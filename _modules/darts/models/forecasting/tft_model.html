@@ -173,6 +173,7 @@
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
 <span class="kn">from</span> <span class="nn">torch.nn</span> <span class="kn">import</span> <span class="n">LSTM</span> <span class="k">as</span> <span class="n">_LSTM</span>
@@ -186,7 +187,9 @@
     <span class="n">_GateAddNorm</span><span class="p">,</span>
     <span class="n">_GatedResidualNetwork</span><span class="p">,</span>
     <span class="n">_InterpretableMultiHeadAttention</span><span class="p">,</span>
+    <span class="n">_MultiEmbedding</span><span class="p">,</span>
     <span class="n">_VariableSelectionNetwork</span><span class="p">,</span>
+    <span class="n">get_embedding_size</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.torch_forecasting_model</span> <span class="kn">import</span> <span class="n">MixedCovariatesTorchModel</span>
 <span class="kn">from</span> <span class="nn">darts.utils.data</span> <span class="kn">import</span> <span class="p">(</span>
@@ -210,14 +213,15 @@
         <span class="n">output_dim</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
         <span class="n">variables_meta</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]],</span>
         <span class="n">num_static_components</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">hidden_size</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">16</span><span class="p">,</span>
-        <span class="n">lstm_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="n">num_attention_heads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
-        <span class="n">full_attention</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">feed_forward</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;GatedResidualNetwork&quot;</span><span class="p">,</span>
-        <span class="n">hidden_continuous_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
-        <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
-        <span class="n">add_relative_index</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">hidden_size</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
+        <span class="n">lstm_layers</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">num_attention_heads</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">full_attention</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">feed_forward</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">hidden_continuous_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">categorical_embedding_sizes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]],</span>
+        <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">add_relative_index</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 
@@ -248,7 +252,13 @@
 <span class="sd">            Set the feedforward network block. default `GatedResidualNetwork` or one of the  glu variant.</span>
 <span class="sd">            Defaults to `GatedResidualNetwork`.</span>
 <span class="sd">        hidden_continuous_size : int</span>
-<span class="sd">            default for hidden size for processing continuous variables&#39;</span>
+<span class="sd">            default for hidden size for processing continuous variables.</span>
+<span class="sd">        categorical_embedding_sizes : dict</span>
+<span class="sd">            A dictionary containing embedding sizes for categorical static covariates. The keys are the column names</span>
+<span class="sd">            of the categorical static covariates. The values are tuples of integers with</span>
+<span class="sd">            `(number of unique categories, embedding size)`. For example `{&quot;some_column&quot;: (64, 8)}`.</span>
+<span class="sd">            Note that `TorchForecastingModels` can only handle numeric data. Consider transforming/encoding your data</span>
+<span class="sd">            with `darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer`.</span>
 <span class="sd">        dropout : float</span>
 <span class="sd">            Fraction of neurons affected by Dropout.</span>
 <span class="sd">        add_relative_index : bool</span>
@@ -270,6 +280,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">num_static_components</span> <span class="o">=</span> <span class="n">num_static_components</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="n">hidden_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_continuous_size</span> <span class="o">=</span> <span class="n">hidden_continuous_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">categorical_embedding_sizes</span> <span class="o">=</span> <span class="n">categorical_embedding_sizes</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lstm_layers</span> <span class="o">=</span> <span class="n">lstm_layers</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">num_attention_heads</span> <span class="o">=</span> <span class="n">num_attention_heads</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">full_attention</span> <span class="o">=</span> <span class="n">full_attention</span>
@@ -290,23 +301,41 @@
         <span class="c1"># _attn: Attention</span>
 
         <span class="c1"># # processing inputs</span>
+        <span class="c1"># embeddings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_embeddings</span> <span class="o">=</span> <span class="n">_MultiEmbedding</span><span class="p">(</span>
+            <span class="n">embedding_sizes</span><span class="o">=</span><span class="n">categorical_embedding_sizes</span><span class="p">,</span>
+            <span class="n">variable_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">categorical_static_variables</span><span class="p">,</span>
+        <span class="p">)</span>
+
         <span class="c1"># continuous variable processing</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">prescalers_linear</span> <span class="o">=</span> <span class="p">{</span>
             <span class="n">name</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
-                <span class="mi">1</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_variables</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_static_components</span><span class="p">,</span>
+                <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">numeric_static_variables</span>
+                <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_static_components</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">hidden_continuous_size</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reals</span>
         <span class="p">}</span>
 
+        <span class="c1"># static (categorical and numerical) variables</span>
         <span class="n">static_input_sizes</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_continuous_size</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_variables</span>
+            <span class="n">name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_embeddings</span><span class="o">.</span><span class="n">output_size</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">categorical_static_variables</span>
         <span class="p">}</span>
+        <span class="n">static_input_sizes</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="n">name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_continuous_size</span>
+                <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">numeric_static_variables</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">static_covariates_vsn</span> <span class="o">=</span> <span class="n">_VariableSelectionNetwork</span><span class="p">(</span>
             <span class="n">input_sizes</span><span class="o">=</span><span class="n">static_input_sizes</span><span class="p">,</span>
             <span class="n">hidden_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
-            <span class="n">input_embedding_flags</span><span class="o">=</span><span class="p">{},</span>  <span class="c1"># this would be required for categorical inputs</span>
+            <span class="n">input_embedding_flags</span><span class="o">=</span><span class="p">{</span>
+                <span class="n">name</span><span class="p">:</span> <span class="kc">True</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">categorical_static_variables</span>
+            <span class="p">},</span>
             <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
             <span class="n">prescalers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prescalers_linear</span><span class="p">,</span>
             <span class="n">single_variable_grns</span><span class="o">=</span><span class="p">{},</span>
@@ -325,7 +354,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">encoder_vsn</span> <span class="o">=</span> <span class="n">_VariableSelectionNetwork</span><span class="p">(</span>
             <span class="n">input_sizes</span><span class="o">=</span><span class="n">encoder_input_sizes</span><span class="p">,</span>
             <span class="n">hidden_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
-            <span class="n">input_embedding_flags</span><span class="o">=</span><span class="p">{},</span>  <span class="c1"># this would be required for categorical inputs</span>
+            <span class="n">input_embedding_flags</span><span class="o">=</span><span class="p">{},</span>  <span class="c1"># this would be required for non-static categorical inputs</span>
             <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
             <span class="n">context_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
             <span class="n">prescalers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prescalers_linear</span><span class="p">,</span>
@@ -335,7 +364,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">decoder_vsn</span> <span class="o">=</span> <span class="n">_VariableSelectionNetwork</span><span class="p">(</span>
             <span class="n">input_sizes</span><span class="o">=</span><span class="n">decoder_input_sizes</span><span class="p">,</span>
             <span class="n">hidden_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
-            <span class="n">input_embedding_flags</span><span class="o">=</span><span class="p">{},</span>  <span class="c1"># this would be required for categorical inputs</span>
+            <span class="n">input_embedding_flags</span><span class="o">=</span><span class="p">{},</span>  <span class="c1"># this would be required for non-static categorical inputs</span>
             <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
             <span class="n">context_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
             <span class="n">prescalers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prescalers_linear</span><span class="p">,</span>
@@ -447,8 +476,21 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        List of all static variables in model</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># TODO: (Darts: dbader) we might want to include static variables in the future?</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables_meta</span><span class="p">[</span><span class="s2">&quot;model_config&quot;</span><span class="p">][</span><span class="s2">&quot;static_input&quot;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">numeric_static_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List of numeric static variables in model</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables_meta</span><span class="p">[</span><span class="s2">&quot;model_config&quot;</span><span class="p">][</span><span class="s2">&quot;static_input_numeric&quot;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">categorical_static_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List of categorical static variables in model</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables_meta</span><span class="p">[</span><span class="s2">&quot;model_config&quot;</span><span class="p">][</span><span class="s2">&quot;static_input_categorical&quot;</span><span class="p">]</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">encoder_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
@@ -609,9 +651,28 @@
 
         <span class="c1"># Embedding and variable selection</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_variables</span><span class="p">:</span>
-            <span class="n">static_embedding</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="n">name</span><span class="p">:</span> <span class="n">x_static</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">static_variables</span><span class="p">)</span>
-            <span class="p">}</span>
+            <span class="c1"># categorical static covariate embeddings</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">categorical_static_variables</span><span class="p">:</span>
+                <span class="n">static_embedding</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_embeddings</span><span class="p">(</span>
+                    <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+                        <span class="p">[</span>
+                            <span class="n">x_static</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">idx</span><span class="p">]</span>
+                            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">static_variables</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">categorical_static_variables</span>
+                        <span class="p">],</span>
+                        <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                    <span class="p">)</span><span class="o">.</span><span class="n">int</span><span class="p">()</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">static_embedding</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="c1"># add numerical static covariates</span>
+            <span class="n">static_embedding</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="n">name</span><span class="p">:</span> <span class="n">x_static</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">idx</span><span class="p">]</span>
+                    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">static_variables</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">numeric_static_variables</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
             <span class="n">static_embedding</span><span class="p">,</span> <span class="n">static_covariate_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_covariates_vsn</span><span class="p">(</span>
                 <span class="n">static_embedding</span>
             <span class="p">)</span>
@@ -737,6 +798,9 @@
         <span class="n">feed_forward</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;GatedResidualNetwork&quot;</span><span class="p">,</span>
         <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
         <span class="n">hidden_continuous_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
+        <span class="n">categorical_embedding_sizes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
+            <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]]</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">add_relative_index</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">loss_fn</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">likelihood</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Likelihood</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -762,45 +826,50 @@
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        input_chunk_length : int</span>
+<span class="sd">        input_chunk_length</span>
 <span class="sd">            Encoder length; number of past time steps that are fed to the forecasting module at prediction time.</span>
-<span class="sd">        output_chunk_length : int</span>
+<span class="sd">        output_chunk_length</span>
 <span class="sd">            Decoder length; number of future time steps that are fed to the forecasting module at prediction time.</span>
-<span class="sd">        hidden_size : int</span>
+<span class="sd">        hidden_size</span>
 <span class="sd">            Hidden state size of the TFT. It is the main hyper-parameter and common across the internal TFT</span>
 <span class="sd">            architecture.</span>
-<span class="sd">        lstm_layers : int</span>
+<span class="sd">        lstm_layers</span>
 <span class="sd">            Number of layers for the Long Short Term Memory (LSTM) Encoder and Decoder (1 is a good default).</span>
-<span class="sd">        num_attention_heads : int</span>
+<span class="sd">        num_attention_heads</span>
 <span class="sd">            Number of attention heads (4 is a good default)</span>
-<span class="sd">        full_attention : bool</span>
+<span class="sd">        full_attention</span>
 <span class="sd">            If ``True``, applies multi-head attention query on past (encoder) and future (decoder) parts. Otherwise,</span>
 <span class="sd">            only queries on future part. Defaults to ``False``.</span>
-<span class="sd">        feed_forward: str</span>
+<span class="sd">        feed_forward</span>
 <span class="sd">            A feedforward network is a fully-connected layer with an activation. TFT Can be one of the glu variant&#39;s</span>
 <span class="sd">            FeedForward Network (FFN)[2]. The glu variant&#39;s FeedForward Network are a series of FFNs designed to work</span>
-<span class="sd">            better with Transformer based models. Defaults to ``&quot;GatedResidualNetwork&quot;``.</span>
-<span class="sd">                [&quot;GLU&quot;, &quot;Bilinear&quot;, &quot;ReGLU&quot;, &quot;GEGLU&quot;, &quot;SwiGLU&quot;, &quot;ReLU&quot;, &quot;GELU&quot;]</span>
-<span class="sd">            or the TFT original FeedForward Network.</span>
-<span class="sd">                [&quot;GatedResidualNetwork&quot;]</span>
-<span class="sd">        dropout : float</span>
+<span class="sd">            better with Transformer based models. Defaults to ``&quot;GatedResidualNetwork&quot;``. [&quot;GLU&quot;, &quot;Bilinear&quot;, &quot;ReGLU&quot;,</span>
+<span class="sd">            &quot;GEGLU&quot;, &quot;SwiGLU&quot;, &quot;ReLU&quot;, &quot;GELU&quot;] or the TFT original FeedForward Network [&quot;GatedResidualNetwork&quot;].</span>
+<span class="sd">        dropout</span>
 <span class="sd">            Fraction of neurons affected by dropout. This is compatible with Monte Carlo dropout</span>
 <span class="sd">            at inference time for model uncertainty estimation (enabled with ``mc_dropout=True`` at</span>
 <span class="sd">            prediction time).</span>
-<span class="sd">        hidden_continuous_size : int</span>
+<span class="sd">        hidden_continuous_size</span>
 <span class="sd">            Default for hidden size for processing continuous variables</span>
-<span class="sd">        add_relative_index : bool</span>
+<span class="sd">        categorical_embedding_sizes</span>
+<span class="sd">            A dictionary used to construct embeddings for categorical static covariates. The keys are the column names</span>
+<span class="sd">            of the categorical static covariates. Each value is either a single integer or a tuple of integers.</span>
+<span class="sd">            For a single integer give the number of unique categories (n) of the corresponding variable. For example</span>
+<span class="sd">            ``{&quot;some_column&quot;: 64}``. The embedding size will be automatically determined by</span>
+<span class="sd">            ``min(round(1.6 * n**0.56), 100)``.</span>
+<span class="sd">            For a tuple of integers, give (number of unique categories, embedding size). For example</span>
+<span class="sd">            ``{&quot;some_column&quot;: (64, 8)}``.</span>
+<span class="sd">            Note that ``TorchForecastingModels`` only support numeric data. Consider transforming/encoding your data</span>
+<span class="sd">            with `darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer`.</span>
+<span class="sd">        add_relative_index</span>
 <span class="sd">            Whether to add positional values to future covariates. Defaults to ``False``.</span>
-<span class="sd">            This allows to use the TFTModel without having to pass future_covariates to :fun:`fit()` and</span>
+<span class="sd">            This allows to use the TFTModel without having to pass future_covariates to :func:`fit()` and</span>
 <span class="sd">            :func:`train()`. It gives a value to the position of each step from input and output chunk relative</span>
 <span class="sd">            to the prediction point. The values are normalized with ``input_chunk_length``.</span>
-<span class="sd">        loss_fn : nn.Module</span>
+<span class="sd">        loss_fn</span>
 <span class="sd">            PyTorch loss function used for training. By default, the TFT model is probabilistic and uses a</span>
 <span class="sd">            ``likelihood`` instead (``QuantileRegression``). To make the model deterministic, you can set the `</span>
 <span class="sd">            `likelihood`` to None and give a ``loss_fn`` argument.</span>
-<span class="sd">        torch_metrics</span>
-<span class="sd">            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found</span>
-<span class="sd">            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.</span>
 <span class="sd">        likelihood</span>
 <span class="sd">            The likelihood model to be used for probabilistic forecasts. By default, the TFT uses</span>
 <span class="sd">            a ``QuantileRegression`` likelihood.</span>
@@ -808,6 +877,9 @@
 <span class="sd">            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and</span>
 <span class="sd">            Darts&#39; :class:`TorchForecastingModel`.</span>
 
+<span class="sd">        torch_metrics</span>
+<span class="sd">            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found</span>
+<span class="sd">            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.</span>
 <span class="sd">        optimizer_cls</span>
 <span class="sd">            The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.</span>
 <span class="sd">        optimizer_kwargs</span>
@@ -950,6 +1022,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">feed_forward</span> <span class="o">=</span> <span class="n">feed_forward</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_continuous_size</span> <span class="o">=</span> <span class="n">hidden_continuous_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">categorical_embedding_sizes</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">categorical_embedding_sizes</span>
+            <span class="k">if</span> <span class="n">categorical_embedding_sizes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="p">{}</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">add_relative_index</span> <span class="o">=</span> <span class="n">add_relative_index</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -1047,25 +1124,63 @@
         <span class="p">}</span>
 
         <span class="n">reals_input</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">categorical_input</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">time_varying_encoder_input</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">time_varying_decoder_input</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">static_input</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">static_input_numeric</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">static_input_categorical</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">categorical_embedding_sizes</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">input_var</span> <span class="ow">in</span> <span class="n">type_names</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">input_var</span> <span class="ow">in</span> <span class="n">variables_meta</span><span class="p">[</span><span class="s2">&quot;input&quot;</span><span class="p">]:</span>
                 <span class="n">vars_meta</span> <span class="o">=</span> <span class="n">variables_meta</span><span class="p">[</span><span class="s2">&quot;input&quot;</span><span class="p">][</span><span class="n">input_var</span><span class="p">]</span>
-                <span class="n">reals_input</span> <span class="o">+=</span> <span class="n">vars_meta</span>
                 <span class="k">if</span> <span class="n">input_var</span> <span class="ow">in</span> <span class="p">[</span>
                     <span class="s2">&quot;past_target&quot;</span><span class="p">,</span>
                     <span class="s2">&quot;past_covariate&quot;</span><span class="p">,</span>
                     <span class="s2">&quot;historic_future_covariate&quot;</span><span class="p">,</span>
                 <span class="p">]:</span>
                     <span class="n">time_varying_encoder_input</span> <span class="o">+=</span> <span class="n">vars_meta</span>
+                    <span class="n">reals_input</span> <span class="o">+=</span> <span class="n">vars_meta</span>
                 <span class="k">elif</span> <span class="n">input_var</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;future_covariate&quot;</span><span class="p">]:</span>
                     <span class="n">time_varying_decoder_input</span> <span class="o">+=</span> <span class="n">vars_meta</span>
+                    <span class="n">reals_input</span> <span class="o">+=</span> <span class="n">vars_meta</span>
                 <span class="k">elif</span> <span class="n">input_var</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;static_covariate&quot;</span><span class="p">]:</span>
-                    <span class="n">static_input</span> <span class="o">+=</span> <span class="n">vars_meta</span>
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">static_covariates</span> <span class="ow">is</span> <span class="kc">None</span>
+                    <span class="p">):</span>  <span class="c1"># when training with fit_from_dataset</span>
+                        <span class="n">static_cols</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span>
+                            <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">static_covariates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+                        <span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">static_cols</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_covariates</span><span class="o">.</span><span class="n">columns</span>
+                    <span class="n">numeric_mask</span> <span class="o">=</span> <span class="o">~</span><span class="n">static_cols</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">categorical_embedding_sizes</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">static_var</span><span class="p">,</span> <span class="n">col_name</span><span class="p">,</span> <span class="n">is_numeric</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
+                        <span class="nb">zip</span><span class="p">(</span><span class="n">vars_meta</span><span class="p">,</span> <span class="n">static_cols</span><span class="p">,</span> <span class="n">numeric_mask</span><span class="p">)</span>
+                    <span class="p">):</span>
+                        <span class="n">static_input</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">static_var</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">is_numeric</span><span class="p">:</span>
+                            <span class="n">static_input_numeric</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">static_var</span><span class="p">)</span>
+                            <span class="n">reals_input</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">static_var</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="c1"># get embedding sizes for each categorical variable</span>
+                            <span class="n">embedding</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">categorical_embedding_sizes</span><span class="p">[</span><span class="n">col_name</span><span class="p">]</span>
+                            <span class="n">raise_if_not</span><span class="p">(</span>
+                                <span class="nb">isinstance</span><span class="p">(</span><span class="n">embedding</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)),</span>
+                                <span class="s2">&quot;Dict values of `categorical_embedding_sizes` must either be integers or tuples. Read &quot;</span>
+                                <span class="s2">&quot;the TFTModel documentation for more information.&quot;</span><span class="p">,</span>
+                                <span class="n">logger</span><span class="p">,</span>
+                            <span class="p">)</span>
+                            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">embedding</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                                <span class="n">embedding</span> <span class="o">=</span> <span class="p">(</span><span class="n">embedding</span><span class="p">,</span> <span class="n">get_embedding_size</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">embedding</span><span class="p">))</span>
+                            <span class="n">categorical_embedding_sizes</span><span class="p">[</span><span class="n">vars_meta</span><span class="p">[</span><span class="n">idx</span><span class="p">]]</span> <span class="o">=</span> <span class="n">embedding</span>
+
+                            <span class="n">static_input_categorical</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">static_var</span><span class="p">)</span>
+                            <span class="n">categorical_input</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">static_var</span><span class="p">)</span>
 
         <span class="n">variables_meta</span><span class="p">[</span><span class="s2">&quot;model_config&quot;</span><span class="p">][</span><span class="s2">&quot;reals_input&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">reals_input</span><span class="p">))</span>
+        <span class="n">variables_meta</span><span class="p">[</span><span class="s2">&quot;model_config&quot;</span><span class="p">][</span><span class="s2">&quot;categorical_input&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+            <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">categorical_input</span><span class="p">)</span>
+        <span class="p">)</span>
         <span class="n">variables_meta</span><span class="p">[</span><span class="s2">&quot;model_config&quot;</span><span class="p">][</span><span class="s2">&quot;time_varying_encoder_input&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
             <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">time_varying_encoder_input</span><span class="p">)</span>
         <span class="p">)</span>
@@ -1075,10 +1190,19 @@
         <span class="n">variables_meta</span><span class="p">[</span><span class="s2">&quot;model_config&quot;</span><span class="p">][</span><span class="s2">&quot;static_input&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
             <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">static_input</span><span class="p">)</span>
         <span class="p">)</span>
+        <span class="n">variables_meta</span><span class="p">[</span><span class="s2">&quot;model_config&quot;</span><span class="p">][</span><span class="s2">&quot;static_input_numeric&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+            <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">static_input_numeric</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">variables_meta</span><span class="p">[</span><span class="s2">&quot;model_config&quot;</span><span class="p">][</span><span class="s2">&quot;static_input_categorical&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+            <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">static_input_categorical</span><span class="p">)</span>
+        <span class="p">)</span>
 
         <span class="n">n_static_components</span> <span class="o">=</span> <span class="p">(</span>
             <span class="nb">len</span><span class="p">(</span><span class="n">static_covariates</span><span class="p">)</span> <span class="k">if</span> <span class="n">static_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
         <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">categorical_embedding_sizes</span> <span class="o">=</span> <span class="n">categorical_embedding_sizes</span>
+
         <span class="k">return</span> <span class="n">_TFTModule</span><span class="p">(</span>
             <span class="n">output_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">,</span>
             <span class="n">variables_meta</span><span class="o">=</span><span class="n">variables_meta</span><span class="p">,</span>
@@ -1090,6 +1214,7 @@
             <span class="n">full_attention</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">full_attention</span><span class="p">,</span>
             <span class="n">feed_forward</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">feed_forward</span><span class="p">,</span>
             <span class="n">hidden_continuous_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_continuous_size</span><span class="p">,</span>
+            <span class="n">categorical_embedding_sizes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">categorical_embedding_sizes</span><span class="p">,</span>
             <span class="n">add_relative_index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">add_relative_index</span><span class="p">,</span>
             <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">pl_module_params</span><span class="p">,</span>
         <span class="p">)</span>
@@ -1142,6 +1267,10 @@
             <span class="n">input_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
             <span class="n">output_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
         <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_supports_static_covariates</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
 
 <div class="viewcode-block" id="TFTModel.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="c1"># since we have future covariates, the inference dataset for future input must be at least of length</span>

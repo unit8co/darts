@@ -2,7 +2,7 @@
 User Guide
 ==========
 
-You will find here some more detailed informations about Darts.
+You will find here some more detailed information about Darts.
 
 **Note:** The user guide is not yet complete and still under construction.
 

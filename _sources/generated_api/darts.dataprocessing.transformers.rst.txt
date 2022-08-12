@@ -15,3 +15,4 @@
         darts.dataprocessing.transformers.missing_values_filler
         darts.dataprocessing.transformers.reconciliation
         darts.dataprocessing.transformers.scaler
+        darts.dataprocessing.transformers.static_covariates_transformer

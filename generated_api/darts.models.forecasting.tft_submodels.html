@@ -207,6 +207,11 @@
        Scaler
       </a>
      </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.static_covariates_transformer.html">
+       Static Covariates Transformer
+      </a>
+     </li>
     </ul>
    </li>
    <li class="toctree-l2">
@@ -313,6 +318,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.catboost_model.html">
+       CatBoost model
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.croston.html">
        Croston method
       </a>
@@ -350,6 +360,11 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.nhits.html">
        N-HiTS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
+       Facebook Prophet
       </a>
      </li>
      <li class="toctree-l3">
@@ -571,6 +586,26 @@ furnished to do so, subject to the following conditions:</p>
 <p>The above copyright notice and this permission notice shall be included in
 all copies or substantial portions of the Software.
 ‘</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="darts.models.forecasting.tft_submodels.get_embedding_size">
+<span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.tft_submodels.</span></span><span class="sig-name descname"><span class="pre">get_embedding_size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/tft_submodels.html#get_embedding_size"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.tft_submodels.get_embedding_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine empirically good embedding sizes (formula taken from fastai).
+:type n: <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>
+:param n: number of classes
+:type n: int
+:type max_size: <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>
+:param max_size: maximum embedding size. Defaults to 100.
+:type max_size: int, optional</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>embedding size</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
 
 
               </div>

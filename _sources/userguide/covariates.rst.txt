@@ -2,7 +2,8 @@
 Covariates
 ==========
 
-This section was written for darts version 0.15.0 and later.
+Sections about past and future covariates were written for darts version 0.15.0 and later.
+Sections about static covariates were written for darts version 0.20.0 and later.
 
 Summary - TL;DR
 ---------------
@@ -14,7 +15,7 @@ covariates themselves are not predicted. We distinguish three kinds of covariate
 
 * **past covariates** are (by definition) covariates known only into the past (e.g. measurements)
 * **future covariates** are (by definition) covariates known into the future (e.g., weather forecasts)
-* **static covariates** are (by definition) covariates constant over time. They are not yet supported in Darts, but we are working on it!
+* **static covariates** are (by definition) covariates constant over time (e.g., product IDs). Check out our static covariates example notebook `here <https://unit8co.github.io/darts/examples/15-static-covariates.html>`_ for more information.
 
 Models in Darts accept ``past_covariates`` and/or ``future_covariates`` in their ``fit()`` and ``predict()`` methods, depending on their capabilities (some models accept no covariates at all). Both target and covariates must be a ``TimeSeries`` object. The models will raise an error if covariates were used that are not supported.
 
@@ -33,6 +34,8 @@ Models in Darts accept ``past_covariates`` and/or ``future_covariates`` in their
                  series=target,  # only required for Global Forecasting Models
                  past_covariates=past_covariates_pred,
                  future_covariates=future_covariates_pred)
+
+Different to past and future covariates, static covariates must be embedded in the **target** series. Because of that, working with static covariates follows a different methodology. You can check out how to use static covariates in `this example <https://unit8co.github.io/darts/examples/15-static-covariates.html>`_.
 
 If you have several covariate variables that you want to use as past (or future) covariates, you have to ``stack()`` all of them into a single ``past_covariates`` (or ``future_covariates``\ ) object.
 
@@ -83,12 +86,16 @@ of the past covariates, and using auto-regression on the target series. If you w
 Introduction - What are covariates (in Darts)?
 ----------------------------------------------
 
-Covariates provide additional information/context that can be useful to improve the prediction of the ``target`` series. The ``target`` series is the variable we wish to predict the future for. We do not predict the covariates themselves, only use them for prediction of the ``target``.
+Past, future and static covariates provide additional information/context that can be useful to improve the prediction of the ``target`` series. The ``target`` series is the variable we wish to predict the future for. We do not predict the covariates themselves, only use them for prediction of the ``target``.
 
-Covariates can hold information about the past (upto and including present time) or future. This is always relative to the prediction point (in time) after which we want to forecast the future.
-In Darts, we refer to these two types as ``past_covariates`` and ``future_covariates``. Darts' forecasting models have different support modes for ``*_covariates``. Some do not support covariates at all, others support either past or future covariates and some support both (more on that in `this subsection <#forecasting-model-covariate-support>`_\ ).
+Past and future covariates hold information about the past (upto and including present time) or future. This is always relative to the prediction point (in time) after which we want to forecast the future.
+In Darts, we refer to these two types as ``past_covariates`` and ``future_covariates``.
 
-Let's have a look at some examples of past and future covariates:
+Static covariates hold time independent (constant / static) information about the ``target`` series. We refer to them as ``static_covariates``. They must be embedded in the ``target`` series. Working with static covariates follows a slightly different approach than with past or future covariates. Check out our `notebook on static covariates <https://unit8co.github.io/darts/examples/15-static-covariates.html>`_ to learn more.
+
+Darts' forecasting models have different support modes for ``*_covariates``. Some do not support covariates at all, others support only past or future covariates and some even support all three (more on that in `this subsection <#forecasting-model-covariate-support>`_\ ).
+
+Let's have a look at some examples of past, future, and static covariates:
 
 
 * ``past_covariates``\ : typically measurements (past data) or temporal attributes
@@ -101,9 +108,22 @@ Let's have a look at some examples of past and future covariates:
   * daily average **forecasted** temperatures (known in the future)
   * day of week, month, year, ...
 
-Temporal attributes are powerful because they are known in advance and can help models capture trends and / or seasonal patterns of the ``target`` series.
+* ``static_covariates``\ : time independent/constant/static ``target`` characterstics
 
-Here's a simple rule-of-thumb to know if your series are past or future covariates:
+  * categorical: 
+
+    * location of ``target`` (country, city, .. name)
+    * ``target`` identifier: (product ID, store ID, ...)
+
+  * numerical:
+
+    * population of ``target``\ 's country/market area (assuming it stays constant over the forecasting horizon)
+    * average temperature of ``target``\ 's region (assuming it stays constant over the forecasting horizon)
+
+Temporal attributes are powerful because they are known in advance and can help models capture trends and / or seasonal patterns of the ``target`` series.
+Static attributes are powerful when working with multiple ``targets`` (either multiple ``TimeSeries``\ , or multivariate series containing multiple dimensions each). The time independent information can help models identify the nature/environment of the underlying series and improve forecasts across different ``targets``.
+
+In this guide we'll focus on past and future covariates. Here's a simple rule-of-thumb to know if your series are **past** or **future covariates**\ :
 
 *If the values are known in advance, they are future covariates (or can be used as past covariates). If they are not, they **must** be past covariates.*
 
@@ -114,7 +134,7 @@ Side note: if you don't have future values (e.g. of measured temperatures), noth
 Forecasting Model Covariate Support
 -----------------------------------
 
-Darts' forecasting models accept optional ``past_covariates`` and / or ``future_covariates`` in their ``fit()`` and ``predict()`` methods, depending on their capabilities. Table 1 shows the supported covariate types for each model. The models will raise an error if covariates were used that are not supported.
+Darts' forecasting models accept optional ``past_covariates`` and / or ``future_covariates`` in their ``fit()`` and ``predict()`` methods (and ``static_covariates`` embedded in the ``target`` series), depending on their capabilities. Table 1 shows the supported covariate types for each model. The models will raise an error if covariates were used that are not supported.
 
 Local Forecasting Models (LFMs):
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -134,54 +154,91 @@ GFMs are broadly speaking "machine learning based" models, which denote PyTorch-
    * - Model
      - Past Covariates
      - Future Covariates
+     - Static Covariates
    * - **Local Forecasting Models (LFMs)**
+     - 
      - 
      - 
    * - ``ExponentialSmoothing``
      - 
      - 
+     - 
+   * - ``BATS`` and ``TBATS``
+     - 
+     - 
+     - 
    * - ``Theta`` and ``FourTheta``
+     - 
      - 
      - 
    * - ``FFT``
      - 
      - 
+     - 
+   * - ``Croston method``
+     - 
+     - 
+     - 
    * - ``ARIMA``
      - 
      - ✅
+     - 
    * - ``VARIMA``
      - 
      - ✅
+     - 
    * - ``AutoARIMA``
      - 
      - ✅
+     - 
+   * - ``StatsForecastAutoARIMA``
+     - 
+     - ✅
+     - 
+   * - ``KalmanForecaster``
+     - 
+     - ✅
+     - 
    * - ``Prophet``
      - 
      - ✅
+     - 
    * - **Global Forecasting Models (GFMs)**
+     - 
      - 
      - 
    * - ``RegressionModel``\ *
      - ✅
      - ✅
+     - 
    * - ``RNNModel``\ **
      - 
      - ✅
+     - 
    * - ``BlockRNNModel``\ ***
      - ✅
+     - 
      - 
    * - ``NBEATSModel``
      - ✅
      - 
+     - 
+   * - ``NHiTSModel``
+     - ✅
+     - 
+     - 
    * - ``TCNModel``
      - ✅
+     - 
      - 
    * - ``TransformerModel``
      - ✅
      - 
+     - 
    * - ``TFTModel``
      - ✅
      - ✅
+     - ✅ 
 
 
 **Table 1: Darts' forecasting models and their covariate support**
@@ -196,8 +253,8 @@ and past targets to do predictions.
 
 ----
 
-Quick guide on how to use covariates with Darts' forecasting models
--------------------------------------------------------------------
+Quick guide on how to use past and/or future covariates with Darts' forecasting models
+--------------------------------------------------------------------------------------
 
 It is very simple to use covariates with Darts' forecasting models. There are just some requirements they have to fulfill.
 
@@ -246,7 +303,7 @@ GFMs can be trained on multiple ``target`` series. You have to supply one covari
    model = NBEATSModel(input_chunk_length=1, output_chunk_length=1)
 
    model.fit(all_targets,
-             past_covariates=all_past_covarites)
+             past_covariates=all_past_covariates)
 
    pred = model.predict(n=1,
                         series=all_targets[0],
@@ -297,6 +354,7 @@ Examples
 Here are a few examples showcasing how to use covariates with Darts forecasting models:
 
 
+* `Static covariates tutorial including TFTModel example <https://unit8co.github.io/darts/examples/15-static-covariates.html>`_
 * `Past covariates with GFMs <https://unit8co.github.io/darts/examples/01-multi-time-series-and-covariates.html#Covariates-Series>`_
 * `Past and future covariates with TFTModel <https://unit8co.github.io/darts/examples/13-TFT-examples.html#Training>`_
 * `Past and future covariates with RegressionModels <https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993>`_

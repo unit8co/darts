@@ -448,7 +448,7 @@ We also noticed that our ice-cream sales depend on the day of the week so we wan
 <li><p>past covariates: measured average daily temperatures in the past <code class="docutils literal notranslate"><span class="pre">temperature</span></code></p></li>
 <li><p>future covariates: day of the week for past and future <code class="docutils literal notranslate"><span class="pre">weekday</span></code></p></li>
 </ul>
-<p>Checking Table 1, a model that would accomodate this kind of covariates would be a
+<p>Checking Table 1, a model that would accommodate this kind of covariates would be a
 <code class="docutils literal notranslate"><span class="pre">SplitCovariatesModel</span></code> (if we don’t use historic values of future covariates), or
 <code class="docutils literal notranslate"><span class="pre">MixedCovariatesModel</span></code> (if we do). We choose a <code class="docutils literal notranslate"><span class="pre">MixedCovariatesModel</span></code> - the <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code>.</p>
 <p>Imagine that we saw a pattern in our past ice cream sales that repeated week after week.
@@ -535,7 +535,7 @@ want to predict - the forecast horizon <code class="docutils literal notranslate
 <ul class="simple">
 <li><p>in our example: predict ice-cream sales for the next 3 days at once (<code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">=</span> <span class="pre">3</span></code>)</p></li>
 </ul>
-<p>To do this we have to supply additional <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> for the next <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">-</span> <span class="pre">output_chunk_length</span> <span class="pre">=</span> <span class="pre">2</span></code> time steps (days) after the end of our 365 days training data. Unfortunately, we do not have measured <code class="docutils literal notranslate"><span class="pre">temperture</span></code> for the future. But let’s assume we have access to temperature forecasts for the next 2 days. We can just append them to <code class="docutils literal notranslate"><span class="pre">temperature</span></code> and the prediction will work!</p>
+<p>To do this we have to supply additional <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> for the next <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">-</span> <span class="pre">output_chunk_length</span> <span class="pre">=</span> <span class="pre">2</span></code> time steps (days) after the end of our 365 days training data. Unfortunately, we do not have measured <code class="docutils literal notranslate"><span class="pre">temperature</span></code> for the future. But let’s assume we have access to temperature forecasts for the next 2 days. We can just append them to <code class="docutils literal notranslate"><span class="pre">temperature</span></code> and the prediction will work!</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">temperature</span> <span class="o">=</span> <span class="n">temperature</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">temperature_forecast</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -569,7 +569,7 @@ To achieve this, it is enough to build your <code class="docutils literal notran
 It can also incur some overheads (for transferring data to/from the GPU),
 so some testing and tuning is often necessary.
 We refer to our <a class="reference external" href="https://unit8co.github.io/darts/userguide/gpu_and_tpu_usage.html">GPU/TPU guide</a>
-for more informations on how to setup a GPU (or a TPU) via PyTorch Lightning.</p>
+for more information on how to setup a GPU (or a TPU) via PyTorch Lightning.</p>
 </section>
 <section id="tune-the-batch-size">
 <h3>Tune the batch size<a class="headerlink" href="#tune-the-batch-size" title="Permalink to this headline">¶</a></h3>

@@ -1,0 +1,4 @@
+
+.. automodule:: darts.dataprocessing.transformers.static_covariates_transformer
+   :members:
+   :undoc-members:

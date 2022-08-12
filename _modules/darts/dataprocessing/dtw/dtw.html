@@ -169,9 +169,12 @@
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">xarray</span> <span class="k">as</span> <span class="nn">xr</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">DIMS</span>
 
 <span class="kn">from</span> <span class="nn">.cost_matrix</span> <span class="kn">import</span> <span class="n">CostMatrix</span>
 <span class="kn">from</span> <span class="nn">.window</span> <span class="kn">import</span> <span class="n">CRWindow</span><span class="p">,</span> <span class="n">NoWindow</span><span class="p">,</span> <span class="n">Window</span>
@@ -370,25 +373,34 @@
 <span class="sd">            Two new TimeSeries instances of the same length, indexed by pd.RangeIndex.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">series1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span>
-        <span class="n">series2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series2</span>
-
-        <span class="n">xa1</span> <span class="o">=</span> <span class="n">series1</span><span class="o">.</span><span class="n">data_array</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="n">xa2</span> <span class="o">=</span> <span class="n">series2</span><span class="o">.</span><span class="n">data_array</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
+        <span class="n">xa1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">data_array</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">xa2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series2</span><span class="o">.</span><span class="n">data_array</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">()</span>
 
-        <span class="n">warped_series1</span> <span class="o">=</span> <span class="n">xa1</span><span class="p">[</span><span class="n">path</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]]</span>
-        <span class="n">warped_series2</span> <span class="o">=</span> <span class="n">xa2</span><span class="p">[</span><span class="n">path</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]]</span>
+        <span class="n">values1</span><span class="p">,</span> <span class="n">values2</span> <span class="o">=</span> <span class="n">xa1</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">path</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]],</span> <span class="n">xa2</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">path</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]]</span>
 
-        <span class="n">time_dim1</span> <span class="o">=</span> <span class="n">series1</span><span class="o">.</span><span class="n">_time_dim</span>
-        <span class="n">time_dim2</span> <span class="o">=</span> <span class="n">series2</span><span class="o">.</span><span class="n">_time_dim</span>
+        <span class="c1"># We set a RangeIndex for both series:</span>
+        <span class="n">warped_series1</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">values1</span><span class="p">,</span>
+            <span class="n">dims</span><span class="o">=</span><span class="n">xa1</span><span class="o">.</span><span class="n">dims</span><span class="p">,</span>
+            <span class="n">coords</span><span class="o">=</span><span class="p">{</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span><span class="n">values1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                <span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">xa1</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span>
+            <span class="p">},</span>
+            <span class="n">attrs</span><span class="o">=</span><span class="n">xa1</span><span class="o">.</span><span class="n">attrs</span><span class="p">,</span>
+        <span class="p">)</span>
 
-        <span class="n">range_index</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">warped_series2</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">values2</span><span class="p">,</span>
+            <span class="n">dims</span><span class="o">=</span><span class="n">xa2</span><span class="o">.</span><span class="n">dims</span><span class="p">,</span>
+            <span class="n">coords</span><span class="o">=</span><span class="p">{</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">series2</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span><span class="n">values2</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                <span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">xa2</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span>
+            <span class="p">},</span>
+            <span class="n">attrs</span><span class="o">=</span><span class="n">xa2</span><span class="o">.</span><span class="n">attrs</span><span class="p">,</span>
+        <span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">range_index</span><span class="p">:</span>
-            <span class="n">warped_series1</span> <span class="o">=</span> <span class="n">warped_series1</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">dims_or_levels</span><span class="o">=</span><span class="n">time_dim1</span><span class="p">)</span>
-            <span class="n">warped_series2</span> <span class="o">=</span> <span class="n">warped_series2</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">dims_or_levels</span><span class="o">=</span><span class="n">time_dim2</span><span class="p">)</span>
+        <span class="n">time_dim1</span><span class="p">,</span> <span class="n">time_dim2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series1</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series2</span><span class="o">.</span><span class="n">_time_dim</span>
 
         <span class="c1"># todo: prevent time information being lost after warping</span>
         <span class="c1"># Applying time index from series1 to series2 (take_dates = True) is disabled for consistency reasons</span>

@@ -209,6 +209,11 @@
        Scaler
       </a>
      </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.static_covariates_transformer.html">
+       Static Covariates Transformer
+      </a>
+     </li>
     </ul>
    </li>
    <li class="toctree-l2">
@@ -315,6 +320,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.catboost_model.html">
+       CatBoost model
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.croston.html">
        Croston method
       </a>
@@ -352,6 +362,11 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.nhits.html">
        N-HiTS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
+       Facebook Prophet
       </a>
      </li>
      <li class="toctree-l3">
@@ -728,7 +743,7 @@ It is recommended to use the factory methods to create TimeSeries instead.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.astype" title="darts.timeseries.TimeSeries.astype"><code class="xref py py-obj docutils literal notranslate"><span class="pre">astype</span></code></a>(dtype)</p></td>
 <td><p>Converts this series to a new series with desired dtype.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.concatenate" title="darts.timeseries.TimeSeries.concatenate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">concatenate</span></code></a>(other[, axis, ignore_time_axes, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.concatenate" title="darts.timeseries.TimeSeries.concatenate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">concatenate</span></code></a>(other[, axis, ignore_time_axis, ...])</p></td>
 <td><p>Concatenate another timeseries to the current one along given axis.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.copy" title="darts.timeseries.TimeSeries.copy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">copy</span></code></a>()</p></td>
@@ -746,193 +761,196 @@ It is recommended to use the factory methods to create TimeSeries instead.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.drop_before" title="darts.timeseries.TimeSeries.drop_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">drop_before</span></code></a>(split_point)</p></td>
 <td><p>Drops everything before the provided time <cite>split_point</cite>, included.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.end_time" title="darts.timeseries.TimeSeries.end_time"><code class="xref py py-obj docutils literal notranslate"><span class="pre">end_time</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.drop_columns" title="darts.timeseries.TimeSeries.drop_columns"><code class="xref py py-obj docutils literal notranslate"><span class="pre">drop_columns</span></code></a>(col_names)</p></td>
+<td><p>Return a new <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instance with dropped columns/components.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.end_time" title="darts.timeseries.TimeSeries.end_time"><code class="xref py py-obj docutils literal notranslate"><span class="pre">end_time</span></code></a>()</p></td>
 <td><p>End time of the series.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.first_value" title="darts.timeseries.TimeSeries.first_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">first_value</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.first_value" title="darts.timeseries.TimeSeries.first_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">first_value</span></code></a>()</p></td>
 <td><p>First value of this univariate series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.first_values" title="darts.timeseries.TimeSeries.first_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">first_values</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.first_values" title="darts.timeseries.TimeSeries.first_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">first_values</span></code></a>()</p></td>
 <td><p>First values of this potentially multivariate series.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.from_csv" title="darts.timeseries.TimeSeries.from_csv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_csv</span></code></a>(filepath_or_buffer[, time_col, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.from_csv" title="darts.timeseries.TimeSeries.from_csv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_csv</span></code></a>(filepath_or_buffer[, time_col, ...])</p></td>
 <td><p>Build a deterministic TimeSeries instance built from a single CSV file.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.from_dataframe" title="darts.timeseries.TimeSeries.from_dataframe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_dataframe</span></code></a>(df[, time_col, value_cols, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.from_dataframe" title="darts.timeseries.TimeSeries.from_dataframe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_dataframe</span></code></a>(df[, time_col, value_cols, ...])</p></td>
 <td><p>Build a deterministic TimeSeries instance built from a selection of columns of a DataFrame.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.from_group_dataframe" title="darts.timeseries.TimeSeries.from_group_dataframe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_group_dataframe</span></code></a>(df, group_cols[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.from_group_dataframe" title="darts.timeseries.TimeSeries.from_group_dataframe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_group_dataframe</span></code></a>(df, group_cols[, ...])</p></td>
 <td><p>Build a list of TimeSeries instances grouped by a selection of columns from a DataFrame.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.from_json" title="darts.timeseries.TimeSeries.from_json"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_json</span></code></a>(json_str[, static_covariates, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.from_json" title="darts.timeseries.TimeSeries.from_json"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_json</span></code></a>(json_str[, static_covariates, ...])</p></td>
 <td><p>Build a series from the JSON String representation of a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> (produced using <a class="reference internal" href="#darts.timeseries.TimeSeries.to_json" title="darts.timeseries.TimeSeries.to_json"><code class="xref py py-func docutils literal notranslate"><span class="pre">TimeSeries.to_json()</span></code></a>).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.from_pickle" title="darts.timeseries.TimeSeries.from_pickle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_pickle</span></code></a>(path)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.from_pickle" title="darts.timeseries.TimeSeries.from_pickle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_pickle</span></code></a>(path)</p></td>
 <td><p>Read a pickled <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.from_series" title="darts.timeseries.TimeSeries.from_series"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_series</span></code></a>(pd_series[, fill_missing_dates, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.from_series" title="darts.timeseries.TimeSeries.from_series"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_series</span></code></a>(pd_series[, fill_missing_dates, ...])</p></td>
 <td><p>Build a univariate deterministic series from a pandas Series.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.from_times_and_values" title="darts.timeseries.TimeSeries.from_times_and_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_times_and_values</span></code></a>(times, values[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.from_times_and_values" title="darts.timeseries.TimeSeries.from_times_and_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_times_and_values</span></code></a>(times, values[, ...])</p></td>
 <td><p>Build a series from a time index and value array.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.from_values" title="darts.timeseries.TimeSeries.from_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_values</span></code></a>(values[, columns, fillna_value, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.from_values" title="darts.timeseries.TimeSeries.from_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_values</span></code></a>(values[, columns, fillna_value, ...])</p></td>
 <td><p>Build an integer-indexed series from an array of values.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.from_xarray" title="darts.timeseries.TimeSeries.from_xarray"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_xarray</span></code></a>(xa[, fill_missing_dates, freq, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.from_xarray" title="darts.timeseries.TimeSeries.from_xarray"><code class="xref py py-obj docutils literal notranslate"><span class="pre">from_xarray</span></code></a>(xa[, fill_missing_dates, freq, ...])</p></td>
 <td><p>Return a TimeSeries instance built from an xarray DataArray.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.gaps" title="darts.timeseries.TimeSeries.gaps"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gaps</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.gaps" title="darts.timeseries.TimeSeries.gaps"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gaps</span></code></a>()</p></td>
 <td><p>A function to compute and return gaps in the TimeSeries.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.get_index_at_point" title="darts.timeseries.TimeSeries.get_index_at_point"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_index_at_point</span></code></a>(point[, after])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.get_index_at_point" title="darts.timeseries.TimeSeries.get_index_at_point"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_index_at_point</span></code></a>(point[, after])</p></td>
 <td><p>Converts a point along the time axis into an integer index.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.get_timestamp_at_point" title="darts.timeseries.TimeSeries.get_timestamp_at_point"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_timestamp_at_point</span></code></a>(point)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.get_timestamp_at_point" title="darts.timeseries.TimeSeries.get_timestamp_at_point"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_timestamp_at_point</span></code></a>(point)</p></td>
 <td><p>Converts a point into a pandas.Timestamp (if Datetime-indexed) or into an integer (if Int64-indexed).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.has_same_time_as" title="darts.timeseries.TimeSeries.has_same_time_as"><code class="xref py py-obj docutils literal notranslate"><span class="pre">has_same_time_as</span></code></a>(other)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.has_same_time_as" title="darts.timeseries.TimeSeries.has_same_time_as"><code class="xref py py-obj docutils literal notranslate"><span class="pre">has_same_time_as</span></code></a>(other)</p></td>
 <td><p>Checks whether this series has the same time index as <cite>other</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.head" title="darts.timeseries.TimeSeries.head"><code class="xref py py-obj docutils literal notranslate"><span class="pre">head</span></code></a>([size, axis])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.head" title="darts.timeseries.TimeSeries.head"><code class="xref py py-obj docutils literal notranslate"><span class="pre">head</span></code></a>([size, axis])</p></td>
 <td><p>Return a TimeSeries containing the first <cite>size</cite> points.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.is_within_range" title="darts.timeseries.TimeSeries.is_within_range"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_within_range</span></code></a>(ts)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.is_within_range" title="darts.timeseries.TimeSeries.is_within_range"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_within_range</span></code></a>(ts)</p></td>
 <td><p>Check whether a given timestamp or integer is within the time interval of this time series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.kurtosis" title="darts.timeseries.TimeSeries.kurtosis"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kurtosis</span></code></a>(**kwargs)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.kurtosis" title="darts.timeseries.TimeSeries.kurtosis"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kurtosis</span></code></a>(**kwargs)</p></td>
 <td><p>Return a deterministic <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the kurtosis of each component (over the samples) of this stochastic <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.last_value" title="darts.timeseries.TimeSeries.last_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">last_value</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.last_value" title="darts.timeseries.TimeSeries.last_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">last_value</span></code></a>()</p></td>
 <td><p>Last value of this univariate series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.last_values" title="darts.timeseries.TimeSeries.last_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">last_values</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.last_values" title="darts.timeseries.TimeSeries.last_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">last_values</span></code></a>()</p></td>
 <td><p>Last values of this potentially multivariate series.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.longest_contiguous_slice" title="darts.timeseries.TimeSeries.longest_contiguous_slice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">longest_contiguous_slice</span></code></a>([max_gap_size])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.longest_contiguous_slice" title="darts.timeseries.TimeSeries.longest_contiguous_slice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">longest_contiguous_slice</span></code></a>([max_gap_size])</p></td>
 <td><p>Return the largest TimeSeries slice of this deterministic series that contains no gaps (contiguous all-NaN values) larger than <cite>max_gap_size</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.map" title="darts.timeseries.TimeSeries.map"><code class="xref py py-obj docutils literal notranslate"><span class="pre">map</span></code></a>(fn)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.map" title="darts.timeseries.TimeSeries.map"><code class="xref py py-obj docutils literal notranslate"><span class="pre">map</span></code></a>(fn)</p></td>
 <td><p>Applies the function <cite>fn</cite> to the underlying NumPy array containing this series' values.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.max" title="darts.timeseries.TimeSeries.max"><code class="xref py py-obj docutils literal notranslate"><span class="pre">max</span></code></a>([axis])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.max" title="darts.timeseries.TimeSeries.max"><code class="xref py py-obj docutils literal notranslate"><span class="pre">max</span></code></a>([axis])</p></td>
 <td><p>Return a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the max calculated over the specified axis.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.mean" title="darts.timeseries.TimeSeries.mean"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mean</span></code></a>([axis])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.mean" title="darts.timeseries.TimeSeries.mean"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mean</span></code></a>([axis])</p></td>
 <td><p>Return a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the mean calculated over the specified axis.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.median" title="darts.timeseries.TimeSeries.median"><code class="xref py py-obj docutils literal notranslate"><span class="pre">median</span></code></a>([axis])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.median" title="darts.timeseries.TimeSeries.median"><code class="xref py py-obj docutils literal notranslate"><span class="pre">median</span></code></a>([axis])</p></td>
 <td><p>Return a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the median calculated over the specified axis.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.min" title="darts.timeseries.TimeSeries.min"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min</span></code></a>([axis])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.min" title="darts.timeseries.TimeSeries.min"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min</span></code></a>([axis])</p></td>
 <td><p>Return a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the min calculated over the specified axis.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.pd_dataframe" title="darts.timeseries.TimeSeries.pd_dataframe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pd_dataframe</span></code></a>([copy])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.pd_dataframe" title="darts.timeseries.TimeSeries.pd_dataframe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pd_dataframe</span></code></a>([copy])</p></td>
 <td><p>Return a Pandas DataFrame representation of this deterministic time series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.pd_series" title="darts.timeseries.TimeSeries.pd_series"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pd_series</span></code></a>([copy])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.pd_series" title="darts.timeseries.TimeSeries.pd_series"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pd_series</span></code></a>([copy])</p></td>
 <td><p>Return a Pandas Series representation of this univariate deterministic time series.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.plot" title="darts.timeseries.TimeSeries.plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot</span></code></a>([new_plot, central_quantile, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.plot" title="darts.timeseries.TimeSeries.plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot</span></code></a>([new_plot, central_quantile, ...])</p></td>
 <td><p>Plot the series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.quantile" title="darts.timeseries.TimeSeries.quantile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">quantile</span></code></a>(quantile, **kwargs)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.quantile" title="darts.timeseries.TimeSeries.quantile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">quantile</span></code></a>(quantile, **kwargs)</p></td>
 <td><p>Return a deterministic <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the single desired quantile of each component (over the samples) of this stochastic <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.quantile_df" title="darts.timeseries.TimeSeries.quantile_df"><code class="xref py py-obj docutils literal notranslate"><span class="pre">quantile_df</span></code></a>([quantile])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.quantile_df" title="darts.timeseries.TimeSeries.quantile_df"><code class="xref py py-obj docutils literal notranslate"><span class="pre">quantile_df</span></code></a>([quantile])</p></td>
 <td><p>Return a Pandas DataFrame containing the single desired quantile of each component (over the samples).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.quantile_timeseries" title="darts.timeseries.TimeSeries.quantile_timeseries"><code class="xref py py-obj docutils literal notranslate"><span class="pre">quantile_timeseries</span></code></a>([quantile])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.quantile_timeseries" title="darts.timeseries.TimeSeries.quantile_timeseries"><code class="xref py py-obj docutils literal notranslate"><span class="pre">quantile_timeseries</span></code></a>([quantile])</p></td>
 <td><p>Return a deterministic <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the single desired quantile of each component (over the samples) of this stochastic <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.quantiles_df" title="darts.timeseries.TimeSeries.quantiles_df"><code class="xref py py-obj docutils literal notranslate"><span class="pre">quantiles_df</span></code></a>([quantiles])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.quantiles_df" title="darts.timeseries.TimeSeries.quantiles_df"><code class="xref py py-obj docutils literal notranslate"><span class="pre">quantiles_df</span></code></a>([quantiles])</p></td>
 <td><p>Return a Pandas DataFrame containing the desired quantiles of each component (over the samples).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.random_component_values" title="darts.timeseries.TimeSeries.random_component_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">random_component_values</span></code></a>([copy])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.random_component_values" title="darts.timeseries.TimeSeries.random_component_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">random_component_values</span></code></a>([copy])</p></td>
 <td><p>Return a 2-D array of shape (time, component), containing the values for one sample taken uniformly at random among this series' samples.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.resample" title="darts.timeseries.TimeSeries.resample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resample</span></code></a>(freq[, method])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.resample" title="darts.timeseries.TimeSeries.resample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resample</span></code></a>(freq[, method])</p></td>
 <td><p>Build a reindexed <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> with a given frequency.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.rescale_with_value" title="darts.timeseries.TimeSeries.rescale_with_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rescale_with_value</span></code></a>(value_at_first_step)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.rescale_with_value" title="darts.timeseries.TimeSeries.rescale_with_value"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rescale_with_value</span></code></a>(value_at_first_step)</p></td>
 <td><p>Return a new <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>, which is a multiple of this series such that the first value is <cite>value_at_first_step</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.shift" title="darts.timeseries.TimeSeries.shift"><code class="xref py py-obj docutils literal notranslate"><span class="pre">shift</span></code></a>(n)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.shift" title="darts.timeseries.TimeSeries.shift"><code class="xref py py-obj docutils literal notranslate"><span class="pre">shift</span></code></a>(n)</p></td>
 <td><p>Shifts the time axis of this TimeSeries by <cite>n</cite> time steps.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.skew" title="darts.timeseries.TimeSeries.skew"><code class="xref py py-obj docutils literal notranslate"><span class="pre">skew</span></code></a>(**kwargs)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.skew" title="darts.timeseries.TimeSeries.skew"><code class="xref py py-obj docutils literal notranslate"><span class="pre">skew</span></code></a>(**kwargs)</p></td>
 <td><p>Return a deterministic <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the skew of each component (over the samples) of this stochastic <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.slice" title="darts.timeseries.TimeSeries.slice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice</span></code></a>(start_ts, end_ts)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.slice" title="darts.timeseries.TimeSeries.slice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice</span></code></a>(start_ts, end_ts)</p></td>
 <td><p>Return a new TimeSeries, starting later than <cite>start_ts</cite> and ending before <cite>end_ts</cite>, inclusive on both ends.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.slice_intersect" title="darts.timeseries.TimeSeries.slice_intersect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice_intersect</span></code></a>(other)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.slice_intersect" title="darts.timeseries.TimeSeries.slice_intersect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice_intersect</span></code></a>(other)</p></td>
 <td><p>Return a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> slice of this series, where the time index has been intersected with the one of the <cite>other</cite> series.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.slice_n_points_after" title="darts.timeseries.TimeSeries.slice_n_points_after"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice_n_points_after</span></code></a>(start_ts, n)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.slice_n_points_after" title="darts.timeseries.TimeSeries.slice_n_points_after"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice_n_points_after</span></code></a>(start_ts, n)</p></td>
 <td><p>Return a new TimeSeries, starting a <cite>start_ts</cite> (inclusive) and having at most <cite>n</cite> points.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.slice_n_points_before" title="darts.timeseries.TimeSeries.slice_n_points_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice_n_points_before</span></code></a>(end_ts, n)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.slice_n_points_before" title="darts.timeseries.TimeSeries.slice_n_points_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice_n_points_before</span></code></a>(end_ts, n)</p></td>
 <td><p>Return a new TimeSeries, ending at <cite>end_ts</cite> (inclusive) and having at most <cite>n</cite> points.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.split_after" title="darts.timeseries.TimeSeries.split_after"><code class="xref py py-obj docutils literal notranslate"><span class="pre">split_after</span></code></a>(split_point)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.split_after" title="darts.timeseries.TimeSeries.split_after"><code class="xref py py-obj docutils literal notranslate"><span class="pre">split_after</span></code></a>(split_point)</p></td>
 <td><p>Splits the series in two, after a provided <cite>split_point</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.split_before" title="darts.timeseries.TimeSeries.split_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">split_before</span></code></a>(split_point)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.split_before" title="darts.timeseries.TimeSeries.split_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">split_before</span></code></a>(split_point)</p></td>
 <td><p>Splits the series in two, before a provided <cite>split_point</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.stack" title="darts.timeseries.TimeSeries.stack"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stack</span></code></a>(other)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.stack" title="darts.timeseries.TimeSeries.stack"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stack</span></code></a>(other)</p></td>
 <td><p>Stacks another univariate or multivariate TimeSeries with the same time index on top of the current one (along the component axis).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.start_time" title="darts.timeseries.TimeSeries.start_time"><code class="xref py py-obj docutils literal notranslate"><span class="pre">start_time</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.start_time" title="darts.timeseries.TimeSeries.start_time"><code class="xref py py-obj docutils literal notranslate"><span class="pre">start_time</span></code></a>()</p></td>
 <td><p>Start time of the series.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.static_covariates_values" title="darts.timeseries.TimeSeries.static_covariates_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">static_covariates_values</span></code></a>([copy])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.static_covariates_values" title="darts.timeseries.TimeSeries.static_covariates_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">static_covariates_values</span></code></a>([copy])</p></td>
 <td><p>Return a 2-D array of dimension (component, static variable), containing the static covariate values of the TimeSeries.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.std" title="darts.timeseries.TimeSeries.std"><code class="xref py py-obj docutils literal notranslate"><span class="pre">std</span></code></a>([ddof])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.std" title="darts.timeseries.TimeSeries.std"><code class="xref py py-obj docutils literal notranslate"><span class="pre">std</span></code></a>([ddof])</p></td>
 <td><p>Return a deterministic <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the standard deviation of each component (over the samples) of this stochastic <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.strip" title="darts.timeseries.TimeSeries.strip"><code class="xref py py-obj docutils literal notranslate"><span class="pre">strip</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.strip" title="darts.timeseries.TimeSeries.strip"><code class="xref py py-obj docutils literal notranslate"><span class="pre">strip</span></code></a>()</p></td>
 <td><p>Return a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> slice of this deterministic time series, where NaN-only entries at the beginning and the end of the series are removed.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.sum" title="darts.timeseries.TimeSeries.sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sum</span></code></a>([axis])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.sum" title="darts.timeseries.TimeSeries.sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sum</span></code></a>([axis])</p></td>
 <td><p>Return a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the sum calculated over the specified axis.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.tail" title="darts.timeseries.TimeSeries.tail"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tail</span></code></a>([size, axis])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.tail" title="darts.timeseries.TimeSeries.tail"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tail</span></code></a>([size, axis])</p></td>
 <td><p>Return last <cite>size</cite> points of the series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.to_csv" title="darts.timeseries.TimeSeries.to_csv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_csv</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.to_csv" title="darts.timeseries.TimeSeries.to_csv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_csv</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Writes this deterministic series to a CSV file.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.to_json" title="darts.timeseries.TimeSeries.to_json"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_json</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.to_json" title="darts.timeseries.TimeSeries.to_json"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_json</span></code></a>()</p></td>
 <td><p>Return a JSON string representation of this deterministic series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.to_pickle" title="darts.timeseries.TimeSeries.to_pickle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_pickle</span></code></a>(path[, protocol])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.to_pickle" title="darts.timeseries.TimeSeries.to_pickle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_pickle</span></code></a>(path[, protocol])</p></td>
 <td><p>Save this series in pickle format.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.univariate_component" title="darts.timeseries.TimeSeries.univariate_component"><code class="xref py py-obj docutils literal notranslate"><span class="pre">univariate_component</span></code></a>(index)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.univariate_component" title="darts.timeseries.TimeSeries.univariate_component"><code class="xref py py-obj docutils literal notranslate"><span class="pre">univariate_component</span></code></a>(index)</p></td>
 <td><p>Retrieve one of the components of the series and return it as new univariate <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instance.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.univariate_values" title="darts.timeseries.TimeSeries.univariate_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">univariate_values</span></code></a>([copy, sample])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.univariate_values" title="darts.timeseries.TimeSeries.univariate_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">univariate_values</span></code></a>([copy, sample])</p></td>
 <td><p>Return a 1-D Numpy array of shape (time,), containing this univariate series' values for one <cite>sample</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.values" title="darts.timeseries.TimeSeries.values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">values</span></code></a>([copy, sample])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.values" title="darts.timeseries.TimeSeries.values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">values</span></code></a>([copy, sample])</p></td>
 <td><p>Return a 2-D array of shape (time, component), containing this series' values for one <cite>sample</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.var" title="darts.timeseries.TimeSeries.var"><code class="xref py py-obj docutils literal notranslate"><span class="pre">var</span></code></a>([ddof])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.var" title="darts.timeseries.TimeSeries.var"><code class="xref py py-obj docutils literal notranslate"><span class="pre">var</span></code></a>([ddof])</p></td>
 <td><p>Return a deterministic <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the variance of each component (over the samples) of this stochastic <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.with_columns_renamed" title="darts.timeseries.TimeSeries.with_columns_renamed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">with_columns_renamed</span></code></a>(col_names, col_names_new)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.with_columns_renamed" title="darts.timeseries.TimeSeries.with_columns_renamed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">with_columns_renamed</span></code></a>(col_names, col_names_new)</p></td>
 <td><p>Return a new <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instance with new columns/components names.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.with_hierarchy" title="darts.timeseries.TimeSeries.with_hierarchy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">with_hierarchy</span></code></a>(hierarchy)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.with_hierarchy" title="darts.timeseries.TimeSeries.with_hierarchy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">with_hierarchy</span></code></a>(hierarchy)</p></td>
 <td><p>Adds a hierarchy to the TimeSeries.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.with_static_covariates" title="darts.timeseries.TimeSeries.with_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">with_static_covariates</span></code></a>(covariates)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.with_static_covariates" title="darts.timeseries.TimeSeries.with_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">with_static_covariates</span></code></a>(covariates)</p></td>
 <td><p>Returns a new TimeSeries object with added static covariates.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.with_values" title="darts.timeseries.TimeSeries.with_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">with_values</span></code></a>(values)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.with_values" title="darts.timeseries.TimeSeries.with_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">with_values</span></code></a>(values)</p></td>
 <td><p>Return a new <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> similar to this one but with new specified values.</p></td>
 </tr>
 </tbody>
@@ -1104,14 +1122,14 @@ order as they appear in the series, or None if the series has no hierarchy.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.concatenate">
-<span class="sig-name descname"><span class="pre">concatenate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_time_axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_hierarchy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.concatenate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.concatenate" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">concatenate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_time_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_hierarchy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.concatenate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.concatenate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Concatenate another timeseries to the current one along given axis.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>other</strong> (<a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><em>TimeSeries</em></a>) – another timeseries to concatenate to this one</p></li>
 <li><p><strong>axis</strong> (<em>str</em><em> or </em><em>int</em>) – axis along which timeseries will be concatenated. [‘time’, ‘component’ or ‘sample’; Default: 0 (time)]</p></li>
-<li><p><strong>ignore_time_axes</strong> (<em>bool</em><em>, </em><em>default False</em>) – Ignore errors when time axis varies for some timeseries. Note that this may yield unexpected results</p></li>
+<li><p><strong>ignore_time_axis</strong> (<em>bool</em><em>, </em><em>default False</em>) – Ignore errors when time axis varies for some timeseries. Note that this may yield unexpected results</p></li>
 <li><p><strong>ignore_static_covariates</strong> (<em>bool</em>) – whether to ignore all requirements for static covariate concatenation and only transfer the
 static covariates of the first TimeSeries element in <cite>series</cite> to the concatenated TimeSeries.
 Only effective when <cite>axis=1</cite>.</p></li>
@@ -1225,6 +1243,23 @@ The timestamp may not be in the series. If it is, the timestamp will be dropped.
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>A new TimeSeries, after <cite>ts</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.timeseries.TimeSeries.drop_columns">
+<span class="sig-name descname"><span class="pre">drop_columns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">col_names</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.drop_columns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.drop_columns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instance with dropped columns/components.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>col_names</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – String or list of strings corresponding the the columns to be dropped.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A new TimeSeries instance with specified columns dropped.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
@@ -2155,7 +2190,7 @@ Works only for deterministic series (i.e., made of 1 sample).</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.plot">
-<span class="sig-name descname"><span class="pre">plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">central_quantile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_quantile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_quantile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.plot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.plot" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">central_quantile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_quantile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_quantile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_formatting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.plot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.plot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plot the series.</p>
 <p>This is a wrapper method around <code class="xref py py-func docutils literal notranslate"><span class="pre">xarray.DataArray.plot()</span></code>.</p>
 <dl class="field-list simple">
@@ -2172,6 +2207,7 @@ interval is shown if <cite>confidence_low_quantile</cite> is None (default 0.05)
 <li><p><strong>high_quantile</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – The quantile to use for the upper bound of the plotted confidence interval. Similar to <cite>central_quantile</cite>,
 this is applied to each component separately (i.e., displaying marginal distributions). No confidence
 interval is shown if <cite>high_quantile</cite> is None (default 0.95).</p></li>
+<li><p><strong>default_formatting</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether or not to use the darts default scheme.</p></li>
 <li><p><strong>args</strong> – some positional arguments for the <cite>plot()</cite> method</p></li>
 <li><p><strong>kwargs</strong> – some keyword arguments for the <cite>plot()</cite> method</p></li>
 </ul>
@@ -2761,6 +2797,8 @@ or None if the series has no hierarchy.</p>
 <span class="sig-name descname"><span class="pre">univariate_component</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.univariate_component"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.univariate_component" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrieve one of the components of the series
 and return it as new univariate <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instance.</p>
+<p>This drops the hierarchy (if any), and retains only the relevant static
+covariates column.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>index</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – An zero-indexed integer indicating which component to retrieve. If components have names,
@@ -2906,6 +2944,10 @@ components of the uni/multivariate TimeSeries. If a single-row DataFrame, the co
 number of components of the TimeSeries. This adds component-specific static covariates.</p>
 </dd>
 </dl>
+<p class="rubric">Notes</p>
+<p>If there are a large number of static covariates variables (i.e., the static covariates have a very large
+dimension), there might be a noticable performance penalty for creating <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects, unless
+the covariates already have the same <code class="docutils literal notranslate"><span class="pre">dtype</span></code> as the series data.</p>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="n">linear_timeseries</span>

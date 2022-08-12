@@ -209,6 +209,11 @@
        Scaler
       </a>
      </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.static_covariates_transformer.html">
+       Static Covariates Transformer
+      </a>
+     </li>
     </ul>
    </li>
    <li class="toctree-l2">
@@ -315,6 +320,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.catboost_model.html">
+       CatBoost model
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.croston.html">
        Croston method
       </a>
@@ -352,6 +362,11 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.nhits.html">
        N-HiTS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
+       Facebook Prophet
       </a>
      </li>
      <li class="toctree-l3">
@@ -592,16 +607,16 @@ or a PyTorch module with the same specifications as
 <li><p><strong>training_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of both input (target and covariates) and output (target) time series used during
 training. Generally speaking, <cite>training_length</cite> should have a higher value than <cite>input_chunk_length</cite>
 because otherwise during training the RNN is never run for as many iterations as it will during
-training. For more information on this parameter, please see <cite>darts.utils.data.ShiftedDataset</cite></p></li>
+inference. For more information on this parameter, please see <cite>darts.utils.data.ShiftedDataset</cite></p></li>
 <li><p><strong>**kwargs</strong> – Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
 Darts’ <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>.</p></li>
 <li><p><strong>loss_fn</strong> – PyTorch loss function used for training.
 This parameter will be ignored for probabilistic models if the <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> parameter is specified.
 Default: <code class="docutils literal notranslate"><span class="pre">torch.nn.MSELoss()</span></code>.</p></li>
-<li><p><strong>torch_metrics</strong> – A torch metric or a <code class="docutils literal notranslate"><span class="pre">MetricCollection</span></code> used for evaluation. A full list of available metrics can be found
-at <a class="reference external" href="https://torchmetrics.readthedocs.io/en/latest/">https://torchmetrics.readthedocs.io/en/latest/</a>. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>likelihood</strong> – One of Darts’ <a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Likelihood</span></code></a> models to be used for
 probabilistic forecasts. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>torch_metrics</strong> – A torch metric or a <code class="docutils literal notranslate"><span class="pre">MetricCollection</span></code> used for evaluation. A full list of available metrics can be found
+at <a class="reference external" href="https://torchmetrics.readthedocs.io/en/latest/">https://torchmetrics.readthedocs.io/en/latest/</a>. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>optimizer_cls</strong> – The PyTorch optimizer class to be used. Default: <code class="docutils literal notranslate"><span class="pre">torch.optim.Adam</span></code>.</p></li>
 <li><p><strong>optimizer_kwargs</strong> – Optionally, some keyword arguments for the PyTorch optimizer (e.g., <code class="docutils literal notranslate"><span class="pre">{'lr':</span> <span class="pre">1e-3}</span></code>
 for specifying a learning rate). Otherwise the default values of the selected <code class="docutils literal notranslate"><span class="pre">optimizer_cls</span></code>
@@ -749,23 +764,29 @@ your forecasting use case. Default: <code class="docutils literal notranslate"><
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.historical_forecasts" title="darts.models.forecasting.rnn_model.RNNModel.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
 <td><p>Compute the historical forecasts that would have been obtained by this model on the <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.load_from_checkpoint" title="darts.models.forecasting.rnn_model.RNNModel.load_from_checkpoint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_from_checkpoint</span></code></a>(model_name[, work_dir, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.load" title="darts.models.forecasting.rnn_model.RNNModel.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path)</p></td>
+<td><p>Loads a model from a given file path.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.load_from_checkpoint" title="darts.models.forecasting.rnn_model.RNNModel.load_from_checkpoint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_from_checkpoint</span></code></a>(model_name[, work_dir, ...])</p></td>
 <td><p>Load the model from automatically saved checkpoints under '{work_dir}/darts_logs/{model_name}/checkpoints/'.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.load_model" title="darts.models.forecasting.rnn_model.RNNModel.load_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_model</span></code></a>(path)</p></td>
-<td><p>loads a model from a given file path.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.load_model" title="darts.models.forecasting.rnn_model.RNNModel.load_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_model</span></code></a>(path)</p></td>
+<td><p>Loads a model from a given file path.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.predict" title="darts.models.forecasting.rnn_model.RNNModel.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, series, past_covariates, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.predict" title="darts.models.forecasting.rnn_model.RNNModel.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, series, past_covariates, ...])</p></td>
 <td><p>Predict the <code class="docutils literal notranslate"><span class="pre">n</span></code> time step following the end of the training series, or of the specified <code class="docutils literal notranslate"><span class="pre">series</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.predict_from_dataset" title="darts.models.forecasting.rnn_model.RNNModel.predict_from_dataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_from_dataset</span></code></a>(n, input_series_dataset)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.predict_from_dataset" title="darts.models.forecasting.rnn_model.RNNModel.predict_from_dataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_from_dataset</span></code></a>(n, input_series_dataset)</p></td>
 <td><p>This method allows for predicting with a specific <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.InferenceDataset</span></code> instance.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.reset_model" title="darts.models.forecasting.rnn_model.RNNModel.reset_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reset_model</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.reset_model" title="darts.models.forecasting.rnn_model.RNNModel.reset_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reset_model</span></code></a>()</p></td>
 <td><p>Resets the model object and removes all stored data - model, checkpoints, loggers and training history.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.residuals" title="darts.models.forecasting.rnn_model.RNNModel.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, forecast_horizon, verbose])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.residuals" title="darts.models.forecasting.rnn_model.RNNModel.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, forecast_horizon, ...])</p></td>
 <td><p>Compute the residuals produced by this model on a univariate time series.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.save" title="darts.models.forecasting.rnn_model.RNNModel.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path])</p></td>
+<td><p>Saves the model under a given path.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.save_model" title="darts.models.forecasting.rnn_model.RNNModel.save_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_model</span></code></a>(path)</p></td>
 <td><p>Saves the model under a given path.</p></td>
@@ -1094,11 +1115,26 @@ If <cite>last_points_only</cite> is set to False, a list of the historical forec
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.load">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads a model from a given file path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>path</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Path from which to load the model. If no path was specified when saving the model, the automatically
+generated path ending with “.pt” has to be provided.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.load_from_checkpoint">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load_from_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">work_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">best</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.load_from_checkpoint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load the model from automatically saved checkpoints under ‘{work_dir}/darts_logs/{model_name}/checkpoints/’.
 This method is used for models that were created with <code class="docutils literal notranslate"><span class="pre">save_checkpoints=True</span></code>.</p>
-<p>If you manually saved your model, consider using <code class="xref py py-meth docutils literal notranslate"><span class="pre">load_model()</span></code>.</p>
+<p>If you manually saved your model, consider using <code class="xref py py-meth docutils literal notranslate"><span class="pre">load()</span></code>.</p>
 <p>Example for loading a <a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel" title="darts.models.forecasting.rnn_model.RNNModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code></a> from checkpoint (<code class="docutils literal notranslate"><span class="pre">model_name</span></code> is the <code class="docutils literal notranslate"><span class="pre">model_name</span></code> used at model
 creation):</p>
 <blockquote>
@@ -1134,18 +1170,14 @@ is ignored when <code class="docutils literal notranslate"><span class="pre">fil
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.load_model">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.load_model" title="Permalink to this definition">¶</a></dt>
-<dd><p>loads a model from a given file path. The file name should end with ‘.pth.tar’</p>
-<p>Example for loading a <a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel" title="darts.models.forecasting.rnn_model.RNNModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code></a>:</p>
-<blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
-
-<span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="s2">&quot;my_model.pth.tar&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div></blockquote>
+<dd><p>Loads a model from a given file path.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>path</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Path under which to save the model at its current state. The path should end with ‘.pth.tar’</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Path from which to load the model.</p></li>
+<li><p><strong>deprecated:</strong> (<em>.</em>) – 0.21.0: <cite>TorchForecastingModel.load_model()</cite> is deprecated and will be removed in a future darts version.
+Please use <cite>TorchForecastingModel.load()</cite> instead.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code></p>
@@ -1305,7 +1337,7 @@ This allows bayesian approximation by specifying an implicit prior over learned 
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.residuals">
-<span class="sig-name descname"><span class="pre">residuals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.residuals" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">residuals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.residuals" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the residuals produced by this model on a univariate time series.</p>
 <p>This function computes the difference between the actual observations from <cite>series</cite>
 and the fitted values vector <cite>p</cite> obtained by training the model on <cite>series</cite>.
@@ -1323,6 +1355,8 @@ prediction (when dealing with stochastic forecasts).</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The univariate TimeSeries instance which the residuals will be computed for.</p></li>
 <li><p><strong>forecast_horizon</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The forecasting horizon used to predict each fitted value.</p></li>
+<li><p><strong>retrain</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to train the model at each iteration, for models that support it.
+If False, the model is not trained at all. Default: True</p></li>
 <li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to print progress.</p></li>
 </ul>
 </dd>
@@ -1336,12 +1370,43 @@ prediction (when dealing with stochastic forecasts).</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.save_model">
-<span class="sig-name descname"><span class="pre">save_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.save_model" title="Permalink to this definition">¶</a></dt>
-<dd><p>Saves the model under a given path. The path should end with ‘.pth.tar’</p>
+<dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves the model under a given path.</p>
+<p>Creates two files under <code class="docutils literal notranslate"><span class="pre">path</span></code> (model object) and <code class="docutils literal notranslate"><span class="pre">path</span></code>.ckpt (checkpoint).</p>
+<p>Example for saving and loading a <a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel" title="darts.models.forecasting.rnn_model.RNNModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code></a>:</p>
+<blockquote>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;my_model.pt&quot;</span><span class="p">)</span>
+<span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;my_model.pt&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>path</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Path under which to save the model at its current state.</p>
+<dd class="field-odd"><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Path under which to save the model at its current state. If no path is specified, the model is automatically
+saved under <code class="docutils literal notranslate"><span class="pre">&quot;{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pt&quot;</span></code>. E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RNNModel_2020-01-01_12:00:00.pt&quot;</span></code>.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.save_model">
+<span class="sig-name descname"><span class="pre">save_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.save_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves the model under a given path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Path under which to save the model at its current state.</p></li>
+<li><p><strong>deprecated:</strong> (<em>.</em>) – 0.21.0: <cite>TorchForecastingModel.save_model()</cite> is deprecated and will be removed in a future darts version.
+Please use <cite>TorchForecastingModel.save()</cite> instead.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>

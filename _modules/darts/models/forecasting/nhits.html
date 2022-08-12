@@ -516,7 +516,6 @@
 <span class="sd">            The number of blocks making up every stack.</span>
 <span class="sd">        num_layers</span>
 <span class="sd">            The number of fully connected layers preceding the final forking layers in each block of every stack.</span>
-<span class="sd">            Only used if `generic_architecture` is set to `True`.</span>
 <span class="sd">        layer_widths</span>
 <span class="sd">            Determines the number of neurons that make up each fully connected layer in each block of every stack.</span>
 <span class="sd">            If a list is passed, it must have a length equal to `num_stacks` and every entry in that list corresponds</span>
@@ -673,7 +672,6 @@
 <span class="sd">            The number of blocks making up every stack.</span>
 <span class="sd">        num_layers</span>
 <span class="sd">            The number of fully connected layers preceding the final forking layers in each block of every stack.</span>
-<span class="sd">            Only used if `generic_architecture` is set to `True`.</span>
 <span class="sd">        layer_widths</span>
 <span class="sd">            Determines the number of neurons that make up each fully connected layer in each block of every stack.</span>
 <span class="sd">            If a list is passed, it must have a length equal to `num_stacks` and every entry in that list corresponds</span>
@@ -704,12 +702,12 @@
 <span class="sd">            PyTorch loss function used for training.</span>
 <span class="sd">            This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.</span>
 <span class="sd">            Default: ``torch.nn.MSELoss()``.</span>
-<span class="sd">        torch_metrics</span>
-<span class="sd">            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found</span>
-<span class="sd">            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.</span>
 <span class="sd">        likelihood</span>
 <span class="sd">            One of Darts&#39; :meth:`Likelihood &lt;darts.utils.likelihood_models.Likelihood&gt;` models to be used for</span>
 <span class="sd">            probabilistic forecasts. Default: ``None``.</span>
+<span class="sd">        torch_metrics</span>
+<span class="sd">            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found</span>
+<span class="sd">            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.</span>
 <span class="sd">        optimizer_cls</span>
 <span class="sd">            The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.</span>
 <span class="sd">        optimizer_kwargs</span>
@@ -870,7 +868,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">pooling_kernel_sizes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_freq_downsample</span> <span class="o">=</span> <span class="n">sizes</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">layer_widths</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">layer_widths</span> <span class="o">=</span> <span class="p">[</span><span class="n">layer_widths</span><span class="p">]</span> <span class="o">*</span> <span class="n">num_stacks</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layer_widths</span> <span class="o">=</span> <span class="p">[</span><span class="n">layer_widths</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_stacks</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_prepare_pooling_downsampling</span><span class="p">(</span>
@@ -923,6 +921,10 @@
             <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">pooling_kernel_sizes</span><span class="p">,</span> <span class="n">n_freq_downsample</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_supports_static_covariates</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
 
     <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
         <span class="c1"># samples are made of (past_target, past_covariates, future_target)</span>

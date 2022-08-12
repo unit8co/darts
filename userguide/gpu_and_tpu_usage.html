@@ -315,7 +315,7 @@
 </section>
 <section id="use-a-gpu">
 <h2>Use a GPU<a class="headerlink" href="#use-a-gpu" title="Permalink to this headline">¶</a></h2>
-<p>GPUs can dramatically improve the performance of your model in terms of processing time. By using an Accelarator in the <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#accelerator">Pytorch Lightning Trainer</a>, we can enjoy the benefits of a GPU. We only need to instruct our model to use our machine’s GPU through PyTorch Lightning Trainer parameters, which are expressed as the <code class="docutils literal notranslate"><span class="pre">pl_trainer_kwargs</span></code> dictionary, like this:</p>
+<p>GPUs can dramatically improve the performance of your model in terms of processing time. By using an Accelerator in the <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#accelerator">Pytorch Lightning Trainer</a>, we can enjoy the benefits of a GPU. We only need to instruct our model to use our machine’s GPU through PyTorch Lightning Trainer parameters, which are expressed as the <code class="docutils literal notranslate"><span class="pre">pl_trainer_kwargs</span></code> dictionary, like this:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">my_model</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="p">(</span>
     <span class="n">model</span><span class="o">=</span><span class="s2">&quot;RNN&quot;</span><span class="p">,</span>
     <span class="o">...</span>

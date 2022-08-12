@@ -415,7 +415,7 @@
 <span class="sd">            The length of both input (target and covariates) and output (target) time series used during</span>
 <span class="sd">            training. Generally speaking, `training_length` should have a higher value than `input_chunk_length`</span>
 <span class="sd">            because otherwise during training the RNN is never run for as many iterations as it will during</span>
-<span class="sd">            training. For more information on this parameter, please see `darts.utils.data.ShiftedDataset`</span>
+<span class="sd">            inference. For more information on this parameter, please see `darts.utils.data.ShiftedDataset`</span>
 <span class="sd">        **kwargs</span>
 <span class="sd">            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and</span>
 <span class="sd">            Darts&#39; :class:`TorchForecastingModel`.</span>
@@ -424,12 +424,12 @@
 <span class="sd">            PyTorch loss function used for training.</span>
 <span class="sd">            This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.</span>
 <span class="sd">            Default: ``torch.nn.MSELoss()``.</span>
-<span class="sd">        torch_metrics</span>
-<span class="sd">            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found</span>
-<span class="sd">            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.</span>
 <span class="sd">        likelihood</span>
 <span class="sd">            One of Darts&#39; :meth:`Likelihood &lt;darts.utils.likelihood_models.Likelihood&gt;` models to be used for</span>
 <span class="sd">            probabilistic forecasts. Default: ``None``.</span>
+<span class="sd">        torch_metrics</span>
+<span class="sd">            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found</span>
+<span class="sd">            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.</span>
 <span class="sd">        optimizer_cls</span>
 <span class="sd">            The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.</span>
 <span class="sd">        optimizer_kwargs</span>
@@ -632,7 +632,15 @@
         <span class="n">raise_if_not</span><span class="p">(</span>
             <span class="n">train_dataset</span><span class="o">.</span><span class="n">ds_past</span><span class="o">.</span><span class="n">shift</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span>
             <span class="s2">&quot;RNNModel requires a shifted training dataset with shift=1.&quot;</span><span class="p">,</span>
-        <span class="p">)</span></div>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">min_train_series_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_length</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_supports_static_covariates</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
 </pre></div>
 
               </div>

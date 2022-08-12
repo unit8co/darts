@@ -1,0 +1,952 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Static Covariates Transformer &#8212; darts  documentation</title>
+    
+  <link href="../_static/css/theme.css" rel="stylesheet">
+  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Pipeline" href="darts.dataprocessing.pipeline.html" />
+    <link rel="prev" title="Scaler" href="darts.dataprocessing.transformers.scaler.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../index.html">
+  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../README.html">
+  Home
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../userguide.html">
+  User Guide
+ </a>
+</li>
+
+<li class="toctree-l1 current active nav-item">
+ <a class="reference internal nav-link" href="darts.html">
+  API Reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../examples.html">
+  Examples
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    <ul class="current nav bd-sidenav">
+ <li class="toctree-l1 current active has-children">
+  <a class="reference internal" href="darts.dataprocessing.html">
+   Data Processing
+  </a>
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <label for="toctree-checkbox-1">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="current">
+   <li class="toctree-l2 current active has-children">
+    <a class="reference internal" href="darts.dataprocessing.transformers.html">
+     Data Transformers
+    </a>
+    <input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
+    <label for="toctree-checkbox-2">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul class="current">
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">
+       Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.boxcox.html">
+       Box-Cox Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
+       Fittable Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">
+       Invertible Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">
+       Mapper and InvertibleMapper
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.missing_values_filler.html">
+       Missing Values Filler
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.reconciliation.html">
+       Hierarchical Reconciliation
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.scaler.html">
+       Scaler
+      </a>
+     </li>
+     <li class="toctree-l3 current active">
+      <a class="current reference internal" href="#">
+       Static Covariates Transformer
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.dataprocessing.pipeline.html">
+     Pipeline
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.datasets.html">
+   Datasets
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
+  <label for="toctree-checkbox-3">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="simple">
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.metrics.html">
+   Metrics
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
+  <label for="toctree-checkbox-4">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.metrics.metrics.html">
+     Metrics
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.models.html">
+   Models
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+  <label for="toctree-checkbox-5">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.models.filtering.html">
+     Filtering Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+    <label for="toctree-checkbox-6">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.gaussian_process_filter.html">
+       Gaussian Processes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.kalman_filter.html">
+       Kalman Filter
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.moving_average.html">
+       Moving Average
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.models.forecasting.html">
+     Forecasting Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
+    <label for="toctree-checkbox-7">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.arima.html">
+       ARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.auto_arima.html">
+       AutoARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.baselines.html">
+       Baseline Models
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.block_rnn_model.html">
+       Block Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.catboost_model.html">
+       CatBoost model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.croston.html">
+       Croston method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.exponential_smoothing.html">
+       Exponential Smoothing
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.fft.html">
+       Fast Fourier Transform
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.gradient_boosted_model.html">
+       LightGBM Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
+       Kalman Filter Forecaster
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
+       Linear Regression model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nbeats.html">
+       N-BEATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nhits.html">
+       N-HiTS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
+       Facebook Prophet
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.random_forest.html">
+       Random Forest
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.regression_ensemble_model.html">
+       Regression ensemble model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.regression_model.html">
+       Regression Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
+       Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">
+       StatsForecastAutoARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tbats.html">
+       BATS and TBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tcn_model.html">
+       Temporal Convolutional Network
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tft_model.html">
+       Temporal Fusion Transformer (TFT)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.theta.html">
+       Theta Method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.transformer_model.html">
+       Transformer Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.varima.html">
+       VARIMA
+      </a>
+     </li>
+    </ul>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.utils.html">
+   Utils
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
+  <label for="toctree-checkbox-8">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.utils.data.html">
+     TimeSeries Datasets
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
+    <label for="toctree-checkbox-9">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.encoder_base.html">
+       Encoder Base Classes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.encoders.html">
+       Time Axes Encoders
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.horizon_based_dataset.html">
+       Horizon-Based Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.inference_dataset.html">
+       Inference Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.sequential_dataset.html">
+       Sequential Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.shifted_dataset.html">
+       Shifted Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.training_dataset.html">
+       Training Datasets Base Classes
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.likelihood_models.html">
+     Likelihood Models
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.losses.html">
+     PyTorch Loss Functions
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.missing_values.html">
+     Utils for filling missing values
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.model_selection.html">
+     Model selection utilities
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.statistics.html">
+     Time Series Statistics
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.timeseries_generation.html">
+     Utils for time series generation
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.torch.html">
+     Utils for Pytorch and its usage
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.utils.html">
+     Additional util functions
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="darts.timeseries.html">
+   Timeseries
+  </a>
+ </li>
+</ul>
+
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+              
+              <div class="toc-item">
+                
+
+<nav id="bd-toc-nav">
+    
+</nav>
+              </div>
+              
+              <div class="toc-item">
+                
+              </div>
+              
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <span class="target" id="module-darts.dataprocessing.transformers.static_covariates_transformer"></span><section id="static-covariates-transformer">
+<h1>Static Covariates Transformer<a class="headerlink" href="#static-covariates-transformer" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.static_covariates_transformer.</span></span><span class="sig-name descname"><span class="pre">StaticCovariatesTransformer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transformer_num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transformer_cat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols_num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols_cat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'StaticCovariatesTransformer'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/static_covariates_transformer.html#StaticCovariatesTransformer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer</span></code></a>, <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer</span></code></a></p>
+<p>Generic wrapper class for scalers/encoders/transformers of static covariates. This transformer acts
+only on static covariates of the series passed to <code class="docutils literal notranslate"><span class="pre">fit()</span></code>, <code class="docutils literal notranslate"><span class="pre">transform()</span></code>, <code class="docutils literal notranslate"><span class="pre">fit_transform()</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">inverse_transform()</span></code>. It can both scale numerical features, as well as encode categorical features.</p>
+<p>The underlying <code class="docutils literal notranslate"><span class="pre">transformer_num</span></code> and <code class="docutils literal notranslate"><span class="pre">transformer_cat</span></code> have to implement the <code class="docutils literal notranslate"><span class="pre">fit()</span></code>, <code class="docutils literal notranslate"><span class="pre">transform()</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">inverse_transform()</span></code> methods (typically from scikit-learn).</p>
+<p>By default, numerical and categorical columns/features are inferred and allocated to <code class="docutils literal notranslate"><span class="pre">transformer_num</span></code> and
+<code class="docutils literal notranslate"><span class="pre">transformer_cat</span></code>, respectively. Alternatively, specify which columns to scale/transform with <code class="docutils literal notranslate"><span class="pre">cols_num</span></code>
+and <code class="docutils literal notranslate"><span class="pre">cols_cat</span></code>.</p>
+<p>Both <code class="docutils literal notranslate"><span class="pre">transformer_num</span></code> and <code class="docutils literal notranslate"><span class="pre">transformer_cat</span></code> are fit globally on static covariate data from all series
+passed to <a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.fit" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.fit"><code class="xref py py-class docutils literal notranslate"><span class="pre">StaticCovariatesTransformer.fit()</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>transformer_num</strong> – The transformer to transform numeric static covariate columns with. It must provide <code class="docutils literal notranslate"><span class="pre">fit()</span></code>,
+<code class="docutils literal notranslate"><span class="pre">transform()</span></code> and <code class="docutils literal notranslate"><span class="pre">inverse_transform()</span></code> methods.
+Default: <code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.preprocessing.MinMaxScaler(feature_range=(0,</span> <span class="pre">1))</span></code>; this will scale all
+values between 0 and 1.</p></li>
+<li><p><strong>transformer_cat</strong> – The encoder to transform categorical static covariate columns with. It must provide <code class="docutils literal notranslate"><span class="pre">fit()</span></code>,
+<code class="docutils literal notranslate"><span class="pre">transform()</span></code> and <code class="docutils literal notranslate"><span class="pre">inverse_transform()</span></code> methods.
+Default: <code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.preprocessing.OrdinalEncoder()</span></code>; this will convert categories
+into integer valued arrays where each integer stands for a specific category.</p></li>
+<li><p><strong>cols_num</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]) – Optionally, a list of column names for which to apply the numeric transformer <code class="docutils literal notranslate"><span class="pre">transformer_num</span></code>.
+By default, the transformer will infer all numerical features based on types, and scale them with
+<cite>transformer_num</cite>. If an empty list, no column will be scaled.</p></li>
+<li><p><strong>cols_cat</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]) – Optionally, a list of column names for which to apply the categorical transformer <cite>transformer_cat</cite>.
+By default, the transformer will infer all categorical features based on types, and transform them with
+<cite>transformer_cat</cite>. If an empty list, no column will be transformed.</p></li>
+<li><p><strong>name</strong> – A specific name for the <a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">StaticCovariatesTransformer</span></code></a>.</p></li>
+<li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
+passed as input to a method, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.
+Note: for a small amount of data, the parallelisation overhead could end up increasing the total
+required amount of time.</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">StaticCovariatesTransformer</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">static_covs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;num&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;cat&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">]})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">values</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="mi">10</span><span class="p">,</span> <span class="mi">3</span><span class="p">)),</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;comp1&quot;</span><span class="p">,</span> <span class="s2">&quot;comp2&quot;</span><span class="p">,</span> <span class="s2">&quot;comp3&quot;</span><span class="p">],</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">static_covariates</span><span class="o">=</span><span class="n">static_covs</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">transformer</span> <span class="o">=</span> <span class="n">StaticCovariatesTransformer</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series_transformed</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">)</span>
+<span class="go">static_covariates  num cat</span>
+<span class="go">component</span>
+<span class="go">comp1               0.0   a</span>
+<span class="go">comp2               2.0   c</span>
+<span class="go">comp3               1.0   b</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">series_transformed</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">)</span>
+<span class="go">static_covariates  num  cat</span>
+<span class="go">component</span>
+<span class="go">comp1               0.0  0.0</span>
+<span class="go">comp2               1.0  2.0</span>
+<span class="go">comp3               0.5  1.0</span>
+</pre></div>
+</div>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.name" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code></a></p></td>
+<td><p>Name of the data transformer.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.fit" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series, *args, **kwargs)</p></td>
+<td><p>Fit the transformer to the provided series or sequence of series.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.fit_transform" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.fit_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_transform</span></code></a>(series, *args, **kwargs)</p></td>
+<td><p>Fit the transformer to the (sequence of) series and return the transformed input.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.inverse_transform" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.inverse_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">inverse_transform</span></code></a>(series, *args, **kwargs)</p></td>
+<td><p>Inverse-transform a (sequence of) series.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.set_n_jobs" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.set_n_jobs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_n_jobs</span></code></a>(value)</p></td>
+<td><p>Set the number of processors to be used by the transformer while processing multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.set_verbose" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.set_verbose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_verbose</span></code></a>(value)</p></td>
+<td><p>Set the verbosity status.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.transform" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform</span></code></a>(series, *args, **kwargs)</p></td>
+<td><p>Transform a (sequence of) of series.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_fit" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_fit</span></code></a>(series)</p></td>
+<td><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.fit" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> is called.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_inverse_transform" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_inverse_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_inverse_transform</span></code></a>(series, *args, **kwargs)</p></td>
+<td><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.inverse_transform" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">inverse_transform()</span></code></a> is called.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_transform" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_transform</span></code></a>(series, *args, **kwargs)</p></td>
+<td><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.transform" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a> is called.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/static_covariates_transformer.html#StaticCovariatesTransformer.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit the transformer to the provided series or sequence of series.</p>
+<p>Fit the data and store the fitting parameters into <code class="docutils literal notranslate"><span class="pre">self._fitted_params</span></code>. If a sequence is passed as input
+data, this function takes care of parallelising the fitting of multiple series in the sequence at the same time
+(in this case <code class="docutils literal notranslate"><span class="pre">self._fitted_params</span></code> will contain an array of fitted params, one for each series).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – (sequence of) series to fit the transformer on.</p></li>
+<li><p><strong>args</strong> – Additional positional arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_fit" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_fit()</span></code></a> method</p></li>
+<li><p><strong>kwargs</strong> – <p>Additional keyword arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_fit" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_fit()</span></code></a> method</p>
+<dl class="simple">
+<dt>component_mask<span class="classifier">Optional[np.ndarray] = None</span></dt><dd><p>Optionally, a 1-D boolean np.ndarray of length <code class="docutils literal notranslate"><span class="pre">series.n_components</span></code> that specifies which
+components of the underlying <cite>series</cite> the Scaler should consider.</p>
+</dd>
+</dl>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Fitted transformer.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer">FittableDataTransformer</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.fit_transform">
+<span class="sig-name descname"><span class="pre">fit_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.fit_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit the transformer to the (sequence of) series and return the transformed input.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – the (sequence of) series to transform.</p></li>
+<li><p><strong>args</strong> – Additional positional arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_transform" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method</p></li>
+<li><p><strong>kwargs</strong> – <p>Additional keyword arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_transform" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method:</p>
+<dl class="simple">
+<dt>component_mask<span class="classifier">Optional[np.ndarray] = None</span></dt><dd><p>Optionally, a 1-D boolean np.ndarray of length <code class="docutils literal notranslate"><span class="pre">series.n_components</span></code> that specifies which
+components of the underlying <cite>series</cite> the Scaler should consider.</p>
+</dd>
+</dl>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Transformed data.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, Sequence[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.inverse_transform">
+<span class="sig-name descname"><span class="pre">inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/static_covariates_transformer.html#StaticCovariatesTransformer.inverse_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.inverse_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inverse-transform a (sequence of) series.</p>
+<p>In case a sequence is passed as input data, this function takes care of
+parallelising the transformation of multiple series in the sequence at the same time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – the (sequence of) series be inverse-transformed.</p></li>
+<li><p><strong>args</strong> – Additional positional arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_inverse_transform" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_inverse_transform()</span></code></a> method</p></li>
+<li><p><strong>kwargs</strong> – <p>Additional keyword arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_inverse_transform" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_inverse_transform()</span></code></a> method</p>
+<dl class="simple">
+<dt>component_mask<span class="classifier">Optional[np.ndarray] = None</span></dt><dd><p>Optionally, a 1-D boolean np.ndarray of length <code class="docutils literal notranslate"><span class="pre">series.n_components</span></code> that specifies
+which components of the underlying <cite>series</cite> the Scaler should consider.</p>
+</dd>
+</dl>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Inverse transformed data.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, List[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the data transformer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.set_n_jobs">
+<span class="sig-name descname"><span class="pre">set_n_jobs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.set_n_jobs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the number of processors to be used by the transformer while processing multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – New n_jobs value.  Set to <cite>-1</cite> for using all the available cores.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.set_verbose">
+<span class="sig-name descname"><span class="pre">set_verbose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.set_verbose" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the verbosity status.</p>
+<p><cite>True</cite> for enabling the detailed report about scaler’s operation progress,
+<cite>False</cite> for no additional information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – New verbosity status</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/static_covariates_transformer.html#StaticCovariatesTransformer.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transform a (sequence of) of series.</p>
+<p>In case a <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> is passed as input data, this function takes care of
+parallelising the transformation of multiple series in the sequence at the same time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – (sequence of) series to be transformed.</p></li>
+<li><p><strong>args</strong> – Additional positional arguments for each <a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_transform" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method call</p></li>
+<li><p><strong>kwargs</strong> – Additional keyword arguments for each <a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_transform" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method call</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Transformed data.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, List[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_fit">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ts_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/static_covariates_transformer.html#StaticCovariatesTransformer.ts_fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.fit" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> is called.</p>
+<p>The function must take as first argument a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object, and return an object containing information
+regarding the fitting phase (e.g., parameters, or external transformers objects). All these parameters will
+be stored in <code class="docutils literal notranslate"><span class="pre">self._fitted_params</span></code>, which can be later used during the transformation step.</p>
+<p>This method is not implemented in the base class and must be implemented in the deriving classes.</p>
+<p>If more parameters are added as input in the derived classes, <code class="xref py py-func docutils literal notranslate"><span class="pre">_fit_iterator()</span></code>
+should be redefined accordingly, to yield the necessary arguments to this function (See
+<code class="xref py py-func docutils literal notranslate"><span class="pre">_fit_iterator()</span></code> for further details)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>(</strong><strong>TimeSeries</strong><strong>)</strong> (<em>series</em>) – <cite>TimeSeries</cite> against which the scaler will be fit.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This method is designed to be a static method instead of instance methods to allow an efficient
+parallelisation also when the scaler instance is storing a non-negligible amount of data. Using instance
+methods would imply copying the instance’s data through multiple processes, which can easily introduce a
+bottleneck and nullify parallelisation benefits.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_inverse_transform">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ts_inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/static_covariates_transformer.html#StaticCovariatesTransformer.ts_inverse_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_inverse_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.inverse_transform" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">inverse_transform()</span></code></a> is called.</p>
+<p>The function must take as first argument a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object, and return the transformed
+<code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object. Additional parameters can be added if necessary, but in this case,
+<code class="xref py py-func docutils literal notranslate"><span class="pre">_inverse_transform_iterator()</span></code> should be redefined accordingly, to yield the necessary
+arguments to this function (See <code class="xref py py-func docutils literal notranslate"><span class="pre">_inverse_transform_iterator()</span></code> for further details)</p>
+<p>This method is not implemented in the base class and must be implemented in the deriving classes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>(</strong><strong>TimeSeries</strong><strong>)</strong> (<em>series</em>) – TimeSeries which will be transformed.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This method is designed to be a static method instead of instance methods to allow an efficient
+parallelisation also when the scaler instance is storing a non-negligible amount of data. Using instance
+methods would imply copying the instance’s data through multiple processes, which can easily introduce a
+bottleneck and nullify parallelisation benefits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_transform">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ts_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/static_covariates_transformer.html#StaticCovariatesTransformer.ts_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.transform" title="darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a> is called.</p>
+<p>The function must take as first argument a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object, and return the transformed <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>
+object. If more parameters are added as input in the derived classes, the <code class="docutils literal notranslate"><span class="pre">_transform_iterator()</span></code> should be
+redefined accordingly, to yield the necessary arguments to this function (See <code class="docutils literal notranslate"><span class="pre">_transform_iterator()</span></code> for
+further details).</p>
+<p>This method is not implemented in the base class and must be implemented in the deriving classes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – series to be transformed.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This method is designed to be a static method instead of instance method to allow an efficient
+parallelisation also when the scaler instance is storing a non-negligible amount of data. Using instance
+methods would imply copying the instance’s data through multiple processes, which can easily introduce a
+bottleneck and nullify parallelisation benefits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'> 
+    <a class='left-prev' id="prev-link" href="darts.dataprocessing.transformers.scaler.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">Scaler</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="darts.dataprocessing.pipeline.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Pipeline</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

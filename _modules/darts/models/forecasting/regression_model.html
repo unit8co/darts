@@ -196,6 +196,7 @@
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">catboost</span> <span class="kn">import</span> <span class="n">CatBoostRegressor</span>
 <span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LinearRegression</span>
 <span class="kn">from</span> <span class="nn">sklearn.multioutput</span> <span class="kn">import</span> <span class="n">MultiOutputRegressor</span>
 
@@ -214,6 +215,7 @@
         <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">add_encoders</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Regression Model</span>
@@ -237,6 +239,26 @@
 <span class="sd">            Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast</span>
 <span class="sd">            horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may</span>
 <span class="sd">            be useful if the covariates don&#39;t extend far enough into the future.</span>
+<span class="sd">        add_encoders</span>
+<span class="sd">            A large number of past and future covariates can be automatically generated with `add_encoders`.</span>
+<span class="sd">            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that</span>
+<span class="sd">            will be used as index encoders. Additionally, a transformer such as Darts&#39; :class:`Scaler` can be added to</span>
+<span class="sd">            transform the generated covariates. This happens all under one hood and only needs to be specified at</span>
+<span class="sd">            model creation.</span>
+<span class="sd">            Read :meth:`SequentialEncoder &lt;darts.utils.data.encoders.SequentialEncoder&gt;` to find out more about</span>
+<span class="sd">            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:</span>
+
+<span class="sd">            .. highlight:: python</span>
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                add_encoders={</span>
+<span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
+<span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
+<span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;absolute&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
+<span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [lambda idx: (idx.year - 1950) / 50]},</span>
+<span class="sd">                    &#39;transformer&#39;: Scaler()</span>
+<span class="sd">                }</span>
+<span class="sd">            ..</span>
 <span class="sd">        model</span>
 <span class="sd">            Scikit-learn-like model with ``fit()`` and ``predict()`` methods. Also possible to use model that doesn&#39;t</span>
 <span class="sd">            support multi-output regression for multivariate timeseries, in which case one regressor</span>
@@ -244,7 +266,7 @@
 <span class="sd">            If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">add_encoders</span><span class="o">=</span><span class="n">add_encoders</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lags</span> <span class="o">=</span> <span class="p">{}</span>
@@ -367,6 +389,46 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
 
     <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_model_encoder_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]:</span>
+        <span class="n">lags_covariates</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">lag</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;past&quot;</span><span class="p">,</span> <span class="s2">&quot;future&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">lags_covariates</span><span class="p">:</span>
+            <span class="c1"># for lags &lt; 0 we need to take `n` steps backwards from past and/or historic future covariates</span>
+            <span class="c1"># for minimum lag = -1 -&gt; steps_back_inclusive = 1</span>
+            <span class="c1"># inclusive means n steps back including the end of the target series</span>
+            <span class="n">n_steps_back_inclusive</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">lags_covariates</span><span class="p">),</span> <span class="mi">0</span><span class="p">))</span>
+            <span class="c1"># for lags &gt;= 0 we need to take `n` steps ahead from future covariates</span>
+            <span class="c1"># for maximum lag = 0 -&gt; output_chunk_length = 1</span>
+            <span class="c1"># exclusive means n steps ahead after the last step of the target series</span>
+            <span class="n">n_steps_ahead_exclusive</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">lags_covariates</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">takes_past_covariates</span> <span class="o">=</span> <span class="s2">&quot;past&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span>
+            <span class="n">takes_future_covariates</span> <span class="o">=</span> <span class="s2">&quot;future&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">n_steps_back_inclusive</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">n_steps_ahead_exclusive</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">takes_past_covariates</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">takes_future_covariates</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">n_steps_back_inclusive</span><span class="p">,</span>
+            <span class="n">n_steps_ahead_exclusive</span><span class="p">,</span>
+            <span class="n">takes_past_covariates</span><span class="p">,</span>
+            <span class="n">takes_future_covariates</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_encoders_n</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the `n` encoder prediction steps specific to RegressionModels.</span>
+<span class="sd">        This will generate slightly more past covariates than the minimum requirement when using past and future</span>
+<span class="sd">        covariate lags simultaneously. This is because encoders were written for TorchForecastingModels where we only</span>
+<span class="sd">        needed `n` future covariates. For RegressionModel we need `n + max_future_lag`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">n_steps_ahead</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">takes_future_covariates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_encoder_settings</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">takes_future_covariates</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">n</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">n</span> <span class="o">+</span> <span class="p">(</span><span class="n">n_steps_ahead</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">min_train_series_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="k">return</span> <span class="nb">max</span><span class="p">(</span>
             <span class="mi">3</span><span class="p">,</span>
@@ -485,6 +547,7 @@
 <span class="sd">        Function that fit the model. Deriving classes can override this method for adding additional parameters (e.g.,</span>
 <span class="sd">        adding validation data), keeping the sanity checks on series performed by fit().</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="n">training_samples</span><span class="p">,</span> <span class="n">training_labels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_lagged_data</span><span class="p">(</span>
             <span class="n">target_series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">,</span> <span class="n">max_samples_per_ts</span>
         <span class="p">)</span>
@@ -527,6 +590,15 @@
 <span class="sd">        **kwargs</span>
 <span class="sd">            Additional keyword arguments passed to the `fit` method of the model.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoders</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">initialize_encoders</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoders</span><span class="o">.</span><span class="n">encoding_available</span><span class="p">:</span>
+            <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoders</span><span class="o">.</span><span class="n">encode_train</span><span class="p">(</span>
+                <span class="n">target</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+                <span class="n">past_covariate</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+                <span class="n">future_covariate</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+            <span class="p">)</span>
+
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
             <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
             <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
@@ -584,6 +656,15 @@
                     <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">MultiOutputRegressor</span><span class="p">(</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs_multioutput_wrapper</span>
                     <span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">CatBoostRegressor</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">get_params</span><span class="p">()[</span><span class="s2">&quot;loss_function&quot;</span><span class="p">]</span>
+                        <span class="o">==</span> <span class="s2">&quot;RMSEWithUncertainty&quot;</span>
+                    <span class="p">):</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">MultiOutputRegressor</span><span class="p">(</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs_multioutput_wrapper</span>
+                        <span class="p">)</span>
+
         <span class="c1"># warn if n_jobs_multioutput_wrapper was provided but not used</span>
         <span class="k">if</span> <span class="p">(</span>
             <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">MultiOutputRegressor</span><span class="p">)</span>
@@ -633,6 +714,14 @@
             <span class="s2">&quot;`num_samples &gt; 1` is only supported for probabilistic models.&quot;</span><span class="p">,</span>
             <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoders</span><span class="o">.</span><span class="n">encoding_available</span><span class="p">:</span>
+            <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoders</span><span class="o">.</span><span class="n">encode_inference</span><span class="p">(</span>
+                <span class="n">n</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_encoders_n</span><span class="p">(</span><span class="n">n</span><span class="p">),</span>
+                <span class="n">target</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+                <span class="n">past_covariate</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+                <span class="n">future_covariate</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+            <span class="p">)</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
 
@@ -802,7 +891,7 @@
 
 <span class="k">class</span> <span class="nc">_LikelihoodMixin</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    A class containing functions supporting quantile and poisson regression, to be used as a mixin for some</span>
+<span class="sd">    A class containing functions supporting quantile, poisson and gaussian regression, to be used as a mixin for some</span>
 <span class="sd">    `RegressionModel` subclasses.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -866,6 +955,67 @@
         <span class="c1"># sampled has shape (n_series * n_samples, output_chunk_length, n_components)</span>
 
         <span class="k">return</span> <span class="n">sampled</span>
+
+    <span class="k">def</span> <span class="nf">_predict_normal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Method intended for CatBoost&#39;s RMSEWithUncertainty loss. Returns samples</span>
+<span class="sd">        computed from double-valued inputs [mean, variance].</span>
+<span class="sd">        X is of shape (n_series * n_samples, n_regression_features)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># model_output shape:</span>
+        <span class="c1"># if univariate &amp; output_chunk_length = 1: (num_samples, 2)</span>
+        <span class="c1"># else: (2, num_samples, n_components * output_chunk_length)</span>
+        <span class="c1"># where the axis with 2 dims is mu, sigma</span>
+        <span class="n">model_output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">output_dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+        <span class="c1"># deterministic case: we return the mean only</span>
+        <span class="k">if</span> <span class="n">num_samples</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c1"># univariate &amp; single-chunk output</span>
+            <span class="k">if</span> <span class="n">output_dim</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">output_slice</span> <span class="o">=</span> <span class="n">model_output</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">output_slice</span> <span class="o">=</span> <span class="n">model_output</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+
+            <span class="k">return</span> <span class="n">output_slice</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># probabilistic case</span>
+        <span class="c1"># univariate &amp; single-chunk output</span>
+        <span class="k">if</span> <span class="n">output_dim</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="c1"># embedding well shaped 2D output into 3D</span>
+            <span class="n">model_output</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">model_output</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># we transpose to get mu, sigma couples on last axis</span>
+            <span class="c1"># shape becomes: (n_components * output_chunk_length, num_samples, 2)</span>
+            <span class="n">model_output</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_normal_sampling</span><span class="p">(</span><span class="n">model_output</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_normal_sampling</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Sampling method for CatBoost&#39;s [mean, variance] output.</span>
+<span class="sd">        model_output is of shape (n_components * output_chunk_length, n_samples, 2),</span>
+<span class="sd">        where the last 2 dimensions are mu and sigma.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">shape</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">chunk_len</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
+
+        <span class="c1"># treating each component separately</span>
+        <span class="n">mu_sigma_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">model_output</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+
+        <span class="n">list_of_samples</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span>
+                <span class="n">mu_sigma</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>  <span class="c1"># mean vector</span>
+                <span class="n">mu_sigma</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>  <span class="c1"># diagonal covariance matrix</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">mu_sigma</span> <span class="ow">in</span> <span class="n">mu_sigma_list</span>
+        <span class="p">]</span>
+
+        <span class="n">samples_transposed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">list_of_samples</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+        <span class="n">samples_reshaped</span> <span class="o">=</span> <span class="n">samples_transposed</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">n_samples</span><span class="p">,</span> <span class="n">chunk_len</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">samples_reshaped</span>
 
     <span class="k">def</span> <span class="nf">_predict_poisson</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>

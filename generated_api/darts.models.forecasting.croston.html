@@ -38,7 +38,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="&lt;no title&gt;" href="darts.models.forecasting.ensemble_model.html" />
-    <link rel="prev" title="Block Recurrent Neural Networks" href="darts.models.forecasting.block_rnn_model.html" />
+    <link rel="prev" title="CatBoost model" href="darts.models.forecasting.catboost_model.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -207,6 +207,11 @@
        Scaler
       </a>
      </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.static_covariates_transformer.html">
+       Static Covariates Transformer
+      </a>
+     </li>
     </ul>
    </li>
    <li class="toctree-l2">
@@ -312,6 +317,11 @@
        Block Recurrent Neural Networks
       </a>
      </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.catboost_model.html">
+       CatBoost model
+      </a>
+     </li>
      <li class="toctree-l3 current active">
       <a class="current reference internal" href="#">
        Croston method
@@ -350,6 +360,11 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.nhits.html">
        N-HiTS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
+       Facebook Prophet
       </a>
      </li>
      <li class="toctree-l3">
@@ -623,11 +638,17 @@ European Journal of Operational Research, 214(3):606 – 615, 2011.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.historical_forecasts" title="darts.models.forecasting.croston.Croston.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
 <td><p>Compute the historical forecasts that would have been obtained by this model on the <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.predict" title="darts.models.forecasting.croston.Croston.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, num_samples])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.load" title="darts.models.forecasting.croston.Croston.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path)</p></td>
+<td><p>Loads the model from a given path or file handle.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.predict" title="darts.models.forecasting.croston.Croston.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, num_samples])</p></td>
 <td><p>Forecasts values for <cite>n</cite> time steps after the end of the training series.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.residuals" title="darts.models.forecasting.croston.Croston.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, forecast_horizon, verbose])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.residuals" title="darts.models.forecasting.croston.Croston.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, forecast_horizon, ...])</p></td>
 <td><p>Compute the residuals produced by this model on a univariate time series.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.save" title="darts.models.forecasting.croston.Croston.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path])</p></td>
+<td><p>Saves the model under a given path or file handle.</p></td>
 </tr>
 </tbody>
 </table>
@@ -847,6 +868,20 @@ If <cite>last_points_only</cite> is set to False, a list of the historical forec
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.load">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.croston.Croston.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads the model from a given path or file handle.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryIO</span></code>]) – Path or file handle from which to load the model.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ForecastingModel</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.model_params">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model_params</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#darts.models.forecasting.croston.Croston.model_params" title="Permalink to this definition">¶</a></dt>
@@ -880,7 +915,7 @@ for deterministic models.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.residuals">
-<span class="sig-name descname"><span class="pre">residuals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.croston.Croston.residuals" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">residuals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.croston.Croston.residuals" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the residuals produced by this model on a univariate time series.</p>
 <p>This function computes the difference between the actual observations from <cite>series</cite>
 and the fitted values vector <cite>p</cite> obtained by training the model on <cite>series</cite>.
@@ -898,6 +933,8 @@ prediction (when dealing with stochastic forecasts).</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The univariate TimeSeries instance which the residuals will be computed for.</p></li>
 <li><p><strong>forecast_horizon</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The forecasting horizon used to predict each fitted value.</p></li>
+<li><p><strong>retrain</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to train the model at each iteration, for models that support it.
+If False, the model is not trained at all. Default: True</p></li>
 <li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to print progress.</p></li>
 </ul>
 </dd>
@@ -906,6 +943,36 @@ prediction (when dealing with stochastic forecasts).</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">pkl_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.croston.Croston.save" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves the model under a given path or file handle.</p>
+<p>Example for saving and loading a <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>:</p>
+<blockquote>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RegressionModel</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">RegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;my_model.pkl&quot;</span><span class="p">)</span>
+<span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RegressionModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;my_model.pkl&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryIO</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Path or file handle under which to save the model at its current state. If no path is specified, the model
+is automatically saved under <code class="docutils literal notranslate"><span class="pre">&quot;{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pkl&quot;</span></code>.
+E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RegressionModel_2020-01-01_12:00:00.pkl&quot;</span></code>.</p></li>
+<li><p><strong>pkl_kwargs</strong> – Keyword arguments passed to <cite>pickle.dump()</cite></p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -920,11 +987,11 @@ prediction (when dealing with stochastic forecasts).</p>
               
               <!-- Previous / next buttons -->
 <div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="darts.models.forecasting.block_rnn_model.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="darts.models.forecasting.catboost_model.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Block Recurrent Neural Networks</p>
+            <p class="prev-next-title">CatBoost model</p>
         </div>
     </a>
     <a class='right-next' id="next-link" href="darts.models.forecasting.ensemble_model.html" title="next page">

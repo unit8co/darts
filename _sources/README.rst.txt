@@ -355,6 +355,15 @@ on bringing more models and features.
      - ✅
      - 
      - 
+   * - ``CatBoostModel``
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - 
+     - 
    * - ``RNNModel`` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version
      - ✅
      - ✅

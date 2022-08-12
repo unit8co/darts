@@ -281,6 +281,11 @@
         <span class="c1"># stacks multiple sequences of timeseries elementwise</span>
         <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_stack_ts_seq</span><span class="p">(</span><span class="n">ts_list</span><span class="p">)</span> <span class="k">for</span> <span class="n">ts_list</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">predictions_list</span><span class="p">)]</span>
 
+    <span class="k">def</span> <span class="nf">_model_encoder_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="s2">&quot;Encoders are not supported by EnsembleModels. Instead add encoder to the underlying `models`.&quot;</span>
+        <span class="p">)</span>
+
     <span class="k">def</span> <span class="nf">_make_multiple_predictions</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>

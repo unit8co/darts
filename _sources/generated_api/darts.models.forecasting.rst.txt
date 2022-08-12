@@ -11,6 +11,7 @@
         darts.models.forecasting.auto_arima
         darts.models.forecasting.baselines
         darts.models.forecasting.block_rnn_model
+        darts.models.forecasting.catboost_model
         darts.models.forecasting.croston
         darts.models.forecasting.ensemble_model
         darts.models.forecasting.exponential_smoothing

@@ -408,10 +408,15 @@
             <span class="p">)</span>
             <span class="n">static_covariates</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">STATIC_COV_TAG</span>
             <span class="c1"># convert numerical columns to same dtype as series</span>
-            <span class="n">numeric_cols</span> <span class="o">=</span> <span class="n">static_covariates</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">)</span><span class="o">.</span><span class="n">columns</span>
-            <span class="n">static_covariates</span> <span class="o">=</span> <span class="n">static_covariates</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span>
-                <span class="p">{</span><span class="n">col</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">numeric_cols</span><span class="p">}</span>
-            <span class="p">)</span>
+            <span class="c1"># we get all numerical columns, except those that have right dtype already</span>
+            <span class="n">cols_to_cast</span> <span class="o">=</span> <span class="n">static_covariates</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span>
+                <span class="n">include</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dtype</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">columns</span>
+
+            <span class="n">changes</span> <span class="o">=</span> <span class="p">{</span><span class="n">col</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols_to_cast</span><span class="p">}</span>
+            <span class="c1"># Calling astype is costly even when there&#39;s no change...</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">changes</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">static_covariates</span> <span class="o">=</span> <span class="n">static_covariates</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">changes</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
         <span class="c1"># handle hierarchy</span>
         <span class="n">hierarchy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">HIERARCHY_TAG</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
@@ -811,7 +816,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">raise_if_not</span><span class="p">(</span>
                 <span class="nb">isinstance</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">VALID_INDEX_TYPES</span><span class="p">),</span>
-                <span class="s2">&quot;If time_col is not specified, the DataFrame must be indexed either with&quot;</span>
+                <span class="s2">&quot;If time_col is not specified, the DataFrame must be indexed either with &quot;</span>
                 <span class="s2">&quot;a DatetimeIndex, or with a RangeIndex.&quot;</span><span class="p">,</span>
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
@@ -1964,7 +1969,7 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">,</span>
         <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="n">ignore_time_axes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">ignore_time_axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">ignore_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">drop_hierarchy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
@@ -1977,7 +1982,7 @@
 <span class="sd">            another timeseries to concatenate to this one</span>
 <span class="sd">        axis : str or int</span>
 <span class="sd">            axis along which timeseries will be concatenated. [&#39;time&#39;, &#39;component&#39; or &#39;sample&#39;; Default: 0 (time)]</span>
-<span class="sd">        ignore_time_axes : bool, default False</span>
+<span class="sd">        ignore_time_axis : bool, default False</span>
 <span class="sd">            Ignore errors when time axis varies for some timeseries. Note that this may yield unexpected results</span>
 <span class="sd">        ignore_static_covariates : bool</span>
 <span class="sd">            whether to ignore all requirements for static covariate concatenation and only transfer the</span>
@@ -2008,7 +2013,7 @@
         <span class="k">return</span> <span class="n">concatenate</span><span class="p">(</span>
             <span class="n">series</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">],</span>
             <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span>
-            <span class="n">ignore_time_axis</span><span class="o">=</span><span class="n">ignore_time_axes</span><span class="p">,</span>
+            <span class="n">ignore_time_axis</span><span class="o">=</span><span class="n">ignore_time_axis</span><span class="p">,</span>
             <span class="n">ignore_static_covariates</span><span class="o">=</span><span class="n">ignore_static_covariates</span><span class="p">,</span>
             <span class="n">drop_hierarchy</span><span class="o">=</span><span class="n">drop_hierarchy</span><span class="p">,</span>
         <span class="p">)</span></div>
@@ -2732,6 +2737,12 @@
 <span class="sd">            &#39;applied&#39; to all components of the TimeSeries. If a multi-row DataFrame, the number of rows must match the</span>
 <span class="sd">            number of components of the TimeSeries. This adds component-specific static covariates.</span>
 
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        If there are a large number of static covariates variables (i.e., the static covariates have a very large</span>
+<span class="sd">        dimension), there might be a noticable performance penalty for creating ``TimeSeries`` objects, unless</span>
+<span class="sd">        the covariates already have the same ``dtype`` as the series data.</span>
+
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
 <span class="sd">        &gt;&gt;&gt; import pandas as pd</span>
@@ -2827,10 +2838,39 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">concatenate</span><span class="p">([</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
 
+<div class="viewcode-block" id="TimeSeries.drop_columns"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.drop_columns">[docs]</a>    <span class="k">def</span> <span class="nf">drop_columns</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">col_names</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a new ``TimeSeries`` instance with dropped columns/components.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        -------</span>
+<span class="sd">        col_names</span>
+<span class="sd">            String or list of strings corresponding the the columns to be dropped.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        TimeSeries</span>
+<span class="sd">            A new TimeSeries instance with specified columns dropped.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">col_names</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">col_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">col_names</span><span class="p">]</span>
+
+        <span class="n">raise_if_not</span><span class="p">(</span>
+            <span class="nb">all</span><span class="p">([(</span><span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">to_list</span><span class="p">())</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">col_names</span><span class="p">]),</span>
+            <span class="s2">&quot;Some column names in col_names don&#39;t exist in the time series.&quot;</span><span class="p">,</span>
+            <span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">new_xa</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">drop_sel</span><span class="p">({</span><span class="s2">&quot;component&quot;</span><span class="p">:</span> <span class="n">col_names</span><span class="p">})</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="TimeSeries.univariate_component"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.univariate_component">[docs]</a>    <span class="k">def</span> <span class="nf">univariate_component</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Retrieve one of the components of the series</span>
 <span class="sd">        and return it as new univariate ``TimeSeries`` instance.</span>
+
+<span class="sd">        This drops the hierarchy (if any), and retains only the relevant static</span>
+<span class="sd">        covariates column.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -2843,11 +2883,8 @@
 <span class="sd">        TimeSeries</span>
 <span class="sd">            A new univariate TimeSeries instance.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
-            <span class="n">new_xa</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">isel</span><span class="p">(</span><span class="n">component</span><span class="o">=</span><span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">new_xa</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">component</span><span class="o">=</span><span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">index</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">[</span><span class="n">index</span><span class="p">]]</span></div>
 
 <div class="viewcode-block" id="TimeSeries.add_datetime_attribute"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.add_datetime_attribute">[docs]</a>    <span class="k">def</span> <span class="nf">add_datetime_attribute</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">attribute</span><span class="p">,</span> <span class="n">one_hot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">cyclic</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
@@ -3130,6 +3167,7 @@
         <span class="n">central_quantile</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
         <span class="n">low_quantile</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span>
         <span class="n">high_quantile</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.95</span><span class="p">,</span>
+        <span class="n">default_formatting</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="o">*</span><span class="n">args</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
@@ -3154,6 +3192,8 @@
 <span class="sd">            The quantile to use for the upper bound of the plotted confidence interval. Similar to `central_quantile`,</span>
 <span class="sd">            this is applied to each component separately (i.e., displaying marginal distributions). No confidence</span>
 <span class="sd">            interval is shown if `high_quantile` is None (default 0.95).</span>
+<span class="sd">        default_formatting</span>
+<span class="sd">            Whether or not to use the darts default scheme.</span>
 <span class="sd">        args</span>
 <span class="sd">            some positional arguments for the `plot()` method</span>
 <span class="sd">        kwargs</span>
@@ -3221,7 +3261,7 @@
             <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">label_to_use</span>
 
             <span class="n">p</span> <span class="o">=</span> <span class="n">central_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-            <span class="n">color_used</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_color</span><span class="p">()</span>
+            <span class="n">color_used</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_color</span><span class="p">()</span> <span class="k">if</span> <span class="n">default_formatting</span> <span class="k">else</span> <span class="kc">None</span>
             <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">alpha</span> <span class="k">if</span> <span class="n">alpha</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">alpha_confidence_intvls</span>
 
             <span class="c1"># Optionally show confidence intervals</span>

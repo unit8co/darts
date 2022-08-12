@@ -171,6 +171,7 @@
 
 <span class="sd">A few popular time series datasets</span>
 <span class="sd">&quot;&quot;&quot;</span>
+
 <span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
 
@@ -226,6 +227,34 @@
                 <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;1f4028a570a20939411cc04de7364bbd&quot;</span><span class="p">,</span>
                 <span class="n">header_time</span><span class="o">=</span><span class="s2">&quot;date&quot;</span><span class="p">,</span>
                 <span class="n">format_time</span><span class="o">=</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AustralianTourismDataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.AustralianTourismDataset">[docs]</a><span class="k">class</span> <span class="nc">AustralianTourismDataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A single multivariate TimeSeries, containing monthly tourism numbers over</span>
+<span class="sd">    36 months in Australia. The numbers are broken down per region</span>
+<span class="sd">    (&quot;NSW&quot;, &quot;VIC&quot;, &quot;QLD&quot;, &quot;SA&quot;, &quot;WA&quot;, &quot;TAS&quot;, &quot;NT&quot;), reason (&quot;Hol&quot;, &quot;VFR&quot;, &quot;Bus&quot;, &quot;Oth&quot;),</span>
+<span class="sd">    (region, reason) pairs, and (region, reason, &lt;city&gt;) tuples, where &lt;city&gt;</span>
+<span class="sd">    can be either &quot;city&quot; or &quot;noncity&quot;.</span>
+
+<span class="sd">    This is an augmented version of the Australian tourism dataset available in [1]_,</span>
+<span class="sd">    where we pre-computed the groupings per region (not available in the original dataset).</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] https://robjhyndman.com/publications/hierarchical-tourism/</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
+                <span class="s2">&quot;australian_tourism.csv&quot;</span><span class="p">,</span>
+                <span class="n">uri</span><span class="o">=</span><span class="n">_DEFAULT_PATH</span> <span class="o">+</span> <span class="s2">&quot;/australian_tourism.csv&quot;</span><span class="p">,</span>
+                <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;6eeea6b56e16e01123f303b492d9901c&quot;</span><span class="p">,</span>
+                <span class="n">header_time</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">format_time</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="p">)</span></div>
 
