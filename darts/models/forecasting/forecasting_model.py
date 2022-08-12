@@ -911,8 +911,26 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             self._model_params if hasattr(self, "_model_params") else self._model_call
         )
 
+    @classmethod
+    def _default_save_path(cls):
+        return f"{cls.__name__}_{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
+
     def save(self, path: Optional[Union[str, BinaryIO]] = None, **pkl_kwargs) -> None:
-        """Saves the model under a given path or file handle.
+        """
+        Saves the model under a given path or file handle.
+
+        Example for saving and loading a :class:`RegressionModel`:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from darts.models import RegressionModel
+
+                model = RegressionModel(lags=4)
+
+                model.save("my_model.pkl")
+                model_loaded = RegressionModel.load("my_model.pkl")
+            ..
 
         Parameters
         ----------
@@ -924,7 +942,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         if path is None:
             # default path
-            path = f"{type(self).__name__}_{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.pkl"
+            path = self._default_save_path() + ".pkl"
 
         if isinstance(path, str):
             # save the whole object using pickle
@@ -936,7 +954,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     @staticmethod
     def load(path: Union[str, BinaryIO]) -> "ForecastingModel":
-        """Loads the model from a given path or file handle.
+        """
+        Loads the model from a given path or file handle.
 
         Parameters
         ----------
@@ -951,7 +970,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 logger,
             )
 
-            # Load the object using joblib
             with open(path, "rb") as handle:
                 model = pickle.load(file=handle)
         else:

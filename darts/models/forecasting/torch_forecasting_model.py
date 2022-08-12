@@ -1290,7 +1290,21 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return tuple(aggregated)
 
     def save(self, path: Optional[str] = None) -> None:
-        """Saves the model under a given path.
+        """
+        Saves the model under a given path.
+
+        Example for saving and loading a :class:`RNNModel`:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from darts.models import RNNModel
+
+                model = RNNModel(input_chunk_length=4)
+
+                model.save("my_model.pt")
+                model_loaded = RNNModel.load("my_model.pt")
+            ..
 
         Parameters
         ----------
@@ -1302,7 +1316,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         if path is None:
             # default path
-            path = f"{type(self).__name__}_{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.pt"
+            path = self._default_save_path() + ".pt"
 
         # We save the whole object to keep track of everything
         with open(path, "wb") as f_out:
@@ -1315,55 +1329,35 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def save_model(self, path: str) -> None:
         """
-        `TorchForecastingModel.save_model()` is deprecated and will be removed in a future darts version.
-        Please use `TorchForecastingModel.save()` instead.
-
         Saves the model under a given path.
 
         Parameters
         ----------
         path
             Path under which to save the model at its current state.
+
+        .. deprecated:: 0.21.0
+            `TorchForecastingModel.save_model()` is deprecated and will be removed in a future darts version.
+            Please use `TorchForecastingModel.save()` instead.
         """
 
-        save_warning = """`TorchForecastingModel.save_model()` is deprecated and will be removed in a future darts version.
-        Please use `TorchForecastingModel.save()` instead."""
+        save_warning = (
+            "`TorchForecastingModel.save_model()` is deprecated and will be removed "
+            "in a future darts version. Please use `TorchForecastingModel.save()` instead."
+        )
         raise_deprecation_warning(save_warning, logger)
 
-        raise_if_not(
-            path.endswith(".pth.tar"),
-            "The given path should end with '.pth.tar'.",
-            logger,
-        )
-
-        # We save the whole object to keep track of everything
-        with open(path, "wb") as f_out:
-            torch.save(self, f_out)
-
-        # In addition, we need to use PTL save_checkpoint() to properly save the trainer and model
-        if self.trainer is not None:
-            base_path = path[:-8]
-            path_ptl_ckpt = base_path + "_ptl-ckpt.pth.tar"
-            self.trainer.save_checkpoint(path_ptl_ckpt)
+        self.save(path)
 
     @staticmethod
     def load(path: str) -> "TorchForecastingModel":
-        """loads a model from a given file path. The file name should end with '.pth.tar'
-
-        Example for loading a :class:`RNNModel`:
-
-            .. highlight:: python
-            .. code-block:: python
-
-                from darts.models import RNNModel
-
-                model_loaded = RNNModel.load("my_model.pth.tar")
-            ..
+        """
+        Loads a model from a given file path.
 
         Parameters
         ----------
         path
-            Path under which to save the model at its current state. The path should end with '.pth.tar'
+            Path from which to load the model.
         """
 
         with open(path, "rb") as fin:
@@ -1380,48 +1374,25 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @staticmethod
     def load_model(path: str) -> "TorchForecastingModel":
         """
-        `TorchForecastingModel.load_model()` is deprecated and will be removed in a future darts version.
-        Please use `TorchForecastingModel.load()` instead.
-
-        Loads a model from a given file path. The file name should end with '.pth.tar'
-
-        Example for loading a :class:`RNNModel`:
-
-            .. highlight:: python
-            .. code-block:: python
-
-                from darts.models import RNNModel
-
-                model_loaded = RNNModel.load("my_model.pth.tar")
-            ..
+        Loads a model from a given file path.
 
         Parameters
         ----------
         path
-            Path under which to save the model at its current state. The path should end with '.pth.tar'
+            Path from which to load the model.
+
+        .. deprecated:: 0.21.0
+            `TorchForecastingModel.load_model()` is deprecated and will be removed in a future darts version.
+            Please use `TorchForecastingModel.load()` instead.
         """
 
         load_warning = (
-            "`TorchForecastingModel.load_model()` is deprecated and will be removed in a future darts "
-            "version. Please use `TorchForecastingModel.load()` instead."
+            "`TorchForecastingModel.load_model()` is deprecated and will be removed "
+            "in a future darts version. Please use `TorchForecastingModel.load()` instead."
         )
         raise_deprecation_warning(load_warning, logger)
 
-        raise_if_not(
-            path.endswith(".pth.tar"),
-            "The given path should end with '.pth.tar'.",
-            logger,
-        )
-
-        with open(path, "rb") as fin:
-            model = torch.load(fin)
-
-        # If a PTL checkpoint was saved, we also need to load it:
-        base_path = path[:-8]
-        path_ptl_ckpt = base_path + "_ptl-ckpt.pth.tar"
-        if os.path.exists(path_ptl_ckpt):
-            model.model = model.model.__class__.load_from_checkpoint(path_ptl_ckpt)
-            model.trainer = None
+        model = TorchForecastingModel.load(path)
 
         return model
 
