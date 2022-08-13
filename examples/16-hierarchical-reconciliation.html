@@ -594,7 +594,7 @@ div.rendered_html tbody tr:hover {
 <p>In this notebook we demonstrate hierarchical reconciliation. We will use the Australian tourism dataset (originally coming from <a class="reference external" href="https://robjhyndman.com/publications/hierarchical-tourism/">here</a>), which contains monthly tourism numbers, disaggrated by region, travel reason and city/non-city type of tourism.</p>
 <p>We will use techniques presented in Rob Hyndman’s book <a class="reference external" href="https://otexts.com/fpp3/hierarchical.html">here</a>, and we will see that reconciling forecasts can be done in a few lines of code using Darts.</p>
 <p>First, some imports:</p>
-<div class="nbinput docutils container">
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
@@ -614,23 +614,6 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
-<span class="ansi-red-fg">ModuleNotFoundError</span>                       Traceback (most recent call last)
-Input <span class="ansi-green-fg">In [1]</span>, in <span class="ansi-cyan-fg">&lt;cell line: 8&gt;</span><span class="ansi-blue-fg">()</span>
-<span class="ansi-green-intense-fg ansi-bold">      5</span> <span class="ansi-bold" style="color: rgb(0,135,0)">from</span> <span class="ansi-bold" style="color: rgb(0,0,255)">pprint</span> <span class="ansi-bold" style="color: rgb(0,135,0)">import</span> pprint
-<span class="ansi-green-intense-fg ansi-bold">      6</span> <span class="ansi-bold" style="color: rgb(0,135,0)">from</span> <span class="ansi-bold" style="color: rgb(0,0,255)">itertools</span> <span class="ansi-bold" style="color: rgb(0,135,0)">import</span> product
-<span class="ansi-green-fg">----&gt; 8</span> <span class="ansi-bold" style="color: rgb(0,135,0)">from</span> <span class="ansi-bold" style="color: rgb(0,0,255)">darts</span> <span class="ansi-bold" style="color: rgb(0,135,0)">import</span> TimeSeries, concatenate
-<span class="ansi-green-intense-fg ansi-bold">      9</span> <span class="ansi-bold" style="color: rgb(0,135,0)">from</span> <span class="ansi-bold" style="color: rgb(0,0,255)">darts</span><span class="ansi-bold" style="color: rgb(0,0,255)">.</span><span class="ansi-bold" style="color: rgb(0,0,255)">datasets</span> <span class="ansi-bold" style="color: rgb(0,135,0)">import</span> AustralianTourismDataset
-<span class="ansi-green-intense-fg ansi-bold">     10</span> <span class="ansi-bold" style="color: rgb(0,135,0)">from</span> <span class="ansi-bold" style="color: rgb(0,0,255)">darts</span><span class="ansi-bold" style="color: rgb(0,0,255)">.</span><span class="ansi-bold" style="color: rgb(0,0,255)">models</span> <span class="ansi-bold" style="color: rgb(0,135,0)">import</span> LinearRegressionModel, Theta
-
-<span class="ansi-red-fg">ModuleNotFoundError</span>: No module named &#39;darts&#39;
-</pre></div></div>
-</div>
 <section id="Loading-Data">
 <h2>Loading Data<a class="headerlink" href="#Loading-Data" title="Permalink to this headline">¶</a></h2>
 <p>Below, we load a single <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>, which is multivariate (i.e., contains multiple components). We simply use the <code class="docutils literal notranslate"><span class="pre">AustralianTourismDataset</span></code> Darts dataset for simplicity, but we could also use <code class="docutils literal notranslate"><span class="pre">TimeSeries.from_dataframe(df)</span></code>, providing a DataFrame <code class="docutils literal notranslate"><span class="pre">df</span></code> containing one column per component and one row per timestamp.</p>
@@ -643,8 +626,14 @@ Input <span class="ansi-green-fg">In [1]</span>, in <span class="ansi-cyan-fg">&
 </pre></div>
 </div>
 </div>
-<p>This series contains several components: * One component named <code class="docutils literal notranslate"><span class="pre">&quot;Total&quot;</span></code>, * One component per region (<code class="docutils literal notranslate"><span class="pre">&quot;NSW&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;VIC&quot;</span></code>, etc) * One component per tourism reason (<code class="docutils literal notranslate"><span class="pre">&quot;Hol&quot;</span></code> for holiday, <code class="docutils literal notranslate"><span class="pre">&quot;Bus&quot;</span></code> for business, etc) * One component per (region, reason) pair (named <code class="docutils literal notranslate"><span class="pre">&quot;NSW</span> <span class="pre">-</span> <span class="pre">hol&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;NSW</span> <span class="pre">-</span> <span class="pre">bus&quot;</span></code>, etc) * One component per (region, reason, &lt;city&gt;) tuple, where &lt;city&gt; is either <code class="docutils literal notranslate"><span class="pre">&quot;city&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;noncity&quot;</span></code>. So these are components named <code class="docutils literal notranslate"><span class="pre">&quot;NSW</span> <span class="pre">-</span> <span class="pre">hol</span> <span class="pre">-</span> <span class="pre">city&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;NSW</span> <span class="pre">-</span> <span class="pre">hol</span> <span class="pre">-</span> <span class="pre">noncity&quot;</span></code>,
-<code class="docutils literal notranslate"><span class="pre">&quot;NSW</span> <span class="pre">-</span> <span class="pre">bus</span> <span class="pre">-</span> <span class="pre">city&quot;</span></code>, etc.</p>
+<p>This series contains several components:</p>
+<ul class="simple">
+<li><p>One component named <code class="docutils literal notranslate"><span class="pre">&quot;Total&quot;</span></code>,</p></li>
+<li><p>One component per region (<code class="docutils literal notranslate"><span class="pre">&quot;NSW&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;VIC&quot;</span></code>, etc)</p></li>
+<li><p>One component per tourism reason (<code class="docutils literal notranslate"><span class="pre">&quot;Hol&quot;</span></code> for holiday, <code class="docutils literal notranslate"><span class="pre">&quot;Bus&quot;</span></code> for business, etc)</p></li>
+<li><p>One component per (region, reason) pair (named <code class="docutils literal notranslate"><span class="pre">&quot;NSW</span> <span class="pre">-</span> <span class="pre">hol&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;NSW</span> <span class="pre">-</span> <span class="pre">bus&quot;</span></code>, etc)</p></li>
+<li><p>One component per (region, reason, &lt;city&gt;) tuple, where &lt;city&gt; is either <code class="docutils literal notranslate"><span class="pre">&quot;city&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;noncity&quot;</span></code>. So these are components named <code class="docutils literal notranslate"><span class="pre">&quot;NSW</span> <span class="pre">-</span> <span class="pre">hol</span> <span class="pre">-</span> <span class="pre">city&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;NSW</span> <span class="pre">-</span> <span class="pre">hol</span> <span class="pre">-</span> <span class="pre">noncity&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;NSW</span> <span class="pre">-</span> <span class="pre">bus</span> <span class="pre">-</span> <span class="pre">city&quot;</span></code>, etc.</p></li>
+</ul>
 <p>Let’s plot a few of those:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
@@ -719,7 +708,13 @@ Input <span class="ansi-green-fg">In [1]</span>, in <span class="ansi-cyan-fg">&
 <section id="Encoding-the-Hierarchy">
 <h2>Encoding the Hierarchy<a class="headerlink" href="#Encoding-the-Hierarchy" title="Permalink to this headline">¶</a></h2>
 <p>We will now encode the hierarchy itself in a way that Darts understands. This is simple: the hierarchy is simply represented as a <code class="docutils literal notranslate"><span class="pre">dict</span></code>, where the keys are component names, and the values are lists containing this component’s parent(s) in the hierarchy.</p>
-<p>For example, referring to the figure above: * <code class="docutils literal notranslate"><span class="pre">&quot;Hol&quot;</span></code> is mapped to <code class="docutils literal notranslate"><span class="pre">[&quot;Total&quot;]</span></code>, as it is a child of <code class="docutils literal notranslate"><span class="pre">&quot;Total&quot;</span></code> in the left tree. * <code class="docutils literal notranslate"><span class="pre">&quot;NSW</span> <span class="pre">-</span> <span class="pre">hol&quot;</span></code> is mapped to <code class="docutils literal notranslate"><span class="pre">[&quot;Hol&quot;,</span> <span class="pre">&quot;NSW&quot;]</span></code>, as it is a child of both <code class="docutils literal notranslate"><span class="pre">&quot;Hol&quot;</span></code> (in the left tree), and <code class="docutils literal notranslate"><span class="pre">&quot;NSW&quot;</span></code> (in the right tree). * <code class="docutils literal notranslate"><span class="pre">&quot;NSW</span> <span class="pre">-</span> <span class="pre">bus</span> <span class="pre">-</span> <span class="pre">city&quot;</span></code> is mapped to <code class="docutils literal notranslate"><span class="pre">[&quot;NSW</span> <span class="pre">-</span> <span class="pre">bus&quot;]</span></code> as it is a child of <code class="docutils literal notranslate"><span class="pre">&quot;NSW</span> <span class="pre">-</span> <span class="pre">bus&quot;</span></code> in the right tree. * etc…</p>
+<p>For example, referring to the figure above:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Hol&quot;</span></code> is mapped to <code class="docutils literal notranslate"><span class="pre">[&quot;Total&quot;]</span></code>, as it is a child of <code class="docutils literal notranslate"><span class="pre">&quot;Total&quot;</span></code> in the left tree.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;NSW</span> <span class="pre">-</span> <span class="pre">hol&quot;</span></code> is mapped to <code class="docutils literal notranslate"><span class="pre">[&quot;Hol&quot;,</span> <span class="pre">&quot;NSW&quot;]</span></code>, as it is a child of both <code class="docutils literal notranslate"><span class="pre">&quot;Hol&quot;</span></code> (in the left tree), and <code class="docutils literal notranslate"><span class="pre">&quot;NSW&quot;</span></code> (in the right tree).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;NSW</span> <span class="pre">-</span> <span class="pre">bus</span> <span class="pre">-</span> <span class="pre">city&quot;</span></code> is mapped to <code class="docutils literal notranslate"><span class="pre">[&quot;NSW</span> <span class="pre">-</span> <span class="pre">bus&quot;]</span></code> as it is a child of <code class="docutils literal notranslate"><span class="pre">&quot;NSW</span> <span class="pre">-</span> <span class="pre">bus&quot;</span></code> in the right tree.</p></li>
+<li><p>etc…</p></li>
+</ul>
 <p>So all components except <code class="docutils literal notranslate"><span class="pre">&quot;Total&quot;</span></code> will appear as a key in the hierarchy dictionary. As we have quite a few components (96), we will not build this dict by hand, but rather programmatically:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
@@ -927,10 +922,12 @@ mean MAE on (region, reason, city): 189.69
 <img alt="../_images/examples_16-hierarchical-reconciliation_26_0.png" src="../_images/examples_16-hierarchical-reconciliation_26_0.png" />
 </div>
 </div>
-<p>It seems that they don’t. So let’s reconcile them. We will use some transformers available in <code class="docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers</span></code> to do that. These transformers can perform <em>posthoc</em> reconciliation (i.e., reconcile forecasts after they have been obtained). We have at our disposal the following methods: * <code class="docutils literal notranslate"><span class="pre">BottomUpReconciliator</span></code> performs bottom-up reconciliation, simply resetting each component in the hierarchy as the sum of its children components (<a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator">API
-documentation</a>). * <code class="docutils literal notranslate"><span class="pre">TopDownReconciliator</span></code> performs top-down reconciliation, which breaks down the aggregate forecasts down the hierarchy using historical proportions. This transformer requires calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code> with the historical values (i.e., the training series) in order to learn these proportions (<a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator">API
-documentation</a>). * <code class="docutils literal notranslate"><span class="pre">MinTReconciliator</span></code> is a technique to perform “optimal” reconciliation, as detailed <a class="reference external" href="https://otexts.com/fpp3/reconciliation.html#the-mint-optimal-reconciliation-approach">here</a>. This transformer can work in a few different ways listed in the <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html#darts.dataprocessing.transformers.reconciliation.MinTReconciliator">API
-Documentation</a>.</p>
+<p>It seems that they don’t. So let’s reconcile them. We will use some transformers available in <code class="docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers</span></code> to do that. These transformers can perform <em>posthoc</em> reconciliation (i.e., reconcile forecasts after they have been obtained). We have at our disposal the following methods:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">BottomUpReconciliator</span></code> performs bottom-up reconciliation, simply resetting each component in the hierarchy as the sum of its children components (<a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator">API documentation</a>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">TopDownReconciliator</span></code> performs top-down reconciliation, which breaks down the aggregate forecasts down the hierarchy using historical proportions. This transformer requires calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code> with the historical values (i.e., the training series) in order to learn these proportions (<a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator">API documentation</a>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">MinTReconciliator</span></code> is a technique to perform “optimal” reconciliation, as detailed <a class="reference external" href="https://otexts.com/fpp3/reconciliation.html#the-mint-optimal-reconciliation-approach">here</a>. This transformer can work in a few different ways listed in the <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html#darts.dataprocessing.transformers.reconciliation.MinTReconciliator">API Documentation</a>.</p></li>
+</ul>
 <p>Below, we use the <code class="docutils literal notranslate"><span class="pre">wls_val</span></code> variant of <code class="docutils literal notranslate"><span class="pre">MinTReconciliator</span></code>:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
@@ -1007,11 +1004,11 @@ mean MAE on (region, reason, city): 188.89
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-/Users/julien/anaconda3/envs/darts/lib/python3.10/site-packages/statsmodels/tsa/holtwinters/model.py:915: ConvergenceWarning: Optimization failed to converge. Check mle_retvals.
+/Users/julien/miniconda3/envs/darts/lib/python3.9/site-packages/statsmodels/tsa/holtwinters/model.py:915: ConvergenceWarning: Optimization failed to converge. Check mle_retvals.
   warnings.warn(
-/Users/julien/anaconda3/envs/darts/lib/python3.10/site-packages/statsmodels/tsa/holtwinters/model.py:915: ConvergenceWarning: Optimization failed to converge. Check mle_retvals.
+/Users/julien/miniconda3/envs/darts/lib/python3.9/site-packages/statsmodels/tsa/holtwinters/model.py:915: ConvergenceWarning: Optimization failed to converge. Check mle_retvals.
   warnings.warn(
-/Users/julien/anaconda3/envs/darts/lib/python3.10/site-packages/statsmodels/tsa/holtwinters/model.py:915: ConvergenceWarning: Optimization failed to converge. Check mle_retvals.
+/Users/julien/miniconda3/envs/darts/lib/python3.9/site-packages/statsmodels/tsa/holtwinters/model.py:915: ConvergenceWarning: Optimization failed to converge. Check mle_retvals.
   warnings.warn(
 </pre></div></div>
 </div>
