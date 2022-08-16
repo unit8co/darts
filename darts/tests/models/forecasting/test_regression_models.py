@@ -559,10 +559,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
             # while it should work with n = 1
             prediction = model_instance.predict(n=1)
-            self.assertTrue(
-                len(prediction) == 1,
-                f"Expected length 1, found {len(prediction)} instead",
-            )
+            self.assertEqual(len(prediction), 1)
 
     def test_fit(self):
         for model in self.models:
@@ -710,7 +707,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         self.assertEqual(len(result), 21)
 
     def test_multioutput_wrapper(self):
-        lags = 12
+        lags = 4
         models = [
             (RegressionModel(lags=lags), True),
             (RegressionModel(lags=lags, model=LinearRegression()), True),
@@ -726,27 +723,28 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             if supports_multioutput_natively:
                 self.assertFalse(isinstance(model.model, MultiOutputRegressor))
             else:
-                self.assertTrue(isinstance(model.model, MultiOutputRegressor))
+                self.assertIsInstance(model.model, MultiOutputRegressor)
 
     def test_multioutput_validation(self):
 
+        lags = 4
+
         models = [
-            LightGBMModel(lags=4, output_chunk_length=1),
-            LightGBMModel(lags=4, output_chunk_length=2),
-            CatBoostModel(lags=4, output_chunk_length=1),
-            CatBoostModel(lags=4, output_chunk_length=2),
+            LightGBMModel(lags=lags, output_chunk_length=1),
+            LightGBMModel(lags=lags, output_chunk_length=2),
+            CatBoostModel(lags=lags, output_chunk_length=1),
+            CatBoostModel(lags=lags, output_chunk_length=2),
         ]
 
         train, val = self.sine_univariate1.split_after(0.6)
 
         for model in models:
-            # without validation
-            model.fit(series=train, val_series=None)
-            # with validation
             model.fit(series=train, val_series=val)
+            if model.output_chunk_length > 1:
+                self.assertIsInstance(model.model, MultiOutputRegressor)
 
     def test_regression_model(self):
-        lags = 12
+        lags = 4
         models = [
             RegressionModel(lags=lags),
             RegressionModel(lags=lags, model=LinearRegression()),
@@ -860,7 +858,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             inter_reduction=np.mean,
         )
 
-        self.assertTrue(error_past_only > error_both)
+        self.assertGreater(error_past_only, error_both)
         # test 2: with both covariates, 2 TS should learn more than one (with little noise)
         model = RegressionModel(
             lags=3, lags_past_covariates=5, lags_future_covariates=(5, 0)
@@ -882,7 +880,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             inter_reduction=np.mean,
         )
 
-        self.assertTrue(error_both > error_both_multi_ts)
+        self.assertGreater(error_both, error_both_multi_ts)
 
     def test_only_future_covariates(self):
 
