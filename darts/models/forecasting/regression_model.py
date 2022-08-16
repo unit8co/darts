@@ -38,9 +38,6 @@ from darts.timeseries import TimeSeries
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import _check_quantiles
 
-# from sklearn.multioutput import MultiOutputRegressor
-
-
 logger = get_logger(__name__)
 
 
