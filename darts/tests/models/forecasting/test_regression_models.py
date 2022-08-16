@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import LinearRegression
-from sklearn.multioutput import MultiOutputRegressor
 
 import darts
 from darts import TimeSeries
@@ -24,6 +23,9 @@ from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 from darts.utils.data.encoders import FutureCyclicEncoder, PastDatetimeAttributeEncoder
+
+# from sklearn.multioutput import MultiOutputRegressor
+from darts.utils.multioutput import MultiOutputRegressor
 
 logger = get_logger(__name__)
 
@@ -725,6 +727,23 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 self.assertFalse(isinstance(model.model, MultiOutputRegressor))
             else:
                 self.assertTrue(isinstance(model.model, MultiOutputRegressor))
+
+    def test_multioutput_validation(self):
+
+        models = [
+            LightGBMModel(lags=4, output_chunk_length=1),
+            LightGBMModel(lags=4, output_chunk_length=2),
+            CatBoostModel(lags=4, output_chunk_length=1),
+            CatBoostModel(lags=4, output_chunk_length=2),
+        ]
+
+        train, val = self.sine_univariate1.split_after(0.6)
+
+        for model in models:
+            # without validation
+            model.fit(series=train, val_series=None)
+            # with validation
+            model.fit(series=train, val_series=val)
 
     def test_regression_model(self):
         lags = 12
