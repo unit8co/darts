@@ -130,7 +130,7 @@ class BlockRNNModel(PastCovariatesTorchModel):
         input_chunk_length: int,
         output_chunk_length: int,
         model: Union[str, nn.Module] = "RNN",
-        hidden_size: int = 25,
+        hidden_dim: int = 25,
         n_rnn_layers: int = 1,
         hidden_fc_sizes: Optional[List] = None,
         dropout: float = 0.0,
@@ -162,8 +162,9 @@ class BlockRNNModel(PastCovariatesTorchModel):
             Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"),
             or a PyTorch module with the same specifications as
             :class:`darts.models.block_rnn_model._BlockRNNModule`.
-        hidden_size
+        hidden_dim
             Size for feature maps for each hidden RNN layer (:math:`h_n`).
+            In Darts version <= 0.21, hidden_dim was referred as hidden_size.
         n_rnn_layers
             Number of layers in the RNN module.
         hidden_fc_sizes
@@ -321,7 +322,7 @@ class BlockRNNModel(PastCovariatesTorchModel):
 
         self.rnn_type_or_module = model
         self.hidden_fc_sizes = hidden_fc_sizes
-        self.hidden_size = hidden_size
+        self.hidden_dim = hidden_dim
         self.n_rnn_layers = n_rnn_layers
         self.dropout = dropout
 
@@ -346,7 +347,7 @@ class BlockRNNModel(PastCovariatesTorchModel):
                 input_size=input_dim,
                 target_size=output_dim,
                 nr_params=nr_params,
-                hidden_dim=self.hidden_size,
+                hidden_dim=self.hidden_dim,
                 num_layers=self.n_rnn_layers,
                 num_layers_out_fc=hidden_fc_sizes,
                 dropout=self.dropout,
