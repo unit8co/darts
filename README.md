@@ -146,6 +146,7 @@ Model | Univariate | Multivariate | Probabilistic | Multiple-series training | P
 `RandomForest` | ✅ | ✅ | | ✅ | ✅ | ✅ | |
 `LinearRegressionModel` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | |
 `LightGBMModel` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | |
+`CatBoostModel` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | |
 `RNNModel` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version | ✅ | ✅ | ✅ | ✅ | | ✅ | | [DeepAR paper](https://arxiv.org/abs/1704.04110)
 `BlockRNNModel` (incl. LSTM and GRU) | ✅ | ✅ | ✅ | ✅ | ✅ | | |
 `NBEATSModel` | ✅ | ✅ | ✅ | ✅ | ✅ | | | [N-BEATS paper](https://arxiv.org/abs/1905.10437)
