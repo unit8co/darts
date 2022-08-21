@@ -212,7 +212,9 @@ class GaussianLikelihood(Likelihood):
         self.beta = beta
         _check_strict_positive(self.prior_sigma, "sigma")
 
-        self.nllloss = nn.GaussianNLLLoss(reduction="mean", full=True)
+        self.nllloss = nn.GaussianNLLLoss(
+            reduction="none" if self.beta > 0.0 else "mean", full=True
+        )
         self.softplus = nn.Softplus()
 
         super().__init__(prior_strength)
@@ -223,7 +225,8 @@ class GaussianLikelihood(Likelihood):
         loss = self.nllloss(means_out.contiguous(), target.contiguous(), cont_sigmas)
         # apply Beta-NLL
         if self.beta > 0.0:
-            loss = loss * (cont_sigmas.detach() ** self.beta)
+            # Note: there is no mean reduction if beta > 0, so we compute it here
+            loss = (loss * (cont_sigmas.detach() ** self.beta)).mean()
         return loss
 
     @property
