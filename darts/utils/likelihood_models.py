@@ -174,7 +174,7 @@ class Likelihood(ABC):
 
 class GaussianLikelihood(Likelihood):
     def __init__(
-        self, prior_mu=None, prior_sigma=None, prior_strength=1.0, beta_nll=0.5
+        self, prior_mu=None, prior_sigma=None, prior_strength=1.0, beta_nll=0.0
     ):
         """
         Univariate Gaussian distribution.
@@ -182,10 +182,10 @@ class GaussianLikelihood(Likelihood):
         https://en.wikipedia.org/wiki/Normal_distribution
 
         Instead of the pure negative log likelihood (NLL) loss, the loss function used
-        is the :math:`\\beta`-NLL loss [1]_, parameterized by ``beta`` in [0, 1].
-        For ``beta=0`` it is equivalent to NLL, however larger values of ``beta`` can
+        is the :math:`\\beta`-NLL loss [1]_, parameterized by ``beta_nll`` in (0, 1).
+        For ``beta_nll=0`` it is equivalent to NLL, however larger values of ``beta_nll`` can
         mitigate issues with NLL causing effective under-sampling of poorly fit regions
-        during training. ``beta=1`` provides the same gradient for the mean as the MSE loss.
+        during training. ``beta_nll=1`` provides the same gradient for the mean as the MSE loss.
 
         - Univariate continuous distribution.
         - Support: :math:`\\mathbb{R}`.
@@ -201,7 +201,7 @@ class GaussianLikelihood(Likelihood):
             strength of the loss regularisation induced by the prior
         beta_nll
             The parameter :math:`0 \\leq \\beta \\leq 1` of the :math:`\\beta`-NLL loss [1]_.
-            Default: 0.5.
+            Default: 0. (equivalent to NLL)
 
         References
         ----------
