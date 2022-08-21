@@ -223,12 +223,13 @@ class GaussianLikelihood(Likelihood):
 
     def _nllloss(self, params_out, target):
         means_out, sigmas_out = params_out
-        cont_sigmas = sigmas_out.contiguous()
-        loss = self.nllloss(means_out.contiguous(), target.contiguous(), cont_sigmas)
+        # Note: GaussianNLLLoss expects variance (and not stdev)
+        cont_var = sigmas_out.contiguous() ** 2
+        loss = self.nllloss(means_out.contiguous(), target.contiguous(), cont_var)
         # apply Beta-NLL
         if self.beta_nll > 0.0:
             # Note: there is no mean reduction if beta_nll > 0, so we compute it here
-            loss = (loss * (cont_sigmas.detach() ** self.beta_nll)).mean()
+            loss = (loss * (cont_var.detach() ** self.beta_nll)).mean()
         return loss
 
     @property
