@@ -173,11 +173,17 @@ class Likelihood(ABC):
 
 
 class GaussianLikelihood(Likelihood):
-    def __init__(self, prior_mu=None, prior_sigma=None, prior_strength=1.0):
+    def __init__(self, prior_mu=None, prior_sigma=None, prior_strength=1.0, beta=0.5):
         """
         Univariate Gaussian distribution.
 
         https://en.wikipedia.org/wiki/Normal_distribution
+
+        Instead of the pure negative log likelihood (NLL) loss, the loss function used
+        is the :math:`\\beta`-NLL loss [1]_, parameterized by ``beta`` in [0, 1].
+        For ``beta=0`` it is equivalent to NLL, however larger values of ``beta`` can
+        mitigate issues with NLL causing effective under-sampling of poorly fit regions
+        during training. ``beta=1`` provides the same gradient for the mean as the MSE loss.
 
         - Univariate continuous distribution.
         - Support: :math:`\\mathbb{R}`.
@@ -191,9 +197,19 @@ class GaussianLikelihood(Likelihood):
             standard deviation (or scale) of the prior Gaussian distribution (default: None)
         prior_strength
             strength of the loss regularisation induced by the prior
+        beta
+            The parameter :math:`0 \\leq \\beta \\leq 1` of the :math:`\\beta`-NLL loss [1]_.
+            Default: 0.5.
+
+        References
+        ----------
+        .. [1] Seitzer et al.,
+               "On the Pitfalls of Heteroscedastic Uncertainty Estimation with Probabilistic Neural Networks"
+               https://arxiv.org/abs/2203.09168
         """
         self.prior_mu = prior_mu
         self.prior_sigma = prior_sigma
+        self.beta = beta
         _check_strict_positive(self.prior_sigma, "sigma")
 
         self.nllloss = nn.GaussianNLLLoss(reduction="mean", full=True)
@@ -203,9 +219,12 @@ class GaussianLikelihood(Likelihood):
 
     def _nllloss(self, params_out, target):
         means_out, sigmas_out = params_out
-        return self.nllloss(
-            means_out.contiguous(), target.contiguous(), sigmas_out.contiguous()
-        )
+        cont_sigmas = sigmas_out.contiguous()
+        loss = self.nllloss(means_out.contiguous(), target.contiguous(), cont_sigmas)
+        # apply Beta-NLL
+        if self.beta > 0.0:
+            loss = loss * (cont_sigmas.detach() ** self.beta)
+        return loss
 
     @property
     def _prior_params(self):
