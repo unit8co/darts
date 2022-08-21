@@ -173,7 +173,9 @@ class Likelihood(ABC):
 
 
 class GaussianLikelihood(Likelihood):
-    def __init__(self, prior_mu=None, prior_sigma=None, prior_strength=1.0, beta=0.5):
+    def __init__(
+        self, prior_mu=None, prior_sigma=None, prior_strength=1.0, beta_nll=0.5
+    ):
         """
         Univariate Gaussian distribution.
 
@@ -197,7 +199,7 @@ class GaussianLikelihood(Likelihood):
             standard deviation (or scale) of the prior Gaussian distribution (default: None)
         prior_strength
             strength of the loss regularisation induced by the prior
-        beta
+        beta_nll
             The parameter :math:`0 \\leq \\beta \\leq 1` of the :math:`\\beta`-NLL loss [1]_.
             Default: 0.5.
 
@@ -209,11 +211,11 @@ class GaussianLikelihood(Likelihood):
         """
         self.prior_mu = prior_mu
         self.prior_sigma = prior_sigma
-        self.beta = beta
+        self.beta_nll = beta_nll
         _check_strict_positive(self.prior_sigma, "sigma")
 
         self.nllloss = nn.GaussianNLLLoss(
-            reduction="none" if self.beta > 0.0 else "mean", full=True
+            reduction="none" if self.beta_nll > 0.0 else "mean", full=True
         )
         self.softplus = nn.Softplus()
 
@@ -224,9 +226,9 @@ class GaussianLikelihood(Likelihood):
         cont_sigmas = sigmas_out.contiguous()
         loss = self.nllloss(means_out.contiguous(), target.contiguous(), cont_sigmas)
         # apply Beta-NLL
-        if self.beta > 0.0:
-            # Note: there is no mean reduction if beta > 0, so we compute it here
-            loss = (loss * (cont_sigmas.detach() ** self.beta)).mean()
+        if self.beta_nll > 0.0:
+            # Note: there is no mean reduction if beta_nll > 0, so we compute it here
+            loss = (loss * (cont_sigmas.detach() ** self.beta_nll)).mean()
         return loss
 
     @property
