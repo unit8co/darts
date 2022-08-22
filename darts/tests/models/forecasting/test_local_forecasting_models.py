@@ -1,4 +1,5 @@
 from typing import Callable
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pandas as pd
@@ -339,63 +340,80 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             model: TransferableDualCovariatesForecastingModel = model_cls(**kwargs)
             model.backtest(series1, future_covariates=exog1, retrain=False)
 
-    def test_backtest_retrain(self):
+    @patch("typing.Callable")
+    def test_backtest_retrain(
+        self,
+        patch_retrain_func,
+    ):
         """
         Test backtest method with different retrain arguments
         """
 
         series = self.ts_pass_train
 
-        def retrain_year_1st(pred_time: pd.Timestamp):
-            """
-            Retrains model on 1st month of the year
-            Remark that AirPassengersDataset has monthly freq
-            """
-            return pred_time.month == 1
-
-        def retrain_on_condition(
-            train_series: TimeSeries,
-            past_covariates: TimeSeries,
-            future_covariates: TimeSeries,
-        ):
-            """
-            Retrains model on some custom condition based on train_series, past and future covariates
-            """
-            c1 = bool(
-                train_series[-1].values()
-                < np.quantile(train_series[-20:-2].values(), 0.1)
-            )
-            c2 = bool(
-                past_covariates[-1].values()
-                < np.quantile(past_covariates[-20:-2].values(), 0.1)
-            )
-            c3 = bool(future_covariates[-1].values() > 0)
-            return all([c1, c2, c3])
-
         lr_univ_args = {"lags": [-1, -2, -3]}
 
         lr_multi_args = {
             "lags": [-1, -2, -3],
             "lags_past_covariates": [-1, -2, -3],
-            "lags_future_covariates": [2, 3],
         }
-        params = [  # tuple of (model, retrain-able, multivariate, retrain parameter)
-            (ExponentialSmoothing(), False, False, True),
-            (ExponentialSmoothing(), False, False, -2),
-            (ExponentialSmoothing(), False, False, 2),
-            (ExponentialSmoothing(), False, False, retrain_year_1st),
-            (LinearRegressionModel(**lr_univ_args), True, False, True),
-            (LinearRegressionModel(**lr_univ_args), True, False, -2),
-            (LinearRegressionModel(**lr_univ_args), True, False, 2),
-            (LinearRegressionModel(**lr_univ_args), True, False, retrain_year_1st),
-            (LinearRegressionModel(**lr_multi_args), True, True, True),
-            (LinearRegressionModel(**lr_multi_args), True, True, -2),
-            (LinearRegressionModel(**lr_multi_args), True, True, 2),
-            (LinearRegressionModel(**lr_multi_args), True, True, retrain_year_1st),
-            (LinearRegressionModel(**lr_multi_args), True, True, retrain_on_condition),
+        params = [  # tuple of (model, retrain-able, multivariate, retrain parameter, model type)
+            (ExponentialSmoothing(), False, False, "hello", "ForecastingModel"),
+            (ExponentialSmoothing(), False, False, True, "ForecastingModel"),
+            (ExponentialSmoothing(), False, False, -2, "ForecastingModel"),
+            (ExponentialSmoothing(), False, False, 2, "ForecastingModel"),
+            (
+                ExponentialSmoothing(),
+                False,
+                False,
+                patch_retrain_func,
+                "ForecastingModel",
+            ),
+            (
+                LinearRegressionModel(**lr_univ_args),
+                True,
+                False,
+                True,
+                "GlobalForecastingModel",
+            ),
+            (
+                LinearRegressionModel(**lr_univ_args),
+                True,
+                False,
+                2,
+                "GlobalForecastingModel",
+            ),
+            (
+                LinearRegressionModel(**lr_univ_args),
+                True,
+                False,
+                patch_retrain_func,
+                "GlobalForecastingModel",
+            ),
+            (
+                LinearRegressionModel(**lr_multi_args),
+                True,
+                True,
+                True,
+                "GlobalForecastingModel",
+            ),
+            (
+                LinearRegressionModel(**lr_multi_args),
+                True,
+                True,
+                2,
+                "GlobalForecastingModel",
+            ),
+            (
+                LinearRegressionModel(**lr_multi_args),
+                True,
+                True,
+                patch_retrain_func,
+                "GlobalForecastingModel",
+            ),
         ]
 
-        for model_cls, retrainable, multivariate, retrain in params:
+        for model_cls, retrainable, multivariate, retrain, model_type in params:
 
             if (
                 not isinstance(retrain, (int, bool, Callable))
@@ -404,12 +422,41 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                 or ((retrain != 1) and (not retrainable))
             ):
                 with self.assertRaises(ValueError):
-                    model_cls.backtest(series, retrain=retrain)
+                    _ = model_cls.historical_forecasts(series, retrain=retrain)
 
             else:
-                model_cls.backtest(
-                    series,
-                    past_covariates=series if multivariate else None,
-                    future_covariates=series if multivariate else None,
-                    retrain=retrain,
-                )
+
+                if isinstance(retrain, Mock):
+                    # resets patch_retrain_func call_count to 0
+                    retrain.call_count = 0
+                    retrain.side_effect = [True, False] * (len(series) // 2)
+                    # retrain.return_value = True
+
+                fit_method_to_patch = f"darts.models.forecasting.forecasting_model.{model_type}._fit_wrapper"
+                predict_method_to_patch = f"darts.models.forecasting.forecasting_model.{model_type}._predict_wrapper"
+
+                with patch(fit_method_to_patch) as patch_fit_method:
+                    with patch(
+                        predict_method_to_patch, side_effect=series
+                    ) as patch_predict_method:
+
+                        # Set _fit_called attribute to True, otherwise retrain function is never called
+                        model_cls._fit_called = True
+
+                        # run backtest
+                        _ = model_cls.historical_forecasts(
+                            series,
+                            past_covariates=series if multivariate else None,
+                            retrain=retrain,
+                        )
+
+                        assert patch_predict_method.called
+                        assert patch_predict_method.call_count > 1
+
+                        assert patch_fit_method.called
+                        assert patch_fit_method.call_count > 1
+
+                        if isinstance(retrain, Mock):
+                            # check that patch_retrain_func has been called at each iteration
+                            assert retrain.called
+                            assert retrain.call_count > 1

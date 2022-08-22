@@ -397,7 +397,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             and (not self._supports_non_retrainable_historical_forecasts()),
             f"{base_class_name} does not support historical forecastings with `retrain` set to `False`. "
             f"For now, this is only supported with GlobalForecastingModels such as TorchForecastingModels. "
-            f"Fore more information, read the documentation for `retrain` in `historical_forecastings()`",
+            f"For more information, read the documentation for `retrain` in `historical_forecasts()`",
             logger,
         )
 

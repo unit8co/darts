@@ -319,6 +319,8 @@ def _check_quantiles(quantiles):
 
 
 def _retrain_wrapper(func: Callable[..., bool]):
+    """Utility function that keeps original signature in `retrain` function param in `historical_forecasts` method"""
+
     @wraps(func)
     def wrapper(*args, **kwargs):
 
