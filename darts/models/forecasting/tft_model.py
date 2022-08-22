@@ -124,15 +124,12 @@ class _TFTModule(PLMixedCovariatesModule):
         self.dropout = dropout
         self.add_relative_index = add_relative_index
 
-        if norm_type == "LayerNorm":
-            self.layer_norm = nn.LayerNorm
-        else:
-            try:
-                self.layer_norm = getattr(layer_norm_variants, norm_type)
-            except AttributeError:
-                raise_log(
-                    AttributeError("please provide a valid layer norm type"),
-                )
+        try:
+            self.layer_norm = getattr(layer_norm_variants, norm_type)
+        except AttributeError:
+            raise_log(
+                AttributeError("please provide a valid layer norm type"),
+            )
 
         # initialize last batch size to check if new mask needs to be generated
         self.batch_size_last = -1
@@ -737,7 +734,7 @@ class TFTModel(MixedCovariatesTorchModel):
             a ``QuantileRegression`` likelihood.
         norm_type: str
             The type of LayerNorm variant to use.  Default: ``LayerNorm``. Options available are
-            ["LayerNorm", "RMSNorm", "PowerNorm"]
+            ["LayerNorm", "RMSNorm", "LayerNormNoBias"]
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.

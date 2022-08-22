@@ -12,12 +12,16 @@ except ImportError:
 
 
 if TORCH_AVAILABLE:
-    from darts.models.components.layer_norm_variants import PowerNorm, RMSNorm
+    from darts.models.components.layer_norm_variants import (
+        LayerNorm,
+        LayerNormNoBias,
+        RMSNorm,
+    )
     from darts.tests.base_test_class import DartsBaseTestClass
 
     class LayerNormVariantsTestCase(DartsBaseTestClass):
         def test_lnv(self):
-            for layer_norm in [RMSNorm, PowerNorm]:
+            for layer_norm in [RMSNorm, LayerNorm, LayerNormNoBias]:
                 ln = layer_norm(4)
                 inputs = torch.zeros(1, 4, 4)
                 ln(inputs)
