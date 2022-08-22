@@ -4076,7 +4076,7 @@ class TimeSeries:
 
             # restore a RangeIndex if needed:
             time_idx = xa_.get_index(self._time_dim)
-            if isinstance(time_idx, pd.Int64Index) and not isinstance(
+            if isinstance(time_idx, pd.Index) and not isinstance(
                 time_idx, pd.RangeIndex
             ):
                 xa_ = xa_.assign_coords(
