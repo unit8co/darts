@@ -49,7 +49,7 @@ if TORCH_AVAILABLE:
             BlockRNNModel,
             {
                 "model": "RNN",
-                "hidden_size": 10,
+                "hidden_dim": 10,
                 "n_rnn_layers": 1,
                 "batch_size": 32,
                 "n_epochs": 10,
