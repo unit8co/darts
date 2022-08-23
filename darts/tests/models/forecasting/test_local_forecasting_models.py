@@ -430,7 +430,6 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                     # resets patch_retrain_func call_count to 0
                     retrain.call_count = 0
                     retrain.side_effect = [True, False] * (len(series) // 2)
-                    # retrain.return_value = True
 
                 fit_method_to_patch = f"darts.models.forecasting.forecasting_model.{model_type}._fit_wrapper"
                 predict_method_to_patch = f"darts.models.forecasting.forecasting_model.{model_type}._predict_wrapper"
@@ -450,13 +449,9 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                             retrain=retrain,
                         )
 
-                        assert patch_predict_method.called
                         assert patch_predict_method.call_count > 1
-
-                        assert patch_fit_method.called
                         assert patch_fit_method.call_count > 1
 
                         if isinstance(retrain, Mock):
                             # check that patch_retrain_func has been called at each iteration
-                            assert retrain.called
                             assert retrain.call_count > 1
