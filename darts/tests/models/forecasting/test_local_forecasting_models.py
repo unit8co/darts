@@ -1,8 +1,5 @@
 from typing import Callable
 from unittest.mock import Mock, patch
-import os
-import shutil
-import tempfile
 
 import numpy as np
 import pandas as pd
