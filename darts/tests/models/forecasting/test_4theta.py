@@ -76,3 +76,51 @@ class FourThetaTestCase(DartsBaseTestClass):
         self.assertTrue(
             mape(val_series, forecast_best) <= mape(val_series, forecast_random)
         )
+
+    def test_min_train_series_length_with_seasonality(self):
+        seasonality_period = 12
+        fourtheta = FourTheta(
+            model_mode=ModelMode.MULTIPLICATIVE,
+            trend_mode=TrendMode.EXPONENTIAL,
+            season_mode=SeasonalityMode.ADDITIVE,
+            seasonality_period=seasonality_period,
+            normalization=False,
+        )
+        theta = Theta(
+            season_mode=SeasonalityMode.ADDITIVE,
+            seasonality_period=seasonality_period,
+        )
+        self.assertEqual(fourtheta.min_train_series_length, 2 * seasonality_period)
+        self.assertEqual(theta.min_train_series_length, 2 * seasonality_period)
+
+    def test_min_train_series_length_without_seasonality(self):
+        fourtheta = FourTheta(
+            model_mode=ModelMode.MULTIPLICATIVE,
+            trend_mode=TrendMode.EXPONENTIAL,
+            season_mode=SeasonalityMode.ADDITIVE,
+            seasonality_period=None,
+            normalization=False,
+        )
+        theta = Theta(
+            season_mode=SeasonalityMode.ADDITIVE,
+            seasonality_period=None,
+        )
+        self.assertEqual(fourtheta.min_train_series_length, 3)
+        self.assertEqual(theta.min_train_series_length, 3)
+
+    def test_fit_insufficient_train_series_length(self):
+        sine_series = st(length=21, freq="MS")
+        with self.assertRaises(ValueError):
+            fourtheta = FourTheta(
+                model_mode=ModelMode.MULTIPLICATIVE,
+                trend_mode=TrendMode.EXPONENTIAL,
+                season_mode=SeasonalityMode.ADDITIVE,
+                seasonality_period=12,
+            )
+            fourtheta.fit(sine_series)
+        with self.assertRaises(ValueError):
+            theta = Theta(
+                season_mode=SeasonalityMode.ADDITIVE,
+                seasonality_period=12,
+            )
+            theta.fit(sine_series)

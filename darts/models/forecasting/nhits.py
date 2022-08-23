@@ -349,7 +349,6 @@ class _NHiTSModule(PLPastCovariatesModule):
             The number of blocks making up every stack.
         num_layers
             The number of fully connected layers preceding the final forking layers in each block of every stack.
-            Only used if `generic_architecture` is set to `True`.
         layer_widths
             Determines the number of neurons that make up each fully connected layer in each block of every stack.
             If a list is passed, it must have a length equal to `num_stacks` and every entry in that list corresponds
@@ -506,7 +505,6 @@ class NHiTSModel(PastCovariatesTorchModel):
             The number of blocks making up every stack.
         num_layers
             The number of fully connected layers preceding the final forking layers in each block of every stack.
-            Only used if `generic_architecture` is set to `True`.
         layer_widths
             Determines the number of neurons that make up each fully connected layer in each block of every stack.
             If a list is passed, it must have a length equal to `num_stacks` and every entry in that list corresponds
@@ -703,7 +701,7 @@ class NHiTSModel(PastCovariatesTorchModel):
         self.pooling_kernel_sizes, self.n_freq_downsample = sizes
 
         if isinstance(layer_widths, int):
-            self.layer_widths = [layer_widths] * num_stacks
+            self.layer_widths = [layer_widths] * self.num_stacks
 
     @staticmethod
     def _prepare_pooling_downsampling(

@@ -12,13 +12,16 @@ one or several time series. The function `predict()` applies `f()` on one or sev
 to obtain forecasts for a desired number of time stamps into the future.
 """
 import copy
+import datetime
 import inspect
+import os
+import pickle
 import time
 from abc import ABC, ABCMeta, abstractmethod
 from collections import OrderedDict
 from itertools import product
 from random import sample
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, BinaryIO, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -33,6 +36,7 @@ from darts.utils import (
     _retrain_wrapper,
     _with_sanity_checks,
 )
+from darts.utils.data.encoders import SequentialEncoder
 from darts.utils.timeseries_generation import (
     _build_forecast_series,
     _generate_new_dates,
@@ -868,7 +872,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return model_class(**best_param_combination), best_param_combination, min_error
 
     def residuals(
-        self, series: TimeSeries, forecast_horizon: int = 1, verbose: bool = False
+        self,
+        series: TimeSeries,
+        forecast_horizon: int = 1,
+        retrain: bool = True,
+        verbose: bool = False,
     ) -> TimeSeries:
         """Compute the residuals produced by this model on a univariate time series.
 
@@ -891,6 +899,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             The univariate TimeSeries instance which the residuals will be computed for.
         forecast_horizon
             The forecasting horizon used to predict each fitted value.
+        retrain
+            Whether to train the model at each iteration, for models that support it.
+            If False, the model is not trained at all. Default: True
         verbose
             Whether to print progress.
         Returns
@@ -909,7 +920,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             start=first_index,
             forecast_horizon=forecast_horizon,
             stride=1,
-            retrain=True,
+            retrain=retrain,
             last_points_only=True,
             verbose=verbose,
         )
@@ -957,6 +968,75 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             self._model_params if hasattr(self, "_model_params") else self._model_call
         )
 
+    @classmethod
+    def _default_save_path(cls) -> str:
+        return f"{cls.__name__}_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}"
+
+    def save(self, path: Optional[Union[str, BinaryIO]] = None, **pkl_kwargs) -> None:
+        """
+        Saves the model under a given path or file handle.
+
+        Example for saving and loading a :class:`RegressionModel`:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from darts.models import RegressionModel
+
+                model = RegressionModel(lags=4)
+
+                model.save("my_model.pkl")
+                model_loaded = RegressionModel.load("my_model.pkl")
+            ..
+
+        Parameters
+        ----------
+        path
+            Path or file handle under which to save the model at its current state. If no path is specified, the model
+            is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pkl"``.
+            E.g., ``"RegressionModel_2020-01-01_12:00:00.pkl"``.
+        pkl_kwargs
+            Keyword arguments passed to `pickle.dump()`
+        """
+
+        if path is None:
+            # default path
+            path = self._default_save_path() + ".pkl"
+
+        if isinstance(path, str):
+            # save the whole object using pickle
+            with open(path, "wb") as handle:
+                pickle.dump(obj=self, file=handle, **pkl_kwargs)
+        else:
+            # save the whole object using pickle
+            pickle.dump(obj=self, file=path, **pkl_kwargs)
+
+    @staticmethod
+    def load(path: Union[str, BinaryIO]) -> "ForecastingModel":
+        """
+        Loads the model from a given path or file handle.
+
+        Parameters
+        ----------
+        path
+            Path or file handle from which to load the model.
+        """
+
+        if isinstance(path, str):
+            raise_if_not(
+                os.path.exists(path),
+                f"The file {path} doesn't exist",
+                logger,
+            )
+
+            with open(path, "rb") as handle:
+                model = pickle.load(file=handle)
+        else:
+
+            model = pickle.load(file=path)
+
+        return model
+
 
 class GlobalForecastingModel(ForecastingModel, ABC):
     """The base class for "global" forecasting models, handling several time series and optional covariates.
@@ -981,6 +1061,13 @@ class GlobalForecastingModel(ForecastingModel, ABC):
 
     _expect_past_covariates, _expect_future_covariates = False, False
     past_covariate_series, future_covariate_series = None, None
+
+    def __init__(self, add_encoders: Optional[dict] = None):
+        super().__init__()
+
+        # by default models do not use encoders
+        self.add_encoders = add_encoders
+        self.encoders: Optional[SequentialEncoder] = None
 
     @abstractmethod
     def fit(
@@ -1133,6 +1220,33 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
         """GlobalForecastingModel supports historical forecasts without retraining the model"""
         return True
+
+    @property
+    @abstractmethod
+    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
+        """Abstract property that returns model specific encoder settings that are used to initialize the encoders.
+
+        Must return Tuple (input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates)
+        """
+        pass
+
+    def initialize_encoders(self) -> SequentialEncoder:
+        """instantiates the SequentialEncoder object based on self._model_encoder_settings and parameter
+        ``add_encoders`` used at model creation"""
+        (
+            input_chunk_length,
+            output_chunk_length,
+            takes_past_covariates,
+            takes_future_covariates,
+        ) = self._model_encoder_settings
+
+        return SequentialEncoder(
+            add_encoders=self.add_encoders,
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            takes_past_covariates=takes_past_covariates,
+            takes_future_covariates=takes_future_covariates,
+        )
 
 
 class DualCovariatesForecastingModel(ForecastingModel, ABC):
