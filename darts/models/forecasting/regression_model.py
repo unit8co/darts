@@ -497,6 +497,10 @@ class RegressionModel(GlobalForecastingModel):
                         self.model = MultiOutputRegressor(
                             self.model, n_jobs=n_jobs_multioutput_wrapper
                         )
+        # assures the model is a single output regressor in case it is wrongly wrapped on a MultiOutputRegressor
+        # this can happen when using a hyperparameter optimizer
+        elif hasatt(self.model, 'estimator') and self.output_chunk_length == 1:
+            self.model = self.model.estimator
 
         # warn if n_jobs_multioutput_wrapper was provided but not used
         if (
