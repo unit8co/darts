@@ -1,3 +1,6 @@
+import os
+import shutil
+import tempfile
 from typing import Callable
 from unittest.mock import Mock, patch
 
