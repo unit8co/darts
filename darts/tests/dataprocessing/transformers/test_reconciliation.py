@@ -105,6 +105,10 @@ class ReconciliationTestCase(unittest.TestCase):
         recon.fit(self.pred)
         self._assert_reconciliation(recon)
 
+        # fit_transform() should also work
+        recon = TopDownReconciliator()
+        _ = recon.fit_transform(self.pred)
+
     def test_mint(self):
         # ols
         recon = MinTReconciliator("ols")
@@ -130,6 +134,10 @@ class ReconciliationTestCase(unittest.TestCase):
         recon = MinTReconciliator("wls_val")
         recon.fit(self.series)
         self._assert_reconciliation(recon)
+
+        # fit_transform() should also work
+        recon = MinTReconciliator()
+        _ = recon.fit_transform(self.series)
 
     def test_summation_matrix(self):
         np.testing.assert_equal(
