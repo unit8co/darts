@@ -55,7 +55,7 @@ class StatsForecastETS(DualCovariatesForecastingModel):
         return "ETS-Statsforecasts"
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-        # super()._fit(series, future_covariates)
+        super()._fit(series, future_covariates)
         series._assert_univariate()
         series = self.training_series
         self.model.fit(
@@ -74,7 +74,6 @@ class StatsForecastETS(DualCovariatesForecastingModel):
         forecast_df = self.model.predict(
             h=n,
             X=future_covariates.values(copy=False) if future_covariates else None,
-            # level=68,  # ask one std for the confidence interval. Note, we're limited to int...
         )
 
         return self._build_forecast_series(forecast_df["mean"])

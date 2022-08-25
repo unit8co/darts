@@ -76,7 +76,7 @@ class Croston(DualCovariatesForecastingModel):
         return "Croston"
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-        # super().fit(series, future_covariates)
+        super()._fit(series, future_covariates)
         series._assert_univariate()
         series = self.training_series
 
@@ -95,8 +95,7 @@ class Croston(DualCovariatesForecastingModel):
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
     ):
-        # super().predict(n, future_covariates, num_samples)
-
+        super()._predict(n, future_covariates, num_samples)
         values = self.model.predict(
             h=n,
             X=future_covariates.values(copy=False).flatten()
