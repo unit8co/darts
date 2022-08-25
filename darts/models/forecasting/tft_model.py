@@ -55,7 +55,7 @@ class _TFTModule(PLMixedCovariatesModule):
         categorical_embedding_sizes: Dict[str, Tuple[int, int]],
         dropout: float,
         add_relative_index: bool,
-        norm_type: str,
+        norm_type: Union[str, nn.Module],
         **kwargs,
     ):
 
@@ -103,7 +103,7 @@ class _TFTModule(PLMixedCovariatesModule):
         likelihood
             The likelihood model to be used for probabilistic forecasts. By default, the TFT uses
             a ``QuantileRegression`` likelihood.
-        norm_type: str
+        norm_type: str | nn.Module
             The type of LayerNorm variant to use.
         **kwargs
             all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
@@ -124,12 +124,15 @@ class _TFTModule(PLMixedCovariatesModule):
         self.dropout = dropout
         self.add_relative_index = add_relative_index
 
-        try:
-            self.layer_norm = getattr(layer_norm_variants, norm_type)
-        except AttributeError:
-            raise_log(
-                AttributeError("please provide a valid layer norm type"),
-            )
+        if issubclass(norm_type, nn.Module):
+            self.layer_norm = norm_type
+        else:
+            try:
+                self.layer_norm = getattr(layer_norm_variants, norm_type)
+            except AttributeError:
+                raise_log(
+                    AttributeError("please provide a valid layer norm type"),
+                )
 
         # initialize last batch size to check if new mask needs to be generated
         self.batch_size_last = -1
@@ -662,7 +665,7 @@ class TFTModel(MixedCovariatesTorchModel):
         add_relative_index: bool = False,
         loss_fn: Optional[nn.Module] = None,
         likelihood: Optional[Likelihood] = None,
-        norm_type: str = "LayerNorm",
+        norm_type: Union[str, nn.Module] = "LayerNorm",
         **kwargs,
     ):
         """Temporal Fusion Transformers (TFT) for Interpretable Time Series Forecasting.
@@ -725,16 +728,16 @@ class TFTModel(MixedCovariatesTorchModel):
             This allows to use the TFTModel without having to pass future_covariates to :func:`fit()` and
             :func:`train()`. It gives a value to the position of each step from input and output chunk relative
             to the prediction point. The values are normalized with ``input_chunk_length``.
-        loss_fn
+        loss_fn: nn.Module
             PyTorch loss function used for training. By default, the TFT model is probabilistic and uses a
             ``likelihood`` instead (``QuantileRegression``). To make the model deterministic, you can set the `
             `likelihood`` to None and give a ``loss_fn`` argument.
         likelihood
             The likelihood model to be used for probabilistic forecasts. By default, the TFT uses
             a ``QuantileRegression`` likelihood.
-        norm_type: str
-            The type of LayerNorm variant to use.  Default: ``LayerNorm``. Options available are
-            ["LayerNorm", "RMSNorm", "LayerNormNoBias"]
+        norm_type: str | nn.Module
+            The type of LayerNorm variant to use.  Default: ``LayerNorm``. Avaliable options are
+            ["LayerNorm", "RMSNorm", "LayerNormNoBias"], or provide a custom nn.Module.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
