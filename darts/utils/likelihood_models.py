@@ -173,11 +173,19 @@ class Likelihood(ABC):
 
 
 class GaussianLikelihood(Likelihood):
-    def __init__(self, prior_mu=None, prior_sigma=None, prior_strength=1.0):
+    def __init__(
+        self, prior_mu=None, prior_sigma=None, prior_strength=1.0, beta_nll=0.0
+    ):
         """
         Univariate Gaussian distribution.
 
         https://en.wikipedia.org/wiki/Normal_distribution
+
+        Instead of the pure negative log likelihood (NLL) loss, the loss function used
+        is the :math:`\\beta`-NLL loss [1]_, parameterized by ``beta_nll`` in (0, 1).
+        For ``beta_nll=0`` it is equivalent to NLL, however larger values of ``beta_nll`` can
+        mitigate issues with NLL causing effective under-sampling of poorly fit regions
+        during training. ``beta_nll=1`` provides the same gradient for the mean as the MSE loss.
 
         - Univariate continuous distribution.
         - Support: :math:`\\mathbb{R}`.
@@ -191,21 +199,38 @@ class GaussianLikelihood(Likelihood):
             standard deviation (or scale) of the prior Gaussian distribution (default: None)
         prior_strength
             strength of the loss regularisation induced by the prior
+        beta_nll
+            The parameter :math:`0 \\leq \\beta \\leq 1` of the :math:`\\beta`-NLL loss [1]_.
+            Default: 0. (equivalent to NLL)
+
+        References
+        ----------
+        .. [1] Seitzer et al.,
+               "On the Pitfalls of Heteroscedastic Uncertainty Estimation with Probabilistic Neural Networks"
+               https://arxiv.org/abs/2203.09168
         """
         self.prior_mu = prior_mu
         self.prior_sigma = prior_sigma
+        self.beta_nll = beta_nll
         _check_strict_positive(self.prior_sigma, "sigma")
 
-        self.nllloss = nn.GaussianNLLLoss(reduction="mean", full=True)
+        self.nllloss = nn.GaussianNLLLoss(
+            reduction="none" if self.beta_nll > 0.0 else "mean", full=True
+        )
         self.softplus = nn.Softplus()
 
         super().__init__(prior_strength)
 
     def _nllloss(self, params_out, target):
         means_out, sigmas_out = params_out
-        return self.nllloss(
-            means_out.contiguous(), target.contiguous(), sigmas_out.contiguous()
-        )
+        # Note: GaussianNLLLoss expects variance (and not stdev)
+        cont_var = sigmas_out.contiguous() ** 2
+        loss = self.nllloss(means_out.contiguous(), target.contiguous(), cont_var)
+        # apply Beta-NLL
+        if self.beta_nll > 0.0:
+            # Note: there is no mean reduction if beta_nll > 0, so we compute it here
+            loss = (loss * (cont_var.detach() ** self.beta_nll)).mean()
+        return loss
 
     @property
     def _prior_params(self):
