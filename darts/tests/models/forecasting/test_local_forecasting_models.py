@@ -41,7 +41,7 @@ models = [
     (ExponentialSmoothing(), 5.6),
     (ARIMA(12, 2, 1), 10),
     (ARIMA(1, 1, 1), 40),
-    (StatsForecastAutoARIMA(period=12), 4.8),
+    (StatsForecastAutoARIMA(season_length=12), 4.8),
     (Croston(version="classic"), 34),
     (Croston(version="tsb", alpha_d=0.1, alpha_p=0.1), 34),
     (Theta(), 11.3),
@@ -66,7 +66,7 @@ multivariate_models = [
     (KalmanForecaster(dim_x=30), 30.0),
 ]
 
-dual_models = [ARIMA(), StatsForecastAutoARIMA(period=12)]
+dual_models = [ARIMA(), StatsForecastAutoARIMA(season_length=12)]
 
 
 models.append((Prophet(), 13.5))

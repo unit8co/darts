@@ -6,7 +6,7 @@ StatsForecastAutoARIMA
 from typing import Optional
 
 import numpy as np
-from statsforecast.arima import AutoARIMA as SFAutoARIMA
+from statsforecast.models import AutoARIMA as SFAutoARIMA
 
 from darts import TimeSeries
 from darts.models.forecasting.forecasting_model import DualCovariatesForecastingModel
@@ -23,12 +23,25 @@ class StatsForecastAutoARIMA(DualCovariatesForecastingModel):
 
         It is probabilistic, whereas :class:`AutoARIMA` is not.
 
+        We refer to the `statsforecast AutoARIMA documentation
+        <https://nixtla.github.io/statsforecast/models.html#arima-methods>`_
+        for the documentation of the arguments.
+
         Parameters
         ----------
         autoarima_args
-            Positional arguments for ``statsforecasts.arima.AutoARIMA``.
+            Positional arguments for ``statsforecasts.models.AutoARIMA``.
         autoarima_kwargs
-            Keyword arguments for ``statsforecasts.arima.AutoARIMA``.
+            Keyword arguments for ``statsforecasts.models.AutoARIMA``.
+
+        Examples
+        --------
+        >>> from darts.models import StatsForecastAutoARIMA
+        >>> from darts.datasets import AirPassengersDataset
+        >>> series = AirPassengersDataset().load()
+        >>> model = StatsForecastAutoARIMA(season_length=12)
+        >>> model.fit(series[:-36])
+        >>> pred = model.predict(36, num_samples=100)
         """
         super().__init__()
         self.model = SFAutoARIMA(*autoarima_args, **autoarima_kwargs)
@@ -56,12 +69,12 @@ class StatsForecastAutoARIMA(DualCovariatesForecastingModel):
         forecast_df = self.model.predict(
             h=n,
             X=future_covariates.values(copy=False) if future_covariates else None,
-            level=68,  # ask one std for the confidence interval. Note, we're limited to int...
+            level=(68.27,),  # ask one std for the confidence interval.
         )
 
-        mu = forecast_df["mean"].values
+        mu = forecast_df["mean"]
         if num_samples > 1:
-            std = forecast_df["hi_68%"].values - mu
+            std = forecast_df["hi-68.27"] - mu
             samples = np.random.normal(loc=mu, scale=std, size=(num_samples, n)).T
             samples = np.expand_dims(samples, axis=1)
         else:
