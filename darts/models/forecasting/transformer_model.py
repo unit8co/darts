@@ -126,7 +126,7 @@ class _TransformerModule(PLPastCovariatesModule):
         dim_feedforward: int,
         dropout: float,
         activation: str,
-        norm_type: Union[str, nn.Module, None],
+        norm_type: Union[str, nn.Module, None] = None,
         custom_encoder: Optional[nn.Module] = None,
         custom_decoder: Optional[nn.Module] = None,
         **kwargs,

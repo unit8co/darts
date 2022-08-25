@@ -49,6 +49,7 @@ if TORCH_AVAILABLE:
             dim_feedforward=2048,
             dropout=0.1,
             activation="relu",
+            norm_type=None,
             custom_encoder=None,
             custom_decoder=None,
         )
