@@ -124,15 +124,15 @@ class _TFTModule(PLMixedCovariatesModule):
         self.dropout = dropout
         self.add_relative_index = add_relative_index
 
-        if issubclass(norm_type, nn.Module):
-            self.layer_norm = norm_type
-        else:
+        if isinstance(norm_type, str):
             try:
                 self.layer_norm = getattr(layer_norm_variants, norm_type)
             except AttributeError:
                 raise_log(
                     AttributeError("please provide a valid layer norm type"),
                 )
+        else:
+            self.layer_norm = norm_type
 
         # initialize last batch size to check if new mask needs to be generated
         self.batch_size_last = -1
