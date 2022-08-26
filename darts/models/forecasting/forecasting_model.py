@@ -612,7 +612,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 - `train_series (TimeSeries)`: train series up to `pred_time`
                 - `past_covariates (TimeSeries)`: past_covariates series up to `pred_time`
                 - `future_covariates (TimeSeries)`: future_covariates series up
-                to `min(pred_time + series.freq * forecast_horizon, series.end_time())`
+                  to `min(pred_time + series.freq * forecast_horizon, series.end_time())`
+                  
             Note: some models do require being retrained every time
             and do not support anything else than `retrain=True`.
         overlap_end
