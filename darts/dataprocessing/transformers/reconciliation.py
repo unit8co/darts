@@ -87,7 +87,7 @@ class BottomUpReconciliator(BaseDataTransformer):
         return np.concatenate([np.zeros((m, n - m)), np.eye(m)], axis=1)
 
     @staticmethod
-    def ts_transform(series: TimeSeries) -> TimeSeries:
+    def ts_transform(series: TimeSeries, *args, **kwargs) -> TimeSeries:
         S = _get_summation_matrix(series)
         G = BottomUpReconciliator.get_projection_matrix(series)
         return _reconcile_from_S_and_G(series, S, G)
@@ -103,12 +103,12 @@ class TopDownReconciliator(FittableDataTransformer):
     """
 
     @staticmethod
-    def ts_fit(series: TimeSeries) -> np.ndarray:
+    def ts_fit(series: TimeSeries, *args, **kwargs) -> np.ndarray:
         G = TopDownReconciliator.get_projection_matrix(series)
         return G
 
     @staticmethod
-    def ts_transform(series: TimeSeries, G: np.ndarray) -> TimeSeries:
+    def ts_transform(series: TimeSeries, G: np.ndarray, *args, **kwargs) -> TimeSeries:
         S = _get_summation_matrix(series)
         return _reconcile_from_S_and_G(series, S, G)
 
@@ -189,12 +189,12 @@ class MinTReconciliator(FittableDataTransformer):
         self.method = method
 
     @staticmethod
-    def ts_fit(series: TimeSeries, method: str) -> np.ndarray:
+    def ts_fit(series: TimeSeries, method: str, *args, **kwargs) -> np.ndarray:
         S, G = MinTReconciliator.get_matrices(series, method)
         return S, G
 
     @staticmethod
-    def ts_transform(series: TimeSeries, S_and_G) -> TimeSeries:
+    def ts_transform(series: TimeSeries, S_and_G, *args, **kwargs) -> TimeSeries:
         S, G = S_and_G
         return _reconcile_from_S_and_G(series, S, G)
 
