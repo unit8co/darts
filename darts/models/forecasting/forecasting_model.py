@@ -365,6 +365,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             In the case of ``int``: the model is retrained every `retrain` iterations.
             In the case of ``Callable``: the model is retrained whenever callable returns `True`.
             Arguments passed to the callable are as follows:
+            
                 - `pred_time (pd.Timestamp or int)`: timestamp of forecast time (end of the training series)
                 - `train_series (TimeSeries)`: train series up to `pred_time`
                 - `past_covariates (TimeSeries)`: past_covariates series up to `pred_time`
