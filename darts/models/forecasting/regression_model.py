@@ -31,11 +31,11 @@ import numpy as np
 import pandas as pd
 from catboost import CatBoostRegressor
 from sklearn.linear_model import LinearRegression
-from sklearn.multioutput import MultiOutputRegressor
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
+from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import _check_quantiles
 
 logger = get_logger(__name__)

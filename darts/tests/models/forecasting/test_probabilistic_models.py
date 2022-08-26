@@ -130,7 +130,7 @@ if TORCH_AVAILABLE:
                 "random_state": 0,
                 "likelihood": GaussianLikelihood(),
             },
-            0.3,
+            1,
         ),
     ]
 
