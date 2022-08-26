@@ -43,7 +43,7 @@ models = [
     (ARIMA(12, 2, 1), 10),
     (ARIMA(1, 1, 1), 40),
     (StatsForecastAutoARIMA(season_length=12), 4.8),
-    (StatsForecastETS(season_length=12), 4.8),
+    (StatsForecastETS(season_length=12, model="AAZ"), 4.0),
     (Croston(version="classic"), 34),
     (Croston(version="tsb", alpha_d=0.1, alpha_p=0.1), 34),
     (Theta(), 11.3),
