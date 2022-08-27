@@ -44,7 +44,7 @@ def _generate_coder(
         Either `torch.nn.TransformerEncoder` or `...TransformerDecoder`
     layer_cls
         Either `darts.models.components.transformer.CustomFeedForwardEncoderLayer`,
-        `...CustomFeedForwardDecoderLayer`, `nn.TransformerEncoderLayer`, or `nn.TransformerDencoderLayer`.
+        `...CustomFeedForwardDecoderLayer`, `nn.TransformerEncoderLayer`, or `nn.TransformerDecoderLayer`.
     ffn_cls
         One of Darts' Position-wise Feed-Forward Network variants `from darts.models.components.glu_variants`
     """
