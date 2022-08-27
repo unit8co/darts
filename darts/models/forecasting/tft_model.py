@@ -736,7 +736,7 @@ class TFTModel(MixedCovariatesTorchModel):
             The likelihood model to be used for probabilistic forecasts. By default, the TFT uses
             a ``QuantileRegression`` likelihood.
         norm_type: str | nn.Module
-            The type of LayerNorm variant to use.  Default: ``LayerNorm``. Avaliable options are
+            The type of LayerNorm variant to use.  Default: ``LayerNorm``. Available options are
             ["LayerNorm", "RMSNorm", "LayerNormNoBias"], or provide a custom nn.Module.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
