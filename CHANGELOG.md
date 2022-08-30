@@ -5,6 +5,8 @@ Darts is still in an early development phase and we cannot always guarantee back
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
+- Added support for retraining model(s) every `n` iteration and on custom condition in `historical_forecasts` method of `ForecastingModel` abstract class. Addressed issues [#135](https://github.com/unit8co/darts/issues/135) and [#623](https://github.com/unit8co/darts/issues/623) by [Francesco Bruzzesi](https://github.com/fbruzzesi).
+
 [Full Changelog](https://github.com/unit8co/darts/compare/0.21.0...master)
 
 
