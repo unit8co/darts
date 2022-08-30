@@ -26,6 +26,7 @@ from darts.models import (
     Prophet,
     RandomForest,
     StatsForecastAutoARIMA,
+    StatsForecastETS,
     Theta,
 )
 from darts.models.forecasting.forecasting_model import (
@@ -43,7 +44,8 @@ models = [
     (ExponentialSmoothing(), 5.6),
     (ARIMA(12, 2, 1), 10),
     (ARIMA(1, 1, 1), 40),
-    (StatsForecastAutoARIMA(period=12), 4.8),
+    (StatsForecastAutoARIMA(season_length=12), 4.8),
+    (StatsForecastETS(season_length=12, model="AAZ"), 4.0),
     (Croston(version="classic"), 34),
     (Croston(version="tsb", alpha_d=0.1, alpha_p=0.1), 34),
     (Theta(), 11.3),
@@ -59,6 +61,10 @@ models = [
     (KalmanForecaster(dim_x=3), 17.0),
     (LinearRegressionModel(lags=12), 11.0),
     (RandomForest(lags=12, n_estimators=5, max_depth=3), 17.0),
+    (Prophet(), 13.5),
+    (AutoARIMA(), 12.2),
+    (TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 8.0),
+    (BATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 10.0),
 ]
 
 # forecasting models with exogenous variables support
@@ -68,16 +74,13 @@ multivariate_models = [
     (KalmanForecaster(dim_x=30), 30.0),
 ]
 
-dual_models = [ARIMA(), StatsForecastAutoARIMA(period=12)]
-
-
-models.append((Prophet(), 13.5))
-dual_models.append(Prophet())
-
-models.append((AutoARIMA(), 12.2))
-models.append((TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 8.0))
-models.append((BATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 10.0))
-dual_models.append(AutoARIMA())
+dual_models = [
+    ARIMA(),
+    StatsForecastAutoARIMA(season_length=12),
+    StatsForecastETS(season_length=12),
+    Prophet(),
+    AutoARIMA(),
+]
 
 
 class LocalForecastingModelsTestCase(DartsBaseTestClass):
