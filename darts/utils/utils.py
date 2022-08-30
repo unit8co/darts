@@ -316,3 +316,22 @@ def _check_quantiles(quantiles):
         "quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles "
         "higher than `q=0.5`",
     )
+
+
+def _retrain_wrapper(func: Callable[..., bool]):
+    """Utility function that keeps original signature in `retrain` function param in `historical_forecasts` method"""
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+
+        original_signature = tuple(signature(func).parameters.keys())
+        result = func(
+            *args, **{k: v for k, v in kwargs.items() if k in original_signature}
+        )
+
+        if not isinstance(result, bool):
+            raise_log(ValueError("Return value of `retrain` must be bool"), logger)
+
+        return result
+
+    return wrapper
