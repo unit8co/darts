@@ -32,6 +32,7 @@ from darts.explainability.explainability import ForecastingModelExplainer
 from darts.logging import get_logger, raise_if, raise_log
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.models.forecasting.regression_model import RegressionModel
+from darts.utils.data.tabularization import create_lagged_data
 
 logger = get_logger(__name__)
 
@@ -403,6 +404,9 @@ class _RegressionShapExplainers:
         )
 
         self.target_names = ShapExplainer.target_names
+        self.past_covariates_names = ShapExplainer.past_covariates_names
+        self.future_covariates_names = ShapExplainer.future_covariates_names
+
         self.n = ShapExplainer.n
         self.shap_method = ShapExplainer.shap_method
         self.background_series = ShapExplainer.background_series
@@ -508,7 +512,7 @@ class _RegressionShapExplainers:
     ):
 
         model_name = type(model_sklearn).__name__
-        print(model_name)
+
         if shap_method is None:
             if model_name in self.default_sklearn_shap_explainers.keys():
                 shap_method = self.default_sklearn_shap_explainers[model_name]
@@ -539,6 +543,7 @@ class _RegressionShapExplainers:
                 model_sklearn.predict, background_X, keep_index=True, **kwargs
             )
         elif shap_method == _ShapMethod.LINEAR:
+            print(kwargs)
             explainer = shap.LinearExplainer(model_sklearn, background_X, **kwargs)
         elif shap_method == _ShapMethod.DEEP:
             explainer = shap.LinearExplainer(model_sklearn, background_X, **kwargs)
@@ -548,6 +553,50 @@ class _RegressionShapExplainers:
         return explainer
 
     def _create_regression_model_shap_X(
+        self, target_series, past_covariates, future_covariates, n_samples=None
+    ):
+
+        lags_list = self.model.lags.get("target")
+        lags_past_covariates_list = self.model.lags.get("past")
+        lags_future_covariates_list = self.model.lags.get("future")
+
+        X, _ = create_lagged_data(
+            target_series,
+            self.n,
+            past_covariates,
+            future_covariates,
+            lags_list,
+            lags_past_covariates_list,
+            lags_future_covariates_list,
+        )
+
+        X = pd.DataFrame(X)
+
+        # We keep the creation order of the different lags/features in create_lagged_data
+        lags_names_list = []
+        if lags_list:
+            for lag in lags_list:
+                for t_name in self.target_names:
+                    lags_names_list.append(t_name + "_target_lag" + str(lag))
+        if lags_past_covariates_list:
+            for lag in lags_past_covariates_list:
+                for t_name in self.past_covariates_names:
+                    lags_names_list.append(t_name + "_past_cov_lag" + str(lag))
+        if lags_future_covariates_list:
+            for lag in lags_future_covariates_list:
+                for t_name in self.future_covariates_names:
+                    lags_names_list.append(t_name + "_fut_cov_lag" + str(lag))
+
+        X = X.rename(
+            columns={
+                name: lags_names_list[idx]
+                for idx, name in enumerate(X.columns.to_list())
+            }
+        )
+
+        return X
+
+    def _create_regression_model_shap_X_(
         self, target_series, past_covariates, future_covariates, n_samples=None
     ):
         """
@@ -631,5 +680,7 @@ class _RegressionShapExplainers:
         X = pd.concat(Xs, axis=0)
         if n_samples:
             X = shap.utils.sample(X, n_samples)
+
+        print(X)
 
         return X

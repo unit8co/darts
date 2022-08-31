@@ -116,22 +116,27 @@ class ForecastingModelExplainer(ABC):
                 else None
             )
 
-        raise_if(
-            self.model.uses_past_covariates and self.background_past_covariates is None,
-            "A background past covariates is not provided, but the model needs past covariates.",
-        )
+        if self.model.uses_past_covariates:
+            raise_if(
+                self.model._expect_past_covariates
+                and self.background_past_covariates is None,
+                "A background past covariates is not provided, but the model needs past covariates.",
+            )
 
-        raise_if(
-            self.model.uses_future_covariates
-            and self.background_future_covariates is None,
-            "A background future covariates is not provided, but the model needs future covariates.",
-        )
+        if self.model.uses_future_covariates:
+            raise_if(
+                self.model._expect_future_covariates
+                and self.background_future_covariates is None,
+                "A background future covariates is not provided, but the model needs future covariates.",
+            )
 
         self.target_names = self.background_series[0].columns.to_list()
+        self.past_covariates_names = None
         if self.background_past_covariates is not None:
             self.past_covariates_names = self.background_past_covariates[
                 0
             ].columns.to_list()
+        self.future_covariates_names = None
         if self.background_future_covariates is not None:
             self.future_covariates_names = self.background_future_covariates[
                 0
@@ -148,15 +153,9 @@ class ForecastingModelExplainer(ABC):
     def _check_background_covariates(self):
 
         if isinstance(self.model, RegressionModel):
-            len_target_min = (
-                len(self.model.lags["target"]) if self.model.lags["target"] else 0
-            )
-            len_past_min = (
-                len(self.model.lags["past"]) if self.model.lags["past"] else 0
-            )
-            len_future_min = (
-                len(self.model.lags["future"]) if self.model.lags["future"] else 0
-            )
+            len_target_min = len(self.model.lags.get("target") or [])
+            len_past_min = len(self.model.lags.get("past") or [])
+            len_future_min = len(self.model.lags.get("future") or [])
             min_length = max(len_target_min, len_past_min, len_future_min)
 
         elif isinstance(self.model, TorchForecastingModel):
@@ -189,16 +188,17 @@ class ForecastingModelExplainer(ABC):
         # sum(len(intersection(target, fut_cov, past_cov))- min_length+1). We compare this to a fixed constant min.
         nb_background_samples = 0
         for idx in range(len(self.background_series)):
-            nb_background_samples += max(
-                len(
-                    self.background_series[idx].time_index.intersection(
-                        self.background_past_covariates[idx].time_index.intersection(
-                            self.background_future_covariates[idx].time_index
-                        )
-                    )
+            inter_ = self.background_series[idx].time_index
+            if self.background_past_covariates:
+                inter_ = inter_.intersection(
+                    self.background_past_covariates[idx].time_index
                 )
-                - min_length
-                + 1,
+            if self.background_future_covariates:
+                inter_ = inter_.intersection(
+                    self.background_future_covariates[idx].time_index
+                )
+            nb_background_samples += max(
+                len(inter_) - min_length + 1,
                 0,
             )
         raise_if(
