@@ -104,7 +104,7 @@ class TimeSeries:
         if not (
             np.issubdtype(val_dtype, np.float64) or np.issubdtype(val_dtype, np.float32)
         ):
-            logger.warn(
+            logger.warning(
                 "TimeSeries is using a numeric type different from np.float32 or np.float64. "
                 "Not all functionalities may work properly. It is recommended casting your data to floating "
                 "point numbers before using TimeSeries."
@@ -3060,7 +3060,7 @@ class TimeSeries:
             kwargs["lw"] = 2
 
         if self.n_components > 10:
-            logger.warn(
+            logger.warning(
                 "Number of components is larger than 10 ({}). Plotting only the first 10 components.".format(
                     self.n_components
                 )
