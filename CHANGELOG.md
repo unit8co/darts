@@ -1,11 +1,11 @@
 
 # Changelog
 
-Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
+Darts is still in an early development phase, and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
-
 - Added support for retraining model(s) every `n` iteration and on custom condition in `historical_forecasts` method of `ForecastingModel` abstract class. Addressed issues [#135](https://github.com/unit8co/darts/issues/135) and [#623](https://github.com/unit8co/darts/issues/623) by [Francesco Bruzzesi](https://github.com/fbruzzesi).
+- New LayerNorm alternatives, RMSNorm and LayerNormNoBias [#1113](https://github.com/unit8co/darts/issues/1113) by [Greg DeVos](https://github.com/gdevos010).
 
 [Full Changelog](https://github.com/unit8co/darts/compare/0.21.0...master)
 
@@ -49,7 +49,7 @@ Darts is still in an early development phase and we cannot always guarantee back
 - Added support for static covariates in `TimeSeries` class. [#966](https://github.com/unit8co/darts/pull/966) by [Dennis Bader](https://github.com/dennisbader).
 - Added support for static covariates in TFT model. [#966](https://github.com/unit8co/darts/pull/966) by [Dennis Bader](https://github.com/dennisbader).
 - Support for storing hierarchy of components in `TimeSeries` (in view of hierarchical reconciliation) [#1012](https://github.com/unit8co/darts/pull/1012) by [Julien Herzen](https://github.com/hrzn).
-- New Reconciliation transformers for forececast reconciliation: bottom up, top down and MinT. [#1012](https://github.com/unit8co/darts/pull/1012) by [Julien Herzen](https://github.com/hrzn).
+- New Reconciliation transformers for forecast reconciliation: bottom up, top down and MinT. [#1012](https://github.com/unit8co/darts/pull/1012) by [Julien Herzen](https://github.com/hrzn).
 - Added support for Monte Carlo Dropout, as a way to capture model uncertainty with torch models at inference time. [#1013](https://github.com/unit8co/darts/pull/1013) by [Julien Herzen](https://github.com/hrzn).
 - New datasets: ETT and Electricity. [#617](https://github.com/unit8co/darts/pull/617)
   by [Greg DeVos](https://github.com/gdevos010)
