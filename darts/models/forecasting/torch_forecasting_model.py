@@ -949,7 +949,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # TODO: multiple training without loading from checkpoint is not trivial (I believe PyTorch-Lightning is still
         #  working on that, see https://github.com/PyTorchLightning/pytorch-lightning/issues/9636)
         if self.epochs_trained > 0 and not self.load_ckpt_path:
-            logger.warn(
+            logger.warning(
                 "Attempting to retrain the model without resuming from a checkpoint. This is currently "
                 "discouraged. Consider setting `save_checkpoints` to `True` and specifying `model_name` at model "
                 f"creation. Then call `model = {self.__class__.__name__}.load_from_checkpoint(model_name, "
