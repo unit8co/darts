@@ -2,9 +2,12 @@ import copy
 from typing import Callable, Union
 
 import numpy as np
+import pandas as pd
+import xarray as xr
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not
+from darts.timeseries import DIMS
 
 from .cost_matrix import CostMatrix
 from .window import CRWindow, NoWindow, Window
@@ -203,25 +206,34 @@ class DTWAlignment:
             Two new TimeSeries instances of the same length, indexed by pd.RangeIndex.
         """
 
-        series1 = self.series1
-        series2 = self.series2
-
-        xa1 = series1.data_array(copy=False)
-        xa2 = series2.data_array(copy=False)
-
+        xa1 = self.series1.data_array(copy=False)
+        xa2 = self.series2.data_array(copy=False)
         path = self.path()
 
-        warped_series1 = xa1[path[:, 0]]
-        warped_series2 = xa2[path[:, 1]]
+        values1, values2 = xa1.values[path[:, 0]], xa2.values[path[:, 1]]
 
-        time_dim1 = series1._time_dim
-        time_dim2 = series2._time_dim
+        # We set a RangeIndex for both series:
+        warped_series1 = xr.DataArray(
+            data=values1,
+            dims=xa1.dims,
+            coords={
+                self.series1._time_dim: pd.RangeIndex(values1.shape[0]),
+                DIMS[1]: xa1.coords[DIMS[1]],
+            },
+            attrs=xa1.attrs,
+        )
 
-        range_index = True
+        warped_series2 = xr.DataArray(
+            data=values2,
+            dims=xa2.dims,
+            coords={
+                self.series2._time_dim: pd.RangeIndex(values2.shape[0]),
+                DIMS[1]: xa2.coords[DIMS[1]],
+            },
+            attrs=xa2.attrs,
+        )
 
-        if range_index:
-            warped_series1 = warped_series1.reset_index(dims_or_levels=time_dim1)
-            warped_series2 = warped_series2.reset_index(dims_or_levels=time_dim2)
+        time_dim1, time_dim2 = self.series1._time_dim, self.series2._time_dim
 
         # todo: prevent time information being lost after warping
         # Applying time index from series1 to series2 (take_dates = True) is disabled for consistency reasons
@@ -302,7 +314,7 @@ def dtw(
         and type(window) is NoWindow
         and len(series1) * len(series2) > 10**6
     ):
-        logger.warn(
+        logger.warning(
             "Exact evaluation will result in poor performance on large datasets."
             " Consider enabling multi-grid or using a window."
         )

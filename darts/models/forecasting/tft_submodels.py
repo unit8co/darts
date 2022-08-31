@@ -34,6 +34,21 @@ logger = get_logger(__name__)
 HiddenState = Union[Tuple[torch.Tensor, torch.Tensor], torch.Tensor]
 
 
+def get_embedding_size(n: int, max_size: int = 100) -> int:
+    """
+    Determine empirically good embedding sizes (formula taken from fastai).
+    Args:
+        n (int): number of classes
+        max_size (int, optional): maximum embedding size. Defaults to 100.
+    Returns:
+        int: embedding size
+    """
+    if n > 2:
+        return min(round(1.6 * n**0.56), max_size)
+    else:
+        return 1
+
+
 class _TimeDistributedEmbeddingBag(nn.EmbeddingBag):
     def __init__(self, *args, batch_first: bool = False, **kwargs):
         super().__init__(*args, **kwargs)
@@ -65,78 +80,54 @@ class _MultiEmbedding(nn.Module):
     def __init__(
         self,
         embedding_sizes: Dict[str, Tuple[int, int]],
-        categorical_groups: Dict[str, List[str]],
-        embedding_paddings: List[str],
-        x_categoricals: List[str],
-        max_embedding_size: int = None,
+        variable_names: List[str],
     ):
+        """Embedding layer for categorical variables including groups of categorical variables.
+        Enabled for static and dynamic categories (i.e. 3 dimensions for batch x time x categories).
+
+        Parameters
+        ----------
+        embedding_sizes
+            dictionary of embedding sizes, e.g. ``{'cat1': (10, 3)}``
+            indicates that the first categorical variable has 10 unique values which are mapped to 3 embedding
+            dimensions. Use :py:func:`~pytorch_forecasting.utils.get_embedding_size` to automatically obtain
+            reasonable embedding sizes depending on the number of categories.
+        variable_names
+            list of categorical variable names to ensure ordered iterations.
+        """
         super().__init__()
         self.embedding_sizes = embedding_sizes
-        self.categorical_groups = categorical_groups
-        self.embedding_paddings = embedding_paddings
-        self.max_embedding_size = max_embedding_size
-        self.x_categoricals = x_categoricals
+        self.variable_names = variable_names
 
-        self.init_embeddings()
+        self.embeddings = nn.ModuleDict(
+            {name: nn.Embedding(*embedding_sizes[name]) for name in variable_names}
+        )
 
-    def init_embeddings(self):
-        self.embeddings = nn.ModuleDict()
-        for name in self.embedding_sizes.keys():
-            embedding_size = self.embedding_sizes[name][1]
-            if self.max_embedding_size is not None:
-                embedding_size = min(embedding_size, self.max_embedding_size)
-            # convert to list to become mutable
-            self.embedding_sizes[name] = list(self.embedding_sizes[name])
-            self.embedding_sizes[name][1] = embedding_size
-            if name in self.categorical_groups:  # embedding bag if related embeddings
-                self.embeddings[name] = _TimeDistributedEmbeddingBag(
-                    self.embedding_sizes[name][0],
-                    embedding_size,
-                    mode="sum",
-                    batch_first=True,
-                )
-            else:
-                if name in self.embedding_paddings:
-                    padding_idx = 0
-                else:
-                    padding_idx = None
-                self.embeddings[name] = nn.Embedding(
-                    self.embedding_sizes[name][0],
-                    embedding_size,
-                    padding_idx=padding_idx,
-                )
+    @property
+    def input_size(self) -> int:
+        return len(self.variable_names)
 
-    def names(self):
-        return list(self.keys())
+    @property
+    def output_size(self) -> Union[Dict[str, int], int]:
+        return {name: sizes[1] for name, sizes in self.embedding_sizes.items()}
 
-    def items(self):
-        return self.embeddings.items()
+    def forward(self, x: torch.Tensor) -> Dict[str, torch.Tensor]:
+        """
+        Parameters
+        ----------
+        x
+            input tensor of shape batch x (optional) time x categoricals in the order of ``variable_names``.
 
-    def keys(self):
-        return self.embeddings.keys()
-
-    def values(self):
-        return self.embeddings.values()
-
-    def __getitem__(self, name: str):
-        return self.embeddings[name]
-
-    def forward(self, x):
-        input_vectors = {}
-        for name, emb in self.embeddings.items():
-            if name in self.categorical_groups:
-                input_vectors[name] = emb(
-                    x[
-                        ...,
-                        [
-                            self.x_categoricals.index(cat_name)
-                            for cat_name in self.categorical_groups[name]
-                        ],
-                    ]
-                )
-            else:
-                input_vectors[name] = emb(x[..., self.x_categoricals.index(name)])
-        return input_vectors
+        Returns
+        -------
+        dict
+            dictionary of category names to embeddings of shape batch x (optional) time x embedding_size if
+            ``embedding_size`` is given as dictionary.
+        """
+        return {
+            name: self.embeddings[name](x[..., i])
+            for i, name in enumerate(self.variable_names)
+        }
 
 
 class _TimeDistributedInterpolation(nn.Module):
@@ -214,7 +205,11 @@ class _GatedLinearUnit(nn.Module):
 
 class _ResampleNorm(nn.Module):
     def __init__(
-        self, input_size: int, output_size: int = None, trainable_add: bool = True
+        self,
+        input_size: int,
+        output_size: int = None,
+        trainable_add: bool = True,
+        norm=nn.LayerNorm,
     ):
         super().__init__()
 
@@ -230,7 +225,7 @@ class _ResampleNorm(nn.Module):
         if self.trainable_add:
             self.mask = nn.Parameter(torch.zeros(self.output_size, dtype=torch.float))
             self.gate = nn.Sigmoid()
-        self.norm = nn.LayerNorm(self.output_size)
+        self.norm = norm(self.output_size)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.input_size != self.output_size:
@@ -245,7 +240,11 @@ class _ResampleNorm(nn.Module):
 
 class _AddNorm(nn.Module):
     def __init__(
-        self, input_size: int, skip_size: int = None, trainable_add: bool = True
+        self,
+        input_size: int,
+        skip_size: int = None,
+        trainable_add: bool = True,
+        norm=nn.LayerNorm,
     ):
         super().__init__()
 
@@ -261,7 +260,7 @@ class _AddNorm(nn.Module):
         if self.trainable_add:
             self.mask = nn.Parameter(torch.zeros(self.input_size, dtype=torch.float))
             self.gate = nn.Sigmoid()
-        self.norm = nn.LayerNorm(self.input_size)
+        self.norm = norm(self.input_size)
 
     def forward(self, x: torch.Tensor, skip: torch.Tensor):
         if self.input_size != self.skip_size:
@@ -282,6 +281,7 @@ class _GateAddNorm(nn.Module):
         skip_size: int = None,
         trainable_add: bool = False,
         dropout: float = None,
+        layer_norm: nn.Module = nn.LayerNorm,
     ):
         super().__init__()
 
@@ -294,7 +294,10 @@ class _GateAddNorm(nn.Module):
             self.input_size, hidden_size=self.hidden_size, dropout=self.dropout
         )
         self.add_norm = _AddNorm(
-            self.hidden_size, skip_size=self.skip_size, trainable_add=trainable_add
+            self.hidden_size,
+            skip_size=self.skip_size,
+            trainable_add=trainable_add,
+            norm=layer_norm,
         )
 
     def forward(self, x, skip):
@@ -312,6 +315,7 @@ class _GatedResidualNetwork(nn.Module):
         dropout: float = 0.1,
         context_size: int = None,
         residual: bool = False,
+        layer_norm: nn.Module = nn.LayerNorm,
     ):
         super().__init__()
         self.input_size = input_size
@@ -327,7 +331,9 @@ class _GatedResidualNetwork(nn.Module):
             residual_size = self.output_size
 
         if self.output_size != residual_size:
-            self.resample_norm = _ResampleNorm(residual_size, self.output_size)
+            self.resample_norm = _ResampleNorm(
+                residual_size, self.output_size, norm=layer_norm
+            )
 
         self.fc1 = nn.Linear(self.input_size, self.hidden_size)
         self.elu = nn.ELU()
@@ -384,6 +390,7 @@ class _VariableSelectionNetwork(nn.Module):
         context_size: int = None,
         single_variable_grns: Optional[Dict[str, _GatedResidualNetwork]] = None,
         prescalers: Optional[Dict[str, nn.Linear]] = None,
+        layer_norm: nn.Module = nn.LayerNorm,
     ):
         """
         Calcualte weights for ``num_inputs`` variables  which are each of size ``input_size``
@@ -430,7 +437,9 @@ class _VariableSelectionNetwork(nn.Module):
                 self.single_variable_grns[name] = single_variable_grns[name]
             elif self.input_embedding_flags.get(name, False):
                 self.single_variable_grns[name] = _ResampleNorm(
-                    input_size, self.hidden_size
+                    input_size,
+                    self.hidden_size,
+                    norm=layer_norm,
                 )
             else:
                 self.single_variable_grns[name] = _GatedResidualNetwork(

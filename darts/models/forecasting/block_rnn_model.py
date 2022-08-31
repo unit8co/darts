@@ -130,7 +130,7 @@ class BlockRNNModel(PastCovariatesTorchModel):
         input_chunk_length: int,
         output_chunk_length: int,
         model: Union[str, nn.Module] = "RNN",
-        hidden_size: int = 25,
+        hidden_dim: int = 25,
         n_rnn_layers: int = 1,
         hidden_fc_sizes: Optional[List] = None,
         dropout: float = 0.0,
@@ -162,8 +162,9 @@ class BlockRNNModel(PastCovariatesTorchModel):
             Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"),
             or a PyTorch module with the same specifications as
             :class:`darts.models.block_rnn_model._BlockRNNModule`.
-        hidden_size
+        hidden_dim
             Size for feature maps for each hidden RNN layer (:math:`h_n`).
+            In Darts version <= 0.21, hidden_dim was referred as hidden_size.
         n_rnn_layers
             Number of layers in the RNN module.
         hidden_fc_sizes
@@ -178,12 +179,12 @@ class BlockRNNModel(PastCovariatesTorchModel):
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
-        torch_metrics
-            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
-            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         likelihood
             One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
+        torch_metrics
+            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
+            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         optimizer_cls
             The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.
         optimizer_kwargs
@@ -321,9 +322,13 @@ class BlockRNNModel(PastCovariatesTorchModel):
 
         self.rnn_type_or_module = model
         self.hidden_fc_sizes = hidden_fc_sizes
-        self.hidden_size = hidden_size
+        self.hidden_dim = hidden_dim
         self.n_rnn_layers = n_rnn_layers
         self.dropout = dropout
+
+    @staticmethod
+    def _supports_static_covariates() -> bool:
+        return False
 
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
@@ -342,7 +347,7 @@ class BlockRNNModel(PastCovariatesTorchModel):
                 input_size=input_dim,
                 target_size=output_dim,
                 nr_params=nr_params,
-                hidden_dim=self.hidden_size,
+                hidden_dim=self.hidden_dim,
                 num_layers=self.n_rnn_layers,
                 num_layers_out_fc=hidden_fc_sizes,
                 dropout=self.dropout,

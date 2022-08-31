@@ -22,6 +22,7 @@ from darts.models.forecasting.random_forest import RandomForest
 from darts.models.forecasting.regression_ensemble_model import RegressionEnsembleModel
 from darts.models.forecasting.regression_model import RegressionModel
 from darts.models.forecasting.sf_auto_arima import StatsForecastAutoARIMA
+from darts.models.forecasting.sf_ets import StatsForecastETS
 from darts.models.forecasting.tbats import BATS, TBATS
 from darts.models.forecasting.theta import FourTheta, Theta
 from darts.models.forecasting.varima import VARIMA

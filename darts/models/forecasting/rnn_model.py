@@ -248,7 +248,7 @@ class RNNModel(DualCovariatesTorchModel):
             The length of both input (target and covariates) and output (target) time series used during
             training. Generally speaking, `training_length` should have a higher value than `input_chunk_length`
             because otherwise during training the RNN is never run for as many iterations as it will during
-            training. For more information on this parameter, please see `darts.utils.data.ShiftedDataset`
+            inference. For more information on this parameter, please see `darts.utils.data.ShiftedDataset`
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -257,12 +257,12 @@ class RNNModel(DualCovariatesTorchModel):
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
-        torch_metrics
-            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
-            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         likelihood
             One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
+        torch_metrics
+            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
+            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         optimizer_cls
             The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.
         optimizer_kwargs
@@ -466,3 +466,11 @@ class RNNModel(DualCovariatesTorchModel):
             train_dataset.ds_past.shift == 1,
             "RNNModel requires a shifted training dataset with shift=1.",
         )
+
+    @property
+    def min_train_series_length(self) -> int:
+        return self.training_length + 1
+
+    @staticmethod
+    def _supports_static_covariates() -> bool:
+        return False

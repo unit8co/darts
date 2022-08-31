@@ -4,14 +4,18 @@ Transformer Model
 """
 
 import math
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
 
-from darts.logging import get_logger, raise_if_not
-from darts.models.components import glu_variants
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.models.components import glu_variants, layer_norm_variants
 from darts.models.components.glu_variants import GLU_FFN
+from darts.models.components.transformer import (
+    CustomFeedForwardDecoderLayer,
+    CustomFeedForwardEncoderLayer,
+)
 from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 
@@ -20,6 +24,48 @@ logger = get_logger(__name__)
 
 BUILT_IN = ["relu", "gelu"]
 FFN = GLU_FFN + BUILT_IN
+
+
+def _generate_coder(
+    d_model,
+    dim_ff,
+    dropout,
+    nhead,
+    num_layers,
+    norm_layer,
+    coder_cls,
+    layer_cls,
+    ffn_cls,
+):
+    """Generates an Encoder or Decoder with one of Darts' Feed-forward Network variants.
+    Parameters
+    ----------
+    coder_cls
+        Either `torch.nn.TransformerEncoder` or `...TransformerDecoder`
+    layer_cls
+        Either `darts.models.components.transformer.CustomFeedForwardEncoderLayer`,
+        `...CustomFeedForwardDecoderLayer`, `nn.TransformerEncoderLayer`, or `nn.TransformerDecoderLayer`.
+    ffn_cls
+        One of Darts' Position-wise Feed-Forward Network variants `from darts.models.components.glu_variants`
+    """
+
+    ffn = (
+        dict(ffn=ffn_cls(d_model=d_model, d_ff=dim_ff, dropout=dropout))
+        if ffn_cls
+        else dict()
+    )
+    layer = layer_cls(
+        **ffn,
+        dropout=dropout,
+        d_model=d_model,
+        nhead=nhead,
+        dim_feedforward=dim_ff,
+    )
+    return coder_cls(
+        layer,
+        num_layers=num_layers,
+        norm=norm_layer(d_model),
+    )
 
 
 # This implementation of positional encoding is taken from the PyTorch documentation:
@@ -80,6 +126,7 @@ class _TransformerModule(PLPastCovariatesModule):
         dim_feedforward: int,
         dropout: float,
         activation: str,
+        norm_type: Union[str, nn.Module, None] = None,
         custom_encoder: Optional[nn.Module] = None,
         custom_decoder: Optional[nn.Module] = None,
         **kwargs,
@@ -110,6 +157,8 @@ class _TransformerModule(PLPastCovariatesModule):
             Fraction of neurons affected by Dropout.
         activation
             The activation function of encoder/decoder intermediate layer.
+        norm_type: str | nn.Module | None
+            The type of LayerNorm variant to use.
         custom_encoder
             A custom transformer encoder provided by the user (default=None).
         custom_decoder
@@ -140,15 +189,79 @@ class _TransformerModule(PLPastCovariatesModule):
             d_model, dropout, self.input_chunk_length
         )
 
+        if isinstance(norm_type, str):
+            try:
+                self.layer_norm = getattr(layer_norm_variants, norm_type)
+            except AttributeError:
+                raise_log(
+                    AttributeError("please provide a valid layer norm type"),
+                )
+        else:
+            self.layer_norm = norm_type
+
         raise_if_not(activation in FFN, f"'{activation}' is not in {FFN}")
         if activation in GLU_FFN:
-            # use glu variant feedforward layers
-            self.activation = getattr(glu_variants, activation)(
-                d_model=d_model, d_ff=dim_feedforward, dropout=dropout
+            raise_if(
+                custom_encoder is not None or custom_decoder is not None,
+                "Cannot use `custom_encoder` or `custom_decoder` along with an `activation` from "
+                f"{GLU_FFN}",
+                logger=logger,
             )
-        else:
-            # use nn.Transformer built in feedforward layers
-            self.activation = activation
+            # use glu variant feed-forward layers
+            ffn_cls = getattr(glu_variants, activation)
+
+            # custom feed-forward layers have activation built-in. reset activation
+            activation = None
+
+            custom_encoder = _generate_coder(
+                d_model,
+                dim_feedforward,
+                dropout,
+                nhead,
+                num_encoder_layers,
+                self.layer_norm if self.layer_norm else nn.LayerNorm,
+                coder_cls=nn.TransformerEncoder,
+                layer_cls=CustomFeedForwardEncoderLayer,
+                ffn_cls=ffn_cls,
+            )
+
+            custom_decoder = _generate_coder(
+                d_model,
+                dim_feedforward,
+                dropout,
+                nhead,
+                num_decoder_layers,
+                self.layer_norm if self.layer_norm else nn.LayerNorm,
+                coder_cls=nn.TransformerDecoder,
+                layer_cls=CustomFeedForwardDecoderLayer,
+                ffn_cls=ffn_cls,
+            )
+
+        # if layer norm set and no GLU variant is used
+        if self.layer_norm and custom_decoder is None:
+            custom_encoder = _generate_coder(
+                d_model,
+                dim_feedforward,
+                dropout,
+                nhead,
+                num_encoder_layers,
+                self.layer_norm,
+                coder_cls=nn.TransformerEncoder,
+                layer_cls=nn.TransformerEncoderLayer,
+                ffn_cls=None,
+            )
+
+            custom_decoder = _generate_coder(
+                d_model,
+                dim_feedforward,
+                dropout,
+                nhead,
+                num_decoder_layers,
+                self.layer_norm,
+                coder_cls=nn.TransformerDecoder,
+                layer_cls=nn.TransformerDecoderLayer,
+                ffn_cls=None,
+            )
 
         # Defining the Transformer module
         self.transformer = nn.Transformer(
@@ -158,7 +271,7 @@ class _TransformerModule(PLPastCovariatesModule):
             num_decoder_layers=num_decoder_layers,
             dim_feedforward=dim_feedforward,
             dropout=dropout,
-            activation=self.activation,
+            activation=activation,
             custom_encoder=custom_encoder,
             custom_decoder=custom_decoder,
         )
@@ -217,6 +330,7 @@ class TransformerModel(PastCovariatesTorchModel):
         dim_feedforward: int = 512,
         dropout: float = 0.1,
         activation: str = "relu",
+        norm_type: Union[str, nn.Module, None] = None,
         custom_encoder: Optional[nn.Module] = None,
         custom_decoder: Optional[nn.Module] = None,
         **kwargs,
@@ -257,10 +371,11 @@ class TransformerModel(PastCovariatesTorchModel):
             The activation function of encoder/decoder intermediate layer, (default='relu').
             can be one of the glu variant's FeedForward Network (FFN)[2]. A feedforward network is a
             fully-connected layer with an activation. The glu variant's FeedForward Network are a series
-            of FFNs designed to work better with Transformer based models.
-                ["GLU", "Bilinear", "ReGLU", "GEGLU", "SwiGLU", "ReLU", "GELU"]
-            or one the pytorch internal activations
-                ["relu", "gelu"]
+            of FFNs designed to work better with Transformer based models. ["GLU", "Bilinear", "ReGLU", "GEGLU",
+            "SwiGLU", "ReLU", "GELU"] or one the pytorch internal activations ["relu", "gelu"]
+        norm_type: str | nn.Module
+            The type of LayerNorm variant to use.  Default: ``None``. Avaliable options are
+            ["LayerNorm", "RMSNorm", "LayerNormNoBias"], or provide a custom nn.Module.
         custom_encoder
             A custom user-provided encoder module for the transformer (default=None).
         custom_decoder
@@ -273,12 +388,12 @@ class TransformerModel(PastCovariatesTorchModel):
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
-        torch_metrics
-            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
-            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         likelihood
             One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
+        torch_metrics
+            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
+            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         optimizer_cls
             The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.
         optimizer_kwargs
@@ -428,6 +543,7 @@ class TransformerModel(PastCovariatesTorchModel):
         self.dim_feedforward = dim_feedforward
         self.dropout = dropout
         self.activation = activation
+        self.norm_type = norm_type
         self.custom_encoder = custom_encoder
         self.custom_decoder = custom_decoder
 
@@ -450,7 +566,12 @@ class TransformerModel(PastCovariatesTorchModel):
             dim_feedforward=self.dim_feedforward,
             dropout=self.dropout,
             activation=self.activation,
+            norm_type=self.norm_type,
             custom_encoder=self.custom_encoder,
             custom_decoder=self.custom_decoder,
             **self.pl_module_params,
         )
+
+    @staticmethod
+    def _supports_static_covariates() -> bool:
+        return False

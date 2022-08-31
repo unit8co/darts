@@ -6,20 +6,23 @@ Temporal Fusion Transformer (TFT)
 from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
+import pandas as pd
 import torch
 from torch import nn
 from torch.nn import LSTM as _LSTM
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if, raise_if_not
-from darts.models.components import glu_variants
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.models.components import glu_variants, layer_norm_variants
 from darts.models.components.glu_variants import GLU_FFN
 from darts.models.forecasting.pl_forecasting_module import PLMixedCovariatesModule
 from darts.models.forecasting.tft_submodels import (
     _GateAddNorm,
     _GatedResidualNetwork,
     _InterpretableMultiHeadAttention,
+    _MultiEmbedding,
     _VariableSelectionNetwork,
+    get_embedding_size,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 from darts.utils.data import (
@@ -43,14 +46,16 @@ class _TFTModule(PLMixedCovariatesModule):
         output_dim: Tuple[int, int],
         variables_meta: Dict[str, Dict[str, List[str]]],
         num_static_components: int,
-        hidden_size: Union[int, List[int]] = 16,
-        lstm_layers: int = 1,
-        num_attention_heads: int = 4,
-        full_attention: bool = False,
-        feed_forward: str = "GatedResidualNetwork",
-        hidden_continuous_size: int = 8,
-        dropout: float = 0.1,
-        add_relative_index: bool = False,
+        hidden_size: Union[int, List[int]],
+        lstm_layers: int,
+        num_attention_heads: int,
+        full_attention: bool,
+        feed_forward: str,
+        hidden_continuous_size: int,
+        categorical_embedding_sizes: Dict[str, Tuple[int, int]],
+        dropout: float,
+        add_relative_index: bool,
+        norm_type: Union[str, nn.Module],
         **kwargs,
     ):
 
@@ -81,7 +86,13 @@ class _TFTModule(PLMixedCovariatesModule):
             Set the feedforward network block. default `GatedResidualNetwork` or one of the  glu variant.
             Defaults to `GatedResidualNetwork`.
         hidden_continuous_size : int
-            default for hidden size for processing continuous variables'
+            default for hidden size for processing continuous variables.
+        categorical_embedding_sizes : dict
+            A dictionary containing embedding sizes for categorical static covariates. The keys are the column names
+            of the categorical static covariates. The values are tuples of integers with
+            `(number of unique categories, embedding size)`. For example `{"some_column": (64, 8)}`.
+            Note that `TorchForecastingModels` can only handle numeric data. Consider transforming/encoding your data
+            with `darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer`.
         dropout : float
             Fraction of neurons affected by Dropout.
         add_relative_index : bool
@@ -92,6 +103,8 @@ class _TFTModule(PLMixedCovariatesModule):
         likelihood
             The likelihood model to be used for probabilistic forecasts. By default, the TFT uses
             a ``QuantileRegression`` likelihood.
+        norm_type: str | nn.Module
+            The type of LayerNorm variant to use.
         **kwargs
             all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
         """
@@ -103,12 +116,23 @@ class _TFTModule(PLMixedCovariatesModule):
         self.num_static_components = num_static_components
         self.hidden_size = hidden_size
         self.hidden_continuous_size = hidden_continuous_size
+        self.categorical_embedding_sizes = categorical_embedding_sizes
         self.lstm_layers = lstm_layers
         self.num_attention_heads = num_attention_heads
         self.full_attention = full_attention
         self.feed_forward = feed_forward
         self.dropout = dropout
         self.add_relative_index = add_relative_index
+
+        if isinstance(norm_type, str):
+            try:
+                self.layer_norm = getattr(layer_norm_variants, norm_type)
+            except AttributeError:
+                raise_log(
+                    AttributeError("please provide a valid layer norm type"),
+                )
+        else:
+            self.layer_norm = norm_type
 
         # initialize last batch size to check if new mask needs to be generated
         self.batch_size_last = -1
@@ -123,27 +147,46 @@ class _TFTModule(PLMixedCovariatesModule):
         # _attn: Attention
 
         # # processing inputs
+        # embeddings
+        self.input_embeddings = _MultiEmbedding(
+            embedding_sizes=categorical_embedding_sizes,
+            variable_names=self.categorical_static_variables,
+        )
+
         # continuous variable processing
         self.prescalers_linear = {
             name: nn.Linear(
-                1 if name not in self.static_variables else self.num_static_components,
+                1
+                if name not in self.numeric_static_variables
+                else self.num_static_components,
                 self.hidden_continuous_size,
             )
             for name in self.reals
         }
 
+        # static (categorical and numerical) variables
         static_input_sizes = {
-            name: self.hidden_continuous_size for name in self.static_variables
+            name: self.input_embeddings.output_size[name]
+            for name in self.categorical_static_variables
         }
+        static_input_sizes.update(
+            {
+                name: self.hidden_continuous_size
+                for name in self.numeric_static_variables
+            }
+        )
 
         self.static_covariates_vsn = _VariableSelectionNetwork(
             input_sizes=static_input_sizes,
             hidden_size=self.hidden_size,
-            input_embedding_flags={},  # this would be required for categorical inputs
+            input_embedding_flags={
+                name: True for name in self.categorical_static_variables
+            },
             dropout=self.dropout,
             prescalers=self.prescalers_linear,
             single_variable_grns={},
             context_size=None,  # no context for static variables
+            layer_norm=self.layer_norm,
         )
 
         # variable selection for encoder and decoder
@@ -158,21 +201,23 @@ class _TFTModule(PLMixedCovariatesModule):
         self.encoder_vsn = _VariableSelectionNetwork(
             input_sizes=encoder_input_sizes,
             hidden_size=self.hidden_size,
-            input_embedding_flags={},  # this would be required for categorical inputs
+            input_embedding_flags={},  # this would be required for non-static categorical inputs
             dropout=self.dropout,
             context_size=self.hidden_size,
             prescalers=self.prescalers_linear,
             single_variable_grns={},
+            layer_norm=self.layer_norm,
         )
 
         self.decoder_vsn = _VariableSelectionNetwork(
             input_sizes=decoder_input_sizes,
             hidden_size=self.hidden_size,
-            input_embedding_flags={},  # this would be required for categorical inputs
+            input_embedding_flags={},  # this would be required for non-static categorical inputs
             dropout=self.dropout,
             context_size=self.hidden_size,
             prescalers=self.prescalers_linear,
             single_variable_grns={},
+            layer_norm=self.layer_norm,
         )
 
         # static encoders
@@ -182,6 +227,7 @@ class _TFTModule(PLMixedCovariatesModule):
             hidden_size=self.hidden_size,
             output_size=self.hidden_size,
             dropout=self.dropout,
+            layer_norm=self.layer_norm,
         )
 
         # for hidden state of the lstm
@@ -190,6 +236,7 @@ class _TFTModule(PLMixedCovariatesModule):
             hidden_size=self.hidden_size,
             output_size=self.hidden_size,
             dropout=self.dropout,
+            layer_norm=self.layer_norm,
         )
 
         # for cell state of the lstm
@@ -198,6 +245,7 @@ class _TFTModule(PLMixedCovariatesModule):
             hidden_size=self.hidden_size,
             output_size=self.hidden_size,
             dropout=self.dropout,
+            layer_norm=self.layer_norm,
         )
 
         # for post lstm static enrichment
@@ -206,6 +254,7 @@ class _TFTModule(PLMixedCovariatesModule):
             hidden_size=self.hidden_size,
             output_size=self.hidden_size,
             dropout=self.dropout,
+            layer_norm=self.layer_norm,
         )
 
         # lstm encoder (history) and decoder (future) for local processing
@@ -226,7 +275,9 @@ class _TFTModule(PLMixedCovariatesModule):
         )
 
         # post lstm GateAddNorm
-        self.post_lstm_gan = _GateAddNorm(input_size=self.hidden_size, dropout=dropout)
+        self.post_lstm_gan = _GateAddNorm(
+            input_size=self.hidden_size, dropout=dropout, layer_norm=self.layer_norm
+        )
 
         # static enrichment and processing past LSTM
         self.static_enrichment_grn = _GatedResidualNetwork(
@@ -235,6 +286,7 @@ class _TFTModule(PLMixedCovariatesModule):
             output_size=self.hidden_size,
             dropout=self.dropout,
             context_size=self.hidden_size,
+            layer_norm=self.layer_norm,
         )
 
         # attention for long-range processing
@@ -243,7 +295,9 @@ class _TFTModule(PLMixedCovariatesModule):
             n_head=self.num_attention_heads,
             dropout=self.dropout,
         )
-        self.post_attn_gan = _GateAddNorm(self.hidden_size, dropout=self.dropout)
+        self.post_attn_gan = _GateAddNorm(
+            self.hidden_size, dropout=self.dropout, layer_norm=self.layer_norm
+        )
 
         if self.feed_forward == "GatedResidualNetwork":
             self.feed_forward_block = _GatedResidualNetwork(
@@ -251,6 +305,7 @@ class _TFTModule(PLMixedCovariatesModule):
                 self.hidden_size,
                 self.hidden_size,
                 dropout=self.dropout,
+                layer_norm=self.layer_norm,
             )
         else:
             raise_if_not(
@@ -264,7 +319,9 @@ class _TFTModule(PLMixedCovariatesModule):
             )
 
         # output processing -> no dropout at this late stage
-        self.pre_output_gan = _GateAddNorm(self.hidden_size, dropout=None)
+        self.pre_output_gan = _GateAddNorm(
+            self.hidden_size, dropout=None, layer_norm=self.layer_norm
+        )
 
         self.output_layer = nn.Linear(self.hidden_size, self.n_targets * self.loss_size)
 
@@ -280,8 +337,21 @@ class _TFTModule(PLMixedCovariatesModule):
         """
         List of all static variables in model
         """
-        # TODO: (Darts: dbader) we might want to include static variables in the future?
         return self.variables_meta["model_config"]["static_input"]
+
+    @property
+    def numeric_static_variables(self) -> List[str]:
+        """
+        List of numeric static variables in model
+        """
+        return self.variables_meta["model_config"]["static_input_numeric"]
+
+    @property
+    def categorical_static_variables(self) -> List[str]:
+        """
+        List of categorical static variables in model
+        """
+        return self.variables_meta["model_config"]["static_input_categorical"]
 
     @property
     def encoder_variables(self) -> List[str]:
@@ -442,9 +512,28 @@ class _TFTModule(PLMixedCovariatesModule):
 
         # Embedding and variable selection
         if self.static_variables:
-            static_embedding = {
-                name: x_static[:, :, i] for i, name in enumerate(self.static_variables)
-            }
+            # categorical static covariate embeddings
+            if self.categorical_static_variables:
+                static_embedding = self.input_embeddings(
+                    torch.cat(
+                        [
+                            x_static[:, :, idx]
+                            for idx, name in enumerate(self.static_variables)
+                            if name in self.categorical_static_variables
+                        ],
+                        dim=1,
+                    ).int()
+                )
+            else:
+                static_embedding = {}
+            # add numerical static covariates
+            static_embedding.update(
+                {
+                    name: x_static[:, :, idx]
+                    for idx, name in enumerate(self.static_variables)
+                    if name in self.numeric_static_variables
+                }
+            )
             static_embedding, static_covariate_var = self.static_covariates_vsn(
                 static_embedding
             )
@@ -570,9 +659,13 @@ class TFTModel(MixedCovariatesTorchModel):
         feed_forward: str = "GatedResidualNetwork",
         dropout: float = 0.1,
         hidden_continuous_size: int = 8,
+        categorical_embedding_sizes: Optional[
+            Dict[str, Union[int, Tuple[int, int]]]
+        ] = None,
         add_relative_index: bool = False,
         loss_fn: Optional[nn.Module] = None,
         likelihood: Optional[Likelihood] = None,
+        norm_type: Union[str, nn.Module] = "LayerNorm",
         **kwargs,
     ):
         """Temporal Fusion Transformers (TFT) for Interpretable Time Series Forecasting.
@@ -595,52 +688,63 @@ class TFTModel(MixedCovariatesTorchModel):
 
         Parameters
         ----------
-        input_chunk_length : int
+        input_chunk_length
             Encoder length; number of past time steps that are fed to the forecasting module at prediction time.
-        output_chunk_length : int
+        output_chunk_length
             Decoder length; number of future time steps that are fed to the forecasting module at prediction time.
-        hidden_size : int
+        hidden_size
             Hidden state size of the TFT. It is the main hyper-parameter and common across the internal TFT
             architecture.
-        lstm_layers : int
+        lstm_layers
             Number of layers for the Long Short Term Memory (LSTM) Encoder and Decoder (1 is a good default).
-        num_attention_heads : int
+        num_attention_heads
             Number of attention heads (4 is a good default)
-        full_attention : bool
+        full_attention
             If ``True``, applies multi-head attention query on past (encoder) and future (decoder) parts. Otherwise,
             only queries on future part. Defaults to ``False``.
-        feed_forward: str
+        feed_forward
             A feedforward network is a fully-connected layer with an activation. TFT Can be one of the glu variant's
             FeedForward Network (FFN)[2]. The glu variant's FeedForward Network are a series of FFNs designed to work
-            better with Transformer based models. Defaults to ``"GatedResidualNetwork"``.
-                ["GLU", "Bilinear", "ReGLU", "GEGLU", "SwiGLU", "ReLU", "GELU"]
-            or the TFT original FeedForward Network.
-                ["GatedResidualNetwork"]
-        dropout : float
+            better with Transformer based models. Defaults to ``"GatedResidualNetwork"``. ["GLU", "Bilinear", "ReGLU",
+            "GEGLU", "SwiGLU", "ReLU", "GELU"] or the TFT original FeedForward Network ["GatedResidualNetwork"].
+        dropout
             Fraction of neurons affected by dropout. This is compatible with Monte Carlo dropout
             at inference time for model uncertainty estimation (enabled with ``mc_dropout=True`` at
             prediction time).
-        hidden_continuous_size : int
+        hidden_continuous_size
             Default for hidden size for processing continuous variables
-        add_relative_index : bool
+        categorical_embedding_sizes
+            A dictionary used to construct embeddings for categorical static covariates. The keys are the column names
+            of the categorical static covariates. Each value is either a single integer or a tuple of integers.
+            For a single integer give the number of unique categories (n) of the corresponding variable. For example
+            ``{"some_column": 64}``. The embedding size will be automatically determined by
+            ``min(round(1.6 * n**0.56), 100)``.
+            For a tuple of integers, give (number of unique categories, embedding size). For example
+            ``{"some_column": (64, 8)}``.
+            Note that ``TorchForecastingModels`` only support numeric data. Consider transforming/encoding your data
+            with `darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer`.
+        add_relative_index
             Whether to add positional values to future covariates. Defaults to ``False``.
-            This allows to use the TFTModel without having to pass future_covariates to :fun:`fit()` and
+            This allows to use the TFTModel without having to pass future_covariates to :func:`fit()` and
             :func:`train()`. It gives a value to the position of each step from input and output chunk relative
             to the prediction point. The values are normalized with ``input_chunk_length``.
-        loss_fn : nn.Module
+        loss_fn: nn.Module
             PyTorch loss function used for training. By default, the TFT model is probabilistic and uses a
             ``likelihood`` instead (``QuantileRegression``). To make the model deterministic, you can set the `
             `likelihood`` to None and give a ``loss_fn`` argument.
-        torch_metrics
-            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
-            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         likelihood
             The likelihood model to be used for probabilistic forecasts. By default, the TFT uses
             a ``QuantileRegression`` likelihood.
+        norm_type: str | nn.Module
+            The type of LayerNorm variant to use.  Default: ``LayerNorm``. Available options are
+            ["LayerNorm", "RMSNorm", "LayerNormNoBias"], or provide a custom nn.Module.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
 
+        torch_metrics
+            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
+            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         optimizer_cls
             The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.
         optimizer_kwargs
@@ -783,8 +887,14 @@ class TFTModel(MixedCovariatesTorchModel):
         self.feed_forward = feed_forward
         self.dropout = dropout
         self.hidden_continuous_size = hidden_continuous_size
+        self.categorical_embedding_sizes = (
+            categorical_embedding_sizes
+            if categorical_embedding_sizes is not None
+            else {}
+        )
         self.add_relative_index = add_relative_index
         self.output_dim: Optional[Tuple[int, int]] = None
+        self.norm_type = norm_type
 
     def _create_model(self, train_sample: MixedCovariatesTrainTensorType) -> nn.Module:
         """
@@ -880,25 +990,63 @@ class TFTModel(MixedCovariatesTorchModel):
         }
 
         reals_input = []
+        categorical_input = []
         time_varying_encoder_input = []
         time_varying_decoder_input = []
         static_input = []
+        static_input_numeric = []
+        static_input_categorical = []
+        categorical_embedding_sizes = {}
         for input_var in type_names:
             if input_var in variables_meta["input"]:
                 vars_meta = variables_meta["input"][input_var]
-                reals_input += vars_meta
                 if input_var in [
                     "past_target",
                     "past_covariate",
                     "historic_future_covariate",
                 ]:
                     time_varying_encoder_input += vars_meta
+                    reals_input += vars_meta
                 elif input_var in ["future_covariate"]:
                     time_varying_decoder_input += vars_meta
+                    reals_input += vars_meta
                 elif input_var in ["static_covariate"]:
-                    static_input += vars_meta
+                    if (
+                        self.static_covariates is None
+                    ):  # when training with fit_from_dataset
+                        static_cols = pd.Index(
+                            [i for i in range(static_covariates.shape[1])]
+                        )
+                    else:
+                        static_cols = self.static_covariates.columns
+                    numeric_mask = ~static_cols.isin(self.categorical_embedding_sizes)
+                    for idx, (static_var, col_name, is_numeric) in enumerate(
+                        zip(vars_meta, static_cols, numeric_mask)
+                    ):
+                        static_input.append(static_var)
+                        if is_numeric:
+                            static_input_numeric.append(static_var)
+                            reals_input.append(static_var)
+                        else:
+                            # get embedding sizes for each categorical variable
+                            embedding = self.categorical_embedding_sizes[col_name]
+                            raise_if_not(
+                                isinstance(embedding, (int, tuple)),
+                                "Dict values of `categorical_embedding_sizes` must either be integers or tuples. Read "
+                                "the TFTModel documentation for more information.",
+                                logger,
+                            )
+                            if isinstance(embedding, int):
+                                embedding = (embedding, get_embedding_size(n=embedding))
+                            categorical_embedding_sizes[vars_meta[idx]] = embedding
+
+                            static_input_categorical.append(static_var)
+                            categorical_input.append(static_var)
 
         variables_meta["model_config"]["reals_input"] = list(dict.fromkeys(reals_input))
+        variables_meta["model_config"]["categorical_input"] = list(
+            dict.fromkeys(categorical_input)
+        )
         variables_meta["model_config"]["time_varying_encoder_input"] = list(
             dict.fromkeys(time_varying_encoder_input)
         )
@@ -908,10 +1056,19 @@ class TFTModel(MixedCovariatesTorchModel):
         variables_meta["model_config"]["static_input"] = list(
             dict.fromkeys(static_input)
         )
+        variables_meta["model_config"]["static_input_numeric"] = list(
+            dict.fromkeys(static_input_numeric)
+        )
+        variables_meta["model_config"]["static_input_categorical"] = list(
+            dict.fromkeys(static_input_categorical)
+        )
 
         n_static_components = (
             len(static_covariates) if static_covariates is not None else 0
         )
+
+        self.categorical_embedding_sizes = categorical_embedding_sizes
+
         return _TFTModule(
             output_dim=self.output_dim,
             variables_meta=variables_meta,
@@ -923,7 +1080,9 @@ class TFTModel(MixedCovariatesTorchModel):
             full_attention=self.full_attention,
             feed_forward=self.feed_forward,
             hidden_continuous_size=self.hidden_continuous_size,
+            categorical_embedding_sizes=self.categorical_embedding_sizes,
             add_relative_index=self.add_relative_index,
+            norm_type=self.norm_type,
             **self.pl_module_params,
         )
 
@@ -975,6 +1134,10 @@ class TFTModel(MixedCovariatesTorchModel):
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
         )
+
+    @staticmethod
+    def _supports_static_covariates() -> bool:
+        return True
 
     def predict(self, n, *args, **kwargs):
         # since we have future covariates, the inference dataset for future input must be at least of length

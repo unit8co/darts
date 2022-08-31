@@ -11,9 +11,11 @@ from darts.utils import timeseries_generation as tg
 logger = get_logger(__name__)
 
 try:
+    import torch.nn as nn
     from torch.nn import MSELoss
 
     from darts.models.forecasting.tft_model import TFTModel
+    from darts.models.forecasting.tft_submodels import get_embedding_size
     from darts.utils.likelihood_models import QuantileRegression
 
     TORCH_AVAILABLE = True
@@ -171,22 +173,49 @@ if TORCH_AVAILABLE:
             )
 
             target_multi = target_multi.with_static_covariates(
-                pd.DataFrame([[0.0, 1.0], [2.0, 3.0]], index=["st1", "st2"])
+                pd.DataFrame(
+                    [[0.0, 1.0, 0, 2], [2.0, 3.0, 1, 3]],
+                    columns=["st1", "st2", "cat1", "cat2"],
+                )
             )
 
             # should work with cyclic encoding for time index
+            # set categorical embedding sizes once with automatic embedding size with an `int` and once by
+            # manually setting it with `tuple(int, int)`
             model = TFTModel(
                 input_chunk_length=3,
                 output_chunk_length=4,
                 add_encoders={"cyclic": {"future": "hour"}},
+                categorical_embedding_sizes={"cat1": 2, "cat2": (2, 2)},
                 pl_trainer_kwargs={"fast_dev_run": True},
             )
             model.fit(target_multi, verbose=False)
+
             assert len(model.model.static_variables) == len(
                 target_multi.static_covariates.columns
             )
 
-            model.predict(n=1, series=target_multi, verbose=False)
+            # check model embeddings
+            target_embedding = {
+                "static_covariate_2": (
+                    2,
+                    get_embedding_size(2),
+                ),  # automatic embedding size
+                "static_covariate_3": (2, 2),  # manual embedding size
+            }
+            assert model.categorical_embedding_sizes == target_embedding
+            for cat_var, embedding_dims in target_embedding.items():
+                assert (
+                    model.model.input_embeddings.embeddings[cat_var].num_embeddings
+                    == embedding_dims[0]
+                )
+                assert (
+                    model.model.input_embeddings.embeddings[cat_var].embedding_dim
+                    == embedding_dims[1]
+                )
+
+            preds = model.predict(n=1, series=target_multi, verbose=False)
+            assert preds.static_covariates.equals(target_multi.static_covariates)
 
             # raise an error when trained with static covariates of wrong dimensionality
             target_multi = target_multi.with_static_covariates(
@@ -330,3 +359,34 @@ if TORCH_AVAILABLE:
                     for ts in y_hat
                 ]
             return y_hat
+
+        def test_layer_norm(self):
+            times = pd.date_range("20130101", "20130410")
+            pd_series = pd.Series(range(100), index=times)
+            series: TimeSeries = TimeSeries.from_series(pd_series)
+            base_model = TFTModel
+
+            model1 = base_model(
+                input_chunk_length=1,
+                output_chunk_length=1,
+                add_relative_index=True,
+                norm_type="RMSNorm",
+            )
+            model1.fit(series, epochs=1)
+
+            model2 = base_model(
+                input_chunk_length=1,
+                output_chunk_length=1,
+                add_relative_index=True,
+                norm_type=nn.LayerNorm,
+            )
+            model2.fit(series, epochs=1)
+
+            with self.assertRaises(AttributeError):
+                model4 = base_model(
+                    input_chunk_length=1,
+                    output_chunk_length=1,
+                    add_relative_index=True,
+                    norm_type="invalid",
+                )
+                model4.fit(series, epochs=1)

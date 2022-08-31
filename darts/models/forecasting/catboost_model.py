@@ -23,6 +23,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         lags_past_covariates: Union[int, List[int]] = None,
         lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
         output_chunk_length: int = 1,
+        add_encoders: Optional[dict] = None,
         likelihood: str = None,
         quantiles: List = None,
         random_state: Optional[int] = None,
@@ -48,6 +49,26 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast
             horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
             be useful if the covariates don't extend far enough into the future.
+        add_encoders
+            A large number of past and future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
+            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'position': {'past': ['absolute'], 'future': ['relative']},
+                    'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
+                    'transformer': Scaler()
+                }
+            ..
         likelihood
             Can be set to 'quantile', 'poisson' or 'gaussian'. If set, the model will be probabilistic,
             allowing sampling at prediction time. When set to 'gaussian', the model will use CatBoost's
@@ -96,6 +117,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,
             output_chunk_length=output_chunk_length,
+            add_encoders=add_encoders,
             model=CatBoostRegressor(**kwargs),
         )
 

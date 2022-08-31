@@ -391,7 +391,6 @@ class _NBEATSModule(PLPastCovariatesModule):
             The number of blocks making up every stack.
         num_layers
             The number of fully connected layers preceding the final forking layers in each block of every stack.
-            Only used if `generic_architecture` is set to `True`.
         layer_widths
             Determines the number of neurons that make up each fully connected layer in each block of every stack.
             If a list is passed, it must have a length equal to `num_stacks` and every entry in that list corresponds
@@ -574,7 +573,6 @@ class NBEATSModel(PastCovariatesTorchModel):
             The number of blocks making up every stack.
         num_layers
             The number of fully connected layers preceding the final forking layers in each block of every stack.
-            Only used if `generic_architecture` is set to `True`.
         layer_widths
             Determines the number of neurons that make up each fully connected layer in each block of every stack.
             If a list is passed, it must have a length equal to `num_stacks` and every entry in that list corresponds
@@ -601,12 +599,12 @@ class NBEATSModel(PastCovariatesTorchModel):
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
-        torch_metrics
-            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
-            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         likelihood
             One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
+        torch_metrics
+            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
+            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         optimizer_cls
             The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.
         optimizer_kwargs
@@ -760,7 +758,11 @@ class NBEATSModel(PastCovariatesTorchModel):
             self.num_stacks = 2
 
         if isinstance(layer_widths, int):
-            self.layer_widths = [layer_widths] * num_stacks
+            self.layer_widths = [layer_widths] * self.num_stacks
+
+    @staticmethod
+    def _supports_static_covariates() -> bool:
+        return False
 
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
