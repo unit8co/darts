@@ -150,3 +150,39 @@ if TORCH_AVAILABLE:
                 model3.model.transformer.decoder.layers[0],
                 CustomFeedForwardDecoderLayer,
             )
+
+        def test_layer_norm(self):
+            base_model = TransformerModel
+
+            # default norm_type is None
+            model0 = base_model(input_chunk_length=1, output_chunk_length=1)
+            y0 = model0.fit(self.series, epochs=1)
+
+            model1 = base_model(
+                input_chunk_length=1, output_chunk_length=1, norm_type="RMSNorm"
+            )
+            y1 = model1.fit(self.series, epochs=1)
+
+            model2 = base_model(
+                input_chunk_length=1, output_chunk_length=1, norm_type=nn.LayerNorm
+            )
+            y2 = model2.fit(self.series, epochs=1)
+
+            model3 = base_model(
+                input_chunk_length=1,
+                output_chunk_length=1,
+                activation="gelu",
+                norm_type="RMSNorm",
+            )
+            y3 = model3.fit(self.series, epochs=1)
+
+            assert y0 != y1
+            assert y0 != y2
+            assert y0 != y3
+            assert y1 != y3
+
+            with self.assertRaises(AttributeError):
+                model4 = base_model(
+                    input_chunk_length=1, output_chunk_length=1, norm_type="invalid"
+                )
+                model4.fit(self.series, epochs=1)
