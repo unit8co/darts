@@ -36,6 +36,7 @@ from sklearn.multioutput import MultiOutputRegressor
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
+from darts.utils.data.tabularization import create_lagged_data
 from darts.utils.utils import _check_quantiles
 
 logger = get_logger(__name__)
@@ -319,8 +320,23 @@ class RegressionModel(GlobalForecastingModel):
         Function that fit the model. Deriving classes can override this method for adding additional parameters (e.g.,
         adding validation data), keeping the sanity checks on series performed by fit().
         """
-        training_samples, training_labels = self._create_lagged_data(
-            target_series, past_covariates, future_covariates, max_samples_per_ts
+        # training_samples, training_labels = self._create_lagged_data(
+        #     target_series, past_covariates, future_covariates, max_samples_per_ts
+        # )
+
+        lags_list = self.lags.get("target")
+        lags_past_covariates_list = self.lags.get("past")
+        lags_future_covariates_list = self.lags.get("future")
+
+        training_samples, training_labels = create_lagged_data(
+            target_series=target_series,
+            output_chunk_length=self.output_chunk_length,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            lags_list=lags_list,
+            lags_past_covariates_list=lags_past_covariates_list,
+            lags_future_covariates_list=lags_future_covariates_list,
+            max_samples_per_ts=max_samples_per_ts,
         )
 
         # if training_labels is of shape (n_samples, 1) flatten it to shape (n_samples,)

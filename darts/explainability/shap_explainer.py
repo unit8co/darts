@@ -330,7 +330,7 @@ class ShapExplainer(ForecastingModelExplainer):
         if horizons is not None:
             raise_if(
                 any([max(horizons) > self.n - 1, min(horizons) < 0]),
-                "One of the horizons is not in the admissible range. Please review your horizons input.",
+                "One of the horizons is too large. Please review your horizons input.",
             )
         else:
             horizons = range(self.n)
