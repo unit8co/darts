@@ -17,6 +17,7 @@ from darts.models.forecasting.exponential_smoothing import ExponentialSmoothing
 from darts.models.forecasting.fft import FFT
 from darts.models.forecasting.kalman_forecaster import KalmanForecaster
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
+from darts.models.forecasting.moving_average import MovingAverage
 from darts.models.forecasting.prophet_model import Prophet
 from darts.models.forecasting.random_forest import RandomForest
 from darts.models.forecasting.regression_ensemble_model import RegressionEnsembleModel
