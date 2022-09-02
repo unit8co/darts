@@ -525,7 +525,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     pd.RangeIndex(
                         start=last_points_times[0],
                         stop=last_points_times[-1] + 1,
-                        step=1,
+                        step=stride,
                     ),
                     np.array(last_points_values),
                     columns=series.columns,
