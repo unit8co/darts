@@ -105,6 +105,20 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             list(indexed_ts.time_index) == list(pd.RangeIndex(2, 7, step=1))
         )
 
+        # check integer indexing features when series index does not start at 0
+        values = np.random.random(100)
+        times = pd.RangeIndex(10, 110)
+        series: TimeSeries = TimeSeries.from_times_and_values(times, values)
+
+        # getting index for idx should return i s.t., series[i].time == idx
+        self.assertEqual(series.get_index_at_point(101), 91)
+
+        # slicing should act the same irrespective of the initial time stamp
+        np.testing.assert_equal(series[10:20].values().flatten(), values[10:20])
+
+        # drop_after should act on the timestamp
+        np.testing.assert_equal(series.drop_after(20).values().flatten(), values[:10])
+
     def test_univariate_component(self):
         series = TimeSeries.from_values(np.array([10, 20, 30])).with_columns_renamed(
             "0", "component"

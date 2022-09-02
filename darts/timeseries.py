@@ -1915,7 +1915,7 @@ class TimeSeries:
         self, point: Union[pd.Timestamp, float, int], after=True
     ) -> int:
         """
-        Converts a point along the time axis into an integer index.
+        Converts a point along the time axis index into an integer index ranging in (0, len(series)-1).
 
         Parameters
         ----------
@@ -1931,8 +1931,9 @@ class TimeSeries:
             In case of a ``float``, the parameter will be treated as the proportion of the time series
             that should lie before the point.
 
-            In the case of ``int``, the parameter will returned as such, provided that it is in the series. Otherwise
-            it will raise a ValueError.
+            In the case of ``int``, the point will be returned as such if the series is datetime-indexed
+            or integer-indexed and starting at 0. Otherwise, if not starting at 0, the method will return
+            the integer ``i`` such that ``point`` is the ``i``-th point along the series.
         after
             If the provided pandas Timestamp is not in the time series index, whether to return the index of the
             next timestamp or the index of the previous one.
@@ -1947,12 +1948,15 @@ class TimeSeries:
             )
             point_index = int((len(self) - 1) * point)
         elif isinstance(point, (int, np.int64)):
-            raise_if(
-                point not in range(len(self)),
+            if self.has_datetime_index or self.start_time() == 0:
+                point_index = point
+            else:
+                point_index = point - self.start_time()
+            raise_if_not(
+                0 <= point_index < len(self),
                 "point (int) should be a valid index in series",
                 logger,
             )
-            point_index = point
         elif isinstance(point, pd.Timestamp):
             raise_if_not(
                 self._has_datetime_index,
