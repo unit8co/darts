@@ -139,8 +139,6 @@ class TimeSeries:
         # As of xarray 0.18.2, this sorting discards the freq of the index for some reason
         # https://github.com/pydata/xarray/issues/5466
         # We sort only if the time axis is not already sorted (monotically increasing).
-
-        # TODO also avoid sorting if index is RangeIndex (already sorted by definition)
         self._xa = (
             xa.copy()
             if xa.get_index(self._time_dim).is_monotonic_increasing
@@ -205,7 +203,7 @@ class TimeSeries:
                 logger,
             )
         else:
-            self._freq = 1
+            self._freq = self._time_index.step
             self._freq_str = None
 
         # check static covariates
@@ -1890,7 +1888,7 @@ class TimeSeries:
             if self._has_datetime_index:
                 return pd.date_range(start=start, end=end, freq=self._freq).size
             else:
-                return start - end
+                return int((start - end) / self._freq)
 
         gap_df["gap_size"] = gap_df.apply(
             lambda row: intvl(start=row.gap_start, end=row.gap_end), axis=1
@@ -2122,9 +2120,15 @@ class TimeSeries:
                 "indexed using an integer-based RangeIndex.",
                 logger,
             )
-            idx = pd.DatetimeIndex(
-                filter(lambda t: start_ts <= t <= end_ts, self._time_index)
-            )
+            if start_ts in self._time_index and end_ts in self._time_index:
+                return self[
+                    start_ts:end_ts
+                ]  # we assume this is faster than the filtering below
+            else:
+                idx = pd.DatetimeIndex(
+                    filter(lambda t: start_ts <= t <= end_ts, self._time_index)
+                )
+                return self[idx]
         else:
             raise_if(
                 self._has_datetime_index,
@@ -2132,8 +2136,13 @@ class TimeSeries:
                 "the series is indexed with a DatetimeIndex.",
                 logger,
             )
-            idx = pd.RangeIndex(start_ts, end_ts, step=1)
-        return self[idx]
+            if start_ts in self._time_index and end_ts in self._time_index:
+                idx = pd.RangeIndex(start_ts, end_ts, step=self.freq)
+            else:
+                idx = pd.RangeIndex(
+                    filter(lambda t: start_ts <= t <= end_ts, self._time_index)
+                )
+            return self[idx]
 
     def slice_n_points_after(
         self, start_ts: Union[pd.Timestamp, int], n: int
@@ -3978,6 +3987,15 @@ class TimeSeries:
 
         .. warning::
             slices use pandas convention of including both ends of the slice.
+
+        Notes
+        -----
+        For integer-indexed series, integers or slices of integer will return the result
+        of ``isel()``. That is, if integer ``i`` is provided, it returns the ``i``-th value
+        along the series, which is not necessarily the value where the time index is equal to ``i``
+        (e.g., if the time index does not start at 0). In contrast, calling this method with a
+        ``pd.RangeIndex`` returns the result of ``sel()`` - i.e., the values where the time
+        index matches the provided range index.
         """
 
         def _check_dt():

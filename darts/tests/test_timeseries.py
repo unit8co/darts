@@ -247,6 +247,35 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         test_case.assertEqual(seriesC.start_time(), pd.Timestamp("20130108"))
         test_case.assertEqual(seriesC.end_time(), pd.Timestamp("20130110"))
 
+        # integer-indexed series, starting at 0
+        values = np.random.rand(
+            30,
+        )
+        idx = pd.RangeIndex(start=0, stop=30, step=1)
+        ts = TimeSeries.from_times_and_values(idx, values)
+        slice_vals = ts.slice(10, 20).values(copy=False).flatten()
+        np.testing.assert_equal(slice_vals, values[10:20])
+
+        # integer-indexed series, not starting at 0
+        values = np.random.rand(
+            30,
+        )
+        idx = pd.RangeIndex(start=5, stop=35, step=1)
+        ts = TimeSeries.from_times_and_values(idx, values)
+        slice_vals = ts.slice(10, 20).values(copy=False).flatten()
+        np.testing.assert_equal(slice_vals, values[5:15])
+
+        # integer-indexed series, not starting at 0, with step
+        values = np.random.rand(
+            30,
+        )
+        idx = pd.RangeIndex(start=5, stop=65, step=2)
+        ts = TimeSeries.from_times_and_values(idx, values)
+        slice_vals = ts.slice(11, 21).values(copy=False).flatten()
+        np.testing.assert_equal(slice_vals, values[3:8])
+
+        # test cases where start and/or stop are not in the series
+
         # n points, base case
         seriesD = test_series.slice_n_points_after(pd.Timestamp("20130102"), n=3)
         test_case.assertEqual(seriesD.start_time(), pd.Timestamp("20130102"))

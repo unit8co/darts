@@ -636,15 +636,24 @@ class RegressionModel(GlobalForecastingModel):
                         f"but it ranges only from {cov.start_time()} until {cov.end_time()}.",
                     )
 
+                    # Note: we use slice() rather than the [] operator because
+                    # for integer-indexed series [] does not act on the time index.
+                    covariate_matrices[cov_type].append(
+                        cov.slice(first_req_ts, last_req_ts).values(copy=False)
+                    )
+
+                    """
                     if cov.has_datetime_index:
                         covariate_matrices[cov_type].append(
-                            cov[first_req_ts:last_req_ts].values()
+                            cov[first_req_ts:last_req_ts].values(copy=False)
                         )
                     else:
-                        # include last_req_ts when slicing series with integer indices
+                        # note: we don't use [] operator with slicing here as
+                        # for integer series it doesn't act on the time index
                         covariate_matrices[cov_type].append(
-                            cov[first_req_ts : last_req_ts + 1].values()
+                            cov[first_req_ts : last_req_ts + 1].values(copy=False)
                         )
+                    """
 
                 covariate_matrices[cov_type] = np.stack(covariate_matrices[cov_type])
 
