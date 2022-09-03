@@ -28,6 +28,7 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         max_samples_per_ts: Optional[int] = None,
+        use_static_covariates: bool = False,
     ):
         """
         A time series dataset containing tuples of (past_target, past_covariates, static_covariates, future_target).
@@ -65,6 +66,8 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        use_static_covariates
+            Whether to use/include static covariate data from input series.
         """
 
         super().__init__()
@@ -78,6 +81,7 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
             shift_covariates=False,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.PAST,
+            use_static_covariates=use_static_covariates,
         )
 
     def __len__(self):
@@ -97,6 +101,7 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         max_samples_per_ts: Optional[int] = None,
+        use_static_covariates: bool = False,
     ):
         """
         A time series dataset containing tuples of (past_target, future_covariates, static_covariates, future_target).
@@ -134,6 +139,8 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        use_static_covariates
+            Whether to use/include static covariate data from input series.
         """
 
         super().__init__()
@@ -147,6 +154,7 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
             shift_covariates=True,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.FUTURE,
+            use_static_covariates=use_static_covariates,
         )
 
     def __len__(self):
@@ -166,6 +174,7 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         max_samples_per_ts: Optional[int] = None,
+        use_static_covariates: bool = False,
     ):
         """
         A time series dataset containing tuples of
@@ -204,6 +213,8 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        use_static_covariates
+            Whether to use/include static covariate data from input series.
         """
 
         super().__init__()
@@ -218,6 +229,7 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
             shift_covariates=False,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.HISTORIC_FUTURE,
+            use_static_covariates=use_static_covariates,
         )
 
         # This dataset is in charge of serving future covariates
@@ -230,6 +242,7 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
             shift_covariates=True,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.FUTURE,
+            use_static_covariates=use_static_covariates,
         )
 
     def __len__(self):
@@ -264,6 +277,7 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         max_samples_per_ts: Optional[int] = None,
+        use_static_covariates: bool = False,
     ):
         """
         A time series dataset containing tuples of
@@ -302,6 +316,8 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        use_static_covariates
+            Whether to use/include static covariate data from input series.
         """
 
         super().__init__()
@@ -316,6 +332,7 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
             shift_covariates=False,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.PAST,
+            use_static_covariates=use_static_covariates,
         )
 
         # This dataset is in charge of serving historical and future future covariates
@@ -325,6 +342,7 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
             max_samples_per_ts=max_samples_per_ts,
+            use_static_covariates=use_static_covariates,
         )
 
     def __len__(self):
@@ -362,6 +380,7 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         max_samples_per_ts: Optional[int] = None,
+        use_static_covariates: bool = False,
     ):
         """
         A time series dataset containing tuples of (past_target, past_covariates, future_covariates, static_covariates,
@@ -403,6 +422,8 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        use_static_covariates
+            Whether to use/include static covariate data from input series.
         """
         super().__init__()
 
@@ -416,6 +437,7 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
             shift_covariates=False,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.PAST,
+            use_static_covariates=use_static_covariates,
         )
 
         # This dataset is in charge of serving future covariates
@@ -428,6 +450,7 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
             shift_covariates=True,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.FUTURE,
+            use_static_covariates=use_static_covariates,
         )
 
     def __len__(self):
