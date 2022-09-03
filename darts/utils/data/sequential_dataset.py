@@ -28,7 +28,7 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         max_samples_per_ts: Optional[int] = None,
-        use_static_covariates: bool = False,
+        use_static_covariates: bool = True,
     ):
         """
         A time series dataset containing tuples of (past_target, past_covariates, static_covariates, future_target).
@@ -101,7 +101,7 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         max_samples_per_ts: Optional[int] = None,
-        use_static_covariates: bool = False,
+        use_static_covariates: bool = True,
     ):
         """
         A time series dataset containing tuples of (past_target, future_covariates, static_covariates, future_target).
@@ -174,7 +174,7 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         max_samples_per_ts: Optional[int] = None,
-        use_static_covariates: bool = False,
+        use_static_covariates: bool = True,
     ):
         """
         A time series dataset containing tuples of
@@ -277,7 +277,7 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         max_samples_per_ts: Optional[int] = None,
-        use_static_covariates: bool = False,
+        use_static_covariates: bool = True,
     ):
         """
         A time series dataset containing tuples of
@@ -380,7 +380,7 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         max_samples_per_ts: Optional[int] = None,
-        use_static_covariates: bool = False,
+        use_static_covariates: bool = True,
     ):
         """
         A time series dataset containing tuples of (past_target, past_covariates, future_covariates, static_covariates,

@@ -109,7 +109,7 @@ class GenericInferenceDataset(InferenceDataset):
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         covariate_type: CovariateType = CovariateType.PAST,
-        use_static_covariates: bool = False,
+        use_static_covariates: bool = True,
     ):
         """
         Contains (past_target, past_covariates | historic_future_covariates, future_past_covariates | future_covariate,
@@ -243,7 +243,7 @@ class PastCovariatesInferenceDataset(InferenceDataset):
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         covariate_type: CovariateType = CovariateType.PAST,
-        use_static_covariates: bool = False,
+        use_static_covariates: bool = True,
     ):
         """
         Contains (past_target, past_covariates, future_past_covariates, static_covariates).
@@ -305,7 +305,7 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
         n: int = 1,
         input_chunk_length: int = 12,
         covariate_type: CovariateType = CovariateType.FUTURE,
-        use_static_covariates: bool = False,
+        use_static_covariates: bool = True,
     ):
         """
         Contains (past_target, future_covariates, static_covariates) tuples
@@ -354,7 +354,7 @@ class DualCovariatesInferenceDataset(InferenceDataset):
         n: int = 1,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
-        use_static_covariates: bool = False,
+        use_static_covariates: bool = True,
     ):
         """
         Contains (past_target, historic_future_covariates, future_covariates, static_covariates) tuples.
@@ -436,7 +436,7 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
         n: int = 1,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
-        use_static_covariates: bool = False,
+        use_static_covariates: bool = True,
     ):
         """
         Contains (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates,
@@ -529,7 +529,7 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
         n: int = 1,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
-        use_static_covariates: bool = False,
+        use_static_covariates: bool = True,
     ):
         """
         Contains (past_target, past_covariates, future_covariates, future_past_covariates, static_covariates) tuples.

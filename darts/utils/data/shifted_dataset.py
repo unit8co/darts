@@ -29,7 +29,7 @@ class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
         length: int = 12,
         shift: int = 1,
         max_samples_per_ts: Optional[int] = None,
-        use_static_covariates: bool = False,
+        use_static_covariates: bool = True,
     ):
         """
         A time series dataset containing tuples of (past_target, past_covariates, static_covariates, future_target)
@@ -101,7 +101,7 @@ class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
         length: int = 12,
         shift: int = 1,
         max_samples_per_ts: Optional[int] = None,
-        use_static_covariates: bool = False,
+        use_static_covariates: bool = True,
     ):
         """
         A time series dataset containing tuples of (past_target, future_covariates, static_covariates, future_target)
@@ -176,7 +176,7 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
         length: int = 12,
         shift: int = 1,
         max_samples_per_ts: Optional[int] = None,
-        use_static_covariates: bool = False,
+        use_static_covariates: bool = True,
     ):
         """
         A time series dataset containing tuples of
@@ -282,7 +282,7 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
         length: int = 12,
         shift: int = 1,
         max_samples_per_ts: Optional[int] = None,
-        use_static_covariates: bool = False,
+        use_static_covariates: bool = True,
     ):
         """
         A time series dataset containing tuples of (past_target, past_covariates, historic_future_covariates,
@@ -388,7 +388,7 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
         length: int = 12,
         shift: int = 1,
         max_samples_per_ts: Optional[int] = None,
-        use_static_covariates: bool = False,
+        use_static_covariates: bool = True,
     ):
         """
         A time series dataset containing tuples of (past_target, past_covariates, future_covariates, static_covariates,
@@ -497,7 +497,7 @@ class GenericShiftedDataset(TrainingDataset):
         shift_covariates: bool = False,
         max_samples_per_ts: Optional[int] = None,
         covariate_type: CovariateType = CovariateType.NONE,
-        use_static_covariates: bool = False,
+        use_static_covariates: bool = True,
     ):
         """
         Contains (past_target, <X>_covariates, static_covariates, future_target), where "<X>" is past if

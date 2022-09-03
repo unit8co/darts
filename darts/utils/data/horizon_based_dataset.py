@@ -24,7 +24,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         output_chunk_length: int = 12,
         lh: Tuple[int, int] = (1, 3),
         lookback: int = 3,
-        use_static_covariates: bool = False,
+        use_static_covariates: bool = True,
     ) -> None:
         """
         A time series dataset containing tuples of (past_target, past_covariates, static_covariates, future_target)
