@@ -34,7 +34,10 @@ class ExponentialSmoothing(ForecastingModel):
         <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.html>`_;
         we refer to this link for the original and more complete documentation of the parameters.
 
-        `model_mode` must be a ``ModelMode`` Enum member. You can access the Enum with ``from darts import ModelMode``.
+        `model_mode` must be a ``ModelMode`` Enum member. You can access the Enum with
+         ``from darts.utils.utils import ModelMode``.
+        `season_mode` must be a ``SeasonalityMode`` Enum member. You can access the Enum with
+        ``from darts.utils.utils import SeasonalityMode``.
 
         ``ExponentialSmoothing(trend=ModelMode.NONE, seasonal=SeasonalityMode.NONE)`` corresponds to a single
         exponential smoothing.
