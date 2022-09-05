@@ -1930,8 +1930,9 @@ class TimeSeries:
             that should lie before the point.
 
             In the case of ``int``, the point will be returned as such if the series is datetime-indexed
-            or integer-indexed and starting at 0. Otherwise, if not starting at 0, the method will return
-            the integer ``i`` such that ``point`` is the ``i``-th point along the series.
+            or integer-indexed and starting at 0 with freq=1. Otherwise, if not starting at 0 or if the
+            steps (freq) is not 1, the method will return the integer ``i`` such that ``point`` is the
+            ``i``-th point along the series.
         after
             If the provided pandas Timestamp is not in the time series index, whether to return the index of the
             next timestamp or the index of the previous one.
@@ -1949,7 +1950,12 @@ class TimeSeries:
             if self.has_datetime_index or self.start_time() == 0:
                 point_index = point
             else:
-                point_index = point - self.start_time()
+                point_index_float = (point - self.start_time()) / self.freq
+                point_index = int(point_index_float)
+                raise_if(
+                    point_index != point_index_float,
+                    "The provided point is not a valid index for this series.",
+                )
             raise_if_not(
                 0 <= point_index < len(self),
                 "point (int) should be a valid index in series",

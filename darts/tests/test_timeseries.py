@@ -119,6 +119,14 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         # drop_after should act on the timestamp
         np.testing.assert_equal(series.drop_after(20).values().flatten(), values[:10])
 
+        # test get_index_at_point on series with step > 1
+        values = np.random.random(10)
+        times = pd.RangeIndex(10, 30, step=2)
+        series: TimeSeries = TimeSeries.from_times_and_values(times, values)
+
+        # getting index for idx should return i s.t., series[i].time == idx
+        self.assertEqual(series.get_index_at_point(16), 3)
+
     def test_univariate_component(self):
         series = TimeSeries.from_values(np.array([10, 20, 30])).with_columns_renamed(
             "0", "component"
