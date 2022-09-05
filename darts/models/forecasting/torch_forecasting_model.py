@@ -1648,6 +1648,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             max_samples_per_ts=max_samples_per_ts,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     def _build_inference_dataset(
@@ -1669,6 +1670,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
             n=n,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
@@ -1723,6 +1725,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             max_samples_per_ts=max_samples_per_ts,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     def _build_inference_dataset(
@@ -1742,6 +1745,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             covariates=future_covariates,
             n=n,
             input_chunk_length=self.input_chunk_length,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
@@ -1792,6 +1796,7 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             max_samples_per_ts=max_samples_per_ts,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     def _build_inference_dataset(
@@ -1808,6 +1813,7 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
             n=n,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
@@ -1856,6 +1862,7 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             max_samples_per_ts=max_samples_per_ts,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     def _build_inference_dataset(
@@ -1873,6 +1880,7 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
             n=n,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
@@ -1918,6 +1926,7 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             max_samples_per_ts=max_samples_per_ts,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     def _build_inference_dataset(
@@ -1935,6 +1944,7 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
             n=n,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
