@@ -20,7 +20,7 @@ def _generate_index(
     start: Optional[Union[pd.Timestamp, int]] = None,
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
-    freq: str = "D",
+    freq: str = None,
     name: str = None,
 ) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
     """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
@@ -38,10 +38,12 @@ def _generate_index(
     length
         Optionally, the length of the returned index. Works only with either `start` or `end`.
     freq
-        The time difference between two adjacent entries in the returned index. Only effective if `start` is a
-        pandas Timestamp. A DateOffset alias is expected; see
+        The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
+        a DateOffset alias is expected; see
         `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
-        The freq is optional for generating an integer index.
+        By default, "D" (daily) is used.
+        If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
+        The freq is optional for generating an integer index (if not specified, 1 is used).
     """
     constructors = [
         arg_name
@@ -63,13 +65,18 @@ def _generate_index(
 
     if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
         index = pd.date_range(
-            start=start, end=end, periods=length, freq=freq, name=name
+            start=start,
+            end=end,
+            periods=length,
+            freq="D" if freq is None else freq,
+            name=name,
         )
     else:  # int
+        step = 1 if freq is None else freq
         index = pd.RangeIndex(
             start=start if start is not None else end - length + 1,
-            stop=end + 1 if end is not None else start + length,
-            step=1,
+            stop=end + 1 if end is not None else start + step * length,
+            step=step,
             name=name,
         )
     return index
@@ -725,7 +732,7 @@ def _generate_new_dates(
     Generates `n` new dates after the end of the specified series
     """
     last = input_series.end_time()
-    start = last + input_series.freq if input_series.has_datetime_index else last + 1
+    start = last + input_series.freq
     return _generate_index(
         start=start, freq=input_series.freq, length=n, name=input_series.time_dim
     )
