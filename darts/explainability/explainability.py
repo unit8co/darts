@@ -227,7 +227,7 @@ class ForecastingModelExplainer(ABC):
         Return a dictionary of dictionaries of (mutivariates) TimeSeries instances
         (or a list of dictionaries of dictionaries, il multiple TimeSeries list):
         - the first dimension corresponds to the horizons being explained.
-        - the second dimension corresponds to the components of the target time series we want to explain.
+        - the second dimension corresponds to the components of the target time series being explained.
 
 
         The value of the second dimension dictionary is a (multivariate) TimeSeries instance giving the 'explanation'
