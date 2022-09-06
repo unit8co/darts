@@ -226,6 +226,7 @@ class ForecastingModelExplainer(ABC):
         Main method of the ForecastingExplainer class.
         Return a dictionary of dictionaries of (mutivariates) TimeSeries instances
         (or a list of dictionaries of dictionaries, il multiple TimeSeries list):
+
         - the first dimension corresponds to the horizons being explained.
         - the second dimension corresponds to the components of the target time series being explained.
 
@@ -236,7 +237,7 @@ class ForecastingModelExplainer(ABC):
 
         The name convention for each component of this multivariate TimeSeries is:
         `name`_`type_of_cov`_lag_`int` where:
-        
+
         - `name` is the existing name of the component in the original different foreground TimeSeries (target or past
         or future).
         - `type_of_cov` is the type of covariates. It can take 3 different values: `target`, `past`, `future`.
