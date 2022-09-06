@@ -436,7 +436,8 @@ class TimeSeries:
         filepath_or_buffer
             The path to the CSV file, or the file object; consistent with the argument of `pandas.read_csv` function
         time_col
-            The time column name. If set, the column will be cast to a pandas DatetimeIndex.
+            The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains
+            timestamps) or a RangeIndex with step size of 1 (if it contains integers).
             If not set, the pandas RangeIndex will be used.
         value_cols
             A string or list of strings representing the value column(s) to be extracted from the CSV file. If set to
@@ -526,7 +527,8 @@ class TimeSeries:
         df
             The DataFrame
         time_col
-            The time column name. If set, the column will be cast to a pandas DatetimeIndex.
+            The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains
+            timestamps) or a RangeIndex with step size of 1 (if it contains integers).
             If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is
             either a pandas DatetimeIndex or a pandas RangeIndex. If a DatetimeIndex is
             used, it is better if it has no holes; alternatively setting `fill_missing_dates` can in some casees solve
@@ -699,7 +701,8 @@ class TimeSeries:
             A string or list of strings representing the columns from the DataFrame by which to extract the
             individual TimeSeries groups.
         time_col
-            The time column name. If set, the column will be cast to a pandas DatetimeIndex.
+            The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains
+            timestamps) or a RangeIndex with step size of 1 (if it contains integers).
             If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is
             either a pandas DatetimeIndex or a pandas RangeIndex. If a DatetimeIndex is
             used, it is better if it has no holes; alternatively setting `fill_missing_dates` can in some casees solve
@@ -2099,8 +2102,11 @@ class TimeSeries:
         self, start_ts: Union[pd.Timestamp, int], end_ts: Union[pd.Timestamp, int]
     ):
         """
-        Return a new TimeSeries, starting later than `start_ts` and ending before `end_ts`, inclusive on both ends.
-        The timestamps don't have to be in the series.
+        Return a new TimeSeries, starting later than `start_ts` and ending before `end_ts`.
+        For series having DatetimeIndex, this is inclusive on both ends. For series having a RangeIndex,
+        `end_ts` is exclusive.
+
+        `start_ts` and `end_ts` don't have to be in the series.
 
         Parameters
         ----------
@@ -2528,7 +2534,9 @@ class TimeSeries:
                 freq=self._freq,
             )
         else:
-            idx = pd.RangeIndex(len(self), len(self) + len(values), 1)
+            idx = pd.RangeIndex(
+                len(self), len(self) + self.freq * len(values), step=self.freq
+            )
 
         return self.append(
             self.__class__.from_times_and_values(
@@ -4106,7 +4114,11 @@ class TimeSeries:
             time_idx = xa_.get_index(self._time_dim)
             if time_idx.is_integer() and not isinstance(time_idx, pd.RangeIndex):
                 xa_ = xa_.assign_coords(
-                    {self._time_dim: pd.RangeIndex(start=key, stop=key + 1)}
+                    {
+                        self._time_dim: pd.RangeIndex(
+                            start=key, stop=key + self.freq, step=self.freq
+                        )
+                    }
                 )
 
             _set_freq_in_xa(xa_)  # indexing may discard the freq so we restore it...
