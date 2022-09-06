@@ -1950,7 +1950,7 @@ class TimeSeries:
             )
             point_index = int((len(self) - 1) * point)
         elif isinstance(point, (int, np.int64)):
-            if self.has_datetime_index or self.start_time() == 0:
+            if self.has_datetime_index or (self.start_time() == 0 and self.freq == 1):
                 point_index = point
             else:
                 point_index_float = (point - self.start_time()) / self.freq

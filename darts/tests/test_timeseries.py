@@ -113,6 +113,14 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         # getting index for idx should return i s.t., series[i].time == idx
         self.assertEqual(series.get_index_at_point(101), 91)
 
+        # check integer indexing features when series index starts at 0 with a step > 1
+        values = np.random.random(100)
+        times = pd.RangeIndex(0, 200, step=2)
+        series: TimeSeries = TimeSeries.from_times_and_values(times, values)
+
+        # getting index for idx should return i s.t., series[i].time == idx
+        self.assertEqual(series.get_index_at_point(100), 50)
+
         # slicing should act the same irrespective of the initial time stamp
         np.testing.assert_equal(series[10:20].values().flatten(), values[10:20])
 
@@ -272,6 +280,15 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         ts = TimeSeries.from_times_and_values(idx, values)
         slice_vals = ts.slice(10, 20).values(copy=False).flatten()
         np.testing.assert_equal(slice_vals, values[5:15])
+
+        # integer-indexed series, starting at 0, with step
+        values = np.random.rand(
+            30,
+        )
+        idx = pd.RangeIndex(start=0, stop=60, step=2)
+        ts = TimeSeries.from_times_and_values(idx, values)
+        slice_vals = ts.slice(10, 20).values(copy=False).flatten()
+        np.testing.assert_equal(slice_vals, values[5:10])
 
         # integer-indexed series, not starting at 0, with step
         values = np.random.rand(
