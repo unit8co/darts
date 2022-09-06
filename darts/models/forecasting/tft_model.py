@@ -1110,6 +1110,7 @@ class TFTModel(MixedCovariatesTorchModel):
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             max_samples_per_ts=max_samples_per_ts,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
@@ -1133,6 +1134,7 @@ class TFTModel(MixedCovariatesTorchModel):
             n=n,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     @staticmethod
