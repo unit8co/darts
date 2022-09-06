@@ -3,17 +3,17 @@ Croston method
 --------------
 """
 
-import numpy as np
-from numba.core import errors
-from statsforecast.models import croston_classic, croston_optimized, croston_sba
-from statsforecast.models import tsb as croston_tsb
+from typing import Optional
+
+from statsforecast.models import TSB as CrostonTSB
+from statsforecast.models import CrostonClassic, CrostonOptimized, CrostonSBA
 
 from darts.logging import raise_if, raise_if_not
-from darts.models.forecasting.forecasting_model import ForecastingModel
+from darts.models.forecasting.forecasting_model import DualCovariatesForecastingModel
 from darts.timeseries import TimeSeries
 
 
-class Croston(ForecastingModel):
+class Croston(DualCovariatesForecastingModel):
     def __init__(
         self, version: str = "classic", alpha_d: float = None, alpha_p: float = None
     ):
@@ -56,62 +56,52 @@ class Croston(ForecastingModel):
         )
 
         if version == "classic":
-            self.method = croston_classic
+            self.model = CrostonClassic()
         elif version == "optimized":
-            self.method = croston_optimized
+            self.model = CrostonOptimized()
         elif version == "sba":
-            self.method = croston_sba
+            self.model = CrostonSBA()
         else:
             raise_if(
                 alpha_d is None or alpha_p is None,
                 'alpha_d and alpha_p must be specified when using "tsb".',
             )
-            self.method = croston_tsb
             self.alpha_d = alpha_d
             self.alpha_p = alpha_p
+            self.model = CrostonTSB(alpha_d=self.alpha_d, alpha_p=self.alpha_p)
 
         self.version = version
 
     def __str__(self):
         return "Croston"
 
-    def fit(self, series: TimeSeries):
-        super().fit(series)
+    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+        super()._fit(series, future_covariates)
         series._assert_univariate()
         series = self.training_series
 
-        if self.version == "tsb":
-            self.forecast_val = self.method(
-                series.values(copy=False),
-                h=1,
-                future_xreg=None,
-                alpha_d=self.alpha_d,
-                alpha_p=self.alpha_p,
-            )
-        elif self.version == "sba":
-            try:
-                self.forecast_val = self.method(
-                    series.values(copy=False), h=1, future_xreg=None
-                )
-            except errors.TypingError:
-                raise_if(
-                    True,
-                    '"sba" version is not supported with this version of statsforecast.',
-                )
+        self.model.fit(
+            y=series.values(copy=False).flatten(),
+            X=future_covariates.values(copy=False).flatten()
+            if future_covariates is not None
+            else None,
+        )
 
-        else:
-            self.forecast_val = self.method(
-                series.values(copy=False), h=1, future_xreg=None
-            )
         return self
 
-    def predict(
+    def _predict(
         self,
         n: int,
+        future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
     ):
-        super().predict(n, num_samples)
-        values = np.tile(self.forecast_val, n)
+        super()._predict(n, future_covariates, num_samples)
+        values = self.model.predict(
+            h=n,
+            X=future_covariates.values(copy=False).flatten()
+            if future_covariates is not None
+            else None,
+        )["mean"]
         return self._build_forecast_series(values)
 
     @property

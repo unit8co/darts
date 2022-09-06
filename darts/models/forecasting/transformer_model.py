@@ -4,13 +4,13 @@ Transformer Model
 """
 
 import math
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
 
-from darts.logging import get_logger, raise_if, raise_if_not
-from darts.models.components import glu_variants
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.models.components import glu_variants, layer_norm_variants
 from darts.models.components.glu_variants import GLU_FFN
 from darts.models.components.transformer import (
     CustomFeedForwardDecoderLayer,
@@ -27,7 +27,15 @@ FFN = GLU_FFN + BUILT_IN
 
 
 def _generate_coder(
-    d_model, dim_ff, dropout, nhead, num_layers, coder_cls, layer_cls, ffn_cls
+    d_model,
+    dim_ff,
+    dropout,
+    nhead,
+    num_layers,
+    norm_layer,
+    coder_cls,
+    layer_cls,
+    ffn_cls,
 ):
     """Generates an Encoder or Decoder with one of Darts' Feed-forward Network variants.
     Parameters
@@ -35,13 +43,19 @@ def _generate_coder(
     coder_cls
         Either `torch.nn.TransformerEncoder` or `...TransformerDecoder`
     layer_cls
-        Either `darts.models.components.transformer.CustomFeedForwardEncoderLayer` or
-        `...CustomFeedForwardDecoderLayer`
+        Either `darts.models.components.transformer.CustomFeedForwardEncoderLayer`,
+        `...CustomFeedForwardDecoderLayer`, `nn.TransformerEncoderLayer`, or `nn.TransformerDecoderLayer`.
     ffn_cls
         One of Darts' Position-wise Feed-Forward Network variants `from darts.models.components.glu_variants`
     """
+
+    ffn = (
+        dict(ffn=ffn_cls(d_model=d_model, d_ff=dim_ff, dropout=dropout))
+        if ffn_cls
+        else dict()
+    )
     layer = layer_cls(
-        ffn=ffn_cls(d_model=d_model, d_ff=dim_ff, dropout=dropout),
+        **ffn,
         dropout=dropout,
         d_model=d_model,
         nhead=nhead,
@@ -50,7 +64,7 @@ def _generate_coder(
     return coder_cls(
         layer,
         num_layers=num_layers,
-        norm=nn.LayerNorm(d_model),
+        norm=norm_layer(d_model),
     )
 
 
@@ -112,6 +126,7 @@ class _TransformerModule(PLPastCovariatesModule):
         dim_feedforward: int,
         dropout: float,
         activation: str,
+        norm_type: Union[str, nn.Module, None] = None,
         custom_encoder: Optional[nn.Module] = None,
         custom_decoder: Optional[nn.Module] = None,
         **kwargs,
@@ -142,6 +157,8 @@ class _TransformerModule(PLPastCovariatesModule):
             Fraction of neurons affected by Dropout.
         activation
             The activation function of encoder/decoder intermediate layer.
+        norm_type: str | nn.Module | None
+            The type of LayerNorm variant to use.
         custom_encoder
             A custom transformer encoder provided by the user (default=None).
         custom_decoder
@@ -172,6 +189,16 @@ class _TransformerModule(PLPastCovariatesModule):
             d_model, dropout, self.input_chunk_length
         )
 
+        if isinstance(norm_type, str):
+            try:
+                self.layer_norm = getattr(layer_norm_variants, norm_type)
+            except AttributeError:
+                raise_log(
+                    AttributeError("please provide a valid layer norm type"),
+                )
+        else:
+            self.layer_norm = norm_type
+
         raise_if_not(activation in FFN, f"'{activation}' is not in {FFN}")
         if activation in GLU_FFN:
             raise_if(
@@ -192,9 +219,10 @@ class _TransformerModule(PLPastCovariatesModule):
                 dropout,
                 nhead,
                 num_encoder_layers,
-                nn.TransformerEncoder,
-                CustomFeedForwardEncoderLayer,
-                ffn_cls,
+                self.layer_norm if self.layer_norm else nn.LayerNorm,
+                coder_cls=nn.TransformerEncoder,
+                layer_cls=CustomFeedForwardEncoderLayer,
+                ffn_cls=ffn_cls,
             )
 
             custom_decoder = _generate_coder(
@@ -203,9 +231,36 @@ class _TransformerModule(PLPastCovariatesModule):
                 dropout,
                 nhead,
                 num_decoder_layers,
-                nn.TransformerDecoder,
-                CustomFeedForwardDecoderLayer,
-                ffn_cls,
+                self.layer_norm if self.layer_norm else nn.LayerNorm,
+                coder_cls=nn.TransformerDecoder,
+                layer_cls=CustomFeedForwardDecoderLayer,
+                ffn_cls=ffn_cls,
+            )
+
+        # if layer norm set and no GLU variant is used
+        if self.layer_norm and custom_decoder is None:
+            custom_encoder = _generate_coder(
+                d_model,
+                dim_feedforward,
+                dropout,
+                nhead,
+                num_encoder_layers,
+                self.layer_norm,
+                coder_cls=nn.TransformerEncoder,
+                layer_cls=nn.TransformerEncoderLayer,
+                ffn_cls=None,
+            )
+
+            custom_decoder = _generate_coder(
+                d_model,
+                dim_feedforward,
+                dropout,
+                nhead,
+                num_decoder_layers,
+                self.layer_norm,
+                coder_cls=nn.TransformerDecoder,
+                layer_cls=nn.TransformerDecoderLayer,
+                ffn_cls=None,
             )
 
         # Defining the Transformer module
@@ -275,6 +330,7 @@ class TransformerModel(PastCovariatesTorchModel):
         dim_feedforward: int = 512,
         dropout: float = 0.1,
         activation: str = "relu",
+        norm_type: Union[str, nn.Module, None] = None,
         custom_encoder: Optional[nn.Module] = None,
         custom_decoder: Optional[nn.Module] = None,
         **kwargs,
@@ -317,6 +373,9 @@ class TransformerModel(PastCovariatesTorchModel):
             fully-connected layer with an activation. The glu variant's FeedForward Network are a series
             of FFNs designed to work better with Transformer based models. ["GLU", "Bilinear", "ReGLU", "GEGLU",
             "SwiGLU", "ReLU", "GELU"] or one the pytorch internal activations ["relu", "gelu"]
+        norm_type: str | nn.Module
+            The type of LayerNorm variant to use.  Default: ``None``. Avaliable options are
+            ["LayerNorm", "RMSNorm", "LayerNormNoBias"], or provide a custom nn.Module.
         custom_encoder
             A custom user-provided encoder module for the transformer (default=None).
         custom_decoder
@@ -484,6 +543,7 @@ class TransformerModel(PastCovariatesTorchModel):
         self.dim_feedforward = dim_feedforward
         self.dropout = dropout
         self.activation = activation
+        self.norm_type = norm_type
         self.custom_encoder = custom_encoder
         self.custom_decoder = custom_decoder
 
@@ -506,6 +566,7 @@ class TransformerModel(PastCovariatesTorchModel):
             dim_feedforward=self.dim_feedforward,
             dropout=self.dropout,
             activation=self.activation,
+            norm_type=self.norm_type,
             custom_encoder=self.custom_encoder,
             custom_decoder=self.custom_decoder,
             **self.pl_module_params,

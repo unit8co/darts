@@ -12,13 +12,16 @@ one or several time series. The function `predict()` applies `f()` on one or sev
 to obtain forecasts for a desired number of time stamps into the future.
 """
 import copy
+import datetime
 import inspect
+import os
+import pickle
 import time
 from abc import ABC, ABCMeta, abstractmethod
 from collections import OrderedDict
 from itertools import product
 from random import sample
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, BinaryIO, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -30,8 +33,10 @@ from darts.utils import (
     _build_tqdm_iterator,
     _historical_forecasts_general_checks,
     _parallel_apply,
+    _retrain_wrapper,
     _with_sanity_checks,
 )
+from darts.utils.data.encoders import SequentialEncoder
 from darts.utils.timeseries_generation import (
     _build_forecast_series,
     _generate_new_dates,
@@ -299,7 +304,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         start: Union[pd.Timestamp, float, int] = 0.5,
         forecast_horizon: int = 1,
         stride: int = 1,
-        retrain: bool = True,
+        retrain: Union[bool, int, Callable[..., bool]] = True,
         overlap_end: bool = False,
         last_points_only: bool = True,
         verbose: bool = False,
@@ -353,8 +358,22 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         stride
             The number of time steps between two consecutive predictions.
         retrain
-            Whether to retrain the model for every prediction or not. Not all models support setting
-            `retrain` to `False`. Notably, this is supported by neural networks based models.
+            Whether and/or on which condition to retrain the model before predicting.
+            This parameter supports 3 different datatypes: ``bool``, (positive) ``int``, and
+            ``Callable`` (returning a ``bool``).
+            In the case of ``bool``: retrain the model at each step (`True`), or never retrains the model (`False`).
+            In the case of ``int``: the model is retrained every `retrain` iterations.
+            In the case of ``Callable``: the model is retrained whenever callable returns `True`.
+            Arguments passed to the callable are as follows:
+
+                - `pred_time (pd.Timestamp or int)`: timestamp of forecast time (end of the training series)
+                - `train_series (TimeSeries)`: train series up to `pred_time`
+                - `past_covariates (TimeSeries)`: past_covariates series up to `pred_time`
+                - `future_covariates (TimeSeries)`: future_covariates series up
+                  to `min(pred_time + series.freq * forecast_horizon, series.end_time())`
+
+            Note: some models do require being retrained every time
+            and do not support anything else than `retrain=True`.
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not
         last_points_only
@@ -380,10 +399,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         # only GlobalForecastingModels support historical forecastings without retraining the model
         base_class_name = self.__class__.__base__.__name__
         raise_if(
-            not retrain and not self._supports_non_retrainable_historical_forecasts(),
+            (isinstance(retrain, Callable) or int(retrain) != 1)
+            and (not self._supports_non_retrainable_historical_forecasts()),
             f"{base_class_name} does not support historical forecastings with `retrain` set to `False`. "
             f"For now, this is only supported with GlobalForecastingModels such as TorchForecastingModels. "
-            f"Fore more information, read the documentation for `retrain` in `historical_forecastings()`",
+            f"For more information, read the documentation for `retrain` in `historical_forecasts()`",
             logger,
         )
 
@@ -404,6 +424,25 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ),
                 logger,
             )
+
+        if isinstance(retrain, bool) or (isinstance(retrain, int) and retrain >= 0):
+            retrain_func = _retrain_wrapper(
+                lambda counter: counter % int(retrain) == 0 if retrain else False
+            )
+
+        elif isinstance(retrain, Callable):
+            retrain_func = _retrain_wrapper(retrain)
+
+        else:
+            raise_log(
+                ValueError(
+                    "`retrain` argument must be either `bool`, positive `int` or `Callable` (returning `bool`)"
+                ),
+                logger,
+            )
+        retrain_func_signature = tuple(
+            inspect.signature(retrain_func).parameters.keys()
+        )
 
         # prepare the start parameter -> pd.Timestamp
         start = series.get_timestamp_at_point(start)
@@ -431,7 +470,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         last_points_values = []
 
         # iterate and forecast
-        for pred_time in iterator:
+        for _counter, pred_time in enumerate(iterator):
             # build the training series
             train = series.drop_after(pred_time)
             if train_length and len(train) > train_length:
@@ -439,7 +478,19 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             # train_cov = covariates.drop_after(pred_time) if covariates else None
 
-            if retrain or not self._fit_called:
+            if (not self._fit_called) or retrain_func(
+                counter=_counter,
+                pred_time=pred_time,
+                train_series=train,
+                past_covariates=past_covariates.drop_after(pred_time)
+                if past_covariates and ("past_covariates" in retrain_func_signature)
+                else None,
+                future_covariates=future_covariates.drop_after(
+                    min(pred_time + series.freq * forecast_horizon, series.end_time())
+                )
+                if future_covariates and ("future_covariates" in retrain_func_signature)
+                else None,
+            ):
                 self._fit_wrapper(
                     series=train,
                     past_covariates=past_covariates,
@@ -494,7 +545,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         start: Union[pd.Timestamp, float, int] = 0.5,
         forecast_horizon: int = 1,
         stride: int = 1,
-        retrain: bool = True,
+        retrain: Union[bool, int, Callable[..., bool]] = True,
         overlap_end: bool = False,
         last_points_only: bool = False,
         metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
@@ -552,8 +603,22 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         stride
             The number of time steps between two consecutive training sets.
         retrain
-            Whether to retrain the model for every prediction or not. Not all models support setting
-            `retrain` to `False`. Notably, this is supported by neural networks based models.
+            Whether and/or on which condition to retrain the model before predicting.
+            This parameter supports 3 different datatypes: ``bool``, (positive) ``int``, and
+            ``Callable`` (returning a ``bool``).
+            In the case of ``bool``: retrain the model at each step (`True`), or never retrains the model (`False`).
+            In the case of ``int``: the model is retrained every `retrain` iterations.
+            In the case of ``Callable``: the model is retrained whenever callable returns `True`.
+            Arguments passed to the callable are as follows:
+
+                - `pred_time (pd.Timestamp or int)`: timestamp of forecast time (end of the training series)
+                - `train_series (TimeSeries)`: train series up to `pred_time`
+                - `past_covariates (TimeSeries)`: past_covariates series up to `pred_time`
+                - `future_covariates (TimeSeries)`: future_covariates series up
+                  to `min(pred_time + series.freq * forecast_horizon, series.end_time())`
+
+            Note: some models do require being retrained every time
+            and do not support anything else than `retrain=True`.
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not
         last_points_only
@@ -811,7 +876,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return model_class(**best_param_combination), best_param_combination, min_error
 
     def residuals(
-        self, series: TimeSeries, forecast_horizon: int = 1, verbose: bool = False
+        self,
+        series: TimeSeries,
+        forecast_horizon: int = 1,
+        retrain: bool = True,
+        verbose: bool = False,
     ) -> TimeSeries:
         """Compute the residuals produced by this model on a univariate time series.
 
@@ -834,6 +903,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             The univariate TimeSeries instance which the residuals will be computed for.
         forecast_horizon
             The forecasting horizon used to predict each fitted value.
+        retrain
+            Whether to train the model at each iteration, for models that support it.
+            If False, the model is not trained at all. Default: True
         verbose
             Whether to print progress.
         Returns
@@ -852,7 +924,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             start=first_index,
             forecast_horizon=forecast_horizon,
             stride=1,
-            retrain=True,
+            retrain=retrain,
             last_points_only=True,
             verbose=verbose,
         )
@@ -900,6 +972,75 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             self._model_params if hasattr(self, "_model_params") else self._model_call
         )
 
+    @classmethod
+    def _default_save_path(cls) -> str:
+        return f"{cls.__name__}_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}"
+
+    def save(self, path: Optional[Union[str, BinaryIO]] = None, **pkl_kwargs) -> None:
+        """
+        Saves the model under a given path or file handle.
+
+        Example for saving and loading a :class:`RegressionModel`:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from darts.models import RegressionModel
+
+                model = RegressionModel(lags=4)
+
+                model.save("my_model.pkl")
+                model_loaded = RegressionModel.load("my_model.pkl")
+            ..
+
+        Parameters
+        ----------
+        path
+            Path or file handle under which to save the model at its current state. If no path is specified, the model
+            is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pkl"``.
+            E.g., ``"RegressionModel_2020-01-01_12:00:00.pkl"``.
+        pkl_kwargs
+            Keyword arguments passed to `pickle.dump()`
+        """
+
+        if path is None:
+            # default path
+            path = self._default_save_path() + ".pkl"
+
+        if isinstance(path, str):
+            # save the whole object using pickle
+            with open(path, "wb") as handle:
+                pickle.dump(obj=self, file=handle, **pkl_kwargs)
+        else:
+            # save the whole object using pickle
+            pickle.dump(obj=self, file=path, **pkl_kwargs)
+
+    @staticmethod
+    def load(path: Union[str, BinaryIO]) -> "ForecastingModel":
+        """
+        Loads the model from a given path or file handle.
+
+        Parameters
+        ----------
+        path
+            Path or file handle from which to load the model.
+        """
+
+        if isinstance(path, str):
+            raise_if_not(
+                os.path.exists(path),
+                f"The file {path} doesn't exist",
+                logger,
+            )
+
+            with open(path, "rb") as handle:
+                model = pickle.load(file=handle)
+        else:
+
+            model = pickle.load(file=path)
+
+        return model
+
 
 class GlobalForecastingModel(ForecastingModel, ABC):
     """The base class for "global" forecasting models, handling several time series and optional covariates.
@@ -924,6 +1065,13 @@ class GlobalForecastingModel(ForecastingModel, ABC):
 
     _expect_past_covariates, _expect_future_covariates = False, False
     past_covariate_series, future_covariate_series = None, None
+
+    def __init__(self, add_encoders: Optional[dict] = None):
+        super().__init__()
+
+        # by default models do not use encoders
+        self.add_encoders = add_encoders
+        self.encoders: Optional[SequentialEncoder] = None
 
     @abstractmethod
     def fit(
@@ -1077,13 +1225,40 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         """GlobalForecastingModel supports historical forecasts without retraining the model"""
         return True
 
+    @property
+    @abstractmethod
+    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
+        """Abstract property that returns model specific encoder settings that are used to initialize the encoders.
+
+        Must return Tuple (input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates)
+        """
+        pass
+
+    def initialize_encoders(self) -> SequentialEncoder:
+        """instantiates the SequentialEncoder object based on self._model_encoder_settings and parameter
+        ``add_encoders`` used at model creation"""
+        (
+            input_chunk_length,
+            output_chunk_length,
+            takes_past_covariates,
+            takes_future_covariates,
+        ) = self._model_encoder_settings
+
+        return SequentialEncoder(
+            add_encoders=self.add_encoders,
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            takes_past_covariates=takes_past_covariates,
+            takes_future_covariates=takes_future_covariates,
+        )
+
 
 class DualCovariatesForecastingModel(ForecastingModel, ABC):
     """The base class for the forecasting models that are not global, but support future covariates.
     Among other things, it lets Darts forecasting models wrap around statsmodels models
     having a `future_covariates` parameter, which corresponds to future-known covariates.
 
-    All implementations have to implement the `fit()` and `predict()` methods defined below.
+    All implementations have to implement the `_fit()` and `_predict()` methods defined below.
     """
 
     _expect_covariate = False
@@ -1137,6 +1312,7 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
         n: int,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        **kwargs,
     ) -> TimeSeries:
         """Forecasts values for `n` time steps after the end of the training series.
 
@@ -1159,8 +1335,7 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
         TimeSeries, a single time series containing the `n` next points after then end of the training series.
         """
 
-        if future_covariates is None:
-            super().predict(n, num_samples)
+        super().predict(n, num_samples)
 
         if self._expect_covariate and future_covariates is None:
             raise_log(
@@ -1169,6 +1344,12 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
                     "`future_covariates` variables have to be provided to `predict()`."
                 )
             )
+
+        raise_if(
+            not self._expect_covariate and future_covariates is not None,
+            "The model has been trained without `future_covariates` variable, but the "
+            "`future_covariates` parameter provided to `predict()` is not None.",
+        )
 
         if future_covariates is not None:
             start = self.training_series.end_time() + self.training_series.freq
@@ -1194,13 +1375,13 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
             ]
 
             raise_if_not(
-                len(future_covariates) == n and self._expect_covariate,
+                len(future_covariates) == n,
                 invalid_time_span_error,
                 logger,
             )
 
         return self._predict(
-            n, future_covariates=future_covariates, num_samples=num_samples
+            n, future_covariates=future_covariates, num_samples=num_samples, **kwargs
         )
 
     @abstractmethod
@@ -1234,3 +1415,132 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
         return self.predict(
             n, future_covariates=future_covariates, num_samples=num_samples
         )
+
+
+class TransferableDualCovariatesForecastingModel(DualCovariatesForecastingModel, ABC):
+    """The base class for the forecasting models that are not global, but support future covariates, and can
+    additionally be applied to new data unrelated to the original series used for fitting the model. Currently,
+    all the derived classes wrap statsmodels models.
+
+    All implementations have to implement the `_fit()`, `_predict()` methods.
+    """
+
+    def predict(
+        self,
+        n: int,
+        series: Optional[TimeSeries] = None,
+        future_covariates: Optional[TimeSeries] = None,
+        num_samples: int = 1,
+        **kwargs,
+    ) -> TimeSeries:
+        """If the `series` parameter is not set, forecasts values for `n` time steps after the end of the training
+        series. If some future covariates were specified during the training, they must also be specified here.
+
+        If the `series` parameter is set, forecasts values for `n` time steps after the end of the new target
+        series. If some future covariates were specified during the training, they must also be specified here.
+
+        Parameters
+        ----------
+        n
+            Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
+        series
+            Optionally, a new target series whose future values will be predicted. Defaults to `None`, meaning that the
+            model will forecast the future value of the training series.
+        future_covariates
+            The time series of future-known covariates which can be fed as input to the model. It must correspond to
+            the covariate time series that has been used with the :func:`fit()` method for training.
+
+            If `series` is not set, it must contain at least the next `n` time steps/indices after the end of the
+            training target series. If `series` is set, it must contain at least the time steps/indices corresponding
+            to the new target series (historic future covariates), plus the next `n` time steps/indices after the end.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+            for deterministic models.
+
+        Returns
+        -------
+        TimeSeries, a single time series containing the `n` next points after then end of the training series.
+        """
+
+        if self._expect_covariate and future_covariates is None:
+            raise_log(
+                ValueError(
+                    "The model has been trained with `future_covariates` variable. Some matching "
+                    "`future_covariates` variables have to be provided to `predict()`."
+                )
+            )
+
+        historic_future_covariates = None
+
+        if series is not None and future_covariates:
+            raise_if_not(
+                future_covariates.start_time() <= series.start_time()
+                and future_covariates.end_time() >= series.end_time() + n * series.freq,
+                "The provided `future_covariates` related to the new target series must contain at least the same time"
+                "steps/indices as the target `series` + `n`.",
+                logger,
+            )
+            # splitting the future covariates
+            (
+                historic_future_covariates,
+                future_covariates,
+            ) = future_covariates.split_after(series.end_time())
+
+            # in case future covariate have more values on the left end side that we don't need
+            if not series.has_same_time_as(historic_future_covariates):
+                historic_future_covariates = historic_future_covariates.slice_intersect(
+                    series
+                )
+
+        # DualCovariatesForecastingModel performs some checks on self.training_series. We temporary replace that with
+        # the new ts
+        if series is not None:
+            self._orig_training_series = self.training_series
+            self.training_series = series
+
+        result = super().predict(
+            n=n,
+            series=series,
+            historic_future_covariates=historic_future_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            **kwargs,
+        )
+
+        # restoring the original training ts
+        if series is not None:
+            self.training_series = self._orig_training_series
+
+        return result
+
+    @abstractmethod
+    def _predict(
+        self,
+        n: int,
+        series: Optional[TimeSeries] = None,
+        historic_future_covariates: Optional[TimeSeries] = None,
+        future_covariates: Optional[TimeSeries] = None,
+        num_samples: int = 1,
+    ) -> TimeSeries:
+        """Forecasts values for a certain number of time steps after the end of the series.
+        TransferableDualCovariatesForecastingModel must implement the predict logic in this method.
+        """
+        pass
+
+    def _predict_wrapper(
+        self,
+        n: int,
+        series: TimeSeries,
+        past_covariates: Optional[TimeSeries],
+        future_covariates: Optional[TimeSeries],
+        num_samples: int,
+    ) -> TimeSeries:
+        return self.predict(
+            n=n,
+            series=series,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+        )
+
+    def _supports_non_retrainable_historical_forecasts(self) -> bool:
+        return True

@@ -24,6 +24,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         output_chunk_length: int = 12,
         lh: Tuple[int, int] = (1, 3),
         lookback: int = 3,
+        use_static_covariates: bool = True,
     ) -> None:
         """
         A time series dataset containing tuples of (past_target, past_covariates, static_covariates, future_target)
@@ -68,6 +69,8 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
             A integer interval for the length of the input in the emitted input and output splits, expressed as a
             multiple of `output_chunk_length`. For instance, `lookback=3` will emit "inputs" of lengths
             `3 * output_chunk_length`.
+        use_static_covariates
+            Whether to use/include static covariate data from input series.
         """
         super().__init__()
 
@@ -97,6 +100,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
 
         self.nr_samples_per_ts = (self.max_lh - self.min_lh) * self.output_chunk_length
         self.total_nr_samples = len(self.target_series) * self.nr_samples_per_ts
+        self.use_static_covariates = use_static_covariates
 
     def __len__(self):
         """
@@ -181,5 +185,8 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
                 "input (or output) chunk relative to the target series.",
             )
 
-        static_covariate = target_series.static_covariates_values(copy=False)
+        if self.use_static_covariates:
+            static_covariate = target_series.static_covariates_values(copy=False)
+        else:
+            static_covariate = None
         return past_target, covariate, static_covariate, future_target

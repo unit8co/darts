@@ -1,11 +1,45 @@
 
 # Changelog
 
-Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
+Darts is still in an early development phase, and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
-[Full Changelog](https://github.com/unit8co/darts/compare/0.20.0...master)
+- Added support for retraining model(s) every `n` iteration and on custom condition in `historical_forecasts` method of `ForecastingModel` abstract class. Addressed issues [#135](https://github.com/unit8co/darts/issues/135) and [#623](https://github.com/unit8co/darts/issues/623) by [Francesco Bruzzesi](https://github.com/fbruzzesi).
+- New LayerNorm alternatives, RMSNorm and LayerNormNoBias [#1113](https://github.com/unit8co/darts/issues/1113) by [Greg DeVos](https://github.com/gdevos010).
 
+[Full Changelog](https://github.com/unit8co/darts/compare/0.21.0...master)
+
+
+## [0.21.0](https://github.com/unit8co/darts/tree/0.21.0) (2022-08-12)
+
+### For users of the library:
+
+**Improved**
+- New model: Catboost, incl `quantile`, `poisson` and `gaussian` likelihoods support. [#1007](https://github.com/unit8co/darts/pull/1007), [#1044](https://github.com/unit8co/darts/pull/1044) by [Jonas Racine](https://github.com/jonasracine).
+- Extension of the `add_encoders` option to `RegressionModel`s. It is now straightforward to add calendar based or custom past or future covariates to these models, similar to torch models. [#1093](https://github.com/unit8co/darts/pull/1093) by [Dennis Bader](https://github.com/dennisbader).
+- Introduction of `StaticCovariatesTransformer`, categorical static covariate support for `TFTModel`, example and user-guide updates on static covariates. [#1081](https://github.com/unit8co/darts/pull/1081) by [Dennis Bader](https://github.com/dennisbader).
+- ARIMA and VARIMA models now support being applied to a new series, different than the one used for training. [#1036](https://github.com/unit8co/darts/pull/1036) by [Samuele Giuliano Piazzetta](https://github.com/piaz97).
+- All Darts forecasting models now have unified `save()` and `load()` methods. [#1070](https://github.com/unit8co/darts/pull/1070) by [Dustin Brunner](https://github.com/brunnedu).
+- Improvements in logging. [#1034](https://github.com/unit8co/darts/pull/1034) by [Dustin Brunner](https://github.com/brunnedu).
+- Re-integrating Prophet >= 1.1 in core dependencies (as it does not depend on PyStan anymore). [#1054](https://github.com/unit8co/darts/pull/1054) by [Julien Herzen](https://github.com/hrzn).
+- Added a new `AustralianTourismDataset`. [#1141](https://github.com/unit8co/darts/pull/1141) by [Julien Herzen](https://github.com/hrzn).
+- Added a new notebook demonstrating hierarchical reconciliation. [#1147](https://github.com/unit8co/darts/pull/1147) by [Julien Herzen](https://github.com/hrzn).
+- Added `drop_columns()` method to `TimeSeries`. [#1040](https://github.com/unit8co/darts/pull/1040) by [@shaido987](https://github.com/shaido987)
+- Speedup static covariates when no casting is needed. [#1053](https://github.com/unit8co/darts/pull/1053) by [Julien Herzen](https://github.com/hrzn).
+- Implemented the min_train_series_length method for the FourTheta and Theta models that overwrites the minimum default of 3 training samples by 2*seasonal_period when appropriate. [#1101](https://github.com/unit8co/darts/pull/1101) by [Rijk van der Meulen](https://github.com/rijkvandermeulen).
+- Make default formatting optional in plots. [#1056](https://github.com/unit8co/darts/pull/1056) by [Colin Delahunty](https://github.com/colin99d)
+- Introduce `retrain` option in `residuals()` method. [#1066](https://github.com/unit8co/darts/pull/1066) by [Julien Herzen](https://github.com/hrzn).
+- Improved error messages. [#1066](https://github.com/unit8co/darts/pull/1066) by [Julien Herzen](https://github.com/hrzn).
+- Small readability improvements to user guide. [#1039](https://github.com/unit8co/darts/pull/1039), [#1046](https://github.com/unit8co/darts/pull/1046/files) by [Ryan Russell](https://github.com/ryanrussell)
+
+**Fixed**
+- Fixed an error when loading torch forecasting models. [#1124](https://github.com/unit8co/darts/pull/1124) by [Dennis Bader](https://github.com/dennisbader).
+- 🔴 renamed `ignore_time_axes` into `ignore_time_axis` in `TimeSeries.concatenate()`. [#1073](https://github.com/unit8co/darts/pull/1073/files) by [Thomas KIENTZ](https://github.com/thomktz)
+- Propagate static covs and hierarchy in missing value filler. [#1076](https://github.com/unit8co/darts/pull/1076) by [Julien Herzen](https://github.com/hrzn).
+- Fixed an issue where num_stacks is used instead of self.num_stacks in the NBEATSModel. Also, a few mistakes in API reference docs. [#1103](https://github.com/unit8co/darts/pull/1103) by [Rijk van der Meulen](https://github.com/rijkvandermeulen).
+- Fixed `univariate_component()` method to propagate static covariates and drop hierarchy. [#1128](https://github.com/unit8co/darts/pull/1128) by [Julien Herzen](https://github.com/hrzn).
+- Fixed various issues. [#1106](https://github.com/unit8co/darts/pull/1106) by [Julien Herzen](https://github.com/hrzn).
+- Fixed an issue with `residuals` on `RNNModel`. [#1066](https://github.com/unit8co/darts/pull/1066) by [Julien Herzen](https://github.com/hrzn).
 
 ## [0.20.0](https://github.com/unit8co/darts/tree/0.20.0) (2022-06-22)
 
@@ -15,7 +49,7 @@ Darts is still in an early development phase and we cannot always guarantee back
 - Added support for static covariates in `TimeSeries` class. [#966](https://github.com/unit8co/darts/pull/966) by [Dennis Bader](https://github.com/dennisbader).
 - Added support for static covariates in TFT model. [#966](https://github.com/unit8co/darts/pull/966) by [Dennis Bader](https://github.com/dennisbader).
 - Support for storing hierarchy of components in `TimeSeries` (in view of hierarchical reconciliation) [#1012](https://github.com/unit8co/darts/pull/1012) by [Julien Herzen](https://github.com/hrzn).
-- New Reconciliation transformers for forececast reconciliation: bottom up, top down and MinT. [#1012](https://github.com/unit8co/darts/pull/1012) by [Julien Herzen](https://github.com/hrzn).
+- New Reconciliation transformers for forecast reconciliation: bottom up, top down and MinT. [#1012](https://github.com/unit8co/darts/pull/1012) by [Julien Herzen](https://github.com/hrzn).
 - Added support for Monte Carlo Dropout, as a way to capture model uncertainty with torch models at inference time. [#1013](https://github.com/unit8co/darts/pull/1013) by [Julien Herzen](https://github.com/hrzn).
 - New datasets: ETT and Electricity. [#617](https://github.com/unit8co/darts/pull/617)
   by [Greg DeVos](https://github.com/gdevos010)

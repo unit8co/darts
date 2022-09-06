@@ -23,7 +23,7 @@ import os
 import shutil
 from abc import ABC, abstractmethod
 from glob import glob
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -47,7 +47,6 @@ from darts.models.forecasting.forecasting_model import (
 )
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.timeseries import TimeSeries
-from darts.utils.data.encoders import SequentialEncoder
 from darts.utils.data.inference_dataset import (
     DualCovariatesInferenceDataset,
     FutureCovariatesInferenceDataset,
@@ -126,9 +125,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         torch_device_str: Optional[str] = None,
         force_reset: bool = False,
         save_checkpoints: bool = False,
-        add_encoders: Optional[Dict] = None,
+        add_encoders: Optional[dict] = None,
         random_state: Optional[int] = None,
-        pl_trainer_kwargs: Optional[Dict] = None,
+        pl_trainer_kwargs: Optional[dict] = None,
         show_warnings: bool = False,
     ):
 
@@ -190,7 +189,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where
             :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
             :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
-            :func:`save_model()` and loaded using :func:`load_model()`. Default: ``False``.
+            :func:`save()` and loaded using :func:`load()`. Default: ``False``.
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -253,7 +252,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
         """
-        super().__init__()
+        super().__init__(add_encoders=add_encoders)
         suppress_lightning_warnings(suppress_all=not show_warnings)
 
         # We will fill these dynamically, upon first call of fit_from_dataset():
@@ -263,10 +262,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         self.n_epochs = n_epochs
         self.batch_size = batch_size
-
-        # by default models do not use encoders
-        self.add_encoders = add_encoders
-        self.encoders: Optional[SequentialEncoder] = None
 
         # get model name and work dir
         if model_name is None:
@@ -353,7 +348,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.load_ckpt_path: Optional[str] = None
 
         # pl_module_params must be set in __init__ method of TorchForecastingModel subclass
-        self.pl_module_params: Optional[Dict] = None
+        self.pl_module_params: Optional[dict] = None
 
     @staticmethod
     def _extract_torch_devices(
@@ -508,7 +503,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # we need to save the initialized TorchForecastingModel as PyTorch-Lightning only saves module checkpoints
         if self.save_checkpoints:
-            self.save_model(
+            self.save(
                 os.path.join(
                     _get_runs_folder(self.work_dir, self.model_name), INIT_MODEL_NAME
                 )
@@ -536,7 +531,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     @staticmethod
     def _init_trainer(
-        trainer_params: Dict, max_epochs: Optional[int] = None
+        trainer_params: dict, max_epochs: Optional[int] = None
     ) -> pl.Trainer:
         """Initializes the PyTorch-Lightning trainer for training or prediction from `trainer_params`."""
         trainer_params_copy = {param: val for param, val in trainer_params.items()}
@@ -792,6 +787,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         else:
             val_dataset = None
 
+        # Pro-actively catch length exceptions to display nicer messages
+        length_ok = True
+        try:
+            len(train_dataset)
+        except ValueError:
+            length_ok = False
+        raise_if(
+            not length_ok or len(train_dataset) == 0,  # mind the order
+            "The train dataset does not contain even one training sample. "
+            + "This is likely due to the provided training series being too short. "
+            + "This model expect series of length at least {}.".format(
+                self.min_train_series_length
+            ),
+        )
         logger.info(f"Train dataset contains {len(train_dataset)} samples.")
 
         return self.fit_from_dataset(
@@ -851,13 +860,26 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         self._fit_called = True
         self._verify_train_dataset_type(train_dataset)
+
+        # Pro-actively catch length exceptions to display nicer messages
+        train_length_ok, val_length_ok = True, True
+        try:
+            len(train_dataset)
+        except ValueError:
+            train_length_ok = False
+        if val_dataset is not None:
+            try:
+                len(val_dataset)
+            except ValueError:
+                val_length_ok = False
+
         raise_if(
-            len(train_dataset) == 0,
+            not train_length_ok or len(train_dataset) == 0,  # mind the order
             "The provided training time series dataset is too short for obtaining even one training point.",
             logger,
         )
         raise_if(
-            val_dataset is not None and len(val_dataset) == 0,
+            val_dataset is not None and (not val_length_ok or len(val_dataset) == 0),
             "The provided validation time series dataset is too short for obtaining even one training point.",
             logger,
         )
@@ -927,7 +949,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # TODO: multiple training without loading from checkpoint is not trivial (I believe PyTorch-Lightning is still
         #  working on that, see https://github.com/PyTorchLightning/pytorch-lightning/issues/9636)
         if self.epochs_trained > 0 and not self.load_ckpt_path:
-            logger.warn(
+            logger.warning(
                 "Attempting to retrain the model without resuming from a checkpoint. This is currently "
                 "discouraged. Consider setting `save_checkpoints` to `True` and specifying `model_name` at model "
                 f"creation. Then call `model = {self.__class__.__name__}.load_from_checkpoint(model_name, "
@@ -1234,33 +1256,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return [ts for batch in predictions for ts in batch]
 
     @property
-    @abstractmethod
-    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
-        """Abstract property that returns model specific encoder settings that are used to initialize the encoders.
-
-        Must return Tuple (input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates)
-        """
-        pass
-
-    def initialize_encoders(self) -> SequentialEncoder:
-        """instantiates the SequentialEncoder object based on self._model_encoder_settings and parameter
-        ``add_encoders`` used at model creation"""
-        (
-            input_chunk_length,
-            output_chunk_length,
-            takes_past_covariates,
-            takes_future_covariates,
-        ) = self._model_encoder_settings
-
-        return SequentialEncoder(
-            add_encoders=self.add_encoders,
-            input_chunk_length=input_chunk_length,
-            output_chunk_length=output_chunk_length,
-            takes_past_covariates=takes_past_covariates,
-            takes_future_covariates=takes_future_covariates,
-        )
-
-    @property
     def first_prediction_index(self) -> int:
         """
         Returns the index of the first predicted within the output of self.model.
@@ -1294,22 +1289,37 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 aggregated.append([sample[i] for sample in batch])
         return tuple(aggregated)
 
-    def save_model(self, path: str) -> None:
-        """Saves the model under a given path. The path should end with '.pth.tar'
+    def save(self, path: Optional[str] = None) -> None:
+        """
+        Saves the model under a given path.
+
+        Creates two files under ``path`` (model object) and ``path``.ckpt (checkpoint).
+
+        Example for saving and loading a :class:`RNNModel`:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from darts.models import RNNModel
+
+                model = RNNModel(input_chunk_length=4)
+
+                model.save("my_model.pt")
+                model_loaded = RNNModel.load("my_model.pt")
+            ..
 
         Parameters
         ----------
         path
-            Path under which to save the model at its current state.
+            Path under which to save the model at its current state. If no path is specified, the model is automatically
+            saved under ``"{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pt"``. E.g., ``"RNNModel_2020-01-01_12:00:00.pt"``.
         """
         # TODO: the parameters are saved twice currently, once with complete
         # object, and once with PTL checkpointing.
 
-        raise_if_not(
-            path.endswith(".pth.tar"),
-            "The given path should end with '.pth.tar'.",
-            logger,
-        )
+        if path is None:
+            # default path
+            path = self._default_save_path() + ".pt"
 
         # We save the whole object to keep track of everything
         with open(path, "wb") as f_out:
@@ -1317,45 +1327,76 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # In addition, we need to use PTL save_checkpoint() to properly save the trainer and model
         if self.trainer is not None:
-            base_path = path[:-8]
-            path_ptl_ckpt = base_path + "_ptl-ckpt.pth.tar"
+            path_ptl_ckpt = path + ".ckpt"
             self.trainer.save_checkpoint(path_ptl_ckpt)
 
-    @staticmethod
-    def load_model(path: str) -> "TorchForecastingModel":
-        """loads a model from a given file path. The file name should end with '.pth.tar'
-
-        Example for loading a :class:`RNNModel`:
-
-            .. highlight:: python
-            .. code-block:: python
-
-                from darts.models import RNNModel
-
-                model_loaded = RNNModel.load_model("my_model.pth.tar")
-            ..
+    def save_model(self, path: str) -> None:
+        """
+        Saves the model under a given path.
 
         Parameters
         ----------
         path
-            Path under which to save the model at its current state. The path should end with '.pth.tar'
+            Path under which to save the model at its current state.
+
+        .. deprecated:: 0.21.0
+            `TorchForecastingModel.save_model()` is deprecated and will be removed in a future darts version.
+            Please use `TorchForecastingModel.save()` instead.
         """
 
-        raise_if_not(
-            path.endswith(".pth.tar"),
-            "The given path should end with '.pth.tar'.",
-            logger,
+        save_warning = (
+            "`TorchForecastingModel.save_model()` is deprecated and will be removed "
+            "in a future darts version. Please use `TorchForecastingModel.save()` instead."
         )
+        raise_deprecation_warning(save_warning, logger)
+
+        self.save(path)
+
+    @staticmethod
+    def load(path: str) -> "TorchForecastingModel":
+        """
+        Loads a model from a given file path.
+
+        Parameters
+        ----------
+        path
+            Path from which to load the model. If no path was specified when saving the model, the automatically
+            generated path ending with ".pt" has to be provided.
+        """
 
         with open(path, "rb") as fin:
             model = torch.load(fin)
 
         # If a PTL checkpoint was saved, we also need to load it:
-        base_path = path[:-8]
-        path_ptl_ckpt = base_path + "_ptl-ckpt.pth.tar"
+        path_ptl_ckpt = path + ".ckpt"
         if os.path.exists(path_ptl_ckpt):
             model.model = model.model.__class__.load_from_checkpoint(path_ptl_ckpt)
             model.trainer = None
+
+        return model
+
+    @staticmethod
+    def load_model(path: str) -> "TorchForecastingModel":
+        """
+        Loads a model from a given file path.
+
+        Parameters
+        ----------
+        path
+            Path from which to load the model.
+
+        .. deprecated:: 0.21.0
+            `TorchForecastingModel.load_model()` is deprecated and will be removed in a future darts version.
+            Please use `TorchForecastingModel.load()` instead.
+        """
+
+        load_warning = (
+            "`TorchForecastingModel.load_model()` is deprecated and will be removed "
+            "in a future darts version. Please use `TorchForecastingModel.load()` instead."
+        )
+        raise_deprecation_warning(load_warning, logger)
+
+        model = TorchForecastingModel.load(path)
 
         return model
 
@@ -1367,7 +1408,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Load the model from automatically saved checkpoints under '{work_dir}/darts_logs/{model_name}/checkpoints/'.
         This method is used for models that were created with ``save_checkpoints=True``.
 
-        If you manually saved your model, consider using :meth:`load_model() <TorchForeCastingModel.load_model()>`.
+        If you manually saved your model, consider using :meth:`load() <TorchForecastingModel.load()>`.
 
         Example for loading a :class:`RNNModel` from checkpoint (``model_name`` is the ``model_name`` used at model
         creation):
@@ -1418,7 +1459,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             logger,
         )
 
-        model = TorchForecastingModel.load_model(base_model_path)
+        model = TorchForecastingModel.load(base_model_path)
 
         # load pytorch lightning module from checkpoint
         # if file_name is None, find most recent file in savepath that is a checkpoint
@@ -1607,6 +1648,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             max_samples_per_ts=max_samples_per_ts,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     def _build_inference_dataset(
@@ -1628,6 +1670,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
             n=n,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
@@ -1682,6 +1725,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             max_samples_per_ts=max_samples_per_ts,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     def _build_inference_dataset(
@@ -1701,6 +1745,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             covariates=future_covariates,
             n=n,
             input_chunk_length=self.input_chunk_length,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
@@ -1751,6 +1796,7 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             max_samples_per_ts=max_samples_per_ts,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     def _build_inference_dataset(
@@ -1767,6 +1813,7 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
             n=n,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
@@ -1815,6 +1862,7 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             max_samples_per_ts=max_samples_per_ts,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     def _build_inference_dataset(
@@ -1832,6 +1880,7 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
             n=n,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
@@ -1877,6 +1926,7 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             max_samples_per_ts=max_samples_per_ts,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     def _build_inference_dataset(
@@ -1894,6 +1944,7 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
             n=n,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):

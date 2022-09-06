@@ -1,53 +1,58 @@
 """
-StatsForecastAutoARIMA
+StatsForecastETS
 -----------
 """
 
 from typing import Optional
 
-import numpy as np
-from statsforecast.models import AutoARIMA as SFAutoARIMA
+from statsforecast.models import ETS
 
 from darts import TimeSeries
 from darts.models.forecasting.forecasting_model import DualCovariatesForecastingModel
 
 
-class StatsForecastAutoARIMA(DualCovariatesForecastingModel):
-    def __init__(self, *autoarima_args, **autoarima_kwargs):
-        """Auto-ARIMA based on `Statsforecasts package
+class StatsForecastETS(DualCovariatesForecastingModel):
+    def __init__(self, *ets_args, **ets_kwargs):
+        """ETS based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
 
-        This implementation can perform faster than the :class:`AutoARIMA` model,
+        This implementation can perform faster than the :class:`ExponentialSmoothing` model,
         but typically requires more time on the first call, because it relies
         on Numba and jit compilation.
 
-        It is probabilistic, whereas :class:`AutoARIMA` is not.
-
-        We refer to the `statsforecast AutoARIMA documentation
-        <https://nixtla.github.io/statsforecast/models.html#arima-methods>`_
-        for the documentation of the arguments.
+        This model accepts the same arguments as the `statsforecast ETS
+        <https://nixtla.github.io/statsforecast/models.html#ets>`_. package.
 
         Parameters
         ----------
-        autoarima_args
-            Positional arguments for ``statsforecasts.models.AutoARIMA``.
-        autoarima_kwargs
-            Keyword arguments for ``statsforecasts.models.AutoARIMA``.
+        season_length
+            Number of observations per cycle. Default: 1.
+        model
+            Three-character string identifying method using the framework
+            terminology of Hyndman et al. (2002). Possible values are:
+
+            * "A" or "M" for error state,
+            * "N", "A" or "Ad" for trend state,
+            * "N", "A" or "M" for season state.
+
+            For instance, "ANN" means additive error, no trend and no seasonality.
+            Furthermore, the character "Z" is a placeholder telling statsforecast
+            to search for the best model using AICs. Default: "ZZZ".
 
         Examples
         --------
-        >>> from darts.models import StatsForecastAutoARIMA
         >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.models import StatsForecastETS
         >>> series = AirPassengersDataset().load()
-        >>> model = StatsForecastAutoARIMA(season_length=12)
+        >>> model = StatsForecastETS(season_length=12, model="AZZ")
         >>> model.fit(series[:-36])
-        >>> pred = model.predict(36, num_samples=100)
+        >>> pred = model.predict(36)
         """
         super().__init__()
-        self.model = SFAutoARIMA(*autoarima_args, **autoarima_kwargs)
+        self.model = ETS(*ets_args, **ets_kwargs)
 
     def __str__(self):
-        return "Auto-ARIMA-Statsforecasts"
+        return "ETS-Statsforecasts"
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         super()._fit(series, future_covariates)
@@ -69,18 +74,9 @@ class StatsForecastAutoARIMA(DualCovariatesForecastingModel):
         forecast_df = self.model.predict(
             h=n,
             X=future_covariates.values(copy=False) if future_covariates else None,
-            level=(68.27,),  # ask one std for the confidence interval.
         )
 
-        mu = forecast_df["mean"]
-        if num_samples > 1:
-            std = forecast_df["hi-68.27"] - mu
-            samples = np.random.normal(loc=mu, scale=std, size=(num_samples, n)).T
-            samples = np.expand_dims(samples, axis=1)
-        else:
-            samples = mu
-
-        return self._build_forecast_series(samples)
+        return self._build_forecast_series(forecast_df["mean"])
 
     @property
     def min_train_series_length(self) -> int:
@@ -90,4 +86,4 @@ class StatsForecastAutoARIMA(DualCovariatesForecastingModel):
         return True
 
     def _is_probabilistic(self) -> bool:
-        return True
+        return False

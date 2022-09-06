@@ -11,6 +11,7 @@ from darts.utils import timeseries_generation as tg
 logger = get_logger(__name__)
 
 try:
+    import torch.nn as nn
     from torch.nn import MSELoss
 
     from darts.models.forecasting.tft_model import TFTModel
@@ -358,3 +359,34 @@ if TORCH_AVAILABLE:
                     for ts in y_hat
                 ]
             return y_hat
+
+        def test_layer_norm(self):
+            times = pd.date_range("20130101", "20130410")
+            pd_series = pd.Series(range(100), index=times)
+            series: TimeSeries = TimeSeries.from_series(pd_series)
+            base_model = TFTModel
+
+            model1 = base_model(
+                input_chunk_length=1,
+                output_chunk_length=1,
+                add_relative_index=True,
+                norm_type="RMSNorm",
+            )
+            model1.fit(series, epochs=1)
+
+            model2 = base_model(
+                input_chunk_length=1,
+                output_chunk_length=1,
+                add_relative_index=True,
+                norm_type=nn.LayerNorm,
+            )
+            model2.fit(series, epochs=1)
+
+            with self.assertRaises(AttributeError):
+                model4 = base_model(
+                    input_chunk_length=1,
+                    output_chunk_length=1,
+                    add_relative_index=True,
+                    norm_type="invalid",
+                )
+                model4.fit(series, epochs=1)

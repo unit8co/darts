@@ -104,7 +104,7 @@ class TimeSeries:
         if not (
             np.issubdtype(val_dtype, np.float64) or np.issubdtype(val_dtype, np.float32)
         ):
-            logger.warn(
+            logger.warning(
                 "TimeSeries is using a numeric type different from np.float32 or np.float64. "
                 "Not all functionalities may work properly. It is recommended casting your data to floating "
                 "point numbers before using TimeSeries."
@@ -2702,6 +2702,9 @@ class TimeSeries:
         Retrieve one of the components of the series
         and return it as new univariate ``TimeSeries`` instance.
 
+        This drops the hierarchy (if any), and retains only the relevant static
+        covariates column.
+
         Parameters
         ----------
         index
@@ -2713,11 +2716,8 @@ class TimeSeries:
         TimeSeries
             A new univariate TimeSeries instance.
         """
-        if isinstance(index, int):
-            new_xa = self._xa.isel(component=index).expand_dims(DIMS[1], axis=1)
-        else:
-            new_xa = self._xa.sel(component=index).expand_dims(DIMS[1], axis=1)
-        return self.__class__(new_xa)
+
+        return self[index if isinstance(index, str) else self.components[index]]
 
     def add_datetime_attribute(
         self, attribute, one_hot: bool = False, cyclic: bool = False
@@ -3060,7 +3060,7 @@ class TimeSeries:
             kwargs["lw"] = 2
 
         if self.n_components > 10:
-            logger.warn(
+            logger.warning(
                 "Number of components is larger than 10 ({}). Plotting only the first 10 components.".format(
                     self.n_components
                 )
@@ -4076,9 +4076,7 @@ class TimeSeries:
 
             # restore a RangeIndex if needed:
             time_idx = xa_.get_index(self._time_dim)
-            if isinstance(time_idx, pd.Int64Index) and not isinstance(
-                time_idx, pd.RangeIndex
-            ):
+            if time_idx.is_integer() and not isinstance(time_idx, pd.RangeIndex):
                 xa_ = xa_.assign_coords(
                     {self._time_dim: pd.RangeIndex(start=key, stop=key + 1)}
                 )

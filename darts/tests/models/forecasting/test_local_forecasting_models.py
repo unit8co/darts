@@ -1,3 +1,9 @@
+import os
+import shutil
+import tempfile
+from typing import Callable
+from unittest.mock import Mock, patch
+
 import numpy as np
 import pandas as pd
 
@@ -15,10 +21,16 @@ from darts.models import (
     ExponentialSmoothing,
     FourTheta,
     KalmanForecaster,
+    LinearRegressionModel,
     NaiveSeasonal,
     Prophet,
+    RandomForest,
     StatsForecastAutoARIMA,
+    StatsForecastETS,
     Theta,
+)
+from darts.models.forecasting.forecasting_model import (
+    TransferableDualCovariatesForecastingModel,
 )
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.timeseries import TimeSeries
@@ -27,22 +39,13 @@ from darts.utils.utils import ModelMode, SeasonalityMode, TrendMode
 
 logger = get_logger(__name__)
 
-try:
-    from darts.models import LinearRegressionModel, RandomForest
-
-    TORCH_AVAILABLE = True
-except ImportError:
-    logger.warning(
-        "Torch not installed - some local forecasting models tests will be skipped"
-    )
-    TORCH_AVAILABLE = False
-
 # (forecasting models, maximum error) tuples
 models = [
     (ExponentialSmoothing(), 5.6),
     (ARIMA(12, 2, 1), 10),
     (ARIMA(1, 1, 1), 40),
-    (StatsForecastAutoARIMA(period=12), 4.8),
+    (StatsForecastAutoARIMA(season_length=12), 4.8),
+    (StatsForecastETS(season_length=12, model="AAZ"), 4.0),
     (Croston(version="classic"), 34),
     (Croston(version="tsb", alpha_d=0.1, alpha_p=0.1), 34),
     (Theta(), 11.3),
@@ -56,13 +59,13 @@ models = [
     (FFT(trend="poly"), 11.4),
     (NaiveSeasonal(), 32.4),
     (KalmanForecaster(dim_x=3), 17.0),
+    (LinearRegressionModel(lags=12), 11.0),
+    (RandomForest(lags=12, n_estimators=5, max_depth=3), 17.0),
+    (Prophet(), 13.5),
+    (AutoARIMA(), 12.2),
+    (TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 8.0),
+    (BATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 10.0),
 ]
-
-if TORCH_AVAILABLE:
-    models += [
-        (LinearRegressionModel(lags=12), 11.0),
-        (RandomForest(lags=12, n_estimators=200, max_depth=3), 15.5),
-    ]
 
 # forecasting models with exogenous variables support
 multivariate_models = [
@@ -71,25 +74,13 @@ multivariate_models = [
     (KalmanForecaster(dim_x=30), 30.0),
 ]
 
-dual_models = [ARIMA(), StatsForecastAutoARIMA(period=12)]
-
-
-models.append((Prophet(), 13.5))
-dual_models.append(Prophet())
-
-models.append((AutoARIMA(), 12.2))
-models.append((TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 8.0))
-models.append((BATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 10.0))
-dual_models.append(AutoARIMA())
-
-
-try:
-    from darts.models import TCNModel  # noqa: F401
-
-    TORCH_AVAILABLE = True
-except ImportError:
-    logger.warning("Torch not installed - will be skipping Torch models tests")
-    TORCH_AVAILABLE = False
+dual_models = [
+    ARIMA(),
+    StatsForecastAutoARIMA(season_length=12),
+    StatsForecastETS(season_length=12),
+    Prophet(),
+    AutoARIMA(),
+]
 
 
 class LocalForecastingModelsTestCase(DartsBaseTestClass):
@@ -115,12 +106,66 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
     ts_ice_heater = IceCreamHeaterDataset().load()
     ts_ice_heater_train, ts_ice_heater_val = ts_ice_heater.split_after(split_point=0.7)
 
+    def setUp(self):
+        self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_work_dir)
+
     def test_save_model_parameters(self):
         # model creation parameters were saved before. check if re-created model has same params as original
         for model, _ in models:
             self.assertTrue(
                 model._model_params == model.untrained_model()._model_params
             )
+
+    def test_save_load_model(self):
+        # check if save and load methods work and if loaded model creates same forecasts as original model
+        cwd = os.getcwd()
+        os.chdir(self.temp_work_dir)
+
+        for model in [ARIMA(1, 1, 1), LinearRegressionModel(lags=12)]:
+            model_path_str = type(model).__name__
+            model_path_file = model_path_str + "_file"
+            model_paths = [model_path_str, model_path_file]
+            full_model_paths = [
+                os.path.join(self.temp_work_dir, p) for p in model_paths
+            ]
+
+            model.fit(self.ts_gaussian)
+            model_prediction = model.predict(self.forecasting_horizon)
+
+            # test save
+            model.save()
+            model.save(model_path_str)
+            with open(model_path_file, "wb") as f:
+                model.save(f)
+
+            for p in full_model_paths:
+                self.assertTrue(os.path.exists(p))
+
+            self.assertTrue(
+                len(
+                    [
+                        p
+                        for p in os.listdir(self.temp_work_dir)
+                        if p.startswith(type(model).__name__)
+                    ]
+                )
+                == 3
+            )
+
+            # test load
+            loaded_model_str = type(model).load(model_path_str)
+            loaded_model_file = type(model).load(model_path_file)
+            loaded_models = [loaded_model_str, loaded_model_file]
+
+            for loaded_model in loaded_models:
+                self.assertEqual(
+                    model_prediction, loaded_model.predict(self.forecasting_horizon)
+                )
+
+        os.chdir(cwd)
 
     def test_models_runnability(self):
         for model, _ in models:
@@ -224,3 +269,228 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
         autoarima = AutoARIMA(trend="t")
         with self.assertRaises(ValueError):
             autoarima.fit(series=ts)
+
+    def test_statsmodels_dual_models(self):
+
+        # same tests, but VARIMA requires to work on a multivariate target series
+        UNIVARIATE = "univariate"
+        MULTIVARIATE = "multivariate"
+
+        params = [
+            (ARIMA, {}, UNIVARIATE),
+            (VARIMA, {"d": 0}, MULTIVARIATE),
+            (VARIMA, {"d": 1}, MULTIVARIATE),
+        ]
+
+        for model_cls, kwargs, model_type in params:
+            pred_len = 5
+            if model_type == MULTIVARIATE:
+                series1 = self.ts_ice_heater_train
+                series2 = self.ts_ice_heater_val
+            else:
+                series1 = self.ts_pass_train
+                series2 = self.ts_pass_val
+
+            # creating covariates from series + noise
+            noise1 = tg.gaussian_timeseries(length=len(series1))
+            noise2 = tg.gaussian_timeseries(length=len(series2))
+
+            for _ in range(1, series1.n_components):
+                noise1 = noise1.stack(tg.gaussian_timeseries(length=len(series1)))
+                noise2 = noise2.stack(tg.gaussian_timeseries(length=len(series2)))
+
+            exog1 = series1 + noise1
+            exog2 = series2 + noise2
+
+            exog1_longer = exog1.concatenate(exog1, ignore_time_axis=True)
+            exog2_longer = exog2.concatenate(exog2, ignore_time_axis=True)
+
+            # shortening of pred_len so that exog are enough for the training series prediction
+            series1 = series1[:-pred_len]
+            series2 = series2[:-pred_len]
+
+            # check runnability with different time series
+            model = model_cls(**kwargs)
+            model.fit(series1)
+            pred1 = model.predict(n=pred_len)
+            pred2 = model.predict(n=pred_len, series=series2)
+
+            # check probabilistic forecast
+            n_samples = 3
+            pred1 = model.predict(n=pred_len, num_samples=n_samples)
+            pred2 = model.predict(n=pred_len, series=series2, num_samples=n_samples)
+
+            # check that the results with a second custom ts are different from the results given with the training ts
+            self.assertFalse(np.array_equal(pred1.values, pred2.values()))
+
+            # check runnability with exogeneous variables
+            model = model_cls(**kwargs)
+            model.fit(series1, future_covariates=exog1)
+            pred1 = model.predict(n=pred_len, future_covariates=exog1)
+            pred2 = model.predict(n=pred_len, series=series2, future_covariates=exog2)
+
+            self.assertFalse(np.array_equal(pred1.values(), pred2.values()))
+
+            # check runnability with future covariates with extra time steps in the past compared to the target series
+            model = model_cls(**kwargs)
+            model.fit(series1, future_covariates=exog1_longer)
+            pred1 = model.predict(n=pred_len, future_covariates=exog1_longer)
+            pred2 = model.predict(
+                n=pred_len, series=series2, future_covariates=exog2_longer
+            )
+
+            # check error is raised if model expects covariates but those are not passed when predicting with new data
+            with self.assertRaises(ValueError):
+                model = model_cls(**kwargs)
+                model.fit(series1, future_covariates=exog1)
+                model.predict(n=pred_len, series=series2)
+
+            # check error is raised if new future covariates are not wide enough for prediction (on the original series)
+            with self.assertRaises(ValueError):
+                model = model_cls(**kwargs)
+                model.fit(series1, future_covariates=exog1)
+                model.predict(n=pred_len, future_covariates=exog1[:-pred_len])
+
+            # check error is raised if new future covariates are not wide enough for prediction (on a new series)
+            with self.assertRaises(ValueError):
+                model = model_cls(**kwargs)
+                model.fit(series1, future_covariates=exog1)
+                model.predict(
+                    n=pred_len, series=series2, future_covariates=exog2[:-pred_len]
+                )
+            # and checking the case with unsufficient historic future covariates
+            with self.assertRaises(ValueError):
+                model = model_cls(**kwargs)
+                model.fit(series1, future_covariates=exog1)
+                model.predict(
+                    n=pred_len, series=series2, future_covariates=exog2[pred_len:]
+                )
+
+            # verify that we can still forecast the original training series after predicting a new target series
+            model = model_cls(**kwargs)
+            model.fit(series1, future_covariates=exog1)
+            pred1 = model.predict(n=pred_len, future_covariates=exog1)
+            model.predict(n=pred_len, series=series2, future_covariates=exog2)
+            pred3 = model.predict(n=pred_len, future_covariates=exog1)
+
+            self.assertTrue(np.array_equal(pred1.values(), pred3.values()))
+
+            # check backtesting with retrain=False
+            model: TransferableDualCovariatesForecastingModel = model_cls(**kwargs)
+            model.backtest(series1, future_covariates=exog1, retrain=False)
+
+    @patch("typing.Callable")
+    def test_backtest_retrain(
+        self,
+        patch_retrain_func,
+    ):
+        """
+        Test backtest method with different retrain arguments
+        """
+
+        series = self.ts_pass_train
+
+        lr_univ_args = {"lags": [-1, -2, -3]}
+
+        lr_multi_args = {
+            "lags": [-1, -2, -3],
+            "lags_past_covariates": [-1, -2, -3],
+        }
+        params = [  # tuple of (model, retrain-able, multivariate, retrain parameter, model type)
+            (ExponentialSmoothing(), False, False, "hello", "ForecastingModel"),
+            (ExponentialSmoothing(), False, False, True, "ForecastingModel"),
+            (ExponentialSmoothing(), False, False, -2, "ForecastingModel"),
+            (ExponentialSmoothing(), False, False, 2, "ForecastingModel"),
+            (
+                ExponentialSmoothing(),
+                False,
+                False,
+                patch_retrain_func,
+                "ForecastingModel",
+            ),
+            (
+                LinearRegressionModel(**lr_univ_args),
+                True,
+                False,
+                True,
+                "GlobalForecastingModel",
+            ),
+            (
+                LinearRegressionModel(**lr_univ_args),
+                True,
+                False,
+                2,
+                "GlobalForecastingModel",
+            ),
+            (
+                LinearRegressionModel(**lr_univ_args),
+                True,
+                False,
+                patch_retrain_func,
+                "GlobalForecastingModel",
+            ),
+            (
+                LinearRegressionModel(**lr_multi_args),
+                True,
+                True,
+                True,
+                "GlobalForecastingModel",
+            ),
+            (
+                LinearRegressionModel(**lr_multi_args),
+                True,
+                True,
+                2,
+                "GlobalForecastingModel",
+            ),
+            (
+                LinearRegressionModel(**lr_multi_args),
+                True,
+                True,
+                patch_retrain_func,
+                "GlobalForecastingModel",
+            ),
+        ]
+
+        for model_cls, retrainable, multivariate, retrain, model_type in params:
+
+            if (
+                not isinstance(retrain, (int, bool, Callable))
+                or (isinstance(retrain, int) and retrain < 0)
+                or (isinstance(retrain, (Callable)) and (not retrainable))
+                or ((retrain != 1) and (not retrainable))
+            ):
+                with self.assertRaises(ValueError):
+                    _ = model_cls.historical_forecasts(series, retrain=retrain)
+
+            else:
+
+                if isinstance(retrain, Mock):
+                    # resets patch_retrain_func call_count to 0
+                    retrain.call_count = 0
+                    retrain.side_effect = [True, False] * (len(series) // 2)
+
+                fit_method_to_patch = f"darts.models.forecasting.forecasting_model.{model_type}._fit_wrapper"
+                predict_method_to_patch = f"darts.models.forecasting.forecasting_model.{model_type}._predict_wrapper"
+
+                with patch(fit_method_to_patch) as patch_fit_method:
+                    with patch(
+                        predict_method_to_patch, side_effect=series
+                    ) as patch_predict_method:
+
+                        # Set _fit_called attribute to True, otherwise retrain function is never called
+                        model_cls._fit_called = True
+
+                        # run backtest
+                        _ = model_cls.historical_forecasts(
+                            series,
+                            past_covariates=series if multivariate else None,
+                            retrain=retrain,
+                        )
+
+                        assert patch_predict_method.call_count > 1
+                        assert patch_fit_method.call_count > 1
+
+                        if isinstance(retrain, Mock):
+                            # check that patch_retrain_func has been called at each iteration
+                            assert retrain.call_count > 1
