@@ -243,7 +243,7 @@ class ForecastingModelExplainer(ABC):
         - `int` is the lag index.
 
         Example:
-        Let's say we have a model with 2 targets (multivariates) named "T_1" and "T_2", three past covariates we didn't
+        Let's say we have a model with 2 target components named "T_0" and "T_1", three past covariates we didn't
         name and one future covariate we didn't name. Also, horizons = [0, 1].
         The model is a regression model, with lags = 3, lags_past_covariates=[-1, -3], lags_future_covariates = [0]
 
