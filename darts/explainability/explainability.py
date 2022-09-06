@@ -230,7 +230,7 @@ class ForecastingModelExplainer(ABC):
         - the second dimension corresponds to the components of the target time series being explained.
 
 
-        The value of the second dimension dictionary is a (multivariate) TimeSeries instance giving the 'explanation'
+        The values of the inner dictionary is a multivariate TimeSeries instance containing the 'explanation'
         for a given forecast (horizon, target) at any timestamp forecastable corresponding to the foreground
         TimeSeries input.
 
