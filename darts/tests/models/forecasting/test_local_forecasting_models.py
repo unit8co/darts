@@ -270,6 +270,29 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             autoarima.fit(series=ts)
 
+    def test_forecast_time_index(self):
+        # the forecast time index should follow that of the train series
+
+        # integer-index, with step>1
+        values = np.random.rand(20)
+        idx = pd.RangeIndex(start=10, stop=50, step=2)
+        ts = TimeSeries.from_times_and_values(idx, values)
+
+        model = NaiveSeasonal(K=1)
+        model.fit(ts)
+        pred = model.predict(n=5)
+        self.assertTrue(
+            all(pred.time_index == pd.RangeIndex(start=50, stop=60, step=2))
+        )
+
+        # datetime-index
+        ts = tg.constant_timeseries(start=pd.Timestamp("20130101"), length=20, value=1)
+        model = NaiveSeasonal(K=1)
+        model.fit(ts)
+        pred = model.predict(n=5)
+        self.assertEqual(pred.start_time(), pd.Timestamp("20130121"))
+        self.assertEqual(pred.end_time(), pd.Timestamp("20130125"))
+
     def test_statsmodels_dual_models(self):
 
         # same tests, but VARIMA requires to work on a multivariate target series

@@ -87,7 +87,7 @@ def constant_timeseries(
     start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
-    freq: str = "D",
+    freq: str = None,
     column_name: Optional[str] = "constant",
     dtype: np.dtype = np.float64,
 ) -> TimeSeries:
@@ -108,9 +108,12 @@ def constant_timeseries(
     length
         Optionally, the length of the returned index. Works only with either `start` or `end`.
     freq
-        The time difference between two adjacent entries in the returned TimeSeries. Only effective if `start` is a
-        pandas Timestamp. A DateOffset alias is expected; see
+        The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
+        a DateOffset alias is expected; see
         `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+        By default, "D" (daily) is used.
+        If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
+        The freq is optional for generating an integer index (if not specified, 1 is used).
     column_name
         Optionally, the name of the value column for the returned TimeSeries
     dtype
@@ -136,7 +139,7 @@ def linear_timeseries(
     start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
-    freq: str = "D",
+    freq: str = None,
     column_name: Optional[str] = "linear",
     dtype: np.dtype = np.float64,
 ) -> TimeSeries:
@@ -162,9 +165,12 @@ def linear_timeseries(
     length
         Optionally, the length of the returned index. Works only with either `start` or `end`.
     freq
-        The time difference between two adjacent entries in the returned TimeSeries. Only effective if `start` is a
-        pandas Timestamp. A DateOffset alias is expected; see
+        The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
+        a DateOffset alias is expected; see
         `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+        By default, "D" (daily) is used.
+        If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
+        The freq is optional for generating an integer index (if not specified, 1 is used).
     column_name
         Optionally, the name of the value column for the returned TimeSeries
     dtype
@@ -191,7 +197,7 @@ def sine_timeseries(
     start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
-    freq: str = "D",
+    freq: str = None,
     column_name: Optional[str] = "sine",
     dtype: np.dtype = np.float64,
 ) -> TimeSeries:
@@ -219,9 +225,12 @@ def sine_timeseries(
     length
         Optionally, the length of the returned index. Works only with either `start` or `end`.
     freq
-        The time difference between two adjacent entries in the returned TimeSeries. Only effective if `start` is a
-        pandas Timestamp. A DateOffset alias is expected; see
+        The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
+        a DateOffset alias is expected; see
         `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+        By default, "D" (daily) is used.
+        If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
+        The freq is optional for generating an integer index (if not specified, 1 is used).
     column_name
         Optionally, the name of the value column for the returned TimeSeries
     dtype
@@ -253,7 +262,7 @@ def gaussian_timeseries(
     start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
-    freq: str = "D",
+    freq: str = None,
     column_name: Optional[str] = "gaussian",
     dtype: np.dtype = np.float64,
 ) -> TimeSeries:
@@ -283,9 +292,12 @@ def gaussian_timeseries(
     length
         Optionally, the length of the returned index. Works only with either `start` or `end`.
     freq
-        The time difference between two adjacent entries in the returned TimeSeries. Only effective if `start` is a
-        pandas Timestamp. A DateOffset alias is expected; see
+        The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
+        a DateOffset alias is expected; see
         `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+        By default, "D" (daily) is used.
+        If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
+        The freq is optional for generating an integer index (if not specified, 1 is used).
     column_name
         Optionally, the name of the value column for the returned TimeSeries
     dtype
@@ -326,7 +338,7 @@ def random_walk_timeseries(
     start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
-    freq: str = "D",
+    freq: str = None,
     column_name: Optional[str] = "random_walk",
     dtype: np.dtype = np.float64,
 ) -> TimeSeries:
@@ -350,9 +362,12 @@ def random_walk_timeseries(
     length
         Optionally, the length of the returned index. Works only with either `start` or `end`.
     freq
-        The time difference between two adjacent entries in the returned TimeSeries. Only effective if `start` is a
-        pandas Timestamp. A DateOffset alias is expected; see
+        The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
+        a DateOffset alias is expected; see
         `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+        By default, "D" (daily) is used.
+        If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
+        The freq is optional for generating an integer index (if not specified, 1 is used).
     column_name
         Optionally, the name of the value column for the returned TimeSeries
     dtype
@@ -378,7 +393,7 @@ def autoregressive_timeseries(
     start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
-    freq: str = "D",
+    freq: str = None,
     column_name: Optional[str] = "autoregressive",
 ) -> TimeSeries:
     """
@@ -403,9 +418,12 @@ def autoregressive_timeseries(
     length
         Optionally, the length of the returned index. Works only with either `start` or `end`.
     freq
-        The time difference between two adjacent entries in the returned TimeSeries. Only effective if `start` is a
-        pandas Timestamp. A DateOffset alias is expected; see
+        The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
+        a DateOffset alias is expected; see
         `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+        By default, "D" (daily) is used.
+        If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
+        The freq is optional for generating an integer index (if not specified, 1 is used).
     column_name
         Optionally, the name of the value column for the returned TimeSeries
 
