@@ -35,7 +35,6 @@ from sklearn.linear_model import LinearRegression
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
-
 from darts.utils.data.tabularization import create_lagged_data
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import _check_quantiles
