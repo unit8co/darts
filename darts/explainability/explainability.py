@@ -226,6 +226,7 @@ class ForecastingModelExplainer(ABC):
         Main method of the ForecastingExplainer class.
         Return a dictionary of dictionaries of (mutivariates) TimeSeries instances
         (or a list of dictionaries of dictionaries, il multiple TimeSeries list):
+        
         - the first dimension corresponds to the horizons we want to explain.
         - the second dimension corresponds to the components of the target time series we want to explain.
 
