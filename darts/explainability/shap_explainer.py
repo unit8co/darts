@@ -78,7 +78,8 @@ class ShapExplainer(ForecastingModelExplainer):
         model
             A ForecastingModel we want to explain. It has to be fitted first.
         background_series
-            A TimeSeries or a list of time series we want to use to 'train' with any foreground we want to explain.
+            Optionally, a TimeSeries or a list of time series we want to use to 'train' with any foreground we want
+            to explain.
             This is optional, for 2 reasons:
                 - In general we want to keep the training_series of the model and this is the default one,
                 but in case of multiple time series training (global or meta learning) the ForecastingModel doesn't
@@ -86,16 +87,17 @@ class ShapExplainer(ForecastingModelExplainer):
                 - We might want to consider a reduced well chosen background in order to reduce computation
                 time.
         background_past_covariates
-            A past covariates TimeSeries or list of TimeSeries that the model needs once fitted.
+            Optionally, a past covariates TimeSeries or list of TimeSeries if the model needs it.
         background_future_covariates
-            A future covariates TimeSeries or list of TimeSeries that the model needs once fitted.
+            Optionally, a future covariates TimeSeries or list of TimeSeries if the model needs it.
         background_nb_samples
             Optionally, sampling a subset of the original background (generally to compute faster, especially
             if shap methods is kernel or permutation)
         shap_method
             Optionally, a shap method we want to apply. By default, the method is chosen automatically with an
             internal mapping.
-            Supported values : “permutation”, “partition”, “tree”, “kernel”, “sampling”, “linear”, “deep”, “gradient”
+            Supported values : “permutation”, “partition”, “tree”, “kernel”, “sampling”, “linear”, “deep”,
+            “gradient”, "additive"
         **kwargs
             Optionally, an additional keyword arguments passed to the shap_method chosen, if any.
         """
@@ -126,7 +128,7 @@ class ShapExplainer(ForecastingModelExplainer):
                 raise_log(
                     ValueError(
                         "Invalid shap method. Please choose one value among the following: [partition, tree, "
-                        "kernel, sampling, linear, deep, gradient]."
+                        "kernel, sampling, linear, deep, gradient, additive]."
                     )
                 )
         else:
@@ -391,7 +393,7 @@ class _RegressionShapExplainers:
 
     def __init__(
         self,
-        ShapExplainer: ShapExplainer,
+        shap_explainer: ShapExplainer,
         background_nb_samples: Optional[int] = None,
         **kwargs,
     ):
@@ -547,6 +549,8 @@ class _RegressionShapExplainers:
             explainer = shap.LinearExplainer(model_sklearn, background_X, **kwargs)
         elif shap_method == _ShapMethod.DEEP:
             explainer = shap.LinearExplainer(model_sklearn, background_X, **kwargs)
+        elif shap_method == _ShapMethod.ADDITIVE:
+            explainer = shap.AdditiveExplainer(model_sklearn, background_X, **kwargs)
 
         logger.info("The shap method used is of type: " + str(type(explainer)))
 
