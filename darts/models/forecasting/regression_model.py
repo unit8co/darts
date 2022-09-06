@@ -638,22 +638,12 @@ class RegressionModel(GlobalForecastingModel):
 
                     # Note: we use slice() rather than the [] operator because
                     # for integer-indexed series [] does not act on the time index.
+                    last_req_ts = (
+                        last_req_ts + ts.freq if ts.has_range_index else last_req_ts
+                    )
                     covariate_matrices[cov_type].append(
                         cov.slice(first_req_ts, last_req_ts).values(copy=False)
                     )
-
-                    """
-                    if cov.has_datetime_index:
-                        covariate_matrices[cov_type].append(
-                            cov[first_req_ts:last_req_ts].values(copy=False)
-                        )
-                    else:
-                        # note: we don't use [] operator with slicing here as
-                        # for integer series it doesn't act on the time index
-                        covariate_matrices[cov_type].append(
-                            cov[first_req_ts : last_req_ts + 1].values(copy=False)
-                        )
-                    """
 
                 covariate_matrices[cov_type] = np.stack(covariate_matrices[cov_type])
 
