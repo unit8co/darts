@@ -1891,7 +1891,7 @@ class TimeSeries:
             if self._has_datetime_index:
                 return pd.date_range(start=start, end=end, freq=self._freq).size
             else:
-                return int((start - end) / self._freq)
+                return int((end - start) / self._freq) + 1
 
         gap_df["gap_size"] = gap_df.apply(
             lambda row: intvl(start=row.gap_start, end=row.gap_end), axis=1
