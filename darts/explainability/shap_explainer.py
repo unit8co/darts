@@ -483,7 +483,7 @@ class _RegressionShapExplainers:
             for h in horizons:
                 tmp_n = {}
                 for t_idx, t in enumerate(target_names):
-                    if self.single_output is False:
+                    if not self.single_output:
                         tmp_t = shap.Explanation(
                             shap_explanation_tmp.values[
                                 :, :, self.target_dim * h + t_idx
