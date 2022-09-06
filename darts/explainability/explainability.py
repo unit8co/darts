@@ -71,7 +71,7 @@ class ForecastingModelExplainer(ABC):
 
         if model._is_probabilistic():
             logger.warning(
-                "The model is probabilistic, but n_sample=1 will be used for explainability."
+                "The model is probabilistic, but num_sample=1 will be used for explainability."
             )
 
         self.model = model
@@ -146,7 +146,7 @@ class ForecastingModelExplainer(ABC):
 
         if not self._test_stationarity():
             logger.warning(
-                "One time series component of the background time series is not stationary."
+                "At least one time series component of the background time series is not stationary."
                 " Beware of wrong interpretation with chosen explainability."
             )
 

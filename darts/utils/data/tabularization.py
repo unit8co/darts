@@ -45,14 +45,12 @@ def create_lagged_data(
                 past_covariates[idx].pd_dataframe(copy=False)
                 if past_covariates
                 else None,
-                # lags.get("past"),
                 lags_past_covariates_list,
             ),
             (
                 future_covariates[idx].pd_dataframe(copy=False)
                 if future_covariates
                 else None,
-                # lags.get("future"),
                 lags_future_covariates_list,
             ),
         ]
@@ -64,11 +62,6 @@ def create_lagged_data(
         # y: output chunk length lags of target
         for future_target_lag in range(output_chunk_length):
             df_y.append(df_target.shift(-future_target_lag))
-
-        # # X: target lags
-        # if "target" in lags:
-        #     for lag in lags["target"]:
-        #         df_X.append(df_target.shift(-lag))
 
         if lags_list:
             for lag in lags_list:
