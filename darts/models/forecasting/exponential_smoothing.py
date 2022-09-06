@@ -36,7 +36,7 @@ class ExponentialSmoothing(ForecastingModel):
 
         `model_mode` must be a ``ModelMode`` Enum member. You can access the Enum with
          ``from darts.utils.utils import ModelMode``.
-        `season_mode` must be a ``SeasonalityMode`` Enum member. You can access the Enum with
+        `seasonal` must be a ``SeasonalityMode`` Enum member. You can access the Enum with
         ``from darts.utils.utils import SeasonalityMode``.
 
         ``ExponentialSmoothing(trend=ModelMode.NONE, seasonal=SeasonalityMode.NONE)`` corresponds to a single
