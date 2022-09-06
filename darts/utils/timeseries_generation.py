@@ -74,8 +74,8 @@ def _generate_index(
     else:  # int
         step = 1 if freq is None else freq
         index = pd.RangeIndex(
-            start=start if start is not None else end - length + 1,
-            stop=end + 1 if end is not None else start + step * length,
+            start=start if start is not None else end - step * length + step,
+            stop=end + step if end is not None else start + step * length,
             step=step,
             name=name,
         )
