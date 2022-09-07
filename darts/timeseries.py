@@ -2159,7 +2159,7 @@ class TimeSeries:
                 if end_ts not in self._time_index
                 else end_ts
             )
-            if end_ts > effective_end_ts + self.freq:
+            if end_ts >= effective_end_ts + self.freq:
                 # if the requested end_ts is further off from the end of the time series,
                 # we have to increase effectiv_end_ts to make the last timestamp inclusive.
                 effective_end_ts += self.freq

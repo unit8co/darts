@@ -344,6 +344,9 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         slice_vals = ts.slice(11, 31).values(copy=False).flatten()
         np.testing.assert_equal(slice_vals, values[5:15])
 
+        slice_ts = ts.slice(40, 60)
+        test_case.assertEqual(ts.end_time(), slice_ts.end_time())
+
     @staticmethod
     def helper_test_split(test_case, test_series: TimeSeries):
         seriesA, seriesB = test_series.split_after(pd.Timestamp("20130104"))
