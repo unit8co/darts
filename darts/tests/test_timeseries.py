@@ -329,13 +329,13 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         idx = pd.RangeIndex(start=0, stop=30, step=1)
         ts = TimeSeries.from_times_and_values(idx, values)
         # end timestamp further off, slice should be inclusive of last timestamp:
-        slice_vals = ts.slice(10, 31).values(copy=False).flatten()
+        slice_vals = ts.slice(10, 30).values(copy=False).flatten()
         np.testing.assert_equal(slice_vals, values[10:])
         slice_vals = ts.slice(10, 32).values(copy=False).flatten()
         np.testing.assert_equal(slice_vals, values[10:])
 
         # end timestamp within the series make it exclusive:
-        slice_vals = ts.slice(10, 30).values(copy=False).flatten()
+        slice_vals = ts.slice(10, 29).values(copy=False).flatten()
         np.testing.assert_equal(slice_vals, values[10:29])
 
         # integer indexed series, step > 1, timestamps not in series
