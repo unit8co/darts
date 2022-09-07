@@ -56,14 +56,6 @@ brew unlink libomp
 brew install libomp.rb
 ```
 
-## Enabling support for Facebook Prophet
-We removed Facebook Prophet as a dependency of Darts (at least for the time being), due to its dependency
-on PyStan and the complex installation this entails. In order to use the `Prophet` model in Darts, we
-recommend you follow the [Prophet installation instructions](https://facebook.github.io/prophet/docs/installation.html)
-and install the prophet package in your environment (the command
-`from darts.models import Prophet` will work once the package is installed).
-At the time of writing, this has been tested with `prophet 1.0.1`.
-
 ## Running the examples only, without installing:
 
 If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use Python notebooks with demo examples.
