@@ -92,7 +92,8 @@ class ShapExplainer(ForecastingModelExplainer):
             Optionally, a future covariates TimeSeries or list of TimeSeries if the model needs it.
         background_nb_samples
             Optionally, sampling a subset of the original background (generally to compute faster, especially
-            if shap methods is kernel or permutation)
+            if shap methods is kernel or permutation). It will randomly takes a subset of background_nb_samples
+            training samples once the training dataset is built (using shap.utils.sample function)
         shap_method
             Optionally, a shap method we want to apply. By default, the method is chosen automatically with an
             internal mapping.
@@ -100,6 +101,16 @@ class ShapExplainer(ForecastingModelExplainer):
             “gradient”, "additive"
         **kwargs
             Optionally, an additional keyword arguments passed to the shap_method chosen, if any.
+        Examples
+        --------
+        For using a summary plot
+        >>> from darts.explainability.shap_explainer import ShapExplainer
+        >>> from darts.models import LinearRegressionModel
+        >>> series = AirPassengersDataset().load()
+        >>> model = LinearRegressionModel()
+        >>> model.fit(series[:-36])
+        >>> ShapExplain = ShapExplainer(model)
+        >>> ShapExplain.summary_plot()
         """
         if not issubclass(type(model), RegressionModel):
             raise_log(
@@ -135,8 +146,16 @@ class ShapExplainer(ForecastingModelExplainer):
             self.shap_method = None
 
         self.explainers = _RegressionShapExplainers(
-            self,
-            background_nb_samples,
+            model=self.model,
+            n=self.n,
+            target_names=self.target_names,
+            past_covariates_names=self.past_covariates_names,
+            future_covariates_names=self.future_covariates_names,
+            background_series=self.background_series,
+            background_past_covariates=self.background_past_covariates,
+            background_future_covariates=self.background_future_covariates,
+            shap_method=self.shap_method,
+            background_nb_samples=background_nb_samples,
             **kwargs,
         )
 
@@ -393,27 +412,34 @@ class _RegressionShapExplainers:
 
     def __init__(
         self,
-        shap_explainer: ShapExplainer,
+        model: RegressionModel,
+        n: int,
+        target_names: Sequence[str],
+        past_covariates_names: Sequence[str],
+        future_covariates_names: Sequence[str],
+        background_series: Sequence[TimeSeries],
+        background_past_covariates: Sequence[TimeSeries],
+        background_future_covariates: Sequence[TimeSeries],
+        shap_method: ShapMethod,
         background_nb_samples: Optional[int] = None,
         **kwargs,
     ):
 
-        self.model = ShapExplainer.model
+        self.model = model
         self.target_dim = self.model.input_dim["target"]
-
         self.is_multiOutputRegressor = isinstance(
             self.model.model, MultiOutputRegressor
         )
 
-        self.target_names = ShapExplainer.target_names
-        self.past_covariates_names = ShapExplainer.past_covariates_names
-        self.future_covariates_names = ShapExplainer.future_covariates_names
+        self.target_names = target_names
+        self.past_covariates_names = past_covariates_names
+        self.future_covariates_names = future_covariates_names
 
-        self.n = ShapExplainer.n
-        self.shap_method = ShapExplainer.shap_method
-        self.background_series = ShapExplainer.background_series
-        self.background_past_covariates = ShapExplainer.background_past_covariates
-        self.background_future_covariates = ShapExplainer.background_future_covariates
+        self.n = n
+        self.shap_method = shap_method
+        self.background_series = background_series
+        self.background_past_covariates = background_past_covariates
+        self.background_future_covariates = background_future_covariates
 
         self.single_output = False
         if (self.n == 1) and (self.target_dim) == 1:
@@ -431,14 +457,14 @@ class _RegressionShapExplainers:
             for i in range(self.n):
                 self.explainers[i] = {}
                 for j in range(self.target_dim):
-                    self.explainers[i][j] = self._get_explainer_sklearn(
+                    self.explainers[i][j] = self._build_explainer_sklearn(
                         self.model.model.estimators_[i + j],
                         self.background_X,
                         self.shap_method,
                         **kwargs,
                     )
         else:
-            self.explainers = self._get_explainer_sklearn(
+            self.explainers = self._build_explainer_sklearn(
                 self.model.model, self.background_X, self.shap_method, **kwargs
             )
 
@@ -505,7 +531,7 @@ class _RegressionShapExplainers:
 
         return shap_explanations
 
-    def _get_explainer_sklearn(
+    def _build_explainer_sklearn(
         self,
         model_sklearn,
         background_X: pd.DataFrame,
@@ -516,7 +542,7 @@ class _RegressionShapExplainers:
         model_name = type(model_sklearn).__name__
 
         if shap_method is None:
-            if model_name in self.default_sklearn_shap_explainers.keys():
+            if model_name in self.default_sklearn_shap_explainers:
                 shap_method = self.default_sklearn_shap_explainers[model_name]
                 print(shap_method)
             else:
@@ -559,6 +585,13 @@ class _RegressionShapExplainers:
     def _create_regression_model_shap_X(
         self, target_series, past_covariates, future_covariates, n_samples=None
     ):
+        """
+        Creates the shap format input for regression models.
+        The output is a pandas DataFrame representing all lags of different covariates, and with adequate
+        column names in order to map feature / shap values.
+        It uses create_lagged_data also used in RegressionModel to build the tabular dataset.
+
+        """
 
         lags_list = self.model.lags.get("target")
         lags_past_covariates_list = self.model.lags.get("past")
@@ -575,6 +608,8 @@ class _RegressionShapExplainers:
         )
 
         X = pd.DataFrame(X)
+        if n_samples:
+            X = shap.utils.sample(X, n_samples)
 
         # We keep the creation order of the different lags/features in create_lagged_data
         lags_names_list = []
