@@ -324,6 +324,26 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         test_case.assertEqual(seriesG.start_time(), pd.Timestamp("20130101"))
         test_case.assertEqual(seriesG.end_time(), pd.Timestamp("20130107"))
 
+        # integer indexed series, step = 1, timestamps not in series
+        values = np.random.rand(30)
+        idx = pd.RangeIndex(start=0, stop=30, step=1)
+        ts = TimeSeries.from_times_and_values(idx, values)
+        # end timestamp further off, slice should be inclusive of last timestamp:
+        slice_vals = ts.slice(10, 31).values(copy=False).flatten()
+        np.testing.assert_equal(slice_vals, values[10:])
+        slice_vals = ts.slice(10, 32).values(copy=False).flatten()
+        np.testing.assert_equal(slice_vals, values[10:])
+
+        # end timestamp within the series make it exclusive:
+        slice_vals = ts.slice(10, 30).values(copy=False).flatten()
+        np.testing.assert_equal(slice_vals, values[10:29])
+
+        # integer indexed series, step > 1, timestamps not in series
+        idx = pd.RangeIndex(start=0, stop=60, step=2)
+        ts = TimeSeries.from_times_and_values(idx, values)
+        slice_vals = ts.slice(11, 31).values(copy=False).flatten()
+        np.testing.assert_equal(slice_vals, values[5:15])
+
     @staticmethod
     def helper_test_split(test_case, test_series: TimeSeries):
         seriesA, seriesB = test_series.split_after(pd.Timestamp("20130104"))

@@ -2148,12 +2148,22 @@ class TimeSeries:
                 "the series is indexed with a DatetimeIndex.",
                 logger,
             )
-            if start_ts in self._time_index and end_ts in self._time_index:
-                idx = pd.RangeIndex(start_ts, end_ts, step=self.freq)
-            else:
-                idx = pd.RangeIndex(
-                    filter(lambda t: start_ts <= t <= end_ts, self._time_index)
-                )
+            # get closest timestamps if either start or end are not in the index
+            effective_start_ts = (
+                min(self._time_index, key=lambda t: abs(t - start_ts))
+                if start_ts not in self._time_index
+                else start_ts
+            )
+            effective_end_ts = (
+                min(self._time_index, key=lambda t: abs(t - end_ts))
+                if end_ts not in self._time_index
+                else end_ts
+            )
+            if end_ts > effective_end_ts + self.freq:
+                # if the requested end_ts is further off from the end of the time series,
+                # we have to increase effectiv_end_ts to make the last timestamp inclusive.
+                effective_end_ts += self.freq
+            idx = pd.RangeIndex(effective_start_ts, effective_end_ts, step=self.freq)
             return self[idx]
 
     def slice_n_points_after(
