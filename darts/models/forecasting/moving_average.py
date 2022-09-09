@@ -3,6 +3,7 @@ Moving Average
 -------------------------------
 """
 import numpy as np
+
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.timeseries import TimeSeries
 
