@@ -53,51 +53,65 @@ class RegressionModel(GlobalForecastingModel):
         model=None,
     ):
         """Regression Model
-        Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.
+                Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged
+                values.
 
-        Parameters
-        ----------
-        lags
-            Lagged target values used to predict the next time step. If an integer is given the last `lags` past lags
-            are used (from -1 backward). Otherwise a list of integers with lags is required (each lag must be < 0).
-        lags_past_covariates
-            Number of lagged past_covariates values used to predict the next time step. If an integer is given the last
-            `lags_past_covariates` past lags are used (inclusive, starting from lag -1). Otherwise a list of integers
-            with lags < 0 is required.
-        lags_future_covariates
-            Number of lagged future_covariates values used to predict the next time step. If an tuple (past, future) is
-            given the last `past` lags in the past are used (inclusive, starting from lag -1) along with the first
-            `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list
-            of integers with lags is required.
-        output_chunk_length
-            Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast
-            horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
-            be useful if the covariates don't extend far enough into the future.
-        add_encoders
-            A large number of past and future covariates can be automatically generated with `add_encoders`.
-            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
-            will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
-            transform the generated covariates. This happens all under one hood and only needs to be specified at
-            model creation.
-            Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
-            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
+                Parameters
+                ----------
+                lags
+                    Lagged target values used to predict the next time step. If an integer is given the last `lags` past
+                    lags are used (from -1 backward). Otherwise a list of integers with lags is required (each lag must
+                    be < 0).
+                lags_past_covariates
+                    Number of lagged past_covariates values used to predict the next time step. If an integer is given
+                    the last `lags_past_covariates` past lags are used (inclusive, starting from lag -1). Otherwise a
+                    list of integers with lags < 0 is required.
+                lags_future_covariates
+                    Number of lagged future_covariates values used to predict the next time step. If an tuple (past,
+                    future) is given the last `past` lags in the past are used (inclusive, starting from lag -1) along
+                    with the first `future` future lags (starting from 0 - the prediction time - up to `future - 1`
+                    included). Otherwise a list of integers with lags is required.
+                output_chunk_length
+                    Number of time steps predicted at once by the internal regression model. Does not have to equal the
+                    forecast horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the
+                    forecast horizon may be useful if the covariates don't extend far enough into the future.
+                add_encoders
+                    A large number of past and future covariates can be automatically generated with `add_encoders`.
+                    This can be done by adding multiple pre-defined index encoders and/or custom user-made functions
+                    that will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can
+                    be added to transform the generated covariates. This happens all under one hood and only needs to
+                    be specified at model creation.
+                    Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
+                    ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
 
-            .. highlight:: python
-            .. code-block:: python
+                    .. highlight:: python
+                    .. code-block:: python
 
-                add_encoders={
-                    'cyclic': {'future': ['month']},
-                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
-                    'position': {'past': ['absolute'], 'future': ['relative']},
-                    'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
-                    'transformer': Scaler()
-                }
-            ..
-        model
-            Scikit-learn-like model with ``fit()`` and ``predict()`` methods. Also possible to use model that doesn't
-            support multi-output regression for multivariate timeseries, in which case one regressor
-            will be used per component in the multivariate series.
-            If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.
+                        add_encoders={
+                            'cyclic': {'future': ['month']},
+                            'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                            'position': {'past': ['absolute'], 'future': ['relative']},
+                            'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
+                            'transformer': Scaler()
+                        }
+                    ..
+                window_transformations
+                    Dictionary specifiying the windowed transformations to be applied to the data. This should have the
+                    form:
+
+                    .. code-block:: python
+
+                        window_transformations = {
+                                        'target': {'function': user_function},
+                                        'future': {'function': 'mean', 'window_size': 10}},
+                                        'past': [{'function': 'ewma', 'window_size': 5},
+                                                 {'function': user_function}]}
+        }
+                model
+                    Scikit-learn-like model with ``fit()`` and ``predict()`` methods. Also possible to use model that
+                    doesn't support multi-output regression for multivariate timeseries, in which case one regressor
+                    will be used per component in the multivariate series.
+                    If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.
         """
 
         super().__init__(add_encoders=add_encoders)
@@ -373,6 +387,11 @@ class RegressionModel(GlobalForecastingModel):
     def _create_windowed_data(
         self, target_series, past_covariates, future_covariates, max_samples_per_ts
     ):
+        """
+        Function to create windowed transformations. The function uses the window_transformations passed to the
+        RegressionModel. A number of simple windowing operations will be implemented as well as accepting a user
+        written function.
+        """
         if isinstance(target_series, TimeSeries):
             target_series = [target_series]
             past_covariates = [past_covariates] if past_covariates else None
@@ -399,21 +418,81 @@ class RegressionModel(GlobalForecastingModel):
             df_X = []
             df_target = target_ts.pd_dataframe(copy=False)
 
+            # TODO: what is the correct place to put these implemented windowing functions
+            def windowed_average(series, window):
+                return 0
+
+            def ewm_average(series, window):
+                return 0
+
+            # mapping from string to windowing function
+            allowed_windowing_functions = {
+                "mean": windowed_average,
+                "ewma": ewm_average,
+            }
+
+            #
+            def _get_function_args_from_dict(transformation):
+                if transformation["function"] is str:
+                    if transformation["function"] in allowed_windowing_functions.keys():
+                        transformation_function = allowed_windowing_functions[
+                            transformation["function"]
+                        ]
+                    else:
+                        raise Exception(
+                            f"Expect function to be one of {allowed_windowing_functions.keys()},"
+                            f'instead received {transformation["function"]}'
+                        )
+                elif callable(transformation["function"]):
+                    transformation_function = transformation["function"]
+                else:
+                    raise Exception(
+                        "Function value must be either a string or callable function."
+                    )
+
+                kwargs = transformation.pop("function")
+
+                return kwargs, transformation_function
+
             # X: target lags
             # TODO: Handle the different string to function options.
             if "target" in self.window_transformations:
                 if self.window_transformations["target"] is dict:
-                    df_X.append(df_target)
-                # elif self.window_transformations["target"] is list:
-                #     for transformation in self.window_transformations["target"]:
-                #         df_X.append(df_target.shift(-lag))
+                    window_transformations_target = [
+                        self.window_transformations["target"]
+                    ]
+                elif self.window_transformations["target"] is list:
+                    window_transformations_target = self.window_transformations[
+                        "target"
+                    ]
+                else:
+                    raise Exception(
+                        f"Expected target transformations to be either dict or list of dicts instead"
+                        f'received {type(self.window_transformations["target"])}'
+                    )
 
+                for transformation in window_transformations_target:
+                    transformation = window_transformations_target
+
+                    assert (
+                        "function" in transformation.keys()
+                    ), 'Window transformation must contain a "function" key.'
+
+                    kwargs, transformation_function = _get_function_args_from_dict(
+                        transformation
+                    )
+
+                    df_target.apply(lambda x: transformation_function(x, kwargs))
+                    df_X.append(df_target)
+
+            # TODO: How to combine lags with windowing to avoid forward looking bias
             # X: covariate lags
             for df_cov, lags in covariates:
                 if lags:
                     for lag in lags:
                         df_X.append(df_cov.shift(-lag))
 
+            # TODO: This is copied and pasted from the lagging code, is this still needed?
             # combine lags
             df_X = pd.concat(df_X, axis=1)
             X = df_X.dropna().values
