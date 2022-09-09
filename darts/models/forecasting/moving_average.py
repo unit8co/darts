@@ -3,7 +3,6 @@ Moving Average
 -------------------------------
 """
 import numpy as np
-
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.timeseries import TimeSeries
 
@@ -26,7 +25,7 @@ class MovingAverageForecaster(ForecastingModel):
 
     def fit(self, series: TimeSeries):
         super().fit(series)
-        self.mean_val = series[-self.window:].univariate_values().mean()
+        self.mean_val = series[-self.window :].univariate_values().mean()
         return self
 
     def predict(self, n: int, num_samples: int = 1):
