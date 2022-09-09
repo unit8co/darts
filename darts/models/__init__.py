@@ -17,7 +17,7 @@ from darts.models.forecasting.exponential_smoothing import ExponentialSmoothing
 from darts.models.forecasting.fft import FFT
 from darts.models.forecasting.kalman_forecaster import KalmanForecaster
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
-from darts.models.forecasting.moving_average import MovingAverage
+from darts.models.forecasting.moving_average import MovingAverageForecaster
 from darts.models.forecasting.prophet_model import Prophet
 from darts.models.forecasting.random_forest import RandomForest
 from darts.models.forecasting.regression_ensemble_model import RegressionEnsembleModel
@@ -58,7 +58,7 @@ from darts.models.filtering.gaussian_process_filter import GaussianProcessFilter
 from darts.models.filtering.kalman_filter import KalmanFilter
 
 # Filtering
-from darts.models.filtering.moving_average import MovingAverage
+from darts.models.filtering.moving_average import MovingAverageFilter
 from darts.models.forecasting.baselines import NaiveEnsembleModel
 
 # Ensembling
