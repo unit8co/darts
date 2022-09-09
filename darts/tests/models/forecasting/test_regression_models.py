@@ -349,7 +349,6 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             max_samples_per_ts=max_samples_per_ts,
         )
 
-        print(training_samples)
         # checking number of dimensions
         self.assertEqual(len(training_samples.shape), 2)  # samples, features
         self.assertEqual(
