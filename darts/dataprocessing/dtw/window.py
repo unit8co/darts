@@ -1,6 +1,7 @@
 import array
 from abc import ABC, abstractmethod
 from math import atan, tan
+from typing import Optional, Tuple
 
 import numpy as np
 
@@ -30,7 +31,7 @@ class Window(ABC):
         pass
 
     @abstractmethod
-    def column_index(self, elem: (int, int)) -> int:
+    def column_index(self, elem: Tuple[int, int]) -> int:
         """
         Parameters
         ----------
@@ -96,7 +97,7 @@ class NoWindow(Window):
     def __len__(self):
         return self.n * self.m + 1  # include (0,0) element
 
-    def column_index(self, elem: (int, int)):
+    def column_index(self, elem: Tuple[int, int]):
         return elem[1] - 1
 
     def column_length(self, column: int) -> int:
@@ -106,6 +107,7 @@ class NoWindow(Window):
         result = np.empty(self.n + 1)
         result.fill(self.m)
         result[0] = 1
+        return result
 
     def __iter__(self):
         for i in range(1, self.n + 1):
@@ -128,7 +130,7 @@ class CRWindow:
     length: int
     column_ranges: array.array
 
-    def __init__(self, n: int, m: int, ranges: np.ndarray = None):
+    def __init__(self, n: int, m: int, ranges: Optional[np.ndarray] = None):
         """
         Parameters
         ----------
@@ -154,25 +156,25 @@ class CRWindow:
             start = ranges[:, 0]
             end = ranges[:, 1]
 
-            raise_if(np.any(start < 0), "Start must be >=0")
-            raise_if(np.any(end > m), "End must be <m")
+            raise_if(bool(np.any(start < 0)), "Start must be >=0")
+            raise_if(bool(np.any(end > m)), "End must be <m")
 
             diff = np.maximum(end - start, 0)
             self.length = np.sum(diff)
 
             ranges[1:] += 1
             ranges = ranges.flatten()
+            self.column_ranges = array.array("i", ranges)
         else:
             ranges = np.zeros((n + 1) * 2, dtype=int)
             ranges[0::2] = self.m  # start
             ranges[1::2] = 0  # end
-            ranges = array.array("i", ranges)
+            ranges_array = array.array("i", ranges)
 
-            ranges[0] = 0
-            ranges[1] = 1
+            ranges_array[0] = 0
+            ranges_array[1] = 1
             self.length = 1
-
-        self.column_ranges = array.array("i", ranges)
+            self.column_ranges = array.array("i", ranges_array)
 
     def add_range(self, column: int, start: int, end: int):
         """
@@ -210,7 +212,7 @@ class CRWindow:
         self.column_ranges[start_idx] = start
         self.column_ranges[end_idx] = end
 
-    def add(self, elem: (int, int)):
+    def add(self, elem: Tuple[int, int]):
         """
         Mark grid cell as active.
 
@@ -226,7 +228,7 @@ class CRWindow:
         start, end = self.column_ranges[column]
         return gtz(end - start)
 
-    def column_index(self, elem: (int, int)) -> int:
+    def column_index(self, elem: Tuple[int, int]) -> int:
         i, j = elem
 
         start, end = self.column_ranges[i]
@@ -235,7 +237,7 @@ class CRWindow:
         else:
             return j - start
 
-    def __contains__(self, elem: (int, int)) -> bool:
+    def __contains__(self, elem: Tuple[int, int]) -> bool:
         i, j = elem
         start, end = self.column_ranges[i]
         return start <= j < end
