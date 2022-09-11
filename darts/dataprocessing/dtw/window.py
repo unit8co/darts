@@ -119,7 +119,7 @@ def gtz(value):  # greater than zero
     return value if value > 0 else 0
 
 
-class CRWindow:
+class CRWindow(Window):
     """
     Compressed row representation window.
     Stores the range of active grid cells in each column.

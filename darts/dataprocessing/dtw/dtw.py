@@ -1,5 +1,5 @@
 import copy
-from typing import Callable, Union
+from typing import Callable, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -14,14 +14,15 @@ from .window import CRWindow, NoWindow, Window
 
 logger = get_logger(__name__)
 
-SeriesValue = Union[np.ndarray, np.floating]
-DistanceFunc = Callable[[SeriesValue, SeriesValue], float]
+DistanceFunc = Union[
+    Callable[[float, float], float], Callable[[np.ndarray, np.ndarray], np.ndarray]
+]
 
 
 # CORE ALGORITHM
 def _dtw_cost_matrix(
     x: np.ndarray, y: np.ndarray, dist: DistanceFunc, window: Window
-) -> np.ndarray:
+) -> CostMatrix:
 
     dtw = CostMatrix._from_window(window)
 
@@ -120,6 +121,7 @@ def _fast_dtw(
     m = len(y)
     min_size = radius + 2
 
+    window: Union[NoWindow, CRWindow]
     if n < min_size or m < min_size or radius == -1:
         window = NoWindow()
         window.init_size(n, m)
@@ -154,8 +156,6 @@ class DTWAlignment:
         self.series2 = series2
         self.cost = cost
 
-    from ._plot import plot, plot_alignment
-
     def path(self) -> np.ndarray:
         """
         Returns
@@ -168,7 +168,7 @@ class DTWAlignment:
 
         if hasattr(self, "_path"):
             return self._path
-        self._path = _dtw_path(self.cost)
+        self._path: np.ndarray = _dtw_path(self.cost)
         return self._path
 
     def distance(self) -> float:
@@ -191,10 +191,10 @@ class DTWAlignment:
             return self._mean_distance
 
         path = self.path()
-        self._mean_distance = self.distance() / len(path)
+        self._mean_distance: float = self.distance() / len(path)
         return self._mean_distance
 
-    def warped(self) -> (TimeSeries, TimeSeries):
+    def warped(self) -> Tuple[TimeSeries, TimeSeries]:
         """
         Warps the two time series according to the warp path returned by .path(), which minimizes
         the pair-wise distance.
@@ -254,11 +254,11 @@ class DTWAlignment:
         )
 
 
-def default_distance_multi(x_values: np.ndarray, y_values: np.ndarray):
+def default_distance_multi(x_values: np.ndarray, y_values: np.ndarray) -> np.ndarray:
     return np.sum(np.abs(x_values - y_values))
 
 
-def default_distance_uni(x_value: float, y_value: float):
+def default_distance_uni(x_value: float, y_value: float) -> float:
     return abs(x_value - y_value)
 
 
@@ -266,7 +266,7 @@ def dtw(
     series1: TimeSeries,
     series2: TimeSeries,
     window: Window = NoWindow(),
-    distance: Union[DistanceFunc, None] = None,
+    distance: Optional[DistanceFunc] = None,
     multi_grid_radius: int = -1,
 ) -> DTWAlignment:
     """
@@ -338,14 +338,14 @@ def dtw(
         values_y = series2.values(copy=False)
 
     raise_if(
-        np.any(np.isnan(values_x)),
+        bool(np.any(np.isnan(values_x))),
         "Dynamic Time Warping does not support nan values. "
         "You can use the module darts.utils.missing_values to fill them, "
         "before passing them to dtw.",
         logger,
     )
     raise_if(
-        np.any(np.isnan(values_y)),
+        bool(np.any(np.isnan(values_y))),
         "Dynamic Time Warping does not support nan values. "
         "You can use the module darts.utils.missing_values to fill them,"
         "before passing it into dtw",

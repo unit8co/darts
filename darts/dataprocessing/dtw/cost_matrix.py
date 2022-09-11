@@ -93,14 +93,12 @@ class SparseCostMatrix(CostMatrix):
         self.n = window.n
         self.m = window.m
         self.window = window
-        self.offsets = np.empty(self.n + 2, dtype=int)
         self.column_ranges = window.column_ranges
-        self.offsets[0] = 0
-        np.cumsum(window.column_lengths(), out=self.offsets[1:])
-
-        len = self.offsets[-1]
-
-        self.offsets = array.array("i", self.offsets)
+        offsets = np.empty(self.n + 2, dtype=int)
+        offsets[0] = 0
+        np.cumsum(window.column_lengths(), out=offsets[1:])
+        len = offsets[-1]
+        self.offsets = array.array("i", offsets)
         self.dense = array.array("f", repeat(np.inf, len))
 
     def fill(self, value):
