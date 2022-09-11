@@ -156,6 +156,8 @@ class DTWAlignment:
         self.series2 = series2
         self.cost = cost
 
+    from ._plot import plot, plot_alignment  # type: ignore
+
     def path(self) -> np.ndarray:
         """
         Returns
