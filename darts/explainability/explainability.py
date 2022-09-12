@@ -88,7 +88,7 @@ class ForecastingModelExplainer(ABC):
 
             raise_if(
                 self.model.training_series is None,
-                "A background time series has to be provided for a model fitted on multiple time series, as"
+                "A background time series has to be provided for a model fitted on multiple time series, as "
                 "no training series has been saved by the model.",
             )
 
@@ -97,24 +97,27 @@ class ForecastingModelExplainer(ABC):
             self.background_future_covariates = self.model.future_covariate_series
 
         else:
+            if self.model.encoders.encoding_available:
+                (
+                    background_past_covariates,
+                    background_future_covariates,
+                ) = self.model.encoders.encode_train(
+                    target=background_series,
+                    past_covariate=background_past_covariates,
+                    future_covariate=background_future_covariates,
+                )
 
             self.background_series = background_series
             self.background_past_covariates = background_past_covariates
             self.background_future_covariates = background_future_covariates
 
         # ensure list of TimeSeries format
-        if isinstance(self.background_series, TimeSeries):
-            self.background_series = [self.background_series]
-            self.background_past_covariates = (
-                [self.background_past_covariates]
-                if self.background_past_covariates
-                else None
-            )
-            self.background_future_covariates = (
-                [self.background_future_covariates]
-                if self.background_future_covariates
-                else None
-            )
+        def to_list(s):
+            return [s] if isinstance(s, TimeSeries) and s is not None else s
+
+        self.background_series = to_list(self.background_series)
+        self.background_past_covariates = to_list(self.background_past_covariates)
+        self.background_future_covariates = to_list(self.background_future_covariates)
 
         if self.model.uses_past_covariates:
             raise_if(
@@ -224,7 +227,7 @@ class ForecastingModelExplainer(ABC):
     ]:
         """
         Main method of the ForecastingExplainer class.
-        Return a dictionary of dictionaries of (mutivariates) TimeSeries instances
+        Return a ExplainabilityResult instance.
         (or a list of dictionaries of dictionaries, il multiple TimeSeries list):
 
         - the first dimension corresponds to the horizons being explained.
@@ -305,3 +308,54 @@ class ForecastingModelExplainer(ABC):
                 for background_serie in self.background_series
             ]
         )
+
+
+class ExplainabilityResult(ABC):
+    """
+    Class to store the explainability results of a ForecastingModelExplainer, and to
+    easily access the results.
+    """
+
+    def __init__(
+        self,
+        explained_forecasts: Union[
+            Dict[integer, Dict[str, TimeSeries]],
+            Sequence[Dict[integer, Dict[str, TimeSeries]]],
+        ],
+    ):
+
+        self.explained_forecasts = explained_forecasts
+        if isinstance(self.explained_forecasts, list):
+            self.available_horizons = list(self.explained_forecasts[0].keys())
+            h_0 = self.available_horizons[0]
+            self.available_components = list(self.explained_forecasts[0][h_0].keys())
+        else:
+            self.available_horizons = list(self.explained_forecasts.keys())
+            h_0 = self.available_horizons[0]
+            self.available_components = list(self.explained_forecasts[h_0].keys())
+
+    def get_explanation(
+        self, horizon: int, component: str
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+
+        raise_if_not(
+            horizon in self.available_horizons,
+            "Horizon {} is not available. Available horizons are: {}".format(
+                horizon, self.available_horizons
+            ),
+        )
+
+        raise_if_not(
+            component in self.available_components,
+            "Component {} is not available. Available components are: {}".format(
+                component, self.available_components
+            ),
+        )
+
+        if isinstance(self.explained_forecasts, list):
+            return [
+                self.explained_forecasts[i][horizon][component]
+                for i in range(len(self.explained_forecasts))
+            ]
+        else:
+            return self.explained_forecasts[horizon][component]

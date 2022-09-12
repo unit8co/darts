@@ -37,7 +37,8 @@ def create_lagged_data(
         past_covariates = [past_covariates] if past_covariates else None
         future_covariates = [future_covariates] if future_covariates else None
 
-    Xs, ys = [], []
+    Xs, ys, Ts = [], [], []
+
     # iterate over series
     for idx, target_ts in enumerate(target_series):
         covariates = [
@@ -77,11 +78,14 @@ def create_lagged_data(
         df_X = pd.concat(df_X, axis=1)
         df_y = pd.concat(df_y, axis=1)
         df_X_y = pd.concat([df_X, df_y], axis=1)
-        X_y = df_X_y.dropna().values
+        df_X_y = df_X_y.dropna()
+        Ts.append(df_X_y.index)
+        X_y = df_X_y.values
 
         # keep most recent max_samples_per_ts samples
         if max_samples_per_ts:
             X_y = X_y[-max_samples_per_ts:]
+            Ts[-1] = Ts[-1][-max_samples_per_ts:]
 
         raise_if(
             X_y.shape[0] == 0,
@@ -92,10 +96,11 @@ def create_lagged_data(
         )
 
         X, y = np.split(X_y, [df_X.shape[1]], axis=1)
+
         Xs.append(X)
         ys.append(y)
 
     # combine samples from all series
     X = np.concatenate(Xs, axis=0)
     y = np.concatenate(ys, axis=0)
-    return X, y
+    return X, y, Ts

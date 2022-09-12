@@ -28,13 +28,17 @@ from numpy import integer
 from sklearn.multioutput import MultiOutputRegressor
 
 from darts import TimeSeries
-from darts.explainability.explainability import ForecastingModelExplainer
+from darts.explainability.explainability import (
+    ExplainabilityResult,
+    ForecastingModelExplainer,
+)
 from darts.logging import get_logger, raise_if, raise_log
-from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.models.forecasting.regression_model import RegressionModel
 from darts.utils.data.tabularization import create_lagged_data
 
 logger = get_logger(__name__)
+
+MIN_BACKGROUND_SAMPLE = 10
 
 
 class _ShapMethod(Enum):
@@ -55,7 +59,7 @@ ShapMethod = NewType("ShapMethod", _ShapMethod)
 class ShapExplainer(ForecastingModelExplainer):
     def __init__(
         self,
-        model: ForecastingModel,
+        model: RegressionModel,
         background_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         background_past_covariates: Optional[
             Union[TimeSeries, Sequence[TimeSeries]]
@@ -72,6 +76,10 @@ class ShapExplainer(ForecastingModelExplainer):
         Naming:
         - A background time series is a time series with which we 'train' the Explainer model.
         - A foreground time series is the time series we will explain according to the fitted Explainer model.
+
+        The ShapExplainer for now only works with RegressionModel.
+        The number of explained horizons (t, t+1, ...) will be equal to output_chunk_length of the Regression model.
+
 
         Parameters
         ----------
@@ -103,11 +111,10 @@ class ShapExplainer(ForecastingModelExplainer):
             Optionally, an additional keyword arguments passed to the shap_method chosen, if any.
         Examples
         --------
-        For using a summary plot
         >>> from darts.explainability.shap_explainer import ShapExplainer
         >>> from darts.models import LinearRegressionModel
         >>> series = AirPassengersDataset().load()
-        >>> model = LinearRegressionModel()
+        >>> model = LinearRegressionModel(lags=12)
         >>> model.fit(series[:-36])
         >>> ShapExplain = ShapExplainer(model)
         >>> ShapExplain.summary_plot()
@@ -182,15 +189,24 @@ class ShapExplainer(ForecastingModelExplainer):
             foreground_series = self.background_series
             foreground_past_covariates = self.background_past_covariates
             foreground_future_covariates = self.background_future_covariates
+        else:
+            if self.model.encoders.encoding_available:
+                (
+                    foreground_past_covariates,
+                    foreground_future_covariates,
+                ) = self.model.encoders.encode_train(
+                    target=foreground_series,
+                    past_covariate=foreground_past_covariates,
+                    future_covariate=foreground_future_covariates,
+                )
 
-        if isinstance(foreground_series, TimeSeries):
-            foreground_series = [foreground_series]
-            foreground_past_covariates = (
-                [foreground_past_covariates] if foreground_past_covariates else None
-            )
-            foreground_future_covariates = (
-                [foreground_future_covariates] if foreground_future_covariates else None
-            )
+        # ensure list of TimeSeries format
+        def to_list(s):
+            return [s] if isinstance(s, TimeSeries) and s is not None else s
+
+        foreground_series = to_list(foreground_series)
+        foreground_past_covariates = to_list(foreground_past_covariates)
+        foreground_future_covariates = to_list(foreground_future_covariates)
 
         horizons, target_names = self._check_horizons_and_targets(
             horizons, target_names
@@ -227,7 +243,7 @@ class ShapExplainer(ForecastingModelExplainer):
         if len(shap_values_list) == 1:
             shap_values_list = shap_values_list[0]
 
-        return shap_values_list
+        return ExplainabilityResult(shap_values_list)
 
     def summary_plot(
         self,
@@ -235,6 +251,7 @@ class ShapExplainer(ForecastingModelExplainer):
         target_names: Optional[Sequence[str]] = None,
         nb_samples: Optional[int] = None,
         plot_type: Optional[str] = "dot",
+        **kwargs,
     ):
         """
         Display a shap plot summary per (target, horizon)).
@@ -278,7 +295,10 @@ class ShapExplainer(ForecastingModelExplainer):
             for h in horizons:
                 plt.title("Target: `{}` - Horizon: {}".format(t, "t+" + str(h)))
                 shap.summary_plot(
-                    shaps_[h][t], foreground_X_sampled, plot_type=plot_type
+                    shaps_[h][t],
+                    foreground_X_sampled,
+                    plot_type=plot_type,
+                    **kwargs,
                 )
 
     def force_plot_from_ts(
@@ -291,6 +311,8 @@ class ShapExplainer(ForecastingModelExplainer):
     ):
         """
         Display a shap force_plot per target and per horizon.
+        For each target and horizon, it displays SHAP values of each lag/covariate with an additive
+        force layout.
         Here the inputs are the foreground series (and not the shap explanations objects)
         If no target names and/or no horizons are provided, we plot all force_plots.
         'original sample ordering' has to be selected to observe the time series chronologically.
@@ -316,6 +338,16 @@ class ShapExplainer(ForecastingModelExplainer):
         horizons, target_names = self._check_horizons_and_targets(
             horizons, target_names
         )
+
+        if self.model.encoders.encoding_available:
+            (
+                foreground_past_covariates,
+                foreground_future_covariates,
+            ) = self.model.encoders.encode_train(
+                target=foreground_series,
+                past_covariate=foreground_past_covariates,
+                future_covariate=foreground_future_covariates,
+            )
 
         foreground_X = self.explainers._create_regression_model_shap_X(
             foreground_series, foreground_past_covariates, foreground_future_covariates
@@ -450,6 +482,7 @@ class _RegressionShapExplainers:
             self.background_past_covariates,
             self.background_future_covariates,
             background_nb_samples,
+            train=True,
         )
 
         if self.is_multiOutputRegressor:
@@ -458,7 +491,7 @@ class _RegressionShapExplainers:
                 self.explainers[i] = {}
                 for j in range(self.target_dim):
                     self.explainers[i][j] = self._build_explainer_sklearn(
-                        self.model.model.estimators_[i + j],
+                        self.model.get_multioutput_estimator(horizon=i, target_dim=j),
                         self.background_X,
                         self.shap_method,
                         **kwargs,
@@ -549,13 +582,8 @@ class _RegressionShapExplainers:
                 shap_method = _ShapMethod.KERNEL
 
         if shap_method == _ShapMethod.TREE:
-            if "feature_perturbation" in kwargs:
-                if kwargs.get("feature_perturbation") == "interventional":
-                    explainer = shap.TreeExplainer(
-                        model_sklearn, background_X, **kwargs
-                    )
-                else:
-                    explainer = shap.TreeExplainer(model_sklearn, **kwargs)
+            if kwargs.get("feature_perturbation") == "interventional":
+                explainer = shap.TreeExplainer(model_sklearn, background_X, **kwargs)
             else:
                 explainer = shap.TreeExplainer(model_sklearn, **kwargs)
         elif shap_method == _ShapMethod.PERMUTATION:
@@ -583,7 +611,12 @@ class _RegressionShapExplainers:
         return explainer
 
     def _create_regression_model_shap_X(
-        self, target_series, past_covariates, future_covariates, n_samples=None
+        self,
+        target_series,
+        past_covariates,
+        future_covariates,
+        n_samples=None,
+        train=False,
     ):
         """
         Creates the shap format input for regression models.
@@ -597,7 +630,7 @@ class _RegressionShapExplainers:
         lags_past_covariates_list = self.model.lags.get("past")
         lags_future_covariates_list = self.model.lags.get("future")
 
-        X, _ = create_lagged_data(
+        X, _, indexes = create_lagged_data(
             target_series,
             self.n,
             past_covariates,
@@ -607,7 +640,18 @@ class _RegressionShapExplainers:
             lags_future_covariates_list,
         )
 
-        X = pd.DataFrame(X)
+        if train:
+            X = pd.DataFrame(X)
+        else:
+            X = pd.DataFrame(X, index=indexes[0])
+
+        if len(X) <= MIN_BACKGROUND_SAMPLE:
+            raise_log(
+                ValueError(
+                    "The number of samples in the background dataset is too small to compute shap values."
+                )
+            )
+
         if n_samples:
             X = shap.utils.sample(X, n_samples)
 
