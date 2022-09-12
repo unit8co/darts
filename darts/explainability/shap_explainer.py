@@ -23,7 +23,6 @@ from typing import Dict, NewType, Optional, Sequence, Tuple, Union
 import matplotlib.pyplot as plt
 import pandas as pd
 import shap
-from IPython.core.display import display
 from numpy import integer
 from sklearn.multioutput import MultiOutputRegressor
 
@@ -303,11 +302,12 @@ class ShapExplainer(ForecastingModelExplainer):
 
     def force_plot_from_ts(
         self,
-        foreground_series: TimeSeries,
+        horizon: int = None,
+        target_name: str = None,
+        foreground_series: TimeSeries = None,
         foreground_past_covariates: Optional[TimeSeries] = None,
         foreground_future_covariates: Optional[TimeSeries] = None,
-        horizons: Optional[Sequence[int]] = None,
-        target_names: Optional[Sequence[str]] = None,
+        **kwargs,
     ):
         """
         Display a shap force_plot per target and per horizon.
@@ -319,25 +319,22 @@ class ShapExplainer(ForecastingModelExplainer):
 
         Parameters
         ----------
+        horizon
+            An integer value  representing which elements in the future we want to explain, starting from the first
+            timestamp prediction at 0.
+            For now we consider only models with output_chunk_length and it can't be bigger than output_chunk_length.
+        target_name
+            A string naming the target name or component we want to plot.
         foreground_series
-            Optionally, target timeseries we want to explain. Can be multivariate.
-            If none is provided, explain will automatically provide the whole background TimeSeries explanation.
+            Target timeseries we want to explain. Can be multivariate.
         foreground_past_covariates
             Optionally, past covariate timeseries if needed by model.
         foreground_future_covariates
             Optionally, future covariate timeseries if needed by model.
             Optionally, A list of string naming the target names we want to plot.
-        horizons
-            Optionally, a list of integer values representing which elements in the future
-            we want to explain, starting from the first timestamp prediction at 0.
-            For now we consider only models with output_chunk_length and it can't be bigger than output_chunk_length.
-        target_names
-            Optionally, A list of string naming the target names we want to plot.
+
 
         """
-        horizons, target_names = self._check_horizons_and_targets(
-            horizons, target_names
-        )
 
         if self.model.encoders.encoding_available:
             (
@@ -353,20 +350,19 @@ class ShapExplainer(ForecastingModelExplainer):
             foreground_series, foreground_past_covariates, foreground_future_covariates
         )
 
-        shap_ = self.explainers.shap_explanations(foreground_X, horizons, target_names)
-        for t in target_names:
-            for h in horizons:
-                print("Target: `{}` - Horizon: {}".format(t, "t+" + str(h)))
-                display(
-                    shap.force_plot(
-                        base_value=shap_[h][t],
-                        features=foreground_X,
-                        out_names=t,
-                    )
-                )
+        shap_ = self.explainers.shap_explanations(
+            foreground_X, [horizon], [target_name]
+        )
+
+        print("Target: `{}` - Horizon: {}".format(target_name, "t+" + str(horizon)))
+        return shap.force_plot(
+            base_value=shap_[horizon][target_name],
+            features=foreground_X,
+            out_names=target_name,
+            **kwargs,
+        )
 
     def _check_horizons_and_targets(self, horizons, target_names) -> Tuple[int, str]:
-
         if target_names is not None:
             raise_if(
                 any(
@@ -577,7 +573,6 @@ class _RegressionShapExplainers:
         if shap_method is None:
             if model_name in self.default_sklearn_shap_explainers:
                 shap_method = self.default_sklearn_shap_explainers[model_name]
-                print(shap_method)
             else:
                 shap_method = _ShapMethod.KERNEL
 
@@ -599,7 +594,6 @@ class _RegressionShapExplainers:
                 model_sklearn.predict, background_X, keep_index=True, **kwargs
             )
         elif shap_method == _ShapMethod.LINEAR:
-            print(kwargs)
             explainer = shap.LinearExplainer(model_sklearn, background_X, **kwargs)
         elif shap_method == _ShapMethod.DEEP:
             explainer = shap.LinearExplainer(model_sklearn, background_X, **kwargs)
@@ -642,15 +636,14 @@ class _RegressionShapExplainers:
 
         if train:
             X = pd.DataFrame(X)
+            if len(X) <= MIN_BACKGROUND_SAMPLE:
+                raise_log(
+                    ValueError(
+                        "The number of samples in the background dataset is too small to compute shap values."
+                    )
+                )
         else:
             X = pd.DataFrame(X, index=indexes[0])
-
-        if len(X) <= MIN_BACKGROUND_SAMPLE:
-            raise_log(
-                ValueError(
-                    "The number of samples in the background dataset is too small to compute shap values."
-                )
-            )
 
         if n_samples:
             X = shap.utils.sample(X, n_samples)

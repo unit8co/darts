@@ -7,7 +7,6 @@ This 'explanation' depends on the characteristics of the XAI model chosen (shap,
 
 """
 from abc import ABC, abstractmethod
-from cmath import inf
 from typing import Dict, Optional, Sequence, Union
 
 from numpy import integer
@@ -15,8 +14,6 @@ from numpy import integer
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import ForecastingModel
-from darts.models.forecasting.regression_model import RegressionModel
-from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
 from darts.utils.statistics import stationarity_tests
 
 logger = get_logger(__name__)
@@ -155,17 +152,6 @@ class ForecastingModelExplainer(ABC):
 
     def _check_background_covariates(self):
 
-        if isinstance(self.model, RegressionModel):
-            len_target_min = len(self.model.lags.get("target") or [])
-            len_past_min = len(self.model.lags.get("past") or [])
-            len_future_min = len(self.model.lags.get("future") or [])
-            min_length = max(len_target_min, len_past_min, len_future_min)
-
-        elif isinstance(self.model, TorchForecastingModel):
-            min_length = self.model.input_chunk_length
-        else:
-            min_length = inf
-
         # ensure we have the same names between TimeSeries (if list of). Important to ensure homogeneity
         # for explained features.
         for idx in range(len(self.background_series)):
@@ -186,28 +172,6 @@ class ForecastingModelExplainer(ABC):
                 ),
                 "Columns names must be identical between TimeSeries list components (multi-TimeSeries).",
             )
-
-        # the number of samples we will build for explanation is:
-        # sum(len(intersection(target, fut_cov, past_cov))- min_length+1). We compare this to a fixed constant min.
-        nb_background_samples = 0
-        for idx in range(len(self.background_series)):
-            inter_ = self.background_series[idx].time_index
-            if self.background_past_covariates:
-                inter_ = inter_.intersection(
-                    self.background_past_covariates[idx].time_index
-                )
-            if self.background_future_covariates:
-                inter_ = inter_.intersection(
-                    self.background_future_covariates[idx].time_index
-                )
-            nb_background_samples += max(
-                len(inter_) - min_length + 1,
-                0,
-            )
-        raise_if(
-            nb_background_samples <= MIN_BACKGROUND_SAMPLE,
-            "The number of samples for the background series is too small.",
-        )
 
     @abstractmethod
     def explain(
