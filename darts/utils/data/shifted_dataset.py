@@ -29,6 +29,7 @@ class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
         length: int = 12,
         shift: int = 1,
         max_samples_per_ts: Optional[int] = None,
+        use_static_covariates: bool = True,
     ):
         """
         A time series dataset containing tuples of (past_target, past_covariates, static_covariates, future_target)
@@ -66,6 +67,8 @@ class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        use_static_covariates
+            Whether to use/include static covariate data from input series.
         """
         super().__init__()
 
@@ -78,6 +81,7 @@ class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
             shift_covariates=False,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.PAST,
+            use_static_covariates=use_static_covariates,
         )
 
     def __len__(self):
@@ -97,6 +101,7 @@ class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
         length: int = 12,
         shift: int = 1,
         max_samples_per_ts: Optional[int] = None,
+        use_static_covariates: bool = True,
     ):
         """
         A time series dataset containing tuples of (past_target, future_covariates, static_covariates, future_target)
@@ -136,6 +141,8 @@ class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        use_static_covariates
+            Whether to use/include static covariate data from input series.
         """
 
         super().__init__()
@@ -149,6 +156,7 @@ class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
             shift_covariates=True,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.FUTURE,
+            use_static_covariates=use_static_covariates,
         )
 
     def __len__(self):
@@ -168,6 +176,7 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
         length: int = 12,
         shift: int = 1,
         max_samples_per_ts: Optional[int] = None,
+        use_static_covariates: bool = True,
     ):
         """
         A time series dataset containing tuples of
@@ -209,6 +218,8 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        use_static_covariates
+            Whether to use/include static covariate data from input series.
         """
 
         super().__init__()
@@ -223,6 +234,7 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
             shift_covariates=False,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.HISTORIC_FUTURE,
+            use_static_covariates=use_static_covariates,
         )
 
         # This dataset is in charge of serving future covariates
@@ -235,6 +247,7 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
             shift_covariates=True,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.FUTURE,
+            use_static_covariates=use_static_covariates,
         )
 
     def __len__(self):
@@ -269,6 +282,7 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
         length: int = 12,
         shift: int = 1,
         max_samples_per_ts: Optional[int] = None,
+        use_static_covariates: bool = True,
     ):
         """
         A time series dataset containing tuples of (past_target, past_covariates, historic_future_covariates,
@@ -311,6 +325,8 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        use_static_covariates
+            Whether to use/include static covariate data from input series.
         """
         super().__init__()
 
@@ -324,6 +340,7 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
             shift_covariates=False,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.PAST,
+            use_static_covariates=use_static_covariates,
         )
 
         # The dual dataset serves both historical and future future covariates
@@ -333,6 +350,7 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
             length=length,
             shift=shift,
             max_samples_per_ts=max_samples_per_ts,
+            use_static_covariates=use_static_covariates,
         )
 
     def __len__(self):
@@ -370,6 +388,7 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
         length: int = 12,
         shift: int = 1,
         max_samples_per_ts: Optional[int] = None,
+        use_static_covariates: bool = True,
     ):
         """
         A time series dataset containing tuples of (past_target, past_covariates, future_covariates, static_covariates,
@@ -412,6 +431,8 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        use_static_covariates
+            Whether to use/include static covariate data from input series.
         """
 
         super().__init__()
@@ -426,6 +447,7 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
             shift_covariates=False,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.PAST,
+            use_static_covariates=use_static_covariates,
         )
 
         # This dataset is in charge of serving future covariates
@@ -438,6 +460,7 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
             shift_covariates=True,
             max_samples_per_ts=max_samples_per_ts,
             covariate_type=CovariateType.FUTURE,
+            use_static_covariates=use_static_covariates,
         )
 
     def __len__(self):
@@ -474,6 +497,7 @@ class GenericShiftedDataset(TrainingDataset):
         shift_covariates: bool = False,
         max_samples_per_ts: Optional[int] = None,
         covariate_type: CovariateType = CovariateType.NONE,
+        use_static_covariates: bool = True,
     ):
         """
         Contains (past_target, <X>_covariates, static_covariates, future_target), where "<X>" is past if
@@ -508,6 +532,8 @@ class GenericShiftedDataset(TrainingDataset):
             most recent `max_samples_per_ts` samples will be considered.
         covariate_type
             An instance of `CovariateType` describing the type of `covariates`.
+        use_static_covariates
+            Whether to use/include static covariate data from input series.
         """
         super().__init__()
 
@@ -543,13 +569,16 @@ class GenericShiftedDataset(TrainingDataset):
             )
 
         self.ideal_nr_samples = len(self.target_series) * self.max_samples_per_ts
+        self.use_static_covariates = use_static_covariates
 
     def __len__(self):
         return self.ideal_nr_samples
 
     def __getitem__(
         self, idx
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], np.ndarray, Optional[np.ndarray]]:
+    ) -> Tuple[
+        np.ndarray, Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]
+    ]:
         # determine the index of the time series.
         target_idx = idx // self.max_samples_per_ts
         target_series = self.target_series[target_idx]
@@ -631,5 +660,8 @@ class GenericShiftedDataset(TrainingDataset):
                 f"target series.",
             )
 
-        static_covariate = target_series.static_covariates_values(copy=False)
+        if self.use_static_covariates:
+            static_covariate = target_series.static_covariates_values(copy=False)
+        else:
+            static_covariate = None
         return past_target, covariate, static_covariate, future_target
