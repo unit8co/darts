@@ -33,6 +33,7 @@ from darts.utils import (
     _build_tqdm_iterator,
     _historical_forecasts_general_checks,
     _parallel_apply,
+    _retrain_wrapper,
     _with_sanity_checks,
 )
 from darts.utils.data.encoders import SequentialEncoder
@@ -303,7 +304,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         start: Union[pd.Timestamp, float, int] = 0.5,
         forecast_horizon: int = 1,
         stride: int = 1,
-        retrain: bool = True,
+        retrain: Union[bool, int, Callable[..., bool]] = True,
         overlap_end: bool = False,
         last_points_only: bool = True,
         verbose: bool = False,
@@ -357,8 +358,22 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         stride
             The number of time steps between two consecutive predictions.
         retrain
-            Whether to retrain the model for every prediction or not. Not all models support setting
-            `retrain` to `False`. Notably, this is supported by neural networks based models.
+            Whether and/or on which condition to retrain the model before predicting.
+            This parameter supports 3 different datatypes: ``bool``, (positive) ``int``, and
+            ``Callable`` (returning a ``bool``).
+            In the case of ``bool``: retrain the model at each step (`True`), or never retrains the model (`False`).
+            In the case of ``int``: the model is retrained every `retrain` iterations.
+            In the case of ``Callable``: the model is retrained whenever callable returns `True`.
+            Arguments passed to the callable are as follows:
+
+                - `pred_time (pd.Timestamp or int)`: timestamp of forecast time (end of the training series)
+                - `train_series (TimeSeries)`: train series up to `pred_time`
+                - `past_covariates (TimeSeries)`: past_covariates series up to `pred_time`
+                - `future_covariates (TimeSeries)`: future_covariates series up
+                  to `min(pred_time + series.freq * forecast_horizon, series.end_time())`
+
+            Note: some models do require being retrained every time
+            and do not support anything else than `retrain=True`.
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not
         last_points_only
@@ -384,10 +399,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         # only GlobalForecastingModels support historical forecastings without retraining the model
         base_class_name = self.__class__.__base__.__name__
         raise_if(
-            not retrain and not self._supports_non_retrainable_historical_forecasts(),
+            (isinstance(retrain, Callable) or int(retrain) != 1)
+            and (not self._supports_non_retrainable_historical_forecasts()),
             f"{base_class_name} does not support historical forecastings with `retrain` set to `False`. "
             f"For now, this is only supported with GlobalForecastingModels such as TorchForecastingModels. "
-            f"Fore more information, read the documentation for `retrain` in `historical_forecastings()`",
+            f"For more information, read the documentation for `retrain` in `historical_forecasts()`",
             logger,
         )
 
@@ -408,6 +424,25 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ),
                 logger,
             )
+
+        if isinstance(retrain, bool) or (isinstance(retrain, int) and retrain >= 0):
+            retrain_func = _retrain_wrapper(
+                lambda counter: counter % int(retrain) == 0 if retrain else False
+            )
+
+        elif isinstance(retrain, Callable):
+            retrain_func = _retrain_wrapper(retrain)
+
+        else:
+            raise_log(
+                ValueError(
+                    "`retrain` argument must be either `bool`, positive `int` or `Callable` (returning `bool`)"
+                ),
+                logger,
+            )
+        retrain_func_signature = tuple(
+            inspect.signature(retrain_func).parameters.keys()
+        )
 
         # prepare the start parameter -> pd.Timestamp
         start = series.get_timestamp_at_point(start)
@@ -435,7 +470,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         last_points_values = []
 
         # iterate and forecast
-        for pred_time in iterator:
+        for _counter, pred_time in enumerate(iterator):
             # build the training series
             train = series.drop_after(pred_time)
             if train_length and len(train) > train_length:
@@ -443,7 +478,19 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             # train_cov = covariates.drop_after(pred_time) if covariates else None
 
-            if retrain or not self._fit_called:
+            if (not self._fit_called) or retrain_func(
+                counter=_counter,
+                pred_time=pred_time,
+                train_series=train,
+                past_covariates=past_covariates.drop_after(pred_time)
+                if past_covariates and ("past_covariates" in retrain_func_signature)
+                else None,
+                future_covariates=future_covariates.drop_after(
+                    min(pred_time + series.freq * forecast_horizon, series.end_time())
+                )
+                if future_covariates and ("future_covariates" in retrain_func_signature)
+                else None,
+            ):
                 self._fit_wrapper(
                     series=train,
                     past_covariates=past_covariates,
@@ -498,7 +545,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         start: Union[pd.Timestamp, float, int] = 0.5,
         forecast_horizon: int = 1,
         stride: int = 1,
-        retrain: bool = True,
+        retrain: Union[bool, int, Callable[..., bool]] = True,
         overlap_end: bool = False,
         last_points_only: bool = False,
         metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
@@ -556,8 +603,22 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         stride
             The number of time steps between two consecutive training sets.
         retrain
-            Whether to retrain the model for every prediction or not. Not all models support setting
-            `retrain` to `False`. Notably, this is supported by neural networks based models.
+            Whether and/or on which condition to retrain the model before predicting.
+            This parameter supports 3 different datatypes: ``bool``, (positive) ``int``, and
+            ``Callable`` (returning a ``bool``).
+            In the case of ``bool``: retrain the model at each step (`True`), or never retrains the model (`False`).
+            In the case of ``int``: the model is retrained every `retrain` iterations.
+            In the case of ``Callable``: the model is retrained whenever callable returns `True`.
+            Arguments passed to the callable are as follows:
+
+                - `pred_time (pd.Timestamp or int)`: timestamp of forecast time (end of the training series)
+                - `train_series (TimeSeries)`: train series up to `pred_time`
+                - `past_covariates (TimeSeries)`: past_covariates series up to `pred_time`
+                - `future_covariates (TimeSeries)`: future_covariates series up
+                  to `min(pred_time + series.freq * forecast_horizon, series.end_time())`
+
+            Note: some models do require being retrained every time
+            and do not support anything else than `retrain=True`.
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not
         last_points_only

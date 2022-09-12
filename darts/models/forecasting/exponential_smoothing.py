@@ -21,7 +21,7 @@ class ExponentialSmoothing(ForecastingModel):
         self,
         trend: Optional[ModelMode] = ModelMode.ADDITIVE,
         damped: Optional[bool] = False,
-        seasonal: Optional[ModelMode] = SeasonalityMode.ADDITIVE,
+        seasonal: Optional[SeasonalityMode] = SeasonalityMode.ADDITIVE,
         seasonal_periods: Optional[int] = None,
         random_state: int = 0,
         **fit_kwargs,
@@ -34,7 +34,10 @@ class ExponentialSmoothing(ForecastingModel):
         <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.html>`_;
         we refer to this link for the original and more complete documentation of the parameters.
 
-        `model_mode` must be a ``ModelMode`` Enum member. You can access the Enum with ``from darts import ModelMode``.
+        `trend` must be a ``ModelMode`` Enum member. You can access the Enum with
+         ``from darts.utils.utils import ModelMode``.
+        `seasonal` must be a ``SeasonalityMode`` Enum member. You can access the Enum with
+        ``from darts.utils.utils import SeasonalityMode``.
 
         ``ExponentialSmoothing(trend=ModelMode.NONE, seasonal=SeasonalityMode.NONE)`` corresponds to a single
         exponential smoothing.
@@ -97,7 +100,7 @@ class ExponentialSmoothing(ForecastingModel):
             seasonal_periods_param = 12
 
         hw_model = hw.ExponentialSmoothing(
-            series.values(),
+            series.values(copy=False),
             trend=self.trend if self.trend is None else self.trend.value,
             damped_trend=self.damped,
             seasonal=self.seasonal if self.seasonal is None else self.seasonal.value,

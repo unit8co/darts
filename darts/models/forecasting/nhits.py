@@ -158,7 +158,7 @@ class _Block(nn.Module):
 
         self.layers = nn.Sequential(*layers)
 
-        # Fully connected layer producing forecast/backcast expansion coeffcients (waveform generator parameters).
+        # Fully connected layer producing forecast/backcast expansion coefficients (waveform generator parameters).
         # The coefficients are emitted for each parameter of the likelihood for the forecast.
         self.backcast_linear_layer = nn.Linear(
             in_features=layer_width, out_features=n_theta_backcast
@@ -413,7 +413,7 @@ class _NHiTSModule(PLPastCovariatesModule):
         self.stacks = nn.ModuleList(self.stacks_list)
 
         # setting the last backcast "branch" to be not trainable (without next block/stack, it doesn't need to be
-        # backpropagated). Removing this lines would cause logtensorboard to crash, since no gradient is stored
+        # backpropagated). Removing this line would cause logtensorboard to crash, since no gradient is stored
         # on this params (the last block backcast is not part of the final output of the net).
         self.stacks_list[-1].blocks[-1].backcast_linear_layer.requires_grad_(False)
 
@@ -476,7 +476,7 @@ class NHiTSModel(PastCovariatesTorchModel):
 
         N-HiTS is similar to N-BEATS (implemented in :class:`NBEATSModel`),
         but attempts to provide better performance at lower computational cost by introducing
-        multi-rate sampling of the inputs and mulit-scale interpolation of the outputs.
+        multi-rate sampling of the inputs and multi-scale interpolation of the outputs.
 
         Similar to :class:`NBEATSModel`, in addition to the univariate version presented in the paper,
         this implementation also supports multivariate series (and covariates) by flattening the model inputs
@@ -489,7 +489,7 @@ class NHiTSModel(PastCovariatesTorchModel):
         This parameter can be a tuple of tuples, of size (num_stacks x num_blocks), specifying the kernel
         size for each block in each stack. If left to ``None``, some default values will be used based on
         ``input_chunk_length``.
-        Similarly, the multi-scale interpolation is controled by ``n_freq_downsample``, which gives the
+        Similarly, the multi-scale interpolation is controlled by ``n_freq_downsample``, which gives the
         downsampling factors to be used in each block of each stack. If left to ``None``, some default
         values will be used based on the ``output_chunk_length``.
 
@@ -545,7 +545,7 @@ class NHiTSModel(PastCovariatesTorchModel):
             The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.
         optimizer_kwargs
             Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
-            for specifying a learning rate). Otherwise the default values of the selected ``optimizer_cls``
+            for specifying a learning rate). Otherwise, the default values of the selected ``optimizer_cls``
             will be used. Default: ``None``.
         lr_scheduler_cls
             Optionally, the PyTorch learning rate scheduler class to be used. Specifying ``None`` corresponds

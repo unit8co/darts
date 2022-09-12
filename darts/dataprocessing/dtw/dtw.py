@@ -314,7 +314,7 @@ def dtw(
         and type(window) is NoWindow
         and len(series1) * len(series2) > 10**6
     ):
-        logger.warn(
+        logger.warning(
             "Exact evaluation will result in poor performance on large datasets."
             " Consider enabling multi-grid or using a window."
         )
