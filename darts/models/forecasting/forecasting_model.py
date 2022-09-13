@@ -878,6 +878,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def residuals(
         self,
         series: TimeSeries,
+        past_covariates: Optional[TimeSeries] = None,
+        future_covariates: Optional[TimeSeries] = None,
         forecast_horizon: int = 1,
         retrain: bool = True,
         verbose: bool = False,
@@ -921,6 +923,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         # compute fitted values
         p = self.historical_forecasts(
             series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
             start=first_index,
             forecast_horizon=forecast_horizon,
             stride=1,
