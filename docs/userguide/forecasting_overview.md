@@ -40,6 +40,43 @@ Furthermore, we define the following types of time series consumed by the models
 * **Target series:** the series that we are interested in forecasting.
 * **Covariate series:** some other series that we are not interested in forecasting, but that can provide valuable inputs to the forecasting model.
 
+## Reproducibility
+
+All forecasting models support saving the model (taking some hyper-parameters in argument), by calling the `save_model()` function.
+
+**Example:**
+```python
+from darts.models import NaiveSeasonal
+
+naive_model = NaiveSeasonal(K=1)            # init
+naive_model.fit(train)                      # fit  
+path = "/Users/darts_user/models/this_model.py"
+naive_model.save_model(path)                      # save
+```
+
+The parameter `path` specifies the location where to save the model at its current state. If no `path` is specified, the model is automatically
+saved under ``"{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pt"``. E.g., ``"RNNModel_2020-01-01_12:00:00.pt"``.
+
+**Example:**
+```python
+from darts.models import NaiveSeasonal
+
+loaded_model = ForecastingModel.load_model(path)   # load
+
+from darts.models import RNNModel
+
+model = RNNModel(input_chunk_length=4)
+
+model.save("my_model.pt")
+model_loaded = RNNModel.load("my_model.pt")
+
+
+```
+
+Special case for torch models:
+
+* **Target series:** the series that we are interested in forecasting.
+* **Covariate series:** some other series that we are not interested in forecasting, but that can provide valuable inputs to the forecasting model.
 
 ## Support for multivariate series
 
