@@ -32,7 +32,7 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         "custom": {"past": [lambda idx: (idx.year - 1950) / 50]},
         "transformer": Scaler(scaler),
     }
-    N = 1000
+    N = 400
     date_today = date(2012, 12, 12)
     days = pd.date_range(date_today, date_today + timedelta(days=N - 1), freq="d")
 
@@ -161,6 +161,15 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             future_covariates=self.fut_cov_ts,
         )
 
+        # SHould have the same number of target, past and futures in the respective lists
+        with self.assertRaises(ValueError):
+            ShapExplainer(
+                self.models[0],
+                [self.target_ts, self.target_ts],
+                self.past_cov_ts,
+                self.fut_cov_ts,
+            )
+
         # Missing a future covariate if you choose to use a new background
         with self.assertRaises(ValueError):
             ShapExplainer(
@@ -175,11 +184,43 @@ class ShapExplainerTestCase(DartsBaseTestClass):
 
         # good type of explainers
         ShapExplain = ShapExplainer(m)
-        self.assertEqual(
-            str(type(ShapExplain.explainers.explainers[0][0])),
-            "<class 'shap.explainers._tree.Tree'>",
+        self.assertTrue(
+            isinstance(ShapExplain.explainers.explainers[0][0], shap.explainers.Tree)
         )
-        self.assertTrue(ShapExplain.explainers.explainers[0][0], shap.explainers.Tree)
+
+        # Linear model - also not a MultiOuputRegressor
+        m = self.models[2].fit(
+            series=self.target_ts,
+            past_covariates=self.past_cov_ts,
+            future_covariates=self.fut_cov_ts,
+        )
+
+        ShapExplain = ShapExplainer(m)
+        self.assertTrue(
+            isinstance(ShapExplain.explainers.explainers, shap.explainers.Linear)
+        )
+
+        # ExtraTreesRegressor - also not a MultiOuputRegressor
+        m = self.models[3].fit(
+            series=self.target_ts,
+            past_covariates=self.past_cov_ts,
+            future_covariates=self.fut_cov_ts,
+        )
+        ShapExplain = ShapExplainer(m)
+        self.assertTrue(
+            isinstance(ShapExplain.explainers.explainers, shap.explainers.Tree)
+        )
+
+        # CatBoost
+        m = self.models[1].fit(
+            series=self.target_ts,
+            past_covariates=self.past_cov_ts,
+            future_covariates=self.fut_cov_ts,
+        )
+        ShapExplain = ShapExplainer(m)
+        self.assertTrue(
+            isinstance(ShapExplain.explainers.explainers[0][0], shap.explainers.Tree)
+        )
 
     def test_explain(self):
 
@@ -191,12 +232,31 @@ class ShapExplainerTestCase(DartsBaseTestClass):
 
         ShapExplain = ShapExplainer(m_0)
 
+        with self.assertRaises(ValueError):
+            # horizon > output_chunk_length
+            results = ShapExplain.explain(horizons=[1, 5])
+            # wrong name
+            results = ShapExplain.explain(horizons=[1, 2], target_names=["test"])
+
         results = ShapExplain.explain()
+
+        with self.assertRaises(ValueError):
+            # wrong horizon
+            results.get_explanation(horizon=5, component="price")
+            # wrong component name
+            results.get_explanation(horizon=1, component="test")
+
+        results = ShapExplain.explain(horizons=[1, 3], target_names=["power"])
+        with self.assertRaises(ValueError):
+            # wrong horizon
+            results.get_explanation(horizon=2, component="power")
+            # wrong component name
+            results.get_explanation(horizon=1, component="test")
+
+        self.assertTrue(results.get_explanation(horizon=1, component="power"))
 
         # right instance
         self.assertTrue(isinstance(results, ExplainabilityResult))
-
-        ts = results.get_explanation(0, "price")
 
         components_list = [
             "price_target_lag-4",
@@ -241,5 +301,50 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             "relative_idx_fut_cov_lag0",
         ]
 
+        results = ShapExplain.explain()
+
         # all the features explained are here, in the right order
-        self.assertEqual(ts.components.to_list(), components_list)
+        self.assertTrue(
+            [
+                results.get_explanation(i, "price").components.to_list()
+                == components_list
+                for i in range(4)
+            ]
+        )
+
+    def test_plot(self):
+
+        m_0 = self.models[0].fit(
+            series=self.target_ts,
+            past_covariates=self.past_cov_ts,
+            future_covariates=self.fut_cov_ts,
+        )
+
+        ShapExplain = ShapExplainer(m_0)
+
+        # We need at least 8 points for force_plot
+        with self.assertRaises(ValueError):
+            ShapExplain.force_plot_from_ts(
+                2,
+                "power",
+                self.target_ts[100:107],
+                self.past_cov_ts[100:107],
+                self.fut_cov_ts[100:107],
+            )
+
+        # We need at least 8 points for force_plot
+        self.assertTrue(
+            ShapExplain.force_plot_from_ts(
+                2,
+                "power",
+                self.target_ts[100:108],
+                self.past_cov_ts[100:108],
+                self.fut_cov_ts[100:108],
+            )
+        )
+
+        # Wrong component name
+        with self.assertRaises(ValueError):
+            ShapExplain.summary_plot(
+                horizons=[0], target_names=["test"], max_display=30
+            )

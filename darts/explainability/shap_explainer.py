@@ -176,10 +176,7 @@ class ShapExplainer(ForecastingModelExplainer):
         ] = None,
         horizons: Optional[Sequence[int]] = None,
         target_names: Optional[Sequence[str]] = None,
-    ) -> Union[
-        Dict[integer, Dict[str, TimeSeries]],
-        Sequence[Dict[integer, Dict[str, TimeSeries]]],
-    ]:
+    ) -> ExplainabilityResult:
         super().explain(
             foreground_series, foreground_past_covariates, foreground_future_covariates
         )
@@ -226,10 +223,9 @@ class ShapExplainer(ForecastingModelExplainer):
             )
 
             shap_values_dict = {}
-            for h in range(self.n):
+            for h in horizons:
                 tmp = {}
-                for idx, t in enumerate(self.target_names):
-
+                for t in target_names:
                     tmp[t] = TimeSeries.from_times_and_values(
                         shap_[h][t].time_index,
                         shap_[h][t].values,
