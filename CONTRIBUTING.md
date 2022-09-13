@@ -75,17 +75,19 @@ To ensure you don't need to worry about formatting and linting when contributing
     - For [Black](https://black.readthedocs.io/en/stable/integrations/editors.html)
     - For other integrations please look at the documentation for your editor
 
-### Developing and running with Apple Silicon M1 processor architecture
+### Developing Mac with Apple Silicon M1 processor 
 We currently recommend to run Darts in an x_64 emulated environment on Mac computers with the Silicon M1 processor. 
 
 Below are the necessary instructions to create and configure the environment:
-- Start by installing conda with miniforge : "brew install miniforge" 
-- Create the x_64 environment : "CONDA_SUBDIR=osx-64 conda create -n env_name python=3.9 pip"
-- Activate the created environment: "conda activate env_name"
-- Configure the environment : "conda env config vars set CONDA_SUBDIR=osx-64"
+- Start by installing conda with miniforge : `brew install miniforge`
+- Create the x_64 environment : `CONDA_SUBDIR=osx-64 conda create -n env_name python=3.9 pip`
+- Activate the created environment: `conda activate env_name`
+- Configure the environment : `conda env config vars set CONDA_SUBDIR=osx-64`
 - Deactivate and reactivate the environment:
-  "conda deactivate"
-  "conda activate env_name"
-- Go to the darts files directory and install the packages with: "pip install -r requirements/dev-all.txt"
-- With this method of installation, lightgbm might still have issues finding the libomp library. Reinstall lightgbm : "conda install lightgbm"
+  ```
+  conda deactivate
+  conda activate env_name
+  ```
+- Go to the darts files directory and install the packages with: `pip install -r requirements/dev-all.txt`
+- With this method of installation, lightgbm might still have issues finding the libomp library. Reinstall lightgbm : `conda install lightgbm`
 - Verify your installation by successfully running all unitTests with gradlew or pytest.

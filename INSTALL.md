@@ -56,6 +56,23 @@ brew unlink libomp
 brew install libomp.rb
 ```
 
+#### Mac issues with Silicon M1 processors 
+
+We currently recommend to run Darts in an x_64 emulated environment on Mac computers with the Silicon M1 processor. 
+
+Below are the necessary instructions to create and configure the environment:
+- Start by installing conda with miniforge : `brew install miniforge`
+- Create the x_64 environment : `CONDA_SUBDIR=osx-64 conda create -n env_name python=3.9 pip`
+- Activate the created environment: `conda activate env_name`
+- Configure the environment : `conda env config vars set CONDA_SUBDIR=osx-64`
+- Deactivate and reactivate the environment:
+  ```
+  conda deactivate
+  conda activate env_name
+  ```
+- Go to the darts files directory and install the packages with: `pip install darts`
+- With this method of installation, lightgbm might still have issues finding the libomp library. Reinstall lightgbm : `conda install lightgbm`
+
 ## Running the examples only, without installing:
 
 If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use Python notebooks with demo examples.
