@@ -83,6 +83,7 @@ model_loaded = RNNModel.load("my_model.pt")
 Special case for torch models:
 
 * **save_checkpoint** In addition, we need to use PTL save_checkpoint() to properly save the trainer and model
+
 ## Support for multivariate series
 
 Some models support multivariate time series. This means that the target (and potential covariates) series provided to the model
