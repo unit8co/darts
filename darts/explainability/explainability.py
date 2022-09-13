@@ -21,6 +21,57 @@ logger = get_logger(__name__)
 MIN_BACKGROUND_SAMPLE = 10
 
 
+class ExplainabilityResult(ABC):
+    """
+    Class to store the explainability results of a ForecastingModelExplainer, and to
+    easily access the results.
+    """
+
+    def __init__(
+        self,
+        explained_forecasts: Union[
+            Dict[integer, Dict[str, TimeSeries]],
+            Sequence[Dict[integer, Dict[str, TimeSeries]]],
+        ],
+    ):
+
+        self.explained_forecasts = explained_forecasts
+        if isinstance(self.explained_forecasts, list):
+            self.available_horizons = list(self.explained_forecasts[0].keys())
+            h_0 = self.available_horizons[0]
+            self.available_components = list(self.explained_forecasts[0][h_0].keys())
+        else:
+            self.available_horizons = list(self.explained_forecasts.keys())
+            h_0 = self.available_horizons[0]
+            self.available_components = list(self.explained_forecasts[h_0].keys())
+
+    def get_explanation(
+        self, horizon: int, component: str
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+
+        raise_if_not(
+            horizon in self.available_horizons,
+            "Horizon {} is not available. Available horizons are: {}".format(
+                horizon, self.available_horizons
+            ),
+        )
+
+        raise_if_not(
+            component in self.available_components,
+            "Component {} is not available. Available components are: {}".format(
+                component, self.available_components
+            ),
+        )
+
+        if isinstance(self.explained_forecasts, list):
+            return [
+                self.explained_forecasts[i][horizon][component]
+                for i in range(len(self.explained_forecasts))
+            ]
+        else:
+            return self.explained_forecasts[horizon][component]
+
+
 class ForecastingModelExplainer(ABC):
     @abstractmethod
     def __init__(
@@ -152,6 +203,20 @@ class ForecastingModelExplainer(ABC):
 
     def _check_background_covariates(self):
 
+        raise_if_not(
+            all(
+                [
+                    len(self.background_series) == len(self.background_past_covariates),
+                    len(self.background_series)
+                    == len(self.background_future_covariates),
+                    len(self.background_past_covariates)
+                    == len(self.background_future_covariates),
+                ]
+            ),
+            "The number of background time series, past covariates and future covariates must be the same "
+            "in the respective lists.",
+        )
+
         # ensure we have the same names between TimeSeries (if list of). Important to ensure homogeneity
         # for explained features.
         for idx in range(len(self.background_series)):
@@ -185,10 +250,7 @@ class ForecastingModelExplainer(ABC):
         ] = None,
         horizons: Optional[Sequence[int]] = None,
         target_names: Optional[Sequence[str]] = None,
-    ) -> Union[
-        Dict[integer, Dict[str, TimeSeries]],
-        Sequence[Dict[integer, Dict[str, TimeSeries]]],
-    ]:
+    ) -> ExplainabilityResult:
         """
         Main method of the ForecastingExplainer class.
         Return a ExplainabilityResult instance.
@@ -272,54 +334,3 @@ class ForecastingModelExplainer(ABC):
                 for background_serie in self.background_series
             ]
         )
-
-
-class ExplainabilityResult(ABC):
-    """
-    Class to store the explainability results of a ForecastingModelExplainer, and to
-    easily access the results.
-    """
-
-    def __init__(
-        self,
-        explained_forecasts: Union[
-            Dict[integer, Dict[str, TimeSeries]],
-            Sequence[Dict[integer, Dict[str, TimeSeries]]],
-        ],
-    ):
-
-        self.explained_forecasts = explained_forecasts
-        if isinstance(self.explained_forecasts, list):
-            self.available_horizons = list(self.explained_forecasts[0].keys())
-            h_0 = self.available_horizons[0]
-            self.available_components = list(self.explained_forecasts[0][h_0].keys())
-        else:
-            self.available_horizons = list(self.explained_forecasts.keys())
-            h_0 = self.available_horizons[0]
-            self.available_components = list(self.explained_forecasts[h_0].keys())
-
-    def get_explanation(
-        self, horizon: int, component: str
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-
-        raise_if_not(
-            horizon in self.available_horizons,
-            "Horizon {} is not available. Available horizons are: {}".format(
-                horizon, self.available_horizons
-            ),
-        )
-
-        raise_if_not(
-            component in self.available_components,
-            "Component {} is not available. Available components are: {}".format(
-                component, self.available_components
-            ),
-        )
-
-        if isinstance(self.explained_forecasts, list):
-            return [
-                self.explained_forecasts[i][horizon][component]
-                for i in range(len(self.explained_forecasts))
-            ]
-        else:
-            return self.explained_forecasts[horizon][component]
