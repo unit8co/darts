@@ -903,6 +903,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         ----------
         series
             The univariate TimeSeries instance which the residuals will be computed for.
+        past_covariates
+            One or several past-observed covariate time series.
+        future_covariates
+            One or several future-known covariate time series.
         forecast_horizon
             The forecasting horizon used to predict each fitted value.
         retrain
