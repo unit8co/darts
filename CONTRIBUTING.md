@@ -88,4 +88,4 @@ Below are the necessary instructions to create and configure the environment:
   "conda activate env_name"
 - Go to the darts files directory and install the packages with: "pip install -r requirements/dev-all.txt"
 - With this method of installation, lightgbm might still have issues finding the libomp library. Reinstall lightgbm : "conda install lightgbm"
-- Verify your installation by successfully running all unitTests with gradlew or pytest. 
+- Verify your installation by successfully running all unitTests with gradlew or pytest.

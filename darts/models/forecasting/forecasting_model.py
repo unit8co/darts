@@ -896,7 +896,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Most commonly, the term "residuals" implies a value for `forecast_horizon` of 1; but
         this can be configured.
 
-        This method works only on univariate series and does not currently support covariates. It uses the median
+        This method works only on univariate series. It uses the median
         prediction (when dealing with stochastic forecasts).
 
         Parameters
