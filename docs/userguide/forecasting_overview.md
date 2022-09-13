@@ -42,27 +42,35 @@ Furthermore, we define the following types of time series consumed by the models
 
 ## Reproducibility
 
-All forecasting models support saving the model (taking some hyper-parameters in argument), by calling the `save_model()` function.
+If the user wishes to save a particular model and use it elsewhere or at a later point in time, darts leverages pickle to achieve that.
+All forecasting models support saving the model into a pickle object, by calling the `save_model()` function, which saves that particular ForecastingModel object instance. When the model is to be used again, the method `load_model()` can be used.
 
 **Example:**
 ```python
+from darts.models import RegressionModel
+
+model = RegressionModel(lags=4)
+
+model.save("my_model.pkl")
+model_loaded = RegressionModel.load("my_model.pkl")
+
 from darts.models import NaiveSeasonal
 
 naive_model = NaiveSeasonal(K=1)            # init
 naive_model.fit(train)                      # fit  
 path = "/Users/darts_user/models/this_model.py"
-naive_model.save_model(path)                      # save
+naive_model.save_model(path)                # save
 ```
 
-The parameter `path` specifies the location where to save the model at its current state. If no `path` is specified, the model is automatically
+The parameter `path` specifies a path or file handle under which to save the model at its current state. If no `path` is specified, the model is automatically
 saved under ``"{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pt"``. E.g., ``"RNNModel_2020-01-01_12:00:00.pt"``.
+Optionally there is also pickle specific keyword arguments `protocol`, `fix_imports` and `buffer_callback`.
+More info: [pickle.dump()](https://docs.python.org/3/library/pickle.html?highlight=dump#pickle.dump)
+
+With torch models we make sure to save the model at its current state.
 
 **Example:**
 ```python
-from darts.models import NaiveSeasonal
-
-loaded_model = ForecastingModel.load_model(path)   # load
-
 from darts.models import RNNModel
 
 model = RNNModel(input_chunk_length=4)
@@ -70,14 +78,11 @@ model = RNNModel(input_chunk_length=4)
 model.save("my_model.pt")
 model_loaded = RNNModel.load("my_model.pt")
 
-
 ```
 
 Special case for torch models:
 
-* **Target series:** the series that we are interested in forecasting.
-* **Covariate series:** some other series that we are not interested in forecasting, but that can provide valuable inputs to the forecasting model.
-
+* **save_checkpoint** In addition, we need to use PTL save_checkpoint() to properly save the trainer and model
 ## Support for multivariate series
 
 Some models support multivariate time series. This means that the target (and potential covariates) series provided to the model
