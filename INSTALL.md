@@ -56,7 +56,7 @@ brew unlink libomp
 brew install libomp.rb
 ```
 
-#### Test evironment on Mac computers with Silicon M1 processors 
+#### Test environment on Mac computers with Silicon M1 processor (arm64) 
 
 We currently recommend to run Darts in an x_64 emulated environment on Mac computers with the Silicon M1 processor,
 instead of trying to install directly with native arm64 packages, many of the dependent packages still have compatibility 
