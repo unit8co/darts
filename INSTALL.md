@@ -70,8 +70,7 @@ Below are the necessary instructions to create and configure the environment:
   conda deactivate
   conda activate env_name
   ```
-- Go to the darts files directory and install the packages with: `pip install darts`
-- With this method of installation, lightgbm might still have issues finding the libomp library. Reinstall lightgbm : `conda install lightgbm`
+- Go to the darts files directory and install the packages with: `conda install -c conda-forge -c pytorch u8darts-all`
 
 ## Running the examples only, without installing:
 

@@ -75,10 +75,13 @@ To ensure you don't need to worry about formatting and linting when contributing
     - For [Black](https://black.readthedocs.io/en/stable/integrations/editors.html)
     - For other integrations please look at the documentation for your editor
 
-### Developing Mac with Apple Silicon M1 processor 
-We currently recommend to run Darts in an x_64 emulated environment on Mac computers with the Silicon M1 processor. 
+### Developement environment on Mac with Apple Silicon M1 processor (arm64 architecture) 
+We currently recommend to run Darts in an x_64 emulated environment on Mac computers with the Silicon M1 processor,
+instead of trying to install directly with native arm64 packages, many of the dependent packages still have compatibility 
+issues. The following is a proposed procedure, if you tested other procedures on similar hardware and they worked, 
+please let us know about them by opening an issue or by updating this file and opening a PR. 
 
-Below are the necessary instructions to create and configure the environment:
+Below are the necessary instructions to create and configure the x_64 emulated environment:
 - Start by installing conda with miniforge : `brew install miniforge`
 - Create the x_64 environment : `CONDA_SUBDIR=osx-64 conda create -n env_name python=3.9 pip`
 - Activate the created environment: `conda activate env_name`
@@ -89,5 +92,16 @@ Below are the necessary instructions to create and configure the environment:
   conda activate env_name
   ```
 - Go to the darts files directory and install the packages with: `pip install -r requirements/dev-all.txt`
-- With this method of installation, lightgbm might still have issues finding the libomp library. Reinstall lightgbm : `conda install lightgbm`
-- Verify your installation by successfully running all unitTests with gradlew or pytest.
+- With this method of installation, lightgbm might still have issues finding the libomp library.
+The following procedure is to garantee that the correct libomp (11.1.0) library is linked.
+  - Unlink the default libomp, from terminal : `brew unlink libomp`
+  - Setup a homebrew installer that is compatible with x_64 packages (follow this [blog](https://medium.com/mkdir-awesome/how-to-install-x86-64-homebrew-packages-on-apple-m1-macbook-54ba295230f) 
+  post until the alias creation). At this point, we have a new brew command located at /usr/local/homebrew/bin/brew
+  - In the following code bits we download version 11.1.0 of libomp, install it as a x_64 compatible package and link to it so that lightgbm can find it:
+  ```
+  wget https://raw.githubusercontent.com/Homebrew/homebrew-core/fb8323f2b170bd4ae97e1bac9bf3e2983af3fdb0/Formula/libomp.rb
+  arch -x86_64 /usr/local/homebrew/bin/brew install libomp.rb
+  sudo ln -s /usr/local/homebrew/Cellar/libomp/11.1.0/lib /usr/local/opt/libomp/lib
+  ```
+  - Verify that your lightgbm works by importing lightgbm from your python env. It should not give library loading errors. 
+- Verify your overall environment setup by successfully running all unitTests with gradlew or pytest.
