@@ -345,6 +345,4 @@ class ShapExplainerTestCase(DartsBaseTestClass):
 
         # Wrong component name
         with self.assertRaises(ValueError):
-            ShapExplain.summary_plot(
-                horizons=[0], target_names=["test"], max_display=30
-            )
+            ShapExplain.summary_plot(horizons=[0], target_names=["test"])
