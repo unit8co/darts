@@ -225,6 +225,8 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
 
     @property
     def min_train_series_length(self) -> int:
+        # Catboost requires a minimum of 2 train samples, therefore the min_train_series_length should be one more than
+        # for other regression models
         return max(
             3,
             -self.lags["target"][0] + self.output_chunk_length + 1
