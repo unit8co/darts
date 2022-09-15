@@ -203,3 +203,12 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
 
     def _is_probabilistic(self) -> bool:
         return self.likelihood is not None
+
+    @property
+    def min_train_series_length(self) -> int:
+        return max(
+            3,
+            -self.lags["target"][0] + self.output_chunk_length + 1
+            if "target" in self.lags
+            else self.output_chunk_length,
+        )
