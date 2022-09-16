@@ -18,16 +18,16 @@ logger = get_logger(__name__)
 
 class CatBoostModel(RegressionModel, _LikelihoodMixin):
     def __init__(
-        self,
-        lags: Union[int, list] = None,
-        lags_past_covariates: Union[int, List[int]] = None,
-        lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
-        output_chunk_length: int = 1,
-        add_encoders: Optional[dict] = None,
-        likelihood: str = None,
-        quantiles: List = None,
-        random_state: Optional[int] = None,
-        **kwargs,
+            self,
+            lags: Union[int, list] = None,
+            lags_past_covariates: Union[int, List[int]] = None,
+            lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
+            output_chunk_length: int = 1,
+            add_encoders: Optional[dict] = None,
+            likelihood: str = None,
+            quantiles: List = None,
+            random_state: Optional[int] = None,
+            **kwargs,
     ):
         """CatBoost Model
 
@@ -125,16 +125,16 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         return f"CatBoostModel(lags={self.lags})"
 
     def fit(
-        self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        max_samples_per_ts: Optional[int] = None,
-        verbose: Optional[Union[int, bool]] = 0,
-        **kwargs,
+            self,
+            series: Union[TimeSeries, Sequence[TimeSeries]],
+            past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            max_samples_per_ts: Optional[int] = None,
+            verbose: Optional[Union[int, bool]] = 0,
+            **kwargs,
     ):
         """
         Fits/trains the model using the provided list of features time series and the target time series.
@@ -206,7 +206,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         return self
 
     def _predict_and_sample(
-        self, x: np.ndarray, num_samples: int, **kwargs
+            self, x: np.ndarray, num_samples: int, **kwargs
     ) -> np.ndarray:
         """Override of RegressionModel's predict method,
         to allow for the probabilistic case
@@ -222,3 +222,14 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
 
     def _is_probabilistic(self) -> bool:
         return self.likelihood is not None
+
+    @property
+    def min_train_series_length(self) -> int:
+        # Catboost requires a minimum of 2 train samples, therefore the min_train_series_length should be one more than
+        # for other regression models
+        return max(
+            3,
+            -self.lags["target"][0] + self.output_chunk_length + 1
+            if "target" in self.lags
+            else self.output_chunk_length,
+        )
