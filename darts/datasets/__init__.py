@@ -13,6 +13,7 @@ import pandas as pd
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if_not
+from darts.utils.utils import _build_tqdm_iterator
 
 from .dataset_loaders import DatasetLoaderCSV, DatasetLoaderMetadata
 
@@ -534,7 +535,7 @@ class ElectricityDataset(DatasetLoaderCSV):
         """
 
         ts_list = []  # list of timeseries
-        for label in series:
+        for label in _build_tqdm_iterator(series, verbose=True, total=len(series.columns)):
             srs = series[label]
 
             # filter column down to the period of recording
@@ -628,7 +629,7 @@ class UberTLCDataset(DatasetLoaderCSV):
         """
 
         ts_list = []  # list of timeseries
-        for label in series:
+        for label in _build_tqdm_iterator(series, verbose=True, total=len(series.columns)):
             srs = series[label]
 
             # filter column down to the period of recording
