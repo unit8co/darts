@@ -176,6 +176,7 @@ class Encoder(ABC):
     def __init__(self):
         self.attribute = None
         self.dtype = np.float64
+        self._fit_called = False
 
     @abstractmethod
     def encode_train(
@@ -238,9 +239,21 @@ class Encoder(ABC):
         """
         return covariate.stack(encoded) if covariate is not None else encoded
 
+    @property
+    def fit_called(self) -> bool:
+        """Returns whether the `Encoder` object has been fitted."""
+        return self._fit_called
+
+    @property
+    @abstractmethod
+    def requires_fit(self) -> bool:
+        """Whether the `Encoder` sub class must be fit with `Enocder.encode_train()` before inference
+        with `Encoder.encode_inference()`."""
+        pass
+
 
 class SingleEncoder(Encoder, ABC):
-    """Abstract class for single index encoders.
+    """`SingleEncoder`: Abstract class for single index encoders.
     Single encoders can be used to implement new encoding techniques.
     Each single encoder must implement an `_encode()` method that carries the encoding logic.
 
@@ -300,10 +313,12 @@ class SingleEncoder(Encoder, ABC):
         """
         index = self.index_generator.generate_train_series(target, covariate)
         encoded = self._encode(index, target.dtype)
-        if merge_covariate:
-            return self._merge_covariate(encoded, covariate=covariate)
-        else:
-            return encoded
+        encoded = (
+            self._merge_covariate(encoded, covariate=covariate)
+            if merge_covariate
+            else encoded
+        )
+        self._fit_called = True
 
     def encode_inference(
         self,
@@ -339,7 +354,7 @@ class SingleEncoder(Encoder, ABC):
     @property
     @abstractmethod
     def accept_transformer(self) -> List[bool]:
-        """Whether or not the SingleEncoder sub class accepts to be transformed."""
+        """Whether the `SingleEncoder` sub class accepts to be transformed."""
         pass
 
 
