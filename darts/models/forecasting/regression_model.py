@@ -423,10 +423,6 @@ class RegressionModel(GlobalForecastingModel):
         **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
         """
-        # guarantee that all inputs are either list of `TimeSeries` or `None`
-        series = series2seq(series)
-        past_covariates = series2seq(past_covariates)
-        future_covariates = series2seq(future_covariates)
 
         self.encoders = self.initialize_encoders()
         if self.encoders.encoding_available:
@@ -435,6 +431,11 @@ class RegressionModel(GlobalForecastingModel):
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
             )
+
+        # guarantee that all inputs are either list of TimeSeries or None
+        series = series2seq(series)
+        past_covariates = series2seq(past_covariates)
+        future_covariates = series2seq(future_covariates)
 
         for covs, name in zip([past_covariates, future_covariates], ["past", "future"]):
             raise_if(
@@ -543,11 +544,6 @@ class RegressionModel(GlobalForecastingModel):
             )
             series = self.training_series
 
-        if past_covariates is None and self.past_covariate_series is not None:
-            past_covariates = self.past_covariate_series
-        if future_covariates is None and self.future_covariate_series is not None:
-            future_covariates = self.future_covariate_series
-
         called_with_single_series = True if isinstance(series, TimeSeries) else False
 
         # guarantee that all inputs are either list of TimeSeries or None
@@ -562,6 +558,11 @@ class RegressionModel(GlobalForecastingModel):
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
             )
+
+        if past_covariates is None and self.past_covariate_series is not None:
+            past_covariates = series2seq(self.past_covariate_series)
+        if future_covariates is None and self.future_covariate_series is not None:
+            future_covariates = series2seq(self.future_covariate_series)
 
         super().predict(n, series, past_covariates, future_covariates, num_samples)
 

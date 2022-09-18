@@ -1085,12 +1085,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
             series = self.training_series
 
-        # optionally, load past/future covariates and remember loading
-        if past_covariates is None and self.past_covariate_series is not None:
-            past_covariates = self.past_covariate_series
-        if future_covariates is None and self.future_covariate_series is not None:
-            future_covariates = self.future_covariate_series
-
         called_with_single_series = True if isinstance(series, TimeSeries) else False
 
         # guarantee that all inputs are either list of TimeSeries or None
@@ -1110,6 +1104,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
             )
+
+        if past_covariates is None and self.past_covariate_series is not None:
+            past_covariates = series2seq(self.past_covariate_series)
+        if future_covariates is None and self.future_covariate_series is not None:
+            future_covariates = series2seq(self.future_covariate_series)
 
         super().predict(n, series, past_covariates, future_covariates)
 
