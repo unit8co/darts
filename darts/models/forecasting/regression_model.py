@@ -36,7 +36,7 @@ from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
 from darts.utils.multioutput import MultiOutputRegressor
-from darts.utils.utils import _check_quantiles
+from darts.utils.utils import _check_quantiles, seq2series, series2seq
 
 logger = get_logger(__name__)
 
@@ -432,48 +432,30 @@ class RegressionModel(GlobalForecastingModel):
                 future_covariate=future_covariates,
             )
 
-        super().fit(
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-        )
+        # guarantee that all inputs are either list of TimeSeries or None
+        series = series2seq(series)
+        past_covariates = series2seq(past_covariates)
+        future_covariates = series2seq(future_covariates)
 
-        raise_if(
-            past_covariates is not None and "past" not in self.lags,
-            "`past_covariates` not None in `fit()` method call, but `lags_past_covariates` is None in constructor.",
-        )
+        for covs, name in zip([past_covariates, future_covariates], ["past", "future"]):
+            raise_if(
+                covs is not None and name not in self.lags,
+                f"`{name}_covariates` not None in `fit()` method call, but `lags_{name}_covariates` is None in "
+                f"constructor.",
+            )
 
-        raise_if(
-            past_covariates is None and "past" in self.lags,
-            "`past_covariates` is None in `fit()` method call, but `lags_past_covariates` is not None in "
-            "constructor.",
-        )
-
-        raise_if(
-            future_covariates is not None and "future" not in self.lags,
-            "`future_covariates` not None in `fit()` method call, but `lags_future_covariates` is None in "
-            "constructor.",
-        )
-
-        raise_if(
-            future_covariates is None and "future" in self.lags,
-            "`future_covariates` is None in `fit()` method call, but `lags_future_covariates` is not None in "
-            "constructor.",
-        )
+            raise_if(
+                covs is None and name in self.lags,
+                f"`{name}_covariates` is None in `fit()` method call, but `lags_{name}_covariates` is not None in "
+                "constructor.",
+            )
 
         # saving the dims of all input series to check at prediction time
-        if isinstance(series, TimeSeries):
-            self.input_dim = {
-                "target": series.width,
-                "past": past_covariates.width if past_covariates else None,
-                "future": future_covariates.width if future_covariates else None,
-            }
-        else:
-            self.input_dim = {
-                "target": series[0].width,
-                "past": past_covariates[0].width if past_covariates else None,
-                "future": future_covariates[0].width if future_covariates else None,
-            }
+        self.input_dim = {
+            "target": series[0].width,
+            "past": past_covariates[0].width if past_covariates else None,
+            "future": future_covariates[0].width if future_covariates else None,
+        }
 
         # if multi-output regression
         if not series[0].is_univariate or self.output_chunk_length > 1:
@@ -504,6 +486,12 @@ class RegressionModel(GlobalForecastingModel):
             and n_jobs_multioutput_wrapper is not None
         ):
             logger.warning("Provided `n_jobs_multioutput_wrapper` wasn't used.")
+
+        super().fit(
+            series=seq2series(series),
+            past_covariates=seq2series(past_covariates),
+            future_covariates=seq2series(future_covariates),
+        )
 
         self._fit_model(
             series, past_covariates, future_covariates, max_samples_per_ts, **kwargs
@@ -571,15 +559,12 @@ class RegressionModel(GlobalForecastingModel):
         if future_covariates is None and self.future_covariate_series is not None:
             future_covariates = self.future_covariate_series
 
-        called_with_single_series = False
+        called_with_single_series = True if isinstance(series, TimeSeries) else False
 
-        if isinstance(series, TimeSeries):
-            called_with_single_series = True
-            series = [series]
-            past_covariates = [past_covariates] if past_covariates is not None else None
-            future_covariates = (
-                [future_covariates] if future_covariates is not None else None
-            )
+        # guarantee that all inputs are either list of TimeSeries or None
+        series = series2seq(series)
+        past_covariates = series2seq(past_covariates)
+        future_covariates = series2seq(future_covariates)
 
         # check that the input sizes of the target series and covariates match
         pred_input_dim = {
