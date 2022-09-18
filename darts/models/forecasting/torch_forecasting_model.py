@@ -1085,14 +1085,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # optionally, load past/future covariates and remember loading
         if past_covariates is None and self.past_covariate_series is not None:
             past_covariates = self.past_covariate_series
-            loaded_past_covariates = True
-        else:
-            loaded_past_covariates = False
         if future_covariates is None and self.future_covariate_series is not None:
             future_covariates = self.future_covariate_series
-            loaded_future_covariates = True
-        else:
-            loaded_future_covariates = False
 
         called_with_single_series = True if isinstance(series, TimeSeries) else False
 
@@ -1106,26 +1100,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # encoders are set when calling fit(), but not when calling fit_from_dataset()
         # additionally, do not generate encodings when covariates were loaded as they already
         # contain the encodings
-        if (
-            (loaded_past_covariates or loaded_future_covariates)
-            and self.encoders is not None
-            and self.encoders.encoding_available
-        ):
-            past_covariates_tmp, future_covariates_tmp = self.encoders.encode_inference(
+        if self.encoders is not None and self.encoders.encoding_available:
+            past_covariates, future_covariates = self.encoders.encode_inference(
                 n=n,
                 target=series,
-                past_covariate=past_covariates if not loaded_past_covariates else None,
-                future_covariate=future_covariates
-                if not loaded_future_covariates
-                else None,
-            )
-            past_covariates = (
-                past_covariates_tmp if not loaded_past_covariates else past_covariates
-            )
-            future_covariates = (
-                future_covariates_tmp
-                if not loaded_future_covariates
-                else future_covariates
+                past_covariate=past_covariates,
+                future_covariate=future_covariates,
             )
 
         super().predict(n, series, past_covariates, future_covariates)

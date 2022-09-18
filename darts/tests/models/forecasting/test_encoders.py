@@ -11,7 +11,7 @@ from darts.dataprocessing.transformers import Scaler
 from darts.logging import get_logger, raise_log
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
-from darts.utils.data.encoder_base import SingleEncoder
+from darts.utils.data.encoder_base import PastCovariateIndexGenerator, SingleEncoder
 from darts.utils.data.encoders import (
     CallableIndexEncoder,
     CyclicTemporalEncoder,
@@ -363,9 +363,12 @@ class EncoderTestCase(DartsBaseTestClass):
             def test_routine(encoder, merge_covs: bool):
                 """checks general behavior for `encode_train` and `encode_inference` with and without merging the
                 output with original covariates"""
+                print(encoder)
+                n = 1
                 covs_train = encoder.encode_train(
                     target=ts, covariate=covs, merge_covariate=merge_covs
                 )
+                assert covs_train.end_time() == ts.end_time()
 
                 # check the encoded component names
                 self.assertTrue(encoder.components.equals(comps_expected))
@@ -378,8 +381,10 @@ class EncoderTestCase(DartsBaseTestClass):
 
                 # check the same for inference
                 covs_inf = encoder.encode_inference(
-                    n=1, target=ts, covariate=covs, merge_covariate=merge_covs
+                    n=n, target=ts, covariate=covs, merge_covariate=merge_covs
                 )
+                # if we give input `covs` the encoder will use the same index as `covs`
+                assert covs_inf.end_time() == covs.end_time()
                 self.assertTrue(encoder.components.equals(comps_expected))
                 if not merge_covs:
                     self.assertTrue(covs_inf.components.equals(comps_expected))
@@ -387,23 +392,42 @@ class EncoderTestCase(DartsBaseTestClass):
                     self.assertTrue(comps_expected.isin(covs_inf.components).all())
                     self.assertTrue(covs_inf[list(covs.components)] == covs)
 
-                # when `covariate` includes components with same names as encoded components, raise an error
-                with pytest.raises(ValueError):
-                    encoder.encode_train(
-                        target=ts, covariate=covs_train, merge_covariate=merge_covs
-                    )
-                    encoder.encode_inference(
-                        n=1, target=ts, covariate=covs_train, merge_covariate=merge_covs
-                    )
-                # other wise, we can compute encodings again
+                # we can use the output of `encode_train()` as input for `encode_train()` and get the same
+                # results (encoded components get overwritten)
                 covs_train2 = encoder.encode_train(
-                    target=ts, covariate=covs, merge_covariate=merge_covs
+                    target=ts, covariate=covs_train, merge_covariate=merge_covs
                 )
+                assert covs_train2 == covs_train
+
+                # we can use the output of `encode_train()` as input for `encode_inference()`. The encoded components
+                # are dropped internally and appended again at the end
                 covs_inf2 = encoder.encode_inference(
-                    n=1, target=ts, covariate=covs, merge_covariate=merge_covs
+                    n=n, target=ts, covariate=covs_train, merge_covariate=merge_covs
                 )
-                assert covs_train == covs_train2
-                assert covs_inf == covs_inf2
+                # We get the same results with `merge_covariate=True` (as original covariates will still be in input)
+                if merge_covs:
+                    assert covs_inf2 == covs_inf
+                # We get only the minimum required time spans with `merge_covariate=False` as input covariates will
+                # are not in output of `encode_train()/inference()`
+                else:
+                    if isinstance(encoder.index_generator, PastCovariateIndexGenerator):
+                        assert len(covs_inf2) == input_chunk_length
+                        assert covs_inf2.end_time() == ts.end_time()
+                    else:
+                        assert (
+                            len(covs_inf2) == input_chunk_length + output_chunk_length
+                        )
+                        assert (
+                            covs_inf2.end_time()
+                            == ts.end_time() + ts.freq * output_chunk_length
+                        )
+
+                # we can use the output of `encode_inference()` as input for `encode_inference()` and get the
+                # same results (encoded components get overwritten)
+                covs_inf3 = encoder.encode_inference(
+                    n=1, target=ts, covariate=covs_inf2, merge_covariate=merge_covs
+                )
+                assert covs_inf3 == covs_inf2
 
             test_routine(copy.deepcopy(enc), merge_covs=False)
             test_routine(copy.deepcopy(enc), merge_covs=True)
@@ -530,15 +554,13 @@ class EncoderTestCase(DartsBaseTestClass):
         assert comps_expected_future.isin(fc.components).all()
         assert covs.components.isin(fc.components).all()
 
-        # if covariates do not contain components that are generated by encoders we can recompute train set
-        # encodings with different inputs
-        _ = enc.encode_train(target=ts, past_covariate=covs, future_covariate=covs)
-
-        # otherwise, raise an error when components generated by encoders are in input covariates
-        with pytest.raises(ValueError):
-            _ = enc.encode_train(target=ts, past_covariate=pc, future_covariate=covs)
-        with pytest.raises(ValueError):
-            _ = enc.encode_train(target=ts, past_covariate=covs, future_covariate=fc)
+        # we can also take the output from a previous `encode_train` call as input covariates.
+        # the encoded components get overwritten by the second call
+        pc_train, fc_train = enc.encode_train(
+            target=ts, past_covariate=pc, future_covariate=fc
+        )
+        assert pc_train == pc
+        assert fc_train == fc
 
         # ==> test `encode_inference()` with all encoders and transformer
         assert enc.fit_called
@@ -553,21 +575,20 @@ class EncoderTestCase(DartsBaseTestClass):
         assert comps_expected_future.isin(fc.components).all()
         assert covs.components.isin(fc.components).all()
 
-        # if covariates do not contain components that are generated by encoders we can recompute inference set
-        # encodings with different inputs
-        _ = enc.encode_inference(
-            n=1, target=ts, past_covariate=covs, future_covariate=covs
+        # we can also take the output from `encode_train()` as input covariates to `encode_inference()` to get the
+        # same results
+        pc_inf, fc_inf = enc.encode_inference(
+            n=1, target=ts, past_covariate=pc_train, future_covariate=fc_train
         )
+        assert pc_inf == pc
+        assert fc_inf == fc
 
-        # otherwise, raise an error when components generated by encoders are in input covariates
-        with pytest.raises(ValueError):
-            _ = enc.encode_inference(
-                n=1, target=ts, past_covariate=pc, future_covariate=covs
-            )
-        with pytest.raises(ValueError):
-            _ = enc.encode_inference(
-                n=1, target=ts, past_covariate=covs, future_covariate=fc
-            )
+        # or take the output from `encode_inference()` and get the same results
+        pc_inf2, fc_inf2 = enc.encode_inference(
+            n=1, target=ts, past_covariate=pc, future_covariate=fc
+        )
+        assert pc_inf2 == pc
+        assert fc_inf2 == fc
 
     def test_cyclic_encoder(self):
         """Test past and future `CyclicTemporalEncoder``"""
