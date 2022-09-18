@@ -43,7 +43,7 @@ Furthermore, we define the following types of time series consumed by the models
 ## Reproducibility
 
 If the user wishes to save a particular model and use it elsewhere or at a later point in time, darts leverages pickle to achieve that.
-All forecasting models support saving the model into a pickle object, by calling the `save_model()` function, which saves that particular ForecastingModel object instance. When the model is to be used again, the method `load_model()` can be used.
+All forecasting models support saving the model into a pickle object, by calling the `save()` function, which saves that particular ForecastingModel object instance. When the model is to be used again, the method `load()` can be used. Please note that the methods `save_model()` and `load_model()` are deprecated.
 
 **Example:**
 ```python
@@ -59,7 +59,7 @@ from darts.models import NaiveSeasonal
 naive_model = NaiveSeasonal(K=1)            # init
 naive_model.fit(train)                      # fit  
 path = "/Users/darts_user/models/this_model.py"
-naive_model.save_model(path)                # save
+naive_model.save(path)                # save
 ```
 
 The parameter `path` specifies a path or file handle under which to save the model at its current state. If no `path` is specified, the model is automatically
@@ -67,22 +67,27 @@ saved under ``"{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pt"``. E.g., ``"RNNModel_2020-
 Optionally there is also pickle specific keyword arguments `protocol`, `fix_imports` and `buffer_callback`.
 More info: [pickle.dump()](https://docs.python.org/3/library/pickle.html?highlight=dump#pickle.dump)
 
-With torch models we make sure to save the model at its current state.
+With torch models we make sure to save the model parameters and the architecture itself at its current state.
 
 **Example:**
 ```python
-from darts.models import RNNModel
+from darts.models import NBEATSModel
 
-model = RNNModel(input_chunk_length=4)
+model = NBEATSModel(input_chunk_length=24,                 # init
+                    output_chunk_length=12)
+
+model.fit([series1, series2])
 
 model.save("my_model.pt")
-model_loaded = RNNModel.load("my_model.pt")
+model_loaded = NBEATSModel.load("my_model.pt")
 
 ```
 
-Special case for torch models:
+Special class methods for torch models:
 
-* **save_checkpoint** In addition, we need to use PTL save_checkpoint() to properly save the trainer and model
+* **save_checkpoint** In addition, we need to use PTL save_checkpoint() to properly save the trainer and model. It is used to be able to save a snapshot of the model mid-training, and then be able to retrieve the model later.
+* **load_from_checkpoint** Returns the best lowest validation point otherwise most recent state of the model.
+
 
 ## Support for multivariate series
 
