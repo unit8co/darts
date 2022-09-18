@@ -249,7 +249,7 @@ class RegressionModel(GlobalForecastingModel):
             takes_future_covariates,
         )
 
-    def _get_encoders_n(self, n):
+    def _get_encoders_n(self, n) -> int:
         """Returns the `n` encoder prediction steps specific to RegressionModels.
         This will generate slightly more past covariates than the minimum requirement when using past and future
         covariate lags simultaneously. This is because encoders were written for TorchForecastingModels where we only
@@ -423,19 +423,18 @@ class RegressionModel(GlobalForecastingModel):
         **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
         """
-
-        self.encoders = self.initialize_encoders()
-        if self.encoders.encoding_available:
-            past_covariates, future_covariates = self.encoders.encode_train(
-                target=series,
-                past_covariate=past_covariates,
-                future_covariate=future_covariates,
-            )
-
-        # guarantee that all inputs are either list of TimeSeries or None
+        # guarantee that all inputs are either list of `TimeSeries` or `None`
         series = series2seq(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
+
+        self.encoders = self.initialize_encoders()
+        if self.encoders.encoding_available:
+            past_covariates, future_covariates = self.generate_fit_encodings(
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+            )
 
         for covs, name in zip([past_covariates, future_covariates], ["past", "future"]):
             raise_if(
@@ -536,16 +535,6 @@ class RegressionModel(GlobalForecastingModel):
             logger,
         )
 
-        if self.encoders.encoding_available:
-            past_covariates, future_covariates = self.encoders.encode_inference(
-                n=self._get_encoders_n(n),
-                target=series,
-                past_covariate=past_covariates,
-                future_covariate=future_covariates,
-            )
-
-        super().predict(n, series, past_covariates, future_covariates, num_samples)
-
         if series is None:
             # then there must be a single TS, and that was saved in super().fit as self.training_series
             raise_if(
@@ -565,6 +554,16 @@ class RegressionModel(GlobalForecastingModel):
         series = series2seq(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
+
+        if self.encoders.encoding_available:
+            past_covariates, future_covariates = self.generate_predict_encodings(
+                n=n,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+            )
+
+        super().predict(n, series, past_covariates, future_covariates, num_samples)
 
         # check that the input sizes of the target series and covariates match
         pred_input_dim = {

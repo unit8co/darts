@@ -705,13 +705,21 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self
             Fitted model.
         """
-        # guarantee that all inputs are either list of TimeSeries or None
+        # guarantee that all inputs are either list of `TimeSeries` or `None`
         series = series2seq(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
         val_series = series2seq(val_series)
         val_past_covariates = series2seq(val_past_covariates)
         val_future_covariates = series2seq(val_future_covariates)
+
+        self.encoders = self.initialize_encoders()
+        if self.encoders.encoding_available:
+            past_covariates, future_covariates = self.generate_fit_encodings(
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+            )
 
         self._verify_past_future_covariates(
             past_covariates=past_covariates, future_covariates=future_covariates
@@ -720,11 +728,21 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # Check that dimensions of train and val set match; on first series only
         if val_series is not None:
-            self._verify_static_covariates(val_series[0].static_covariates)
+            if self.encoders.encoding_available:
+                (
+                    val_past_covariates,
+                    val_future_covariates,
+                ) = self.generate_fit_encodings(
+                    series=val_series,
+                    past_covariates=val_past_covariates,
+                    future_covariates=val_future_covariates,
+                )
             self._verify_past_future_covariates(
                 past_covariates=val_past_covariates,
                 future_covariates=val_future_covariates,
             )
+            self._verify_static_covariates(val_series[0].static_covariates)
+
             match = (
                 series[0].width == val_series[0].width
                 and (past_covariates[0].width if past_covariates is not None else None)
@@ -750,14 +768,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 "and the validation set do not match.",
             )
 
-        self.encoders = self.initialize_encoders()
-
-        if self.encoders.encoding_available:
-            past_covariates, future_covariates = self.encoders.encode_train(
-                target=series,
-                past_covariate=past_covariates,
-                future_covariate=future_covariates,
-            )
         train_dataset = self._build_train_dataset(
             target=series,
             past_covariates=past_covariates,
@@ -766,13 +776,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         if val_series is not None:
-            if self.encoders.encoding_available:
-                val_past_covariates, val_future_covariates = self.encoders.encode_train(
-                    target=val_series,
-                    past_covariate=val_past_covariates,
-                    future_covariate=val_future_covariates,
-                )
-
             val_dataset = self._build_train_dataset(
                 target=val_series,
                 past_covariates=val_past_covariates,
@@ -1101,11 +1104,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # additionally, do not generate encodings when covariates were loaded as they already
         # contain the encodings
         if self.encoders is not None and self.encoders.encoding_available:
-            past_covariates, future_covariates = self.encoders.encode_inference(
+            past_covariates, future_covariates = self.generate_predict_encodings(
                 n=n,
-                target=series,
-                past_covariate=past_covariates,
-                future_covariate=future_covariates,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
             )
 
         super().predict(n, series, past_covariates, future_covariates)
