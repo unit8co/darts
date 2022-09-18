@@ -1,20 +1,30 @@
+import copy
 import unittest
 from typing import Optional, Sequence
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_log
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 from darts.utils.data.encoder_base import SingleEncoder
 from darts.utils.data.encoders import (
+    CallableIndexEncoder,
+    CyclicTemporalEncoder,
+    DatetimeAttributeEncoder,
+    FutureCallableIndexEncoder,
     FutureCyclicEncoder,
     FutureDatetimeAttributeEncoder,
+    FutureIntegerIndexEncoder,
+    IntegerIndexEncoder,
+    PastCallableIndexEncoder,
     PastCyclicEncoder,
     PastDatetimeAttributeEncoder,
+    PastIntegerIndexEncoder,
     SequentialEncoder,
 )
 
@@ -30,6 +40,16 @@ except ImportError:
 
 
 class EncoderTestCase(DartsBaseTestClass):
+    encoders_cls = [
+        FutureCallableIndexEncoder,
+        FutureCyclicEncoder,
+        FutureDatetimeAttributeEncoder,
+        FutureIntegerIndexEncoder,
+        PastCallableIndexEncoder,
+        PastCyclicEncoder,
+        PastDatetimeAttributeEncoder,
+        PastIntegerIndexEncoder,
+    ]
     n_target_1 = 12
     n_target_2 = 24
     shift = 50
@@ -292,6 +312,263 @@ class EncoderTestCase(DartsBaseTestClass):
         )
         return encoders
 
+    def test_single_encoders_general(self):
+        ts = tg.linear_timeseries(length=24, freq="MS")
+        covs = tg.linear_timeseries(length=24, freq="MS")
+
+        input_chunk_length = 12
+        output_chunk_length = 6
+
+        for enc_cls in self.encoders_cls:
+            if issubclass(enc_cls, CyclicTemporalEncoder):
+                attr = "month"
+                comps_expected = pd.Index(["month_sin", "month_cos"])
+                requires_fit = False
+            elif issubclass(enc_cls, DatetimeAttributeEncoder):
+                attr = "month"
+                comps_expected = pd.Index(["month"])
+                requires_fit = False
+            elif issubclass(enc_cls, IntegerIndexEncoder):
+                attr = "absolute"
+                comps_expected = pd.Index(["absolute_idx"])
+                requires_fit = True
+            elif issubclass(enc_cls, CallableIndexEncoder):
+
+                def some_f(idx):
+                    return idx.month
+
+                attr = some_f
+                comps_expected = pd.Index(["custom"])
+                requires_fit = False
+            else:
+                attr, comps_expected, requires_fit = None, None, False
+                raise_log(ValueError("unknown encoder class"), logger=logger)
+
+            enc = enc_cls(
+                input_chunk_length=input_chunk_length,
+                output_chunk_length=output_chunk_length,
+                attribute=attr,
+            )
+
+            self.assertTrue(not enc.fit_called)
+            # initially, no components
+            self.assertTrue(enc.components.empty)
+
+            # some encoders must be fit before encoding inference part
+            self.assertTrue(requires_fit == enc.requires_fit)
+            if requires_fit:
+                with pytest.raises(ValueError):
+                    enc.encode_inference(n=1, target=ts, covariate=covs)
+
+            def test_routine(encoder, merge_covs: bool):
+                """checks general behavior for `encode_train` and `encode_inference` with and without merging the
+                output with original covariates"""
+                covs_train = encoder.encode_train(
+                    target=ts, covariate=covs, merge_covariate=merge_covs
+                )
+
+                # check the encoded component names
+                self.assertTrue(encoder.components.equals(comps_expected))
+                if not merge_covs:
+                    self.assertTrue(covs_train.components.equals(comps_expected))
+                else:
+                    self.assertTrue(comps_expected.isin(covs_train.components).all())
+                    # check that original components are in output when merging
+                    self.assertTrue(covs_train[list(covs.components)] == covs)
+
+                # check the same for inference
+                covs_inf = encoder.encode_inference(
+                    n=1, target=ts, covariate=covs, merge_covariate=merge_covs
+                )
+                self.assertTrue(encoder.components.equals(comps_expected))
+                if not merge_covs:
+                    self.assertTrue(covs_inf.components.equals(comps_expected))
+                else:
+                    self.assertTrue(comps_expected.isin(covs_inf.components).all())
+                    self.assertTrue(covs_inf[list(covs.components)] == covs)
+
+                # when `covariate` includes components with same names as encoded components, raise an error
+                with pytest.raises(ValueError):
+                    encoder.encode_train(
+                        target=ts, covariate=covs_train, merge_covariate=merge_covs
+                    )
+                    encoder.encode_inference(
+                        n=1, target=ts, covariate=covs_train, merge_covariate=merge_covs
+                    )
+                # other wise, we can compute encodings again
+                covs_train2 = encoder.encode_train(
+                    target=ts, covariate=covs, merge_covariate=merge_covs
+                )
+                covs_inf2 = encoder.encode_inference(
+                    n=1, target=ts, covariate=covs, merge_covariate=merge_covs
+                )
+                assert covs_train == covs_train2
+                assert covs_inf == covs_inf2
+
+            test_routine(copy.deepcopy(enc), merge_covs=False)
+            test_routine(copy.deepcopy(enc), merge_covs=True)
+
+    def test_sequential_encoder_general(self):
+        ts = tg.linear_timeseries(length=24, freq="MS")
+        covs = tg.linear_timeseries(length=24, freq="MS")
+
+        input_chunk_length = 12
+        output_chunk_length = 6
+        add_encoders = {
+            "cyclic": {"past": ["month", "day"], "future": ["day", "month"]},
+            "datetime_attribute": {
+                "past": ["month", "year"],
+                "future": ["year", "month"],
+            },
+            "position": {
+                "past": ["absolute", "relative"],
+                "future": ["relative", "absolute"],
+            },
+            "custom": {
+                "past": [lambda idx: idx.month, lambda idx: idx.year],
+                "future": [lambda idx: idx.month, lambda idx: idx.year],
+            },
+            "transformer": Scaler(),
+        }
+        # given `add_encoders` dict, we expect encoders to generate the following components
+        comps_expected_past = pd.Index(
+            [
+                "month_sin",
+                "month_cos",
+                "day_sin",
+                "day_cos",
+                "month",
+                "year",
+                "absolute_idx",
+                "relative_idx",
+                "custom",
+                "custom_1",
+            ]
+        )
+        comps_expected_future = pd.Index(
+            [
+                "day_sin",
+                "day_cos",
+                "month_sin",
+                "month_cos",
+                "year",
+                "month",
+                "relative_idx",
+                "absolute_idx",
+                "custom",
+                "custom_1",
+            ]
+        )
+        kwargs = {
+            "add_encoders": add_encoders,
+            "input_chunk_length": input_chunk_length,
+            "output_chunk_length": output_chunk_length,
+            "takes_future_covariates": True,
+            "takes_past_covariates": True,
+        }
+        kwargs_copy = copy.deepcopy(kwargs)
+
+        # with `position` encoder, we have to call `encode_train()` before inference set
+        kwargs_copy["add_encoders"] = {
+            k: val
+            for k, val in kwargs["add_encoders"].items()
+            if k not in ["transformer"]
+        }
+        enc = SequentialEncoder(**kwargs_copy)
+        assert enc.requires_fit
+        # inference directly does not work
+        with pytest.raises(ValueError):
+            _ = enc.encode_inference(
+                n=1, target=ts, past_covariate=covs, future_covariate=covs
+            )
+        # train first then inference does work
+        _ = enc.encode_train(target=ts, past_covariate=covs, future_covariate=covs)
+        _ = enc.encode_inference(
+            n=1, target=ts, past_covariate=covs, future_covariate=covs
+        )
+
+        # with `transformer`, we have to call `encode_train()` before inference set
+        kwargs_copy["add_encoders"] = {
+            k: val for k, val in kwargs["add_encoders"].items() if k not in ["position"]
+        }
+        enc = SequentialEncoder(**kwargs_copy)
+        assert enc.requires_fit
+        # inference directly does not work
+        with pytest.raises(ValueError):
+            _ = enc.encode_inference(
+                n=1, target=ts, past_covariate=covs, future_covariate=covs
+            )
+        # train first then inference does work
+        _ = enc.encode_train(target=ts, past_covariate=covs, future_covariate=covs)
+        _ = enc.encode_inference(
+            n=1, target=ts, past_covariate=covs, future_covariate=covs
+        )
+
+        # without position encoder and transformer, we can directly encode the inference set
+        kwargs_copy["add_encoders"] = {
+            k: val
+            for k, val in kwargs["add_encoders"].items()
+            if k not in ["position", "transformer"]
+        }
+        enc = SequentialEncoder(**kwargs_copy)
+        assert not enc.requires_fit
+        _ = enc.encode_inference(
+            n=1, target=ts, past_covariate=covs, future_covariate=covs
+        )
+
+        # ==> test `encode_train()` with all encoders and transformer
+        enc = SequentialEncoder(**kwargs)
+        assert not enc.fit_called
+        assert enc.requires_fit
+        pc, fc = enc.encode_train(target=ts, past_covariate=covs, future_covariate=covs)
+
+        assert enc.past_components.equals(comps_expected_past)
+        assert comps_expected_past.isin(pc.components).all()
+        assert covs.components.isin(pc.components).all()
+
+        assert enc.future_components.equals(comps_expected_future)
+        assert comps_expected_future.isin(fc.components).all()
+        assert covs.components.isin(fc.components).all()
+
+        # if covariates do not contain components that are generated by encoders we can recompute train set
+        # encodings with different inputs
+        _ = enc.encode_train(target=ts, past_covariate=covs, future_covariate=covs)
+
+        # otherwise, raise an error when components generated by encoders are in input covariates
+        with pytest.raises(ValueError):
+            _ = enc.encode_train(target=ts, past_covariate=pc, future_covariate=covs)
+        with pytest.raises(ValueError):
+            _ = enc.encode_train(target=ts, past_covariate=covs, future_covariate=fc)
+
+        # ==> test `encode_inference()` with all encoders and transformer
+        assert enc.fit_called
+        pc, fc = enc.encode_inference(
+            n=1, target=ts, past_covariate=covs, future_covariate=covs
+        )
+        assert enc.past_components.equals(comps_expected_past)
+        assert comps_expected_past.isin(pc.components).all()
+        assert covs.components.isin(pc.components).all()
+
+        assert enc.future_components.equals(comps_expected_future)
+        assert comps_expected_future.isin(fc.components).all()
+        assert covs.components.isin(fc.components).all()
+
+        # if covariates do not contain components that are generated by encoders we can recompute inference set
+        # encodings with different inputs
+        _ = enc.encode_inference(
+            n=1, target=ts, past_covariate=covs, future_covariate=covs
+        )
+
+        # otherwise, raise an error when components generated by encoders are in input covariates
+        with pytest.raises(ValueError):
+            _ = enc.encode_inference(
+                n=1, target=ts, past_covariate=pc, future_covariate=covs
+            )
+        with pytest.raises(ValueError):
+            _ = enc.encode_inference(
+                n=1, target=ts, past_covariate=covs, future_covariate=fc
+            )
+
     def test_cyclic_encoder(self):
         """Test past and future `CyclicTemporalEncoder``"""
 
@@ -312,6 +589,7 @@ class EncoderTestCase(DartsBaseTestClass):
         second_halve = encoder.encode_train(
             target=month_series[12:], covariate=month_series[12:], merge_covariate=False
         )
+
         # check if encoded values for first 12 months are equal to values of last 12 months
         self.assertTrue((first_halve.values() == second_halve.values()).all())
 
@@ -353,6 +631,7 @@ class EncoderTestCase(DartsBaseTestClass):
         second_halve = encoder.encode_train(
             target=month_series[12:], covariate=month_series[12:], merge_covariate=False
         )
+
         # check if encoded values for first 12 months are equal to values of last 12 months
         self.assertTrue((first_halve.values() == second_halve.values()).all())
 

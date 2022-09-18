@@ -159,6 +159,7 @@ from darts.utils.data.encoder_base import (
 )
 from darts.utils.data.utils import _index_diff
 from darts.utils.timeseries_generation import datetime_attribute_timeseries
+from darts.utils.utils import seq2series, series2seq
 
 SupportedTimeSeries = Union[TimeSeries, Sequence[TimeSeries]]
 logger = get_logger(__name__)
@@ -733,9 +734,9 @@ class SequentialEncoder(Encoder):
 
         # encoders
         self._past_encoders: List[SingleEncoder] = []
-        self._past_encoded_components: List[str] = []
+        self._past_components: pd.Index = pd.Index([])
         self._future_encoders: List[SingleEncoder] = []
-        self._future_encoded_components: List[str] = []
+        self._future_components: pd.Index = pd.Index([])
 
         # transformer
         self._past_transformer: Optional[SequentialEncoderTransformer] = None
@@ -795,8 +796,7 @@ class SequentialEncoder(Encoder):
                 )
 
             self._fit_called = True
-
-        return self._launch_encoder(
+        past_covariate, future_covariate = self._launch_encoder(
             target=target,
             past_covariate=past_covariate,
             future_covariate=future_covariate,
@@ -804,6 +804,8 @@ class SequentialEncoder(Encoder):
             encode_past=encode_past,
             encode_future=encode_future,
         )
+        self._fit_called = True
+        return past_covariate, future_covariate
 
     def encode_inference(
         self,
@@ -843,8 +845,8 @@ class SequentialEncoder(Encoder):
         """
         raise_if(
             not self.fit_called and self.requires_fit,
-            "`SequentialEncoder` contains encoders or transformers which must be trained before inference. "
-            "Call `SequentialEncoder.encode_train()` before `SequentialEncoder.encode_inference()`.",
+            f"`{self.__class__.__name__}` contains encoders or transformers which must be trained before inference. "
+            "Call method `encode_train()` before `encode_inference()`.",
             logger=logger,
         )
         return self._launch_encoder(
@@ -874,37 +876,38 @@ class SequentialEncoder(Encoder):
         if not self.encoding_available:
             return past_covariate, future_covariate
 
+        # guarantee that all inputs are either a sequence of TimeSeries or None
         single_series = isinstance(target, TimeSeries)
-        target = [target] if single_series else target
+        target = series2seq(target)
+        past_covariate = series2seq(past_covariate)
+        future_covariate = series2seq(future_covariate)
 
+        # generate past covariate encodings
         if self.past_encoders and encode_past:
             past_covariate = self._encode_sequence(
                 encoders=self.past_encoders,
                 transformer=self.past_transformer,
                 target=target,
                 covariate=past_covariate,
+                covariate_type=PAST,
                 n=n,
             )
 
+        # generate future covariate encodings
         if self.future_encoders and encode_future:
             future_covariate = self._encode_sequence(
                 encoders=self.future_encoders,
                 transformer=self.future_transformer,
                 target=target,
                 covariate=future_covariate,
+                covariate_type=FUTURE,
                 n=n,
             )
 
+        # convert covariates back to single series if single target was used as input
         if single_series:
-            past_covariate = (
-                past_covariate[0] if past_covariate is not None else past_covariate
-            )
-            future_covariate = (
-                future_covariate[0]
-                if future_covariate is not None
-                else future_covariate
-            )
-
+            past_covariate = seq2series(past_covariate)
+            future_covariate = seq2series(future_covariate)
         return past_covariate, future_covariate
 
     def _encode_sequence(
@@ -913,6 +916,7 @@ class SequentialEncoder(Encoder):
         transformer: Optional[SequentialEncoderTransformer],
         target: Sequence[TimeSeries],
         covariate: Optional[SupportedTimeSeries],
+        covariate_type: str,
         n: Optional[int] = None,
     ) -> List[TimeSeries]:
         """Sequentially encodes the index of all input target/covariate TimeSeries
@@ -920,6 +924,17 @@ class SequentialEncoder(Encoder):
         If `n` is `None` it is a prediction and method `encoder.encode_inference()` is called.
         Otherwise, it is a training case and `encoder.encode_train()` is called.
         """
+        # avoid pitfalls: raise an error if the encoded component names are already in `covariate` series
+        if covariate is not None:
+            components = getattr(self, f"{covariate_type}_components")
+            duplicate_components = components[components.isin(covariate[0].components)]
+            raise_if(
+                len(duplicate_components) > 0,
+                f"`covariate` series contains components with same names as components generated by "
+                f"`{self.__class__.__name__}`. Consider removing/renaming {duplicate_components} from the `covariate` "
+                f"series components.",
+                logger=logger,
+            )
 
         encode_method = "encode_train" if n is None else "encode_inference"
 
@@ -946,6 +961,13 @@ class SequentialEncoder(Encoder):
         if transformer is not None:
             encoded_sequence = transformer.transform(encoded_sequence)
 
+        # store encoded past/future component names if they were not saved before
+        if getattr(self, f"{covariate_type}_components").empty:
+            components = encoded_sequence[0].components
+            if covariate is not None and covariate[0] is not None:
+                components = components[~components.isin(covariate[0].components)]
+            setattr(self, f"_{covariate_type}_components", components)
+
         return encoded_sequence
 
     @property
@@ -964,26 +986,26 @@ class SequentialEncoder(Encoder):
         return self.past_encoders, self.future_encoders
 
     @property
-    def past_encoded_components(self) -> List[str]:
+    def past_components(self) -> pd.Index:
         """Returns the past covariate component names generated by `SequentialEncoder.past_encoders`.
         Only available after calling `SequentialEncoder.encode_train()`
         """
-        return self._past_encoded_components
+        return self._past_components
 
     @property
-    def future_encoded_components(self) -> List[str]:
+    def future_components(self) -> pd.Index:
         """Returns the future covariate component names generated by `SequentialEncoder.future_encoders`.
         Only available after calling `SequentialEncoder.encode_train()`
         """
-        return self._future_encoded_components
+        return self._future_components
 
     @property
-    def encoded_components(self) -> Tuple[List[str], List[str]]:
+    def components(self) -> Tuple[pd.Index, pd.Index]:
         """Returns the covariate component names generated by `SequentialEncoder.past_encoders` and
         `SequentialEncoder.past_encoders`. A tuple of (past encoded components, future encoded components).
         Only available after calling `SequentialEncoder.encode_train()`
         """
-        return self.past_encoded_components, self.future_encoded_components
+        return self.past_components, self.future_components
 
     @property
     def past_transformer(self) -> SequentialEncoderTransformer:
