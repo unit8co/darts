@@ -732,7 +732,9 @@ class SequentialEncoder(Encoder):
         future_covariate: Optional[SupportedTimeSeries] = None,
         encode_past: bool = True,
         encode_future: bool = True,
-    ) -> Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
+    ) -> Tuple[
+        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
+    ]:
         """Returns encoded index for all past and/or future covariates for training.
         Which covariates are generated depends on the parameters used at model creation.
 
@@ -791,7 +793,9 @@ class SequentialEncoder(Encoder):
         future_covariate: Optional[SupportedTimeSeries] = None,
         encode_past: bool = True,
         encode_future: bool = True,
-    ) -> Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
+    ) -> Tuple[
+        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
+    ]:
         """Returns encoded index for all past and/or future covariates for inference/prediction.
         Which covariates are generated depends on the parameters used at model creation.
 
@@ -845,7 +849,8 @@ class SequentialEncoder(Encoder):
         if not self.encoding_available:
             return past_covariate, future_covariate
 
-        target = [target] if isinstance(target, TimeSeries) else target
+        single_series = isinstance(target, TimeSeries)
+        target = [target] if single_series else target
 
         if self.past_encoders and encode_past:
             past_covariate = self._encode_sequence(
@@ -864,6 +869,17 @@ class SequentialEncoder(Encoder):
                 covariate=future_covariate,
                 n=n,
             )
+
+        if single_series:
+            past_covariate = (
+                past_covariate[0] if past_covariate is not None else past_covariate
+            )
+            future_covariate = (
+                future_covariate[0]
+                if future_covariate is not None
+                else future_covariate
+            )
+
         return past_covariate, future_covariate
 
     def _encode_sequence(
