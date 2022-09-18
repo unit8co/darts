@@ -423,6 +423,10 @@ class RegressionModel(GlobalForecastingModel):
         **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
         """
+        # guarantee that all inputs are either list of TimeSeries or None
+        series = series2seq(series)
+        past_covariates = series2seq(past_covariates)
+        future_covariates = series2seq(future_covariates)
 
         self.encoders = self.initialize_encoders()
         if self.encoders.encoding_available:
@@ -431,11 +435,6 @@ class RegressionModel(GlobalForecastingModel):
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
             )
-
-        # guarantee that all inputs are either list of TimeSeries or None
-        series = series2seq(series)
-        past_covariates = series2seq(past_covariates)
-        future_covariates = series2seq(future_covariates)
 
         for covs, name in zip([past_covariates, future_covariates], ["past", "future"]):
             raise_if(
