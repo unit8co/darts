@@ -1082,6 +1082,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
             series = self.training_series
 
+        # optionally, load past/future covariates and remember loading
         if past_covariates is None and self.past_covariate_series is not None:
             past_covariates = self.past_covariate_series
             loaded_past_covariates = True
@@ -1103,16 +1104,28 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self._verify_static_covariates(series[0].static_covariates)
 
         # encoders are set when calling fit(), but not when calling fit_from_dataset()
+        # additionally, do not generate encodings when covariates were loaded as they already
+        # contain the encodings
         if (
             (loaded_past_covariates or loaded_future_covariates)
             and self.encoders is not None
             and self.encoders.encoding_available
         ):
-            past_covariates, future_covariates = self.encoders.encode_inference(
+            past_covariates_tmp, future_covariates_tmp = self.encoders.encode_inference(
                 n=n,
                 target=series,
-                past_covariate=past_covariates,
-                future_covariate=future_covariates,
+                past_covariate=past_covariates if not loaded_past_covariates else None,
+                future_covariate=future_covariates
+                if not loaded_future_covariates
+                else None,
+            )
+            past_covariates = (
+                past_covariates_tmp if not loaded_past_covariates else past_covariates
+            )
+            future_covariates = (
+                future_covariates_tmp
+                if not loaded_future_covariates
+                else future_covariates
             )
 
         super().predict(n, series, past_covariates, future_covariates)
