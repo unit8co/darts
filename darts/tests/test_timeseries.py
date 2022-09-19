@@ -281,7 +281,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         slice_vals = ts.slice(10, 20).values(copy=False).flatten()
         np.testing.assert_equal(slice_vals, values[5:15])
 
-        # integer-indexed series, starting at 0, with step
+        # integer-indexed series, starting at 0, with step > 1
         values = np.random.rand(
             30,
         )
