@@ -470,7 +470,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             )
         )
 
-        with test_case.assertRaises(OverflowError):
+        with test_case.assertRaises(ValueError):
             test_series.shift(1e6)
 
         seriesM = TimeSeries.from_times_and_values(
