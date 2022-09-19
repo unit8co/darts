@@ -547,5 +547,3 @@ class BacktestingTestCase(DartsBaseTestClass):
             "kernel_size": [2, 3, 4],
         }
         TCNModel.gridsearch(tcn_params, dummy_series, forecast_horizon=3, metric=mape)
-
-

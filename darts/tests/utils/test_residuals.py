@@ -13,6 +13,7 @@ from darts.utils.timeseries_generation import linear_timeseries as lt
 
 logger = get_logger(__name__)
 
+
 class TestResidualsTestCase(DartsBaseTestClass):
 
     np.random.seed(42)
@@ -47,9 +48,11 @@ class TestResidualsTestCase(DartsBaseTestClass):
             comps_target=1,
             comps_pcov=1,
             comps_fcov=1,
-        ) #outputs lists and not TimeSeries
+        )  # outputs lists and not TimeSeries
 
-        model_instance = LinearRegressionModel(lags=4, lags_past_covariates=4, lags_future_covariates=(4,1))
+        model_instance = LinearRegressionModel(
+            lags=4, lags_past_covariates=4, lags_future_covariates=(4, 1)
+        )
         model_instance.fit(
             series=target_series,
             past_covariates=past_covariates,
@@ -69,7 +72,8 @@ class TestResidualsTestCase(DartsBaseTestClass):
             model.residuals(target_series, future_covariates=future_covariates)
 
         with self.assertRaises(ValueError):
-            model.residuals(target_series, past_covariates=past_covariates, future_covariates=future_covariates)
-
-
-
+            model.residuals(
+                target_series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+            )

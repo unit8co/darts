@@ -922,18 +922,18 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         try:
             series._assert_univariate()
         except (AttributeError, TypeError):
-            raise ValueError('series must be of type TimeSeries')
+            raise ValueError("series must be of type TimeSeries")
 
         if past_covariates is not None:
             raise_if_not(
                 isinstance(past_covariates, TimeSeries),
-                "past_covariates should be of type TimeSeries"
+                "past_covariates should be of type TimeSeries",
             )
 
         if future_covariates is not None:
             raise_if_not(
                 isinstance(future_covariates, TimeSeries),
-                "future_covariates should be of type TimeSeries"
+                "future_covariates should be of type TimeSeries",
             )
 
         # get first index not contained in the first training set
