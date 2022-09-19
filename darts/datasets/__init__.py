@@ -535,7 +535,9 @@ class ElectricityDataset(DatasetLoaderCSV):
         """
 
         ts_list = []  # list of timeseries
-        for label in _build_tqdm_iterator(series, verbose=True, total=len(series.columns)):
+        for label in _build_tqdm_iterator(
+            series, verbose=True, total=len(series.columns)
+        ):
             srs = series[label]
 
             # filter column down to the period of recording
@@ -629,7 +631,9 @@ class UberTLCDataset(DatasetLoaderCSV):
         """
 
         ts_list = []  # list of timeseries
-        for label in _build_tqdm_iterator(series, verbose=True, total=len(series.columns)):
+        for label in _build_tqdm_iterator(
+            series, verbose=True, total=len(series.columns)
+        ):
             srs = series[label]
 
             # filter column down to the period of recording
