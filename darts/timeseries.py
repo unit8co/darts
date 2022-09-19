@@ -1933,7 +1933,7 @@ class TimeSeries:
             that should lie before the point.
 
             If an ``int`` and series is datetime-indexed, the value of `point` is returned.
-            If an ``int`` and series is integer-indexed, the index position of `point` in the RangeIndex is returned 
+            If an ``int`` and series is integer-indexed, the index position of `point` in the RangeIndex is returned
             (accounting for steps).
         after
             If the provided pandas Timestamp is not in the time series index, whether to return the index of the
