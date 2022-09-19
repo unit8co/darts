@@ -8,13 +8,7 @@ import pandas as pd
 from darts import TimeSeries
 from darts.logging import get_logger
 from darts.metrics import mape, r2_score
-from darts.models import (
-    ARIMA,
-    FFT,
-    ExponentialSmoothing,
-    NaiveDrift,
-    Theta,
-)
+from darts.models import ARIMA, FFT, ExponentialSmoothing, NaiveDrift, Theta
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.timeseries_generation import gaussian_timeseries as gt
 from darts.utils.timeseries_generation import linear_timeseries as lt
