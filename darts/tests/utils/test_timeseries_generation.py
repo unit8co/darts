@@ -246,6 +246,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
                         expected_end=end_assert,
                         start=start_assert,
                         length=length,
+                        freq="D" if step == 1 else f"{step}D",
                     )
                     test_routine(
                         expected_length=length,
@@ -253,6 +254,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
                         expected_end=end_assert,
                         start=start_assert,
                         end=end_assert,
+                        freq="D" if step == 1 else f"{step}D",
                     )
                     test_routine(
                         expected_length=length,
