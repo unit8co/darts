@@ -13,7 +13,7 @@ import pandas as pd
 from darts import TimeSeries
 from darts.dataprocessing.transformers import FittableDataTransformer
 from darts.logging import get_logger
-from darts.utils.timeseries_generation import _generate_index
+from darts.utils.timeseries_generation import generate_index
 
 SupportedIndex = Union[pd.DatetimeIndex, pd.RangeIndex]
 EncoderOutputType = Optional[Union[Sequence[TimeSeries], List[TimeSeries]]]
@@ -118,7 +118,7 @@ class PastCovariateIndexGenerator(CovariateIndexGenerator):
         if covariate is not None:
             return covariate.time_index
         else:
-            return _generate_index(
+            return generate_index(
                 start=target.end_time() - target.freq * (self.input_chunk_length - 1),
                 length=self.input_chunk_length + max(0, n - self.output_chunk_length),
                 freq=target.freq,
@@ -162,7 +162,7 @@ class FutureCovariateIndexGenerator(CovariateIndexGenerator):
         if covariate is not None:
             return covariate.time_index
         else:
-            return _generate_index(
+            return generate_index(
                 start=target.end_time() - target.freq * (self.input_chunk_length - 1),
                 length=self.input_chunk_length + max(n, self.output_chunk_length),
                 freq=target.freq,

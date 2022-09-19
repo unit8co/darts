@@ -16,7 +16,7 @@ from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 logger = get_logger(__name__)
 
 
-def _generate_index(
+def generate_index(
     start: Optional[Union[pd.Timestamp, int]] = None,
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
@@ -125,7 +125,7 @@ def constant_timeseries(
         A constant TimeSeries with value 'value'.
     """
 
-    index = _generate_index(start=start, end=end, freq=freq, length=length)
+    index = generate_index(start=start, end=end, freq=freq, length=length)
     values = np.full(len(index), value, dtype=dtype)
 
     return TimeSeries.from_times_and_values(
@@ -182,7 +182,7 @@ def linear_timeseries(
         A linear TimeSeries created as indicated above.
     """
 
-    index = _generate_index(start=start, end=end, freq=freq, length=length)
+    index = generate_index(start=start, end=end, freq=freq, length=length)
     values = np.linspace(start_value, end_value, len(index), dtype=dtype)
     return TimeSeries.from_times_and_values(
         index, values, freq=freq, columns=pd.Index([column_name])
@@ -242,7 +242,7 @@ def sine_timeseries(
         A sinusoidal TimeSeries parametrized as indicated above.
     """
 
-    index = _generate_index(start=start, end=end, freq=freq, length=length)
+    index = generate_index(start=start, end=end, freq=freq, length=length)
     values = np.array(range(len(index)), dtype=dtype)
     f = np.vectorize(
         lambda x: value_amplitude
@@ -324,7 +324,7 @@ def gaussian_timeseries(
             logger,
         )
 
-    index = _generate_index(start=start, end=end, freq=freq, length=length)
+    index = generate_index(start=start, end=end, freq=freq, length=length)
     values = np.random.normal(mean, std, size=len(index)).astype(dtype)
 
     return TimeSeries.from_times_and_values(
@@ -379,7 +379,7 @@ def random_walk_timeseries(
         A random walk TimeSeries created as indicated above.
     """
 
-    index = _generate_index(start=start, end=end, freq=freq, length=length)
+    index = generate_index(start=start, end=end, freq=freq, length=length)
     values = np.cumsum(np.random.normal(mean, std, size=len(index)), dtype=dtype)
 
     return TimeSeries.from_times_and_values(
@@ -442,7 +442,7 @@ def autoregressive_timeseries(
             "start_values must have same length as coef.",
         )
 
-    index = _generate_index(start=start, end=end, freq=freq, length=length)
+    index = generate_index(start=start, end=end, freq=freq, length=length)
 
     values = np.empty(len(coef) + len(index))
     values[: len(coef)] = start_values
@@ -751,6 +751,6 @@ def _generate_new_dates(
     """
     last = input_series.end_time()
     start = last + input_series.freq
-    return _generate_index(
+    return generate_index(
         start=start, freq=input_series.freq, length=n, name=input_series.time_dim
     )

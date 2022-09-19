@@ -5,10 +5,10 @@ import pandas as pd
 
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.timeseries_generation import (
-    _generate_index,
     autoregressive_timeseries,
     constant_timeseries,
     gaussian_timeseries,
+    generate_index,
     holidays_timeseries,
     linear_timeseries,
     random_walk_timeseries,
@@ -34,7 +34,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
             test_routine(start=0, length=length_assert)
             test_routine(start=0, end=length_assert - 1)
             test_routine(start=pd.Timestamp("2000-01-01"), length=length_assert)
-            end_date = _generate_index(
+            end_date = generate_index(
                 start=pd.Timestamp("2000-01-01"), length=length_assert
             )[-1]
             test_routine(start=pd.Timestamp("2000-01-01"), end=end_date)
@@ -66,7 +66,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
             test_routine(start=0, length=length_assert)
             test_routine(start=0, end=length_assert - 1)
             test_routine(start=pd.Timestamp("2000-01-01"), length=length_assert)
-            end_date = _generate_index(
+            end_date = generate_index(
                 start=pd.Timestamp("2000-01-01"), length=length_assert
             )[-1]
             test_routine(start=pd.Timestamp("2000-01-01"), end=end_date)
@@ -94,7 +94,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
             test_routine(start=0, length=length_assert)
             test_routine(start=0, end=length_assert - 1)
             test_routine(start=pd.Timestamp("2000-01-01"), length=length_assert)
-            end_date = _generate_index(
+            end_date = generate_index(
                 start=pd.Timestamp("2000-01-01"), length=length_assert
             )[-1]
             test_routine(start=pd.Timestamp("2000-01-01"), end=end_date)
@@ -110,7 +110,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
             test_routine(start=0, length=length_assert)
             test_routine(start=0, end=length_assert - 1)
             test_routine(start=pd.Timestamp("2000-01-01"), length=length_assert)
-            end_date = _generate_index(
+            end_date = generate_index(
                 start=pd.Timestamp("2000-01-01"), length=length_assert
             )[-1]
             test_routine(start=pd.Timestamp("2000-01-01"), end=end_date)
@@ -126,7 +126,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
             test_routine(start=0, length=length_assert)
             test_routine(start=0, end=length_assert - 1)
             test_routine(start=pd.Timestamp("2000-01-01"), length=length_assert)
-            end_date = _generate_index(
+            end_date = generate_index(
                 start=pd.Timestamp("2000-01-01"), length=length_assert
             )[-1]
             test_routine(start=pd.Timestamp("2000-01-01"), end=end_date)
@@ -188,7 +188,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
             length=None,
             freq=None,
         ):
-            index = _generate_index(start=start, end=end, length=length, freq=freq)
+            index = generate_index(start=start, end=end, length=length, freq=freq)
             self.assertEqual(len(index), expected_length)
             self.assertEqual(index[0], expected_start)
             self.assertEqual(index[-1], expected_end)
@@ -246,7 +246,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
                     f"2000-01-0{start}"
                 )  # pd.DatetimeIndex(["2000-01-01"], freq="D")
                 # start_date += start_date.freq * start
-                dates = _generate_index(start=start_date, length=length)
+                dates = generate_index(start=start_date, length=length)
                 start_assert, end_assert = dates[0], dates[-1]
                 test_routine(
                     expected_length=length,
@@ -274,24 +274,24 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
 
         # `start`, `end` and `length` cannot both be set simultaneously
         with self.assertRaises(ValueError):
-            _generate_index(start=0, end=9, length=10)
+            generate_index(start=0, end=9, length=10)
         # same as above but `start` defaults to timestamp '2000-01-01' in all timeseries generation functions
         with self.assertRaises(ValueError):
             linear_timeseries(end=9, length=10)
 
         # exactly two of [`start`, `end`, `length`] must be set
         with self.assertRaises(ValueError):
-            _generate_index(start=0)
+            generate_index(start=0)
         with self.assertRaises(ValueError):
-            _generate_index(start=None, end=1)
+            generate_index(start=None, end=1)
         with self.assertRaises(ValueError):
-            _generate_index(start=None, end=None, length=10)
+            generate_index(start=None, end=None, length=10)
 
         # `start` and `end` must have same type
         with self.assertRaises(ValueError):
-            _generate_index(start=0, end=pd.Timestamp("2000-01-01"))
+            generate_index(start=0, end=pd.Timestamp("2000-01-01"))
         with self.assertRaises(ValueError):
-            _generate_index(start=pd.Timestamp("2000-01-01"), end=10)
+            generate_index(start=pd.Timestamp("2000-01-01"), end=10)
 
     def test_autoregressive_timeseries(self):
         # testing for correct length
@@ -318,7 +318,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
             test_length(start=0, length=length_assert)
             test_length(start=0, end=length_assert - 1)
             test_length(start=pd.Timestamp("2000-01-01"), length=length_assert)
-            end_date = _generate_index(
+            end_date = generate_index(
                 start=pd.Timestamp("2000-01-01"), length=length_assert
             )[-1]
             test_length(start=pd.Timestamp("2000-01-01"), end=end_date)

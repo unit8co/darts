@@ -214,11 +214,11 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
 
         # test case with numerical pd.RangeIndex
         target_num_idx = TimeSeries.from_times_and_values(
-            times=tg._generate_index(start=0, length=len(self.ts_gaussian)),
+            times=tg.generate_index(start=0, length=len(self.ts_gaussian)),
             values=self.ts_gaussian.all_values(copy=False),
         )
         fc_num_idx = TimeSeries.from_times_and_values(
-            times=tg._generate_index(start=0, length=len(self.ts_gaussian_long)),
+            times=tg.generate_index(start=0, length=len(self.ts_gaussian_long)),
             values=self.ts_gaussian_long.all_values(copy=False),
         )
 

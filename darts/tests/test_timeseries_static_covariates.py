@@ -11,7 +11,7 @@ from darts import TimeSeries, concatenate
 from darts.dataprocessing.transformers import BoxCox, Scaler
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.timeseries import DEFAULT_GLOBAL_STATIC_COV_NAME, STATIC_COV_TAG
-from darts.utils.timeseries_generation import _generate_index, linear_timeseries
+from darts.utils.timeseries_generation import generate_index, linear_timeseries
 
 
 class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
@@ -25,7 +25,7 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
             pd.concat(
                 [
                     pd.DataFrame(
-                        _generate_index(start=pd.Timestamp(2010, 1, 1), length=len_ts)
+                        generate_index(start=pd.Timestamp(2010, 1, 1), length=len_ts)
                     )
                 ]
                 * n_groups,

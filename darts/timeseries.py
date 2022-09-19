@@ -4376,9 +4376,9 @@ def concatenate(
                 "of the first series.",
             )
 
-            from darts.utils.timeseries_generation import _generate_index
+            from darts.utils.timeseries_generation import generate_index
 
-            tindex = _generate_index(
+            tindex = generate_index(
                 start=series[0].start_time(),
                 freq=series[0].freq_str,
                 length=da_concat.shape[0],
