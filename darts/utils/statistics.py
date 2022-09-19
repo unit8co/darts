@@ -847,7 +847,10 @@ def plot_hist(
 
 
 def plot_residuals_analysis(
-    residuals: TimeSeries, num_bins: int = 20, fill_nan: bool = True, default_formatting: bool = True
+    residuals: TimeSeries,
+    num_bins: int = 20,
+    fill_nan: bool = True,
+    default_formatting: bool = True,
 ) -> None:
     """Plots data relevant to residuals.
 
