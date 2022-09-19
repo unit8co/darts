@@ -1932,10 +1932,9 @@ class TimeSeries:
             In case of a ``float``, the parameter will be treated as the proportion of the time series
             that should lie before the point.
 
-            In the case of ``int``, the point will be returned as such if the series is datetime-indexed
-            or integer-indexed and starting at 0 with freq=1. Otherwise, if not starting at 0 or if the
-            steps (freq) is not 1, the method will return the integer ``i`` such that ``point`` is the
-            ``i``-th point along the series.
+            If an ``int`` and series is datetime-indexed, the value of `point` is returned.
+            If an ``int`` and series is integer-indexed, the index position of `point` in the RangeIndex is returned 
+            (accounting for steps).
         after
             If the provided pandas Timestamp is not in the time series index, whether to return the index of the
             next timestamp or the index of the previous one.
