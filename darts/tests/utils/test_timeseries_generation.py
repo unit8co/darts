@@ -200,7 +200,6 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
                 for step in [1, 2, 4]:
                     expected_start = start
                     expected_end = start + (length - 1) * step
-                    # end_assert = start_pos + step * length_assert - 1
                     if step == 1:
                         test_routine(
                             expected_length=length,
