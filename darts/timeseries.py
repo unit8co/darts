@@ -3130,7 +3130,16 @@ class TimeSeries:
             )
             kwargs["label"] = label_to_use
 
-            p = central_series.plot(*args, **kwargs)
+            if central_series.shape[0] > 1:
+                p = central_series.plot(*args, **kwargs)
+            else:
+                p = plt.plot(
+                    [self.start_time()],
+                    central_series.values[0],
+                    "o",
+                    *args,
+                    **kwargs,
+                )
             color_used = p[0].get_color() if default_formatting else None
             kwargs["alpha"] = alpha if alpha is not None else alpha_confidence_intvls
 
@@ -3142,17 +3151,26 @@ class TimeSeries:
             ):
                 low_series = comp.quantile(q=low_quantile, dim=DIMS[2])
                 high_series = comp.quantile(q=high_quantile, dim=DIMS[2])
-                plt.fill_between(
-                    self.time_index,
-                    low_series,
-                    high_series,
-                    color=color_used,
-                    alpha=(
-                        alpha_confidence_intvls
-                        if "alpha" not in kwargs
-                        else kwargs["alpha"]
-                    ),
-                )
+                if low_series.shape[0] > 1:
+                    plt.fill_between(
+                        self.time_index,
+                        low_series,
+                        high_series,
+                        color=color_used,
+                        alpha=(
+                            alpha_confidence_intvls
+                            if "alpha" not in kwargs
+                            else kwargs["alpha"]
+                        ),
+                    )
+                else:
+                    plt.plot(
+                        [self.start_time(), self.start_time()],
+                        [low_series.values[0], high_series.values[0]],
+                        "-+",
+                        color=color_used,
+                        lw=2,
+                    )
 
         plt.legend()
         plt.title(self._xa.name)
