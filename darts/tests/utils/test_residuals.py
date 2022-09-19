@@ -54,7 +54,7 @@ class TestResidualsTestCase(DartsBaseTestClass):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
-        # it seems that models can be fit with data objects that are not necessarily TimeSeries, but residuals will
+        # it seems that models can be fit with data objects that are not necessarily TimeSeries, but residuals() will
         # fail because it starts by asserting that the provided object is a univariate TimeSeries.
         # The following asserts the correct TimeSeries types
 
