@@ -229,39 +229,40 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
                         freq=step,
                     )
 
-                if start == 0:
-                    continue
+                    if start == 0:
+                        continue
 
-                # test pd.DatetimeIndex with a start date within 01 and 09
-                start_date = pd.Timestamp(
-                    f"2000-01-0{start}"
-                )  # pd.DatetimeIndex(["2000-01-01"], freq="D")
-                # start_date += start_date.freq * start
-                dates = generate_index(start=start_date, length=length)
-                start_assert, end_assert = dates[0], dates[-1]
-                test_routine(
-                    expected_length=length,
-                    expected_start=start_assert,
-                    expected_end=end_assert,
-                    start=start_assert,
-                    length=length,
-                )
-                test_routine(
-                    expected_length=length,
-                    expected_start=start_assert,
-                    expected_end=end_assert,
-                    start=start_assert,
-                    end=end_assert,
-                )
-                test_routine(
-                    expected_length=length,
-                    expected_start=start_assert,
-                    expected_end=end_assert,
-                    start=None,
-                    end=end_assert,
-                    length=length,
-                    freq="D",
-                )
+                    # test pd.DatetimeIndex with a start date within 01 and 09
+                    start_date = pd.Timestamp(f"2000-01-0{start}")
+                    dates = generate_index(
+                        start=start_date,
+                        length=length,
+                        freq="D" if step == 1 else f"{step}D",
+                    )
+                    start_assert, end_assert = dates[0], dates[-1]
+                    test_routine(
+                        expected_length=length,
+                        expected_start=start_assert,
+                        expected_end=end_assert,
+                        start=start_assert,
+                        length=length,
+                    )
+                    test_routine(
+                        expected_length=length,
+                        expected_start=start_assert,
+                        expected_end=end_assert,
+                        start=start_assert,
+                        end=end_assert,
+                    )
+                    test_routine(
+                        expected_length=length,
+                        expected_start=start_assert,
+                        expected_end=end_assert,
+                        start=None,
+                        end=end_assert,
+                        length=length,
+                        freq="D" if step == 1 else f"{step}D",
+                    )
 
         # `start`, `end` and `length` cannot both be set simultaneously
         with self.assertRaises(ValueError):
