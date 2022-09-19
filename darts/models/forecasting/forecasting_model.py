@@ -919,7 +919,22 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         TimeSeries
             The vector of residuals.
         """
-        series._assert_univariate()
+        try:
+            series._assert_univariate()
+        except (AttributeError, TypeError):
+            raise ValueError('series must be of type TimeSeries')
+
+        if past_covariates is not None:
+            raise_if_not(
+                isinstance(past_covariates, TimeSeries),
+                "past_covariates should be of type TimeSeries"
+            )
+
+        if future_covariates is not None:
+            raise_if_not(
+                isinstance(future_covariates, TimeSeries),
+                "future_covariates should be of type TimeSeries"
+            )
 
         # get first index not contained in the first training set
         first_index = series.time_index[self.min_train_series_length]
