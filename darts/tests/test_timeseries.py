@@ -127,7 +127,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         # drop_after should act on the timestamp
         np.testing.assert_equal(series.drop_after(20).values().flatten(), values[:10])
 
-        # test get_index_at_point on series with step > 1
+        # test get_index_at_point on series which does not start at 0 and with a step > 1
         values = np.random.random(10)
         times = pd.RangeIndex(10, 30, step=2)
         series: TimeSeries = TimeSeries.from_times_and_values(times, values)
