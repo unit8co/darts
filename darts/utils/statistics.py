@@ -847,7 +847,10 @@ def plot_hist(
 
 
 def plot_residuals_analysis(
-    residuals: TimeSeries, num_bins: int = 20, fill_nan: bool = True
+    residuals: TimeSeries,
+    num_bins: int = 20,
+    fill_nan: bool = True,
+    default_formatting: bool = True,
 ) -> None:
     """Plots data relevant to residuals.
 
@@ -865,6 +868,8 @@ def plot_residuals_analysis(
         Optionally, an integer value determining the number of bins in the histogram.
     fill_nan
         A boolean value indicating whether NaN values should be filled in the residuals.
+    default_formatting
+        Whether or not to use the darts default scheme.
     """
 
     residuals._assert_univariate()
@@ -905,7 +910,7 @@ def plot_residuals_analysis(
 
     # plot ACF
     ax3 = fig.add_subplot(gs[1:, :1])
-    plot_acf(residuals, axis=ax3)
+    plot_acf(residuals, axis=ax3, default_formatting=default_formatting)
     ax3.set_ylabel("ACF value")
     ax3.set_xlabel("lag")
     ax3.set_title("ACF")
