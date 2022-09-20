@@ -1212,3 +1212,8 @@ def rho_risk(
 
     rho_loss = 2 * (z_true - z_hat_rho) * (rho * pred_below - (1 - rho) * pred_above)
     return rho_loss / z_true
+
+
+# rho-risk (quantile risk)
+def julien_function(a):
+    return 2 * a

@@ -310,6 +310,9 @@ class MetricsTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             metrics.mase(1, 2, 3)
 
+    def test_julien(self):
+        self.assertEqual(self.series_train, self.series_train)
+
     def test_ope(self):
         self.helper_test_multivariate_duplication_equality(metrics.ope)
         self.helper_test_multiple_ts_duplication_equality(metrics.ope)
