@@ -53,13 +53,6 @@ model = RegressionModel(lags=4)
 
 model.save("my_model.pkl")
 model_loaded = RegressionModel.load("my_model.pkl")
-
-from darts.models import NaiveSeasonal
-
-naive_model = NaiveSeasonal(K=1)            # init
-naive_model.fit(train)                      # fit  
-path = "/Users/darts_user/models/this_model.py"
-naive_model.save(path)                # save
 ```
 
 The parameter `path` specifies a path or file handle under which to save the model at its current state. If no `path` is specified, the model is automatically
@@ -80,7 +73,6 @@ model.fit([series1, series2])
 
 model.save("my_model.pt")
 model_loaded = NBEATSModel.load("my_model.pt")
-
 ```
 
 Special class methods for torch models:
