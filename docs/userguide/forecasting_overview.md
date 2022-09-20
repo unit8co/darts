@@ -67,7 +67,7 @@ saved under ``"{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pt"``. E.g., ``"RNNModel_2020-
 Optionally there is also pickle specific keyword arguments `protocol`, `fix_imports` and `buffer_callback`.
 More info: [pickle.dump()](https://docs.python.org/3/library/pickle.html?highlight=dump#pickle.dump)
 
-With torch models we make sure to save the model parameters and the architecture itself at its current state.
+With torch models, the model parameters and the training state are saved.
 
 **Example:**
 ```python
