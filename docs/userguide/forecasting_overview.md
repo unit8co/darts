@@ -86,7 +86,7 @@ model_loaded = NBEATSModel.load("my_model.pt")
 Special class methods for torch models:
 
 * **save_checkpoint** In addition, we need to use PTL save_checkpoint() to properly save the trainer and model. It is used to be able to save a snapshot of the model mid-training, and then be able to retrieve the model later.
-* **load_from_checkpoint** Returns the best lowest validation point otherwise most recent state of the model.
+* `load_from_checkpoint()` returns a model checkpointed during training (by default the one with lowest validation loss).
 
 
 ## Support for multivariate series
