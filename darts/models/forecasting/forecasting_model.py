@@ -149,7 +149,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     def _supports_range_index(self) -> bool:
         """Checks if the forecasting model supports a range index.
-        Some models may not support this, if for instance the rely on underlying dates.
+        Some models may not support this, if for instance they rely on underlying dates.
 
         By default, returns True. Needs to be overwritten by models that do not support
         range indexing and raise meaningful exception.
@@ -922,7 +922,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         try:
             series._assert_univariate()
         except (AttributeError, TypeError):
-            raise ValueError("series must be of type TimeSeries")
+            raise ValueError(
+                "series must be of type TimeSeries. "
+                "If Sequence[TimeSeries] is provided, select the series to compute residuals for."
+            )
 
         if past_covariates is not None:
             raise_if_not(

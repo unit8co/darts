@@ -14,7 +14,7 @@ class TestResidualsTestCase(DartsBaseTestClass):
 
     np.random.seed(42)
 
-    def test_forecasting_residuals(self):
+    def test_forecasting_residuals_nocov_output(self):
         model = NaiveSeasonal(K=1)
 
         # test zero residuals
@@ -34,28 +34,29 @@ class TestResidualsTestCase(DartsBaseTestClass):
             np.zeros(len(residuals)), residuals.univariate_values()
         )
 
-        # test with past and/or future covariates
+    def test_forecasting_residuals_inputs(self):
+        # test input types past and/or future covariates
 
-        # dummy feature and target TimeSeries instances
+        # dummy covariates and target TimeSeries instances
 
         target_series, past_covariates, future_covariates = dummy_timeseries(
-            length=100,
+            length=10,
             n_series=1,
             comps_target=1,
             comps_pcov=1,
             comps_fcov=1,
-        )  # outputs lists and not TimeSeries
+        )  # outputs Sequences[TimeSeries] and not TimeSeries
 
-        model_instance = LinearRegressionModel(
+        model = LinearRegressionModel(
             lags=4, lags_past_covariates=4, lags_future_covariates=(4, 1)
         )
-        model_instance.fit(
+        model.fit(
             series=target_series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
-        # it seems that models can be fit with data objects that are not necessarily TimeSeries, but residuals() will
-        # fail because it starts by asserting that the provided object is a univariate TimeSeries.
+        # residuals() will fail if the inputs are not of TimeSeries type (Sequence[TimeSeries] don't work)
+        # because it starts by asserting that the provided object is a univariate TimeSeries.
         # The following asserts the correct TimeSeries types
 
         with self.assertRaises(ValueError):
@@ -73,3 +74,59 @@ class TestResidualsTestCase(DartsBaseTestClass):
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
             )
+
+    def test_forecasting_residuals_cov_output(self):
+        # if covariates are constant and the target is constant/linear,
+        # residuals should be zero (for a LinearRegression model)
+
+        target_series_1 = ct(value=0.5, length=10)
+        target_series_2 = lt(length=10)
+        past_covariates = ct(value=0.2, length=10)
+        future_covariates = ct(value=0.1, length=10)
+
+        model_1 = LinearRegressionModel(
+            lags=1, lags_past_covariates=1, lags_future_covariates=(1, 1)
+        )
+        model_2 = LinearRegressionModel(
+            lags=1, lags_past_covariates=1, lags_future_covariates=(1, 1)
+        )
+        model_1.fit(
+            target_series_1,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+        residuals_1 = model_1.residuals(
+            target_series_1,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
+        model_2.fit(
+            target_series_2,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+        residuals_2 = model_2.residuals(
+            target_series_2,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
+        # residuals zero
+        np.testing.assert_almost_equal(
+            residuals_1.univariate_values(), np.zeros(len(residuals_1))
+        )
+
+        np.testing.assert_almost_equal(
+            residuals_2.univariate_values(), np.zeros(len(residuals_2))
+        )
+
+        # if model is trained with covariates, should raise error when covariates are missing in residuals()
+        with self.assertRaises(ValueError):
+            model_1.residuals(target_series_1)
+
+        with self.assertRaises(ValueError):
+            model_1.residuals(target_series_1, past_covariates=past_covariates)
+
+        with self.assertRaises(ValueError):
+            model_1.residuals(target_series_1, future_covariates=future_covariates)
