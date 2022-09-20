@@ -43,7 +43,7 @@ Furthermore, we define the following types of time series consumed by the models
 ## Reproducibility
 
 If the user wishes to save a particular model and use it elsewhere or at a later point in time, darts leverages pickle to achieve that.
-All forecasting models support saving the model into a pickle object, by calling the `save()` function, which saves that particular ForecastingModel object instance. When the model is to be used again, the method `load()` can be used. Please note that the methods `save_model()` and `load_model()` are deprecated.
+All forecasting models support saving the model on the filesystem, by calling the `save()` function, which saves that particular `ForecastingModel` object instance. When the model is to be used again, the method `load()` can be used. Please note that the methods `save_model()` and `load_model()` are deprecated.
 
 **Example:**
 ```python
