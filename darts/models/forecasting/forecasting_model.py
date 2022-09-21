@@ -274,7 +274,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         args
             The args parameter(s) provided to the historical_forecasts function.
         kwargs
-            The kwargs paramter(s) provided to the historical_forecasts function.
+            The kwargs parameter(s) provided to the historical_forecasts function.
 
         Raises
         ------
@@ -627,7 +627,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             A function that takes two ``TimeSeries`` instances as inputs and returns an error value.
         reduction
             A function used to combine the individual error scores obtained when `last_points_only` is set to False.
-            If explicitely set to `None`, the method will return a list of the individual error scores instead.
+            If explicitly set to `None`, the method will return a list of the individual error scores instead.
             Set to ``np.mean`` by default.
         verbose
             Whether to print progress

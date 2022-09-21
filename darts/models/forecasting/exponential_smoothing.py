@@ -94,7 +94,7 @@ class ExponentialSmoothing(ForecastingModel):
             None if self.infer_seasonal_periods else self.seasonal_periods
         )
 
-        # set the seasonal periods paramter to a default value if it was not provided explicitly
+        # set the seasonal periods parameter to a default value if it was not provided explicitly
         # and if it cannot be inferred due to the lack of a datetime index
         if self.seasonal_periods is None and series.has_range_index:
             seasonal_periods_param = 12

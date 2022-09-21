@@ -358,7 +358,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                 model.predict(
                     n=pred_len, series=series2, future_covariates=exog2[:-pred_len]
                 )
-            # and checking the case with unsufficient historic future covariates
+            # and checking the case with insufficient historic future covariates
             with self.assertRaises(ValueError):
                 model = model_cls(**kwargs)
                 model.fit(series1, future_covariates=exog1)

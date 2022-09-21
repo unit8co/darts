@@ -41,7 +41,7 @@ class SplitTimeSeriesSequence(Sequence):
 
         if vertical_split_type not in [SIMPLE, MODEL_AWARE]:
             raise AttributeError(
-                "`vertical_split_type` can be eiter `simple` or `model-aware`."
+                "`vertical_split_type` can be either `simple` or `model-aware`."
             )
 
         if (
