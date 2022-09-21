@@ -74,3 +74,11 @@ To ensure you don't need to worry about formatting and linting when contributing
 - Integration in your editor:
     - For [Black](https://black.readthedocs.io/en/stable/integrations/editors.html)
     - For other integrations please look at the documentation for your editor
+
+### Developement environment on Mac with Apple Silicon M1 processor (arm64 architecture)
+
+Please follow the procedure decribed in [INSTALL.md](https://github.com/unit8co/darts/blob/master/INSTALL.md#test-environment-appple-m1-processor) 
+to set up a x_64 emulated environment. For the development environment, instead of installing Darts with 
+`pip install darts`, instead go to the darts cloned repo location and install the packages with: `pip install -r requirements/dev-all.txt`. 
+If necessary, follow the same steps to setup libomp for lightgbm. 
+Finally, verify your overall environment setup by successfully running all unitTests with gradlew or pytest.
