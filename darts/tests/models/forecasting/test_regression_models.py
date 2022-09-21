@@ -664,10 +664,13 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         )
 
     def test_min_train_series_length(self):
-        model = self.models[3](lags=2)
+        model = LightGBMModel(lags=4)
         min_train_series_length_expected = -model.lags['target'][0] + model.output_chunk_length + 1
         self.assertEqual(min_train_series_length_expected, model.min_train_series_length)
-        model = self.models[4](lags=4)
+        model = CatBoostModel(lags=2)
+        min_train_series_length_expected = -model.lags['target'][0] + model.output_chunk_length + 1
+        self.assertEqual(min_train_series_length_expected, model.min_train_series_length)
+        model = LightGBMModel(lags=[-4, -3, -2])
         min_train_series_length_expected = -model.lags['target'][0] + model.output_chunk_length + 1
         self.assertEqual(min_train_series_length_expected, model.min_train_series_length)
 
