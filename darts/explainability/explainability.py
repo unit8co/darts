@@ -137,9 +137,9 @@ class ForecastingModelExplainer(ABC):
                 "`background_series` must be provided if `model` was fit on multiple time series."
             )
 
-            self.background_series = self.model.training_series
-            self.background_past_covariates = self.model.past_covariate_series
-            self.background_future_covariates = self.model.future_covariate_series
+            background_series = self.model.training_series
+            background_past_covariates = self.model.past_covariate_series
+            background_future_covariates = self.model.future_covariate_series
 
         else:
             if self.model.encoders.encoding_available:
@@ -152,17 +152,13 @@ class ForecastingModelExplainer(ABC):
                     future_covariate=background_future_covariates,
                 )
 
-            self.background_series = background_series
-            self.background_past_covariates = background_past_covariates
-            self.background_future_covariates = background_future_covariates
-
         # ensure list of TimeSeries format
         def to_list(s):
             return [s] if isinstance(s, TimeSeries) and s is not None else s
 
-        self.background_series = to_list(self.background_series)
-        self.background_past_covariates = to_list(self.background_past_covariates)
-        self.background_future_covariates = to_list(self.background_future_covariates)
+        self.background_series = to_list(background_series)
+        self.background_past_covariates = to_list(background_past_covariates)
+        self.background_future_covariates = to_list(background_future_covariates)
 
         if self.model.uses_past_covariates:
             raise_if(
