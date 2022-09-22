@@ -1,6 +1,6 @@
 """
 Shap-based ForecastingModelExplainer
-------------------------------
+------------------------------------
 This class is meant to wrap a shap explainer (https://github.com/slundberg/shap) specifically for time series.
 
 Warning
@@ -121,7 +121,7 @@ class ShapExplainer(ForecastingModelExplainer):
         if not issubclass(type(model), RegressionModel):
             raise_log(
                 ValueError(
-                    "Invalid model type. For now, only RegressionModel type can be explained."
+                    "Invalid `model` type. Currently, only models of type `RegressionModel` are supported."
                 ),
                 logger,
             )

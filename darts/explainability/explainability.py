@@ -1,9 +1,9 @@
 """
 Forecasting Model Explainer Base Class
-------------------------------
-A forecasting model explainer captures an already fitted forecasting model, and apply an Explainability model
-to this forecasting model. Its purpose is to be able to explain each past input contribution to a given model forecast.
-This 'explanation' depends on the characteristics of the XAI model chosen (shap, lime etc...).
+--------------------------------------
+A forecasting model explainer takes a fitted forecasting model as input and applies an Explainability model 
+to it. Its purpose is to explain each past input contribution to a given model forecast. This 'explanation' 
+depends on the characteristics of the XAI model chosen (shap, lime etc...).
 
 """
 from abc import ABC, abstractmethod
@@ -23,7 +23,7 @@ MIN_BACKGROUND_SAMPLE = 10
 
 class ExplainabilityResult(ABC):
     """
-    Class to store the explainability results of a ForecastingModelExplainer, and to
+    Class to store the explainability results of a `ForecastingModelExplainer`, and to
     easily access the results.
     """
 
@@ -89,25 +89,23 @@ class ForecastingModelExplainer(ABC):
         forecasting model explainers support.
 
         Naming:
-        - A background time series is a time series with which we 'train' the Explainer model.
-        - A foreground time series is the time series we will explain according to the fitted Explainer model.
+        - A background series is a `TimeSeries` with which we 'train' the `Explainer` model.
+        - A foreground series is the `TimeSeries` we will explain according to the fitted `Explainer` model.
 
         Parameters
         ----------
         model
-            A ForecastingModel we want to explain. It has to be fitted first.
+            A `ForecastingModel` we want to explain. It must be fitted first.
         background_series
-            A TimeSeries or a list of time series we want to use to 'train' with any foreground we want to explain.
-            This is optional, for 2 reasons:
-                - In general we want to keep the training_series of the model and this is the default one,
-                but in case of multiple time series training (global or meta learning) the ForecastingModel doesn't
-                save them. In this case we need to feed a background time series.
-                - We might want to consider a reduced well chosen background in order to reduce computation
-                time.
+            A series or list of series to *train* the `ForecastingModelExplainer` along with any foreground series.
+            Consider using a reduced well-chosen backgroundto to reduce computation time.
+                - optional if `model` was fit on a single target series. By default, it is the `series` used
+                at fitting time.
+                - mandatory if `model` was fit on multiple (list of) target series.
         background_past_covariates
-            A past covariates TimeSeries or list of TimeSeries that the model needs once fitted.
+            A past covariates series or list of series that the model needs once fitted.
         background_future_covariates
-            A future covariates TimeSeries or list of TimeSeries that the model needs once fitted.
+            A future covariates series or list of series that the model needs once fitted.
         """
         if not model._fit_called:
             raise_log(
@@ -119,30 +117,29 @@ class ForecastingModelExplainer(ABC):
 
         if model._is_probabilistic():
             logger.warning(
-                "The model is probabilistic, but num_sample=1 will be used for explainability."
+                "The model is probabilistic, but num_samples=1 will be used for explainability."
             )
 
         self.model = model
 
-        # In case we don't want to fit the Explainer with a specific background time series, we use the one
-        # already existing in the fitted model input.
+        # if `background_series` was not passed, use `training_series` saved in fitted forecasting model.
         if background_series is None:
 
             raise_if(
                 (background_past_covariates is not None)
                 or (background_future_covariates is not None),
-                "There is background past or future covariates but no background series. Please provide one.",
+                "Supplied background past or future covariates but no background series. Please provide "
+                "`background_series`.",
             )
 
             raise_if(
                 self.model.training_series is None,
-                "A background time series has to be provided for a model fitted on multiple time series, as "
-                "no training series has been saved by the model.",
+                "`background_series` must be provided if `model` was fit on multiple time series."
             )
 
-            self.background_series = self.model.training_series
-            self.background_past_covariates = self.model.past_covariate_series
-            self.background_future_covariates = self.model.future_covariate_series
+            background_series = self.model.training_series
+            background_past_covariates = self.model.past_covariate_series
+            background_future_covariates = self.model.future_covariate_series
 
         else:
             if self.model.encoders.encoding_available:
@@ -155,17 +152,13 @@ class ForecastingModelExplainer(ABC):
                     future_covariate=background_future_covariates,
                 )
 
-            self.background_series = background_series
-            self.background_past_covariates = background_past_covariates
-            self.background_future_covariates = background_future_covariates
-
         # ensure list of TimeSeries format
         def to_list(s):
             return [s] if isinstance(s, TimeSeries) and s is not None else s
 
-        self.background_series = to_list(self.background_series)
-        self.background_past_covariates = to_list(self.background_past_covariates)
-        self.background_future_covariates = to_list(self.background_future_covariates)
+        self.background_series = to_list(background_series)
+        self.background_past_covariates = to_list(background_past_covariates)
+        self.background_future_covariates = to_list(background_future_covariates)
 
         if self.model.uses_past_covariates:
             raise_if(
@@ -204,14 +197,10 @@ class ForecastingModelExplainer(ABC):
     def _check_background_covariates(self):
 
         raise_if_not(
-            all(
-                [
-                    len(self.background_series) == len(self.background_past_covariates),
-                    len(self.background_series)
-                    == len(self.background_future_covariates),
-                    len(self.background_past_covariates)
-                    == len(self.background_future_covariates),
-                ]
+            (
+                len(self.background_series) 
+                == len(self.background_past_covariates) 
+                == len(self.background_future_covariates)
             ),
             "The number of background time series, past covariates and future covariates must be the same "
             "in the respective lists.",
