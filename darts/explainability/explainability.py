@@ -197,14 +197,10 @@ class ForecastingModelExplainer(ABC):
     def _check_background_covariates(self):
 
         raise_if_not(
-            all(
-                [
-                    len(self.background_series) == len(self.background_past_covariates),
-                    len(self.background_series)
-                    == len(self.background_future_covariates),
-                    len(self.background_past_covariates)
-                    == len(self.background_future_covariates),
-                ]
+            (
+                len(self.background_series) 
+                == len(self.background_past_covariates) 
+                == len(self.background_future_covariates)
             ),
             "The number of background time series, past covariates and future covariates must be the same "
             "in the respective lists.",
