@@ -89,25 +89,23 @@ class ForecastingModelExplainer(ABC):
         forecasting model explainers support.
 
         Naming:
-        - A background time series is a time series with which we 'train' the Explainer model.
-        - A foreground time series is the time series we will explain according to the fitted Explainer model.
+        - A background series is a `TimeSeries` with which we 'train' the `Explainer` model.
+        - A foreground series is the `TimeSeries` we will explain according to the fitted `Explainer` model.
 
         Parameters
         ----------
         model
-            A ForecastingModel we want to explain. It has to be fitted first.
+            A `ForecastingModel` we want to explain. It must be fitted first.
         background_series
-            A TimeSeries or a list of time series we want to use to 'train' with any foreground we want to explain.
-            This is optional, for 2 reasons:
-                - In general we want to keep the training_series of the model and this is the default one,
-                but in case of multiple time series training (global or meta learning) the ForecastingModel doesn't
-                save them. In this case we need to feed a background time series.
-                - We might want to consider a reduced well chosen background in order to reduce computation
-                time.
+            A series or list of series to *train* the `ForecastingModelExplainer` along with any foreground series.
+            Consider using a reduced well-chosen backgroundto to reduce computation time.
+                - optional if `model` was fit on a single target series. By default, it is the `series` used
+                at fitting time.
+                - mandatory if `model` was fit on multiple (list of) target series.
         background_past_covariates
-            A past covariates TimeSeries or list of TimeSeries that the model needs once fitted.
+            A past covariates series or list of series that the model needs once fitted.
         background_future_covariates
-            A future covariates TimeSeries or list of TimeSeries that the model needs once fitted.
+            A future covariates series or list of series that the model needs once fitted.
         """
         if not model._fit_called:
             raise_log(
