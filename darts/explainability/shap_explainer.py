@@ -465,7 +465,7 @@ class _RegressionShapExplainers:
         self.background_future_covariates = background_future_covariates
 
         self.single_output = False
-        if (self.n == 1) and (self.target_dim) == 1:
+        if self.n == 1 and self.target_dim == 1:
             self.single_output = True
 
         self.background_X = self._create_regression_model_shap_X(
