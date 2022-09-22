@@ -257,9 +257,9 @@ class ShapExplainer(ForecastingModelExplainer):
         Parameters
         ----------
         horizons
-            Optionally, a list of integer values representing which elements in the future
-            we want to explain, starting from the first timestamp prediction at 0.
-            For now we consider only models with output_chunk_length and it can't be bigger than output_chunk_length.
+            Optionally, a list of integers representing which points/steps in the future we want to explain,
+            starting from the first prediction step at 0. Currently, only forecasting models are supported which
+            provide an `output_chunk_length` parameter. `horizons` must not be larger than `output_chunk_length`.
         target_names
             Optionally, A list of string naming the target names we want to plot.
         nb_samples
