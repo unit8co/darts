@@ -263,7 +263,7 @@ class ShapExplainer(ForecastingModelExplainer):
         target_names
             Optionally, a list of strings with the target components we want to explain.
         nb_samples
-            Optionally, an integer value sampling the foreground series (based on the backgound),
+            Optionally, an integer for sampling the foreground series (based on the backgound),
             for the sake of performance.
         plot_type
             Optionally, string value for the type of plot proposed by shap library. Currently,
