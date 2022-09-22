@@ -316,20 +316,19 @@ class ShapExplainer(ForecastingModelExplainer):
         Parameters
         ----------
         horizon
-            An integer value  representing which elements in the future we want to explain, starting from the first
-            timestamp prediction at 0.
-            For now we consider only models with output_chunk_length and it can't be bigger than output_chunk_length.
+            An integer for the point/step in the future we want to explain, starting from the first 
+            prediction step at 0. Currently, only forecasting models are supported which provide an 
+            `output_chunk_length` parameter. `horizons` must not be larger than `output_chunk_length`.
         target_name
-            A string naming the target name or component we want to plot.
+            The target component name to plot.
         foreground_series
-            Target timeseries we want to explain. Can be multivariate.
+            The target series to explain. Can be multivariate.
         foreground_past_covariates
-            Optionally, past covariate timeseries if needed by model.
+            Optionally, a past covariate series if required by the forecasting model.
         foreground_future_covariates
-            Optionally, future covariate timeseries if needed by model.
-            Optionally, A list of string naming the target names we want to plot.
-
-
+            Optionally, a future covariate series if required by the forecasting model.
+        **kwargs
+            Optionally, additional keyword arguments passed to `shap.force_plot()`.
         """
 
         if self.model.encoders.encoding_available:
