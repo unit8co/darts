@@ -606,7 +606,7 @@ class _RegressionShapExplainers:
         future_covariates,
         n_samples=None,
         train=False,
-    ):
+    ) -> pd.DataFrame:
         """
         Creates the shap format input for regression models.
         The output is a pandas DataFrame representing all lags of different covariates, and with adequate
