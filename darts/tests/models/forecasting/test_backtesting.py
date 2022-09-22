@@ -8,16 +8,8 @@ import pandas as pd
 from darts import TimeSeries
 from darts.logging import get_logger
 from darts.metrics import mape, r2_score
-from darts.models import (
-    ARIMA,
-    FFT,
-    ExponentialSmoothing,
-    NaiveDrift,
-    NaiveSeasonal,
-    Theta,
-)
+from darts.models import ARIMA, FFT, ExponentialSmoothing, NaiveDrift, Theta
 from darts.tests.base_test_class import DartsBaseTestClass
-from darts.utils.timeseries_generation import constant_timeseries as ct
 from darts.utils.timeseries_generation import gaussian_timeseries as gt
 from darts.utils.timeseries_generation import linear_timeseries as lt
 from darts.utils.timeseries_generation import random_walk_timeseries as rt
@@ -549,23 +541,3 @@ class BacktestingTestCase(DartsBaseTestClass):
             "kernel_size": [2, 3, 4],
         }
         TCNModel.gridsearch(tcn_params, dummy_series, forecast_horizon=3, metric=mape)
-
-    def test_forecasting_residuals(self):
-        model = NaiveSeasonal(K=1)
-
-        # test zero residuals
-        constant_ts = ct(length=20)
-        residuals = model.residuals(constant_ts)
-        np.testing.assert_almost_equal(
-            residuals.univariate_values(), np.zeros(len(residuals))
-        )
-
-        # test constant, positive residuals
-        linear_ts = lt(length=20)
-        residuals = model.residuals(linear_ts)
-        np.testing.assert_almost_equal(
-            np.diff(residuals.univariate_values()), np.zeros(len(residuals) - 1)
-        )
-        np.testing.assert_array_less(
-            np.zeros(len(residuals)), residuals.univariate_values()
-        )
