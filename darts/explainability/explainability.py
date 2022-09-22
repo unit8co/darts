@@ -1,6 +1,6 @@
 """
 Forecasting Model Explainer Base Class
-------------------------------
+--------------------------------------
 A forecasting model explainer takes a fitted forecasting model as input and applies an Explainability model 
 to it. Its purpose is to explain each past input contribution to a given model forecast. This 'explanation' 
 depends on the characteristics of the XAI model chosen (shap, lime etc...).
