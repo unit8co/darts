@@ -133,8 +133,7 @@ class ForecastingModelExplainer(ABC):
 
             raise_if(
                 self.model.training_series is None,
-                "A background time series has to be provided for a model fitted on multiple time series, as "
-                "no training series has been saved by the model.",
+                "`background_series` must be provided if `model` was fit on multiple time series."
             )
 
             self.background_series = self.model.training_series
