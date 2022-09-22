@@ -516,7 +516,7 @@ class _RegressionShapExplainers:
 
         """
 
-        # Creation of an unified dictionary between multiOutputRegressor estimators and
+        # create a unified dictionary between multiOutputRegressor estimators and
         # native multiOutput estimators
         shap_explanations = {}
         if self.is_multiOutputRegressor:
