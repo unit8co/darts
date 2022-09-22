@@ -252,75 +252,76 @@ class ForecastingModelExplainer(ABC):
         target_names: Optional[Sequence[str]] = None,
     ) -> ExplainabilityResult:
         """
-        Main method of the ForecastingExplainer class.
-        Return a ExplainabilityResult instance.
-        (or a list of dictionaries of dictionaries, il multiple TimeSeries list):
+         Main method of the ForecastingExplainer class.
+         Return a ExplainabilityResult instance.
 
-        - the first dimension corresponds to the horizons being explained.
-        - the second dimension corresponds to the components of the target time series being explained.
+         Results can be retrieved via the ExplainabilityResult.get_explanation(horizon, target)
+         The result is a multivariate TimeSeries instance containing the 'explanation'
+         for the (horizon, target) forecast at any timestamp forecastable corresponding to the foreground
+         TimeSeries input.
 
+         The component name convention of this multivariate `TimeSeries` is:
+         ``f'{name}_{type_of_cov}_{lag}_{int}'``, where:
 
-        The values of the inner dictionary is a multivariate TimeSeries instance containing the 'explanation'
-        for a given forecast (horizon, target) at any timestamp forecastable corresponding to the foreground
-        TimeSeries input.
+         - `name` is the component name from the original foreground series (target, past, or future).
+         - `type_of_cov` is the covariates type. It can take 3 different values: ``{"target", "past", "future"}``.
+         - `int` is the lag index.
 
-        The name convention for each component of this multivariate TimeSeries is:
-        `name`_`type_of_cov`_lag_`int` where:
+         Example:
+         Let's say we have a model with 2 target components named ``"T_0"`` and ``"T_1"``, three past covariates we
+         didn't name, and one future covariate we didn't name. Also, ``horizons = [0, 1]``.
+         The model is a regression model, with ``lags = 3``, ``lags_past_covariates=[-1, -3]``,
+         ``lags_future_covariates = [0]``.
 
-        - `name` is the existing name of the component in the original different foreground TimeSeries (target or past
-        or future).
-        - `type_of_cov` is the type of covariates. It can take 3 different values: `target`, `past`, `future`.
-        - `int` is the lag index.
-
-        Example:
-        Let's say we have a model with 2 target components named "T_0" and "T_1", three past covariates we didn't
-        name and one future covariate we didn't name. Also, horizons = [0, 1].
-        The model is a regression model, with lags = 3, lags_past_covariates=[-1, -3], lags_future_covariates = [0]
-
-        We provide a foreground_series (not a list), past covariates, future covariates, of length 5.
-
-        Then the output will be the following:
-
-        output[0]['T_1'] a multivariate TimeSeries containing the 'explanations' of the chosen Explainer, with
-        component names:
-            - T_0_target_lag-1
-            - T_0_target_lag-2
-            - T_0_target_lag-3
-            - T_1_target_lag-1
-            - T_1_target_lag-2
-            - T_1_target_lag-3
-            - 0_past_cov_lag-1 (we didn't name the past covariate so it took the default name 0)
-            - 0_past_cov_lag-3 (we didn't name the past covariate so it took the default name 0)
-            - 1_past_cov_lag-1 (we didn't name the past covariate so it took the default name 1)
-            - 1_past_cov_lag-3 (we didn't name the past covariate so it took the default name 1)
-            - 2_past_cov_lag-1 (we didn't name the past covariate so it took the default name 2)
-            - 2_past_cov_lag-3 (we didn't name the past covariate so it took the default name 2)
-            - 0_fut_cov_lag_0  (we didn't name the future covariate so it took the default name 0)
-
-        of length 3, as we can explain 5-3+1 forecasts (basically timestamp indexes 4, 5, and 6)
+         We provide `foreground_series`, `foreground_past_covariates`, `foreground_future_covariates` each of length 5.
 
 
-        Parameters
-        ----------
-        foreground_series
-            Optionally, target timeseries we want to explain. Can be multivariate.
-            If none is provided, explain will automatically provide the whole background TimeSeries explanation.
-        foreground_past_covariates
-            Optionally, past covariate timeseries if needed by the ForecastingModel.
-        foreground_future_covariates
-            Optionally, future covariate timeseries if needed by the ForecastingModel.
-        horizons
-            Optionally, a list of integer values representing which elements in the future
-            we want to explain, starting from the first timestamp prediction at 0.
-            For now we consider only models with output_chunk_length and it can't be bigger than output_chunk_length.
-        target_names
-            Optionally, A list of string naming the target names we want to explain.
+         >>> explain_results = explainer.explain(
+             foreground_series=foreground_series,
+             foreground_past_covariates=foreground_past_covariates,
+             foreground_future_covariates=foreground_future_covariates, horizons=[0, 1], target_names=["T_0", "T_1"])
+         >>> output = explain_results.get_explanation(horizon=0, target="T_1")
 
-        Returns
-        -------
-        a dictionary of dictionary of Timeseries (or a list of such) of explaining values :
-            - each element of the first dimension dictionary is corresponding to a forecast horizon
-            - each element of the second dimension dictionary is corresponding to a target name
+        Then ``output`` is a multivariate TimeSeries containing the *explanations* of the chosen `Explainer`,
+         with component names:
+             - T_0_target_lag-1
+             - T_0_target_lag-2
+             - T_0_target_lag-3
+             - T_1_target_lag-1
+             - T_1_target_lag-2
+             - T_1_target_lag-3
+             - 0_past_cov_lag-1 (we didn't name the past covariate so it took the default name 0)
+             - 0_past_cov_lag-3 (we didn't name the past covariate so it took the default name 0)
+             - 1_past_cov_lag-1 (we didn't name the past covariate so it took the default name 1)
+             - 1_past_cov_lag-3 (we didn't name the past covariate so it took the default name 1)
+             - 2_past_cov_lag-1 (we didn't name the past covariate so it took the default name 2)
+             - 2_past_cov_lag-3 (we didn't name the past covariate so it took the default name 2)
+             - 0_fut_cov_lag_0  (we didn't name the future covariate so it took the default name 0)
+
+         of length 3, as we can explain 5-3+1 forecasts (basically timestamp indexes 4, 5, and 6)
+
+
+
+         Parameters
+         ----------
+         foreground_series
+             Optionally, target timeseries we want to explain. Can be multivariate.
+             If none is provided, explain will automatically provide the whole background TimeSeries explanation.
+         foreground_past_covariates
+             Optionally, past covariate timeseries if needed by the ForecastingModel.
+         foreground_future_covariates
+             Optionally, future covariate timeseries if needed by the ForecastingModel.
+         horizons
+             Optionally, a list of integer values representing which elements in the future
+             we want to explain, starting from the first timestamp prediction at 0.
+             For now we consider only models with output_chunk_length and it can't be bigger than output_chunk_length.
+         target_names
+             Optionally, A list of string naming the target names we want to explain.
+
+         Returns
+         -------
+         An `ExplainabilityResult` instance.
+
         """
         pass
 
