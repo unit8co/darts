@@ -23,7 +23,7 @@ MIN_BACKGROUND_SAMPLE = 10
 
 class ExplainabilityResult(ABC):
     """
-    Class to store the explainability results of a ForecastingModelExplainer, and to
+    Class to store the explainability results of a `ForecastingModelExplainer`, and to
     easily access the results.
     """
 
