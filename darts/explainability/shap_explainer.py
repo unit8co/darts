@@ -139,8 +139,8 @@ class ShapExplainer(ForecastingModelExplainer):
             else:
                 raise_log(
                     ValueError(
-                        "Invalid shap method. Please choose one value among the following: [partition, tree, "
-                        "kernel, sampling, linear, deep, gradient, additive]."
+                        "Invalid `shap_method`. Please choose one value among the following: ['partition', 'tree', "
+                        "'kernel', 'sampling', 'linear', 'deep', 'gradient', 'additive']."
                     )
                 )
         else:
@@ -252,17 +252,17 @@ class ShapExplainer(ForecastingModelExplainer):
         Parameters
         ----------
         horizons
-            Optionally, a list of integer values representing which elements in the future
-            we want to explain, starting from the first timestamp prediction at 0.
-            For now we consider only models with output_chunk_length and it can't be bigger than output_chunk_length.
+            Optionally, a list of integers representing which points/steps in the future we want to explain,
+            starting from the first prediction step at 0. Currently, only forecasting models are supported which
+            provide an `output_chunk_length` parameter. `horizons` must not be larger than `output_chunk_length`.
         target_names
-            Optionally, A list of string naming the target names we want to plot.
+            Optionally, a list of strings with the target components we want to explain.
         nb_samples
-            Optionally, an integer value sampling the foreground series (based on the backgound),
+            Optionally, an integer for sampling the foreground series (based on the backgound),
             for the sake of performance.
         plot_type
-            Optionally, string value for the type of plot proposed by shap library. Currently,
-            the following are available: 'dot', 'bar', 'violin'.
+            Optionally, specify which of the propres shap library plot type to use. Can be one of 
+            ``'dot', 'bar', 'violin'``.
 
         """
 
@@ -311,20 +311,19 @@ class ShapExplainer(ForecastingModelExplainer):
         Parameters
         ----------
         horizon
-            An integer value  representing which elements in the future we want to explain, starting from the first
-            timestamp prediction at 0.
-            For now we consider only models with output_chunk_length and it can't be bigger than output_chunk_length.
+            An integer for the point/step in the future we want to explain, starting from the first 
+            prediction step at 0. Currently, only forecasting models are supported which provide an 
+            `output_chunk_length` parameter. `horizons` must not be larger than `output_chunk_length`.
         target_name
-            A string naming the target name or component we want to plot.
+            The target component name to plot.
         foreground_series
-            Target timeseries we want to explain. Can be multivariate.
+            The target series to explain. Can be multivariate.
         foreground_past_covariates
-            Optionally, past covariate timeseries if needed by model.
+            Optionally, a past covariate series if required by the forecasting model.
         foreground_future_covariates
-            Optionally, future covariate timeseries if needed by model.
-            Optionally, A list of string naming the target names we want to plot.
-
-
+            Optionally, a future covariate series if required by the forecasting model.
+        **kwargs
+            Optionally, additional keyword arguments passed to `shap.force_plot()`.
         """
 
         if self.model.encoders.encoding_available:
@@ -461,7 +460,7 @@ class _RegressionShapExplainers:
         self.background_future_covariates = background_future_covariates
 
         self.single_output = False
-        if (self.n == 1) and (self.target_dim) == 1:
+        if self.n == 1 and self.target_dim == 1:
             self.single_output = True
 
         self.background_X = self._create_regression_model_shap_X(
@@ -504,15 +503,15 @@ class _RegressionShapExplainers:
         foreground_X
             the Dataframe of lags features specific of darts RegressionModel.
         horizons
-            Optionally, a list of integer values representing which elements in the future
-            we want to explain, starting from the first timestamp prediction at 0.
-            For now we consider only models with output_chunk_length and it can't be bigger than output_chunk_length.
+            Optionally, a list of integers representing which points/steps in the future we want to explain,
+            starting from the first prediction step at 0. Currently, only forecasting models are supported which
+            provide an `output_chunk_length` parameter. `horizons` must not be larger than `output_chunk_length`.
         target_names
-            Optionally, A list of string naming the target names we want to explain.
+            Optionally, a list of strings with the target components we want to explain.
 
         """
 
-        # Creation of an unified dictionary between multiOutputRegressor estimators and
+        # create a unified dictionary between multiOutputRegressor estimators and
         # native multiOutput estimators
         shap_explanations = {}
         if self.is_multiOutputRegressor:
@@ -602,7 +601,7 @@ class _RegressionShapExplainers:
         future_covariates,
         n_samples=None,
         train=False,
-    ):
+    ) -> pd.DataFrame:
         """
         Creates the shap format input for regression models.
         The output is a pandas DataFrame representing all lags of different covariates, and with adequate
