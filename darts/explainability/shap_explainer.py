@@ -144,8 +144,8 @@ class ShapExplainer(ForecastingModelExplainer):
             else:
                 raise_log(
                     ValueError(
-                        "Invalid shap method. Please choose one value among the following: [partition, tree, "
-                        "kernel, sampling, linear, deep, gradient, additive]."
+                        "Invalid `shap_method`. Please choose one value among the following: ['partition', 'tree', "
+                        "'kernel', 'sampling', 'linear', 'deep', 'gradient', 'additive']."
                     )
                 )
         else:
