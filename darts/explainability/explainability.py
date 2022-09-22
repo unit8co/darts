@@ -122,8 +122,7 @@ class ForecastingModelExplainer(ABC):
 
         self.model = model
 
-        # In case we don't want to fit the Explainer with a specific background time series, we use the one
-        # already existing in the fitted model input.
+        # if `background_series` was not passed, use `training_series` saved in fitted forecasting model.
         if background_series is None:
 
             raise_if(
