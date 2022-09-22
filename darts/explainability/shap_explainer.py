@@ -73,41 +73,36 @@ class ShapExplainer(ForecastingModelExplainer):
         """ShapExplainer
 
         Naming:
-        - A background time series is a time series with which we 'train' the Explainer model.
-        - A foreground time series is the time series we will explain according to the fitted Explainer model.
+        - A background series is a `TimeSeries` with which we 'train' the `Explainer` model.
+        - A foreground series is the `TimeSeries` we will explain according to the fitted `Explainer` model.
 
-        The ShapExplainer for now only works with RegressionModel.
-        The number of explained horizons (t, t+1, ...) will be equal to output_chunk_length of the Regression model.
-
+        Currently, ShapExplainer only works with `RegressionModel` forecasting models.
+        The number of explained horizons (t, t+1, ...) will be equal to `output_chunk_length` of `model`.
 
         Parameters
         ----------
         model
-            A ForecastingModel we want to explain. It has to be fitted first.
+            A `ForecastingModel` we want to explain. It must be fitted first.
         background_series
-            Optionally, a TimeSeries or a list of time series we want to use to 'train' with any foreground we want
-            to explain.
-            This is optional, for 2 reasons:
-                - In general we want to keep the training_series of the model and this is the default one,
-                but in case of multiple time series training (global or meta learning) the ForecastingModel doesn't
-                save them. In this case we need to feed a background time series.
-                - We might want to consider a reduced well chosen background in order to reduce computation
-                time.
+            A series or list of series to *train* the `ForecastingModelExplainer` along with any foreground series.
+            Consider using a reduced well-chosen backgroundto to reduce computation time.
+                - optional if `model` was fit on a single target series. By default, it is the `series` used
+                at fitting time.
+                - mandatory if `model` was fit on multiple (list of) target series.
         background_past_covariates
-            Optionally, a past covariates TimeSeries or list of TimeSeries if the model needs it.
+            A past covariates series or list of series that the model needs once fitted.
         background_future_covariates
-            Optionally, a future covariates TimeSeries or list of TimeSeries if the model needs it.
+            A future covariates series or list of series that the model needs once fitted.
         background_nb_samples
-            Optionally, sampling a subset of the original background (generally to compute faster, especially
-            if shap methods is kernel or permutation). It will randomly takes a subset of background_nb_samples
-            training samples once the training dataset is built (using shap.utils.sample function)
+            Optionally, whether to sample a subset of the original background. Randomly picks
+            `background_nb_samples` training samples of the constructed training dataset (using `shap.utils.sample()`).
+            Generally for faster computation, especially when `shap_method` is ``"kernel"`` or ``"permutation"``.
         shap_method
-            Optionally, a shap method we want to apply. By default, the method is chosen automatically with an
-            internal mapping.
-            Supported values : “permutation”, “partition”, “tree”, “kernel”, “sampling”, “linear”, “deep”,
-            “gradient”, "additive"
+            Optionally, the shap method we want to apply. By default, the method is chosen automatically with an
+            internal mapping. Supported values : ``"permutation", "partition", "tree", "kernel", "sampling", "linear",
+            "deep", "gradient", "additive"``.
         **kwargs
-            Optionally, an additional keyword arguments passed to the shap_method chosen, if any.
+            Optionally, additional keyword arguments passed to `shap_method`.
         Examples
         --------
         >>> from darts.explainability.shap_explainer import ShapExplainer
@@ -115,8 +110,8 @@ class ShapExplainer(ForecastingModelExplainer):
         >>> series = AirPassengersDataset().load()
         >>> model = LinearRegressionModel(lags=12)
         >>> model.fit(series[:-36])
-        >>> ShapExplain = ShapExplainer(model)
-        >>> ShapExplain.summary_plot()
+        >>> shap_explain = ShapExplainer(model)
+        >>> shap_explain.summary_plot()
         """
         if not issubclass(type(model), RegressionModel):
             raise_log(
