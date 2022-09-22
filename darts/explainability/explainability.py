@@ -128,7 +128,8 @@ class ForecastingModelExplainer(ABC):
             raise_if(
                 (background_past_covariates is not None)
                 or (background_future_covariates is not None),
-                "There is background past or future covariates but no background series. Please provide one.",
+                "Supplied background past or future covariates but no background series. Please provide "
+                "`background_series`.",
             )
 
             raise_if(
