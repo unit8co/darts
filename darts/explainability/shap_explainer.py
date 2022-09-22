@@ -266,8 +266,8 @@ class ShapExplainer(ForecastingModelExplainer):
             Optionally, an integer for sampling the foreground series (based on the backgound),
             for the sake of performance.
         plot_type
-            Optionally, string value for the type of plot proposed by shap library. Currently,
-            the following are available: 'dot', 'bar', 'violin'.
+            Optionally, specify which of the propres shap library plot type to use. Can be one of 
+            ``'dot', 'bar', 'violin'``.
 
         """
 
