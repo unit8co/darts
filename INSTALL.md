@@ -75,7 +75,7 @@ Below are the necessary instructions to create and configure the environment:
   ```
 - Install darts: `pip install darts`
   - With this method of installation, lightgbm might still have issues finding the libomp library.
-  The following procedure is to garantee that the correct libomp (11.1.0) library is linked.
+  The following procedure is to guarantee that the correct libomp (11.1.0) library is linked.
     - Unlink the existing libomp, from terminal : `brew unlink libomp`
     - Setup a homebrew installer that is compatible with x_64 packages (follow this [blog](https://medium.com/mkdir-awesome/how-to-install-x86-64-homebrew-packages-on-apple-m1-macbook-54ba295230f) 
     post):

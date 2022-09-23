@@ -2609,7 +2609,7 @@ class TimeSeries:
         Notes
         -----
         If there are a large number of static covariates variables (i.e., the static covariates have a very large
-        dimension), there might be a noticable performance penalty for creating ``TimeSeries`` objects, unless
+        dimension), there might be a noticeable performance penalty for creating ``TimeSeries`` objects, unless
         the covariates already have the same ``dtype`` as the series data.
 
         Examples
@@ -2888,7 +2888,7 @@ class TimeSeries:
 
         Return a new TimeSeries instance. If `fn` takes 1 argument it is simply applied on the backing array
         of shape (time, n_components, n_samples).
-        If it takes 2 arguments, it is applied repeteadly on the (ts, value[ts]) tuples, where
+        If it takes 2 arguments, it is applied repeatedly on the (ts, value[ts]) tuples, where
         "ts" denotes a timestamp value, and "value[ts]" denote the array of values at this timestamp, of shape
         (n_components, n_samples).
 

@@ -158,7 +158,7 @@ class RegressionModel(GlobalForecastingModel):
             raise_if(
                 isinstance(lags_future_covariates[0], bool)
                 or isinstance(lags_future_covariates[1], bool),
-                "`lags_future_covariates` tuple must contain intergers, not bool",
+                "`lags_future_covariates` tuple must contain integers, not bool",
             )
 
         # set lags
