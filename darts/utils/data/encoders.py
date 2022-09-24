@@ -9,7 +9,7 @@ inference.
 The encoders extract the index either from the target series or optional additional past/future covariates.
 If additional covariates are supplied to `encode_train()` or `encode_inference()`, the time index of those
 covariates are used for the encodings. This means that the input covariates must meet the same model-specific
-requirements as wihtout encoders.
+requirements as without encoders.
 
 There are two main types of encoder classes: `SingleEncoder` and `SequentialEncoder`.
 

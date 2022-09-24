@@ -34,7 +34,7 @@ class CovariateIndexGeneratorTestCase(DartsBaseTestClass):
     # pd.DatetimeIndex
     # target covariate for inference dataset for n <= output_chunk_length
     cov_time_inf_short = TimeSeries.from_times_and_values(
-        tg._generate_index(
+        tg.generate_index(
             start=target_time.start_time(),
             length=n_target + n_short,
             freq=target_time.freq,
@@ -43,7 +43,7 @@ class CovariateIndexGeneratorTestCase(DartsBaseTestClass):
     )
     # target covariate for inference dataset for n > output_chunk_length
     cov_time_inf_long = TimeSeries.from_times_and_values(
-        tg._generate_index(
+        tg.generate_index(
             start=target_time.start_time(),
             length=n_target + n_long,
             freq=target_time.freq,
@@ -54,7 +54,7 @@ class CovariateIndexGeneratorTestCase(DartsBaseTestClass):
     # integer index
     # target covariate for inference dataset for n <= output_chunk_length
     cov_int_inf_short = TimeSeries.from_times_and_values(
-        tg._generate_index(
+        tg.generate_index(
             start=target_int.start_time(),
             length=n_target + n_short,
             freq=target_int.freq,
@@ -63,7 +63,7 @@ class CovariateIndexGeneratorTestCase(DartsBaseTestClass):
     )
     # target covariate for inference dataset for n > output_chunk_length
     cov_int_inf_long = TimeSeries.from_times_and_values(
-        tg._generate_index(
+        tg.generate_index(
             start=target_int.start_time(),
             length=n_target + n_long,
             freq=target_int.freq,

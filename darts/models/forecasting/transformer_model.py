@@ -374,7 +374,7 @@ class TransformerModel(PastCovariatesTorchModel):
             of FFNs designed to work better with Transformer based models. ["GLU", "Bilinear", "ReGLU", "GEGLU",
             "SwiGLU", "ReLU", "GELU"] or one the pytorch internal activations ["relu", "gelu"]
         norm_type: str | nn.Module
-            The type of LayerNorm variant to use.  Default: ``None``. Avaliable options are
+            The type of LayerNorm variant to use.  Default: ``None``. Available options are
             ["LayerNorm", "RMSNorm", "LayerNormNoBias"], or provide a custom nn.Module.
         custom_encoder
             A custom user-provided encoder module for the transformer (default=None).

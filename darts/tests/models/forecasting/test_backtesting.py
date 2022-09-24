@@ -63,7 +63,7 @@ def compare_best_against_random(model_class, params, series, stride=1):
         params, train, val_series=val, metric=mape
     )
 
-    # intantiate model with random parameters from 'params'
+    # instantiate model with random parameters from 'params'
     random.seed(1)
     random_param_choice = {}
     for key in params.keys():
@@ -483,7 +483,8 @@ class BacktestingTestCase(DartsBaseTestClass):
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_gridsearch_n_jobs(self):
         """
-        Testing that running gridsearch with multiple workers returns the same best_parameters as the single worker run.
+        Testing that running gridsearch with multiple workers returns the same
+        best_parameters as the single worker run.
         """
 
         np.random.seed(1)
