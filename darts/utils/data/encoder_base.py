@@ -254,7 +254,9 @@ class Encoder(ABC):
         if len(duplicate_components) == len(covariate.components):
             covariate = None
         # case 2: covariate has also non-encoded components
-        elif not duplicate_components.empty:
+        elif len(duplicate_components) and len(duplicate_components) < len(
+            covariate.components
+        ):
             covariate = covariate[
                 list(
                     covariate.components[
