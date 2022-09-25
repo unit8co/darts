@@ -83,6 +83,15 @@ class CovariateIndexGenerator(ABC):
         """
         pass
 
+    @property
+    @abstractmethod
+    def base_component_name(self) -> str:
+        """Returns the index generator base component name.
+        - "pc": past covariates
+        - "fc": future covariates
+        """
+        pass
+
 
 class PastCovariateIndexGenerator(CovariateIndexGenerator):
     """Generates index for past covariates on train and inference datasets"""
@@ -123,6 +132,10 @@ class PastCovariateIndexGenerator(CovariateIndexGenerator):
                 length=self.input_chunk_length + max(0, n - self.output_chunk_length),
                 freq=target.freq,
             )
+
+    @property
+    def base_component_name(self) -> str:
+        return "pc"
 
 
 class FutureCovariateIndexGenerator(CovariateIndexGenerator):
@@ -167,6 +180,10 @@ class FutureCovariateIndexGenerator(CovariateIndexGenerator):
                 length=self.input_chunk_length + max(n, self.output_chunk_length),
                 freq=target.freq,
             )
+
+    @property
+    def base_component_name(self) -> str:
+        return "fc"
 
 
 class Encoder(ABC):
@@ -428,6 +445,26 @@ class SingleEncoder(Encoder, ABC):
         """Returns the encoded component names. Only available after `Encoder.encode_train()` or
         `Encoder.encode_inference()` have been called."""
         return self._components
+
+    @property
+    @abstractmethod
+    def base_component_name(self) -> str:
+        """Returns the base encoder base component name. The string follows the given format:
+        `"darts_enc_{covariate_temp}_{encoder}_{attribute}"`, where the elements are:
+
+        * covariate_temp: "pc" or "fc" for past, or future covariates respectively.
+        * encoder: the SingleEncoder type used:
+            * "cyc" (cyclic temporal encoder),
+            * "dta" (datetime attribute encoder),
+            * "pos" (positional integer index encoder),
+            * "cus" (custom callable index encoder)
+        * attribute: the attribute used for the underlying encoder. Some examples:
+            * "month_sin", "month_cos" (for "cyc")
+            * "month" (for "dta")
+            * "absolute", "relative" (for "pos")
+            * "custom" (for "cus")
+        """
+        return f"darts_enc_{self.index_generator.base_component_name}"
 
 
 class SequentialEncoderTransformer:

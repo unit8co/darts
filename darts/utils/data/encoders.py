@@ -202,7 +202,14 @@ class CyclicTemporalEncoder(SingleEncoder):
         """applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`."""
         super()._encode(index, dtype)
         return datetime_attribute_timeseries(
-            index, attribute=self.attribute, cyclic=True, dtype=dtype
+            index,
+            attribute=self.attribute,
+            cyclic=True,
+            dtype=dtype,
+            with_columns=[
+                self.base_component_name + self.attribute + "_sin",
+                self.base_component_name + self.attribute + "_cos",
+            ],
         )
 
     @property
@@ -213,6 +220,10 @@ class CyclicTemporalEncoder(SingleEncoder):
     @property
     def requires_fit(self) -> bool:
         return False
+
+    @property
+    def base_component_name(self) -> str:
+        return super().base_component_name + "_cyc_"
 
 
 class PastCyclicEncoder(CyclicTemporalEncoder):
@@ -296,7 +307,10 @@ class DatetimeAttributeEncoder(SingleEncoder):
         """Applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`."""
         super()._encode(index, dtype)
         return datetime_attribute_timeseries(
-            index, attribute=self.attribute, dtype=dtype
+            index,
+            attribute=self.attribute,
+            dtype=dtype,
+            with_columns=self.base_component_name + self.attribute,
         )
 
     @property
@@ -307,6 +321,10 @@ class DatetimeAttributeEncoder(SingleEncoder):
     @property
     def requires_fit(self) -> bool:
         return False
+
+    @property
+    def base_component_name(self) -> str:
+        return super().base_component_name + "_dta_"
 
 
 class PastDatetimeAttributeEncoder(DatetimeAttributeEncoder):
@@ -427,7 +445,7 @@ class IntegerIndexEncoder(SingleEncoder):
         encoded = TimeSeries.from_times_and_values(
             times=index,
             values=np.arange(current_start_index, current_start_index + len(index)),
-            columns=[self.attribute + "_idx"],
+            columns=[self.base_component_name + self.attribute],
         ).astype(np.dtype(dtype))
 
         # update reference index for 'absolute' case to avoid having to evaluate longer differences (cost-intensive)
@@ -448,6 +466,10 @@ class IntegerIndexEncoder(SingleEncoder):
     def requires_fit(self) -> bool:
         # requires fitting to get the reference index from `IntegerIndexEncoder.index_generator` for inference
         return True
+
+    @property
+    def base_component_name(self) -> str:
+        return super().base_component_name + "_pos_"
 
 
 class PastIntegerIndexEncoder(IntegerIndexEncoder):
@@ -559,7 +581,9 @@ class CallableIndexEncoder(SingleEncoder):
         super()._encode(index, dtype)
 
         return TimeSeries.from_times_and_values(
-            times=index, values=self.attribute(index), columns=["custom"]
+            times=index,
+            values=self.attribute(index),
+            columns=[self.base_component_name + "custom"],
         ).astype(np.dtype(dtype))
 
     @property
@@ -570,6 +594,10 @@ class CallableIndexEncoder(SingleEncoder):
     @property
     def requires_fit(self) -> bool:
         return False
+
+    @property
+    def base_component_name(self) -> str:
+        return super().base_component_name + "_cus_"
 
 
 class PastCallableIndexEncoder(CallableIndexEncoder):

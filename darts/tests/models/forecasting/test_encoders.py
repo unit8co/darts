@@ -216,8 +216,16 @@ class EncoderTestCase(DartsBaseTestClass):
             self.assertTrue(fc.time_index.equals(fc_in.time_index))
 
         # for training dataset: both encoded past and future covariates with cyclic encoder 'month' should be equal
+        # (apart from component names)
         for pc, fc in zip(past_covs_train, future_covs_train):
-            self.assertEqual(pc, fc)
+            self.assertEqual(
+                pc.with_columns_renamed(
+                    list(pc.components), [f"comp{i}" for i in range(len(pc.components))]
+                ),
+                fc.with_columns_renamed(
+                    list(fc.components), [f"comp{i}" for i in range(len(fc.components))]
+                ),
+            )
 
     @unittest.skipUnless(
         TORCH_AVAILABLE,
@@ -322,15 +330,15 @@ class EncoderTestCase(DartsBaseTestClass):
         for enc_cls in self.encoders_cls:
             if issubclass(enc_cls, CyclicTemporalEncoder):
                 attr = "month"
-                comps_expected = pd.Index(["month_sin", "month_cos"])
+                comps_expected = ["cyc_month_sin", "cyc_month_cos"]
                 requires_fit = False
             elif issubclass(enc_cls, DatetimeAttributeEncoder):
                 attr = "month"
-                comps_expected = pd.Index(["month"])
+                comps_expected = ["dta_month"]
                 requires_fit = False
             elif issubclass(enc_cls, IntegerIndexEncoder):
                 attr = "absolute"
-                comps_expected = pd.Index(["absolute_idx"])
+                comps_expected = ["pos_absolute"]
                 requires_fit = True
             elif issubclass(enc_cls, CallableIndexEncoder):
 
@@ -338,7 +346,7 @@ class EncoderTestCase(DartsBaseTestClass):
                     return idx.month
 
                 attr = some_f
-                comps_expected = pd.Index(["custom"])
+                comps_expected = ["cus_custom"]
                 requires_fit = False
             else:
                 attr, comps_expected, requires_fit = None, None, False
@@ -348,6 +356,13 @@ class EncoderTestCase(DartsBaseTestClass):
                 input_chunk_length=input_chunk_length,
                 output_chunk_length=output_chunk_length,
                 attribute=attr,
+            )
+            if isinstance(enc.index_generator, PastCovariateIndexGenerator):
+                base_comp_name = "darts_enc_pc_"
+            else:
+                base_comp_name = "darts_enc_fc_"
+            comps_expected = pd.Index(
+                [base_comp_name + comp_name for comp_name in comps_expected]
             )
 
             self.assertTrue(not enc.fit_called)
@@ -360,7 +375,7 @@ class EncoderTestCase(DartsBaseTestClass):
                 with pytest.raises(ValueError):
                     enc.encode_inference(n=1, target=ts, covariate=covs)
 
-            def test_routine(encoder, merge_covs: bool):
+            def test_routine(encoder, merge_covs: bool, comps_expected: pd.Index):
                 """checks general behavior for `encode_train` and `encode_inference` with and without merging the
                 output with original covariates"""
                 n = 1
@@ -428,8 +443,12 @@ class EncoderTestCase(DartsBaseTestClass):
                 )
                 assert covs_inf3 == covs_inf2
 
-            test_routine(copy.deepcopy(enc), merge_covs=False)
-            test_routine(copy.deepcopy(enc), merge_covs=True)
+            test_routine(
+                copy.deepcopy(enc), merge_covs=False, comps_expected=comps_expected
+            )
+            test_routine(
+                copy.deepcopy(enc), merge_covs=True, comps_expected=comps_expected
+            )
 
     def test_sequential_encoder_general(self):
         ts = tg.linear_timeseries(length=24, freq="MS")
@@ -456,30 +475,30 @@ class EncoderTestCase(DartsBaseTestClass):
         # given `add_encoders` dict, we expect encoders to generate the following components
         comps_expected_past = pd.Index(
             [
-                "month_sin",
-                "month_cos",
-                "day_sin",
-                "day_cos",
-                "month",
-                "year",
-                "absolute_idx",
-                "relative_idx",
-                "custom",
-                "custom_1",
+                "darts_enc_pc_cyc_month_sin",
+                "darts_enc_pc_cyc_month_cos",
+                "darts_enc_pc_cyc_day_sin",
+                "darts_enc_pc_cyc_day_cos",
+                "darts_enc_pc_dta_month",
+                "darts_enc_pc_dta_year",
+                "darts_enc_pc_pos_absolute",
+                "darts_enc_pc_pos_relative",
+                "darts_enc_pc_cus_custom",
+                "darts_enc_pc_cus_custom_1",
             ]
         )
         comps_expected_future = pd.Index(
             [
-                "day_sin",
-                "day_cos",
-                "month_sin",
-                "month_cos",
-                "year",
-                "month",
-                "relative_idx",
-                "absolute_idx",
-                "custom",
-                "custom_1",
+                "darts_enc_fc_cyc_day_sin",
+                "darts_enc_fc_cyc_day_cos",
+                "darts_enc_fc_cyc_month_sin",
+                "darts_enc_fc_cyc_month_cos",
+                "darts_enc_fc_dta_year",
+                "darts_enc_fc_dta_month",
+                "darts_enc_fc_pos_relative",
+                "darts_enc_fc_pos_absolute",
+                "darts_enc_fc_cus_custom",
+                "darts_enc_fc_cus_custom_1",
             ]
         )
         kwargs = {
@@ -593,7 +612,6 @@ class EncoderTestCase(DartsBaseTestClass):
         """Test past and future `CyclicTemporalEncoder``"""
 
         attribute = "month"
-
         month_series = TimeSeries.from_times_and_values(
             times=tg._generate_index(
                 start=pd.to_datetime("2000-01-01"), length=24, freq="MS"
@@ -614,20 +632,32 @@ class EncoderTestCase(DartsBaseTestClass):
         self.assertTrue((first_halve.values() == second_halve.values()).all())
 
         # test past cyclic encoder
+        # pc: past covariates
+        expected_components = [
+            "darts_enc_pc_cyc_month_sin",
+            "darts_enc_pc_cyc_month_cos",
+        ]
         self.helper_test_cyclic_encoder(
             PastCyclicEncoder,
             attribute=attribute,
             inf_ts_short=self.inf_ts_short_past,
             inf_ts_long=self.inf_ts_long_past,
             cyclic=True,
+            expected_components=expected_components,
         )
         # test future cyclic encoder
+        # fc: future covariates
+        expected_components = [
+            "darts_enc_fc_cyc_month_sin",
+            "darts_enc_fc_cyc_month_cos",
+        ]
         self.helper_test_cyclic_encoder(
             FutureCyclicEncoder,
             attribute=attribute,
             inf_ts_short=self.inf_ts_short_future,
             inf_ts_long=self.inf_ts_long_future,
             cyclic=True,
+            expected_components=expected_components,
         )
 
     def test_datetime_attribute_encoder(self):
@@ -656,21 +686,25 @@ class EncoderTestCase(DartsBaseTestClass):
         self.assertTrue((first_halve.values() == second_halve.values()).all())
 
         # test past cyclic encoder
+        expected_components = "darts_enc_pc_dta_month"
         self.helper_test_cyclic_encoder(
             PastDatetimeAttributeEncoder,
             attribute=attribute,
             inf_ts_short=self.inf_ts_short_past,
             inf_ts_long=self.inf_ts_long_past,
             cyclic=False,
+            expected_components=expected_components,
         )
 
         # test future cyclic encoder
+        expected_components = "darts_enc_fc_dta_month"
         self.helper_test_cyclic_encoder(
             FutureDatetimeAttributeEncoder,
             attribute=attribute,
             inf_ts_short=self.inf_ts_short_future,
             inf_ts_long=self.inf_ts_long_future,
             cyclic=False,
+            expected_components=expected_components,
         )
 
     def test_integer_positional_encoder(self):
@@ -820,17 +854,21 @@ class EncoderTestCase(DartsBaseTestClass):
         # cyclic encodings should not be transformed
         for curve in ["sin", "cos"]:
             self.assertAlmostEqual(
-                t1[f"minute_{curve}"].all_values(copy=False).min(), -1.0, delta=10e-9
+                t1[f"darts_enc_fc_cyc_minute_{curve}"].all_values(copy=False).min(),
+                -1.0,
+                delta=10e-9,
             )
             self.assertAlmostEqual(
-                t1[f"minute_{curve}"].values(copy=False).max(), 1.0, delta=10e-9
+                t1[f"darts_enc_fc_cyc_minute_{curve}"].values(copy=False).max(),
+                1.0,
+                delta=10e-9,
             )
         # all others should be transformed to values between 0 and 1
         self.assertAlmostEqual(
-            t1["absolute_idx"].values(copy=False).min(), 0.0, delta=10e-9
+            t1["darts_enc_fc_pos_absolute"].values(copy=False).min(), 0.0, delta=10e-9
         )
         self.assertAlmostEqual(
-            t1["absolute_idx"].values(copy=False).max(), 1.0, delta=10e-9
+            t1["darts_enc_fc_pos_absolute"].values(copy=False).max(), 1.0, delta=10e-9
         )
 
         # ===> validation set test <===
@@ -845,10 +883,10 @@ class EncoderTestCase(DartsBaseTestClass):
         _, t2 = encs.encode_train(ts2, future_covariate=ts2)
         # make sure that when calling encoders the second time, scalers are not fit again (for validation and inference)
         self.assertAlmostEqual(
-            t2["absolute_idx"].values(copy=False).min(), 1.0, delta=10e-9
+            t2["darts_enc_fc_pos_absolute"].values(copy=False).min(), 1.0, delta=10e-9
         )
         self.assertAlmostEqual(
-            t2["absolute_idx"].values(copy=False).max(), 2.0, delta=10e-9
+            t2["darts_enc_fc_pos_absolute"].values(copy=False).max(), 2.0, delta=10e-9
         )
 
         fc_inf = tg.linear_timeseries(
@@ -857,16 +895,24 @@ class EncoderTestCase(DartsBaseTestClass):
         _, t3 = encs.encode_inference(n=12, target=ts1, future_covariate=fc_inf)
 
         # index 0 is also start of train target series and value should be 0
-        self.assertAlmostEqual(t3["absolute_idx"][0].values()[0, 0], 0.0)
+        self.assertAlmostEqual(t3["darts_enc_fc_pos_absolute"][0].values()[0, 0], 0.0)
         # index len(ts1) - 1 is the prediction point and value should be 0
-        self.assertAlmostEqual(t3["absolute_idx"][len(ts1) - 1].values()[0, 0], 1.0)
+        self.assertAlmostEqual(
+            t3["darts_enc_fc_pos_absolute"][len(ts1) - 1].values()[0, 0], 1.0
+        )
         # the future should scale proportional to distance to prediction point
         self.assertAlmostEqual(
-            t3["absolute_idx"][80 - 1].values()[0, 0], 80 / 60, delta=0.01
+            t3["darts_enc_fc_pos_absolute"][80 - 1].values()[0, 0], 80 / 60, delta=0.01
         )
 
     def helper_test_cyclic_encoder(
-        self, encoder_class, attribute, inf_ts_short, inf_ts_long, cyclic
+        self,
+        encoder_class,
+        attribute,
+        inf_ts_short,
+        inf_ts_long,
+        cyclic,
+        expected_components,
     ):
         """Test cases for both `PastCyclicEncoder` and `FutureCyclicEncoder`"""
         encoder = encoder_class(
@@ -877,22 +923,42 @@ class EncoderTestCase(DartsBaseTestClass):
         # covs: covariates; ds: dataset
         # expected generated covs when covs are supplied as input for train and inference ds
         result_with_cov = [
-            tg.datetime_attribute_timeseries(ts, attribute=attribute, cyclic=cyclic)
+            tg.datetime_attribute_timeseries(
+                ts,
+                attribute=attribute,
+                cyclic=cyclic,
+                with_columns=expected_components,
+            )
             for ts in self.covariate_multi
         ]
         # expected generated covs when covs are not supplied as input for train ds
         result_no_cov = [
-            tg.datetime_attribute_timeseries(ts, attribute=attribute, cyclic=cyclic)
+            tg.datetime_attribute_timeseries(
+                ts,
+                attribute=attribute,
+                cyclic=cyclic,
+                with_columns=expected_components,
+            )
             for ts in self.target_multi
         ]
         # expected generated covs when covs are not supplied as input for inference ds and n <= output_chunk_length
         result_no_cov_inf_short = [
-            tg.datetime_attribute_timeseries(ts, attribute=attribute, cyclic=cyclic)
+            tg.datetime_attribute_timeseries(
+                ts,
+                attribute=attribute,
+                cyclic=cyclic,
+                with_columns=expected_components,
+            )
             for ts in inf_ts_short
         ]
         # expected generated covs when covs are not supplied as input for inference ds and n > output_chunk_length
         result_no_cov_inf_long = [
-            tg.datetime_attribute_timeseries(ts, attribute=attribute, cyclic=cyclic)
+            tg.datetime_attribute_timeseries(
+                ts,
+                attribute=attribute,
+                cyclic=cyclic,
+                with_columns=expected_components,
+            )
             for ts in inf_ts_long
         ]
 
