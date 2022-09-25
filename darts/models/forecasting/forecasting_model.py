@@ -149,7 +149,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     def _supports_range_index(self) -> bool:
         """Checks if the forecasting model supports a range index.
-        Some models may not support this, if for instance the rely on underlying dates.
+        Some models may not support this, if for instance they rely on underlying dates.
 
         By default, returns True. Needs to be overwritten by models that do not support
         range indexing and raise meaningful exception.
@@ -274,7 +274,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         args
             The args parameter(s) provided to the historical_forecasts function.
         kwargs
-            The kwargs paramter(s) provided to the historical_forecasts function.
+            The kwargs parameter(s) provided to the historical_forecasts function.
 
         Raises
         ------
@@ -525,7 +525,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     pd.RangeIndex(
                         start=last_points_times[0],
                         stop=last_points_times[-1] + 1,
-                        step=1,
+                        step=series.freq * stride,
                     ),
                     np.array(last_points_values),
                     columns=series.columns,
@@ -627,7 +627,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             A function that takes two ``TimeSeries`` instances as inputs and returns an error value.
         reduction
             A function used to combine the individual error scores obtained when `last_points_only` is set to False.
-            If explicitely set to `None`, the method will return a list of the individual error scores instead.
+            If explicitly set to `None`, the method will return a list of the individual error scores instead.
             Set to ``np.mean`` by default.
         verbose
             Whether to print progress
@@ -878,6 +878,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def residuals(
         self,
         series: TimeSeries,
+        past_covariates: Optional[TimeSeries] = None,
+        future_covariates: Optional[TimeSeries] = None,
         forecast_horizon: int = 1,
         retrain: bool = True,
         verbose: bool = False,
@@ -894,13 +896,17 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Most commonly, the term "residuals" implies a value for `forecast_horizon` of 1; but
         this can be configured.
 
-        This method works only on univariate series and does not currently support covariates. It uses the median
+        This method works only on univariate series. It uses the median
         prediction (when dealing with stochastic forecasts).
 
         Parameters
         ----------
         series
             The univariate TimeSeries instance which the residuals will be computed for.
+        past_covariates
+            One or several past-observed covariate time series.
+        future_covariates
+            One or several future-known covariate time series.
         forecast_horizon
             The forecasting horizon used to predict each fitted value.
         retrain
@@ -913,7 +919,25 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         TimeSeries
             The vector of residuals.
         """
-        series._assert_univariate()
+        try:
+            series._assert_univariate()
+        except (AttributeError, TypeError):
+            raise ValueError(
+                "series must be of type TimeSeries. "
+                "If Sequence[TimeSeries] is provided, select the series to compute residuals for."
+            )
+
+        if past_covariates is not None:
+            raise_if_not(
+                isinstance(past_covariates, TimeSeries),
+                "past_covariates should be of type TimeSeries",
+            )
+
+        if future_covariates is not None:
+            raise_if_not(
+                isinstance(future_covariates, TimeSeries),
+                "future_covariates should be of type TimeSeries",
+            )
 
         # get first index not contained in the first training set
         first_index = series.time_index[self.min_train_series_length]
@@ -921,6 +945,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         # compute fitted values
         p = self.historical_forecasts(
             series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
             start=first_index,
             forecast_horizon=forecast_horizon,
             stride=1,
