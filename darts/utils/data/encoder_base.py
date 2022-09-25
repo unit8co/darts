@@ -243,7 +243,7 @@ class Encoder(ABC):
     def _drop_encoded_components(
         covariate: Optional[TimeSeries], components: pd.Index
     ) -> Optional[TimeSeries]:
-        """Avoid pitfalls: `encode_train()` or `encode_inference()` can be called multiple times or chanined.
+        """Avoid pitfalls: `encode_train()` or `encode_inference()` can be called multiple times or chained.
         Exclude any encoded components from `covariate` to generate and add the new encodings at a later time.
         """
         if covariate is None:
@@ -272,7 +272,7 @@ class Encoder(ABC):
     @property
     @abstractmethod
     def requires_fit(self) -> bool:
-        """Whether the `Encoder` sub class must be fit with `Enocder.encode_train()` before inference
+        """Whether the `Encoder` sub class must be fit with `Encoder.encode_train()` before inference
         with `Encoder.encode_inference()`."""
         pass
 

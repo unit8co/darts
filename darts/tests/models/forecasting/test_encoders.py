@@ -363,7 +363,6 @@ class EncoderTestCase(DartsBaseTestClass):
             def test_routine(encoder, merge_covs: bool):
                 """checks general behavior for `encode_train` and `encode_inference` with and without merging the
                 output with original covariates"""
-                print(encoder)
                 n = 1
                 covs_train = encoder.encode_train(
                     target=ts, covariate=covs, merge_covariate=merge_covs
