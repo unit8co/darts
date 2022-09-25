@@ -60,13 +60,13 @@ saved under ``"{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pt"``. E.g., ``"RNNModel_2020-
 Optionally there is also pickle specific keyword arguments `protocol`, `fix_imports` and `buffer_callback`.
 More info: [pickle.dump()](https://docs.python.org/3/library/pickle.html?highlight=dump#pickle.dump)
 
-With torch models, the model parameters and the training state are saved.
+With torch models, the model parameters and the training state are saved. We use the trainer to save the model checkpoint.
 
 **Example:**
 ```python
 from darts.models import NBEATSModel
 
-model = NBEATSModel(input_chunk_length=24,                 # init
+model = NBEATSModel(input_chunk_length=24,
                     output_chunk_length=12)
 
 model.fit([series1, series2])
@@ -75,7 +75,7 @@ model.save("my_model.pt")
 model_loaded = NBEATSModel.load("my_model.pt")
 ```
 
-Special class methods for torch models:
+Private methods for torch models used under the hood:
 
 * **save_checkpoint:** In addition, we need to use PTL save_checkpoint() to properly save the trainer and model. It is used to be able to save a snapshot of the model mid-training, and then be able to retrieve the model later.
 * **load_from_checkpoint:** returns a model checkpointed during training (by default the one with lowest validation loss).
