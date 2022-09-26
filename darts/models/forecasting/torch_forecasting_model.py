@@ -301,7 +301,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             pass
 
         # TODO: remove below in the next version ======>
-        accelerator, gpus, auto_select_gpus = self._extract_torch_devices(
+        accelerator, devices, auto_select_gpus = self._extract_torch_devices(
             torch_device_str
         )
         # TODO: until here <======
@@ -336,9 +336,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             "callbacks": [cb for cb in [checkpoint_callback] if cb is not None],
         }
         if pl_170_or_above:
-            self.trainer_params["devices"] = gpus
+            self.trainer_params["devices"] = devices
         else:
-            self.trainer_params["gpus"] = gpus
+            self.trainer_params["gpus"] = devices
 
         # update trainer parameters with user defined `pl_trainer_kwargs`
         if pl_trainer_kwargs is not None:
@@ -367,7 +367,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Returns
         -------
         Tuple
-            (accelerator, gpus, auto_select_gpus)
+            (accelerator, devices, auto_select_gpus)
         """
 
         if torch_device_str is None:
@@ -376,7 +376,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         device_warning = (
             "`torch_device_str` is deprecated and will be removed in a coming Darts version. For full support "
             "of all torch devices, use PyTorch-Lightnings trainer flags and pass them inside "
-            "`pl_trainer_kwargs`. Flags of interest are {`accelerator`, `gpus`, `auto_select_gpus`, `devices`}. "
+            "`pl_trainer_kwargs`. Flags of interest are {`accelerator`, `devices`, `auto_select_gpus`}. "
             "For more information, visit "
             "https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags"
         )
@@ -395,16 +395,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
         device_split = torch_device_str.split(":")
 
-        gpus = None
+        devices = None
         auto_select_gpus = False
         accelerator = "gpu" if device_split[0] == "cuda" else device_split[0]
 
         if len(device_split) == 2 and accelerator == "gpu":
-            gpus = device_split[1]
-            gpus = [int(gpus)]
+            devices = device_split[1]
+            devices = [int(devices)]
         elif len(device_split) == 1:
             if accelerator == "gpu":
-                gpus = -1
+                devices = -1
                 auto_select_gpus = True
         else:
             raise_if(
@@ -412,7 +412,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 f"unknown torch_device_str `{torch_device_str}`. " + device_warning,
                 logger,
             )
-        return accelerator, gpus, auto_select_gpus
+        return accelerator, devices, auto_select_gpus
 
     @classmethod
     def _validate_model_params(cls, **kwargs):

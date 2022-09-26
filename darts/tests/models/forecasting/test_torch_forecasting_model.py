@@ -338,11 +338,11 @@ if TORCH_AVAILABLE:
             ]
 
             for torch_device, settings in torch_devices:
-                accelerator, gpus, auto_select_gpus = settings
+                accelerator, devices, auto_select_gpus = settings
                 model = RNNModel(12, "RNN", 10, 10, torch_device_str=torch_device)
 
                 self.assertEqual(model.trainer_params["accelerator"], accelerator)
-                self.assertEqual(model.trainer_params["gpus"], gpus)
+                self.assertEqual(model.trainer_params["devices"], devices)
                 self.assertEqual(
                     model.trainer_params["auto_select_gpus"], auto_select_gpus
                 )
