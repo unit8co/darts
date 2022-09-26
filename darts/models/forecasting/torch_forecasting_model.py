@@ -81,6 +81,10 @@ INIT_MODEL_NAME = "_model.pth.tar"
 
 logger = get_logger(__name__)
 
+# Check whether we are running pytorch-lightning >= 1.7.0 or not:
+tokens = pl.__version__.split(".")
+pl_170_or_above = int(tokens[0]) >= 1 and int(tokens[1]) >= 7
+
 
 def _get_checkpoint_folder(work_dir, model_name):
     return os.path.join(work_dir, model_name, CHECKPOINTS_FOLDER)
@@ -181,7 +185,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                 For more info, see here:
                 https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
-                https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html#select-gpu-devices
+                https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus
         force_reset
             If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
             be discarded). Default: ``False``.
@@ -324,7 +328,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # setup trainer parameters from model creation parameters
         self.trainer_params = {
             "accelerator": accelerator,
-            "gpus": gpus,
             "auto_select_gpus": auto_select_gpus,
             "logger": model_logger,
             "max_epochs": n_epochs,
@@ -332,6 +335,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             "enable_checkpointing": save_checkpoints,
             "callbacks": [cb for cb in [checkpoint_callback] if cb is not None],
         }
+        if pl_170_or_above:
+            self.trainer_params["devices"] = gpus
+        else:
+            self.trainer_params["gpus"] = gpus
 
         # update trainer parameters with user defined `pl_trainer_kwargs`
         if pl_trainer_kwargs is not None:
