@@ -578,13 +578,13 @@ class NHiTSModel(PastCovariatesTorchModel):
 
             .. deprecated:: v0.17.0
                 ``torch_device_str`` has been deprecated in v0.17.0 and will be removed in a future version.
-                Instead, specify this with keys ``"accelerator", "gpus", "auto_select_gpus"`` in your
+                Instead, specify this with keys ``"accelerator", "devices", "auto_select_gpus"`` in your
                 ``pl_trainer_kwargs`` dict. Some examples for setting the devices inside the ``pl_trainer_kwargs``
                 dict:
 
                 - ``{"accelerator": "cpu"}`` for CPU,
-                - ``{"accelerator": "gpu", "gpus": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
-                - ``{"accelerator": "gpu", "gpus": -1, "auto_select_gpus": True}`` to use all available GPUS.
+                - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
+                - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
 
                 For more info, see here:
                 https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
