@@ -173,7 +173,7 @@ class _Block(nn.Module):
 
         self.fc_stack = nn.ModuleList(self.linear_layer_stack_list)
 
-        # Fully connected layer producing forecast/backcast expansion coeffcients (waveform generator parameters).
+        # Fully connected layer producing forecast/backcast expansion coefficients (waveform generator parameters).
         # The coefficients are emitted for each parameter of the likelihood.
         if g_type == _GType.SEASONALITY:
             self.backcast_linear_layer = nn.Linear(

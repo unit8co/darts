@@ -132,7 +132,8 @@ class _RNNModule(PLDualCovariatesModule):
         self, n: int, input_batch: Tuple, roll_size: int
     ) -> torch.Tensor:
         """
-        This model is recurrent, so we have to write a specific way to obtain the time series forecasts of length n.
+        This model is recurrent, so we have to write a specific way to
+        obtain the time series forecasts of length n.
         """
         (
             past_target,

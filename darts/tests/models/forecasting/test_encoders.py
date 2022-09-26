@@ -56,7 +56,7 @@ class EncoderTestCase(DartsBaseTestClass):
     # multi-TS at prediction should be as follows
     inf_ts_short_future = [
         TimeSeries.from_times_and_values(
-            tg._generate_index(
+            tg.generate_index(
                 start=ts.end_time() + (1 - 12) * ts.freq, length=12 + 6, freq=ts.freq
             ),
             np.arange(12 + 6),
@@ -66,7 +66,7 @@ class EncoderTestCase(DartsBaseTestClass):
 
     inf_ts_long_future = [
         TimeSeries.from_times_and_values(
-            tg._generate_index(
+            tg.generate_index(
                 start=ts.end_time() + (1 - 12) * ts.freq, length=12 + 8, freq=ts.freq
             ),
             np.arange(12 + 8),
@@ -76,7 +76,7 @@ class EncoderTestCase(DartsBaseTestClass):
 
     inf_ts_short_past = [
         TimeSeries.from_times_and_values(
-            tg._generate_index(
+            tg.generate_index(
                 start=ts.end_time() + (1 - 12) * ts.freq, length=12, freq=ts.freq
             ),
             np.arange(12),
@@ -86,7 +86,7 @@ class EncoderTestCase(DartsBaseTestClass):
 
     inf_ts_long_past = [
         TimeSeries.from_times_and_values(
-            tg._generate_index(
+            tg.generate_index(
                 start=ts.end_time() + (1 - 12) * ts.freq,
                 length=12 + (8 - 6),
                 freq=ts.freq,
@@ -298,7 +298,7 @@ class EncoderTestCase(DartsBaseTestClass):
         attribute = "month"
 
         month_series = TimeSeries.from_times_and_values(
-            times=tg._generate_index(
+            times=tg.generate_index(
                 start=pd.to_datetime("2000-01-01"), length=24, freq="MS"
             ),
             values=np.arange(24),
@@ -338,7 +338,7 @@ class EncoderTestCase(DartsBaseTestClass):
         attribute = "month"
 
         month_series = TimeSeries.from_times_and_values(
-            times=tg._generate_index(
+            times=tg.generate_index(
                 start=pd.to_datetime("2000-01-01"), length=24, freq="MS"
             ),
             values=np.arange(24),

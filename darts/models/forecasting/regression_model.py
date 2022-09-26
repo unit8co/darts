@@ -158,7 +158,7 @@ class RegressionModel(GlobalForecastingModel):
             raise_if(
                 isinstance(lags_future_covariates[0], bool)
                 or isinstance(lags_future_covariates[1], bool),
-                "`lags_future_covariates` tuple must contain intergers, not bool",
+                "`lags_future_covariates` tuple must contain integers, not bool",
             )
 
         # set lags
@@ -636,22 +636,24 @@ class RegressionModel(GlobalForecastingModel):
                         f"but it ranges only from {cov.start_time()} until {cov.end_time()}.",
                     )
 
-                    if cov.has_datetime_index:
-                        covariate_matrices[cov_type].append(
-                            cov[first_req_ts:last_req_ts].values()
-                        )
-                    else:
-                        # include last_req_ts when slicing series with integer indices
-                        covariate_matrices[cov_type].append(
-                            cov[first_req_ts : last_req_ts + 1].values()
-                        )
+                    # Note: we use slice() rather than the [] operator because
+                    # for integer-indexed series [] does not act on the time index.
+                    last_req_ts = (
+                        # For range indexes, we need to make the end timestamp inclusive here
+                        last_req_ts + ts.freq
+                        if ts.has_range_index
+                        else last_req_ts
+                    )
+                    covariate_matrices[cov_type].append(
+                        cov.slice(first_req_ts, last_req_ts).values(copy=False)
+                    )
 
                 covariate_matrices[cov_type] = np.stack(covariate_matrices[cov_type])
 
         series_matrix = None
         if "target" in self.lags:
             series_matrix = np.stack(
-                [ts[self.lags["target"][0] :].values() for ts in series]
+                [ts[self.lags["target"][0] :].values(copy=False) for ts in series]
             )
 
         # repeat series_matrix to shape (num_samples * num_series, n_lags, n_components)

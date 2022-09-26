@@ -312,7 +312,7 @@ class FFT(ForecastingModel):
         # perform dft
         self.fft_values = np.fft.fft(cropped_series.univariate_values())
 
-        # get indices of `nr_freqs_to_keep` (if a correct value was provied) frequencies with the highest amplitudes
+        # get indices of `nr_freqs_to_keep` (if a correct value was provided) frequencies with the highest amplitudes
         # by partitioning around the element with sorted index -nr_freqs_to_keep instead of sorting the whole array
         first_n = self.nr_freqs_to_keep
         if first_n is None or first_n < 1 or first_n > len(self.fft_values):
