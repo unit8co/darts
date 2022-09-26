@@ -311,7 +311,7 @@ class RNNModel(DualCovariatesTorchModel):
 
                 For more info, see here:
                 https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
-                https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html#select-gpu-devices
+                https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus
         force_reset
             If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
             be discarded). Default: ``False``.

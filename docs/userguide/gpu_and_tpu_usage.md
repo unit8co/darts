@@ -83,6 +83,7 @@ Now the model is ready to start predicting, which won't be shown here since it's
 
 ## Use a GPU
 GPUs can dramatically improve the performance of your model in terms of processing time. By using an Accelerator in the [Pytorch Lightning Trainer](https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#accelerator), we can enjoy the benefits of a GPU. We only need to instruct our model to use our machine's GPU through PyTorch Lightning Trainer parameters, which are expressed as the `pl_trainer_kwargs` dictionary, like this:
+
 ```python
 my_model = RNNModel(
     model="RNN",
@@ -90,7 +91,7 @@ my_model = RNNModel(
     force_reset=True,
     pl_trainer_kwargs={
       "accelerator": "gpu",
-      "gpus": [0]
+      "devices": [0]
     },
 )
 ```
