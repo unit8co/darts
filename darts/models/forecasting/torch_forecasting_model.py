@@ -72,6 +72,7 @@ from darts.utils.data.training_dataset import (
 )
 from darts.utils.likelihood_models import Likelihood
 from darts.utils.torch import random_method
+from darts.utils.utils import seq2series, series2seq
 
 DEFAULT_DARTS_FOLDER = "darts_logs"
 CHECKPOINTS_FOLDER = "checkpoints"
@@ -704,32 +705,44 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self
             Fitted model.
         """
-        super().fit(
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-        )
+        # guarantee that all inputs are either list of `TimeSeries` or `None`
+        series = series2seq(series)
+        past_covariates = series2seq(past_covariates)
+        future_covariates = series2seq(future_covariates)
+        val_series = series2seq(val_series)
+        val_past_covariates = series2seq(val_past_covariates)
+        val_future_covariates = series2seq(val_future_covariates)
 
-        # TODO: also check the validation covariates
+        self.encoders = self.initialize_encoders()
+        if self.encoders.encoding_available:
+            past_covariates, future_covariates = self.generate_fit_encodings(
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+            )
+
         self._verify_past_future_covariates(
             past_covariates=past_covariates, future_covariates=future_covariates
         )
         self._verify_static_covariates(series[0].static_covariates)
 
-        def wrap_fn(
-            ts: Union[TimeSeries, Sequence[TimeSeries]]
-        ) -> Sequence[TimeSeries]:
-            return [ts] if isinstance(ts, TimeSeries) else ts
-
-        series = wrap_fn(series)
-        past_covariates = wrap_fn(past_covariates)
-        future_covariates = wrap_fn(future_covariates)
-        val_series = wrap_fn(val_series)
-        val_past_covariates = wrap_fn(val_past_covariates)
-        val_future_covariates = wrap_fn(val_future_covariates)
-
         # Check that dimensions of train and val set match; on first series only
         if val_series is not None:
+            if self.encoders.encoding_available:
+                (
+                    val_past_covariates,
+                    val_future_covariates,
+                ) = self.generate_fit_encodings(
+                    series=val_series,
+                    past_covariates=val_past_covariates,
+                    future_covariates=val_future_covariates,
+                )
+            self._verify_past_future_covariates(
+                past_covariates=val_past_covariates,
+                future_covariates=val_future_covariates,
+            )
+            self._verify_static_covariates(val_series[0].static_covariates)
+
             match = (
                 series[0].width == val_series[0].width
                 and (past_covariates[0].width if past_covariates is not None else None)
@@ -755,14 +768,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 "and the validation set do not match.",
             )
 
-        self.encoders = self.initialize_encoders()
-
-        if self.encoders.encoding_available:
-            past_covariates, future_covariates = self.encoders.encode_train(
-                target=series,
-                past_covariate=past_covariates,
-                future_covariate=future_covariates,
-            )
         train_dataset = self._build_train_dataset(
             target=series,
             past_covariates=past_covariates,
@@ -771,13 +776,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         if val_series is not None:
-            if self.encoders.encoding_available:
-                val_past_covariates, val_future_covariates = self.encoders.encode_train(
-                    target=val_series,
-                    past_covariate=val_past_covariates,
-                    future_covariate=val_future_covariates,
-                )
-
             val_dataset = self._build_train_dataset(
                 target=val_series,
                 past_covariates=val_past_covariates,
@@ -802,6 +800,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             ),
         )
         logger.info(f"Train dataset contains {len(train_dataset)} samples.")
+
+        super().fit(
+            series=seq2series(series),
+            past_covariates=seq2series(past_covariates),
+            future_covariates=seq2series(future_covariates),
+        )
 
         return self.fit_from_dataset(
             train_dataset, val_dataset, trainer, verbose, epochs, num_loader_workers
@@ -1074,8 +1078,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             One or several time series containing the forecasts of ``series``, or the forecast of the training series
             if ``series`` is not specified and the model has been trained on a single series.
         """
-        super().predict(n, series, past_covariates, future_covariates)
-
         if series is None:
             raise_if(
                 self.training_series is None,
@@ -1083,36 +1085,32 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
             series = self.training_series
 
-        if past_covariates is None and self.past_covariate_series is not None:
-            past_covariates = self.past_covariate_series
-        if future_covariates is None and self.future_covariate_series is not None:
-            future_covariates = self.future_covariate_series
+        called_with_single_series = True if isinstance(series, TimeSeries) else False
 
-        called_with_single_series = False
-        if isinstance(series, TimeSeries):
-            called_with_single_series = True
-            series = [series]
-
-        past_covariates = (
-            [past_covariates]
-            if isinstance(past_covariates, TimeSeries)
-            else past_covariates
-        )
-        future_covariates = (
-            [future_covariates]
-            if isinstance(future_covariates, TimeSeries)
-            else future_covariates
-        )
+        # guarantee that all inputs are either list of TimeSeries or None
+        series = series2seq(series)
+        past_covariates = series2seq(past_covariates)
+        future_covariates = series2seq(future_covariates)
 
         self._verify_static_covariates(series[0].static_covariates)
+
         # encoders are set when calling fit(), but not when calling fit_from_dataset()
+        # additionally, do not generate encodings when covariates were loaded as they already
+        # contain the encodings
         if self.encoders is not None and self.encoders.encoding_available:
-            past_covariates, future_covariates = self.encoders.encode_inference(
+            past_covariates, future_covariates = self.generate_predict_encodings(
                 n=n,
-                target=series,
-                past_covariate=past_covariates,
-                future_covariate=future_covariates,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
             )
+
+        if past_covariates is None and self.past_covariate_series is not None:
+            past_covariates = series2seq(self.past_covariate_series)
+        if future_covariates is None and self.future_covariate_series is not None:
+            future_covariates = series2seq(self.future_covariate_series)
+
+        super().predict(n, series, past_covariates, future_covariates)
 
         dataset = self._build_inference_dataset(
             target=series,
