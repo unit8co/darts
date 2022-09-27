@@ -354,16 +354,43 @@ class ShapExplainerTestCase(DartsBaseTestClass):
                 self.fut_cov_ts[100:107],
             )
 
-        # We need at least 8 points for force_plot
-        self.assertTrue(
+        fplot = shap_explain.force_plot_from_ts(
+            2,
+            "power",
+            self.target_ts[100:108],
+            self.past_cov_ts[100:108],
+            self.fut_cov_ts[100:108],
+        )
+        self.assertTrue(isinstance(fplot, shap.plots._force.BaseVisualizer))
+
+        # You need both horizon and component
+        with self.assertRaises(ValueError):
             shap_explain.force_plot_from_ts(
-                2,
+                None,
                 "power",
                 self.target_ts[100:108],
                 self.past_cov_ts[100:108],
                 self.fut_cov_ts[100:108],
             )
-        )
+
+        with self.assertRaises(ValueError):
+            shap_explain.force_plot_from_ts(
+                0,
+                None,
+                self.target_ts[100:108],
+                self.past_cov_ts[100:108],
+                self.fut_cov_ts[100:108],
+            )
+
+        # fake component
+        with self.assertRaises(ValueError):
+            shap_explain.force_plot_from_ts(
+                2,
+                "fake",
+                self.target_ts[100:108],
+                self.past_cov_ts[100:108],
+                self.fut_cov_ts[100:108],
+            )
 
         # Wrong component name
         with self.assertRaises(ValueError):

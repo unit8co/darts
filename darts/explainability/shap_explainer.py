@@ -301,11 +301,9 @@ class ShapExplainer(ForecastingModelExplainer):
         **kwargs,
     ):
         """
-        Display a shap force_plot per target and per horizon.
-        For each target and horizon, it displays SHAP values of each lag/covariate with an additive
-        force layout.
+        Display a shap force_plot for one target and one horizon.
+        It displays SHAP values of each lag/covariate with an additive force layout.
         Here the inputs are the foreground series (and not the shap explanations objects)
-        If no target names and/or no horizons are provided, we plot all force_plots.
         'original sample ordering' has to be selected to observe the time series chronologically.
 
         Parameters
@@ -325,6 +323,19 @@ class ShapExplainer(ForecastingModelExplainer):
         **kwargs
             Optionally, additional keyword arguments passed to `shap.force_plot()`.
         """
+
+        if horizon is None or target_name is None:
+            raise_log(
+                ValueError(
+                    "Please provide a horizon and a target name to plot the force plot."
+                )
+            )
+
+        horizon, target_name = self._check_horizons_and_targets(
+            [horizon], [target_name]
+        )
+
+        horizon, target_name = horizon[0], target_name[0]
 
         if self.model.encoders.encoding_available:
             (
@@ -352,7 +363,9 @@ class ShapExplainer(ForecastingModelExplainer):
             **kwargs,
         )
 
-    def _check_horizons_and_targets(self, horizons, target_names) -> Tuple[int, str]:
+    def _check_horizons_and_targets(
+        self, horizons, target_names
+    ) -> Tuple[Sequence[int], Sequence[str]]:
         if target_names is not None:
             raise_if(
                 any(
