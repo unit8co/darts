@@ -105,6 +105,36 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             list(indexed_ts.time_index) == list(pd.RangeIndex(2, 7, step=1))
         )
 
+        # check integer indexing features when series index does not start at 0
+        values = np.random.random(100)
+        times = pd.RangeIndex(10, 110)
+        series: TimeSeries = TimeSeries.from_times_and_values(times, values)
+
+        # getting index for idx should return i s.t., series[i].time == idx
+        self.assertEqual(series.get_index_at_point(101), 91)
+
+        # check integer indexing features when series index starts at 0 with a step > 1
+        values = np.random.random(100)
+        times = pd.RangeIndex(0, 200, step=2)
+        series: TimeSeries = TimeSeries.from_times_and_values(times, values)
+
+        # getting index for idx should return i s.t., series[i].time == idx
+        self.assertEqual(series.get_index_at_point(100), 50)
+
+        # slicing should act the same irrespective of the initial time stamp
+        np.testing.assert_equal(series[10:20].values().flatten(), values[10:20])
+
+        # drop_after should act on the timestamp
+        np.testing.assert_equal(series.drop_after(20).values().flatten(), values[:10])
+
+        # test get_index_at_point on series which does not start at 0 and with a step > 1
+        values = np.random.random(10)
+        times = pd.RangeIndex(10, 30, step=2)
+        series: TimeSeries = TimeSeries.from_times_and_values(times, values)
+
+        # getting index for idx should return i s.t., series[i].time == idx
+        self.assertEqual(series.get_index_at_point(16), 3)
+
     def test_univariate_component(self):
         series = TimeSeries.from_values(np.array([10, 20, 30])).with_columns_renamed(
             "0", "component"
@@ -233,6 +263,36 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         test_case.assertEqual(seriesC.start_time(), pd.Timestamp("20130108"))
         test_case.assertEqual(seriesC.end_time(), pd.Timestamp("20130110"))
 
+        # integer-indexed series, starting at 0
+        values = np.random.rand(30)
+        idx = pd.RangeIndex(start=0, stop=30, step=1)
+        ts = TimeSeries.from_times_and_values(idx, values)
+        slice_vals = ts.slice(10, 20).values(copy=False).flatten()
+        np.testing.assert_equal(slice_vals, values[10:20])
+
+        # integer-indexed series, not starting at 0
+        values = np.random.rand(30)
+        idx = pd.RangeIndex(start=5, stop=35, step=1)
+        ts = TimeSeries.from_times_and_values(idx, values)
+        slice_vals = ts.slice(10, 20).values(copy=False).flatten()
+        np.testing.assert_equal(slice_vals, values[5:15])
+
+        # integer-indexed series, starting at 0, with step > 1
+        values = np.random.rand(30)
+        idx = pd.RangeIndex(start=0, stop=60, step=2)
+        ts = TimeSeries.from_times_and_values(idx, values)
+        slice_vals = ts.slice(10, 20).values(copy=False).flatten()
+        np.testing.assert_equal(slice_vals, values[5:10])
+
+        # integer-indexed series, not starting at 0, with step > 1
+        values = np.random.rand(30)
+        idx = pd.RangeIndex(start=5, stop=65, step=2)
+        ts = TimeSeries.from_times_and_values(idx, values)
+        slice_vals = ts.slice(11, 21).values(copy=False).flatten()
+        np.testing.assert_equal(slice_vals, values[3:8])
+
+        # test cases where start and/or stop are not in the series
+
         # n points, base case
         seriesD = test_series.slice_n_points_after(pd.Timestamp("20130102"), n=3)
         test_case.assertEqual(seriesD.start_time(), pd.Timestamp("20130102"))
@@ -255,6 +315,29 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         )
         test_case.assertEqual(seriesG.start_time(), pd.Timestamp("20130101"))
         test_case.assertEqual(seriesG.end_time(), pd.Timestamp("20130107"))
+
+        # integer indexed series, step = 1, timestamps not in series
+        values = np.random.rand(30)
+        idx = pd.RangeIndex(start=0, stop=30, step=1)
+        ts = TimeSeries.from_times_and_values(idx, values)
+        # end timestamp further off, slice should be inclusive of last timestamp:
+        slice_vals = ts.slice(10, 30).values(copy=False).flatten()
+        np.testing.assert_equal(slice_vals, values[10:])
+        slice_vals = ts.slice(10, 32).values(copy=False).flatten()
+        np.testing.assert_equal(slice_vals, values[10:])
+
+        # end timestamp within the series make it exclusive:
+        slice_vals = ts.slice(10, 29).values(copy=False).flatten()
+        np.testing.assert_equal(slice_vals, values[10:29])
+
+        # integer indexed series, step > 1, timestamps not in series
+        idx = pd.RangeIndex(start=0, stop=60, step=2)
+        ts = TimeSeries.from_times_and_values(idx, values)
+        slice_vals = ts.slice(11, 31).values(copy=False).flatten()
+        np.testing.assert_equal(slice_vals, values[5:15])
+
+        slice_ts = ts.slice(40, 60)
+        test_case.assertEqual(ts.end_time(), slice_ts.end_time())
 
     @staticmethod
     def helper_test_split(test_case, test_series: TimeSeries):
@@ -387,7 +470,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             )
         )
 
-        with test_case.assertRaises(OverflowError):
+        with test_case.assertRaises(ValueError):
             test_series.shift(1e6)
 
         seriesM = TimeSeries.from_times_and_values(
@@ -1028,6 +1111,12 @@ class TimeSeriesTestCase(DartsBaseTestClass):
                 )
             ).all()
         )
+
+        # test gaps detection on integer-indexed series
+        values = np.array([1, 2, np.nan, np.nan, 3, 4, np.nan, 6])
+        times = pd.RangeIndex(8)
+        ts = TimeSeries.from_times_and_values(times, values)
+        np.testing.assert_equal(ts.gaps().values, np.array([[2, 3, 2], [6, 6, 1]]))
 
     def test_longest_contiguous_slice(self):
         times = pd.date_range("20130101", "20130111")

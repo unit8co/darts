@@ -614,7 +614,7 @@ if TORCH_AVAILABLE:
         def test_residuals(self):
             """
             Torch models should not fail when computing residuals on a series
-            long enough to accomodate at least one training sample.
+            long enough to accommodate at least one training sample.
             """
             ts = linear_timeseries(start_value=0, end_value=1, length=38)
 

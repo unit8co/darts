@@ -393,7 +393,7 @@ class _VariableSelectionNetwork(nn.Module):
         layer_norm: nn.Module = nn.LayerNorm,
     ):
         """
-        Calcualte weights for ``num_inputs`` variables  which are each of size ``input_size``
+        Calculate weights for ``num_inputs`` variables  which are each of size ``input_size``
         """
         super().__init__()
 

@@ -40,7 +40,7 @@ class SmapeLoss(nn.Module):
         Parameters
         ----------
         block_denom_grad
-            Whether to stop the gradient in the denomitator
+            Whether to stop the gradient in the denominator
         """
         super().__init__()
         self.block_denom_grad = block_denom_grad

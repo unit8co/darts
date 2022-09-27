@@ -117,7 +117,7 @@ class GenericInferenceDataset(InferenceDataset):
 
         "future_past_covariates" are past covariates that happen to be also known in the future - those
         are needed for forecasting with n > output_chunk_length by any model relying on past covariates.
-        For this reason, when n > output_chunk_length, this dataset will also emmit the "future past_covariates".
+        For this reason, when n > output_chunk_length, this dataset will also emit the "future past_covariates".
 
         "historic_future_covariates" are historic future covariates that are given for the input_chunk in the past.
 
@@ -251,7 +251,7 @@ class PastCovariatesInferenceDataset(InferenceDataset):
         "future_past_covariates" are past covariates that happen to be also known in the future - those
         are needed for forecasting with n > output_chunk_length by any model relying on past covariates.
 
-        For this reason, when n > output_chunk_length, this dataset will also emmit the "future past_covariates".
+        For this reason, when n > output_chunk_length, this dataset will also emit the "future past_covariates".
 
         Parameters
         ----------
@@ -265,7 +265,7 @@ class PastCovariatesInferenceDataset(InferenceDataset):
         input_chunk_length
             The length of the target series the model takes as input.
         output_chunk_length
-            The length of the target series the model emmits in output.
+            The length of the target series the model emits in output.
         use_static_covariates
             Whether to use/include static covariate data from input series.
         """
@@ -371,7 +371,7 @@ class DualCovariatesInferenceDataset(InferenceDataset):
         input_chunk_length
             The length of the target series the model takes as input.
         output_chunk_length
-            The length of the target series the model emmits in output.
+            The length of the target series the model emits in output.
         use_static_covariates
             Whether to use/include static covariate data from input series.
         """
@@ -459,7 +459,7 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
         input_chunk_length
             The length of the target series the model takes as input.
         output_chunk_length
-            The length of the target series the model emmits in output.
+            The length of the target series the model emits in output.
         use_static_covariates
             Whether to use/include static covariate data from input series.
         """
@@ -551,7 +551,7 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
         input_chunk_length
             The length of the target series the model takes as input.
         output_chunk_length
-            The length of the target series the model emmits in output.
+            The length of the target series the model emits in output.
         use_static_covariates
             Whether to use/include static covariate data from input series.
         """
