@@ -6,7 +6,7 @@ Below, we show examples of hyperparameter optimization done with [Optuna](https:
 
 
 ## Hyperparameter optimization with Optuna
-Using [Optuna](https://optuna.org/) is a great option for hyperparameter optimization with Darts. Below, we show a minimal example
+[Optuna](https://optuna.org/) is a great option for hyperparameter optimization with Darts. Below, we show a minimal example
 using PyTorch Lightning callback for pruning experiments.
 For the sake of the example, we are training a `TCNModel` on a single series, and optimizing (probably overfitting) 
 hyperparameters for the prediction accuracy on a validation set.
