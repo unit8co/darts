@@ -71,7 +71,7 @@ def objective(trial):
         pl_trainer_kwargs = {"callbacks": callbacks}
         num_workers = 0
 
-    # optionally also add the (scaled) year (cyclically encoded) as a past covariate
+    # optionally also add the (scaled) year value as a past covariate
     if include_year:
         encoders = {"datetime_attribute": {"past": ["year"]},
                     "transformer": Scaler()}
