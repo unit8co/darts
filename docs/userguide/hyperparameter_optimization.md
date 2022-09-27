@@ -223,6 +223,7 @@ train_fn_with_parameters = tune.with_parameters(
     train_model, callbacks=[my_stopper, tune_callback], train=train, val=val,
 )
 
+# optimize hyperparameters by minimizing the MAPE on the validation set 
 analysis = tune.run(
     train_fn_with_parameters,
     resources_per_trial=resources_per_trial,
