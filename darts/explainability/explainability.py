@@ -1,8 +1,8 @@
 """
 Forecasting Model Explainer Base Class
 --------------------------------------
-A forecasting model explainer takes a fitted forecasting model as input and applies an Explainability model 
-to it. Its purpose is to explain each past input contribution to a given model forecast. This 'explanation' 
+A forecasting model explainer takes a fitted forecasting model as input and applies an Explainability model
+to it. Its purpose is to explain each past input contribution to a given model forecast. This 'explanation'
 depends on the characteristics of the XAI model chosen (shap, lime etc...).
 
 """
@@ -134,7 +134,7 @@ class ForecastingModelExplainer(ABC):
 
             raise_if(
                 self.model.training_series is None,
-                "`background_series` must be provided if `model` was fit on multiple time series."
+                "`background_series` must be provided if `model` was fit on multiple time series.",
             )
 
             background_series = self.model.training_series
@@ -196,15 +196,17 @@ class ForecastingModelExplainer(ABC):
 
     def _check_background_covariates(self):
 
-        raise_if_not(
-            (
-                len(self.background_series) 
-                == len(self.background_past_covariates) 
-                == len(self.background_future_covariates)
-            ),
-            "The number of background time series, past covariates and future covariates must be the same "
-            "in the respective lists.",
-        )
+        if self.background_past_covariates is not None:
+            raise_if_not(
+                len(self.background_series) == len(self.background_past_covariates),
+                "The number of background series and past covariates must be the same.",
+            )
+
+        if self.background_future_covariates is not None:
+            raise_if_not(
+                len(self.background_series) == len(self.background_future_covariates),
+                "The number of background series and future covariates must be the same.",
+            )
 
         # ensure we have the same names between TimeSeries (if list of). Important to ensure homogeneity
         # for explained features.

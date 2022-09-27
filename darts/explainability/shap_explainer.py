@@ -261,7 +261,7 @@ class ShapExplainer(ForecastingModelExplainer):
             Optionally, an integer for sampling the foreground series (based on the backgound),
             for the sake of performance.
         plot_type
-            Optionally, specify which of the propres shap library plot type to use. Can be one of 
+            Optionally, specify which of the propres shap library plot type to use. Can be one of
             ``'dot', 'bar', 'violin'``.
 
         """
@@ -311,8 +311,8 @@ class ShapExplainer(ForecastingModelExplainer):
         Parameters
         ----------
         horizon
-            An integer for the point/step in the future we want to explain, starting from the first 
-            prediction step at 0. Currently, only forecasting models are supported which provide an 
+            An integer for the point/step in the future we want to explain, starting from the first
+            prediction step at 0. Currently, only forecasting models are supported which provide an
             `output_chunk_length` parameter. `horizons` must not be larger than `output_chunk_length`.
         target_name
             The target component name to plot.
@@ -589,6 +589,11 @@ class _RegressionShapExplainers:
             explainer = shap.LinearExplainer(model_sklearn, background_X, **kwargs)
         elif shap_method == _ShapMethod.ADDITIVE:
             explainer = shap.AdditiveExplainer(model_sklearn, background_X, **kwargs)
+        else:
+            raise ValueError(
+                "shap_method must be one of the following: "
+                + ", ".join([e.value for e in _ShapMethod])
+            )
 
         logger.info("The shap method used is of type: " + str(type(explainer)))
 
