@@ -4,7 +4,7 @@ Utils for time series generation
 """
 
 import math
-from typing import Optional, Sequence, Union
+from typing import List, Optional, Sequence, Union
 
 import holidays
 import numpy as np
@@ -588,6 +588,7 @@ def datetime_attribute_timeseries(
     until: Optional[Union[int, str, pd.Timestamp]] = None,
     add_length: int = 0,
     dtype=np.float64,
+    with_columns: Optional[Union[List[str], str]] = None,
 ) -> TimeSeries:
     """
     Returns a new TimeSeries with index `time_index` and one or more dimensions containing
@@ -618,6 +619,13 @@ def datetime_attribute_timeseries(
         Set only one of until and add_length.
     dtype
         The desired NumPy dtype (np.float32 or np.float64) for the resulting series
+    with_columns
+        Optionally, specify the output component names.
+        * If `one_hot` and `cyclic` are ``False``, must be a string
+        * If `cyclic` is ``True``, must be a list of two strings. The first string for the sine, the second for the
+            cosine component name.
+        * If `one_hot` is ``True``, must be a list of strings of the same length as the generated one hot encoded
+            features.
 
     Returns
     -------
@@ -686,10 +694,19 @@ def datetime_attribute_timeseries(
                 values_df[i] = 0
         values_df = values_df[range(1, num_values_dict[attribute] + 1)]
 
-        values_df.columns = [
-            attribute + "_" + str(column_name) for column_name in values_df.columns
-        ]
+        if with_columns is None:
+            with_columns = [
+                attribute + "_" + str(column_name) for column_name in values_df.columns
+            ]
 
+        raise_if_not(
+            len(with_columns) == len(values_df.columns),
+            "For the given case with `one_hot=True`,`with_columns` must be a list of strings of length "
+            f"{values_df.columns}.",
+            logger=logger,
+        )
+
+        values_df.columns = with_columns
     else:
         if cyclic:
             if attribute == "day":
@@ -699,17 +716,32 @@ def datetime_attribute_timeseries(
                 period = num_values_dict[attribute]
                 freq = 2 * np.pi / period
 
+            if with_columns is None:
+                with_columns = [attribute + "_sin", attribute + "_cos"]
+
+            raise_if(
+                len(with_columns) != 2,
+                "`with_columns` must be a list of two strings when `cyclic=True`. "
+                "The first string for the sine component name, the second for the cosine component name.",
+                logger=logger,
+            )
             values_df = pd.DataFrame(
                 {
-                    attribute + "_sin": np.sin(freq * values),
-                    attribute + "_cos": np.cos(freq * values),
+                    with_columns[0]: np.sin(freq * values),
+                    with_columns[1]: np.cos(freq * values),
                 }
             )
         else:
-            values_df = pd.DataFrame({attribute: values})
+            if with_columns is None:
+                with_columns = attribute
+            raise_if_not(
+                isinstance(with_columns, str),
+                "`with_columns` must be a string specifying the output component name.",
+                logger=logger,
+            )
+            values_df = pd.DataFrame({with_columns: values})
 
     values_df.index = time_index
-
     return TimeSeries.from_dataframe(values_df).astype(dtype)
 
 

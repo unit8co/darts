@@ -12,7 +12,7 @@ import pandas as pd
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import FittableDataTransformer
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_if
 from darts.utils.timeseries_generation import generate_index
 
 SupportedIndex = Union[pd.DatetimeIndex, pd.RangeIndex]
@@ -83,6 +83,15 @@ class CovariateIndexGenerator(ABC):
         """
         pass
 
+    @property
+    @abstractmethod
+    def base_component_name(self) -> str:
+        """Returns the index generator base component name.
+        - "pc": past covariates
+        - "fc": future covariates
+        """
+        pass
+
 
 class PastCovariateIndexGenerator(CovariateIndexGenerator):
     """Generates index for past covariates on train and inference datasets"""
@@ -123,6 +132,10 @@ class PastCovariateIndexGenerator(CovariateIndexGenerator):
                 length=self.input_chunk_length + max(0, n - self.output_chunk_length),
                 freq=target.freq,
             )
+
+    @property
+    def base_component_name(self) -> str:
+        return "pc"
 
 
 class FutureCovariateIndexGenerator(CovariateIndexGenerator):
@@ -168,6 +181,10 @@ class FutureCovariateIndexGenerator(CovariateIndexGenerator):
                 freq=target.freq,
             )
 
+    @property
+    def base_component_name(self) -> str:
+        return "fc"
+
 
 class Encoder(ABC):
     """Abstract class for all encoders"""
@@ -176,6 +193,7 @@ class Encoder(ABC):
     def __init__(self):
         self.attribute = None
         self.dtype = np.float64
+        self._fit_called = False
 
     @abstractmethod
     def encode_train(
@@ -183,7 +201,7 @@ class Encoder(ABC):
         target: TimeSeries,
         covariate: Optional[TimeSeries] = None,
         merge_covariate: bool = True,
-        **kwargs
+        **kwargs,
     ) -> TimeSeries:
         """Each subclass must implement a method to encode covariate index for training.
 
@@ -205,7 +223,7 @@ class Encoder(ABC):
         target: TimeSeries,
         covariate: Optional[TimeSeries] = None,
         merge_covariate: bool = True,
-        **kwargs
+        **kwargs,
     ) -> TimeSeries:
         """Each subclass must implement a method to encode covariate index for prediction
 
@@ -238,9 +256,48 @@ class Encoder(ABC):
         """
         return covariate.stack(encoded) if covariate is not None else encoded
 
+    @staticmethod
+    def _drop_encoded_components(
+        covariate: Optional[TimeSeries], components: pd.Index
+    ) -> Optional[TimeSeries]:
+        """Avoid pitfalls: `encode_train()` or `encode_inference()` can be called multiple times or chained.
+        Exclude any encoded components from `covariate` to generate and add the new encodings at a later time.
+        """
+        if covariate is None:
+            return covariate
+
+        duplicate_components = components[components.isin(covariate.components)]
+        # case 1: covariate only consists of encoded components
+        if len(duplicate_components) == len(covariate.components):
+            covariate = None
+        # case 2: covariate has also non-encoded components
+        elif len(duplicate_components) and len(duplicate_components) < len(
+            covariate.components
+        ):
+            covariate = covariate[
+                list(
+                    covariate.components[
+                        ~covariate.components.isin(duplicate_components)
+                    ]
+                )
+            ]
+        return covariate
+
+    @property
+    def fit_called(self) -> bool:
+        """Returns whether the `Encoder` object has been fitted."""
+        return self._fit_called
+
+    @property
+    @abstractmethod
+    def requires_fit(self) -> bool:
+        """Whether the `Encoder` sub class must be fit with `Encoder.encode_train()` before inference
+        with `Encoder.encode_inference()`."""
+        pass
+
 
 class SingleEncoder(Encoder, ABC):
-    """Abstract class for single index encoders.
+    """`SingleEncoder`: Abstract class for single index encoders.
     Single encoders can be used to implement new encoding techniques.
     Each single encoder must implement an `_encode()` method that carries the encoding logic.
 
@@ -263,6 +320,7 @@ class SingleEncoder(Encoder, ABC):
 
         super().__init__()
         self.index_generator = index_generator
+        self._components = pd.Index([])
 
     @abstractmethod
     def _encode(self, index: SupportedIndex, dtype: np.dtype) -> TimeSeries:
@@ -283,7 +341,7 @@ class SingleEncoder(Encoder, ABC):
         target: TimeSeries,
         covariate: Optional[TimeSeries] = None,
         merge_covariate: bool = True,
-        **kwargs
+        **kwargs,
     ) -> TimeSeries:
         """Returns encoded index for training.
 
@@ -298,12 +356,29 @@ class SingleEncoder(Encoder, ABC):
         merge_covariate
             Whether or not to merge the encoded TimeSeries with `covariate`.
         """
+        # exclude encoded components from covariate to add the newly encoded components later
+        covariate = self._drop_encoded_components(covariate, self.components)
+
+        # generate index and encodings
         index = self.index_generator.generate_train_series(target, covariate)
         encoded = self._encode(index, target.dtype)
-        if merge_covariate:
-            return self._merge_covariate(encoded, covariate=covariate)
-        else:
-            return encoded
+
+        # optionally, merge encodings with original `covariate` series
+        encoded = (
+            self._merge_covariate(encoded, covariate=covariate)
+            if merge_covariate
+            else encoded
+        )
+
+        # save encoded component names
+        if self.components.empty:
+            components = encoded.components
+            if covariate is not None:
+                components = components[~components.isin(covariate.components)]
+            self._components = components
+
+        self._fit_called = True
+        return encoded
 
     def encode_inference(
         self,
@@ -311,7 +386,7 @@ class SingleEncoder(Encoder, ABC):
         target: TimeSeries,
         covariate: Optional[TimeSeries] = None,
         merge_covariate: bool = True,
-        **kwargs
+        **kwargs,
     ) -> TimeSeries:
         """Returns encoded index for inference/prediction.
 
@@ -328,19 +403,68 @@ class SingleEncoder(Encoder, ABC):
         merge_covariate
             Whether or not to merge the encoded TimeSeries with `covariate`.
         """
+        # some encoders must be fit before `encode_inference()`
+        raise_if(
+            not self.fit_called and self.requires_fit,
+            f"`{self.__class__.__name__}` object must be trained before inference. "
+            f"Call method `encode_train()` before `encode_inference()`.",
+            logger=logger,
+        )
+
+        # exclude encoded components from covariate to add the newly encoded components later
+        covariate = self._drop_encoded_components(covariate, self.components)
+
+        # generate index and encodings
         index = self.index_generator.generate_inference_series(n, target, covariate)
         encoded = self._encode(index, target.dtype)
 
-        if merge_covariate:
-            return self._merge_covariate(encoded, covariate=covariate)
-        else:
-            return encoded
+        # optionally, merge encodings with original `covariate` series
+        encoded = (
+            self._merge_covariate(encoded, covariate=covariate)
+            if merge_covariate
+            else encoded
+        )
+
+        # optionally, save encoded component names also at inference as some encoders do not have to be trained before
+        if self.components.empty:
+            components = encoded.components
+            if covariate is not None:
+                components = components[~components.isin(covariate.components)]
+            self._components = components
+
+        return encoded
 
     @property
     @abstractmethod
     def accept_transformer(self) -> List[bool]:
-        """Whether or not the SingleEncoder sub class accepts to be transformed."""
+        """Whether the `SingleEncoder` sub class accepts to be transformed."""
         pass
+
+    @property
+    def components(self) -> pd.Index:
+        """Returns the encoded component names. Only available after `Encoder.encode_train()` or
+        `Encoder.encode_inference()` have been called."""
+        return self._components
+
+    @property
+    @abstractmethod
+    def base_component_name(self) -> str:
+        """Returns the base encoder base component name. The string follows the given format:
+        `"darts_enc_{covariate_temp}_{encoder}_{attribute}"`, where the elements are:
+
+        * covariate_temp: "pc" or "fc" for past, or future covariates respectively.
+        * encoder: the SingleEncoder type used:
+            * "cyc" (cyclic temporal encoder),
+            * "dta" (datetime attribute encoder),
+            * "pos" (positional integer index encoder),
+            * "cus" (custom callable index encoder)
+        * attribute: the attribute used for the underlying encoder. Some examples:
+            * "month_sin", "month_cos" (for "cyc")
+            * "month" (for "dta")
+            * "absolute", "relative" (for "pos")
+            * "custom" (for "cus")
+        """
+        return f"darts_enc_{self.index_generator.base_component_name}"
 
 
 class SequentialEncoderTransformer:
