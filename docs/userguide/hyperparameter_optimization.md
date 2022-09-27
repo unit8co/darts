@@ -142,16 +142,17 @@ study.optimize(objective, n_trials=100, callbacks=[print_callback])
 Here is an example of how to use Ray Tune to with the `NBEATSModel` model using the [Asynchronous Hyperband scheduler](https://blog.ml.cmu.edu/2018/12/12/massively-parallel-hyperparameter-optimization/). 
 
 ```python
-from darts.models import NBEATSModel
-from darts.datasets import AirPassengersDataset
-from pytorch_lightning.callbacks import EarlyStopping
 import pandas as pd
-from darts.dataprocessing.transformers import Scaler
-from torchmetrics import MetricCollection, MeanAbsolutePercentageError, MeanAbsoluteError
+from pytorch_lightning.callbacks import EarlyStopping
 from ray import tune
 from ray.tune import CLIReporter
 from ray.tune.integration.pytorch_lightning import TuneReportCallback
 from ray.tune.schedulers import ASHAScheduler
+from torchmetrics import MeanAbsoluteError, MeanAbsolutePercentageError, MetricCollection
+
+from darts.dataprocessing.transformers import Scaler
+from darts.datasets import AirPassengersDataset
+from darts.models import NBEATSModel
 
 def train_model(model_args, callbacks, train, val):
     torch_metrics = MetricCollection([MeanAbsolutePercentageError(), MeanAbsoluteError()])
