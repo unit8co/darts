@@ -6,7 +6,7 @@ from enum import Enum
 from functools import wraps
 from inspect import Parameter, getcallargs, signature
 from types import SimpleNamespace
-from typing import Callable, Iterator, List, Tuple, TypeVar
+from typing import Callable, Iterator, List, Optional, Sequence, Tuple, TypeVar, Union
 
 import numpy as np
 import pandas as pd
@@ -335,3 +335,40 @@ def _retrain_wrapper(func: Callable[..., bool]):
         return result
 
     return wrapper
+
+
+def series2seq(
+    ts: Optional[Union[TimeSeries, Sequence[TimeSeries]]]
+) -> Optional[Sequence[TimeSeries]]:
+    """If `ts` is a single TimeSeries, return it as a list of a single TimeSeries.
+
+    Parameters
+    ----------
+    ts
+        None, a single TimeSeries, or a sequence of TimeSeries
+
+    Returns
+    -------
+        `ts` if `ts` is not a TimeSeries, else `[ts]`
+
+    """
+    return [ts] if isinstance(ts, TimeSeries) else ts
+
+
+def seq2series(
+    ts: Optional[Union[TimeSeries, Sequence[TimeSeries]]]
+) -> Optional[TimeSeries]:
+    """If `ts` is a Sequence with only a single series, return the single series as TimeSeries.
+
+    Parameters
+    ----------
+    ts
+        None, a single TimeSeries, or a sequence of TimeSeries
+
+    Returns
+    -------
+        `ts` if `ts` if is not a single element TimeSeries sequence, else `ts[0]`
+
+    """
+
+    return ts[0] if isinstance(ts, Sequence) and len(ts) == 1 else ts
