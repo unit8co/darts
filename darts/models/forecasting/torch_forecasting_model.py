@@ -127,7 +127,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         work_dir: str = os.path.join(os.getcwd(), DEFAULT_DARTS_FOLDER),
         log_tensorboard: bool = False,
         nr_epochs_val_period: int = 1,
-        torch_device_str: Optional[str] = None,
         force_reset: bool = False,
         save_checkpoints: bool = False,
         add_encoders: Optional[dict] = None,
@@ -168,24 +167,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         nr_epochs_val_period
             Number of epochs to wait before evaluating the validation loss (if a validation
             ``TimeSeries`` is passed to the :func:`fit()` method). Default: ``1``.
-        torch_device_str
-            Optionally, a string indicating the torch device to use. By default, ``torch_device_str`` is ``None``
-            which will run on CPU. Set it to ``"cuda"`` to use all available GPUs or ``"cuda:i"`` to only use
-            GPU ``i`` (``i`` must be an integer). For example "cuda:0" will use the first GPU only.
-
-            .. deprecated:: v0.17.0
-                ``torch_device_str`` has been deprecated in v0.17.0 and will be removed in a future version.
-                Instead, specify this with keys ``"accelerator", "devices", "auto_select_gpus"`` in your
-                ``pl_trainer_kwargs`` dict. Some examples for setting the devices inside the ``pl_trainer_kwargs``
-                dict:
-
-                - ``{"accelerator": "cpu"}`` for CPU,
-                - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
-                - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
-
-                For more info, see here:
-                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
-                https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus
         force_reset
             If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
             be discarded). Default: ``False``.
@@ -227,6 +208,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             object. Check the `PL Trainer documentation
             <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
             supported kwargs. Default: ``None``.
+            Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
+            "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
+            dict:
+
+                - ``{"accelerator": "cpu"}`` for CPU,
+                - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
+                - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
+
+                For more info, see here:
+                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
+                https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus
             With parameter ``"callbacks"`` you can add custom or PyTorch-Lightning built-in callbacks to Darts'
             :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.
             The model will stop training early if the validation loss `val_loss` does not improve beyond
@@ -300,12 +292,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         else:
             pass
 
-        # TODO: remove below in the next version ======>
-        accelerator, devices, auto_select_gpus = self._extract_torch_devices(
-            torch_device_str
-        )
-        # TODO: until here <======
-
         # save best epoch on val_loss and last epoch under 'darts_logs/model_name/checkpoints/'
         if save_checkpoints:
             checkpoint_callback = pl.callbacks.ModelCheckpoint(
@@ -327,18 +313,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # setup trainer parameters from model creation parameters
         self.trainer_params = {
-            "accelerator": accelerator,
-            "auto_select_gpus": auto_select_gpus,
             "logger": model_logger,
             "max_epochs": n_epochs,
             "check_val_every_n_epoch": nr_epochs_val_period,
             "enable_checkpointing": save_checkpoints,
             "callbacks": [cb for cb in [checkpoint_callback] if cb is not None],
         }
-        if pl_170_or_above:
-            self.trainer_params["devices"] = devices
-        else:
-            self.trainer_params["gpus"] = devices
 
         # update trainer parameters with user defined `pl_trainer_kwargs`
         if pl_trainer_kwargs is not None:
@@ -357,62 +337,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # pl_module_params must be set in __init__ method of TorchForecastingModel subclass
         self.pl_module_params: Optional[dict] = None
-
-    @staticmethod
-    def _extract_torch_devices(
-        torch_device_str,
-    ) -> Tuple[str, Optional[Union[list, int]], bool]:
-        """This method handles the deprecated `torch_device_str` and should be removed in a future Darts version.
-
-        Returns
-        -------
-        Tuple
-            (accelerator, devices, auto_select_gpus)
-        """
-
-        if torch_device_str is None:
-            return "cpu", None, False
-
-        device_warning = (
-            "`torch_device_str` is deprecated and will be removed in a coming Darts version. For full support "
-            "of all torch devices, use PyTorch-Lightnings trainer flags and pass them inside "
-            "`pl_trainer_kwargs`. Flags of interest are {`accelerator`, `devices`, `auto_select_gpus`}. "
-            "For more information, visit "
-            "https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags"
-        )
-        raise_deprecation_warning(device_warning, logger)
-        # check torch device
-        raise_if_not(
-            any(
-                [
-                    device_str in torch_device_str
-                    for device_str in ["cuda", "cpu", "auto"]
-                ]
-            ),
-            f"unknown torch_device_str `{torch_device_str}`. String must contain one of `('cuda', 'cpu', 'auto') "
-            + device_warning,
-            logger,
-        )
-        device_split = torch_device_str.split(":")
-
-        devices = None
-        auto_select_gpus = False
-        accelerator = "gpu" if device_split[0] == "cuda" else device_split[0]
-
-        if len(device_split) == 2 and accelerator == "gpu":
-            devices = device_split[1]
-            devices = [int(devices)]
-        elif len(device_split) == 1:
-            if accelerator == "gpu":
-                devices = -1
-                auto_select_gpus = True
-        else:
-            raise_if(
-                True,
-                f"unknown torch_device_str `{torch_device_str}`. " + device_warning,
-                logger,
-            )
-        return accelerator, devices, auto_select_gpus
 
     @classmethod
     def _validate_model_params(cls, **kwargs):
