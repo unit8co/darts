@@ -131,6 +131,7 @@ def print_callback(study, trial):
     print(f"Best value: {study.best_value}, Best params: {study.best_trial.params}")
 
 
+# optimize hyperparameters by minimizing the sMAPE on the validation set 
 study = optuna.create_study(direction="minimize")
 study.optimize(objective, n_trials=100, callbacks=[print_callback])
 ```
