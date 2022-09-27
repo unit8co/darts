@@ -20,10 +20,10 @@ from optuna.integration import PyTorchLightningPruningCallback
 from pytorch_lightning.callbacks import EarlyStopping
 from sklearn.preprocessing import MaxAbsScaler
 
-from darts.datasets import AirPassengersDataset
-from darts.models import TCNModel
-from darts.dataprocessing.transformers import Scaler
+from darts.dataprocessing.transformers import Scale
+from darts.datasets import AirPassengersDatasetr
 from darts.metrics import smape
+from darts.models import TCNModel
 from darts.utils.likelihood_models import GaussianLikelihood
 
 # load data
