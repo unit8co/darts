@@ -1,6 +1,6 @@
 # Hyperparameter Optimization in Darts
 There is nothing special in Darts when it comes to hyperparameter optimization.
-The main thing to be aware of is probably the existence of PyTorch Lightning callbacks for early stopping and pruning of experiments.
+The main thing to be aware of is probably the existence of PyTorch Lightning callbacks for early stopping and pruning of experiments with Darts' deep learning based TorchForecastingModels.
 Below, we show examples of hyperparameter optimization done with [Optuna](https://optuna.org/) and
 [Ray Tune](https://docs.ray.io/en/latest/tune/examples/tune-pytorch-lightning.html).
 
