@@ -81,10 +81,6 @@ INIT_MODEL_NAME = "_model.pth.tar"
 
 logger = get_logger(__name__)
 
-# Check whether we are running pytorch-lightning >= 1.7.0 or not:
-tokens = pl.__version__.split(".")
-pl_170_or_above = int(tokens[0]) >= 1 and int(tokens[1]) >= 7
-
 
 def _get_checkpoint_folder(work_dir, model_name):
     return os.path.join(work_dir, model_name, CHECKPOINTS_FOLDER)
