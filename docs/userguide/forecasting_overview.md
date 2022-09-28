@@ -40,7 +40,7 @@ Furthermore, we define the following types of time series consumed by the models
 * **Target series:** the series that we are interested in forecasting.
 * **Covariate series:** some other series that we are not interested in forecasting, but that can provide valuable inputs to the forecasting model.
 
-## Reproducibility
+## Saving and Loading Models
 
 If you wish to save a particular model and use it elsewhere or at a later point in time, darts can achieve that. It leverages pickle and in the case of Torch models relies on saving PyTorch Lightning trainer checkpoints.
 All forecasting models support saving the model on the filesystem, by calling the `save()` function, which saves that particular `ForecastingModel` object instance. When the model is to be used again, the method `load()` can be used. Please note that the methods `save_model()` and `load_model()` are deprecated.
