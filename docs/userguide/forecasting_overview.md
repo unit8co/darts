@@ -56,7 +56,7 @@ model_loaded = RegressionModel.load("my_model.pkl")
 ```
 
 The parameter `path` specifies a path or file handle under which to save the model at its current state. If no `path` is specified, the model is automatically
-saved under ``"{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pt"``. E.g., ``"RNNModel_2020-01-01_12:00:00.pt"``.
+saved under ``"{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pkl"``. E.g., ``"RegressionModel_2020-01-01_12:00:00.pkl"``.
 Optionally there is also pickle specific keyword arguments `protocol`, `fix_imports` and `buffer_callback`.
 More info: [pickle.dump()](https://docs.python.org/3/library/pickle.html?highlight=dump#pickle.dump)
 
