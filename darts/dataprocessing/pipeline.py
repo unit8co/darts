@@ -78,7 +78,7 @@ class Pipeline:
 
         if transformers is None or len(transformers) == 0:
             logger.warning("Empty pipeline created")
-            self._transformers: Sequence[BaseDataTransformer[TimeSeries]] = []
+            self._transformers: Sequence[BaseDataTransformer] = []
         elif copy:
             self._transformers = deepcopy(transformers)
         else:
@@ -196,7 +196,7 @@ class Pipeline:
             )
 
             for transformer in reversed(self._transformers):
-                data = transformer.inverse_transform(data)
+                data = transformer.inverse_transform(data)  # type: ignore
             return data
         else:
             for transformer in reversed(self._transformers):
@@ -237,6 +237,7 @@ class Pipeline:
             logger,
         )
 
+        transformers: Sequence[BaseDataTransformer]
         if isinstance(key, int):
             transformers = [self._transformers[key]]
         else:

@@ -5,3 +5,4 @@ pre-commit
 pytest-cov
 pyupgrade==2.31.0
 testfixtures
+mypy==0.971
