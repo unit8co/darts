@@ -69,8 +69,6 @@ from darts.models import NBEATSModel
 model = NBEATSModel(input_chunk_length=24,
                     output_chunk_length=12)
 
-model.fit([series1, series2])
-
 model.save("my_model.pt")
 model_loaded = NBEATSModel.load("my_model.pt")
 ```
