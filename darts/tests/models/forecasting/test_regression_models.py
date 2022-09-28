@@ -1015,6 +1015,40 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         assert lgb_fit_patch.call_args[1]["eval_set"] is not None
         assert lgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
 
+    def test_integer_indexed_series(self):
+        values_target = np.random.rand(30)
+        values_past_cov = np.random.rand(30)
+        values_future_cov = np.random.rand(30)
+
+        idx1 = pd.RangeIndex(start=0, stop=30, step=1)
+        idx2 = pd.RangeIndex(start=10, stop=70, step=2)
+
+        preds = []
+
+        for idx in [idx1, idx2]:
+            target = TimeSeries.from_times_and_values(idx, values_target)
+            past_cov = TimeSeries.from_times_and_values(idx, values_past_cov)
+            future_cov = TimeSeries.from_times_and_values(idx, values_future_cov)
+
+            train, _ = target[:20], target[20:]
+
+            model = LinearRegressionModel(
+                lags=[-2, -1], lags_past_covariates=[-2, -1], lags_future_covariates=[0]
+            )
+            model.fit(
+                series=train, past_covariates=past_cov, future_covariates=future_cov
+            )
+
+            preds.append(model.predict(n=10))
+
+        # the predicted values should not depend on the time axis
+        np.testing.assert_equal(preds[0].values(), preds[1].values())
+
+        # the time axis returned by the second model should be as expected
+        self.assertTrue(
+            all(preds[1].time_index == pd.RangeIndex(start=50, stop=70, step=2))
+        )
+
     def test_encoders(self):
         max_past_lag = -4
         max_future_lag = 4

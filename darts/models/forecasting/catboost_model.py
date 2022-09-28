@@ -112,6 +112,10 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             else:
                 self.kwargs["loss_function"] = likelihood_map[likelihood]
 
+        # suppress writing catboost info files when user does not specifically ask to
+        if "allow_writing_files" not in kwargs:
+            kwargs["allow_writing_files"] = False
+
         super().__init__(
             lags=lags,
             lags_past_covariates=lags_past_covariates,
@@ -161,7 +165,9 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
         verbose
-            An integer or a boolean that can be set to 1 to display catboost's default verbose output.
+            An integer or a boolean that can be set to 1 to display catboost's default verbose output
+        **kwargs
+            Additional kwargs passed to `catboost.CatboostRegressor.fit()`
         """
 
         if val_series is not None:

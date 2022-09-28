@@ -75,7 +75,7 @@ of the past covariates, and using auto-regression on the target series. If you w
 ## Introduction - What are covariates (in Darts)?
 Past, future and static covariates provide additional information/context that can be useful to improve the prediction of the `target` series. The `target` series is the variable we wish to predict the future for. We do not predict the covariates themselves, only use them for prediction of the `target`.
 
-Past and future covariates hold information about the past (upto and including present time) or future. This is always relative to the prediction point (in time) after which we want to forecast the future.
+Past and future covariates hold information about the past (up to and including present time) or future. This is always relative to the prediction point (in time) after which we want to forecast the future.
 In Darts, we refer to these two types as `past_covariates` and `future_covariates`.
 
 Static covariates hold time independent (constant / static) information about the `target` series. We refer to them as `static_covariates`. They must be embedded in the `target` series. Working with static covariates follows a slightly different approach than with past or future covariates. Check out our [notebook on static covariates](https://unit8co.github.io/darts/examples/15-static-covariates.html) to learn more.
@@ -89,7 +89,7 @@ Let's have a look at some examples of past, future, and static covariates:
 - `future_covariates`: typically forecasts (future known data) or temporal attributes
     -   daily average **forecasted** temperatures (known in the future)
     -   day of week, month, year, ...
-- `static_covariates`: time independent/constant/static `target` characterstics
+- `static_covariates`: time independent/constant/static `target` characteristics
     -   categorical: 
         - location of `target` (country, city, .. name)
         - `target` identifier: (product ID, store ID, ...)
