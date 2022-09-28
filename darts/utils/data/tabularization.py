@@ -16,6 +16,7 @@ def create_lagged_data(
     lags_past_covariates_list: Optional[Sequence[int]] = None,
     lags_future_covariates_list: Optional[Sequence[int]] = None,
     max_samples_per_ts: Optional[int] = None,
+    is_training: Optional[bool] = True,  # other option: 'inference
 ):
     """
     Helper function that creates training/validation matrices (X and y as required in sklearn), given series and
@@ -62,23 +63,52 @@ def create_lagged_data(
 
         # y: output chunk length lags of target
         for future_target_lag in range(output_chunk_length):
-            df_y.append(df_target.shift(-future_target_lag))
+            df_y.append(
+                df_target.shift(-future_target_lag).rename(
+                    columns=lambda x: f"{x}_horizon_lag{future_target_lag}"
+                )
+            )
 
         if lags_list:
             for lag in lags_list:
-                df_X.append(df_target.shift(-lag))
+                df_X.append(
+                    df_target.shift(-lag).rename(
+                        columns=lambda x: f"{x}_target_lag{lag}"
+                    )
+                )
 
         # X: covariate lags
-        for df_cov, lags in covariates:
+        for idx, (df_cov, lags) in enumerate(covariates):
+
+            if idx == 0:
+                covariate_name = "past"
+            else:
+                covariate_name = "future"
             if lags:
+                # We extend the covariates dataframes
+                # to have the same timestamps as the target at the end
+                #  so that when we create the lags with shifts
+                # we don't have nan on the last rows. Only useful for inference.
+                df_cov = df_cov.reindex(df_target.index)
+
                 for lag in lags:
-                    df_X.append(df_cov.shift(-lag))
+                    df_X.append(
+                        df_cov.shift(-lag).rename(
+                            columns=lambda x: f"{x}_{covariate_name}_cov_lag{lag}"
+                        )
+                    )
 
         # combine lags
         df_X = pd.concat(df_X, axis=1)
         df_y = pd.concat(df_y, axis=1)
         df_X_y = pd.concat([df_X, df_y], axis=1)
-        df_X_y = df_X_y.dropna()
+
+        if is_training:
+            df_X_y = df_X_y.dropna()
+        # We don't need to drop where y are none for inference, as we just care for X
+        else:
+            df_X_y = df_X_y.dropna(subset=df_X.columns)
+
         Ts.append(df_X_y.index)
         X_y = df_X_y.values
 

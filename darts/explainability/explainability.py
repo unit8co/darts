@@ -15,6 +15,7 @@ from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.utils.statistics import stationarity_tests
+from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
 
@@ -143,22 +144,27 @@ class ForecastingModelExplainer(ABC):
 
         else:
             if self.model.encoders.encoding_available:
+                #     (
+                #         background_past_covariates,
+                #         background_future_covariates,
+                #     ) = self.model.encoders.encode_train(
+                #         target=background_series,
+                #         past_covariate=background_past_covariates,
+                #         future_covariate=background_future_covariates,
+                #     )
                 (
                     background_past_covariates,
                     background_future_covariates,
-                ) = self.model.encoders.encode_train(
-                    target=background_series,
-                    past_covariate=background_past_covariates,
-                    future_covariate=background_future_covariates,
+                ) = self.model.generate_predict_encodings(
+                    n=len(background_series) - self.model.min_train_series_length,
+                    series=background_series,
+                    past_covariates=background_past_covariates,
+                    future_covariates=background_future_covariates,
                 )
 
-        # ensure list of TimeSeries format
-        def to_list(s):
-            return [s] if isinstance(s, TimeSeries) and s is not None else s
-
-        self.background_series = to_list(background_series)
-        self.background_past_covariates = to_list(background_past_covariates)
-        self.background_future_covariates = to_list(background_future_covariates)
+        self.background_series = series2seq(background_series)
+        self.background_past_covariates = series2seq(background_past_covariates)
+        self.background_future_covariates = series2seq(background_future_covariates)
 
         if self.model.uses_past_covariates:
             raise_if(

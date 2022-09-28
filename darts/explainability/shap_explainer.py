@@ -34,6 +34,7 @@ from darts.explainability.explainability import (
 from darts.logging import get_logger, raise_if, raise_log
 from darts.models.forecasting.regression_model import RegressionModel
 from darts.utils.data.tabularization import create_lagged_data
+from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
 
@@ -185,19 +186,16 @@ class ShapExplainer(ForecastingModelExplainer):
                 (
                     foreground_past_covariates,
                     foreground_future_covariates,
-                ) = self.model.encoders.encode_train(
-                    target=foreground_series,
-                    past_covariate=foreground_past_covariates,
-                    future_covariate=foreground_future_covariates,
+                ) = self.model.generate_predict_encodings(
+                    n=len(foreground_series) - self.model.min_train_series_length,
+                    series=foreground_series,
+                    past_covariates=foreground_past_covariates,
+                    future_covariates=foreground_future_covariates,
                 )
 
-        # ensure list of TimeSeries format
-        def to_list(s):
-            return [s] if isinstance(s, TimeSeries) and s is not None else s
-
-        foreground_series = to_list(foreground_series)
-        foreground_past_covariates = to_list(foreground_past_covariates)
-        foreground_future_covariates = to_list(foreground_future_covariates)
+        foreground_series = series2seq(foreground_series)
+        foreground_past_covariates = series2seq(foreground_past_covariates)
+        foreground_future_covariates = series2seq(foreground_future_covariates)
 
         horizons, target_names = self._check_horizons_and_targets(
             horizons, target_names
@@ -341,10 +339,11 @@ class ShapExplainer(ForecastingModelExplainer):
             (
                 foreground_past_covariates,
                 foreground_future_covariates,
-            ) = self.model.encoders.encode_train(
-                target=foreground_series,
-                past_covariate=foreground_past_covariates,
-                future_covariate=foreground_future_covariates,
+            ) = self.model.generate_predict_encodings(
+                n=len(foreground_series) - self.model.min_train_series_length,
+                series=foreground_series,
+                past_covariates=foreground_past_covariates,
+                future_covariates=foreground_future_covariates,
             )
 
         foreground_X = self.explainers._create_regression_model_shap_X(
@@ -640,6 +639,7 @@ class _RegressionShapExplainers:
             lags_list,
             lags_past_covariates_list,
             lags_future_covariates_list,
+            is_training=False,
         )
 
         if train:

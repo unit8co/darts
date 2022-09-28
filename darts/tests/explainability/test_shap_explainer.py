@@ -32,9 +32,11 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         "custom": {"past": [lambda idx: (idx.year - 1950) / 50]},
         "transformer": Scaler(scaler),
     }
-    N = 400
-    date_today = date(2012, 12, 12)
-    days = pd.date_range(date_today, date_today + timedelta(days=N - 1), freq="d")
+
+    date_start = date(2012, 12, 12)
+    date_end = date(2014, 6, 5)
+    days = pd.date_range(date_start, date_end, freq="d")
+    N = len(days)
 
     eps_1 = np.random.normal(0, 1, N).astype("float32")
     eps_2 = np.random.normal(0, 1, N).astype("float32")
@@ -44,8 +46,9 @@ class ShapExplainerTestCase(DartsBaseTestClass):
     x_3 = np.zeros(N).astype("float32")
 
     days_past_cov = pd.date_range(
-        date_today, date_today + timedelta(days=N - 2), freq="d"
+        date_start, date_start + timedelta(days=N - 2), freq="d"
     )
+
     past_cov_1 = np.random.normal(0, 1, N - 1).astype("float32")
     past_cov_2 = np.random.normal(0, 1, N - 1).astype("float32")
     past_cov_3 = np.random.normal(0, 1, N - 1).astype("float32")
@@ -277,6 +280,24 @@ class ShapExplainerTestCase(DartsBaseTestClass):
 
         self.assertTrue(results.get_explanation(horizon=1, component="power"))
 
+        # explain with a new foreground, minimum required. We should obtain one
+        # timeseries with only one time element
+        results = shap_explain.explain(
+            foreground_series=self.target_ts[-5:],
+            foreground_past_covariates=self.past_cov_ts[-4:],
+            foreground_future_covariates=self.fut_cov_ts[-1],
+        )
+
+        ts_res = results.get_explanation(horizon=2, component="power")
+        self.assertTrue(len(ts_res) == 1)
+        self.assertTrue(ts_res.time_index[-1] == pd.Timestamp(2014, 6, 5))
+
+        with self.assertRaises(ValueError):
+            # wrong horizon
+            results.get_explanation(horizon=5, component="price")
+            # wrong component name
+            results.get_explanation(horizon=1, component="test")
+
         # right instance
         self.assertTrue(isinstance(results, ExplainabilityResult))
 
@@ -344,22 +365,22 @@ class ShapExplainerTestCase(DartsBaseTestClass):
 
         shap_explain = ShapExplainer(m_0)
 
-        # We need at least 8 points for force_plot
+        # We need at least 5 points for force_plot
         with self.assertRaises(ValueError):
             shap_explain.force_plot_from_ts(
                 2,
                 "power",
-                self.target_ts[100:107],
-                self.past_cov_ts[100:107],
-                self.fut_cov_ts[100:107],
+                self.target_ts[100:104],
+                self.past_cov_ts[100:104],
+                self.fut_cov_ts[100:104],
             )
 
         fplot = shap_explain.force_plot_from_ts(
             2,
             "power",
-            self.target_ts[100:108],
-            self.past_cov_ts[100:108],
-            self.fut_cov_ts[100:108],
+            self.target_ts[100:105],
+            self.past_cov_ts[100:105],
+            self.fut_cov_ts[100:105],
         )
         self.assertTrue(isinstance(fplot, shap.plots._force.BaseVisualizer))
 
