@@ -19,6 +19,9 @@ You will find here some more detailed information about Darts.
    .. userguide/regression_models.md
 
    userguide/covariates.md
+
+   userguide/hyperparameter_optimization.md
+
    .. userguide/probabilistic_forecasting.md
 
    .. userguide/ensembling.md
