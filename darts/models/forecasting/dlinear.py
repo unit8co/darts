@@ -264,7 +264,7 @@ class _DLinearModule(PLPastCovariatesModule):
         enc_in,
         **kwargs,
     ):
-        """PyTorch module implementing the N-HiTS architecture.
+        """PyTorch module implementing the DLinear architecture.
 
         Parameters
         ----------
