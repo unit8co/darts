@@ -221,12 +221,11 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             isinstance(shap_explain.explainers.explainers, shap.explainers.Tree)
         )
 
-        # ExtraTreesRegressor - also not a MultiOuputRegressor
+        # No past or future covariates
         m = self.models[4].fit(
             series=self.target_ts,
         )
 
-        # No past or future covariates
         shap_explain = ShapExplainer(m)
         self.assertTrue(
             isinstance(shap_explain.explainers.explainers, shap.explainers.Linear)
@@ -355,6 +354,14 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             ]
         )
 
+        # No past or future covariates
+        m = self.models[4].fit(
+            series=self.target_ts,
+        )
+        shap_explain = ShapExplainer(m)
+
+        self.assertTrue(isinstance(shap_explain.explain(), ExplainabilityResult))
+
     def test_plot(self):
 
         m_0 = self.models[0].fit(
@@ -416,3 +423,12 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         # Wrong component name
         with self.assertRaises(ValueError):
             shap_explain.summary_plot(horizons=[0], target_names=["test"])
+
+        # No past or future covariates
+        m = self.models[4].fit(
+            series=self.target_ts,
+        )
+        shap_explain = ShapExplainer(m)
+
+        fplot = shap_explain.force_plot_from_ts(1, "power", self.target_ts[100:105])
+        self.assertTrue(isinstance(fplot, shap.plots._force.BaseVisualizer))

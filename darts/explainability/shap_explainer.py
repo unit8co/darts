@@ -205,10 +205,19 @@ class ShapExplainer(ForecastingModelExplainer):
 
         for idx, foreground_ts in enumerate(foreground_series):
 
+            foreground_past_cov_ts = None
+            foreground_future_cov_ts = None
+
+            if foreground_past_covariates:
+                foreground_past_cov_ts = foreground_past_covariates[idx]
+
+            if foreground_future_covariates:
+                foreground_future_cov_ts = foreground_future_covariates[idx]
+
             foreground_X = self.explainers._create_regression_model_shap_X(
                 foreground_ts,
-                foreground_past_covariates[idx],
-                foreground_future_covariates[idx],
+                foreground_past_cov_ts,
+                foreground_future_cov_ts,
             )
 
             shap_ = self.explainers.shap_explanations(
