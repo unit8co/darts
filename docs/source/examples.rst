@@ -65,6 +65,18 @@ for hierarchical time series, using the Australian domestic tourism dataset.
    examples/16-hierarchical-reconciliation.ipynb
 
 
+Hyperparameter Optimization
+===========================
+
+An example showcasing how to find good forecasting models
+with Darts using the Optuna library for hyperparameter optimization.
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/17-hyperparameter-optimization.ipynb
+
+
 Fast Fourier Transform
 ======================
 

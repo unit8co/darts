@@ -14,7 +14,7 @@ Using a dedicated type to represent time series (instead of say, Pandas DataFram
 ## Multivariate time series -vs- multiple time series
 We distinguish univariate from multivariate series:
 
-* A **Multivariate** series contain multiple dimensions (i.e. multiple values per time step).
+* A **multivariate** series contain multiple dimensions (i.e. multiple values per time step).
 * A **univariate** series contains only one dimension (i.e., single scalar value for each time step).
 
 Sometimes the dimensions are called *components*. A single `TimeSeries` object can be either univariate (if it has a single component), or multivariate (if it has multiple components). In a multivariate series, all components share the same time axis. I.e., they all share the same time stamps.
@@ -60,7 +60,7 @@ More methods are documented in the [TimeSeries API documentation](https://unit8c
 
 Furthermore, it is possible to concatenate series along different axes using the function `concatenate()`. `axis=0` corresponds to time, `axis=1` corresponds to component and `axis=2` correspond to stochastic sample dimensions. For instance:
 ```python
-from dart import concatenate
+from darts import concatenate
 
 my_multivariate_series = concatenate([series1, series2, ...], axis=1)
 ```
@@ -97,7 +97,7 @@ Optionally, `TimeSeries` objects can contain a hierarchy, which specifies how it
 
 For instance, the following hierarchy means that the two components `"a"` and `"b"` add up to `"total"`:
 ```python
-hierarchy = {"a": ["total"], "b", ["total"]}
+hierarchy = {"a": ["total"], "b": ["total"]}
 ```
 
 Hierarchies can be used for posthoc forecast reconciliation. Darts offers several reconciliation transformers (usable with `fit()`/`transform()`) - see the [corresponding API documentation](https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html).
