@@ -303,7 +303,7 @@ class ForecastingModelExplainer(ABC):
          ----------
          foreground_series
              Optionally, the target `TimeSeries` to be explained. Can be multivariate.
-             If none is provided, explain will automatically provide the whole background TimeSeries explanation.
+             If none is provided, the background `TimeSeries` will be explained instead.
          foreground_past_covariates
              Optionally, past covariate timeseries if needed by the ForecastingModel.
          foreground_future_covariates
