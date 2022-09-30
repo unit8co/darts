@@ -251,7 +251,7 @@ class ShapExplainer(ForecastingModelExplainer):
         **kwargs,
     ):
         """
-        Display a shap plot summary per (target, horizon)).
+        Display a shap plot summary for each horizon and each component dimension of the target.
         This method reuses the initial background data as foreground (potentially sampled) to give a general importance
         plot for each feature.
         If no target names and/or no horizons are provided, we plot all summary plots.
