@@ -85,7 +85,7 @@ class ShapExplainer(ForecastingModelExplainer):
         model
             A `ForecastingModel` we want to explain. It must be fitted first.
         background_series
-            A series or list of series to *train* the `ForecastingModelExplainer` along with any foreground series.
+            One or several series to *train* the `ForecastingModelExplainer` along with any foreground series.
             Consider using a reduced well-chosen backgroundto to reduce computation time.
                 - optional if `model` was fit on a single target series. By default, it is the `series` used
                 at fitting time.
