@@ -317,7 +317,8 @@ class ForecastingModelExplainer(ABC):
 
          Returns
          -------
-         An `ExplainabilityResult` instance.
+         ExplainabilityResult
+             The forecast explanations.
 
         """
         pass
