@@ -898,7 +898,7 @@ class SequentialEncoder(Encoder):
         """Launches the encode sequence for past covariate and future covariate for either training or
         inference/prediction.
 
-        If `n` is not`None` it is a prediction, otherwise it is training.
+        If `n` is not `None` it is a prediction, otherwise it is training.
         """
 
         if not self.encoding_available:
