@@ -75,7 +75,7 @@ class ShapExplainer(ForecastingModelExplainer):
 
         Naming:
         - A background series is a `TimeSeries` with which we 'train' the `Explainer` model.
-        - A foreground series is the `TimeSeries` we will explain according to the fitted `Explainer` model.
+        - A foreground series is a `TimeSeries` that can be explained by a shap explainer after it has been fitted.
 
         Currently, ShapExplainer only works with `RegressionModel` forecasting models.
         The number of explained horizons (t, t+1, ...) will be equal to `output_chunk_length` of `model`.
