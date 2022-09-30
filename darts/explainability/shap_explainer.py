@@ -78,7 +78,7 @@ class ShapExplainer(ForecastingModelExplainer):
         - A foreground series is a `TimeSeries` that can be explained by a shap explainer after it has been fitted.
 
         Currently, ShapExplainer only works with `RegressionModel` forecasting models.
-        The number of explained horizons (t, t+1, ...) will be equal to `output_chunk_length` of `model`.
+        The number of explained horizons (t+1, t+2, ...) can be at most equal to `output_chunk_length` of `model`.
 
         Parameters
         ----------
