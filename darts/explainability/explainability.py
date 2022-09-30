@@ -102,7 +102,7 @@ class ForecastingModelExplainer(ABC):
             Consider using a reduced well-chosen backgroundto to reduce computation time.
                 - optional if `model` was fit on a single target series. By default, it is the `series` used
                 at fitting time.
-                - mandatory if `model` was fit on multiple (list of) target series.
+                - mandatory if `model` was fit on multiple (sequence of) target series.
         background_past_covariates
             A past covariates series or list of series that the model needs once fitted.
         background_future_covariates
