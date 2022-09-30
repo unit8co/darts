@@ -252,7 +252,7 @@ class ShapExplainer(ForecastingModelExplainer):
     ):
         """
         Display a shap plot summary per (target, horizon)).
-        We here reuse the initial background data as foreground (potentially sampled) to give a general importance
+        This method reuses the initial background data as foreground (potentially sampled) to give a general importance
         plot for each feature.
         If no target names and/or no horizons are provided, we plot all summary plots.
 
