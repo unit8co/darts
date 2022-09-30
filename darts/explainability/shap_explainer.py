@@ -1,5 +1,5 @@
 """
-Shap-based ForecastingModelExplainer
+Shap Explainer for RegressionModels
 ------------------------------------
 This class is meant to wrap a shap explainer (https://github.com/slundberg/shap) specifically for time series.
 
