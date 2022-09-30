@@ -279,7 +279,7 @@ class ForecastingModelExplainer(ABC):
              foreground_future_covariates=foreground_future_covariates, horizons=[0, 1], target_names=["T_0", "T_1"])
          >>> output = explain_results.get_explanation(horizon=0, target="T_1")
 
-        Then ``output`` is a multivariate TimeSeries containing the *explanations* of the chosen `Explainer`,
+        Then ``output`` is a multivariate TimeSeries containing the *explanations* of the corresponding `ForecastingModelExplainer`,
          with component names:
              - T_0_target_lag-1
              - T_0_target_lag-2
