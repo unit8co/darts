@@ -263,7 +263,7 @@ class ShapExplainer(ForecastingModelExplainer):
             starting from the first prediction step at 0. Currently, only forecasting models are supported which
             provide an `output_chunk_length` parameter. `horizons` must not be larger than `output_chunk_length`.
         target_names
-            Optionally, a list of strings with the target components we want to explain.
+            Optionally, a list of strings with the target components to be explained.
         nb_samples
             Optionally, an integer for sampling the foreground series (based on the backgound),
             for the sake of performance.
