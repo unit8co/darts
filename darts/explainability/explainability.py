@@ -99,7 +99,7 @@ class ForecastingModelExplainer(ABC):
             A `ForecastingModel` we want to explain. It must be fitted first.
         background_series
             A series or list of series to *train* the `ForecastingModelExplainer` along with any foreground series.
-            Consider using a reduced well-chosen backgroundto to reduce computation time.
+            Consider using a reduced well-chosen background to reduce computation time.
                 - optional if `model` was fit on a single target series. By default, it is the `series` used
                 at fitting time.
                 - mandatory if `model` was fit on multiple (sequence of) target series.
