@@ -83,7 +83,7 @@ class ShapExplainer(ForecastingModelExplainer):
         Parameters
         ----------
         model
-            A `ForecastingModel` we want to explain. It must be fitted first.
+            A `ForecastingModel` to be explained. It must be fitted first.
         background_series
             One or several series to *train* the `ForecastingModelExplainer` along with any foreground series.
             Consider using a reduced well-chosen backgroundto to reduce computation time.
