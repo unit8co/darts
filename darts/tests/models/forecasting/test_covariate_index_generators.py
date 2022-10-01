@@ -6,15 +6,15 @@ from darts.logging import get_logger
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 from darts.utils.data.encoder_base import (
-    CovariateIndexGenerator,
-    FutureCovariateIndexGenerator,
-    PastCovariateIndexGenerator,
+    CovariatesIndexGenerator,
+    FutureCovariatesIndexGenerator,
+    PastCovariatesIndexGenerator,
 )
 
 logger = get_logger(__name__)
 
 
-class CovariateIndexGeneratorTestCase(DartsBaseTestClass):
+class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
     n_target = 24
     target_time = tg.linear_timeseries(length=n_target, freq="MS")
     cov_time_train = tg.datetime_attribute_timeseries(
@@ -32,7 +32,7 @@ class CovariateIndexGeneratorTestCase(DartsBaseTestClass):
     n_long = 8
 
     # pd.DatetimeIndex
-    # target covariate for inference dataset for n <= output_chunk_length
+    # expected covariates for inference dataset for n <= output_chunk_length
     cov_time_inf_short = TimeSeries.from_times_and_values(
         tg.generate_index(
             start=target_time.start_time(),
@@ -41,7 +41,7 @@ class CovariateIndexGeneratorTestCase(DartsBaseTestClass):
         ),
         np.arange(n_target + n_short),
     )
-    # target covariate for inference dataset for n > output_chunk_length
+    # expected covariates for inference dataset for n > output_chunk_length
     cov_time_inf_long = TimeSeries.from_times_and_values(
         tg.generate_index(
             start=target_time.start_time(),
@@ -52,7 +52,7 @@ class CovariateIndexGeneratorTestCase(DartsBaseTestClass):
     )
 
     # integer index
-    # target covariate for inference dataset for n <= output_chunk_length
+    # excpected covariates for inference dataset for n <= output_chunk_length
     cov_int_inf_short = TimeSeries.from_times_and_values(
         tg.generate_index(
             start=target_int.start_time(),
@@ -61,7 +61,7 @@ class CovariateIndexGeneratorTestCase(DartsBaseTestClass):
         ),
         np.arange(n_target + n_short),
     )
-    # target covariate for inference dataset for n > output_chunk_length
+    # excpected covariates for inference dataset for n > output_chunk_length
     cov_int_inf_long = TimeSeries.from_times_and_values(
         tg.generate_index(
             start=target_int.start_time(),
@@ -71,7 +71,7 @@ class CovariateIndexGeneratorTestCase(DartsBaseTestClass):
         np.arange(n_target + n_long),
     )
 
-    def helper_test_index_types(self, ig: CovariateIndexGenerator):
+    def helper_test_index_types(self, ig: CovariatesIndexGenerator):
         """test the index type of generated index"""
         # pd.DatetimeIndex
         idx = ig.generate_train_series(self.target_time, self.cov_time_train)
@@ -93,7 +93,7 @@ class CovariateIndexGeneratorTestCase(DartsBaseTestClass):
         idx = ig.generate_train_series(self.target_int, None)
         self.assertTrue(isinstance(idx, pd.RangeIndex))
 
-    def helper_test_index_generator_train(self, ig: CovariateIndexGenerator):
+    def helper_test_index_generator_train(self, ig: CovariatesIndexGenerator):
         """
         If covariates are given, the index generators should return the covariate series' index.
         If covariates are not given, the index generators should return the target series' index.
@@ -178,7 +178,7 @@ class CovariateIndexGeneratorTestCase(DartsBaseTestClass):
         self.assertTrue(idx.equals(self.cov_int_inf_long.time_index))
 
     def test_past_index_generator(self):
-        ig = PastCovariateIndexGenerator(
+        ig = PastCovariatesIndexGenerator(
             self.input_chunk_length, self.output_chunk_length
         )
         self.helper_test_index_types(ig)
@@ -186,7 +186,7 @@ class CovariateIndexGeneratorTestCase(DartsBaseTestClass):
         self.helper_test_index_generator_inference(ig, is_past=True)
 
     def test_future_index_generator(self):
-        ig = FutureCovariateIndexGenerator(
+        ig = FutureCovariatesIndexGenerator(
             self.input_chunk_length, self.output_chunk_length
         )
         self.helper_test_index_types(ig)

@@ -3,7 +3,7 @@ Random Forest
 -------------
 
 A forecasting model using a random forest regression. It uses some of the target series' lags, as well as optionally
-some covariate series' lags in order to obtain a forecast.
+some covariate series lags in order to obtain a forecast.
 
 See [1]_ for a reference around random forests.
 

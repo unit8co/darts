@@ -338,7 +338,7 @@ class _NHiTSModule(PLPastCovariatesModule):
         Parameters
         ----------
         input_dim
-            The number of input components (target + optional covariate)
+            The number of input components (target + optional covariates)
         output_dim
             Number of output components in the target
         nr_params
