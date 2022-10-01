@@ -48,7 +48,7 @@ There are two main types of encoder classes: `SingleEncoder` and `SequentialEnco
 
         If used at model creation, the SequentialEncoder will handle all past and future encoders autonomously.
         The requirements for model parameter `add_encoders` are described in the next section or in
-        :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>`.
+        :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>`.
 
 SingleEncoder
 -------------
@@ -144,10 +144,7 @@ import numpy as np
 import pandas as pd
 
 from darts import TimeSeries, concatenate
-from darts.dataprocessing.transformers import FittableDataTransformer
-from darts.logging import get_logger, raise_if, raise_if_not
-from darts.timeseries import DIMS
-from darts.utils.data.encoder_base import (
+from darts.dataprocessing.encoders.encoder_base import (
     CovariatesIndexGenerator,
     Encoder,
     FutureCovariatesIndexGenerator,
@@ -157,6 +154,9 @@ from darts.utils.data.encoder_base import (
     SingleEncoder,
     SupportedIndex,
 )
+from darts.dataprocessing.transformers import FittableDataTransformer
+from darts.logging import get_logger, raise_if, raise_if_not
+from darts.timeseries import DIMS
 from darts.utils.data.utils import _index_diff
 from darts.utils.timeseries_generation import datetime_attribute_timeseries
 from darts.utils.utils import seq2series, series2seq
@@ -692,13 +692,13 @@ class SequentialEncoder(Encoder):
             `{encoder keyword: {temporal keyword: List[attributes]}, ..., transformer keyword: transformer object}`
         Supported encoder keywords:
             `'cyclic'` for cyclic temporal encoder. See the docs
-            :meth:`CyclicTemporalEncoder <darts.utils.data.encoders.CyclicTemporalEncoder>`;
+            :meth:`CyclicTemporalEncoder <darts.dataprocessing.encoders.CyclicTemporalEncoder>`;
             `'datetime_attribute'` for adding scalar information of pd.DatetimeIndex attribute. See the docs
-            :meth:`DatetimeAttributeEncoder <darts.utils.data.encoders.DatetimeAttributeEncoder>`
+            :meth:`DatetimeAttributeEncoder <darts.dataprocessing.encoders.DatetimeAttributeEncoder>`
             `'position'` for integer index position encoder. See the docs
-            :meth:`IntegerIndexEncoder <darts.utils.data.encoders.IntegerIndexEncoder>`;
+            :meth:`IntegerIndexEncoder <darts.dataprocessing.encoders.IntegerIndexEncoder>`;
             `'custom'` for encoding index with custom callables (functions). See the docs
-            :meth:`CallableIndexEncoder <darts.utils.data.encoders.CallableIndexEncoder>`;
+            :meth:`CallableIndexEncoder <darts.dataprocessing.encoders.CallableIndexEncoder>`;
         Supported temporal keywords:
             'past' for adding encoding as past covariates
             'future' for adding encoding as future covariates

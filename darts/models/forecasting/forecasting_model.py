@@ -27,6 +27,7 @@ import numpy as np
 import pandas as pd
 
 from darts import metrics
+from darts.dataprocessing.encoders import SequentialEncoder
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
 from darts.utils import (
@@ -36,7 +37,6 @@ from darts.utils import (
     _retrain_wrapper,
     _with_sanity_checks,
 )
-from darts.utils.data.encoders import SequentialEncoder
 from darts.utils.timeseries_generation import (
     _build_forecast_series,
     _generate_new_dates,

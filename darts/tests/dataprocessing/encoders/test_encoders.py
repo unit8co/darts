@@ -7,26 +7,31 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries
-from darts.dataprocessing.transformers import Scaler
-from darts.logging import get_logger, raise_log
-from darts.tests.base_test_class import DartsBaseTestClass
-from darts.utils import timeseries_generation as tg
-from darts.utils.data.encoder_base import PastCovariatesIndexGenerator, SingleEncoder
-from darts.utils.data.encoders import (
-    CallableIndexEncoder,
-    CyclicTemporalEncoder,
-    DatetimeAttributeEncoder,
+from darts.dataprocessing.encoders import (
     FutureCallableIndexEncoder,
     FutureCyclicEncoder,
     FutureDatetimeAttributeEncoder,
     FutureIntegerIndexEncoder,
-    IntegerIndexEncoder,
     PastCallableIndexEncoder,
     PastCyclicEncoder,
     PastDatetimeAttributeEncoder,
     PastIntegerIndexEncoder,
     SequentialEncoder,
 )
+from darts.dataprocessing.encoders.encoder_base import (
+    PastCovariatesIndexGenerator,
+    SingleEncoder,
+)
+from darts.dataprocessing.encoders.encoders import (
+    CallableIndexEncoder,
+    CyclicTemporalEncoder,
+    DatetimeAttributeEncoder,
+    IntegerIndexEncoder,
+)
+from darts.dataprocessing.transformers import Scaler
+from darts.logging import get_logger, raise_log
+from darts.tests.base_test_class import DartsBaseTestClass
+from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
 

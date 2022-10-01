@@ -2,14 +2,14 @@ import numpy as np
 import pandas as pd
 
 from darts import TimeSeries
-from darts.logging import get_logger
-from darts.tests.base_test_class import DartsBaseTestClass
-from darts.utils import timeseries_generation as tg
-from darts.utils.data.encoder_base import (
+from darts.dataprocessing.encoders.encoder_base import (
     CovariatesIndexGenerator,
     FutureCovariatesIndexGenerator,
     PastCovariatesIndexGenerator,
 )
+from darts.logging import get_logger
+from darts.tests.base_test_class import DartsBaseTestClass
+from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
 
