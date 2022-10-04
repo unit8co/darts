@@ -46,7 +46,7 @@ class ForecastingModelExplainer(ABC):
         Parameters
         ----------
         model
-            A `ForecastingModel` we want to explain. It must be fitted first.
+            A `ForecastingModel` to be explained. It must be fitted first.
         background_series
             A series or list of series to *train* the `ForecastingModelExplainer` along with any foreground series.
             Consider using a reduced well-chosen background to reduce computation time.
@@ -209,23 +209,25 @@ class ForecastingModelExplainer(ABC):
         """
         Explains a foreground time series, returns an :class:`ExplainabilityResult`.
 
-        Results can be retrieved via the ExplainabilityResult.get_explanation(horizon, target_component)
+        Results can be retrieved via the method
+        :func:`ExplainabilityResult.get_explanation(horizon, target_component)`.
         The result is a multivariate `TimeSeries` instance containing the 'explanation'
         for the (horizon, target_component) forecast at any timestamp forecastable corresponding to
         the foreground `TimeSeries` input.
 
         The component name convention of this multivariate `TimeSeries` is:
-        ``f'{name}_{type_of_cov}_{lag}_{int}'``, where:
+        ``"{name}_{type_of_cov}_lag_{idx}"``, where:
 
-        - `name` is the component name from the original foreground series (target, past, or future).
-        - `type_of_cov` is the covariates type. It can take 3 different values: ``{"target", "past", "future"}``.
-        - `int` is the lag index.
+        - ``{name}`` is the component name from the original foreground series (target, past, or future).
+        - ``{type_of_cov}`` is the covariates type. It can take 3 different values:
+          ``"target"``, ``"past_cov"`` or ``"future_cov"``.
+        - ``{idx}`` is the lag index.
 
-        Example:
-        Let's say we have a model with 2 target components we named ``"T_0"`` and ``"T_1"``,
-        three past covariates with default component names
-        (which will be 0, 1 and 2 by default at initialization),
-        and one future covariate with default component name (0).
+        **Example:**
+
+        Say we have a model with 2 target components named ``"T_0"`` and ``"T_1"``,
+        3 past covariates with default component names ``"0"``, ``"1"``, and ``"2"``,
+        and one future covariate with default component name ``"0"``.
         Also, ``horizons = [1, 2]``.
         The model is a regression model, with ``lags = 3``, ``lags_past_covariates=[-1, -3]``,
         ``lags_future_covariates = [0]``.
@@ -234,16 +236,16 @@ class ForecastingModelExplainer(ABC):
 
 
         >>> explain_results = explainer.explain(
-        foreground_series=foreground_series,
-        foreground_past_covariates=foreground_past_covariates,
-        foreground_future_covariates=foreground_future_covariates,
-        horizons=[1, 2],
-        target_names=["T_0", "T_1"])
+        >>>     foreground_series=foreground_series,
+        >>>     foreground_past_covariates=foreground_past_covariates,
+        >>>     foreground_future_covariates=foreground_future_covariates,
+        >>>     horizons=[1, 2],
+        >>>     target_names=["T_0", "T_1"])
         >>> output = explain_results.get_explanation(horizon=1, target="T_1")
 
-        Then ``output`` is a multivariate TimeSeries containing the **explanations** of the corresponding
-        `ForecastingModelExplainer`,
-         with component names:
+        Then the method returns a multivariate TimeSeries containing the *explanations* of
+        the corresponding `ForecastingModelExplainer`, with the following component names:
+
              - T_0_target_lag-1
              - T_0_target_lag-2
              - T_0_target_lag-3
@@ -258,13 +260,14 @@ class ForecastingModelExplainer(ABC):
              - 2_past_cov_lag-3
              - 0_fut_cov_lag_0
 
-         of length 3, as we can explain 5-3+1 forecasts (basically timestamp indexes 4, 5, and 6)
+        This series has length 3, as the model can explain 5-3+1 forecasts
+        (timestamp indexes 4, 5, and 6)
 
-         Parameters
-         ----------
+        Parameters
+        ----------
         foreground_series
             Optionally, the target `TimeSeries` to be explained. Can be multivariate.
-            If none is provided, the background `TimeSeries` will be explained instead.
+            If not provided, the background `TimeSeries` will be explained instead.
         foreground_past_covariates
             Optionally, past covariate timeseries if needed by the ForecastingModel.
         foreground_future_covariates
@@ -274,7 +277,7 @@ class ForecastingModelExplainer(ABC):
             Horizon 1 corresponds to the first timestamp being forecasted.
             All values must be no larger than `output_chunk_length` of the explained model.
         target_components
-            Optionally, A list of string naming the target components we want to explain.
+            Optionally, A list of string naming the target components to be explained.
 
          Returns
          -------

@@ -74,10 +74,9 @@ class ShapExplainer(ForecastingModelExplainer):
     ):
         """ShapExplainer
 
-        Naming:
+        **Definitions**
 
         - A background series is a `TimeSeries` used to train the shap explainer.
-
         - A foreground series is a `TimeSeries` that can be explained by a shap explainer after it has been fitted.
 
         Currently, ShapExplainer only works with `RegressionModel` forecasting models.
@@ -105,7 +104,7 @@ class ShapExplainer(ForecastingModelExplainer):
             Generally used for faster computation, especially when `shap_method` is
             ``"kernel"`` or ``"permutation"``.
         shap_method
-            Optionally, the shap method we want to apply. By default, an attempt is made
+            Optionally, the shap method to apply. By default, an attempt is made
             to select the most appropriate method based on a pre-defined set of known models.
             internal mapping. Supported values : ``"permutation", "partition", "tree", "kernel", "sampling", "linear",
             "deep", "gradient", "additive"``.
@@ -284,7 +283,7 @@ class ShapExplainer(ForecastingModelExplainer):
         Parameters
         ----------
         horizons
-            Optionally, a list of integers representing which points/steps in the future we want to explain,
+            Optionally, a list of integers representing which points/steps in the future to explain,
             starting from the first prediction step at 1. `horizons` must not be larger than
             `output_chunk_length`.
         target_components
@@ -335,7 +334,9 @@ class ShapExplainer(ForecastingModelExplainer):
         """
         Display a shap force_plot for one target and one horizon, for a given foreground_series.
         It displays shap values of each lag/covariate with an additive force layout.
-        'original sample ordering' has to be selected to observe the time series chronologically.
+
+        Once the plot is displayed, select "original sample ordering"
+        to observe the time series chronologically.
 
         Parameters
         ----------
@@ -346,7 +347,7 @@ class ShapExplainer(ForecastingModelExplainer):
         foreground_future_covariates
             Optionally, a future covariate series if required by the forecasting model.
         horizon
-            Optionally, an integer for the point/step in the future we want to explain,
+            Optionally, an integer for the point/step in the future to explain,
             starting from the first
             prediction step at 1. `horizons` must not be larger than `output_chunk_length`.
             by default, horizon = 1.
@@ -432,7 +433,7 @@ class ShapExplainer(ForecastingModelExplainer):
 
 class _RegressionShapExplainers:
     """
-    Helper Class to wrap the different cases we encounter with shap different explainers, multivariates,
+    Helper Class to wrap the different cases encountered with shap different explainers, multivariates,
     horizon etc.
     Aim to provide shap values for any type of RegressionModel. Manage the MultioutputRegressor cases.
     For darts RegressionModel only.
