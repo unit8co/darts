@@ -37,7 +37,6 @@ class ShapExplainerTestCase(DartsBaseTestClass):
     date_end = date(2014, 6, 5)
     days = pd.date_range(date_start, date_end, freq="d")
     N = len(days)
-
     eps_1 = np.random.normal(0, 1, N).astype("float32")
     eps_2 = np.random.normal(0, 1, N).astype("float32")
 
@@ -260,7 +259,7 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             # horizon > output_chunk_length
             results = shap_explain.explain(horizons=[1, 5])
             # wrong name
-            results = shap_explain.explain(horizons=[1, 2], target_names=["test"])
+            results = shap_explain.explain(horizons=[1, 2], target_components=["test"])
 
         results = shap_explain.explain()
 
@@ -270,15 +269,26 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             # wrong component name
             results.get_explanation(horizon=1, component="test")
 
-        results = shap_explain.explain(horizons=[1, 3], target_names=["power"])
+        results = shap_explain.explain(horizons=[1, 3], target_components=["power"])
         with self.assertRaises(ValueError):
             # wrong horizon
             results.get_explanation(horizon=2, component="power")
             # wrong component name
             results.get_explanation(horizon=1, component="test")
 
-        self.assertTrue(results.get_explanation(horizon=1, component="power"))
+        explanation = results.get_explanation(horizon=1, component="power")
 
+        self.assertEqual(len(explanation), 537)
+
+        # list of foregrounds
+        results = shap_explain.explain(
+            foreground_series=[self.target_ts, self.target_ts[:100]],
+            foreground_past_covariates=[self.past_cov_ts, self.past_cov_ts[:40]],
+            foreground_future_covariates=[self.fut_cov_ts, self.fut_cov_ts[:40]],
+        )
+        ts_res = results.get_explanation(horizon=2, component="power")
+
+        self.assertEqual(len(ts_res), 2)
         # explain with a new foreground, minimum required. We should obtain one
         # timeseries with only one time element
         results = shap_explain.explain(
@@ -350,7 +360,7 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             [
                 results.get_explanation(i, "price").components.to_list()
                 == components_list
-                for i in range(4)
+                for i in range(1, 5)
             ]
         )
 
@@ -375,60 +385,70 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         # We need at least 5 points for force_plot
         with self.assertRaises(ValueError):
             shap_explain.force_plot_from_ts(
-                2,
-                "power",
                 self.target_ts[100:104],
                 self.past_cov_ts[100:104],
                 self.fut_cov_ts[100:104],
+                2,
+                "power",
             )
 
         fplot = shap_explain.force_plot_from_ts(
-            2,
-            "power",
             self.target_ts[100:105],
             self.past_cov_ts[100:105],
             self.fut_cov_ts[100:105],
+            2,
+            "power",
         )
         self.assertTrue(isinstance(fplot, shap.plots._force.BaseVisualizer))
 
-        # You need both horizon and component
+        # no component name -> multivariate error
         with self.assertRaises(ValueError):
             shap_explain.force_plot_from_ts(
-                None,
-                "power",
                 self.target_ts[100:108],
                 self.past_cov_ts[100:108],
                 self.fut_cov_ts[100:108],
-            )
-
-        with self.assertRaises(ValueError):
-            shap_explain.force_plot_from_ts(
-                0,
-                None,
-                self.target_ts[100:108],
-                self.past_cov_ts[100:108],
-                self.fut_cov_ts[100:108],
+                1,
             )
 
         # fake component
         with self.assertRaises(ValueError):
             shap_explain.force_plot_from_ts(
-                2,
-                "fake",
                 self.target_ts[100:108],
                 self.past_cov_ts[100:108],
                 self.fut_cov_ts[100:108],
+                2,
+                "fake",
+            )
+
+        # horizon 0
+        with self.assertRaises(ValueError):
+            shap_explain.force_plot_from_ts(
+                self.target_ts[100:108],
+                self.past_cov_ts[100:108],
+                self.fut_cov_ts[100:108],
+                0,
+                "power",
             )
 
         # Wrong component name
         with self.assertRaises(ValueError):
-            shap_explain.summary_plot(horizons=[0], target_names=["test"])
+            shap_explain.summary_plot(horizons=[1], target_components=["test"])
+
+        # Wrong horizon
+        with self.assertRaises(ValueError):
+            shap_explain.summary_plot(horizons=[0], target_components=["test"])
+        with self.assertRaises(ValueError):
+            shap_explain.summary_plot(horizons=[10], target_components=["test"])
 
         # No past or future covariates
         m = self.models[4].fit(
             series=self.target_ts,
         )
-        shap_explain = ShapExplainer(m)
 
-        fplot = shap_explain.force_plot_from_ts(1, "power", self.target_ts[100:105])
+        shap_explain = ShapExplainer(m)
+        fplot = shap_explain.force_plot_from_ts(
+            foreground_series=self.target_ts[100:105],
+            horizon=1,
+            target_component="power",
+        )
         self.assertTrue(isinstance(fplot, shap.plots._force.BaseVisualizer))

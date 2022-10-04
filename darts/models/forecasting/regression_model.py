@@ -34,7 +34,7 @@ from sklearn.linear_model import LinearRegression
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
-from darts.utils.data.tabularization import create_lagged_data
+from darts.utils.data.tabularization import _create_lagged_data
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import _check_quantiles, seq2series, series2seq
 
@@ -292,18 +292,18 @@ class RegressionModel(GlobalForecastingModel):
     def _create_lagged_data(
         self, target_series, past_covariates, future_covariates, max_samples_per_ts
     ):
-        lags_list = self.lags.get("target")
-        lags_past_covariates_list = self.lags.get("past")
-        lags_future_covariates_list = self.lags.get("future")
+        lags = self.lags.get("target")
+        lags_past_covariates = self.lags.get("past")
+        lags_future_covariates = self.lags.get("future")
 
-        training_samples, training_labels, _ = create_lagged_data(
+        training_samples, training_labels, _ = _create_lagged_data(
             target_series=target_series,
             output_chunk_length=self.output_chunk_length,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            lags_list=lags_list,
-            lags_past_covariates_list=lags_past_covariates_list,
-            lags_future_covariates_list=lags_future_covariates_list,
+            lags=lags,
+            lags_past_covariates=lags_past_covariates,
+            lags_future_covariates=lags_future_covariates,
             max_samples_per_ts=max_samples_per_ts,
         )
 
@@ -324,21 +324,6 @@ class RegressionModel(GlobalForecastingModel):
 
         training_samples, training_labels = self._create_lagged_data(
             target_series, past_covariates, future_covariates, max_samples_per_ts
-        )
-
-        lags_list = self.lags.get("target")
-        lags_past_covariates_list = self.lags.get("past")
-        lags_future_covariates_list = self.lags.get("future")
-
-        training_samples, training_labels, _ = create_lagged_data(
-            target_series=target_series,
-            output_chunk_length=self.output_chunk_length,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            lags_list=lags_list,
-            lags_past_covariates_list=lags_past_covariates_list,
-            lags_future_covariates_list=lags_future_covariates_list,
-            max_samples_per_ts=max_samples_per_ts,
         )
 
         # if training_labels is of shape (n_samples, 1) flatten it to shape (n_samples,)

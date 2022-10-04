@@ -7,14 +7,14 @@ from darts.logging import raise_if
 from darts.timeseries import TimeSeries
 
 
-def create_lagged_data(
+def _create_lagged_data(
     target_series: Union[TimeSeries, Sequence[TimeSeries]],
     output_chunk_length: int,
     past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    lags_list: Optional[Sequence[int]] = None,
-    lags_past_covariates_list: Optional[Sequence[int]] = None,
-    lags_future_covariates_list: Optional[Sequence[int]] = None,
+    lags: Optional[Sequence[int]] = None,
+    lags_past_covariates: Optional[Sequence[int]] = None,
+    lags_future_covariates: Optional[Sequence[int]] = None,
     max_samples_per_ts: Optional[int] = None,
     is_training: Optional[bool] = True,  # other option: 'inference
 ):
@@ -30,6 +30,30 @@ def create_lagged_data(
 
     y has the following structure (output_chunk_length=4 and target has 2 components):
     lag_+0_comp_1_target | lag_+0_comp_2_target | ... | lag_+3_comp_1_target | lag_+3_comp_2_target
+
+    Parameters
+    ----------
+    target_series
+        The target series of the regression model.
+    output_chunk_length
+        The output_chunk_length of the regression model.
+    past_covariates
+        Optionally, the past covariates of the regression model.
+    future_covariates
+        Optionally, the future covariates of the regression model.
+    lags
+        Optionally, the lags of the target series to be used as features.
+    lags_past_covariates
+        Optionally, the lags of the past covariates to be used as features.
+    lags_future_covariates
+        Optionally, the lags of the future covariates to be used as features.
+    max_samples_per_ts
+        Optionally, the maximum number of samples to be drawn for training/validation
+        The kept samples are the most recent ones.
+    is_training
+        Optionally, whether the data is used for training or inference.
+        If inference, the rows where the future_target_lags are NaN are not removed from X,
+        as we are only interested in the X matrix to infer the future target values.
     """
 
     # ensure list of TimeSeries format
@@ -47,13 +71,13 @@ def create_lagged_data(
                 past_covariates[idx].pd_dataframe(copy=False)
                 if past_covariates
                 else None,
-                lags_past_covariates_list,
+                lags_past_covariates,
             ),
             (
                 future_covariates[idx].pd_dataframe(copy=False)
                 if future_covariates
                 else None,
-                lags_future_covariates_list,
+                lags_future_covariates,
             ),
         ]
 
@@ -69,8 +93,8 @@ def create_lagged_data(
                 )
             )
 
-        if lags_list:
-            for lag in lags_list:
+        if lags:
+            for lag in lags:
                 df_X.append(
                     df_target.shift(-lag).rename(
                         columns=lambda x: f"{x}_target_lag{lag}"
@@ -78,20 +102,22 @@ def create_lagged_data(
                 )
 
         # X: covariate lags
-        for idx, (df_cov, lags) in enumerate(covariates):
+        for idx, (df_cov, lags_cov) in enumerate(covariates):
 
             if idx == 0:
                 covariate_name = "past"
             else:
                 covariate_name = "future"
-            if lags:
-                # We extend the covariates dataframes
-                # to have the same timestamps as the target at the end
-                #  so that when we create the lags with shifts
-                # we don't have nan on the last rows. Only useful for inference.
-                df_cov = df_cov.reindex(df_target.index)
+            if lags_cov:
 
-                for lag in lags:
+                if not is_training:
+                    # We extend the covariates dataframes
+                    # to have the same timestamps as the target at the end
+                    #  so that when we create the lags with shifts
+                    # we don't have nan on the last rows. Only useful for inference.
+                    df_cov = df_cov.reindex(df_target.index)
+
+                for lag in lags_cov:
                     df_X.append(
                         df_cov.shift(-lag).rename(
                             columns=lambda x: f"{x}_{covariate_name}_cov_lag{lag}"

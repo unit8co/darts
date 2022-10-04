@@ -1,13 +1,13 @@
 """
 Forecasting Model Explainer Base Class
---------------------------------------
+
 A forecasting model explainer takes a fitted forecasting model as input and applies an Explainability model
 to it. Its purpose is to explain each past input contribution to a given model forecast. This 'explanation'
 depends on the characteristics of the XAI model chosen (shap, lime etc...).
 
 """
 from abc import ABC, abstractmethod
-from typing import Dict, Optional, Sequence, Union
+from typing import Collection, Dict, Optional, Sequence, Union
 
 from numpy import integer
 
@@ -47,8 +47,19 @@ class ExplainabilityResult(ABC):
             self.available_components = list(self.explained_forecasts[h_0].keys())
 
     def get_explanation(
-        self, horizon: int, component: str
+        self, horizon: int, component: Optional[str] = None
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+
+        raise_if(
+            component is None and len(self.available_components) > 1,
+            ValueError(
+                "The component parameter is required when the model has more than one component."
+            ),
+            logger,
+        )
+
+        if component is None:
+            component = self.available_components[0]
 
         raise_if_not(
             horizon in self.available_horizons,
@@ -91,6 +102,7 @@ class ForecastingModelExplainer(ABC):
 
         Naming:
         - A background series is a `TimeSeries` with which we 'train' the `Explainer` model.
+
         - A foreground series is the `TimeSeries` we will explain according to the fitted `Explainer` model.
 
         Parameters
@@ -102,6 +114,7 @@ class ForecastingModelExplainer(ABC):
             Consider using a reduced well-chosen background to reduce computation time.
                 - optional if `model` was fit on a single target series. By default, it is the `series` used
                 at fitting time.
+
                 - mandatory if `model` was fit on multiple (sequence of) target series.
         background_past_covariates
             A past covariates series or list of series that the model needs once fitted.
@@ -144,14 +157,6 @@ class ForecastingModelExplainer(ABC):
 
         else:
             if self.model.encoders.encoding_available:
-                #     (
-                #         background_past_covariates,
-                #         background_future_covariates,
-                #     ) = self.model.encoders.encode_train(
-                #         target=background_series,
-                #         past_covariate=background_past_covariates,
-                #         future_covariate=background_future_covariates,
-                #     )
                 (
                     background_past_covariates,
                     background_future_covariates,
@@ -180,19 +185,26 @@ class ForecastingModelExplainer(ABC):
                 "A background future covariates is not provided, but the model needs future covariates.",
             )
 
-        self.target_names = self.background_series[0].columns.to_list()
-        self.past_covariates_names = None
+        self.target_components = self.background_series[0].columns.to_list()
+        self.past_covariates_components = None
         if self.background_past_covariates is not None:
-            self.past_covariates_names = self.background_past_covariates[
+            self.past_covariates_components = self.background_past_covariates[
                 0
             ].columns.to_list()
-        self.future_covariates_names = None
+        self.future_covariates_components = None
         if self.background_future_covariates is not None:
-            self.future_covariates_names = self.background_future_covariates[
+            self.future_covariates_components = self.background_future_covariates[
                 0
             ].columns.to_list()
 
-        self._check_background_covariates()
+        self._check_background_covariates(
+            self.background_series,
+            self.background_past_covariates,
+            self.background_future_covariates,
+            self.target_components,
+            self.past_covariates_components,
+            self.future_covariates_components,
+        )
 
         if not self._test_stationarity():
             logger.warning(
@@ -200,35 +212,42 @@ class ForecastingModelExplainer(ABC):
                 " Beware of wrong interpretation with chosen explainability."
             )
 
-    def _check_background_covariates(self):
+    @staticmethod
+    def _check_background_covariates(
+        background_series,
+        background_past_covariates,
+        background_future_covariates,
+        target_components,
+        past_covariates_components,
+        future_covariates_components,
+    ) -> None:
 
-        if self.background_past_covariates is not None:
+        if background_past_covariates is not None:
             raise_if_not(
-                len(self.background_series) == len(self.background_past_covariates),
+                len(background_series) == len(background_past_covariates),
                 "The number of background series and past covariates must be the same.",
             )
 
-        if self.background_future_covariates is not None:
+        if background_future_covariates is not None:
             raise_if_not(
-                len(self.background_series) == len(self.background_future_covariates),
+                len(background_series) == len(background_future_covariates),
                 "The number of background series and future covariates must be the same.",
             )
 
         # ensure we have the same names between TimeSeries (if list of). Important to ensure homogeneity
         # for explained features.
-        for idx in range(len(self.background_series)):
+        for idx in range(len(background_series)):
             raise_if_not(
                 all(
                     [
-                        self.background_series[idx].columns.to_list()
-                        == self.target_names,
-                        self.background_past_covariates[idx].columns.to_list()
-                        == self.past_covariates_names
-                        if self.background_past_covariates is not None
+                        background_series[idx].columns.to_list() == target_components,
+                        background_past_covariates[idx].columns.to_list()
+                        == past_covariates_components
+                        if background_past_covariates is not None
                         else True,
-                        self.background_future_covariates[idx].columns.to_list()
-                        == self.future_covariates_names
-                        if self.background_future_covariates is not None
+                        background_future_covariates[idx].columns.to_list()
+                        == future_covariates_components
+                        if background_future_covariates is not None
                         else True,
                     ]
                 ),
@@ -245,41 +264,47 @@ class ForecastingModelExplainer(ABC):
         foreground_future_covariates: Optional[
             Union[TimeSeries, Sequence[TimeSeries]]
         ] = None,
-        horizons: Optional[Sequence[int]] = None,
-        target_names: Optional[Sequence[str]] = None,
+        horizons: Optional[Collection[int]] = None,
+        target_components: Optional[Collection[str]] = None,
     ) -> ExplainabilityResult:
         """
-         Main method of the ForecastingExplainer class.
-         Return a ExplainabilityResult instance.
+        Main method of the ForecastingExplainer class.
+        Return a ExplainabilityResult instance.
 
-         Results can be retrieved via the ExplainabilityResult.get_explanation(horizon, target)
-         The result is a multivariate TimeSeries instance containing the 'explanation'
-         for the (horizon, target) forecast at any timestamp forecastable corresponding to the foreground
-         TimeSeries input.
+        Results can be retrieved via the ExplainabilityResult.get_explanation(horizon, target_component)
+        The result is a multivariate `TimeSeries` instance containing the 'explanation'
+        for the (horizon, target_component) forecast at any timestamp forecastable corresponding to
+        the foreground `TimeSeries` input.
 
-         The component name convention of this multivariate `TimeSeries` is:
-         ``f'{name}_{type_of_cov}_{lag}_{int}'``, where:
+        The component name convention of this multivariate `TimeSeries` is:
+        ``f'{name}_{type_of_cov}_{lag}_{int}'``, where:
 
-         - `name` is the component name from the original foreground series (target, past, or future).
-         - `type_of_cov` is the covariates type. It can take 3 different values: ``{"target", "past", "future"}``.
-         - `int` is the lag index.
+        - `name` is the component name from the original foreground series (target, past, or future).
+        - `type_of_cov` is the covariates type. It can take 3 different values: ``{"target", "past", "future"}``.
+        - `int` is the lag index.
 
-         Example:
-         Let's say we have a model with 2 target components named ``"T_0"`` and ``"T_1"``, three past covariates we
-         didn't name, and one future covariate we didn't name. Also, ``horizons = [0, 1]``.
-         The model is a regression model, with ``lags = 3``, ``lags_past_covariates=[-1, -3]``,
-         ``lags_future_covariates = [0]``.
+        Example:
+        Let's say we have a model with 2 target components we named ``"T_0"`` and ``"T_1"``,
+        three past covariates with default component names
+        (which will be 0, 1 and 2 by default at initialization),
+        and one future covariate with default component name (0).
+        Also, ``horizons = [1, 2]``.
+        The model is a regression model, with ``lags = 3``, ``lags_past_covariates=[-1, -3]``,
+        ``lags_future_covariates = [0]``.
 
-         We provide `foreground_series`, `foreground_past_covariates`, `foreground_future_covariates` each of length 5.
+        We provide `foreground_series`, `foreground_past_covariates`, `foreground_future_covariates` each of length 5.
 
 
-         >>> explain_results = explainer.explain(
-             foreground_series=foreground_series,
-             foreground_past_covariates=foreground_past_covariates,
-             foreground_future_covariates=foreground_future_covariates, horizons=[0, 1], target_names=["T_0", "T_1"])
-         >>> output = explain_results.get_explanation(horizon=0, target="T_1")
+        >>> explain_results = explainer.explain(
+        foreground_series=foreground_series,
+        foreground_past_covariates=foreground_past_covariates,
+        foreground_future_covariates=foreground_future_covariates,
+        horizons=[1, 2],
+        target_names=["T_0", "T_1"])
+        >>> output = explain_results.get_explanation(horizon=1, target="T_1")
 
-        Then ``output`` is a multivariate TimeSeries containing the *explanations* of the corresponding `ForecastingModelExplainer`,
+        Then ``output`` is a multivariate TimeSeries containing the **explanations** of the corresponding
+        `ForecastingModelExplainer`,
          with component names:
              - T_0_target_lag-1
              - T_0_target_lag-2
@@ -287,33 +312,31 @@ class ForecastingModelExplainer(ABC):
              - T_1_target_lag-1
              - T_1_target_lag-2
              - T_1_target_lag-3
-             - 0_past_cov_lag-1 (we didn't name the past covariate so it took the default name 0)
-             - 0_past_cov_lag-3 (we didn't name the past covariate so it took the default name 0)
-             - 1_past_cov_lag-1 (we didn't name the past covariate so it took the default name 1)
-             - 1_past_cov_lag-3 (we didn't name the past covariate so it took the default name 1)
-             - 2_past_cov_lag-1 (we didn't name the past covariate so it took the default name 2)
-             - 2_past_cov_lag-3 (we didn't name the past covariate so it took the default name 2)
-             - 0_fut_cov_lag_0  (we didn't name the future covariate so it took the default name 0)
+             - 0_past_cov_lag-1
+             - 0_past_cov_lag-3
+             - 1_past_cov_lag-1
+             - 1_past_cov_lag-3
+             - 2_past_cov_lag-1
+             - 2_past_cov_lag-3
+             - 0_fut_cov_lag_0
 
          of length 3, as we can explain 5-3+1 forecasts (basically timestamp indexes 4, 5, and 6)
 
-
-
          Parameters
          ----------
-         foreground_series
-             Optionally, the target `TimeSeries` to be explained. Can be multivariate.
-             If none is provided, the background `TimeSeries` will be explained instead.
-         foreground_past_covariates
-             Optionally, past covariate timeseries if needed by the ForecastingModel.
-         foreground_future_covariates
-             Optionally, future covariate timeseries if needed by the ForecastingModel.
-         horizons
-             Optionally, a list of integer values representing which elements in the future
-             we want to explain, starting from the first timestamp prediction at 0.
-             For now we consider only models with output_chunk_length and it can't be bigger than output_chunk_length.
-         target_names
-             Optionally, A list of string naming the target names we want to explain.
+        foreground_series
+            Optionally, the target `TimeSeries` to be explained. Can be multivariate.
+            If none is provided, the background `TimeSeries` will be explained instead.
+        foreground_past_covariates
+            Optionally, past covariate timeseries if needed by the ForecastingModel.
+        foreground_future_covariates
+            Optionally, future covariate timeseries if needed by the ForecastingModel.
+        horizons
+            Optionally, a collection of integers representing the future lags to be explained.
+            Horizon 1 corresponds to the first timestamp being forecasted.
+            All values must be no larger than `output_chunk_length` of the explained model.
+        target_components
+            Optionally, A list of string naming the target components we want to explain.
 
          Returns
          -------
