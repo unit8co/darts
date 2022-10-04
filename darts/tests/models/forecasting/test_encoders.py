@@ -828,7 +828,7 @@ class EncoderTestCase(DartsBaseTestClass):
         self.assertTrue((ts.time_index.year.values == t1.values()[:, 0]).all())
         self.assertTrue((ts.time_index.year.values - 1 == t1.values()[:, 1]).all())
 
-    def test_transformer(self):
+    def test_transformer_single_series(self):
         def test_routine_cyclic(past_covs):
             for curve in ["sin", "cos"]:
                 self.assertAlmostEqual(
@@ -915,6 +915,150 @@ class EncoderTestCase(DartsBaseTestClass):
         self.assertAlmostEqual(
             fc3["darts_enc_fc_pos_absolute"][80 - 1].values()[0, 0], 80 / 60, delta=0.01
         )
+
+    def test_transformer_multi_series(self):
+        ts1 = tg.linear_timeseries(
+            start_value=1, end_value=2, length=21, freq="T", column_name="cov"
+        )
+        ts2 = tg.linear_timeseries(
+            start=None,
+            end=ts1.end_time(),
+            start_value=1.5,
+            end_value=2,
+            length=11,
+            freq="T",
+            column_name="cov",
+        )
+        ts1_inf = ts1.drop_before(ts2.start_time() - ts1.freq)
+        ts2_inf = ts2
+        encoder_params = {
+            "datetime_attribute": {"past": ["minute"], "future": ["minute"]},
+            "position": {"future": ["relative"]},
+            "transformer": Scaler(),
+        }
+
+        enc_base = SequentialEncoder(
+            add_encoders=encoder_params,
+            input_chunk_length=11,
+            output_chunk_length=6,
+            takes_past_covariates=True,
+            takes_future_covariates=True,
+        )
+
+        # ====> TEST Transformation starting from multi-TimeSeries input: transformer is globally fit per encoded
+        # component
+        enc = copy.deepcopy(enc_base)
+        pc, fc = enc.encode_train([ts1, ts2], future_covariate=[ts1, ts2])
+        # user supplied covariates should not be transformed
+        self.assertTrue(fc[0]["cov"] == ts1)
+        self.assertTrue(fc[1]["cov"] == ts2)
+        # check that first covariate series ranges from 0. to 1. and second from 0.5 to 1.
+        for covs, cov_name in zip(
+            [pc, fc], ["darts_enc_pc_dta_minute", "darts_enc_fc_dta_minute"]
+        ):
+            self.assertAlmostEqual(
+                covs[0][cov_name].values(copy=False).min(), 0.0, delta=10e-9
+            )
+            self.assertAlmostEqual(
+                covs[0][cov_name].values(copy=False).max(), 1.0, delta=10e-9
+            )
+            self.assertAlmostEqual(
+                covs[1][cov_name].values(copy=False).min(), 0.5, delta=10e-9
+            )
+            self.assertAlmostEqual(
+                covs[1][cov_name].values(copy=False).max(), 1.0, delta=10e-9
+            )
+
+        # check the same for inference (future covs will be identical to `encode_train()` as we give covariates
+        # as input)
+        pc, fc = enc.encode_inference(
+            n=6, target=[ts1, ts2], future_covariate=[ts1_inf, ts2_inf]
+        )
+        for covs, cov_name in zip(
+            [pc, fc], ["darts_enc_pc_dta_minute", "darts_enc_fc_dta_minute"]
+        ):
+            for cov in covs:
+                self.assertAlmostEqual(
+                    cov[cov_name].values(copy=False).min(), 0.5, delta=10e-9
+                )
+                self.assertAlmostEqual(
+                    cov[cov_name].values(copy=False).max(), 1.0, delta=10e-9
+                )
+
+        # check the same for only supplying single series as input
+        pc, fc = enc.encode_inference(n=6, target=ts2, future_covariate=ts2_inf)
+        for cov, cov_name in zip(
+            [pc, fc], ["darts_enc_pc_dta_minute", "darts_enc_fc_dta_minute"]
+        ):
+            self.assertAlmostEqual(
+                cov[cov_name].values(copy=False).min(), 0.5, delta=10e-9
+            )
+            self.assertAlmostEqual(
+                cov[cov_name].values(copy=False).max(), 1.0, delta=10e-9
+            )
+
+        # ====> TEST Transformation starting from single-TimeSeries input: transformer is fit per component of a single
+        # encoded series
+        enc = copy.deepcopy(enc_base)
+        pc, fc = enc.encode_train(ts2, future_covariate=ts2)
+        # user supplied covariates should not be transformed
+        self.assertTrue(fc["cov"] == ts2)
+        # check that first covariate series ranges from 0. to 1. and second from 0.5 to 1.
+        for covs, cov_name in zip(
+            [pc, fc], ["darts_enc_pc_dta_minute", "darts_enc_fc_dta_minute"]
+        ):
+            self.assertAlmostEqual(
+                covs[cov_name].values(copy=False).min(), 0.0, delta=10e-9
+            )
+            self.assertAlmostEqual(
+                covs[cov_name].values(copy=False).max(), 1.0, delta=10e-9
+            )
+
+        # second time fitting will not fit transformers again
+        pc, fc = enc.encode_train([ts1, ts2], future_covariate=[ts1, ts2])
+        for covs, cov_name in zip(
+            [pc, fc], ["darts_enc_pc_dta_minute", "darts_enc_fc_dta_minute"]
+        ):
+            self.assertAlmostEqual(
+                covs[0][cov_name].values(copy=False).min(), -1.0, delta=10e-9
+            )
+            self.assertAlmostEqual(
+                covs[0][cov_name].values(copy=False).max(), 1.0, delta=10e-9
+            )
+            self.assertAlmostEqual(
+                covs[1][cov_name].values(copy=False).min(), 0.0, delta=10e-9
+            )
+            self.assertAlmostEqual(
+                covs[1][cov_name].values(copy=False).max(), 1.0, delta=10e-9
+            )
+
+        # check inference with single series (future covs will be identical to `encode_train()` as we give covariates
+        # as input)
+        pc, fc = enc.encode_inference(n=6, target=ts2, future_covariate=ts2_inf)
+        for cov, cov_name in zip(
+            [pc, fc], ["darts_enc_pc_dta_minute", "darts_enc_fc_dta_minute"]
+        ):
+            self.assertAlmostEqual(
+                cov[cov_name].values(copy=False).min(), 0.0, delta=10e-9
+            )
+            self.assertAlmostEqual(
+                cov[cov_name].values(copy=False).max(), 1.0, delta=10e-9
+            )
+
+        # check the same for supplying multiple series as input
+        pc, fc = enc.encode_inference(
+            n=6, target=[ts1, ts2], future_covariate=[ts1_inf, ts2_inf]
+        )
+        for covs, cov_name in zip(
+            [pc, fc], ["darts_enc_pc_dta_minute", "darts_enc_fc_dta_minute"]
+        ):
+            for cov in covs:
+                self.assertAlmostEqual(
+                    cov[cov_name].values(copy=False).min(), 0.0, delta=10e-9
+                )
+                self.assertAlmostEqual(
+                    cov[cov_name].values(copy=False).max(), 1.0, delta=10e-9
+                )
 
     def helper_test_cyclic_encoder(
         self,
