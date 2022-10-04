@@ -1,9 +1,10 @@
 """
 Shap Explainer for RegressionModels
 ------------------------------------
-This class wraps a `shap explainer <https://github.com/slundberg/shap>`_ specifically for time series.
+A `shap explainer <https://github.com/slundberg/shap>`_ specifically for time series
+forecasting models.
 
-This class is (currently) limited to `RegressionModel` instances of forecasting models.
+This class is (currently) limited to Darts' `RegressionModel` instances of forecasting models.
 It uses shap values to provide "explanations" of each input features.
 The input features are the different past lags (of the target and/or past covariates),
 as well as potential future lags of future covariates used as inputs by the forecasting
