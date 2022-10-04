@@ -271,7 +271,7 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
             <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">val_dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">val_dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
         <span class="p">):</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                 <span class="s2">&quot;TimeSeries is using a numeric type different from np.float32 or np.float64. &quot;</span>
                 <span class="s2">&quot;Not all functionalities may work properly. It is recommended casting your data to floating &quot;</span>
                 <span class="s2">&quot;point numbers before using TimeSeries.&quot;</span>
@@ -306,8 +306,6 @@
         <span class="c1"># As of xarray 0.18.2, this sorting discards the freq of the index for some reason</span>
         <span class="c1"># https://github.com/pydata/xarray/issues/5466</span>
         <span class="c1"># We sort only if the time axis is not already sorted (monotically increasing).</span>
-
-        <span class="c1"># TODO also avoid sorting if index is RangeIndex (already sorted by definition)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">xa</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">xa</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">)</span><span class="o">.</span><span class="n">is_monotonic_increasing</span>
@@ -372,7 +370,7 @@
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="o">.</span><span class="n">step</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_freq_str</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="c1"># check static covariates</span>
@@ -605,7 +603,8 @@
 <span class="sd">        filepath_or_buffer</span>
 <span class="sd">            The path to the CSV file, or the file object; consistent with the argument of `pandas.read_csv` function</span>
 <span class="sd">        time_col</span>
-<span class="sd">            The time column name. If set, the column will be cast to a pandas DatetimeIndex.</span>
+<span class="sd">            The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains</span>
+<span class="sd">            timestamps) or a RangeIndex with step size of 1 (if it contains integers).</span>
 <span class="sd">            If not set, the pandas RangeIndex will be used.</span>
 <span class="sd">        value_cols</span>
 <span class="sd">            A string or list of strings representing the value column(s) to be extracted from the CSV file. If set to</span>
@@ -695,7 +694,8 @@
 <span class="sd">        df</span>
 <span class="sd">            The DataFrame</span>
 <span class="sd">        time_col</span>
-<span class="sd">            The time column name. If set, the column will be cast to a pandas DatetimeIndex.</span>
+<span class="sd">            The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains</span>
+<span class="sd">            timestamps) or a RangeIndex with step size of 1 (if it contains integers).</span>
 <span class="sd">            If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is</span>
 <span class="sd">            either a pandas DatetimeIndex or a pandas RangeIndex. If a DatetimeIndex is</span>
 <span class="sd">            used, it is better if it has no holes; alternatively setting `fill_missing_dates` can in some casees solve</span>
@@ -868,7 +868,8 @@
 <span class="sd">            A string or list of strings representing the columns from the DataFrame by which to extract the</span>
 <span class="sd">            individual TimeSeries groups.</span>
 <span class="sd">        time_col</span>
-<span class="sd">            The time column name. If set, the column will be cast to a pandas DatetimeIndex.</span>
+<span class="sd">            The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains</span>
+<span class="sd">            timestamps) or a RangeIndex with step size of 1 (if it contains integers).</span>
 <span class="sd">            If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is</span>
 <span class="sd">            either a pandas DatetimeIndex or a pandas RangeIndex. If a DatetimeIndex is</span>
 <span class="sd">            used, it is better if it has no holes; alternatively setting `fill_missing_dates` can in some casees solve</span>
@@ -2057,7 +2058,7 @@
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_datetime_index</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_freq</span><span class="p">)</span><span class="o">.</span><span class="n">size</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">start</span> <span class="o">-</span> <span class="n">end</span>
+                <span class="k">return</span> <span class="nb">int</span><span class="p">((</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
 
         <span class="n">gap_df</span><span class="p">[</span><span class="s2">&quot;gap_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gap_df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
             <span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">intvl</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">gap_start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">gap_end</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span>
@@ -2082,7 +2083,7 @@
         <span class="bp">self</span><span class="p">,</span> <span class="n">point</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">after</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Converts a point along the time axis into an integer index.</span>
+<span class="sd">        Converts a point along the time axis index into an integer index ranging in (0, len(series)-1).</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -2098,8 +2099,9 @@
 <span class="sd">            In case of a ``float``, the parameter will be treated as the proportion of the time series</span>
 <span class="sd">            that should lie before the point.</span>
 
-<span class="sd">            In the case of ``int``, the parameter will returned as such, provided that it is in the series. Otherwise</span>
-<span class="sd">            it will raise a ValueError.</span>
+<span class="sd">            If an ``int`` and series is datetime-indexed, the value of `point` is returned.</span>
+<span class="sd">            If an ``int`` and series is integer-indexed, the index position of `point` in the RangeIndex is returned</span>
+<span class="sd">            (accounting for steps).</span>
 <span class="sd">        after</span>
 <span class="sd">            If the provided pandas Timestamp is not in the time series index, whether to return the index of the</span>
 <span class="sd">            next timestamp or the index of the previous one.</span>
@@ -2114,12 +2116,20 @@
             <span class="p">)</span>
             <span class="n">point_index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">point</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)):</span>
-            <span class="n">raise_if</span><span class="p">(</span>
-                <span class="n">point</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)),</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_datetime_index</span> <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="n">point_index</span> <span class="o">=</span> <span class="n">point</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">point_index_float</span> <span class="o">=</span> <span class="p">(</span><span class="n">point</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">())</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span>
+                <span class="n">point_index</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">point_index_float</span><span class="p">)</span>
+                <span class="n">raise_if</span><span class="p">(</span>
+                    <span class="n">point_index</span> <span class="o">!=</span> <span class="n">point_index_float</span><span class="p">,</span>
+                    <span class="s2">&quot;The provided point is not a valid index for this series.&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="n">raise_if_not</span><span class="p">(</span>
+                <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">point_index</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span>
                 <span class="s2">&quot;point (int) should be a valid index in series&quot;</span><span class="p">,</span>
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="n">point_index</span> <span class="o">=</span> <span class="n">point</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">):</span>
             <span class="n">raise_if_not</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_has_datetime_index</span><span class="p">,</span>
@@ -2258,8 +2268,11 @@
         <span class="bp">self</span><span class="p">,</span> <span class="n">start_ts</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">end_ts</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Return a new TimeSeries, starting later than `start_ts` and ending before `end_ts`, inclusive on both ends.</span>
-<span class="sd">        The timestamps don&#39;t have to be in the series.</span>
+<span class="sd">        Return a new TimeSeries, starting later than `start_ts` and ending before `end_ts`.</span>
+<span class="sd">        For series having DatetimeIndex, this is inclusive on both ends. For series having a RangeIndex,</span>
+<span class="sd">        `end_ts` is exclusive.</span>
+
+<span class="sd">        `start_ts` and `end_ts` don&#39;t have to be in the series.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -2285,9 +2298,15 @@
                 <span class="s2">&quot;indexed using an integer-based RangeIndex.&quot;</span><span class="p">,</span>
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span>
-                <span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">start_ts</span> <span class="o">&lt;=</span> <span class="n">t</span> <span class="o">&lt;=</span> <span class="n">end_ts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="p">)</span>
-            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">start_ts</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span> <span class="ow">and</span> <span class="n">end_ts</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="p">[</span>
+                    <span class="n">start_ts</span><span class="p">:</span><span class="n">end_ts</span>
+                <span class="p">]</span>  <span class="c1"># we assume this is faster than the filtering below</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span>
+                    <span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">start_ts</span> <span class="o">&lt;=</span> <span class="n">t</span> <span class="o">&lt;=</span> <span class="n">end_ts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="p">)</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">raise_if</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_has_datetime_index</span><span class="p">,</span>
@@ -2295,8 +2314,23 @@
                 <span class="s2">&quot;the series is indexed with a DatetimeIndex.&quot;</span><span class="p">,</span>
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span><span class="n">start_ts</span><span class="p">,</span> <span class="n">end_ts</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span></div>
+            <span class="c1"># get closest timestamps if either start or end are not in the index</span>
+            <span class="n">effective_start_ts</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="nb">abs</span><span class="p">(</span><span class="n">t</span> <span class="o">-</span> <span class="n">start_ts</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">start_ts</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span>
+                <span class="k">else</span> <span class="n">start_ts</span>
+            <span class="p">)</span>
+            <span class="n">effective_end_ts</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="nb">abs</span><span class="p">(</span><span class="n">t</span> <span class="o">-</span> <span class="n">end_ts</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">end_ts</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span>
+                <span class="k">else</span> <span class="n">end_ts</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">end_ts</span> <span class="o">&gt;=</span> <span class="n">effective_end_ts</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">:</span>
+                <span class="c1"># if the requested end_ts is further off from the end of the time series,</span>
+                <span class="c1"># we have to increase effectiv_end_ts to make the last timestamp inclusive.</span>
+                <span class="n">effective_end_ts</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span><span class="n">effective_start_ts</span><span class="p">,</span> <span class="n">effective_end_ts</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span></div>
 
 <div class="viewcode-block" id="TimeSeries.slice_n_points_after"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.slice_n_points_after">[docs]</a>    <span class="k">def</span> <span class="nf">slice_n_points_after</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">start_ts</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span>
@@ -2676,7 +2710,9 @@
                 <span class="n">freq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_freq</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span>
+                <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">),</span> <span class="n">step</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">freq</span>
+            <span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
@@ -2740,7 +2776,7 @@
 <span class="sd">        Notes</span>
 <span class="sd">        -----</span>
 <span class="sd">        If there are a large number of static covariates variables (i.e., the static covariates have a very large</span>
-<span class="sd">        dimension), there might be a noticable performance penalty for creating ``TimeSeries`` objects, unless</span>
+<span class="sd">        dimension), there might be a noticeable performance penalty for creating ``TimeSeries`` objects, unless</span>
 <span class="sd">        the covariates already have the same ``dtype`` as the series data.</span>
 
 <span class="sd">        Examples</span>
@@ -3019,7 +3055,7 @@
 
 <span class="sd">        Return a new TimeSeries instance. If `fn` takes 1 argument it is simply applied on the backing array</span>
 <span class="sd">        of shape (time, n_components, n_samples).</span>
-<span class="sd">        If it takes 2 arguments, it is applied repeteadly on the (ts, value[ts]) tuples, where</span>
+<span class="sd">        If it takes 2 arguments, it is applied repeatedly on the (ts, value[ts]) tuples, where</span>
 <span class="sd">        &quot;ts&quot; denotes a timestamp value, and &quot;value[ts]&quot; denote the array of values at this timestamp, of shape</span>
 <span class="sd">        (n_components, n_samples).</span>
 
@@ -3227,7 +3263,7 @@
             <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;lw&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                 <span class="s2">&quot;Number of components is larger than 10 (</span><span class="si">{}</span><span class="s2">). Plotting only the first 10 components.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span>
                 <span class="p">)</span>
@@ -3260,7 +3296,16 @@
             <span class="p">)</span>
             <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">label_to_use</span>
 
-            <span class="n">p</span> <span class="o">=</span> <span class="n">central_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">central_series</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">central_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                    <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">()],</span>
+                    <span class="n">central_series</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                    <span class="s2">&quot;o&quot;</span><span class="p">,</span>
+                    <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+                <span class="p">)</span>
             <span class="n">color_used</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_color</span><span class="p">()</span> <span class="k">if</span> <span class="n">default_formatting</span> <span class="k">else</span> <span class="kc">None</span>
             <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">alpha</span> <span class="k">if</span> <span class="n">alpha</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">alpha_confidence_intvls</span>
 
@@ -3272,17 +3317,26 @@
             <span class="p">):</span>
                 <span class="n">low_series</span> <span class="o">=</span> <span class="n">comp</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">q</span><span class="o">=</span><span class="n">low_quantile</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
                 <span class="n">high_series</span> <span class="o">=</span> <span class="n">comp</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">q</span><span class="o">=</span><span class="n">high_quantile</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
-                <span class="n">plt</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
-                    <span class="n">low_series</span><span class="p">,</span>
-                    <span class="n">high_series</span><span class="p">,</span>
-                    <span class="n">color</span><span class="o">=</span><span class="n">color_used</span><span class="p">,</span>
-                    <span class="n">alpha</span><span class="o">=</span><span class="p">(</span>
-                        <span class="n">alpha_confidence_intvls</span>
-                        <span class="k">if</span> <span class="s2">&quot;alpha&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span>
-                        <span class="k">else</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span>
-                    <span class="p">),</span>
-                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">low_series</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">plt</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
+                        <span class="n">low_series</span><span class="p">,</span>
+                        <span class="n">high_series</span><span class="p">,</span>
+                        <span class="n">color</span><span class="o">=</span><span class="n">color_used</span><span class="p">,</span>
+                        <span class="n">alpha</span><span class="o">=</span><span class="p">(</span>
+                            <span class="n">alpha_confidence_intvls</span>
+                            <span class="k">if</span> <span class="s2">&quot;alpha&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span>
+                            <span class="k">else</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span>
+                        <span class="p">),</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                        <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">()],</span>
+                        <span class="p">[</span><span class="n">low_series</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">high_series</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span>
+                        <span class="s2">&quot;-+&quot;</span><span class="p">,</span>
+                        <span class="n">color</span><span class="o">=</span><span class="n">color_used</span><span class="p">,</span>
+                        <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                    <span class="p">)</span>
 
         <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">name</span><span class="p">)</span></div>
@@ -4141,6 +4195,15 @@
 
 <span class="sd">        .. warning::</span>
 <span class="sd">            slices use pandas convention of including both ends of the slice.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        For integer-indexed series, integers or slices of integer will return the result</span>
+<span class="sd">        of ``isel()``. That is, if integer ``i`` is provided, it returns the ``i``-th value</span>
+<span class="sd">        along the series, which is not necessarily the value where the time index is equal to ``i``</span>
+<span class="sd">        (e.g., if the time index does not start at 0). In contrast, calling this method with a</span>
+<span class="sd">        ``pd.RangeIndex`` returns the result of ``sel()`` - i.e., the values where the time</span>
+<span class="sd">        index matches the provided range index.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">def</span> <span class="nf">_check_dt</span><span class="p">():</span>
@@ -4243,11 +4306,13 @@
 
             <span class="c1"># restore a RangeIndex if needed:</span>
             <span class="n">time_idx</span> <span class="o">=</span> <span class="n">xa_</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">)</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time_idx</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Int64Index</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span>
-                <span class="n">time_idx</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span>
-            <span class="p">):</span>
+            <span class="k">if</span> <span class="n">time_idx</span><span class="o">.</span><span class="n">is_integer</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time_idx</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">):</span>
                 <span class="n">xa_</span> <span class="o">=</span> <span class="n">xa_</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">(</span>
-                    <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="n">key</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)}</span>
+                    <span class="p">{</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span>
+                            <span class="n">start</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="n">key</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">freq</span>
+                        <span class="p">)</span>
+                    <span class="p">}</span>
                 <span class="p">)</span>
 
             <span class="n">_set_freq_in_xa</span><span class="p">(</span><span class="n">xa_</span><span class="p">)</span>  <span class="c1"># indexing may discard the freq so we restore it...</span>
@@ -4477,9 +4542,9 @@
                 <span class="s2">&quot;of the first series.&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
-            <span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="n">_generate_index</span>
+            <span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="n">generate_index</span>
 
-            <span class="n">tindex</span> <span class="o">=</span> <span class="n">_generate_index</span><span class="p">(</span>
+            <span class="n">tindex</span> <span class="o">=</span> <span class="n">generate_index</span><span class="p">(</span>
                 <span class="n">start</span><span class="o">=</span><span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span>
                 <span class="n">freq</span><span class="o">=</span><span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">freq_str</span><span class="p">,</span>
                 <span class="n">length</span><span class="o">=</span><span class="n">da_concat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>

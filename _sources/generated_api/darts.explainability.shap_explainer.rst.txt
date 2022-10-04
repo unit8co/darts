@@ -1,0 +1,4 @@
+
+.. automodule:: darts.explainability.shap_explainer
+   :members:
+   :undoc-members:

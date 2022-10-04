@@ -234,11 +234,33 @@
   </ul>
  </li>
  <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.metrics.html">
-   Metrics
+  <a class="reference internal" href="darts.explainability.html">
+   Explainability
   </a>
   <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
   <label for="toctree-checkbox-4">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.explainability_result.html">
+     ExplainabilityResult
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.shap_explainer.html">
+     Shap Explainer for RegressionModels
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.metrics.html">
+   Metrics
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+  <label for="toctree-checkbox-5">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -254,8 +276,8 @@
   <a class="reference internal" href="darts.models.html">
    Models
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
-  <label for="toctree-checkbox-5">
+  <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+  <label for="toctree-checkbox-6">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -264,8 +286,8 @@
     <a class="reference internal" href="darts.models.filtering.html">
      Filtering Models
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
-    <label for="toctree-checkbox-6">
+    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
+    <label for="toctree-checkbox-7">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -291,8 +313,8 @@
     <a class="reference internal" href="darts.models.forecasting.html">
      Forecasting Models
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
-    <label for="toctree-checkbox-7">
+    <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
+    <label for="toctree-checkbox-8">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -393,6 +415,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_ets.html">
+       StatsForecastETS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.tbats.html">
        BATS and TBATS
       </a>
@@ -430,8 +457,8 @@
   <a class="reference internal" href="darts.utils.html">
    Utils
   </a>
-  <input checked="" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
-  <label for="toctree-checkbox-8">
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
+  <label for="toctree-checkbox-9">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -440,8 +467,8 @@
     <a class="reference internal" href="darts.utils.data.html">
      TimeSeries Datasets
     </a>
-    <input checked="" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
-    <label for="toctree-checkbox-9">
+    <input checked="" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
+    <label for="toctree-checkbox-10">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -594,7 +621,7 @@ inference.</p>
 <p>The encoders extract the index either from the target series or optional additional past/future covariates.
 If additional covariates are supplied to <cite>encode_train()</cite> or <cite>encode_inference()</cite>, the time index of those
 covariates are used for the encodings. This means that the input covariates must meet the same model-specific
-requirements as wihtout encoders.</p>
+requirements as without encoders.</p>
 <p>There are two main types of encoder classes: <cite>SingleEncoder</cite> and <cite>SequentialEncoder</cite>.</p>
 <ul>
 <li><dl>
@@ -638,7 +665,7 @@ The requirements for model parameter <cite>add_encoders</cite> are described in 
 <p>The SingleEncoders from {X}{SingleEncoder} are:</p>
 <ul>
 <li><dl>
-<dt>DatetimeAttributeEncoder</dt><dd><p>Adds scalar pd.DatatimeIndex attribute information derived from <cite>series.time_index</cite>.
+<dt><cite>DatetimeAttributeEncoder</cite></dt><dd><p>Adds scalar pd.DatatimeIndex attribute information derived from <cite>series.time_index</cite>.
 Requires <cite>series</cite> to have a pd.DatetimeIndex.</p>
 <dl class="simple">
 <dt>attribute</dt><dd><p>An attribute of <cite>pd.DatetimeIndex</cite>: see all available attributes in
@@ -649,7 +676,7 @@ Requires <cite>series</cite> to have a pd.DatetimeIndex.</p>
 </dl>
 </li>
 <li><dl>
-<dt>CyclicTemporalEncoder</dt><dd><p>Adds cyclic pd.DatetimeIndex attribute information deriveed from <cite>series.time_index</cite>.
+<dt><cite>CyclicTemporalEncoder</cite></dt><dd><p>Adds cyclic pd.DatetimeIndex attribute information deriveed from <cite>series.time_index</cite>.
 Adds 2 columns, corresponding to sin and cos encodings, to uniquely describe the underlying attribute.
 Requires <cite>series</cite> to have a pd.DatetimeIndex.</p>
 <dl class="simple">
@@ -662,11 +689,10 @@ Requires <cite>series</cite> to have a pd.DatetimeIndex.</p>
 </dl>
 </li>
 <li><dl>
-<dt>IntegerIndexEncoder</dt><dd><p>Adds absolute or relative index positions as integer values (positions) derived from <cite>series</cite> time index.
+<dt><cite>IntegerIndexEncoder</cite></dt><dd><p>Adds the relative index positions as integer values (positions) derived from <cite>series</cite> time index.
 <cite>series</cite> can either have a pd.DatetimeIndex or an integer index.</p>
 <dl class="simple">
-<dt>attribute</dt><dd><p>Either ‘absolute’ or ‘relative’.
-‘absolute’ will generate position values ranging from 0 to inf where 0 is set at the start of <cite>series</cite>.
+<dt>attribute</dt><dd><p>Currently, only ‘relative’ is supported.
 ‘relative’ will generate position values relative to the forecasting/prediction point. Values range
 from -inf to inf where 0 is set at the forecasting point.</p>
 </dd>
@@ -675,7 +701,7 @@ from -inf to inf where 0 is set at the forecasting point.</p>
 </dl>
 </li>
 <li><dl>
-<dt>CallableIndexEncoder</dt><dd><p>Applies a user-defined callable to encode <cite>series</cite>’ index.
+<dt><cite>CallableIndexEncoder</cite></dt><dd><p>Applies a user-defined callable to encode <cite>series</cite>’ index.
 <cite>series</cite> can either have a pd.DatetimeIndex or an integer index.</p>
 <dl class="simple">
 <dt>attribute</dt><dd><p>a callable/function to encode the index.
@@ -728,7 +754,7 @@ TorchForecastingModel (this is only meant to illustrate many features at once).<
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">add_encoders</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s1">&#39;cyclic&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;future&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;month&#39;</span><span class="p">]},</span>
     <span class="s1">&#39;datetime_attribute&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;future&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;hour&#39;</span><span class="p">,</span> <span class="s1">&#39;dayofweek&#39;</span><span class="p">]},</span>
-    <span class="s1">&#39;position&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;past&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;absolute&#39;</span><span class="p">],</span> <span class="s1">&#39;future&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;relative&#39;</span><span class="p">]},</span>
+    <span class="s1">&#39;position&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;past&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;relative&#39;</span><span class="p">],</span> <span class="s1">&#39;future&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;relative&#39;</span><span class="p">]},</span>
     <span class="s1">&#39;custom&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;past&#39;</span><span class="p">:</span> <span class="p">[</span><span class="k">lambda</span> <span class="n">idx</span><span class="p">:</span> <span class="p">(</span><span class="n">idx</span><span class="o">.</span><span class="n">year</span> <span class="o">-</span> <span class="mi">1950</span><span class="p">)</span> <span class="o">/</span> <span class="mi">50</span><span class="p">]},</span>
     <span class="s1">&#39;transformer&#39;</span><span class="p">:</span> <span class="n">Scaler</span><span class="p">()</span>
 <span class="p">}</span>
@@ -740,7 +766,7 @@ TorchForecastingModel (this is only meant to illustrate many features at once).<
 <dt class="sig sig-object py" id="darts.utils.data.encoders.CallableIndexEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoders.</span></span><span class="sig-name descname"><span class="pre">CallableIndexEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index_generator</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#CallableIndexEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.CallableIndexEncoder" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.SingleEncoder" title="darts.utils.data.encoder_base.SingleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoder_base.SingleEncoder</span></code></a></p>
-<p>CallableIndexEncoder: Applies a user-defined callable to encode the underlying index for past and future
+<p><cite>CallableIndexEncoder</cite>: Applies a user-defined callable to encode the underlying index for past and future
 covariates.</p>
 <p class="rubric">Attributes</p>
 <table class="longtable table autosummary">
@@ -750,7 +776,19 @@ covariates.</p>
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CallableIndexEncoder.accept_transformer" title="darts.utils.data.encoders.CallableIndexEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>CallableIndexEncoder accepts transformations.</p></td>
+<td><p><cite>CallableIndexEncoder</cite> accepts transformations.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CallableIndexEncoder.base_component_name" title="darts.utils.data.encoders.CallableIndexEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CallableIndexEncoder.components" title="darts.utils.data.encoders.CallableIndexEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CallableIndexEncoder.fit_called" title="darts.utils.data.encoders.CallableIndexEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CallableIndexEncoder.requires_fit" title="darts.utils.data.encoders.CallableIndexEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -790,7 +828,19 @@ An example for a correct <cite>attribute</cite> for <cite>index</cite> of type p
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CallableIndexEncoder.accept_transformer" title="darts.utils.data.encoders.CallableIndexEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>CallableIndexEncoder accepts transformations.</p></td>
+<td><p><cite>CallableIndexEncoder</cite> accepts transformations.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CallableIndexEncoder.base_component_name" title="darts.utils.data.encoders.CallableIndexEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CallableIndexEncoder.components" title="darts.utils.data.encoders.CallableIndexEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CallableIndexEncoder.fit_called" title="darts.utils.data.encoders.CallableIndexEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CallableIndexEncoder.requires_fit" title="darts.utils.data.encoders.CallableIndexEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -812,10 +862,57 @@ An example for a correct <cite>attribute</cite> for <cite>index</cite> of type p
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.data.encoders.CallableIndexEncoder.accept_transformer">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.CallableIndexEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
-<dd><p>CallableIndexEncoder accepts transformations.</p>
+<dd><p><cite>CallableIndexEncoder</cite> accepts transformations.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.CallableIndexEncoder.base_component_name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">base_component_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.utils.data.encoders.CallableIndexEncoder.base_component_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the base encoder base component name. The string follows the given format:
+<cite>“darts_enc_{covariate_temp}_{encoder}_{attribute}”</cite>, where the elements are:</p>
+<ul class="simple">
+<li><p>covariate_temp: “pc” or “fc” for past, or future covariates respectively.</p></li>
+<li><dl class="simple">
+<dt>encoder: the SingleEncoder type used:</dt><dd><ul>
+<li><p>“cyc” (cyclic temporal encoder),</p></li>
+<li><p>“dta” (datetime attribute encoder),</p></li>
+<li><p>“pos” (positional integer index encoder),</p></li>
+<li><p>“cus” (custom callable index encoder)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>attribute: the attribute used for the underlying encoder. Some examples:</dt><dd><ul>
+<li><p>“month_sin”, “month_cos” (for “cyc”)</p></li>
+<li><p>“month” (for “dta”)</p></li>
+<li><p>“relative” (for “pos”)</p></li>
+<li><p>“custom” (for “cus”)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.CallableIndexEncoder.components">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.utils.data.encoders.CallableIndexEncoder.components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
+<cite>Encoder.encode_inference()</cite> have been called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -861,12 +958,75 @@ An example for a correct <cite>attribute</cite> for <cite>index</cite> of type p
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.CallableIndexEncoder.fit_called">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fit_called</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.CallableIndexEncoder.fit_called" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.CallableIndexEncoder.requires_fit">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">requires_fit</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.CallableIndexEncoder.requires_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference
+with <cite>Encoder.encode_inference()</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.encoders.CyclicTemporalEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoders.</span></span><span class="sig-name descname"><span class="pre">CyclicTemporalEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index_generator</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#CyclicTemporalEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.CyclicTemporalEncoder" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.SingleEncoder" title="darts.utils.data.encoder_base.SingleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoder_base.SingleEncoder</span></code></a></p>
+<p><cite>CyclicTemporalEncoder</cite>: Cyclic encoding of time series datetime attributes.</p>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CyclicTemporalEncoder.accept_transformer" title="darts.utils.data.encoders.CyclicTemporalEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
+<td><p><cite>CyclicTemporalEncoder</cite> should not be transformed.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CyclicTemporalEncoder.base_component_name" title="darts.utils.data.encoders.CyclicTemporalEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CyclicTemporalEncoder.components" title="darts.utils.data.encoders.CyclicTemporalEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CyclicTemporalEncoder.fit_called" title="darts.utils.data.encoders.CyclicTemporalEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CyclicTemporalEncoder.requires_fit" title="darts.utils.data.encoders.CyclicTemporalEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CyclicTemporalEncoder.encode_inference" title="darts.utils.data.encoders.CyclicTemporalEncoder.encode_inference"><code class="xref py py-obj docutils literal notranslate"><span class="pre">encode_inference</span></code></a>(n, target[, covariate, ...])</p></td>
+<td><p>Returns encoded index for inference/prediction.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CyclicTemporalEncoder.encode_train" title="darts.utils.data.encoders.CyclicTemporalEncoder.encode_train"><code class="xref py py-obj docutils literal notranslate"><span class="pre">encode_train</span></code></a>(target[, covariate, ...])</p></td>
+<td><p>Returns encoded index for training.</p></td>
+</tr>
+</tbody>
+</table>
 <p>Cyclic index encoding for <cite>TimeSeries</cite> that have a time index of type <cite>pd.DatetimeIndex</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -889,7 +1049,19 @@ For more information, check out <a class="reference internal" href="darts.utils.
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CyclicTemporalEncoder.accept_transformer" title="darts.utils.data.encoders.CyclicTemporalEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>CyclicTemporalEncoder should not be transformed.</p></td>
+<td><p><cite>CyclicTemporalEncoder</cite> should not be transformed.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CyclicTemporalEncoder.base_component_name" title="darts.utils.data.encoders.CyclicTemporalEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CyclicTemporalEncoder.components" title="darts.utils.data.encoders.CyclicTemporalEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CyclicTemporalEncoder.fit_called" title="darts.utils.data.encoders.CyclicTemporalEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CyclicTemporalEncoder.requires_fit" title="darts.utils.data.encoders.CyclicTemporalEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -911,10 +1083,57 @@ For more information, check out <a class="reference internal" href="darts.utils.
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.data.encoders.CyclicTemporalEncoder.accept_transformer">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.CyclicTemporalEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
-<dd><p>CyclicTemporalEncoder should not be transformed. Returns two elements for sine and cosine waves.</p>
+<dd><p><cite>CyclicTemporalEncoder</cite> should not be transformed. Returns two elements for sine and cosine waves.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.CyclicTemporalEncoder.base_component_name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">base_component_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.utils.data.encoders.CyclicTemporalEncoder.base_component_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the base encoder base component name. The string follows the given format:
+<cite>“darts_enc_{covariate_temp}_{encoder}_{attribute}”</cite>, where the elements are:</p>
+<ul class="simple">
+<li><p>covariate_temp: “pc” or “fc” for past, or future covariates respectively.</p></li>
+<li><dl class="simple">
+<dt>encoder: the SingleEncoder type used:</dt><dd><ul>
+<li><p>“cyc” (cyclic temporal encoder),</p></li>
+<li><p>“dta” (datetime attribute encoder),</p></li>
+<li><p>“pos” (positional integer index encoder),</p></li>
+<li><p>“cus” (custom callable index encoder)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>attribute: the attribute used for the underlying encoder. Some examples:</dt><dd><ul>
+<li><p>“month_sin”, “month_cos” (for “cyc”)</p></li>
+<li><p>“month” (for “dta”)</p></li>
+<li><p>“relative” (for “pos”)</p></li>
+<li><p>“custom” (for “cus”)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.CyclicTemporalEncoder.components">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.utils.data.encoders.CyclicTemporalEncoder.components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
+<cite>Encoder.encode_inference()</cite> have been called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -960,13 +1179,36 @@ For more information, check out <a class="reference internal" href="darts.utils.
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.CyclicTemporalEncoder.fit_called">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fit_called</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.CyclicTemporalEncoder.fit_called" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.CyclicTemporalEncoder.requires_fit">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">requires_fit</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.CyclicTemporalEncoder.requires_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference
+with <cite>Encoder.encode_inference()</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.encoders.DatetimeAttributeEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoders.</span></span><span class="sig-name descname"><span class="pre">DatetimeAttributeEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index_generator</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#DatetimeAttributeEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.DatetimeAttributeEncoder" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.SingleEncoder" title="darts.utils.data.encoder_base.SingleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoder_base.SingleEncoder</span></code></a></p>
-<p>DatetimeAttributeEncoder: Adds pd.DatatimeIndex attribute information derived from the index as scalars.
+<p><cite>DatetimeAttributeEncoder</cite>: Adds pd.DatatimeIndex attribute information derived from the index as scalars.
 Requires the underlying TimeSeries to have a pd.DatetimeIndex</p>
 <p class="rubric">Attributes</p>
 <table class="longtable table autosummary">
@@ -976,7 +1218,19 @@ Requires the underlying TimeSeries to have a pd.DatetimeIndex</p>
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.DatetimeAttributeEncoder.accept_transformer" title="darts.utils.data.encoders.DatetimeAttributeEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>DatetimeAttributeEncoder accepts transformations</p></td>
+<td><p><cite>DatetimeAttributeEncoder</cite> accepts transformations</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.DatetimeAttributeEncoder.base_component_name" title="darts.utils.data.encoders.DatetimeAttributeEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.DatetimeAttributeEncoder.components" title="darts.utils.data.encoders.DatetimeAttributeEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.DatetimeAttributeEncoder.fit_called" title="darts.utils.data.encoders.DatetimeAttributeEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.DatetimeAttributeEncoder.requires_fit" title="darts.utils.data.encoders.DatetimeAttributeEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1016,7 +1270,19 @@ For more information, check out <a class="reference internal" href="darts.utils.
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.DatetimeAttributeEncoder.accept_transformer" title="darts.utils.data.encoders.DatetimeAttributeEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>DatetimeAttributeEncoder accepts transformations</p></td>
+<td><p><cite>DatetimeAttributeEncoder</cite> accepts transformations</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.DatetimeAttributeEncoder.base_component_name" title="darts.utils.data.encoders.DatetimeAttributeEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.DatetimeAttributeEncoder.components" title="darts.utils.data.encoders.DatetimeAttributeEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.DatetimeAttributeEncoder.fit_called" title="darts.utils.data.encoders.DatetimeAttributeEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.DatetimeAttributeEncoder.requires_fit" title="darts.utils.data.encoders.DatetimeAttributeEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1038,10 +1304,57 @@ For more information, check out <a class="reference internal" href="darts.utils.
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.data.encoders.DatetimeAttributeEncoder.accept_transformer">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.DatetimeAttributeEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
-<dd><p>DatetimeAttributeEncoder accepts transformations</p>
+<dd><p><cite>DatetimeAttributeEncoder</cite> accepts transformations</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.DatetimeAttributeEncoder.base_component_name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">base_component_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.utils.data.encoders.DatetimeAttributeEncoder.base_component_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the base encoder base component name. The string follows the given format:
+<cite>“darts_enc_{covariate_temp}_{encoder}_{attribute}”</cite>, where the elements are:</p>
+<ul class="simple">
+<li><p>covariate_temp: “pc” or “fc” for past, or future covariates respectively.</p></li>
+<li><dl class="simple">
+<dt>encoder: the SingleEncoder type used:</dt><dd><ul>
+<li><p>“cyc” (cyclic temporal encoder),</p></li>
+<li><p>“dta” (datetime attribute encoder),</p></li>
+<li><p>“pos” (positional integer index encoder),</p></li>
+<li><p>“cus” (custom callable index encoder)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>attribute: the attribute used for the underlying encoder. Some examples:</dt><dd><ul>
+<li><p>“month_sin”, “month_cos” (for “cyc”)</p></li>
+<li><p>“month” (for “dta”)</p></li>
+<li><p>“relative” (for “pos”)</p></li>
+<li><p>“custom” (for “cus”)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.DatetimeAttributeEncoder.components">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.utils.data.encoders.DatetimeAttributeEncoder.components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
+<cite>Encoder.encode_inference()</cite> have been called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1087,13 +1400,36 @@ For more information, check out <a class="reference internal" href="darts.utils.
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.DatetimeAttributeEncoder.fit_called">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fit_called</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.DatetimeAttributeEncoder.fit_called" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.DatetimeAttributeEncoder.requires_fit">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">requires_fit</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.DatetimeAttributeEncoder.requires_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference
+with <cite>Encoder.encode_inference()</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.encoders.FutureCallableIndexEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoders.</span></span><span class="sig-name descname"><span class="pre">FutureCallableIndexEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#FutureCallableIndexEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.FutureCallableIndexEncoder" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.data.encoders.CallableIndexEncoder" title="darts.utils.data.encoders.CallableIndexEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoders.CallableIndexEncoder</span></code></a></p>
-<p>IntegerIndexEncoder: Adds integer index value (position) for future covariates derived from the underlying
+<p><cite>IntegerIndexEncoder</cite>: Adds integer index value (position) for future covariates derived from the underlying
 TimeSeries’ time index.</p>
 <p class="rubric">Attributes</p>
 <table class="longtable table autosummary">
@@ -1103,7 +1439,19 @@ TimeSeries’ time index.</p>
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureCallableIndexEncoder.accept_transformer" title="darts.utils.data.encoders.FutureCallableIndexEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>CallableIndexEncoder accepts transformations.</p></td>
+<td><p><cite>CallableIndexEncoder</cite> accepts transformations.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureCallableIndexEncoder.base_component_name" title="darts.utils.data.encoders.FutureCallableIndexEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureCallableIndexEncoder.components" title="darts.utils.data.encoders.FutureCallableIndexEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureCallableIndexEncoder.fit_called" title="darts.utils.data.encoders.FutureCallableIndexEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureCallableIndexEncoder.requires_fit" title="darts.utils.data.encoders.FutureCallableIndexEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1143,7 +1491,19 @@ An example for a correct <cite>attribute</cite> for <cite>index</cite> of type p
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureCallableIndexEncoder.accept_transformer" title="darts.utils.data.encoders.FutureCallableIndexEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>CallableIndexEncoder accepts transformations.</p></td>
+<td><p><cite>CallableIndexEncoder</cite> accepts transformations.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureCallableIndexEncoder.base_component_name" title="darts.utils.data.encoders.FutureCallableIndexEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureCallableIndexEncoder.components" title="darts.utils.data.encoders.FutureCallableIndexEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureCallableIndexEncoder.fit_called" title="darts.utils.data.encoders.FutureCallableIndexEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureCallableIndexEncoder.requires_fit" title="darts.utils.data.encoders.FutureCallableIndexEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1165,10 +1525,57 @@ An example for a correct <cite>attribute</cite> for <cite>index</cite> of type p
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.data.encoders.FutureCallableIndexEncoder.accept_transformer">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureCallableIndexEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
-<dd><p>CallableIndexEncoder accepts transformations.</p>
+<dd><p><cite>CallableIndexEncoder</cite> accepts transformations.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureCallableIndexEncoder.base_component_name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">base_component_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureCallableIndexEncoder.base_component_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the base encoder base component name. The string follows the given format:
+<cite>“darts_enc_{covariate_temp}_{encoder}_{attribute}”</cite>, where the elements are:</p>
+<ul class="simple">
+<li><p>covariate_temp: “pc” or “fc” for past, or future covariates respectively.</p></li>
+<li><dl class="simple">
+<dt>encoder: the SingleEncoder type used:</dt><dd><ul>
+<li><p>“cyc” (cyclic temporal encoder),</p></li>
+<li><p>“dta” (datetime attribute encoder),</p></li>
+<li><p>“pos” (positional integer index encoder),</p></li>
+<li><p>“cus” (custom callable index encoder)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>attribute: the attribute used for the underlying encoder. Some examples:</dt><dd><ul>
+<li><p>“month_sin”, “month_cos” (for “cyc”)</p></li>
+<li><p>“month” (for “dta”)</p></li>
+<li><p>“relative” (for “pos”)</p></li>
+<li><p>“custom” (for “cus”)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureCallableIndexEncoder.components">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureCallableIndexEncoder.components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
+<cite>Encoder.encode_inference()</cite> have been called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1214,13 +1621,36 @@ An example for a correct <cite>attribute</cite> for <cite>index</cite> of type p
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureCallableIndexEncoder.fit_called">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fit_called</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureCallableIndexEncoder.fit_called" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureCallableIndexEncoder.requires_fit">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">requires_fit</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureCallableIndexEncoder.requires_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference
+with <cite>Encoder.encode_inference()</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.encoders.FutureCyclicEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoders.</span></span><span class="sig-name descname"><span class="pre">FutureCyclicEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#FutureCyclicEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.FutureCyclicEncoder" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.data.encoders.CyclicTemporalEncoder" title="darts.utils.data.encoders.CyclicTemporalEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoders.CyclicTemporalEncoder</span></code></a></p>
-<p>Cyclic encoder for future covariates.</p>
+<p><cite>CyclicEncoder</cite>: Cyclic encoding of future covariate datetime attributes.</p>
 <p class="rubric">Attributes</p>
 <table class="longtable table autosummary">
 <colgroup>
@@ -1229,7 +1659,19 @@ An example for a correct <cite>attribute</cite> for <cite>index</cite> of type p
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureCyclicEncoder.accept_transformer" title="darts.utils.data.encoders.FutureCyclicEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>CyclicTemporalEncoder should not be transformed.</p></td>
+<td><p><cite>CyclicTemporalEncoder</cite> should not be transformed.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureCyclicEncoder.base_component_name" title="darts.utils.data.encoders.FutureCyclicEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureCyclicEncoder.components" title="darts.utils.data.encoders.FutureCyclicEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureCyclicEncoder.fit_called" title="darts.utils.data.encoders.FutureCyclicEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureCyclicEncoder.requires_fit" title="darts.utils.data.encoders.FutureCyclicEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1269,7 +1711,19 @@ For more information, check out <a class="reference internal" href="darts.utils.
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureCyclicEncoder.accept_transformer" title="darts.utils.data.encoders.FutureCyclicEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>CyclicTemporalEncoder should not be transformed.</p></td>
+<td><p><cite>CyclicTemporalEncoder</cite> should not be transformed.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureCyclicEncoder.base_component_name" title="darts.utils.data.encoders.FutureCyclicEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureCyclicEncoder.components" title="darts.utils.data.encoders.FutureCyclicEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureCyclicEncoder.fit_called" title="darts.utils.data.encoders.FutureCyclicEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureCyclicEncoder.requires_fit" title="darts.utils.data.encoders.FutureCyclicEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1291,10 +1745,57 @@ For more information, check out <a class="reference internal" href="darts.utils.
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.data.encoders.FutureCyclicEncoder.accept_transformer">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureCyclicEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
-<dd><p>CyclicTemporalEncoder should not be transformed. Returns two elements for sine and cosine waves.</p>
+<dd><p><cite>CyclicTemporalEncoder</cite> should not be transformed. Returns two elements for sine and cosine waves.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureCyclicEncoder.base_component_name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">base_component_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureCyclicEncoder.base_component_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the base encoder base component name. The string follows the given format:
+<cite>“darts_enc_{covariate_temp}_{encoder}_{attribute}”</cite>, where the elements are:</p>
+<ul class="simple">
+<li><p>covariate_temp: “pc” or “fc” for past, or future covariates respectively.</p></li>
+<li><dl class="simple">
+<dt>encoder: the SingleEncoder type used:</dt><dd><ul>
+<li><p>“cyc” (cyclic temporal encoder),</p></li>
+<li><p>“dta” (datetime attribute encoder),</p></li>
+<li><p>“pos” (positional integer index encoder),</p></li>
+<li><p>“cus” (custom callable index encoder)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>attribute: the attribute used for the underlying encoder. Some examples:</dt><dd><ul>
+<li><p>“month_sin”, “month_cos” (for “cyc”)</p></li>
+<li><p>“month” (for “dta”)</p></li>
+<li><p>“relative” (for “pos”)</p></li>
+<li><p>“custom” (for “cus”)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureCyclicEncoder.components">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureCyclicEncoder.components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
+<cite>Encoder.encode_inference()</cite> have been called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1340,6 +1841,29 @@ For more information, check out <a class="reference internal" href="darts.utils.
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureCyclicEncoder.fit_called">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fit_called</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureCyclicEncoder.fit_called" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureCyclicEncoder.requires_fit">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">requires_fit</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureCyclicEncoder.requires_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference
+with <cite>Encoder.encode_inference()</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -1355,7 +1879,19 @@ For more information, check out <a class="reference internal" href="darts.utils.
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureDatetimeAttributeEncoder.accept_transformer" title="darts.utils.data.encoders.FutureDatetimeAttributeEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>DatetimeAttributeEncoder accepts transformations</p></td>
+<td><p><cite>DatetimeAttributeEncoder</cite> accepts transformations</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureDatetimeAttributeEncoder.base_component_name" title="darts.utils.data.encoders.FutureDatetimeAttributeEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureDatetimeAttributeEncoder.components" title="darts.utils.data.encoders.FutureDatetimeAttributeEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureDatetimeAttributeEncoder.fit_called" title="darts.utils.data.encoders.FutureDatetimeAttributeEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureDatetimeAttributeEncoder.requires_fit" title="darts.utils.data.encoders.FutureDatetimeAttributeEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1395,7 +1931,19 @@ For more information, check out <a class="reference internal" href="darts.utils.
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureDatetimeAttributeEncoder.accept_transformer" title="darts.utils.data.encoders.FutureDatetimeAttributeEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>DatetimeAttributeEncoder accepts transformations</p></td>
+<td><p><cite>DatetimeAttributeEncoder</cite> accepts transformations</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureDatetimeAttributeEncoder.base_component_name" title="darts.utils.data.encoders.FutureDatetimeAttributeEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureDatetimeAttributeEncoder.components" title="darts.utils.data.encoders.FutureDatetimeAttributeEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureDatetimeAttributeEncoder.fit_called" title="darts.utils.data.encoders.FutureDatetimeAttributeEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureDatetimeAttributeEncoder.requires_fit" title="darts.utils.data.encoders.FutureDatetimeAttributeEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1417,10 +1965,57 @@ For more information, check out <a class="reference internal" href="darts.utils.
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.data.encoders.FutureDatetimeAttributeEncoder.accept_transformer">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureDatetimeAttributeEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
-<dd><p>DatetimeAttributeEncoder accepts transformations</p>
+<dd><p><cite>DatetimeAttributeEncoder</cite> accepts transformations</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureDatetimeAttributeEncoder.base_component_name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">base_component_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureDatetimeAttributeEncoder.base_component_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the base encoder base component name. The string follows the given format:
+<cite>“darts_enc_{covariate_temp}_{encoder}_{attribute}”</cite>, where the elements are:</p>
+<ul class="simple">
+<li><p>covariate_temp: “pc” or “fc” for past, or future covariates respectively.</p></li>
+<li><dl class="simple">
+<dt>encoder: the SingleEncoder type used:</dt><dd><ul>
+<li><p>“cyc” (cyclic temporal encoder),</p></li>
+<li><p>“dta” (datetime attribute encoder),</p></li>
+<li><p>“pos” (positional integer index encoder),</p></li>
+<li><p>“cus” (custom callable index encoder)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>attribute: the attribute used for the underlying encoder. Some examples:</dt><dd><ul>
+<li><p>“month_sin”, “month_cos” (for “cyc”)</p></li>
+<li><p>“month” (for “dta”)</p></li>
+<li><p>“relative” (for “pos”)</p></li>
+<li><p>“custom” (for “cus”)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureDatetimeAttributeEncoder.components">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureDatetimeAttributeEncoder.components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
+<cite>Encoder.encode_inference()</cite> have been called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1466,13 +2061,36 @@ For more information, check out <a class="reference internal" href="darts.utils.
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureDatetimeAttributeEncoder.fit_called">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fit_called</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureDatetimeAttributeEncoder.fit_called" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureDatetimeAttributeEncoder.requires_fit">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">requires_fit</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureDatetimeAttributeEncoder.requires_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference
+with <cite>Encoder.encode_inference()</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.encoders.FutureIntegerIndexEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoders.</span></span><span class="sig-name descname"><span class="pre">FutureIntegerIndexEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#FutureIntegerIndexEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.FutureIntegerIndexEncoder" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.data.encoders.IntegerIndexEncoder" title="darts.utils.data.encoders.IntegerIndexEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoders.IntegerIndexEncoder</span></code></a></p>
-<p>IntegerIndexEncoder: Adds integer index value (position) for future covariates derived from the underlying
+<p><cite>IntegerIndexEncoder</cite>: Adds integer index value (position) for future covariates derived from the underlying
 TimeSeries’ time index.</p>
 <p class="rubric">Attributes</p>
 <table class="longtable table autosummary">
@@ -1482,7 +2100,19 @@ TimeSeries’ time index.</p>
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureIntegerIndexEncoder.accept_transformer" title="darts.utils.data.encoders.FutureIntegerIndexEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>IntegerIndexEncoder accepts transformations.</p></td>
+<td><p><cite>IntegerIndexEncoder</cite> accepts transformations.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureIntegerIndexEncoder.base_component_name" title="darts.utils.data.encoders.FutureIntegerIndexEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureIntegerIndexEncoder.components" title="darts.utils.data.encoders.FutureIntegerIndexEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureIntegerIndexEncoder.fit_called" title="darts.utils.data.encoders.FutureIntegerIndexEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureIntegerIndexEncoder.requires_fit" title="darts.utils.data.encoders.FutureIntegerIndexEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1506,10 +2136,8 @@ TimeSeries’ time index.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the emitted past series.</p></li>
 <li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the emitted future series.</p></li>
-<li><p><strong>attribute</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Either ‘absolute’ or ‘relative’. If ‘absolute’, the generated encoded values will range from (0, inf)
-and the train target series will be used as a reference to set the 0-index. If ‘relative’, the generated
-encoded values will range from (-inf, inf) and the train target series end time will be used as a reference
-to evaluate the relative index positions.</p></li>
+<li><p><strong>attribute</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Currently only ‘relative’ is supported. The generated encoded values will range from (-inf, inf) and the
+target series end time will be used as a reference to evaluate the relative index positions.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1521,7 +2149,19 @@ to evaluate the relative index positions.</p></li>
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureIntegerIndexEncoder.accept_transformer" title="darts.utils.data.encoders.FutureIntegerIndexEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>IntegerIndexEncoder accepts transformations.</p></td>
+<td><p><cite>IntegerIndexEncoder</cite> accepts transformations.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureIntegerIndexEncoder.base_component_name" title="darts.utils.data.encoders.FutureIntegerIndexEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureIntegerIndexEncoder.components" title="darts.utils.data.encoders.FutureIntegerIndexEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureIntegerIndexEncoder.fit_called" title="darts.utils.data.encoders.FutureIntegerIndexEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.FutureIntegerIndexEncoder.requires_fit" title="darts.utils.data.encoders.FutureIntegerIndexEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1543,11 +2183,58 @@ to evaluate the relative index positions.</p></li>
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.data.encoders.FutureIntegerIndexEncoder.accept_transformer">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureIntegerIndexEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
-<dd><p>IntegerIndexEncoder accepts transformations. Note that transforming ‘relative’ IntegerIndexEncoder
-will return an ‘absolute’ index.</p>
+<dd><p><cite>IntegerIndexEncoder</cite> accepts transformations. Note that transforming ‘relative’ <cite>IntegerIndexEncoder</cite>
+will return the absolute position (in the transformed space).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureIntegerIndexEncoder.base_component_name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">base_component_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureIntegerIndexEncoder.base_component_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the base encoder base component name. The string follows the given format:
+<cite>“darts_enc_{covariate_temp}_{encoder}_{attribute}”</cite>, where the elements are:</p>
+<ul class="simple">
+<li><p>covariate_temp: “pc” or “fc” for past, or future covariates respectively.</p></li>
+<li><dl class="simple">
+<dt>encoder: the SingleEncoder type used:</dt><dd><ul>
+<li><p>“cyc” (cyclic temporal encoder),</p></li>
+<li><p>“dta” (datetime attribute encoder),</p></li>
+<li><p>“pos” (positional integer index encoder),</p></li>
+<li><p>“cus” (custom callable index encoder)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>attribute: the attribute used for the underlying encoder. Some examples:</dt><dd><ul>
+<li><p>“month_sin”, “month_cos” (for “cyc”)</p></li>
+<li><p>“month” (for “dta”)</p></li>
+<li><p>“relative” (for “pos”)</p></li>
+<li><p>“custom” (for “cus”)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureIntegerIndexEncoder.components">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureIntegerIndexEncoder.components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
+<cite>Encoder.encode_inference()</cite> have been called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1593,6 +2280,29 @@ will return an ‘absolute’ index.</p>
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureIntegerIndexEncoder.fit_called">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fit_called</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureIntegerIndexEncoder.fit_called" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureIntegerIndexEncoder.requires_fit">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">requires_fit</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureIntegerIndexEncoder.requires_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference
+with <cite>Encoder.encode_inference()</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -1609,7 +2319,19 @@ for past and future covariates.</p>
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.IntegerIndexEncoder.accept_transformer" title="darts.utils.data.encoders.IntegerIndexEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>IntegerIndexEncoder accepts transformations.</p></td>
+<td><p><cite>IntegerIndexEncoder</cite> accepts transformations.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.IntegerIndexEncoder.base_component_name" title="darts.utils.data.encoders.IntegerIndexEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.IntegerIndexEncoder.components" title="darts.utils.data.encoders.IntegerIndexEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.IntegerIndexEncoder.fit_called" title="darts.utils.data.encoders.IntegerIndexEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.IntegerIndexEncoder.requires_fit" title="darts.utils.data.encoders.IntegerIndexEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1633,10 +2355,8 @@ for past and future covariates.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>index_generator</strong> (<a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.CovariateIndexGenerator" title="darts.utils.data.encoder_base.CovariateIndexGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">CovariateIndexGenerator</span></code></a>) – An instance of <cite>CovariateIndexGenerator</cite> with methods <cite>generate_train_series()</cite> and
 <cite>generate_inference_series()</cite>. Used to generate the index for encoders.</p></li>
-<li><p><strong>attribute</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Either ‘absolute’ or ‘relative’. If ‘absolute’, the generated encoded values will range from (0, inf)
-and the train target series will be used as a reference to set the 0-index. If ‘relative’, the generated
-encoded values will range from (-inf, inf) and the train target series end time will be used as a reference
-to evaluate the relative index positions.</p></li>
+<li><p><strong>attribute</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Currently only ‘relative’ is supported. The generated encoded values will range from (-inf, inf) and the
+target series end time will be used as a reference to evaluate the relative index positions.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1648,7 +2368,19 @@ to evaluate the relative index positions.</p></li>
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.IntegerIndexEncoder.accept_transformer" title="darts.utils.data.encoders.IntegerIndexEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>IntegerIndexEncoder accepts transformations.</p></td>
+<td><p><cite>IntegerIndexEncoder</cite> accepts transformations.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.IntegerIndexEncoder.base_component_name" title="darts.utils.data.encoders.IntegerIndexEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.IntegerIndexEncoder.components" title="darts.utils.data.encoders.IntegerIndexEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.IntegerIndexEncoder.fit_called" title="darts.utils.data.encoders.IntegerIndexEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.IntegerIndexEncoder.requires_fit" title="darts.utils.data.encoders.IntegerIndexEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1670,11 +2402,58 @@ to evaluate the relative index positions.</p></li>
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.data.encoders.IntegerIndexEncoder.accept_transformer">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.IntegerIndexEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
-<dd><p>IntegerIndexEncoder accepts transformations. Note that transforming ‘relative’ IntegerIndexEncoder
-will return an ‘absolute’ index.</p>
+<dd><p><cite>IntegerIndexEncoder</cite> accepts transformations. Note that transforming ‘relative’ <cite>IntegerIndexEncoder</cite>
+will return the absolute position (in the transformed space).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.IntegerIndexEncoder.base_component_name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">base_component_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.utils.data.encoders.IntegerIndexEncoder.base_component_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the base encoder base component name. The string follows the given format:
+<cite>“darts_enc_{covariate_temp}_{encoder}_{attribute}”</cite>, where the elements are:</p>
+<ul class="simple">
+<li><p>covariate_temp: “pc” or “fc” for past, or future covariates respectively.</p></li>
+<li><dl class="simple">
+<dt>encoder: the SingleEncoder type used:</dt><dd><ul>
+<li><p>“cyc” (cyclic temporal encoder),</p></li>
+<li><p>“dta” (datetime attribute encoder),</p></li>
+<li><p>“pos” (positional integer index encoder),</p></li>
+<li><p>“cus” (custom callable index encoder)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>attribute: the attribute used for the underlying encoder. Some examples:</dt><dd><ul>
+<li><p>“month_sin”, “month_cos” (for “cyc”)</p></li>
+<li><p>“month” (for “dta”)</p></li>
+<li><p>“relative” (for “pos”)</p></li>
+<li><p>“custom” (for “cus”)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.IntegerIndexEncoder.components">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.utils.data.encoders.IntegerIndexEncoder.components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
+<cite>Encoder.encode_inference()</cite> have been called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1720,13 +2499,36 @@ will return an ‘absolute’ index.</p>
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.IntegerIndexEncoder.fit_called">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fit_called</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.IntegerIndexEncoder.fit_called" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.IntegerIndexEncoder.requires_fit">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">requires_fit</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.IntegerIndexEncoder.requires_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference
+with <cite>Encoder.encode_inference()</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.encoders.PastCallableIndexEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoders.</span></span><span class="sig-name descname"><span class="pre">PastCallableIndexEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#PastCallableIndexEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.PastCallableIndexEncoder" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.data.encoders.CallableIndexEncoder" title="darts.utils.data.encoders.CallableIndexEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoders.CallableIndexEncoder</span></code></a></p>
-<p>IntegerIndexEncoder: Adds integer index value (position) for past covariates derived from the underlying
+<p><cite>IntegerIndexEncoder</cite>: Adds integer index value (position) for past covariates derived from the underlying
 TimeSeries’ time index.</p>
 <p class="rubric">Attributes</p>
 <table class="longtable table autosummary">
@@ -1736,7 +2538,19 @@ TimeSeries’ time index.</p>
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastCallableIndexEncoder.accept_transformer" title="darts.utils.data.encoders.PastCallableIndexEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>CallableIndexEncoder accepts transformations.</p></td>
+<td><p><cite>CallableIndexEncoder</cite> accepts transformations.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastCallableIndexEncoder.base_component_name" title="darts.utils.data.encoders.PastCallableIndexEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastCallableIndexEncoder.components" title="darts.utils.data.encoders.PastCallableIndexEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastCallableIndexEncoder.fit_called" title="darts.utils.data.encoders.PastCallableIndexEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastCallableIndexEncoder.requires_fit" title="darts.utils.data.encoders.PastCallableIndexEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1776,7 +2590,19 @@ An example for a correct <cite>attribute</cite> for <cite>index</cite> of type p
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastCallableIndexEncoder.accept_transformer" title="darts.utils.data.encoders.PastCallableIndexEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>CallableIndexEncoder accepts transformations.</p></td>
+<td><p><cite>CallableIndexEncoder</cite> accepts transformations.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastCallableIndexEncoder.base_component_name" title="darts.utils.data.encoders.PastCallableIndexEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastCallableIndexEncoder.components" title="darts.utils.data.encoders.PastCallableIndexEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastCallableIndexEncoder.fit_called" title="darts.utils.data.encoders.PastCallableIndexEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastCallableIndexEncoder.requires_fit" title="darts.utils.data.encoders.PastCallableIndexEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1798,10 +2624,57 @@ An example for a correct <cite>attribute</cite> for <cite>index</cite> of type p
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.data.encoders.PastCallableIndexEncoder.accept_transformer">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.PastCallableIndexEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
-<dd><p>CallableIndexEncoder accepts transformations.</p>
+<dd><p><cite>CallableIndexEncoder</cite> accepts transformations.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastCallableIndexEncoder.base_component_name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">base_component_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.utils.data.encoders.PastCallableIndexEncoder.base_component_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the base encoder base component name. The string follows the given format:
+<cite>“darts_enc_{covariate_temp}_{encoder}_{attribute}”</cite>, where the elements are:</p>
+<ul class="simple">
+<li><p>covariate_temp: “pc” or “fc” for past, or future covariates respectively.</p></li>
+<li><dl class="simple">
+<dt>encoder: the SingleEncoder type used:</dt><dd><ul>
+<li><p>“cyc” (cyclic temporal encoder),</p></li>
+<li><p>“dta” (datetime attribute encoder),</p></li>
+<li><p>“pos” (positional integer index encoder),</p></li>
+<li><p>“cus” (custom callable index encoder)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>attribute: the attribute used for the underlying encoder. Some examples:</dt><dd><ul>
+<li><p>“month_sin”, “month_cos” (for “cyc”)</p></li>
+<li><p>“month” (for “dta”)</p></li>
+<li><p>“relative” (for “pos”)</p></li>
+<li><p>“custom” (for “cus”)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastCallableIndexEncoder.components">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.utils.data.encoders.PastCallableIndexEncoder.components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
+<cite>Encoder.encode_inference()</cite> have been called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1847,13 +2720,36 @@ An example for a correct <cite>attribute</cite> for <cite>index</cite> of type p
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastCallableIndexEncoder.fit_called">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fit_called</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.PastCallableIndexEncoder.fit_called" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastCallableIndexEncoder.requires_fit">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">requires_fit</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.PastCallableIndexEncoder.requires_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference
+with <cite>Encoder.encode_inference()</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.encoders.PastCyclicEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoders.</span></span><span class="sig-name descname"><span class="pre">PastCyclicEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#PastCyclicEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.PastCyclicEncoder" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.data.encoders.CyclicTemporalEncoder" title="darts.utils.data.encoders.CyclicTemporalEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoders.CyclicTemporalEncoder</span></code></a></p>
-<p>Cyclic encoder for past covariates.</p>
+<p><cite>CyclicEncoder</cite>: Cyclic encoding of past covariate datetime attributes.</p>
 <p class="rubric">Attributes</p>
 <table class="longtable table autosummary">
 <colgroup>
@@ -1862,7 +2758,19 @@ An example for a correct <cite>attribute</cite> for <cite>index</cite> of type p
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastCyclicEncoder.accept_transformer" title="darts.utils.data.encoders.PastCyclicEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>CyclicTemporalEncoder should not be transformed.</p></td>
+<td><p><cite>CyclicTemporalEncoder</cite> should not be transformed.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastCyclicEncoder.base_component_name" title="darts.utils.data.encoders.PastCyclicEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastCyclicEncoder.components" title="darts.utils.data.encoders.PastCyclicEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastCyclicEncoder.fit_called" title="darts.utils.data.encoders.PastCyclicEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastCyclicEncoder.requires_fit" title="darts.utils.data.encoders.PastCyclicEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1902,7 +2810,19 @@ For more information, check out <a class="reference internal" href="darts.utils.
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastCyclicEncoder.accept_transformer" title="darts.utils.data.encoders.PastCyclicEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>CyclicTemporalEncoder should not be transformed.</p></td>
+<td><p><cite>CyclicTemporalEncoder</cite> should not be transformed.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastCyclicEncoder.base_component_name" title="darts.utils.data.encoders.PastCyclicEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastCyclicEncoder.components" title="darts.utils.data.encoders.PastCyclicEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastCyclicEncoder.fit_called" title="darts.utils.data.encoders.PastCyclicEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastCyclicEncoder.requires_fit" title="darts.utils.data.encoders.PastCyclicEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1924,10 +2844,57 @@ For more information, check out <a class="reference internal" href="darts.utils.
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.data.encoders.PastCyclicEncoder.accept_transformer">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.PastCyclicEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
-<dd><p>CyclicTemporalEncoder should not be transformed. Returns two elements for sine and cosine waves.</p>
+<dd><p><cite>CyclicTemporalEncoder</cite> should not be transformed. Returns two elements for sine and cosine waves.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastCyclicEncoder.base_component_name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">base_component_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.utils.data.encoders.PastCyclicEncoder.base_component_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the base encoder base component name. The string follows the given format:
+<cite>“darts_enc_{covariate_temp}_{encoder}_{attribute}”</cite>, where the elements are:</p>
+<ul class="simple">
+<li><p>covariate_temp: “pc” or “fc” for past, or future covariates respectively.</p></li>
+<li><dl class="simple">
+<dt>encoder: the SingleEncoder type used:</dt><dd><ul>
+<li><p>“cyc” (cyclic temporal encoder),</p></li>
+<li><p>“dta” (datetime attribute encoder),</p></li>
+<li><p>“pos” (positional integer index encoder),</p></li>
+<li><p>“cus” (custom callable index encoder)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>attribute: the attribute used for the underlying encoder. Some examples:</dt><dd><ul>
+<li><p>“month_sin”, “month_cos” (for “cyc”)</p></li>
+<li><p>“month” (for “dta”)</p></li>
+<li><p>“relative” (for “pos”)</p></li>
+<li><p>“custom” (for “cus”)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastCyclicEncoder.components">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.utils.data.encoders.PastCyclicEncoder.components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
+<cite>Encoder.encode_inference()</cite> have been called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1973,6 +2940,29 @@ For more information, check out <a class="reference internal" href="darts.utils.
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastCyclicEncoder.fit_called">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fit_called</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.PastCyclicEncoder.fit_called" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastCyclicEncoder.requires_fit">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">requires_fit</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.PastCyclicEncoder.requires_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference
+with <cite>Encoder.encode_inference()</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -1988,7 +2978,19 @@ For more information, check out <a class="reference internal" href="darts.utils.
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastDatetimeAttributeEncoder.accept_transformer" title="darts.utils.data.encoders.PastDatetimeAttributeEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>DatetimeAttributeEncoder accepts transformations</p></td>
+<td><p><cite>DatetimeAttributeEncoder</cite> accepts transformations</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastDatetimeAttributeEncoder.base_component_name" title="darts.utils.data.encoders.PastDatetimeAttributeEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastDatetimeAttributeEncoder.components" title="darts.utils.data.encoders.PastDatetimeAttributeEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastDatetimeAttributeEncoder.fit_called" title="darts.utils.data.encoders.PastDatetimeAttributeEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastDatetimeAttributeEncoder.requires_fit" title="darts.utils.data.encoders.PastDatetimeAttributeEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -2028,7 +3030,19 @@ For more information, check out <a class="reference internal" href="darts.utils.
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastDatetimeAttributeEncoder.accept_transformer" title="darts.utils.data.encoders.PastDatetimeAttributeEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>DatetimeAttributeEncoder accepts transformations</p></td>
+<td><p><cite>DatetimeAttributeEncoder</cite> accepts transformations</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastDatetimeAttributeEncoder.base_component_name" title="darts.utils.data.encoders.PastDatetimeAttributeEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastDatetimeAttributeEncoder.components" title="darts.utils.data.encoders.PastDatetimeAttributeEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastDatetimeAttributeEncoder.fit_called" title="darts.utils.data.encoders.PastDatetimeAttributeEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastDatetimeAttributeEncoder.requires_fit" title="darts.utils.data.encoders.PastDatetimeAttributeEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -2050,10 +3064,57 @@ For more information, check out <a class="reference internal" href="darts.utils.
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.data.encoders.PastDatetimeAttributeEncoder.accept_transformer">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.PastDatetimeAttributeEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
-<dd><p>DatetimeAttributeEncoder accepts transformations</p>
+<dd><p><cite>DatetimeAttributeEncoder</cite> accepts transformations</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastDatetimeAttributeEncoder.base_component_name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">base_component_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.utils.data.encoders.PastDatetimeAttributeEncoder.base_component_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the base encoder base component name. The string follows the given format:
+<cite>“darts_enc_{covariate_temp}_{encoder}_{attribute}”</cite>, where the elements are:</p>
+<ul class="simple">
+<li><p>covariate_temp: “pc” or “fc” for past, or future covariates respectively.</p></li>
+<li><dl class="simple">
+<dt>encoder: the SingleEncoder type used:</dt><dd><ul>
+<li><p>“cyc” (cyclic temporal encoder),</p></li>
+<li><p>“dta” (datetime attribute encoder),</p></li>
+<li><p>“pos” (positional integer index encoder),</p></li>
+<li><p>“cus” (custom callable index encoder)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>attribute: the attribute used for the underlying encoder. Some examples:</dt><dd><ul>
+<li><p>“month_sin”, “month_cos” (for “cyc”)</p></li>
+<li><p>“month” (for “dta”)</p></li>
+<li><p>“relative” (for “pos”)</p></li>
+<li><p>“custom” (for “cus”)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastDatetimeAttributeEncoder.components">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.utils.data.encoders.PastDatetimeAttributeEncoder.components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
+<cite>Encoder.encode_inference()</cite> have been called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2099,13 +3160,36 @@ For more information, check out <a class="reference internal" href="darts.utils.
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastDatetimeAttributeEncoder.fit_called">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fit_called</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.PastDatetimeAttributeEncoder.fit_called" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastDatetimeAttributeEncoder.requires_fit">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">requires_fit</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.PastDatetimeAttributeEncoder.requires_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference
+with <cite>Encoder.encode_inference()</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.encoders.PastIntegerIndexEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoders.</span></span><span class="sig-name descname"><span class="pre">PastIntegerIndexEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#PastIntegerIndexEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.PastIntegerIndexEncoder" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.data.encoders.IntegerIndexEncoder" title="darts.utils.data.encoders.IntegerIndexEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoders.IntegerIndexEncoder</span></code></a></p>
-<p>IntegerIndexEncoder: Adds integer index value (position) for past covariates derived from the underlying
+<p><cite>IntegerIndexEncoder</cite>: Adds integer index value (position) for past covariates derived from the underlying
 TimeSeries’ time index.</p>
 <p class="rubric">Attributes</p>
 <table class="longtable table autosummary">
@@ -2115,7 +3199,19 @@ TimeSeries’ time index.</p>
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastIntegerIndexEncoder.accept_transformer" title="darts.utils.data.encoders.PastIntegerIndexEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>IntegerIndexEncoder accepts transformations.</p></td>
+<td><p><cite>IntegerIndexEncoder</cite> accepts transformations.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastIntegerIndexEncoder.base_component_name" title="darts.utils.data.encoders.PastIntegerIndexEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastIntegerIndexEncoder.components" title="darts.utils.data.encoders.PastIntegerIndexEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastIntegerIndexEncoder.fit_called" title="darts.utils.data.encoders.PastIntegerIndexEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastIntegerIndexEncoder.requires_fit" title="darts.utils.data.encoders.PastIntegerIndexEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -2139,10 +3235,8 @@ TimeSeries’ time index.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the emitted past series.</p></li>
 <li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the emitted future series.</p></li>
-<li><p><strong>attribute</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Either ‘absolute’ or ‘relative’. If ‘absolute’, the generated encoded values will range from (0, inf)
-and the train target series will be used as a reference to set the 0-index. If ‘relative’, the generated
-encoded values will range from (-inf, inf) and the train target series end time will be used as a reference
-to evaluate the relative index positions.</p></li>
+<li><p><strong>attribute</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Currently only ‘relative’ is supported. The generated encoded values will range from (-inf, inf) and the
+target series end time will be used as a reference to evaluate the relative index positions.</p></li>
 </ul>
 </dd>
 </dl>
@@ -2154,7 +3248,19 @@ to evaluate the relative index positions.</p></li>
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastIntegerIndexEncoder.accept_transformer" title="darts.utils.data.encoders.PastIntegerIndexEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>IntegerIndexEncoder accepts transformations.</p></td>
+<td><p><cite>IntegerIndexEncoder</cite> accepts transformations.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastIntegerIndexEncoder.base_component_name" title="darts.utils.data.encoders.PastIntegerIndexEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastIntegerIndexEncoder.components" title="darts.utils.data.encoders.PastIntegerIndexEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastIntegerIndexEncoder.fit_called" title="darts.utils.data.encoders.PastIntegerIndexEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.PastIntegerIndexEncoder.requires_fit" title="darts.utils.data.encoders.PastIntegerIndexEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -2176,11 +3282,58 @@ to evaluate the relative index positions.</p></li>
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.data.encoders.PastIntegerIndexEncoder.accept_transformer">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.PastIntegerIndexEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
-<dd><p>IntegerIndexEncoder accepts transformations. Note that transforming ‘relative’ IntegerIndexEncoder
-will return an ‘absolute’ index.</p>
+<dd><p><cite>IntegerIndexEncoder</cite> accepts transformations. Note that transforming ‘relative’ <cite>IntegerIndexEncoder</cite>
+will return the absolute position (in the transformed space).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastIntegerIndexEncoder.base_component_name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">base_component_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.utils.data.encoders.PastIntegerIndexEncoder.base_component_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the base encoder base component name. The string follows the given format:
+<cite>“darts_enc_{covariate_temp}_{encoder}_{attribute}”</cite>, where the elements are:</p>
+<ul class="simple">
+<li><p>covariate_temp: “pc” or “fc” for past, or future covariates respectively.</p></li>
+<li><dl class="simple">
+<dt>encoder: the SingleEncoder type used:</dt><dd><ul>
+<li><p>“cyc” (cyclic temporal encoder),</p></li>
+<li><p>“dta” (datetime attribute encoder),</p></li>
+<li><p>“pos” (positional integer index encoder),</p></li>
+<li><p>“cus” (custom callable index encoder)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>attribute: the attribute used for the underlying encoder. Some examples:</dt><dd><ul>
+<li><p>“month_sin”, “month_cos” (for “cyc”)</p></li>
+<li><p>“month” (for “dta”)</p></li>
+<li><p>“relative” (for “pos”)</p></li>
+<li><p>“custom” (for “cus”)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastIntegerIndexEncoder.components">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.utils.data.encoders.PastIntegerIndexEncoder.components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
+<cite>Encoder.encode_inference()</cite> have been called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2226,6 +3379,29 @@ will return an ‘absolute’ index.</p>
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastIntegerIndexEncoder.fit_called">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fit_called</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.PastIntegerIndexEncoder.fit_called" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastIntegerIndexEncoder.requires_fit">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">requires_fit</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.PastIntegerIndexEncoder.requires_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference
+with <cite>Encoder.encode_inference()</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -2241,20 +3417,38 @@ It provides the same functionality as single encoders (<cite>encode_train()</cit
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.encoder_map" title="darts.utils.data.encoders.SequentialEncoder.encoder_map"><code class="xref py py-obj docutils literal notranslate"><span class="pre">encoder_map</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.components" title="darts.utils.data.encoders.SequentialEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the covariate component names generated by <cite>SequentialEncoder.past_encoders</cite> and <cite>SequentialEncoder.past_encoders</cite>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.encoder_map" title="darts.utils.data.encoders.SequentialEncoder.encoder_map"><code class="xref py py-obj docutils literal notranslate"><span class="pre">encoder_map</span></code></a></p></td>
 <td><p>Mapping between encoder identifier string (from parameters at model creations) and the corresponding future or past covariate encoder</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.encoders" title="darts.utils.data.encoders.SequentialEncoder.encoders"><code class="xref py py-obj docutils literal notranslate"><span class="pre">encoders</span></code></a></p></td>
+<td><p>Returns a tuple of (past covariate encoders, future covariate encoders)</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.fit_called" title="darts.utils.data.encoders.SequentialEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.future_components" title="darts.utils.data.encoders.SequentialEncoder.future_components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">future_components</span></code></a></p></td>
+<td><p>Returns the future covariate component names generated by <cite>SequentialEncoder.future_encoders</cite>.</p></td>
+</tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.future_encoders" title="darts.utils.data.encoders.SequentialEncoder.future_encoders"><code class="xref py py-obj docutils literal notranslate"><span class="pre">future_encoders</span></code></a></p></td>
-<td><p>Returns the future covariate encoder objects</p></td>
+<td><p>Returns the future covariate encoders</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.future_transformer" title="darts.utils.data.encoders.SequentialEncoder.future_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">future_transformer</span></code></a></p></td>
 <td><p>Returns the future transformer object</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.past_encoders" title="darts.utils.data.encoders.SequentialEncoder.past_encoders"><code class="xref py py-obj docutils literal notranslate"><span class="pre">past_encoders</span></code></a></p></td>
-<td><p>Returns the past covariate encoder objects</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.past_components" title="darts.utils.data.encoders.SequentialEncoder.past_components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">past_components</span></code></a></p></td>
+<td><p>Returns the past covariate component names generated by <cite>SequentialEncoder.past_encoders</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.past_transformer" title="darts.utils.data.encoders.SequentialEncoder.past_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">past_transformer</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.past_encoders" title="darts.utils.data.encoders.SequentialEncoder.past_encoders"><code class="xref py py-obj docutils literal notranslate"><span class="pre">past_encoders</span></code></a></p></td>
+<td><p>Returns the past covariate encoders</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.past_transformer" title="darts.utils.data.encoders.SequentialEncoder.past_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">past_transformer</span></code></a></p></td>
 <td><p>Returns the past transformer object</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.requires_fit" title="darts.utils.data.encoders.SequentialEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -2270,6 +3464,9 @@ It provides the same functionality as single encoders (<cite>encode_train()</cit
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.encode_train" title="darts.utils.data.encoders.SequentialEncoder.encode_train"><code class="xref py py-obj docutils literal notranslate"><span class="pre">encode_train</span></code></a>(target[, past_covariate, ...])</p></td>
 <td><p>Returns encoded index for all past and/or future covariates for training.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.transformers" title="darts.utils.data.encoders.SequentialEncoder.transformers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transformers</span></code></a>()</p></td>
+<td><p>Returns a tuple of (past transformer, future transformer).</p></td>
 </tr>
 </tbody>
 </table>
@@ -2308,7 +3505,7 @@ The training, validation and inference datasets are then transformed equally.</p
 <span class="n">add_encoders</span><span class="o">=</span><span class="p">{</span>
     <span class="s1">&#39;cyclic&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;future&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;month&#39;</span><span class="p">]},</span>
     <span class="s1">&#39;datetime_attribute&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;past&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;hour&#39;</span><span class="p">],</span> <span class="s1">&#39;future&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;year&#39;</span><span class="p">,</span> <span class="s1">&#39;dayofweek&#39;</span><span class="p">]},</span>
-    <span class="s1">&#39;position&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;past&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;absolute&#39;</span><span class="p">],</span> <span class="s1">&#39;future&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;relative&#39;</span><span class="p">]},</span>
+    <span class="s1">&#39;position&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;past&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;relative&#39;</span><span class="p">],</span> <span class="s1">&#39;future&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;relative&#39;</span><span class="p">]},</span>
     <span class="s1">&#39;custom&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;past&#39;</span><span class="p">:</span> <span class="p">[</span><span class="k">lambda</span> <span class="n">idx</span><span class="p">:</span> <span class="p">(</span><span class="n">idx</span><span class="o">.</span><span class="n">year</span> <span class="o">-</span> <span class="mi">1950</span><span class="p">)</span> <span class="o">/</span> <span class="mi">50</span><span class="p">]},</span>
     <span class="s1">&#39;transformer&#39;</span><span class="p">:</span> <span class="n">Scaler</span><span class="p">()</span>
 <span class="p">}</span>
@@ -2351,20 +3548,38 @@ The <cite>attribute</cite> tells the <cite>SingleEncoder</cite> which attribute 
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.encoder_map" title="darts.utils.data.encoders.SequentialEncoder.encoder_map"><code class="xref py py-obj docutils literal notranslate"><span class="pre">encoder_map</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.components" title="darts.utils.data.encoders.SequentialEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the covariate component names generated by <cite>SequentialEncoder.past_encoders</cite> and <cite>SequentialEncoder.past_encoders</cite>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.encoder_map" title="darts.utils.data.encoders.SequentialEncoder.encoder_map"><code class="xref py py-obj docutils literal notranslate"><span class="pre">encoder_map</span></code></a></p></td>
 <td><p>Mapping between encoder identifier string (from parameters at model creations) and the corresponding future or past covariate encoder</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.encoders" title="darts.utils.data.encoders.SequentialEncoder.encoders"><code class="xref py py-obj docutils literal notranslate"><span class="pre">encoders</span></code></a></p></td>
+<td><p>Returns a tuple of (past covariate encoders, future covariate encoders)</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.fit_called" title="darts.utils.data.encoders.SequentialEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.future_components" title="darts.utils.data.encoders.SequentialEncoder.future_components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">future_components</span></code></a></p></td>
+<td><p>Returns the future covariate component names generated by <cite>SequentialEncoder.future_encoders</cite>.</p></td>
+</tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.future_encoders" title="darts.utils.data.encoders.SequentialEncoder.future_encoders"><code class="xref py py-obj docutils literal notranslate"><span class="pre">future_encoders</span></code></a></p></td>
-<td><p>Returns the future covariate encoder objects</p></td>
+<td><p>Returns the future covariate encoders</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.future_transformer" title="darts.utils.data.encoders.SequentialEncoder.future_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">future_transformer</span></code></a></p></td>
 <td><p>Returns the future transformer object</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.past_encoders" title="darts.utils.data.encoders.SequentialEncoder.past_encoders"><code class="xref py py-obj docutils literal notranslate"><span class="pre">past_encoders</span></code></a></p></td>
-<td><p>Returns the past covariate encoder objects</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.past_components" title="darts.utils.data.encoders.SequentialEncoder.past_components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">past_components</span></code></a></p></td>
+<td><p>Returns the past covariate component names generated by <cite>SequentialEncoder.past_encoders</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.past_transformer" title="darts.utils.data.encoders.SequentialEncoder.past_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">past_transformer</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.past_encoders" title="darts.utils.data.encoders.SequentialEncoder.past_encoders"><code class="xref py py-obj docutils literal notranslate"><span class="pre">past_encoders</span></code></a></p></td>
+<td><p>Returns the past covariate encoders</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.past_transformer" title="darts.utils.data.encoders.SequentialEncoder.past_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">past_transformer</span></code></a></p></td>
 <td><p>Returns the past transformer object</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.requires_fit" title="darts.utils.data.encoders.SequentialEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -2381,8 +3596,24 @@ The <cite>attribute</cite> tells the <cite>SingleEncoder</cite> which attribute 
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.encode_train" title="darts.utils.data.encoders.SequentialEncoder.encode_train"><code class="xref py py-obj docutils literal notranslate"><span class="pre">encode_train</span></code></a>(target[, past_covariate, ...])</p></td>
 <td><p>Returns encoded index for all past and/or future covariates for training.</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder.transformers" title="darts.utils.data.encoders.SequentialEncoder.transformers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transformers</span></code></a>()</p></td>
+<td><p>Returns a tuple of (past transformer, future transformer).</p></td>
+</tr>
 </tbody>
 </table>
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.SequentialEncoder.components">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">pandas.core.indexes.base.Index</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.SequentialEncoder.components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the covariate component names generated by <cite>SequentialEncoder.past_encoders</cite> and
+<cite>SequentialEncoder.past_encoders</cite>. A tuple of (past encoded components, future encoded components).
+Only available after calling <cite>SequentialEncoder.encode_train()</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.data.encoders.SequentialEncoder.encode_inference">
 <span class="sig-name descname"><span class="pre">encode_inference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encode_past</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encode_future</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#SequentialEncoder.encode_inference"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.SequentialEncoder.encode_inference" title="Permalink to this definition">¶</a></dt>
@@ -2456,9 +3687,43 @@ future or past covariate encoder</p>
 </dd></dl>
 
 <dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.SequentialEncoder.encoders">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">encoders</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.SingleEncoder" title="darts.utils.data.encoder_base.SingleEncoder"><span class="pre">darts.utils.data.encoder_base.SingleEncoder</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.SingleEncoder" title="darts.utils.data.encoder_base.SingleEncoder"><span class="pre">darts.utils.data.encoder_base.SingleEncoder</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.SequentialEncoder.encoders" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a tuple of (past covariate encoders, future covariate encoders)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.SingleEncoder" title="darts.utils.data.encoder_base.SingleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">SingleEncoder</span></code></a>], <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.SingleEncoder" title="darts.utils.data.encoder_base.SingleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">SingleEncoder</span></code></a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.SequentialEncoder.fit_called">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fit_called</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.SequentialEncoder.fit_called" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.SequentialEncoder.future_components">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">future_components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.utils.data.encoders.SequentialEncoder.future_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the future covariate component names generated by <cite>SequentialEncoder.future_encoders</cite>.
+Only available after calling <cite>SequentialEncoder.encode_train()</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.data.encoders.SequentialEncoder.future_encoders">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">future_encoders</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.SingleEncoder" title="darts.utils.data.encoder_base.SingleEncoder"><span class="pre">darts.utils.data.encoder_base.SingleEncoder</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.SequentialEncoder.future_encoders" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the future covariate encoder objects</p>
+<dd><p>Returns the future covariate encoders</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.SingleEncoder" title="darts.utils.data.encoder_base.SingleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">SingleEncoder</span></code></a>]</p>
@@ -2478,9 +3743,21 @@ future or past covariate encoder</p>
 </dd></dl>
 
 <dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.SequentialEncoder.past_components">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">past_components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.utils.data.encoders.SequentialEncoder.past_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the past covariate component names generated by <cite>SequentialEncoder.past_encoders</cite>.
+Only available after calling <cite>SequentialEncoder.encode_train()</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.data.encoders.SequentialEncoder.past_encoders">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">past_encoders</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.SingleEncoder" title="darts.utils.data.encoder_base.SingleEncoder"><span class="pre">darts.utils.data.encoder_base.SingleEncoder</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.SequentialEncoder.past_encoders" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the past covariate encoder objects</p>
+<dd><p>Returns the past covariate encoders</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.SingleEncoder" title="darts.utils.data.encoder_base.SingleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">SingleEncoder</span></code></a>]</p>
@@ -2495,6 +3772,29 @@ future or past covariate encoder</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.SequentialEncoderTransformer" title="darts.utils.data.encoder_base.SequentialEncoderTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">SequentialEncoderTransformer</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.SequentialEncoder.requires_fit">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">requires_fit</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoders.SequentialEncoder.requires_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference
+with <cite>Encoder.encode_inference()</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.SequentialEncoder.transformers">
+<span class="sig-name descname"><span class="pre">transformers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#SequentialEncoder.transformers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.SequentialEncoder.transformers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a tuple of (past transformer, future transformer).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.SequentialEncoderTransformer" title="darts.utils.data.encoder_base.SequentialEncoderTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">SequentialEncoderTransformer</span></code></a>, <a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.SequentialEncoderTransformer" title="darts.utils.data.encoder_base.SequentialEncoderTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">SequentialEncoderTransformer</span></code></a>]</p>
 </dd>
 </dl>
 </dd></dl>

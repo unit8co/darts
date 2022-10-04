@@ -180,6 +180,7 @@
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">_build_tqdm_iterator</span>
 
 <span class="kn">from</span> <span class="nn">.dataset_loaders</span> <span class="kn">import</span> <span class="n">DatasetLoaderCSV</span><span class="p">,</span> <span class="n">DatasetLoaderMetadata</span>
 
@@ -701,7 +702,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">ts_list</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># list of timeseries</span>
-        <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">series</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">_build_tqdm_iterator</span><span class="p">(</span>
+            <span class="n">series</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+        <span class="p">):</span>
             <span class="n">srs</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="n">label</span><span class="p">]</span>
 
             <span class="c1"># filter column down to the period of recording</span>
@@ -795,7 +798,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">ts_list</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># list of timeseries</span>
-        <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">series</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">_build_tqdm_iterator</span><span class="p">(</span>
+            <span class="n">series</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+        <span class="p">):</span>
             <span class="n">srs</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="n">label</span><span class="p">]</span>
 
             <span class="c1"># filter column down to the period of recording</span>

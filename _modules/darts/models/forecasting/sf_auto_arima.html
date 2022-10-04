@@ -173,7 +173,7 @@
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">statsforecast.arima</span> <span class="kn">import</span> <span class="n">AutoARIMA</span> <span class="k">as</span> <span class="n">SFAutoARIMA</span>
+<span class="kn">from</span> <span class="nn">statsforecast.models</span> <span class="kn">import</span> <span class="n">AutoARIMA</span> <span class="k">as</span> <span class="n">SFAutoARIMA</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.forecasting_model</span> <span class="kn">import</span> <span class="n">DualCovariatesForecastingModel</span>
@@ -190,12 +190,25 @@
 
 <span class="sd">        It is probabilistic, whereas :class:`AutoARIMA` is not.</span>
 
+<span class="sd">        We refer to the `statsforecast AutoARIMA documentation</span>
+<span class="sd">        &lt;https://nixtla.github.io/statsforecast/models.html#arima-methods&gt;`_</span>
+<span class="sd">        for the documentation of the arguments.</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        autoarima_args</span>
-<span class="sd">            Positional arguments for ``statsforecasts.arima.AutoARIMA``.</span>
+<span class="sd">            Positional arguments for ``statsforecasts.models.AutoARIMA``.</span>
 <span class="sd">        autoarima_kwargs</span>
-<span class="sd">            Keyword arguments for ``statsforecasts.arima.AutoARIMA``.</span>
+<span class="sd">            Keyword arguments for ``statsforecasts.models.AutoARIMA``.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import StatsForecastAutoARIMA</span>
+<span class="sd">        &gt;&gt;&gt; from darts.datasets import AirPassengersDataset</span>
+<span class="sd">        &gt;&gt;&gt; series = AirPassengersDataset().load()</span>
+<span class="sd">        &gt;&gt;&gt; model = StatsForecastAutoARIMA(season_length=12)</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(series[:-36])</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(36, num_samples=100)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">SFAutoARIMA</span><span class="p">(</span><span class="o">*</span><span class="n">autoarima_args</span><span class="p">,</span> <span class="o">**</span><span class="n">autoarima_kwargs</span><span class="p">)</span>
@@ -223,12 +236,12 @@
         <span class="n">forecast_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
             <span class="n">h</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
             <span class="n">X</span><span class="o">=</span><span class="n">future_covariates</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">if</span> <span class="n">future_covariates</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="n">level</span><span class="o">=</span><span class="mi">68</span><span class="p">,</span>  <span class="c1"># ask one std for the confidence interval. Note, we&#39;re limited to int...</span>
+            <span class="n">level</span><span class="o">=</span><span class="p">(</span><span class="mf">68.27</span><span class="p">,),</span>  <span class="c1"># ask one std for the confidence interval.</span>
         <span class="p">)</span>
 
-        <span class="n">mu</span> <span class="o">=</span> <span class="n">forecast_df</span><span class="p">[</span><span class="s2">&quot;mean&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">forecast_df</span><span class="p">[</span><span class="s2">&quot;mean&quot;</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">num_samples</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">std</span> <span class="o">=</span> <span class="n">forecast_df</span><span class="p">[</span><span class="s2">&quot;hi_68%&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">-</span> <span class="n">mu</span>
+            <span class="n">std</span> <span class="o">=</span> <span class="n">forecast_df</span><span class="p">[</span><span class="s2">&quot;hi-68.27&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">mu</span>
             <span class="n">samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="n">mu</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">std</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">num_samples</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span><span class="o">.</span><span class="n">T</span>
             <span class="n">samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>

@@ -234,11 +234,33 @@
   </ul>
  </li>
  <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.metrics.html">
-   Metrics
+  <a class="reference internal" href="darts.explainability.html">
+   Explainability
   </a>
   <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
   <label for="toctree-checkbox-4">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.explainability_result.html">
+     ExplainabilityResult
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.shap_explainer.html">
+     Shap Explainer for RegressionModels
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.metrics.html">
+   Metrics
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+  <label for="toctree-checkbox-5">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -254,8 +276,8 @@
   <a class="reference internal" href="darts.models.html">
    Models
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
-  <label for="toctree-checkbox-5">
+  <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+  <label for="toctree-checkbox-6">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -264,8 +286,8 @@
     <a class="reference internal" href="darts.models.filtering.html">
      Filtering Models
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
-    <label for="toctree-checkbox-6">
+    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
+    <label for="toctree-checkbox-7">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -291,8 +313,8 @@
     <a class="reference internal" href="darts.models.forecasting.html">
      Forecasting Models
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
-    <label for="toctree-checkbox-7">
+    <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
+    <label for="toctree-checkbox-8">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -393,6 +415,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_ets.html">
+       StatsForecastETS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.tbats.html">
        BATS and TBATS
       </a>
@@ -430,8 +457,8 @@
   <a class="reference internal" href="darts.utils.html">
    Utils
   </a>
-  <input checked="" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
-  <label for="toctree-checkbox-8">
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
+  <label for="toctree-checkbox-9">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -440,8 +467,8 @@
     <a class="reference internal" href="darts.utils.data.html">
      TimeSeries Datasets
     </a>
-    <input checked="" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
-    <label for="toctree-checkbox-9">
+    <input checked="" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
+    <label for="toctree-checkbox-10">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -570,7 +597,7 @@
 <h1>Inference Dataset<a class="headerlink" href="#inference-dataset" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.inference_dataset.DualCovariatesInferenceDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.inference_dataset.</span></span><span class="sig-name descname"><span class="pre">DualCovariatesInferenceDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/inference_dataset.html#DualCovariatesInferenceDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.inference_dataset.DualCovariatesInferenceDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.inference_dataset.</span></span><span class="sig-name descname"><span class="pre">DualCovariatesInferenceDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/inference_dataset.html#DualCovariatesInferenceDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.inference_dataset.DualCovariatesInferenceDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.data.inference_dataset.InferenceDataset" title="darts.utils.data.inference_dataset.InferenceDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.inference_dataset.InferenceDataset</span></code></a></p>
 <p>Contains (past_target, historic_future_covariates, future_covariates, static_covariates) tuples.</p>
 <dl class="field-list simple">
@@ -581,7 +608,8 @@
 if the model was trained with future-known covariates.</p></li>
 <li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Forecast horizon: The number of time steps to predict after the end of the target series.</p></li>
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the target series the model takes as input.</p></li>
-<li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the target series the model emmits in output.</p></li>
+<li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the target series the model emits in output.</p></li>
+<li><p><strong>use_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use/include static covariate data from input series.</p></li>
 </ul>
 </dd>
 </dl>
@@ -589,7 +617,7 @@ if the model was trained with future-known covariates.</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.inference_dataset.FutureCovariatesInferenceDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.inference_dataset.</span></span><span class="sig-name descname"><span class="pre">FutureCovariatesInferenceDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">CovariateType.FUTURE</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/inference_dataset.html#FutureCovariatesInferenceDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.inference_dataset.FutureCovariatesInferenceDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.inference_dataset.</span></span><span class="sig-name descname"><span class="pre">FutureCovariatesInferenceDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">CovariateType.FUTURE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/inference_dataset.html#FutureCovariatesInferenceDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.inference_dataset.FutureCovariatesInferenceDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.data.inference_dataset.InferenceDataset" title="darts.utils.data.inference_dataset.InferenceDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.inference_dataset.InferenceDataset</span></code></a></p>
 <p>Contains (past_target, future_covariates, static_covariates) tuples</p>
 <dl class="field-list simple">
@@ -600,6 +628,7 @@ if the model was trained with future-known covariates.</p></li>
 if the model was trained with future-known covariates.</p></li>
 <li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Forecast horizon: The number of time steps to predict after the end of the target series.</p></li>
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the target series the model takes as input.</p></li>
+<li><p><strong>use_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use/include static covariate data from input series.</p></li>
 </ul>
 </dd>
 </dl>
@@ -607,13 +636,13 @@ if the model was trained with future-known covariates.</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.inference_dataset.GenericInferenceDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.inference_dataset.</span></span><span class="sig-name descname"><span class="pre">GenericInferenceDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">CovariateType.PAST</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/inference_dataset.html#GenericInferenceDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.inference_dataset.GenericInferenceDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.inference_dataset.</span></span><span class="sig-name descname"><span class="pre">GenericInferenceDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">CovariateType.PAST</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/inference_dataset.html#GenericInferenceDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.inference_dataset.GenericInferenceDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.data.inference_dataset.InferenceDataset" title="darts.utils.data.inference_dataset.InferenceDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.inference_dataset.InferenceDataset</span></code></a></p>
 <p>Contains (past_target, past_covariates | historic_future_covariates, future_past_covariates | future_covariate,
 static_covariates).</p>
 <p>“future_past_covariates” are past covariates that happen to be also known in the future - those
 are needed for forecasting with n &gt; output_chunk_length by any model relying on past covariates.
-For this reason, when n &gt; output_chunk_length, this dataset will also emmit the “future past_covariates”.</p>
+For this reason, when n &gt; output_chunk_length, this dataset will also emit the “future past_covariates”.</p>
 <p>“historic_future_covariates” are historic future covariates that are given for the input_chunk in the past.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -624,6 +653,7 @@ were used during training, the same type of cavariates must be supplied at predi
 <li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Forecast horizon: The number of time steps to predict after the end of the target series.</p></li>
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the target series the model takes as input.</p></li>
 <li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the target series the model emits in output.</p></li>
+<li><p><strong>use_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use/include static covariate data from input series.</p></li>
 </ul>
 </dd>
 </dl>
@@ -643,7 +673,7 @@ needed in order to properly construct the time axis of the forecast series.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.inference_dataset.MixedCovariatesInferenceDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.inference_dataset.</span></span><span class="sig-name descname"><span class="pre">MixedCovariatesInferenceDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/inference_dataset.html#MixedCovariatesInferenceDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.inference_dataset.MixedCovariatesInferenceDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.inference_dataset.</span></span><span class="sig-name descname"><span class="pre">MixedCovariatesInferenceDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/inference_dataset.html#MixedCovariatesInferenceDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.inference_dataset.MixedCovariatesInferenceDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.data.inference_dataset.InferenceDataset" title="darts.utils.data.inference_dataset.InferenceDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.inference_dataset.InferenceDataset</span></code></a></p>
 <p>Contains (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates,
 static_covariates)
@@ -659,7 +689,8 @@ if the model was trained with past-observed covariates.</p></li>
 if the model was trained with future-known covariates.</p></li>
 <li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Forecast horizon: The number of time steps to predict after the end of the target series.</p></li>
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the target series the model takes as input.</p></li>
-<li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the target series the model emmits in output.</p></li>
+<li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the target series the model emits in output.</p></li>
+<li><p><strong>use_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use/include static covariate data from input series.</p></li>
 </ul>
 </dd>
 </dl>
@@ -667,12 +698,12 @@ if the model was trained with future-known covariates.</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.inference_dataset.PastCovariatesInferenceDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.inference_dataset.</span></span><span class="sig-name descname"><span class="pre">PastCovariatesInferenceDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">CovariateType.PAST</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/inference_dataset.html#PastCovariatesInferenceDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.inference_dataset.PastCovariatesInferenceDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.inference_dataset.</span></span><span class="sig-name descname"><span class="pre">PastCovariatesInferenceDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">CovariateType.PAST</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/inference_dataset.html#PastCovariatesInferenceDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.inference_dataset.PastCovariatesInferenceDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.data.inference_dataset.InferenceDataset" title="darts.utils.data.inference_dataset.InferenceDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.inference_dataset.InferenceDataset</span></code></a></p>
 <p>Contains (past_target, past_covariates, future_past_covariates, static_covariates).</p>
 <p>“future_past_covariates” are past covariates that happen to be also known in the future - those
 are needed for forecasting with n &gt; output_chunk_length by any model relying on past covariates.</p>
-<p>For this reason, when n &gt; output_chunk_length, this dataset will also emmit the “future past_covariates”.</p>
+<p>For this reason, when n &gt; output_chunk_length, this dataset will also emit the “future past_covariates”.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -681,7 +712,8 @@ are needed for forecasting with n &gt; output_chunk_length by any model relying 
 if the model was trained with past-observed covariates.</p></li>
 <li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Forecast horizon: The number of time steps to predict after the end of the target series.</p></li>
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the target series the model takes as input.</p></li>
-<li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the target series the model emmits in output.</p></li>
+<li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the target series the model emits in output.</p></li>
+<li><p><strong>use_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use/include static covariate data from input series.</p></li>
 </ul>
 </dd>
 </dl>
@@ -689,7 +721,7 @@ if the model was trained with past-observed covariates.</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.inference_dataset.SplitCovariatesInferenceDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.inference_dataset.</span></span><span class="sig-name descname"><span class="pre">SplitCovariatesInferenceDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/inference_dataset.html#SplitCovariatesInferenceDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.inference_dataset.SplitCovariatesInferenceDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.inference_dataset.</span></span><span class="sig-name descname"><span class="pre">SplitCovariatesInferenceDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/inference_dataset.html#SplitCovariatesInferenceDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.inference_dataset.SplitCovariatesInferenceDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.data.inference_dataset.InferenceDataset" title="darts.utils.data.inference_dataset.InferenceDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.inference_dataset.InferenceDataset</span></code></a></p>
 <p>Contains (past_target, past_covariates, future_covariates, future_past_covariates, static_covariates) tuples.
 “future_past_covariates” are past covariates that happen to be also known in the future - those
@@ -704,7 +736,8 @@ if the model was trained with past-observed covariates.</p></li>
 if the model was trained with future-known covariates.</p></li>
 <li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Forecast horizon: The number of time steps to predict after the end of the target series.</p></li>
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the target series the model takes as input.</p></li>
-<li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the target series the model emmits in output.</p></li>
+<li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the target series the model emits in output.</p></li>
+<li><p><strong>use_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use/include static covariate data from input series.</p></li>
 </ul>
 </dd>
 </dl>

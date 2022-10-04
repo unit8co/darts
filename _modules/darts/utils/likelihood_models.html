@@ -340,11 +340,19 @@
 
 
 <div class="viewcode-block" id="GaussianLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.GaussianLikelihood">[docs]</a><span class="k">class</span> <span class="nc">GaussianLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_mu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_sigma</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">prior_mu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_sigma</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">beta_nll</span><span class="o">=</span><span class="mf">0.0</span>
+    <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Univariate Gaussian distribution.</span>
 
 <span class="sd">        https://en.wikipedia.org/wiki/Normal_distribution</span>
+
+<span class="sd">        Instead of the pure negative log likelihood (NLL) loss, the loss function used</span>
+<span class="sd">        is the :math:`\\beta`-NLL loss [1]_, parameterized by ``beta_nll`` in (0, 1).</span>
+<span class="sd">        For ``beta_nll=0`` it is equivalent to NLL, however larger values of ``beta_nll`` can</span>
+<span class="sd">        mitigate issues with NLL causing effective under-sampling of poorly fit regions</span>
+<span class="sd">        during training. ``beta_nll=1`` provides the same gradient for the mean as the MSE loss.</span>
 
 <span class="sd">        - Univariate continuous distribution.</span>
 <span class="sd">        - Support: :math:`\\mathbb{R}`.</span>
@@ -358,21 +366,38 @@
 <span class="sd">            standard deviation (or scale) of the prior Gaussian distribution (default: None)</span>
 <span class="sd">        prior_strength</span>
 <span class="sd">            strength of the loss regularisation induced by the prior</span>
+<span class="sd">        beta_nll</span>
+<span class="sd">            The parameter :math:`0 \\leq \\beta \\leq 1` of the :math:`\\beta`-NLL loss [1]_.</span>
+<span class="sd">            Default: 0. (equivalent to NLL)</span>
+
+<span class="sd">        References</span>
+<span class="sd">        ----------</span>
+<span class="sd">        .. [1] Seitzer et al.,</span>
+<span class="sd">               &quot;On the Pitfalls of Heteroscedastic Uncertainty Estimation with Probabilistic Neural Networks&quot;</span>
+<span class="sd">               https://arxiv.org/abs/2203.09168</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">prior_mu</span> <span class="o">=</span> <span class="n">prior_mu</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">prior_sigma</span> <span class="o">=</span> <span class="n">prior_sigma</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beta_nll</span> <span class="o">=</span> <span class="n">beta_nll</span>
         <span class="n">_check_strict_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_sigma</span><span class="p">,</span> <span class="s2">&quot;sigma&quot;</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">nllloss</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">GaussianNLLLoss</span><span class="p">(</span><span class="n">reduction</span><span class="o">=</span><span class="s2">&quot;mean&quot;</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nllloss</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">GaussianNLLLoss</span><span class="p">(</span>
+            <span class="n">reduction</span><span class="o">=</span><span class="s2">&quot;none&quot;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_nll</span> <span class="o">&gt;</span> <span class="mf">0.0</span> <span class="k">else</span> <span class="s2">&quot;mean&quot;</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Softplus</span><span class="p">()</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">prior_strength</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_nllloss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params_out</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
         <span class="n">means_out</span><span class="p">,</span> <span class="n">sigmas_out</span> <span class="o">=</span> <span class="n">params_out</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nllloss</span><span class="p">(</span>
-            <span class="n">means_out</span><span class="o">.</span><span class="n">contiguous</span><span class="p">(),</span> <span class="n">target</span><span class="o">.</span><span class="n">contiguous</span><span class="p">(),</span> <span class="n">sigmas_out</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
-        <span class="p">)</span>
+        <span class="c1"># Note: GaussianNLLLoss expects variance (and not stdev)</span>
+        <span class="n">cont_var</span> <span class="o">=</span> <span class="n">sigmas_out</span><span class="o">.</span><span class="n">contiguous</span><span class="p">()</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nllloss</span><span class="p">(</span><span class="n">means_out</span><span class="o">.</span><span class="n">contiguous</span><span class="p">(),</span> <span class="n">target</span><span class="o">.</span><span class="n">contiguous</span><span class="p">(),</span> <span class="n">cont_var</span><span class="p">)</span>
+        <span class="c1"># apply Beta-NLL</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_nll</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="c1"># Note: there is no mean reduction if beta_nll &gt; 0, so we compute it here</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="p">(</span><span class="n">loss</span> <span class="o">*</span> <span class="p">(</span><span class="n">cont_var</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span> <span class="o">**</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_nll</span><span class="p">))</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">loss</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">_prior_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>

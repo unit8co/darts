@@ -20,7 +20,7 @@ Multivariate time series -vs- multiple time series
 We distinguish univariate from multivariate series:
 
 
-* A **Multivariate** series contain multiple dimensions (i.e. multiple values per time step).
+* A **multivariate** series contain multiple dimensions (i.e. multiple values per time step).
 * A **univariate** series contains only one dimension (i.e., single scalar value for each time step).
 
 Sometimes the dimensions are called *components*. A single ``TimeSeries`` object can be either univariate (if it has a single component), or multivariate (if it has multiple components). In a multivariate series, all components share the same time axis. I.e., they all share the same time stamps.
@@ -87,7 +87,7 @@ Furthermore, it is possible to concatenate series along different axes using the
 
 .. code-block:: python
 
-   from dart import concatenate
+   from darts import concatenate
 
    my_multivariate_series = concatenate([series1, series2, ...], axis=1)
 
@@ -138,7 +138,7 @@ For instance, the following hierarchy means that the two components ``"a"`` and 
 
 .. code-block:: python
 
-   hierarchy = {"a": ["total"], "b", ["total"]}
+   hierarchy = {"a": ["total"], "b": ["total"]}
 
 Hierarchies can be used for posthoc forecast reconciliation. Darts offers several reconciliation transformers (usable with ``fit()``\ /\ ``transform()``\ ) - see the `corresponding API documentation <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
 

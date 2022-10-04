@@ -276,6 +276,7 @@
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">covariate_type</span><span class="p">:</span> <span class="n">CovariateType</span> <span class="o">=</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span><span class="p">,</span>
+        <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Contains (past_target, past_covariates | historic_future_covariates, future_past_covariates | future_covariate,</span>
@@ -283,7 +284,7 @@
 
 <span class="sd">        &quot;future_past_covariates&quot; are past covariates that happen to be also known in the future - those</span>
 <span class="sd">        are needed for forecasting with n &gt; output_chunk_length by any model relying on past covariates.</span>
-<span class="sd">        For this reason, when n &gt; output_chunk_length, this dataset will also emmit the &quot;future past_covariates&quot;.</span>
+<span class="sd">        For this reason, when n &gt; output_chunk_length, this dataset will also emit the &quot;future past_covariates&quot;.</span>
 
 <span class="sd">        &quot;historic_future_covariates&quot; are historic future covariates that are given for the input_chunk in the past.</span>
 
@@ -300,6 +301,8 @@
 <span class="sd">            The length of the target series the model takes as input.</span>
 <span class="sd">        output_chunk_length</span>
 <span class="sd">            The length of the target series the model emits in output.</span>
+<span class="sd">        use_static_covariates</span>
+<span class="sd">            Whether to use/include static covariate data from input series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
@@ -315,6 +318,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">n</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_static_covariates</span> <span class="o">=</span> <span class="n">use_static_covariates</span>
 
         <span class="n">raise_if_not</span><span class="p">(</span>
             <span class="p">(</span><span class="n">covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covariates</span><span class="p">)),</span>
@@ -383,7 +387,11 @@
                 <span class="k">else</span> <span class="kc">None</span>
             <span class="p">)</span>
 
-        <span class="n">static_covariate</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">static_covariates_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_static_covariates</span><span class="p">:</span>
+            <span class="n">static_covariate</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">static_covariates_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">static_covariate</span> <span class="o">=</span> <span class="kc">None</span>
+
         <span class="k">return</span> <span class="p">(</span>
             <span class="n">past_target</span><span class="p">,</span>
             <span class="n">past_covariate</span><span class="p">,</span>
@@ -402,6 +410,7 @@
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">covariate_type</span><span class="p">:</span> <span class="n">CovariateType</span> <span class="o">=</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span><span class="p">,</span>
+        <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Contains (past_target, past_covariates, future_past_covariates, static_covariates).</span>
@@ -409,7 +418,7 @@
 <span class="sd">        &quot;future_past_covariates&quot; are past covariates that happen to be also known in the future - those</span>
 <span class="sd">        are needed for forecasting with n &gt; output_chunk_length by any model relying on past covariates.</span>
 
-<span class="sd">        For this reason, when n &gt; output_chunk_length, this dataset will also emmit the &quot;future past_covariates&quot;.</span>
+<span class="sd">        For this reason, when n &gt; output_chunk_length, this dataset will also emit the &quot;future past_covariates&quot;.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -423,7 +432,9 @@
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            The length of the target series the model takes as input.</span>
 <span class="sd">        output_chunk_length</span>
-<span class="sd">            The length of the target series the model emmits in output.</span>
+<span class="sd">            The length of the target series the model emits in output.</span>
+<span class="sd">        use_static_covariates</span>
+<span class="sd">            Whether to use/include static covariate data from input series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
@@ -435,6 +446,7 @@
             <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
             <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
             <span class="n">covariate_type</span><span class="o">=</span><span class="n">covariate_type</span><span class="p">,</span>
+            <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -460,6 +472,7 @@
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
         <span class="n">covariate_type</span><span class="p">:</span> <span class="n">CovariateType</span> <span class="o">=</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">FUTURE</span><span class="p">,</span>
+        <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Contains (past_target, future_covariates, static_covariates) tuples</span>
@@ -475,6 +488,8 @@
 <span class="sd">            Forecast horizon: The number of time steps to predict after the end of the target series.</span>
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            The length of the target series the model takes as input.</span>
+<span class="sd">        use_static_covariates</span>
+<span class="sd">            Whether to use/include static covariate data from input series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
@@ -485,6 +500,7 @@
             <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
             <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
             <span class="n">covariate_type</span><span class="o">=</span><span class="n">covariate_type</span><span class="p">,</span>
+            <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -505,6 +521,7 @@
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Contains (past_target, historic_future_covariates, future_covariates, static_covariates) tuples.</span>
@@ -521,7 +538,9 @@
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            The length of the target series the model takes as input.</span>
 <span class="sd">        output_chunk_length</span>
-<span class="sd">            The length of the target series the model emmits in output.</span>
+<span class="sd">            The length of the target series the model emits in output.</span>
+<span class="sd">        use_static_covariates</span>
+<span class="sd">            Whether to use/include static covariate data from input series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
@@ -533,6 +552,7 @@
             <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
             <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
             <span class="n">covariate_type</span><span class="o">=</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">HISTORIC_FUTURE</span><span class="p">,</span>
+            <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># This dataset is in charge of serving future covariates</span>
@@ -542,6 +562,7 @@
             <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
             <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
             <span class="n">covariate_type</span><span class="o">=</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">FUTURE</span><span class="p">,</span>
+            <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -582,6 +603,7 @@
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Contains (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates,</span>
@@ -604,7 +626,9 @@
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            The length of the target series the model takes as input.</span>
 <span class="sd">        output_chunk_length</span>
-<span class="sd">            The length of the target series the model emmits in output.</span>
+<span class="sd">            The length of the target series the model emits in output.</span>
+<span class="sd">        use_static_covariates</span>
+<span class="sd">            Whether to use/include static covariate data from input series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
@@ -616,6 +640,7 @@
             <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
             <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
             <span class="n">covariate_type</span><span class="o">=</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span><span class="p">,</span>
+            <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># This dataset is in charge of serving historic and future future covariates</span>
@@ -625,6 +650,7 @@
             <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
             <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
             <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+            <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -670,6 +696,7 @@
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Contains (past_target, past_covariates, future_covariates, future_past_covariates, static_covariates) tuples.</span>
@@ -691,7 +718,9 @@
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            The length of the target series the model takes as input.</span>
 <span class="sd">        output_chunk_length</span>
-<span class="sd">            The length of the target series the model emmits in output.</span>
+<span class="sd">            The length of the target series the model emits in output.</span>
+<span class="sd">        use_static_covariates</span>
+<span class="sd">            Whether to use/include static covariate data from input series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
@@ -703,6 +732,7 @@
             <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
             <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
             <span class="n">covariate_type</span><span class="o">=</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span><span class="p">,</span>
+            <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># This dataset is in charge of serving future covariates</span>
@@ -712,6 +742,7 @@
             <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
             <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
             <span class="n">covariate_type</span><span class="o">=</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">FUTURE</span><span class="p">,</span>
+            <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>

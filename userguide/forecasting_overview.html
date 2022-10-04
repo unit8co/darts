@@ -177,6 +177,11 @@
   </a>
  </li>
  <li class="toctree-l1">
+  <a class="reference internal" href="hyperparameter_optimization.html">
+   Hyperparameter Optimization in Darts
+  </a>
+ </li>
+ <li class="toctree-l1">
   <a class="reference internal" href="faq.html">
    Frequently Asked Questions
   </a>
@@ -204,6 +209,11 @@
  <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#generalities">
    Generalities
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#saving-and-loading-models">
+   Saving and Loading Models
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
@@ -299,6 +309,40 @@ be provided to <code class="docutils literal notranslate"><span class="pre">pred
 <ul class="simple">
 <li><p><strong>Target series:</strong> the series that we are interested in forecasting.</p></li>
 <li><p><strong>Covariate series:</strong> some other series that we are not interested in forecasting, but that can provide valuable inputs to the forecasting model.</p></li>
+</ul>
+</section>
+<section id="saving-and-loading-models">
+<h2>Saving and Loading Models<a class="headerlink" href="#saving-and-loading-models" title="Permalink to this headline">¶</a></h2>
+<p>If you wish to save a particular model and use it elsewhere or at a later point in time, darts can achieve that. It leverages pickle and in the case of Torch models relies on saving PyTorch Lightning trainer checkpoints.
+All forecasting models support saving the model on the filesystem, by calling the <code class="docutils literal notranslate"><span class="pre">save()</span></code> function, which saves that particular <code class="docutils literal notranslate"><span class="pre">ForecastingModel</span></code> object instance. When the model is to be used again, the method <code class="docutils literal notranslate"><span class="pre">load()</span></code> can be used. Please note that the methods <code class="docutils literal notranslate"><span class="pre">save_model()</span></code> and <code class="docutils literal notranslate"><span class="pre">load_model()</span></code> are deprecated.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RegressionModel</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">RegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;my_model.pkl&quot;</span><span class="p">)</span>
+<span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RegressionModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;my_model.pkl&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The parameter <code class="docutils literal notranslate"><span class="pre">path</span></code> specifies a path or file handle under which to save the model at its current state. If no <code class="docutils literal notranslate"><span class="pre">path</span></code> is specified, the model is automatically
+saved under <code class="docutils literal notranslate"><span class="pre">&quot;{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pkl&quot;</span></code>. E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RegressionModel_2020-01-01_12:00:00.pkl&quot;</span></code>.
+Optionally there is also pickle specific keyword arguments <code class="docutils literal notranslate"><span class="pre">protocol</span></code>, <code class="docutils literal notranslate"><span class="pre">fix_imports</span></code> and <code class="docutils literal notranslate"><span class="pre">buffer_callback</span></code>.
+More info: <a class="reference external" href="https://docs.python.org/3/library/pickle.html?highlight=dump#pickle.dump">pickle.dump()</a></p>
+<p>With torch models, the model parameters and the training state are saved. We use the trainer to save the model checkpoint.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">NBEATSModel</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
+                    <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;my_model.pt&quot;</span><span class="p">)</span>
+<span class="n">model_loaded</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;my_model.pt&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Private methods for torch models used under the hood:</p>
+<ul class="simple">
+<li><p><strong>save_checkpoint:</strong> In addition, we need to use PTL save_checkpoint() to properly save the trainer and model. It is used to be able to save a snapshot of the model mid-training, and then be able to retrieve the model later.</p></li>
+<li><p><strong>load_from_checkpoint:</strong> returns a model checkpointed during training (by default the one with lowest validation loss).</p></li>
 </ul>
 </section>
 <section id="support-for-multivariate-series">

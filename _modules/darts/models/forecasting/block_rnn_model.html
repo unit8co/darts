@@ -297,7 +297,7 @@
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;RNN&quot;</span><span class="p">,</span>
-        <span class="n">hidden_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">25</span><span class="p">,</span>
+        <span class="n">hidden_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">25</span><span class="p">,</span>
         <span class="n">n_rnn_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">hidden_fc_sizes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
@@ -329,8 +329,9 @@
 <span class="sd">            Either a string specifying the RNN module type (&quot;RNN&quot;, &quot;LSTM&quot; or &quot;GRU&quot;),</span>
 <span class="sd">            or a PyTorch module with the same specifications as</span>
 <span class="sd">            :class:`darts.models.block_rnn_model._BlockRNNModule`.</span>
-<span class="sd">        hidden_size</span>
+<span class="sd">        hidden_dim</span>
 <span class="sd">            Size for feature maps for each hidden RNN layer (:math:`h_n`).</span>
+<span class="sd">            In Darts version &lt;= 0.21, hidden_dim was referred as hidden_size.</span>
 <span class="sd">        n_rnn_layers</span>
 <span class="sd">            Number of layers in the RNN module.</span>
 <span class="sd">        hidden_fc_sizes</span>
@@ -381,24 +382,6 @@
 <span class="sd">        nr_epochs_val_period</span>
 <span class="sd">            Number of epochs to wait before evaluating the validation loss (if a validation</span>
 <span class="sd">            ``TimeSeries`` is passed to the :func:`fit()` method). Default: ``1``.</span>
-<span class="sd">        torch_device_str</span>
-<span class="sd">            Optionally, a string indicating the torch device to use. By default, ``torch_device_str`` is ``None``</span>
-<span class="sd">            which will run on CPU. Set it to ``&quot;cuda&quot;`` to use all available GPUs or ``&quot;cuda:i&quot;`` to only use</span>
-<span class="sd">            GPU ``i`` (``i`` must be an integer). For example &quot;cuda:0&quot; will use the first GPU only.</span>
-
-<span class="sd">            .. deprecated:: v0.17.0</span>
-<span class="sd">                ``torch_device_str`` has been deprecated in v0.17.0 and will be removed in a future version.</span>
-<span class="sd">                Instead, specify this with keys ``&quot;accelerator&quot;, &quot;gpus&quot;, &quot;auto_select_gpus&quot;`` in your</span>
-<span class="sd">                ``pl_trainer_kwargs`` dict. Some examples for setting the devices inside the ``pl_trainer_kwargs``</span>
-<span class="sd">                dict:</span>
-
-<span class="sd">                - ``{&quot;accelerator&quot;: &quot;cpu&quot;}`` for CPU,</span>
-<span class="sd">                - ``{&quot;accelerator&quot;: &quot;gpu&quot;, &quot;gpus&quot;: [i]}`` to use only GPU ``i`` (``i`` must be an integer),</span>
-<span class="sd">                - ``{&quot;accelerator&quot;: &quot;gpu&quot;, &quot;gpus&quot;: -1, &quot;auto_select_gpus&quot;: True}`` to use all available GPUS.</span>
-
-<span class="sd">                For more info, see here:</span>
-<span class="sd">                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and</span>
-<span class="sd">                https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html#select-gpu-devices</span>
 <span class="sd">        force_reset</span>
 <span class="sd">            If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will</span>
 <span class="sd">            be discarded). Default: ``False``.</span>
@@ -423,7 +406,7 @@
 <span class="sd">                add_encoders={</span>
 <span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
 <span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
-<span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;absolute&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
+<span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;relative&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
 <span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [lambda idx: (idx.year - 1950) / 50]},</span>
 <span class="sd">                    &#39;transformer&#39;: Scaler()</span>
 <span class="sd">                }</span>
@@ -440,6 +423,19 @@
 <span class="sd">            object. Check the `PL Trainer documentation</span>
 <span class="sd">            &lt;https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html&gt;`_ for more information about the</span>
 <span class="sd">            supported kwargs. Default: ``None``.</span>
+<span class="sd">            Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``&quot;accelerator&quot;,</span>
+<span class="sd">            &quot;devices&quot;, and &quot;auto_select_gpus&quot;``. Some examples for setting the devices inside the ``pl_trainer_kwargs``</span>
+<span class="sd">            dict:</span>
+
+
+<span class="sd">            - ``{&quot;accelerator&quot;: &quot;cpu&quot;}`` for CPU,</span>
+<span class="sd">            - ``{&quot;accelerator&quot;: &quot;gpu&quot;, &quot;devices&quot;: [i]}`` to use only GPU ``i`` (``i`` must be an integer),</span>
+<span class="sd">            - ``{&quot;accelerator&quot;: &quot;gpu&quot;, &quot;devices&quot;: -1, &quot;auto_select_gpus&quot;: True}`` to use all available GPUS.</span>
+
+<span class="sd">            For more info, see here:</span>
+<span class="sd">            https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and</span>
+<span class="sd">            https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus</span>
+
 <span class="sd">            With parameter ``&quot;callbacks&quot;`` you can add custom or PyTorch-Lightning built-in callbacks to Darts&#39;</span>
 <span class="sd">            :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.</span>
 <span class="sd">            The model will stop training early if the validation loss `val_loss` does not improve beyond</span>
@@ -488,7 +484,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">rnn_type_or_module</span> <span class="o">=</span> <span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_fc_sizes</span> <span class="o">=</span> <span class="n">hidden_fc_sizes</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="n">hidden_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span> <span class="o">=</span> <span class="n">hidden_dim</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_rnn_layers</span> <span class="o">=</span> <span class="n">n_rnn_layers</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
 
@@ -513,7 +509,7 @@
                 <span class="n">input_size</span><span class="o">=</span><span class="n">input_dim</span><span class="p">,</span>
                 <span class="n">target_size</span><span class="o">=</span><span class="n">output_dim</span><span class="p">,</span>
                 <span class="n">nr_params</span><span class="o">=</span><span class="n">nr_params</span><span class="p">,</span>
-                <span class="n">hidden_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+                <span class="n">hidden_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span><span class="p">,</span>
                 <span class="n">num_layers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_rnn_layers</span><span class="p">,</span>
                 <span class="n">num_layers_out_fc</span><span class="o">=</span><span class="n">hidden_fc_sizes</span><span class="p">,</span>
                 <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>

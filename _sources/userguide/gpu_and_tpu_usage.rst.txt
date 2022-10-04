@@ -102,7 +102,7 @@ GPUs can dramatically improve the performance of your model in terms of processi
        force_reset=True,
        pl_trainer_kwargs={
          "accelerator": "gpu",
-         "gpus": [0]
+         "devices": [0]
        },
    )
 

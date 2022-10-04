@@ -38,7 +38,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Utils for time series generation" href="darts.utils.timeseries_generation.html" />
-    <link rel="prev" title="Model selection utilities" href="darts.utils.model_selection.html" />
+    <link rel="prev" title="&lt;no title&gt;" href="darts.utils.multioutput.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -234,11 +234,33 @@
   </ul>
  </li>
  <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.metrics.html">
-   Metrics
+  <a class="reference internal" href="darts.explainability.html">
+   Explainability
   </a>
   <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
   <label for="toctree-checkbox-4">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.explainability_result.html">
+     ExplainabilityResult
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.shap_explainer.html">
+     Shap Explainer for RegressionModels
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.metrics.html">
+   Metrics
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+  <label for="toctree-checkbox-5">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -254,8 +276,8 @@
   <a class="reference internal" href="darts.models.html">
    Models
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
-  <label for="toctree-checkbox-5">
+  <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+  <label for="toctree-checkbox-6">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -264,8 +286,8 @@
     <a class="reference internal" href="darts.models.filtering.html">
      Filtering Models
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
-    <label for="toctree-checkbox-6">
+    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
+    <label for="toctree-checkbox-7">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -291,8 +313,8 @@
     <a class="reference internal" href="darts.models.forecasting.html">
      Forecasting Models
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
-    <label for="toctree-checkbox-7">
+    <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
+    <label for="toctree-checkbox-8">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -393,6 +415,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_ets.html">
+       StatsForecastETS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.tbats.html">
        BATS and TBATS
       </a>
@@ -430,8 +457,8 @@
   <a class="reference internal" href="darts.utils.html">
    Utils
   </a>
-  <input checked="" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
-  <label for="toctree-checkbox-8">
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
+  <label for="toctree-checkbox-9">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -440,8 +467,8 @@
     <a class="reference internal" href="darts.utils.data.html">
      TimeSeries Datasets
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
-    <label for="toctree-checkbox-9">
+    <input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
+    <label for="toctree-checkbox-10">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -782,7 +809,7 @@ correction.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.plot_residuals_analysis">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_residuals_analysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">residuals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_nan</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_residuals_analysis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_residuals_analysis" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_residuals_analysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">residuals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_nan</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_formatting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_residuals_analysis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_residuals_analysis" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots data relevant to residuals.</p>
 <p>This function takes a univariate TimeSeries instance of residuals and plots their values,
 their distribution and their ACF.
@@ -795,6 +822,7 @@ be interpolated.</p>
 <li><p><strong>residuals</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – Univariate TimeSeries instance representing residuals.</p></li>
 <li><p><strong>num_bins</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, an integer value determining the number of bins in the histogram.</p></li>
 <li><p><strong>fill_nan</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – A boolean value indicating whether NaN values should be filled in the residuals.</p></li>
+<li><p><strong>default_formatting</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether or not to use the darts default scheme.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -1023,11 +1051,11 @@ p_value_threshold_adfuller = 0.01 and p_value_threshold_kpss = 0.1).</p>
               
               <!-- Previous / next buttons -->
 <div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="darts.utils.model_selection.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="darts.utils.multioutput.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Model selection utilities</p>
+            <p class="prev-next-title">&lt;no title&gt;</p>
         </div>
     </a>
     <a class='right-next' id="next-link" href="darts.utils.timeseries_generation.html" title="next page">

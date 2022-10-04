@@ -191,6 +191,7 @@
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
         <span class="n">lh</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
         <span class="n">lookback</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A time series dataset containing tuples of (past_target, past_covariates, static_covariates, future_target)</span>
@@ -235,6 +236,8 @@
 <span class="sd">            A integer interval for the length of the input in the emitted input and output splits, expressed as a</span>
 <span class="sd">            multiple of `output_chunk_length`. For instance, `lookback=3` will emit &quot;inputs&quot; of lengths</span>
 <span class="sd">            `3 * output_chunk_length`.</span>
+<span class="sd">        use_static_covariates</span>
+<span class="sd">            Whether to use/include static covariate data from input series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
@@ -264,6 +267,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">nr_samples_per_ts</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_lh</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_lh</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">total_nr_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_samples_per_ts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_static_covariates</span> <span class="o">=</span> <span class="n">use_static_covariates</span>
 
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -348,7 +352,10 @@
                 <span class="s2">&quot;input (or output) chunk relative to the target series.&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
-        <span class="n">static_covariate</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">static_covariates_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_static_covariates</span><span class="p">:</span>
+            <span class="n">static_covariate</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">static_covariates_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">static_covariate</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">return</span> <span class="n">past_target</span><span class="p">,</span> <span class="n">covariate</span><span class="p">,</span> <span class="n">static_covariate</span><span class="p">,</span> <span class="n">future_target</span></div>
 </pre></div>
 

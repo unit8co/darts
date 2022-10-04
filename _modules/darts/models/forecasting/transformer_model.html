@@ -171,13 +171,13 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">math</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
 
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span>
-<span class="kn">from</span> <span class="nn">darts.models.components</span> <span class="kn">import</span> <span class="n">glu_variants</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span> <span class="nn">darts.models.components</span> <span class="kn">import</span> <span class="n">glu_variants</span><span class="p">,</span> <span class="n">layer_norm_variants</span>
 <span class="kn">from</span> <span class="nn">darts.models.components.glu_variants</span> <span class="kn">import</span> <span class="n">GLU_FFN</span>
 <span class="kn">from</span> <span class="nn">darts.models.components.transformer</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">CustomFeedForwardDecoderLayer</span><span class="p">,</span>
@@ -194,7 +194,15 @@
 
 
 <span class="k">def</span> <span class="nf">_generate_coder</span><span class="p">(</span>
-    <span class="n">d_model</span><span class="p">,</span> <span class="n">dim_ff</span><span class="p">,</span> <span class="n">dropout</span><span class="p">,</span> <span class="n">nhead</span><span class="p">,</span> <span class="n">num_layers</span><span class="p">,</span> <span class="n">coder_cls</span><span class="p">,</span> <span class="n">layer_cls</span><span class="p">,</span> <span class="n">ffn_cls</span>
+    <span class="n">d_model</span><span class="p">,</span>
+    <span class="n">dim_ff</span><span class="p">,</span>
+    <span class="n">dropout</span><span class="p">,</span>
+    <span class="n">nhead</span><span class="p">,</span>
+    <span class="n">num_layers</span><span class="p">,</span>
+    <span class="n">norm_layer</span><span class="p">,</span>
+    <span class="n">coder_cls</span><span class="p">,</span>
+    <span class="n">layer_cls</span><span class="p">,</span>
+    <span class="n">ffn_cls</span><span class="p">,</span>
 <span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Generates an Encoder or Decoder with one of Darts&#39; Feed-forward Network variants.</span>
 <span class="sd">    Parameters</span>
@@ -202,13 +210,19 @@
 <span class="sd">    coder_cls</span>
 <span class="sd">        Either `torch.nn.TransformerEncoder` or `...TransformerDecoder`</span>
 <span class="sd">    layer_cls</span>
-<span class="sd">        Either `darts.models.components.transformer.CustomFeedForwardEncoderLayer` or</span>
-<span class="sd">        `...CustomFeedForwardDecoderLayer`</span>
+<span class="sd">        Either `darts.models.components.transformer.CustomFeedForwardEncoderLayer`,</span>
+<span class="sd">        `...CustomFeedForwardDecoderLayer`, `nn.TransformerEncoderLayer`, or `nn.TransformerDecoderLayer`.</span>
 <span class="sd">    ffn_cls</span>
 <span class="sd">        One of Darts&#39; Position-wise Feed-Forward Network variants `from darts.models.components.glu_variants`</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">ffn</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">dict</span><span class="p">(</span><span class="n">ffn</span><span class="o">=</span><span class="n">ffn_cls</span><span class="p">(</span><span class="n">d_model</span><span class="o">=</span><span class="n">d_model</span><span class="p">,</span> <span class="n">d_ff</span><span class="o">=</span><span class="n">dim_ff</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="n">dropout</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">ffn_cls</span>
+        <span class="k">else</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="p">)</span>
     <span class="n">layer</span> <span class="o">=</span> <span class="n">layer_cls</span><span class="p">(</span>
-        <span class="n">ffn</span><span class="o">=</span><span class="n">ffn_cls</span><span class="p">(</span><span class="n">d_model</span><span class="o">=</span><span class="n">d_model</span><span class="p">,</span> <span class="n">d_ff</span><span class="o">=</span><span class="n">dim_ff</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="n">dropout</span><span class="p">),</span>
+        <span class="o">**</span><span class="n">ffn</span><span class="p">,</span>
         <span class="n">dropout</span><span class="o">=</span><span class="n">dropout</span><span class="p">,</span>
         <span class="n">d_model</span><span class="o">=</span><span class="n">d_model</span><span class="p">,</span>
         <span class="n">nhead</span><span class="o">=</span><span class="n">nhead</span><span class="p">,</span>
@@ -217,7 +231,7 @@
     <span class="k">return</span> <span class="n">coder_cls</span><span class="p">(</span>
         <span class="n">layer</span><span class="p">,</span>
         <span class="n">num_layers</span><span class="o">=</span><span class="n">num_layers</span><span class="p">,</span>
-        <span class="n">norm</span><span class="o">=</span><span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">(</span><span class="n">d_model</span><span class="p">),</span>
+        <span class="n">norm</span><span class="o">=</span><span class="n">norm_layer</span><span class="p">(</span><span class="n">d_model</span><span class="p">),</span>
     <span class="p">)</span>
 
 
@@ -279,6 +293,7 @@
         <span class="n">dim_feedforward</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
         <span class="n">activation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">norm_type</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">custom_encoder</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">custom_decoder</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
@@ -309,6 +324,8 @@
 <span class="sd">            Fraction of neurons affected by Dropout.</span>
 <span class="sd">        activation</span>
 <span class="sd">            The activation function of encoder/decoder intermediate layer.</span>
+<span class="sd">        norm_type: str | nn.Module | None</span>
+<span class="sd">            The type of LayerNorm variant to use.</span>
 <span class="sd">        custom_encoder</span>
 <span class="sd">            A custom transformer encoder provided by the user (default=None).</span>
 <span class="sd">        custom_decoder</span>
@@ -339,6 +356,16 @@
             <span class="n">d_model</span><span class="p">,</span> <span class="n">dropout</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span>
         <span class="p">)</span>
 
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">norm_type</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">layer_norm</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">layer_norm_variants</span><span class="p">,</span> <span class="n">norm_type</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;please provide a valid layer norm type&quot;</span><span class="p">),</span>
+                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layer_norm</span> <span class="o">=</span> <span class="n">norm_type</span>
+
         <span class="n">raise_if_not</span><span class="p">(</span><span class="n">activation</span> <span class="ow">in</span> <span class="n">FFN</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">activation</span><span class="si">}</span><span class="s2">&#39; is not in </span><span class="si">{</span><span class="n">FFN</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">activation</span> <span class="ow">in</span> <span class="n">GLU_FFN</span><span class="p">:</span>
             <span class="n">raise_if</span><span class="p">(</span>
@@ -359,9 +386,10 @@
                 <span class="n">dropout</span><span class="p">,</span>
                 <span class="n">nhead</span><span class="p">,</span>
                 <span class="n">num_encoder_layers</span><span class="p">,</span>
-                <span class="n">nn</span><span class="o">.</span><span class="n">TransformerEncoder</span><span class="p">,</span>
-                <span class="n">CustomFeedForwardEncoderLayer</span><span class="p">,</span>
-                <span class="n">ffn_cls</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">layer_norm</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer_norm</span> <span class="k">else</span> <span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">,</span>
+                <span class="n">coder_cls</span><span class="o">=</span><span class="n">nn</span><span class="o">.</span><span class="n">TransformerEncoder</span><span class="p">,</span>
+                <span class="n">layer_cls</span><span class="o">=</span><span class="n">CustomFeedForwardEncoderLayer</span><span class="p">,</span>
+                <span class="n">ffn_cls</span><span class="o">=</span><span class="n">ffn_cls</span><span class="p">,</span>
             <span class="p">)</span>
 
             <span class="n">custom_decoder</span> <span class="o">=</span> <span class="n">_generate_coder</span><span class="p">(</span>
@@ -370,9 +398,36 @@
                 <span class="n">dropout</span><span class="p">,</span>
                 <span class="n">nhead</span><span class="p">,</span>
                 <span class="n">num_decoder_layers</span><span class="p">,</span>
-                <span class="n">nn</span><span class="o">.</span><span class="n">TransformerDecoder</span><span class="p">,</span>
-                <span class="n">CustomFeedForwardDecoderLayer</span><span class="p">,</span>
-                <span class="n">ffn_cls</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">layer_norm</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer_norm</span> <span class="k">else</span> <span class="n">nn</span><span class="o">.</span><span class="n">LayerNorm</span><span class="p">,</span>
+                <span class="n">coder_cls</span><span class="o">=</span><span class="n">nn</span><span class="o">.</span><span class="n">TransformerDecoder</span><span class="p">,</span>
+                <span class="n">layer_cls</span><span class="o">=</span><span class="n">CustomFeedForwardDecoderLayer</span><span class="p">,</span>
+                <span class="n">ffn_cls</span><span class="o">=</span><span class="n">ffn_cls</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># if layer norm set and no GLU variant is used</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer_norm</span> <span class="ow">and</span> <span class="n">custom_decoder</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">custom_encoder</span> <span class="o">=</span> <span class="n">_generate_coder</span><span class="p">(</span>
+                <span class="n">d_model</span><span class="p">,</span>
+                <span class="n">dim_feedforward</span><span class="p">,</span>
+                <span class="n">dropout</span><span class="p">,</span>
+                <span class="n">nhead</span><span class="p">,</span>
+                <span class="n">num_encoder_layers</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">layer_norm</span><span class="p">,</span>
+                <span class="n">coder_cls</span><span class="o">=</span><span class="n">nn</span><span class="o">.</span><span class="n">TransformerEncoder</span><span class="p">,</span>
+                <span class="n">layer_cls</span><span class="o">=</span><span class="n">nn</span><span class="o">.</span><span class="n">TransformerEncoderLayer</span><span class="p">,</span>
+                <span class="n">ffn_cls</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">custom_decoder</span> <span class="o">=</span> <span class="n">_generate_coder</span><span class="p">(</span>
+                <span class="n">d_model</span><span class="p">,</span>
+                <span class="n">dim_feedforward</span><span class="p">,</span>
+                <span class="n">dropout</span><span class="p">,</span>
+                <span class="n">nhead</span><span class="p">,</span>
+                <span class="n">num_decoder_layers</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">layer_norm</span><span class="p">,</span>
+                <span class="n">coder_cls</span><span class="o">=</span><span class="n">nn</span><span class="o">.</span><span class="n">TransformerDecoder</span><span class="p">,</span>
+                <span class="n">layer_cls</span><span class="o">=</span><span class="n">nn</span><span class="o">.</span><span class="n">TransformerDecoderLayer</span><span class="p">,</span>
+                <span class="n">ffn_cls</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="c1"># Defining the Transformer module</span>
@@ -442,6 +497,7 @@
         <span class="n">dim_feedforward</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">512</span><span class="p">,</span>
         <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
         <span class="n">activation</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;relu&quot;</span><span class="p">,</span>
+        <span class="n">norm_type</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">custom_encoder</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">custom_decoder</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
@@ -484,6 +540,9 @@
 <span class="sd">            fully-connected layer with an activation. The glu variant&#39;s FeedForward Network are a series</span>
 <span class="sd">            of FFNs designed to work better with Transformer based models. [&quot;GLU&quot;, &quot;Bilinear&quot;, &quot;ReGLU&quot;, &quot;GEGLU&quot;,</span>
 <span class="sd">            &quot;SwiGLU&quot;, &quot;ReLU&quot;, &quot;GELU&quot;] or one the pytorch internal activations [&quot;relu&quot;, &quot;gelu&quot;]</span>
+<span class="sd">        norm_type: str | nn.Module</span>
+<span class="sd">            The type of LayerNorm variant to use.  Default: ``None``. Available options are</span>
+<span class="sd">            [&quot;LayerNorm&quot;, &quot;RMSNorm&quot;, &quot;LayerNormNoBias&quot;], or provide a custom nn.Module.</span>
 <span class="sd">        custom_encoder</span>
 <span class="sd">            A custom user-provided encoder module for the transformer (default=None).</span>
 <span class="sd">        custom_decoder</span>
@@ -532,24 +591,6 @@
 <span class="sd">        nr_epochs_val_period</span>
 <span class="sd">            Number of epochs to wait before evaluating the validation loss (if a validation</span>
 <span class="sd">            ``TimeSeries`` is passed to the :func:`fit()` method). Default: ``1``.</span>
-<span class="sd">        torch_device_str</span>
-<span class="sd">            Optionally, a string indicating the torch device to use. By default, ``torch_device_str`` is ``None``</span>
-<span class="sd">            which will run on CPU. Set it to ``&quot;cuda&quot;`` to use all available GPUs or ``&quot;cuda:i&quot;`` to only use</span>
-<span class="sd">            GPU ``i`` (``i`` must be an integer). For example &quot;cuda:0&quot; will use the first GPU only.</span>
-
-<span class="sd">            .. deprecated:: v0.17.0</span>
-<span class="sd">                ``torch_device_str`` has been deprecated in v0.17.0 and will be removed in a future version.</span>
-<span class="sd">                Instead, specify this with keys ``&quot;accelerator&quot;, &quot;gpus&quot;, &quot;auto_select_gpus&quot;`` in your</span>
-<span class="sd">                ``pl_trainer_kwargs`` dict. Some examples for setting the devices inside the ``pl_trainer_kwargs``</span>
-<span class="sd">                dict:</span>
-
-<span class="sd">                - ``{&quot;accelerator&quot;: &quot;cpu&quot;}`` for CPU,</span>
-<span class="sd">                - ``{&quot;accelerator&quot;: &quot;gpu&quot;, &quot;gpus&quot;: [i]}`` to use only GPU ``i`` (``i`` must be an integer),</span>
-<span class="sd">                - ``{&quot;accelerator&quot;: &quot;gpu&quot;, &quot;gpus&quot;: -1, &quot;auto_select_gpus&quot;: True}`` to use all available GPUS.</span>
-
-<span class="sd">                For more info, see here:</span>
-<span class="sd">                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and</span>
-<span class="sd">                https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html#select-gpu-devices</span>
 <span class="sd">        force_reset</span>
 <span class="sd">            If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will</span>
 <span class="sd">            be discarded). Default: ``False``.</span>
@@ -574,7 +615,7 @@
 <span class="sd">                add_encoders={</span>
 <span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
 <span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
-<span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;absolute&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
+<span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;relative&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
 <span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [lambda idx: (idx.year - 1950) / 50]},</span>
 <span class="sd">                    &#39;transformer&#39;: Scaler()</span>
 <span class="sd">                }</span>
@@ -591,6 +632,19 @@
 <span class="sd">            object. Check the `PL Trainer documentation</span>
 <span class="sd">            &lt;https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html&gt;`_ for more information about the</span>
 <span class="sd">            supported kwargs. Default: ``None``.</span>
+<span class="sd">            Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``&quot;accelerator&quot;,</span>
+<span class="sd">            &quot;devices&quot;, and &quot;auto_select_gpus&quot;``. Some examples for setting the devices inside the ``pl_trainer_kwargs``</span>
+<span class="sd">            dict:</span>
+
+
+<span class="sd">            - ``{&quot;accelerator&quot;: &quot;cpu&quot;}`` for CPU,</span>
+<span class="sd">            - ``{&quot;accelerator&quot;: &quot;gpu&quot;, &quot;devices&quot;: [i]}`` to use only GPU ``i`` (``i`` must be an integer),</span>
+<span class="sd">            - ``{&quot;accelerator&quot;: &quot;gpu&quot;, &quot;devices&quot;: -1, &quot;auto_select_gpus&quot;: True}`` to use all available GPUS.</span>
+
+<span class="sd">            For more info, see here:</span>
+<span class="sd">            https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and</span>
+<span class="sd">            https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus</span>
+
 <span class="sd">            With parameter ``&quot;callbacks&quot;`` you can add custom or PyTorch-Lightning built-in callbacks to Darts&#39;</span>
 <span class="sd">            :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.</span>
 <span class="sd">            The model will stop training early if the validation loss `val_loss` does not improve beyond</span>
@@ -651,6 +705,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">dim_feedforward</span> <span class="o">=</span> <span class="n">dim_feedforward</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">activation</span> <span class="o">=</span> <span class="n">activation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm_type</span> <span class="o">=</span> <span class="n">norm_type</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">custom_encoder</span> <span class="o">=</span> <span class="n">custom_encoder</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">custom_decoder</span> <span class="o">=</span> <span class="n">custom_decoder</span>
 
@@ -673,6 +728,7 @@
             <span class="n">dim_feedforward</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dim_feedforward</span><span class="p">,</span>
             <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
             <span class="n">activation</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">,</span>
+            <span class="n">norm_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_type</span><span class="p">,</span>
             <span class="n">custom_encoder</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">custom_encoder</span><span class="p">,</span>
             <span class="n">custom_decoder</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">custom_decoder</span><span class="p">,</span>
             <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">pl_module_params</span><span class="p">,</span>

@@ -37,7 +37,7 @@
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Frequently Asked Questions" href="faq.html" />
+    <link rel="next" title="Hyperparameter Optimization in Darts" href="hyperparameter_optimization.html" />
     <link rel="prev" title="Using Torch Models with GPUs and TPUs" href="gpu_and_tpu_usage.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
@@ -174,6 +174,11 @@
  <li class="toctree-l1 current active">
   <a class="current reference internal" href="#">
    Covariates
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="hyperparameter_optimization.html">
+   Hyperparameter Optimization in Darts
   </a>
  </li>
  <li class="toctree-l1">
@@ -344,7 +349,7 @@ of the past covariates, and using auto-regression on the target series. If you w
 <section id="introduction-what-are-covariates-in-darts">
 <h2>Introduction - What are covariates (in Darts)?<a class="headerlink" href="#introduction-what-are-covariates-in-darts" title="Permalink to this headline">¶</a></h2>
 <p>Past, future and static covariates provide additional information/context that can be useful to improve the prediction of the <code class="docutils literal notranslate"><span class="pre">target</span></code> series. The <code class="docutils literal notranslate"><span class="pre">target</span></code> series is the variable we wish to predict the future for. We do not predict the covariates themselves, only use them for prediction of the <code class="docutils literal notranslate"><span class="pre">target</span></code>.</p>
-<p>Past and future covariates hold information about the past (upto and including present time) or future. This is always relative to the prediction point (in time) after which we want to forecast the future.
+<p>Past and future covariates hold information about the past (up to and including present time) or future. This is always relative to the prediction point (in time) after which we want to forecast the future.
 In Darts, we refer to these two types as <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> and <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code>.</p>
 <p>Static covariates hold time independent (constant / static) information about the <code class="docutils literal notranslate"><span class="pre">target</span></code> series. We refer to them as <code class="docutils literal notranslate"><span class="pre">static_covariates</span></code>. They must be embedded in the <code class="docutils literal notranslate"><span class="pre">target</span></code> series. Working with static covariates follows a slightly different approach than with past or future covariates. Check out our <a class="reference external" href="https://unit8co.github.io/darts/examples/15-static-covariates.html">notebook on static covariates</a> to learn more.</p>
 <p>Darts’ forecasting models have different support modes for <code class="docutils literal notranslate"><span class="pre">*_covariates</span></code>. Some do not support covariates at all, others support only past or future covariates and some even support all three (more on that in <a class="reference external" href="#forecasting-model-covariate-support">this subsection</a>).</p>
@@ -362,7 +367,7 @@ In Darts, we refer to these two types as <code class="docutils literal notransla
 <li><p>day of week, month, year, …</p></li>
 </ul>
 </li>
-<li><p><code class="docutils literal notranslate"><span class="pre">static_covariates</span></code>: time independent/constant/static <code class="docutils literal notranslate"><span class="pre">target</span></code> characterstics</p>
+<li><p><code class="docutils literal notranslate"><span class="pre">static_covariates</span></code>: time independent/constant/static <code class="docutils literal notranslate"><span class="pre">target</span></code> characteristics</p>
 <ul>
 <li><p>categorical:</p>
 <ul>
@@ -635,10 +640,10 @@ and past targets to do predictions.</p>
             <p class="prev-next-title">Using Torch Models with GPUs and TPUs</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="faq.html" title="next page">
+    <a class='right-next' id="next-link" href="hyperparameter_optimization.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Frequently Asked Questions</p>
+        <p class="prev-next-title">Hyperparameter Optimization in Darts</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

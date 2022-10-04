@@ -234,11 +234,33 @@
   </ul>
  </li>
  <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.metrics.html">
-   Metrics
+  <a class="reference internal" href="darts.explainability.html">
+   Explainability
   </a>
   <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
   <label for="toctree-checkbox-4">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.explainability_result.html">
+     ExplainabilityResult
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.shap_explainer.html">
+     Shap Explainer for RegressionModels
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.metrics.html">
+   Metrics
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+  <label for="toctree-checkbox-5">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -254,8 +276,8 @@
   <a class="reference internal" href="darts.models.html">
    Models
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
-  <label for="toctree-checkbox-5">
+  <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+  <label for="toctree-checkbox-6">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -264,8 +286,8 @@
     <a class="reference internal" href="darts.models.filtering.html">
      Filtering Models
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
-    <label for="toctree-checkbox-6">
+    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
+    <label for="toctree-checkbox-7">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -291,8 +313,8 @@
     <a class="reference internal" href="darts.models.forecasting.html">
      Forecasting Models
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
-    <label for="toctree-checkbox-7">
+    <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
+    <label for="toctree-checkbox-8">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -393,6 +415,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_ets.html">
+       StatsForecastETS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.tbats.html">
        BATS and TBATS
       </a>
@@ -430,8 +457,8 @@
   <a class="reference internal" href="darts.utils.html">
    Utils
   </a>
-  <input checked="" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
-  <label for="toctree-checkbox-8">
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
+  <label for="toctree-checkbox-9">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -440,8 +467,8 @@
     <a class="reference internal" href="darts.utils.data.html">
      TimeSeries Datasets
     </a>
-    <input checked="" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
-    <label for="toctree-checkbox-9">
+    <input checked="" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
+    <label for="toctree-checkbox-10">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -570,7 +597,7 @@
 <h1>Sequential Training Dataset<a class="headerlink" href="#sequential-training-dataset" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.sequential_dataset.DualCovariatesSequentialDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.sequential_dataset.</span></span><span class="sig-name descname"><span class="pre">DualCovariatesSequentialDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_samples_per_ts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/sequential_dataset.html#DualCovariatesSequentialDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.sequential_dataset.DualCovariatesSequentialDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.sequential_dataset.</span></span><span class="sig-name descname"><span class="pre">DualCovariatesSequentialDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_samples_per_ts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/sequential_dataset.html#DualCovariatesSequentialDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.sequential_dataset.DualCovariatesSequentialDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.utils.data.training_dataset.html#darts.utils.data.training_dataset.DualCovariatesTrainingDataset" title="darts.utils.data.training_dataset.DualCovariatesTrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.training_dataset.DualCovariatesTrainingDataset</span></code></a></p>
 <p>A time series dataset containing tuples of
 (past_target, historic_future_covariates, future_covariates, static_covariates, future_target).
@@ -601,6 +628,7 @@ ensure proper sampling. If <cite>None</cite>, it will read all of the individual
 creation) to know their sizes, which might be expensive on big datasets.
 If some series turn out to have a length that would allow more than <cite>max_samples_per_ts</cite>, only the
 most recent <cite>max_samples_per_ts</cite> samples will be considered.</p></li>
+<li><p><strong>use_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use/include static covariate data from input series.</p></li>
 </ul>
 </dd>
 </dl>
@@ -608,7 +636,7 @@ most recent <cite>max_samples_per_ts</cite> samples will be considered.</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.sequential_dataset.FutureCovariatesSequentialDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.sequential_dataset.</span></span><span class="sig-name descname"><span class="pre">FutureCovariatesSequentialDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_samples_per_ts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/sequential_dataset.html#FutureCovariatesSequentialDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.sequential_dataset.FutureCovariatesSequentialDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.sequential_dataset.</span></span><span class="sig-name descname"><span class="pre">FutureCovariatesSequentialDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_samples_per_ts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/sequential_dataset.html#FutureCovariatesSequentialDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.sequential_dataset.FutureCovariatesSequentialDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.utils.data.training_dataset.html#darts.utils.data.training_dataset.FutureCovariatesTrainingDataset" title="darts.utils.data.training_dataset.FutureCovariatesTrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.training_dataset.FutureCovariatesTrainingDataset</span></code></a></p>
 <p>A time series dataset containing tuples of (past_target, future_covariates, static_covariates, future_target).
 The “past” series have length <cite>input_chunk_length</cite> and the “future” series have
@@ -638,6 +666,7 @@ ensure proper sampling. If <cite>None</cite>, it will read all of the individual
 creation) to know their sizes, which might be expensive on big datasets.
 If some series turn out to have a length that would allow more than <cite>max_samples_per_ts</cite>, only the
 most recent <cite>max_samples_per_ts</cite> samples will be considered.</p></li>
+<li><p><strong>use_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use/include static covariate data from input series.</p></li>
 </ul>
 </dd>
 </dl>
@@ -645,7 +674,7 @@ most recent <cite>max_samples_per_ts</cite> samples will be considered.</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.sequential_dataset.MixedCovariatesSequentialDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.sequential_dataset.</span></span><span class="sig-name descname"><span class="pre">MixedCovariatesSequentialDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_samples_per_ts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/sequential_dataset.html#MixedCovariatesSequentialDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.sequential_dataset.MixedCovariatesSequentialDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.sequential_dataset.</span></span><span class="sig-name descname"><span class="pre">MixedCovariatesSequentialDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_samples_per_ts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/sequential_dataset.html#MixedCovariatesSequentialDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.sequential_dataset.MixedCovariatesSequentialDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.utils.data.training_dataset.html#darts.utils.data.training_dataset.MixedCovariatesTrainingDataset" title="darts.utils.data.training_dataset.MixedCovariatesTrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.training_dataset.MixedCovariatesTrainingDataset</span></code></a></p>
 <p>A time series dataset containing tuples of
 (past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates, future_target).
@@ -676,6 +705,7 @@ ensure proper sampling. If <cite>None</cite>, it will read all of the individual
 creation) to know their sizes, which might be expensive on big datasets.
 If some series turn out to have a length that would allow more than <cite>max_samples_per_ts</cite>, only the
 most recent <cite>max_samples_per_ts</cite> samples will be considered.</p></li>
+<li><p><strong>use_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use/include static covariate data from input series.</p></li>
 </ul>
 </dd>
 </dl>
@@ -683,7 +713,7 @@ most recent <cite>max_samples_per_ts</cite> samples will be considered.</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.sequential_dataset.PastCovariatesSequentialDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.sequential_dataset.</span></span><span class="sig-name descname"><span class="pre">PastCovariatesSequentialDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_samples_per_ts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/sequential_dataset.html#PastCovariatesSequentialDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.sequential_dataset.PastCovariatesSequentialDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.sequential_dataset.</span></span><span class="sig-name descname"><span class="pre">PastCovariatesSequentialDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_samples_per_ts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/sequential_dataset.html#PastCovariatesSequentialDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.sequential_dataset.PastCovariatesSequentialDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.utils.data.training_dataset.html#darts.utils.data.training_dataset.PastCovariatesTrainingDataset" title="darts.utils.data.training_dataset.PastCovariatesTrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.training_dataset.PastCovariatesTrainingDataset</span></code></a></p>
 <p>A time series dataset containing tuples of (past_target, past_covariates, static_covariates, future_target).
 The “past” series have length <cite>input_chunk_length</cite> and the “future” series have
@@ -713,6 +743,7 @@ ensure proper sampling. If <cite>None</cite>, it will read all of the individual
 creation) to know their sizes, which might be expensive on big datasets.
 If some series turn out to have a length that would allow more than <cite>max_samples_per_ts</cite>, only the
 most recent <cite>max_samples_per_ts</cite> samples will be considered.</p></li>
+<li><p><strong>use_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use/include static covariate data from input series.</p></li>
 </ul>
 </dd>
 </dl>
@@ -720,7 +751,7 @@ most recent <cite>max_samples_per_ts</cite> samples will be considered.</p></li>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.sequential_dataset.SplitCovariatesSequentialDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.sequential_dataset.</span></span><span class="sig-name descname"><span class="pre">SplitCovariatesSequentialDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_samples_per_ts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/sequential_dataset.html#SplitCovariatesSequentialDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.sequential_dataset.SplitCovariatesSequentialDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.sequential_dataset.</span></span><span class="sig-name descname"><span class="pre">SplitCovariatesSequentialDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_samples_per_ts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/sequential_dataset.html#SplitCovariatesSequentialDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.sequential_dataset.SplitCovariatesSequentialDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.utils.data.training_dataset.html#darts.utils.data.training_dataset.SplitCovariatesTrainingDataset" title="darts.utils.data.training_dataset.SplitCovariatesTrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.training_dataset.SplitCovariatesTrainingDataset</span></code></a></p>
 <p>A time series dataset containing tuples of (past_target, past_covariates, future_covariates, static_covariates,
 future_target).
@@ -753,6 +784,7 @@ ensure proper sampling. If <cite>None</cite>, it will read all of the individual
 creation) to know their sizes, which might be expensive on big datasets.
 If some series turn out to have a length that would allow more than <cite>max_samples_per_ts</cite>, only the
 most recent <cite>max_samples_per_ts</cite> samples will be considered.</p></li>
+<li><p><strong>use_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use/include static covariate data from input series.</p></li>
 </ul>
 </dd>
 </dl>

@@ -236,11 +236,33 @@
   </ul>
  </li>
  <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.metrics.html">
-   Metrics
+  <a class="reference internal" href="darts.explainability.html">
+   Explainability
   </a>
   <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
   <label for="toctree-checkbox-4">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.explainability_result.html">
+     ExplainabilityResult
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.shap_explainer.html">
+     Shap Explainer for RegressionModels
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.metrics.html">
+   Metrics
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+  <label for="toctree-checkbox-5">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -256,8 +278,8 @@
   <a class="reference internal" href="darts.models.html">
    Models
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
-  <label for="toctree-checkbox-5">
+  <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+  <label for="toctree-checkbox-6">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -266,8 +288,8 @@
     <a class="reference internal" href="darts.models.filtering.html">
      Filtering Models
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
-    <label for="toctree-checkbox-6">
+    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
+    <label for="toctree-checkbox-7">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -293,8 +315,8 @@
     <a class="reference internal" href="darts.models.forecasting.html">
      Forecasting Models
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
-    <label for="toctree-checkbox-7">
+    <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
+    <label for="toctree-checkbox-8">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -395,6 +417,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_ets.html">
+       StatsForecastETS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.tbats.html">
        BATS and TBATS
       </a>
@@ -432,8 +459,8 @@
   <a class="reference internal" href="darts.utils.html">
    Utils
   </a>
-  <input checked="" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
-  <label for="toctree-checkbox-8">
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
+  <label for="toctree-checkbox-9">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -442,8 +469,8 @@
     <a class="reference internal" href="darts.utils.data.html">
      TimeSeries Datasets
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
-    <label for="toctree-checkbox-9">
+    <input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
+    <label for="toctree-checkbox-10">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -1154,10 +1181,15 @@ and the parameters given in <cite>model_output</cite>.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.GaussianLikelihood">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">GaussianLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_sigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#GaussianLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.GaussianLikelihood" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">GaussianLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_sigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta_nll</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#GaussianLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.GaussianLikelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
 <p>Univariate Gaussian distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Normal_distribution">https://en.wikipedia.org/wiki/Normal_distribution</a></p>
+<p>Instead of the pure negative log likelihood (NLL) loss, the loss function used
+is the <span class="math notranslate nohighlight">\(\beta\)</span>-NLL loss <a class="reference internal" href="#r5720e301191a-1" id="id1">[1]</a>, parameterized by <code class="docutils literal notranslate"><span class="pre">beta_nll</span></code> in (0, 1).
+For <code class="docutils literal notranslate"><span class="pre">beta_nll=0</span></code> it is equivalent to NLL, however larger values of <code class="docutils literal notranslate"><span class="pre">beta_nll</span></code> can
+mitigate issues with NLL causing effective under-sampling of poorly fit regions
+during training. <code class="docutils literal notranslate"><span class="pre">beta_nll=1</span></code> provides the same gradient for the mean as the MSE loss.</p>
 <ul class="simple">
 <li><p>Univariate continuous distribution.</p></li>
 <li><p>Support: <span class="math notranslate nohighlight">\(\mathbb{R}\)</span>.</p></li>
@@ -1169,7 +1201,17 @@ and the parameters given in <cite>model_output</cite>.</p>
 <li><p><strong>prior_mu</strong> – mean of the prior Gaussian distribution (default: None).</p></li>
 <li><p><strong>prior_sigma</strong> – standard deviation (or scale) of the prior Gaussian distribution (default: None)</p></li>
 <li><p><strong>prior_strength</strong> – strength of the loss regularisation induced by the prior</p></li>
+<li><p><strong>beta_nll</strong> – The parameter <span class="math notranslate nohighlight">\(0 \leq \beta \leq 1\)</span> of the <span class="math notranslate nohighlight">\(\beta\)</span>-NLL loss <a class="reference internal" href="#r5720e301191a-1" id="id2">[1]</a>.
+Default: 0. (equivalent to NLL)</p></li>
 </ul>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r5720e301191a-1"><span class="brackets">1</span><span class="fn-backref">(<a href="#id1">1</a>,<a href="#id2">2</a>)</span></dt>
+<dd><p>Seitzer et al.,
+“On the Pitfalls of Heteroscedastic Uncertainty Estimation with Probabilistic Neural Networks”
+<a class="reference external" href="https://arxiv.org/abs/2203.09168">https://arxiv.org/abs/2203.09168</a></p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>

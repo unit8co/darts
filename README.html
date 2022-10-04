@@ -284,12 +284,13 @@ series, and some of the models offer a rich support for probabilistic forecastin
 <li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4">Temporal Convolutional Networks and Forecasting</a></p></li>
 <li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/probabilistic-forecasting-in-darts-e88fbe83344e">Probabilistic Forecasting</a></p></li>
 <li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/transfer-learning-for-time-series-forecasting-87f39e375278">Transfer Learning for Time Series Forecasting</a></p></li>
+<li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/hierarchical-forecast-reconciliation-with-darts-8b4b058bb543">Hierarchical Forecast Reconciliation</a></p></li>
 </ul>
 </section>
 </section>
 <section id="quick-install">
 <h2>Quick Install<a class="headerlink" href="#quick-install" title="Permalink to this headline">¶</a></h2>
-<p>We recommend to first setup a clean Python environment for your project with at least Python 3.7 using your favorite tool
+<p>We recommend to first setup a clean Python environment for your project with Python 3.7+ using your favorite tool
 (<span class="raw-html-m2r"><a href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html" title="conda-env">conda</a></span>,
 <a class="reference external" href="https://docs.python.org/3/library/venv.html">venv</a>, <a class="reference external" href="https://virtualenv.pypa.io/en/latest/">virtualenv</a> with
 or without <a class="reference external" href="https://virtualenvwrapper.readthedocs.io/en/latest/">virtualenvwrapper</a>).</p>
@@ -307,10 +308,10 @@ or without <a class="reference external" href="https://virtualenvwrapper.readthe
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 
 <span class="c1"># Read a pandas DataFrame</span>
-<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s1">&#39;AirPassengers.csv&#39;</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;AirPassengers.csv&quot;</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
 
 <span class="c1"># Create a TimeSeries, specifying the time and value columns</span>
-<span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s1">&#39;Month&#39;</span><span class="p">,</span> <span class="s1">&#39;#Passengers&#39;</span><span class="p">)</span>
+<span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s2">&quot;Month&quot;</span><span class="p">,</span> <span class="s2">&quot;#Passengers&quot;</span><span class="p">)</span>
 
 <span class="c1"># Set aside the last 36 months as a validation series</span>
 <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:]</span>
@@ -328,7 +329,7 @@ or without <a class="reference external" href="https://virtualenvwrapper.readthe
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
 <span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-<span class="n">prediction</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">,</span> <span class="n">low_quantile</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">high_quantile</span><span class="o">=</span><span class="mf">0.95</span><span class="p">)</span>
+<span class="n">prediction</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;forecast&quot;</span><span class="p">,</span> <span class="n">low_quantile</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">high_quantile</span><span class="o">=</span><span class="mf">0.95</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -355,6 +356,7 @@ static data for each dimension, which can be exploited by some models.</p></li>
 These can make the forecasts add up in a way that respects the underlying hierarchy.</p></li>
 <li><p><strong>Regression Models:</strong> It is possible to plug-in any scikit-learn compatible model
 to obtain forecasts as functions of lagged values of the target series and covariates.</p></li>
+<li><p><strong>Explainability:</strong> Darts has the ability to <em>explain</em> forecasting models by using Shap values.</p></li>
 <li><p><strong>Data processing:</strong> Tools to easily apply (and revert) common transformations on
 time series data (scaling, filling missing values, boxcox, …)</p></li>
 <li><p><strong>Metrics:</strong> A variety of metrics for evaluating time series’ goodness of fit;
@@ -436,7 +438,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p>✅</p></td>
 <td></td>
-<td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">statsforecast</a></p></td>
+<td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">Nixtla’s statsforecast</a></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code></p></td>
 <td><p>✅</p></td>
@@ -448,7 +450,17 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BATS</span></code> and <code class="docutils literal notranslate"><span class="pre">TBATS</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">StatsForecastETS</span></code></p></td>
+<td><p>✅</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td><p>✅</p></td>
+<td></td>
+<td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">Nixtla’s statsforecast</a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BATS</span></code> and <code class="docutils literal notranslate"><span class="pre">TBATS</span></code></p></td>
 <td><p>✅</p></td>
 <td></td>
 <td><p>✅</p></td>
@@ -458,7 +470,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p><a class="reference external" href="https://robjhyndman.com/papers/ComplexSeasonality.pdf">TBATS paper</a></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Theta</span></code> and <code class="docutils literal notranslate"><span class="pre">FourTheta</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Theta</span></code> and <code class="docutils literal notranslate"><span class="pre">FourTheta</span></code></p></td>
 <td><p>✅</p></td>
 <td></td>
 <td></td>
@@ -468,7 +480,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p><a class="reference external" href="https://robjhyndman.com/papers/Theta.pdf">Theta</a> &amp; <a class="reference external" href="https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R">4 Theta</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Prophet</span></code> (see <a class="reference external" href="https://github.com/unit8co/darts/blob/master/INSTALL.md#enabling-support-for-facebook-prophet">install notes</a>)</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Prophet</span></code> (see <a class="reference external" href="https://github.com/unit8co/darts/blob/master/INSTALL.md#enabling-support-for-facebook-prophet">install notes</a>)</p></td>
 <td><p>✅</p></td>
 <td></td>
 <td><p>✅</p></td>
@@ -478,7 +490,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p><a class="reference external" href="https://github.com/facebook/prophet">Prophet repo</a></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FFT</span></code> (Fast Fourier Transform)</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FFT</span></code> (Fast Fourier Transform)</p></td>
 <td><p>✅</p></td>
 <td></td>
 <td></td>
@@ -488,7 +500,7 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">KalmanForecaster</span></code> using the Kalman filter and N4SID for system identification</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">KalmanForecaster</span></code> using the Kalman filter and N4SID for system identification</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -498,7 +510,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p><a class="reference external" href="https://people.duke.edu/~hpgavin/SystemID/References/VanOverschee-Automatica-1994.pdf">N4SID paper</a></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Croston</span></code> method</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Croston</span></code> method</p></td>
 <td><p>✅</p></td>
 <td></td>
 <td></td>
@@ -508,7 +520,7 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>; generic wrapper around any sklearn regression model</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>; generic wrapper around any sklearn regression model</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td></td>
@@ -518,7 +530,7 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RandomForest</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">RandomForest</span></code></p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td></td>
@@ -528,7 +540,7 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code></p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -538,7 +550,7 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">LightGBMModel</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">LightGBMModel</span></code></p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -548,7 +560,7 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CatBoostModel</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CatBoostModel</span></code></p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -558,7 +570,7 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -568,7 +580,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/1704.04110">DeepAR paper</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code> (incl. LSTM and GRU)</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code> (incl. LSTM and GRU)</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -578,7 +590,7 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code></p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -588,7 +600,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/1905.10437">N-BEATS paper</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">NHiTSModel</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NHiTSModel</span></code></p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -598,7 +610,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/2201.12886">N-HiTS paper</a></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TCNModel</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TCNModel</span></code></p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -608,7 +620,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/1803.01271">TCN paper</a>, <a class="reference external" href="https://arxiv.org/abs/1906.04397">DeepTCN paper</a>, <a class="reference external" href="https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4">blog post</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TransformerModel</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TransformerModel</span></code></p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -618,7 +630,7 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> (Temporal Fusion Transformer)</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> (Temporal Fusion Transformer)</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -628,7 +640,7 @@ on bringing more models and features.</p>
 <td><p>✅</p></td>
 <td><p><a class="reference external" href="https://arxiv.org/pdf/1912.09363.pdf">TFT paper</a>, <a class="reference external" href="https://pytorch-forecasting.readthedocs.io/en/latest/models.html">PyTorch Forecasting</a></p></td>
 </tr>
-<tr class="row-odd"><td><p>Naive Baselines</p></td>
+<tr class="row-even"><td><p>Naive Baselines</p></td>
 <td><p>✅</p></td>
 <td></td>
 <td></td>
@@ -643,7 +655,7 @@ on bringing more models and features.</p>
 </section>
 <section id="community-contact">
 <h2>Community &amp; Contact<a class="headerlink" href="#community-contact" title="Permalink to this headline">¶</a></h2>
-<p>Anyone is welcome to join our <a href="#id2"><span class="problematic" id="id3">:raw-html-m2r:`&lt;del&gt;\ `Discord server &lt;https://discord.gg/Um3jBTYFsA&gt;`_</span></a>&lt;/del&gt;`
+<p>Anyone is welcome to join our <a href="#id3"><span class="problematic" id="id4">:raw-html-m2r:`&lt;del&gt;\ `Discord server &lt;https://discord.gg/Um3jBTYFsA&gt;`_</span></a>&lt;/del&gt;`
 <a class="reference external" href="https://gitter.im/u8darts/darts">Gitter room</a> to
 ask questions, make proposals, discuss use-cases, and more. If you spot a bug or
 or have suggestions, GitHub issues are also welcome.</p>

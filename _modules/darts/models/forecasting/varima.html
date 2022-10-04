@@ -276,7 +276,7 @@
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
 
         <span class="k">if</span> <span class="n">num_samples</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">trend</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                 <span class="s2">&quot;Trends are not well supported yet for getting probabilistic forecasts with ARIMA.&quot;</span>
                 <span class="s2">&quot;If you run into issues, try calling fit() with num_samples=1 or removing the trend from&quot;</span>
                 <span class="s2">&quot;your model.&quot;</span>

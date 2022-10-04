@@ -102,11 +102,12 @@ Articles on Selected Topics
 * `Temporal Convolutional Networks and Forecasting <https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4>`_
 * `Probabilistic Forecasting <https://medium.com/unit8-machine-learning-publication/probabilistic-forecasting-in-darts-e88fbe83344e>`_
 * `Transfer Learning for Time Series Forecasting <https://medium.com/unit8-machine-learning-publication/transfer-learning-for-time-series-forecasting-87f39e375278>`_
+* `Hierarchical Forecast Reconciliation <https://medium.com/unit8-machine-learning-publication/hierarchical-forecast-reconciliation-with-darts-8b4b058bb543>`_
 
 Quick Install
 -------------
 
-We recommend to first setup a clean Python environment for your project with at least Python 3.7 using your favorite tool
+We recommend to first setup a clean Python environment for your project with Python 3.7+ using your favorite tool
 (\ :raw-html-m2r:`<a href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html" title="conda-env">conda</a>`\ ,
 `venv <https://docs.python.org/3/library/venv.html>`_\ , `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ with
 or without `virtualenvwrapper <https://virtualenvwrapper.readthedocs.io/en/latest/>`_\ ).
@@ -132,10 +133,10 @@ Create a ``TimeSeries`` object from a Pandas DataFrame, and split it in train/va
    from darts import TimeSeries
 
    # Read a pandas DataFrame
-   df = pd.read_csv('AirPassengers.csv', delimiter=",")
+   df = pd.read_csv("AirPassengers.csv", delimiter=",")
 
    # Create a TimeSeries, specifying the time and value columns
-   series = TimeSeries.from_dataframe(df, 'Month', '#Passengers')
+   series = TimeSeries.from_dataframe(df, "Month", "#Passengers")
 
    # Set aside the last 36 months as a validation series
    train, val = series[:-36], series[-36:]
@@ -157,7 +158,7 @@ Plot the median, 5th and 95th percentiles:
    import matplotlib.pyplot as plt
 
    series.plot()
-   prediction.plot(label='forecast', low_quantile=0.05, high_quantile=0.95)
+   prediction.plot(label="forecast", low_quantile=0.05, high_quantile=0.95)
    plt.legend()
 
 
@@ -189,6 +190,7 @@ Features
   These can make the forecasts add up in a way that respects the underlying hierarchy.
 * **Regression Models:** It is possible to plug-in any scikit-learn compatible model
   to obtain forecasts as functions of lagged values of the target series and covariates.
+* **Explainability:** Darts has the ability to *explain* forecasting models by using Shap values.
 * **Data processing:** Tools to easily apply (and revert) common transformations on
   time series data (scaling, filling missing values, boxcox, ...)
 * **Metrics:** A variety of metrics for evaluating time series' goodness of fit;
@@ -255,7 +257,7 @@ on bringing more models and features.
      - 
      - ✅
      - 
-     - `statsforecast <https://github.com/Nixtla/statsforecast>`_
+     - `Nixtla's statsforecast <https://github.com/Nixtla/statsforecast>`_
    * - ``ExponentialSmoothing``
      - ✅
      - 
@@ -265,6 +267,15 @@ on bringing more models and features.
      - 
      - 
      - 
+   * - ``StatsForecastETS``
+     - ✅
+     - 
+     - 
+     - 
+     - 
+     - ✅
+     - 
+     - `Nixtla's statsforecast <https://github.com/Nixtla/statsforecast>`_
    * - ``BATS`` and ``TBATS``
      - ✅
      - 

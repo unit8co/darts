@@ -196,6 +196,7 @@
         <span class="n">length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
         <span class="n">shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A time series dataset containing tuples of (past_target, past_covariates, static_covariates, future_target)</span>
@@ -233,6 +234,8 @@
 <span class="sd">            creation) to know their sizes, which might be expensive on big datasets.</span>
 <span class="sd">            If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the</span>
 <span class="sd">            most recent `max_samples_per_ts` samples will be considered.</span>
+<span class="sd">        use_static_covariates</span>
+<span class="sd">            Whether to use/include static covariate data from input series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
@@ -245,6 +248,7 @@
             <span class="n">shift_covariates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
             <span class="n">covariate_type</span><span class="o">=</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span><span class="p">,</span>
+            <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -264,6 +268,7 @@
         <span class="n">length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
         <span class="n">shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A time series dataset containing tuples of (past_target, future_covariates, static_covariates, future_target)</span>
@@ -303,6 +308,8 @@
 <span class="sd">            creation) to know their sizes, which might be expensive on big datasets.</span>
 <span class="sd">            If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the</span>
 <span class="sd">            most recent `max_samples_per_ts` samples will be considered.</span>
+<span class="sd">        use_static_covariates</span>
+<span class="sd">            Whether to use/include static covariate data from input series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
@@ -316,6 +323,7 @@
             <span class="n">shift_covariates</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
             <span class="n">covariate_type</span><span class="o">=</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">FUTURE</span><span class="p">,</span>
+            <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -335,6 +343,7 @@
         <span class="n">length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
         <span class="n">shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A time series dataset containing tuples of</span>
@@ -376,6 +385,8 @@
 <span class="sd">            creation) to know their sizes, which might be expensive on big datasets.</span>
 <span class="sd">            If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the</span>
 <span class="sd">            most recent `max_samples_per_ts` samples will be considered.</span>
+<span class="sd">        use_static_covariates</span>
+<span class="sd">            Whether to use/include static covariate data from input series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
@@ -390,6 +401,7 @@
             <span class="n">shift_covariates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
             <span class="n">covariate_type</span><span class="o">=</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">HISTORIC_FUTURE</span><span class="p">,</span>
+            <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># This dataset is in charge of serving future covariates</span>
@@ -402,6 +414,7 @@
             <span class="n">shift_covariates</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
             <span class="n">covariate_type</span><span class="o">=</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">FUTURE</span><span class="p">,</span>
+            <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -436,6 +449,7 @@
         <span class="n">length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
         <span class="n">shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A time series dataset containing tuples of (past_target, past_covariates, historic_future_covariates,</span>
@@ -478,6 +492,8 @@
 <span class="sd">            creation) to know their sizes, which might be expensive on big datasets.</span>
 <span class="sd">            If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the</span>
 <span class="sd">            most recent `max_samples_per_ts` samples will be considered.</span>
+<span class="sd">        use_static_covariates</span>
+<span class="sd">            Whether to use/include static covariate data from input series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
@@ -491,6 +507,7 @@
             <span class="n">shift_covariates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
             <span class="n">covariate_type</span><span class="o">=</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span><span class="p">,</span>
+            <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># The dual dataset serves both historical and future future covariates</span>
@@ -500,6 +517,7 @@
             <span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">,</span>
             <span class="n">shift</span><span class="o">=</span><span class="n">shift</span><span class="p">,</span>
             <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
+            <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -537,6 +555,7 @@
         <span class="n">length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
         <span class="n">shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A time series dataset containing tuples of (past_target, past_covariates, future_covariates, static_covariates,</span>
@@ -579,6 +598,8 @@
 <span class="sd">            creation) to know their sizes, which might be expensive on big datasets.</span>
 <span class="sd">            If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the</span>
 <span class="sd">            most recent `max_samples_per_ts` samples will be considered.</span>
+<span class="sd">        use_static_covariates</span>
+<span class="sd">            Whether to use/include static covariate data from input series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
@@ -593,6 +614,7 @@
             <span class="n">shift_covariates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
             <span class="n">covariate_type</span><span class="o">=</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span><span class="p">,</span>
+            <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># This dataset is in charge of serving future covariates</span>
@@ -605,6 +627,7 @@
             <span class="n">shift_covariates</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
             <span class="n">covariate_type</span><span class="o">=</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">FUTURE</span><span class="p">,</span>
+            <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -641,6 +664,7 @@
         <span class="n">shift_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">covariate_type</span><span class="p">:</span> <span class="n">CovariateType</span> <span class="o">=</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">NONE</span><span class="p">,</span>
+        <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Contains (past_target, &lt;X&gt;_covariates, static_covariates, future_target), where &quot;&lt;X&gt;&quot; is past if</span>
@@ -675,6 +699,8 @@
 <span class="sd">            most recent `max_samples_per_ts` samples will be considered.</span>
 <span class="sd">        covariate_type</span>
 <span class="sd">            An instance of `CovariateType` describing the type of `covariates`.</span>
+<span class="sd">        use_static_covariates</span>
+<span class="sd">            Whether to use/include static covariate data from input series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
@@ -710,13 +736,16 @@
             <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">ideal_nr_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_static_covariates</span> <span class="o">=</span> <span class="n">use_static_covariates</span>
 
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ideal_nr_samples</span>
 
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
+    <span class="p">]:</span>
         <span class="c1"># determine the index of the time series.</span>
         <span class="n">target_idx</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span>
         <span class="n">target_series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">[</span><span class="n">target_idx</span><span class="p">]</span>
@@ -798,7 +827,10 @@
                 <span class="sa">f</span><span class="s2">&quot;target series.&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
-        <span class="n">static_covariate</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">static_covariates_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_static_covariates</span><span class="p">:</span>
+            <span class="n">static_covariate</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">static_covariates_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">static_covariate</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">return</span> <span class="n">past_target</span><span class="p">,</span> <span class="n">covariate</span><span class="p">,</span> <span class="n">static_covariate</span><span class="p">,</span> <span class="n">future_target</span></div>
 </pre></div>
 

@@ -479,7 +479,7 @@
         <span class="c1"># perform dft</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fft_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fft</span><span class="p">(</span><span class="n">cropped_series</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">())</span>
 
-        <span class="c1"># get indices of `nr_freqs_to_keep` (if a correct value was provied) frequencies with the highest amplitudes</span>
+        <span class="c1"># get indices of `nr_freqs_to_keep` (if a correct value was provided) frequencies with the highest amplitudes</span>
         <span class="c1"># by partitioning around the element with sorted index -nr_freqs_to_keep instead of sorting the whole array</span>
         <span class="n">first_n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_freqs_to_keep</span>
         <span class="k">if</span> <span class="n">first_n</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">first_n</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">first_n</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_values</span><span class="p">):</span>

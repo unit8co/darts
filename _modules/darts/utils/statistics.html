@@ -1014,7 +1014,10 @@
 
 
 <div class="viewcode-block" id="plot_residuals_analysis"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.plot_residuals_analysis">[docs]</a><span class="k">def</span> <span class="nf">plot_residuals_analysis</span><span class="p">(</span>
-    <span class="n">residuals</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">num_bins</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="n">fill_nan</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">residuals</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+    <span class="n">num_bins</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="n">fill_nan</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">default_formatting</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Plots data relevant to residuals.</span>
 
@@ -1032,6 +1035,8 @@
 <span class="sd">        Optionally, an integer value determining the number of bins in the histogram.</span>
 <span class="sd">    fill_nan</span>
 <span class="sd">        A boolean value indicating whether NaN values should be filled in the residuals.</span>
+<span class="sd">    default_formatting</span>
+<span class="sd">        Whether or not to use the darts default scheme.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">residuals</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
@@ -1072,7 +1077,7 @@
 
     <span class="c1"># plot ACF</span>
     <span class="n">ax3</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">1</span><span class="p">:,</span> <span class="p">:</span><span class="mi">1</span><span class="p">])</span>
-    <span class="n">plot_acf</span><span class="p">(</span><span class="n">residuals</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">ax3</span><span class="p">)</span>
+    <span class="n">plot_acf</span><span class="p">(</span><span class="n">residuals</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">ax3</span><span class="p">,</span> <span class="n">default_formatting</span><span class="o">=</span><span class="n">default_formatting</span><span class="p">)</span>
     <span class="n">ax3</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;ACF value&quot;</span><span class="p">)</span>
     <span class="n">ax3</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;lag&quot;</span><span class="p">)</span>
     <span class="n">ax3</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;ACF&quot;</span><span class="p">)</span></div>

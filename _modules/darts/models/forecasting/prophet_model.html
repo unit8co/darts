@@ -322,7 +322,7 @@
         <span class="n">predict_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_predict_df</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">num_samples</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">predict_df</span><span class="p">)[</span><span class="s2">&quot;yhat&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            <span class="n">forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">predict_df</span><span class="p">,</span> <span class="n">vectorized</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="s2">&quot;yhat&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">forecast</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_stochastic_samples</span><span class="p">(</span><span class="n">predict_df</span><span class="p">,</span> <span class="n">n_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span>
@@ -370,7 +370,7 @@
 
         <span class="n">predict_df</span><span class="p">[</span><span class="s2">&quot;trend&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict_trend</span><span class="p">(</span><span class="n">predict_df</span><span class="p">)</span>
 
-        <span class="n">forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">sample_posterior_predictive</span><span class="p">(</span><span class="n">predict_df</span><span class="p">)</span>
+        <span class="n">forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">sample_posterior_predictive</span><span class="p">(</span><span class="n">predict_df</span><span class="p">,</span> <span class="n">vectorized</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="c1"># reset default number of uncertainty_samples</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">uncertainty_samples</span> <span class="o">=</span> <span class="n">n_samples_default</span>
@@ -388,7 +388,7 @@
 
         <span class="n">predict_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_predict_df</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">predict_df</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">predict_df</span><span class="p">,</span> <span class="n">vectorized</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Prophet.add_seasonality"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.prophet_model.html#darts.models.forecasting.prophet_model.Prophet.add_seasonality">[docs]</a>    <span class="k">def</span> <span class="nf">add_seasonality</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -398,7 +398,7 @@
         <span class="n">prior_scale</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">mode</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Adds a custom seasonality to the model that reapeats after every n `seasonal_periods` timesteps.</span>
+        <span class="sd">&quot;&quot;&quot;Adds a custom seasonality to the model that repeats after every n `seasonal_periods` timesteps.</span>
 <span class="sd">        An example for `seasonal_periods`: If you have hourly data (frequency=&#39;H&#39;) and your seasonal cycle repeats</span>
 <span class="sd">        after 48 hours -&gt; `seasonal_periods=48`.</span>
 

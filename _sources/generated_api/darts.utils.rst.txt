@@ -12,6 +12,7 @@
         darts.utils.losses
         darts.utils.missing_values
         darts.utils.model_selection
+        darts.utils.multioutput
         darts.utils.statistics
         darts.utils.timeseries_generation
         darts.utils.torch

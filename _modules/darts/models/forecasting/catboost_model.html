@@ -231,7 +231,7 @@
 <span class="sd">                add_encoders={</span>
 <span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
 <span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
-<span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;absolute&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
+<span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;relative&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
 <span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [lambda idx: (idx.year - 1950) / 50]},</span>
 <span class="sd">                    &#39;transformer&#39;: Scaler()</span>
 <span class="sd">                }</span>
@@ -278,6 +278,10 @@
 
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;loss_function&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">likelihood_map</span><span class="p">[</span><span class="n">likelihood</span><span class="p">]</span>
+
+        <span class="c1"># suppress writing catboost info files when user does not specifically ask to</span>
+        <span class="k">if</span> <span class="s2">&quot;allow_writing_files&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;allow_writing_files&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">lags</span><span class="o">=</span><span class="n">lags</span><span class="p">,</span>
@@ -328,7 +332,9 @@
 <span class="sd">            If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the</span>
 <span class="sd">            most recent `max_samples_per_ts` samples will be considered.</span>
 <span class="sd">        verbose</span>
-<span class="sd">            An integer or a boolean that can be set to 1 to display catboost&#39;s default verbose output.</span>
+<span class="sd">            An integer or a boolean that can be set to 1 to display catboost&#39;s default verbose output</span>
+<span class="sd">        **kwargs</span>
+<span class="sd">            Additional kwargs passed to `catboost.CatboostRegressor.fit()`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="n">val_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -388,7 +394,18 @@
             <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_predict_and_sample</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_is_probabilistic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">min_train_series_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="c1"># Catboost requires a minimum of 2 train samples, therefore the min_train_series_length should be one more than</span>
+        <span class="c1"># for other regression models</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span>
+            <span class="mi">3</span><span class="p">,</span>
+            <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="p">[</span><span class="s2">&quot;target&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="s2">&quot;target&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span>
+            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
+        <span class="p">)</span></div>
 </pre></div>
 
               </div>

@@ -236,11 +236,33 @@
   </ul>
  </li>
  <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.metrics.html">
-   Metrics
+  <a class="reference internal" href="darts.explainability.html">
+   Explainability
   </a>
   <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
   <label for="toctree-checkbox-4">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.explainability_result.html">
+     ExplainabilityResult
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.shap_explainer.html">
+     Shap Explainer for RegressionModels
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.metrics.html">
+   Metrics
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+  <label for="toctree-checkbox-5">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -256,8 +278,8 @@
   <a class="reference internal" href="darts.models.html">
    Models
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
-  <label for="toctree-checkbox-5">
+  <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+  <label for="toctree-checkbox-6">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -266,8 +288,8 @@
     <a class="reference internal" href="darts.models.filtering.html">
      Filtering Models
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
-    <label for="toctree-checkbox-6">
+    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
+    <label for="toctree-checkbox-7">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -293,8 +315,8 @@
     <a class="reference internal" href="darts.models.forecasting.html">
      Forecasting Models
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
-    <label for="toctree-checkbox-7">
+    <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
+    <label for="toctree-checkbox-8">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -395,6 +417,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_ets.html">
+       StatsForecastETS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.tbats.html">
        BATS and TBATS
       </a>
@@ -432,8 +459,8 @@
   <a class="reference internal" href="darts.utils.html">
    Utils
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
-  <label for="toctree-checkbox-8">
+  <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
+  <label for="toctree-checkbox-9">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -442,8 +469,8 @@
     <a class="reference internal" href="darts.utils.data.html">
      TimeSeries Datasets
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
-    <label for="toctree-checkbox-9">
+    <input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
+    <label for="toctree-checkbox-10">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -804,7 +831,7 @@ It is recommended to use the factory methods to create TimeSeries instead.</p>
 <td><p>A function to compute and return gaps in the TimeSeries.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.get_index_at_point" title="darts.timeseries.TimeSeries.get_index_at_point"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_index_at_point</span></code></a>(point[, after])</p></td>
-<td><p>Converts a point along the time axis into an integer index.</p></td>
+<td><p>Converts a point along the time axis index into an integer index ranging in (0, len(series)-1).</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.get_timestamp_at_point" title="darts.timeseries.TimeSeries.get_timestamp_at_point"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_timestamp_at_point</span></code></a>(point)</p></td>
 <td><p>Converts a point into a pandas.Timestamp (if Datetime-indexed) or into an integer (if Int64-indexed).</p></td>
@@ -882,7 +909,7 @@ It is recommended to use the factory methods to create TimeSeries instead.</p>
 <td><p>Return a deterministic <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the skew of each component (over the samples) of this stochastic <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.slice" title="darts.timeseries.TimeSeries.slice"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice</span></code></a>(start_ts, end_ts)</p></td>
-<td><p>Return a new TimeSeries, starting later than <cite>start_ts</cite> and ending before <cite>end_ts</cite>, inclusive on both ends.</p></td>
+<td><p>Return a new TimeSeries, starting later than <cite>start_ts</cite> and ending before <cite>end_ts</cite>.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.slice_intersect" title="darts.timeseries.TimeSeries.slice_intersect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice_intersect</span></code></a>(other)</p></td>
 <td><p>Return a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> slice of this series, where the time index has been intersected with the one of the <cite>other</cite> series.</p></td>
@@ -1349,7 +1376,8 @@ and a list of columns <cite>value_cols</cite> can be used to indicate the values
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>filepath_or_buffer</strong> – The path to the CSV file, or the file object; consistent with the argument of <cite>pandas.read_csv</cite> function</p></li>
-<li><p><strong>time_col</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The time column name. If set, the column will be cast to a pandas DatetimeIndex.
+<li><p><strong>time_col</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains
+timestamps) or a RangeIndex with step size of 1 (if it contains integers).
 If not set, the pandas RangeIndex will be used.</p></li>
 <li><p><strong>value_cols</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A string or list of strings representing the value column(s) to be extracted from the CSV file. If set to
 <cite>None</cite>, all columns from the CSV file will be used (except for the time_col, if specified)</p></li>
@@ -1408,7 +1436,8 @@ and a list of columns <cite>value_cols</cite> has to represent the values for th
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>df</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>) – The DataFrame</p></li>
-<li><p><strong>time_col</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The time column name. If set, the column will be cast to a pandas DatetimeIndex.
+<li><p><strong>time_col</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains
+timestamps) or a RangeIndex with step size of 1 (if it contains integers).
 If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is
 either a pandas DatetimeIndex or a pandas RangeIndex. If a DatetimeIndex is
 used, it is better if it has no holes; alternatively setting <cite>fill_missing_dates</cite> can in some casees solve
@@ -1475,7 +1504,8 @@ TimeSeries objects. These can be viewed with <cite>my_series.static_covariates</
 <li><p><strong>df</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>) – The DataFrame</p></li>
 <li><p><strong>group_cols</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – A string or list of strings representing the columns from the DataFrame by which to extract the
 individual TimeSeries groups.</p></li>
-<li><p><strong>time_col</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The time column name. If set, the column will be cast to a pandas DatetimeIndex.
+<li><p><strong>time_col</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains
+timestamps) or a RangeIndex with step size of 1 (if it contains integers).
 If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is
 either a pandas DatetimeIndex or a pandas RangeIndex. If a DatetimeIndex is
 used, it is better if it has no holes; alternatively setting <cite>fill_missing_dates</cite> can in some casees solve
@@ -1627,7 +1657,7 @@ either a provided <cite>freq</cite> or the possibility to infer the frequency fr
 <code class="xref py py-meth docutils literal notranslate"><span class="pre">_fill_missing_dates()</span></code> for more info.</p></li>
 <li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, a string representing the frequency of the Pandas DateTimeIndex. This is useful in order to
 fill in missing values if some dates are missing and <cite>fill_missing_dates</cite> is set to <cite>True</cite>.</p></li>
-<li><p><strong>columns</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Collection</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]) – Columns to be used by the underlying pandas DataFrame.</p></li>
+<li><p><strong>columns</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">range</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Columns to be used by the underlying pandas DataFrame.</p></li>
 <li><p><strong>fillna_value</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – Optionally, a numeric value to fill missing values (NaNs) with.</p></li>
 <li><p><strong>static_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a set of static covariates to be added to the TimeSeries. Either a pandas Series or a pandas
 DataFrame. If a Series, the index represents the static variables. The covariates are globally ‘applied’
@@ -1678,7 +1708,7 @@ The series will have an integer index (RangeIndex).</p>
 <li><p><strong>values</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – A Numpy array of values for the TimeSeries. Both 2-dimensional arrays, for deterministic series,
 and 3-dimensional arrays, for probabilistic series, are accepted. In the former case the dimensions
 should be (time, component), and in the latter case (time, component, sample).</p></li>
-<li><p><strong>columns</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Collection</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]]) – Columns to be used by the underlying pandas DataFrame.</p></li>
+<li><p><strong>columns</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">range</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Columns to be used by the underlying pandas DataFrame.</p></li>
 <li><p><strong>fillna_value</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – Optionally, a numeric value to fill missing values (NaNs) with.</p></li>
 <li><p><strong>static_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a set of static covariates to be added to the TimeSeries. Either a pandas Series or a pandas
 DataFrame. If a Series, the index represents the static variables. The covariates are globally ‘applied’
@@ -1774,7 +1804,7 @@ by a DatetimeIndex).</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.get_index_at_point">
 <span class="sig-name descname"><span class="pre">get_index_at_point</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">point</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">after</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.get_index_at_point"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.get_index_at_point" title="Permalink to this definition">¶</a></dt>
-<dd><p>Converts a point along the time axis into an integer index.</p>
+<dd><p>Converts a point along the time axis index into an integer index ranging in (0, len(series)-1).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1786,8 +1816,9 @@ It it’s not present in the time index, the index of the next timestamp is retu
 (if it exists in the series).</p>
 <p>In case of a <code class="docutils literal notranslate"><span class="pre">float</span></code>, the parameter will be treated as the proportion of the time series
 that should lie before the point.</p>
-<p>In the case of <code class="docutils literal notranslate"><span class="pre">int</span></code>, the parameter will returned as such, provided that it is in the series. Otherwise
-it will raise a ValueError.</p>
+<p>If an <code class="docutils literal notranslate"><span class="pre">int</span></code> and series is datetime-indexed, the value of <cite>point</cite> is returned.
+If an <code class="docutils literal notranslate"><span class="pre">int</span></code> and series is integer-indexed, the index position of <cite>point</cite> in the RangeIndex is returned
+(accounting for steps).</p>
 </p></li>
 <li><p><strong>after</strong> – If the provided pandas Timestamp is not in the time series index, whether to return the index of the
 next timestamp or the index of the previous one.</p></li>
@@ -2024,7 +2055,7 @@ If a timestamp is provided, it does not need to be an element of the time index 
 <dd><p>Applies the function <cite>fn</cite> to the underlying NumPy array containing this series’ values.</p>
 <p>Return a new TimeSeries instance. If <cite>fn</cite> takes 1 argument it is simply applied on the backing array
 of shape (time, n_components, n_samples).
-If it takes 2 arguments, it is applied repeteadly on the (ts, value[ts]) tuples, where
+If it takes 2 arguments, it is applied repeatedly on the (ts, value[ts]) tuples, where
 “ts” denotes a timestamp value, and “value[ts]” denote the array of values at this timestamp, of shape
 (n_components, n_samples).</p>
 <dl class="field-list simple">
@@ -2423,8 +2454,10 @@ With <span class="math notranslate nohighlight">\(n=-2\)</span>, March 2013 beco
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.slice">
 <span class="sig-name descname"><span class="pre">slice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_ts</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.slice"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.slice" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a new TimeSeries, starting later than <cite>start_ts</cite> and ending before <cite>end_ts</cite>, inclusive on both ends.
-The timestamps don’t have to be in the series.</p>
+<dd><p>Return a new TimeSeries, starting later than <cite>start_ts</cite> and ending before <cite>end_ts</cite>.
+For series having DatetimeIndex, this is inclusive on both ends. For series having a RangeIndex,
+<cite>end_ts</cite> is exclusive.</p>
+<p><cite>start_ts</cite> and <cite>end_ts</cite> don’t have to be in the series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -2946,7 +2979,7 @@ number of components of the TimeSeries. This adds component-specific static cova
 </dl>
 <p class="rubric">Notes</p>
 <p>If there are a large number of static covariates variables (i.e., the static covariates have a very large
-dimension), there might be a noticable performance penalty for creating <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects, unless
+dimension), there might be a noticeable performance penalty for creating <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects, unless
 the covariates already have the same <code class="docutils literal notranslate"><span class="pre">dtype</span></code> as the series data.</p>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>

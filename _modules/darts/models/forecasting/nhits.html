@@ -325,7 +325,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">layers</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="o">*</span><span class="n">layers</span><span class="p">)</span>
 
-        <span class="c1"># Fully connected layer producing forecast/backcast expansion coeffcients (waveform generator parameters).</span>
+        <span class="c1"># Fully connected layer producing forecast/backcast expansion coefficients (waveform generator parameters).</span>
         <span class="c1"># The coefficients are emitted for each parameter of the likelihood for the forecast.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">backcast_linear_layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
             <span class="n">in_features</span><span class="o">=</span><span class="n">layer_width</span><span class="p">,</span> <span class="n">out_features</span><span class="o">=</span><span class="n">n_theta_backcast</span>
@@ -580,7 +580,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">stacks</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stacks_list</span><span class="p">)</span>
 
         <span class="c1"># setting the last backcast &quot;branch&quot; to be not trainable (without next block/stack, it doesn&#39;t need to be</span>
-        <span class="c1"># backpropagated). Removing this lines would cause logtensorboard to crash, since no gradient is stored</span>
+        <span class="c1"># backpropagated). Removing this line would cause logtensorboard to crash, since no gradient is stored</span>
         <span class="c1"># on this params (the last block backcast is not part of the final output of the net).</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stacks_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">blocks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">backcast_linear_layer</span><span class="o">.</span><span class="n">requires_grad_</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
 
@@ -643,7 +643,7 @@
 
 <span class="sd">        N-HiTS is similar to N-BEATS (implemented in :class:`NBEATSModel`),</span>
 <span class="sd">        but attempts to provide better performance at lower computational cost by introducing</span>
-<span class="sd">        multi-rate sampling of the inputs and mulit-scale interpolation of the outputs.</span>
+<span class="sd">        multi-rate sampling of the inputs and multi-scale interpolation of the outputs.</span>
 
 <span class="sd">        Similar to :class:`NBEATSModel`, in addition to the univariate version presented in the paper,</span>
 <span class="sd">        this implementation also supports multivariate series (and covariates) by flattening the model inputs</span>
@@ -656,7 +656,7 @@
 <span class="sd">        This parameter can be a tuple of tuples, of size (num_stacks x num_blocks), specifying the kernel</span>
 <span class="sd">        size for each block in each stack. If left to ``None``, some default values will be used based on</span>
 <span class="sd">        ``input_chunk_length``.</span>
-<span class="sd">        Similarly, the multi-scale interpolation is controled by ``n_freq_downsample``, which gives the</span>
+<span class="sd">        Similarly, the multi-scale interpolation is controlled by ``n_freq_downsample``, which gives the</span>
 <span class="sd">        downsampling factors to be used in each block of each stack. If left to ``None``, some default</span>
 <span class="sd">        values will be used based on the ``output_chunk_length``.</span>
 
@@ -712,7 +712,7 @@
 <span class="sd">            The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.</span>
 <span class="sd">        optimizer_kwargs</span>
 <span class="sd">            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{&#39;lr&#39;: 1e-3}``</span>
-<span class="sd">            for specifying a learning rate). Otherwise the default values of the selected ``optimizer_cls``</span>
+<span class="sd">            for specifying a learning rate). Otherwise, the default values of the selected ``optimizer_cls``</span>
 <span class="sd">            will be used. Default: ``None``.</span>
 <span class="sd">        lr_scheduler_cls</span>
 <span class="sd">            Optionally, the PyTorch learning rate scheduler class to be used. Specifying ``None`` corresponds</span>
@@ -738,24 +738,6 @@
 <span class="sd">        nr_epochs_val_period</span>
 <span class="sd">            Number of epochs to wait before evaluating the validation loss (if a validation</span>
 <span class="sd">            ``TimeSeries`` is passed to the :func:`fit()` method). Default: ``1``.</span>
-<span class="sd">        torch_device_str</span>
-<span class="sd">            Optionally, a string indicating the torch device to use. By default, ``torch_device_str`` is ``None``</span>
-<span class="sd">            which will run on CPU. Set it to ``&quot;cuda&quot;`` to use all available GPUs or ``&quot;cuda:i&quot;`` to only use</span>
-<span class="sd">            GPU ``i`` (``i`` must be an integer). For example &quot;cuda:0&quot; will use the first GPU only.</span>
-
-<span class="sd">            .. deprecated:: v0.17.0</span>
-<span class="sd">                ``torch_device_str`` has been deprecated in v0.17.0 and will be removed in a future version.</span>
-<span class="sd">                Instead, specify this with keys ``&quot;accelerator&quot;, &quot;gpus&quot;, &quot;auto_select_gpus&quot;`` in your</span>
-<span class="sd">                ``pl_trainer_kwargs`` dict. Some examples for setting the devices inside the ``pl_trainer_kwargs``</span>
-<span class="sd">                dict:</span>
-
-<span class="sd">                - ``{&quot;accelerator&quot;: &quot;cpu&quot;}`` for CPU,</span>
-<span class="sd">                - ``{&quot;accelerator&quot;: &quot;gpu&quot;, &quot;gpus&quot;: [i]}`` to use only GPU ``i`` (``i`` must be an integer),</span>
-<span class="sd">                - ``{&quot;accelerator&quot;: &quot;gpu&quot;, &quot;gpus&quot;: -1, &quot;auto_select_gpus&quot;: True}`` to use all available GPUS.</span>
-
-<span class="sd">                For more info, see here:</span>
-<span class="sd">                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and</span>
-<span class="sd">                https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html#select-gpu-devices</span>
 <span class="sd">        force_reset</span>
 <span class="sd">            If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will</span>
 <span class="sd">            be discarded). Default: ``False``.</span>
@@ -780,7 +762,7 @@
 <span class="sd">                add_encoders={</span>
 <span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
 <span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
-<span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;absolute&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
+<span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;relative&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
 <span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [lambda idx: (idx.year - 1950) / 50]},</span>
 <span class="sd">                    &#39;transformer&#39;: Scaler()</span>
 <span class="sd">                }</span>
@@ -797,6 +779,19 @@
 <span class="sd">            object. Check the `PL Trainer documentation</span>
 <span class="sd">            &lt;https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html&gt;`_ for more information about the</span>
 <span class="sd">            supported kwargs. Default: ``None``.</span>
+<span class="sd">            Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``&quot;accelerator&quot;,</span>
+<span class="sd">            &quot;devices&quot;, and &quot;auto_select_gpus&quot;``. Some examples for setting the devices inside the ``pl_trainer_kwargs``</span>
+<span class="sd">            dict:</span>
+
+
+<span class="sd">            - ``{&quot;accelerator&quot;: &quot;cpu&quot;}`` for CPU,</span>
+<span class="sd">            - ``{&quot;accelerator&quot;: &quot;gpu&quot;, &quot;devices&quot;: [i]}`` to use only GPU ``i`` (``i`` must be an integer),</span>
+<span class="sd">            - ``{&quot;accelerator&quot;: &quot;gpu&quot;, &quot;devices&quot;: -1, &quot;auto_select_gpus&quot;: True}`` to use all available GPUS.</span>
+
+<span class="sd">            For more info, see here:</span>
+<span class="sd">            https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and</span>
+<span class="sd">            https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus</span>
+
 <span class="sd">            With parameter ``&quot;callbacks&quot;`` you can add custom or PyTorch-Lightning built-in callbacks to Darts&#39;</span>
 <span class="sd">            :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.</span>
 <span class="sd">            The model will stop training early if the validation loss `val_loss` does not improve beyond</span>

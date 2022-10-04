@@ -170,17 +170,17 @@
 <span class="sd">--------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">numba.core</span> <span class="kn">import</span> <span class="n">errors</span>
-<span class="kn">from</span> <span class="nn">statsforecast.models</span> <span class="kn">import</span> <span class="n">croston_classic</span><span class="p">,</span> <span class="n">croston_optimized</span><span class="p">,</span> <span class="n">croston_sba</span>
-<span class="kn">from</span> <span class="nn">statsforecast.models</span> <span class="kn">import</span> <span class="n">tsb</span> <span class="k">as</span> <span class="n">croston_tsb</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">from</span> <span class="nn">statsforecast.models</span> <span class="kn">import</span> <span class="n">TSB</span> <span class="k">as</span> <span class="n">CrostonTSB</span>
+<span class="kn">from</span> <span class="nn">statsforecast.models</span> <span class="kn">import</span> <span class="n">CrostonClassic</span><span class="p">,</span> <span class="n">CrostonOptimized</span><span class="p">,</span> <span class="n">CrostonSBA</span>
 
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.forecasting_model</span> <span class="kn">import</span> <span class="n">ForecastingModel</span>
+<span class="kn">from</span> <span class="nn">darts.models.forecasting.forecasting_model</span> <span class="kn">import</span> <span class="n">DualCovariatesForecastingModel</span>
 <span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 
 
-<div class="viewcode-block" id="Croston"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.croston.html#darts.models.forecasting.croston.Croston">[docs]</a><span class="k">class</span> <span class="nc">Croston</span><span class="p">(</span><span class="n">ForecastingModel</span><span class="p">):</span>
+<div class="viewcode-block" id="Croston"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.croston.html#darts.models.forecasting.croston.Croston">[docs]</a><span class="k">class</span> <span class="nc">Croston</span><span class="p">(</span><span class="n">DualCovariatesForecastingModel</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;classic&quot;</span><span class="p">,</span> <span class="n">alpha_d</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">alpha_p</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">):</span>
@@ -223,63 +223,53 @@
         <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">version</span> <span class="o">==</span> <span class="s2">&quot;classic&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">croston_classic</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">CrostonClassic</span><span class="p">()</span>
         <span class="k">elif</span> <span class="n">version</span> <span class="o">==</span> <span class="s2">&quot;optimized&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">croston_optimized</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">CrostonOptimized</span><span class="p">()</span>
         <span class="k">elif</span> <span class="n">version</span> <span class="o">==</span> <span class="s2">&quot;sba&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">croston_sba</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">CrostonSBA</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">raise_if</span><span class="p">(</span>
                 <span class="n">alpha_d</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">alpha_p</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span>
                 <span class="s1">&#39;alpha_d and alpha_p must be specified when using &quot;tsb&quot;.&#39;</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">croston_tsb</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">alpha_d</span> <span class="o">=</span> <span class="n">alpha_d</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">alpha_p</span> <span class="o">=</span> <span class="n">alpha_p</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">CrostonTSB</span><span class="p">(</span><span class="n">alpha_d</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_d</span><span class="p">,</span> <span class="n">alpha_p</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_p</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="n">version</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;Croston&quot;</span>
 
-<div class="viewcode-block" id="Croston.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.croston.html#darts.models.forecasting.croston.Croston.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_fit</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">)</span>
         <span class="n">series</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
         <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">==</span> <span class="s2">&quot;tsb&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">forecast_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">(</span>
-                <span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
-                <span class="n">h</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                <span class="n">future_xreg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                <span class="n">alpha_d</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_d</span><span class="p">,</span>
-                <span class="n">alpha_p</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha_p</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">==</span> <span class="s2">&quot;sba&quot;</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">forecast_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">(</span>
-                    <span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">h</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">future_xreg</span><span class="o">=</span><span class="kc">None</span>
-                <span class="p">)</span>
-            <span class="k">except</span> <span class="n">errors</span><span class="o">.</span><span class="n">TypingError</span><span class="p">:</span>
-                <span class="n">raise_if</span><span class="p">(</span>
-                    <span class="kc">True</span><span class="p">,</span>
-                    <span class="s1">&#39;&quot;sba&quot; version is not supported with this version of statsforecast.&#39;</span><span class="p">,</span>
-                <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+            <span class="n">y</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
+            <span class="n">X</span><span class="o">=</span><span class="n">future_covariates</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
 
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">forecast_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">(</span>
-                <span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">h</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">future_xreg</span><span class="o">=</span><span class="kc">None</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span></div>
+        <span class="k">return</span> <span class="bp">self</span>
 
-<div class="viewcode-block" id="Croston.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.croston.html#darts.models.forecasting.croston.Croston.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
+    <span class="k">def</span> <span class="nf">_predict</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
-        <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forecast_val</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_forecast_series</span><span class="p">(</span><span class="n">values</span><span class="p">)</span></div>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+            <span class="n">h</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+            <span class="n">X</span><span class="o">=</span><span class="n">future_covariates</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">)[</span><span class="s2">&quot;mean&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_forecast_series</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">min_train_series_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>

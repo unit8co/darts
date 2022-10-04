@@ -188,7 +188,7 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">trend</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ModelMode</span><span class="p">]</span> <span class="o">=</span> <span class="n">ModelMode</span><span class="o">.</span><span class="n">ADDITIVE</span><span class="p">,</span>
         <span class="n">damped</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">seasonal</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ModelMode</span><span class="p">]</span> <span class="o">=</span> <span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">ADDITIVE</span><span class="p">,</span>
+        <span class="n">seasonal</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SeasonalityMode</span><span class="p">]</span> <span class="o">=</span> <span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">ADDITIVE</span><span class="p">,</span>
         <span class="n">seasonal_periods</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="o">**</span><span class="n">fit_kwargs</span><span class="p">,</span>
@@ -201,7 +201,10 @@
 <span class="sd">        &lt;https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.html&gt;`_;</span>
 <span class="sd">        we refer to this link for the original and more complete documentation of the parameters.</span>
 
-<span class="sd">        `model_mode` must be a ``ModelMode`` Enum member. You can access the Enum with ``from darts import ModelMode``.</span>
+<span class="sd">        `trend` must be a ``ModelMode`` Enum member. You can access the Enum with</span>
+<span class="sd">         ``from darts.utils.utils import ModelMode``.</span>
+<span class="sd">        `seasonal` must be a ``SeasonalityMode`` Enum member. You can access the Enum with</span>
+<span class="sd">        ``from darts.utils.utils import SeasonalityMode``.</span>
 
 <span class="sd">        ``ExponentialSmoothing(trend=ModelMode.NONE, seasonal=SeasonalityMode.NONE)`` corresponds to a single</span>
 <span class="sd">        exponential smoothing.</span>
@@ -258,13 +261,13 @@
             <span class="kc">None</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">infer_seasonal_periods</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">seasonal_periods</span>
         <span class="p">)</span>
 
-        <span class="c1"># set the seasonal periods paramter to a default value if it was not provided explicitly</span>
+        <span class="c1"># set the seasonal periods parameter to a default value if it was not provided explicitly</span>
         <span class="c1"># and if it cannot be inferred due to the lack of a datetime index</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">seasonal_periods</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">series</span><span class="o">.</span><span class="n">has_range_index</span><span class="p">:</span>
             <span class="n">seasonal_periods_param</span> <span class="o">=</span> <span class="mi">12</span>
 
         <span class="n">hw_model</span> <span class="o">=</span> <span class="n">hw</span><span class="o">.</span><span class="n">ExponentialSmoothing</span><span class="p">(</span>
-            <span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span>
+            <span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
             <span class="n">trend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">trend</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">trend</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">trend</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
             <span class="n">damped_trend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">damped</span><span class="p">,</span>
             <span class="n">seasonal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">seasonal</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">seasonal</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">seasonal</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>

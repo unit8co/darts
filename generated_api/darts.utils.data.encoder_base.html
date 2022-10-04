@@ -234,11 +234,33 @@
   </ul>
  </li>
  <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.metrics.html">
-   Metrics
+  <a class="reference internal" href="darts.explainability.html">
+   Explainability
   </a>
   <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
   <label for="toctree-checkbox-4">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.explainability_result.html">
+     ExplainabilityResult
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.shap_explainer.html">
+     Shap Explainer for RegressionModels
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.metrics.html">
+   Metrics
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+  <label for="toctree-checkbox-5">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -254,8 +276,8 @@
   <a class="reference internal" href="darts.models.html">
    Models
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
-  <label for="toctree-checkbox-5">
+  <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+  <label for="toctree-checkbox-6">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -264,8 +286,8 @@
     <a class="reference internal" href="darts.models.filtering.html">
      Filtering Models
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
-    <label for="toctree-checkbox-6">
+    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
+    <label for="toctree-checkbox-7">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -291,8 +313,8 @@
     <a class="reference internal" href="darts.models.forecasting.html">
      Forecasting Models
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
-    <label for="toctree-checkbox-7">
+    <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
+    <label for="toctree-checkbox-8">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -393,6 +415,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_ets.html">
+       StatsForecastETS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.tbats.html">
        BATS and TBATS
       </a>
@@ -430,8 +457,8 @@
   <a class="reference internal" href="darts.utils.html">
    Utils
   </a>
-  <input checked="" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
-  <label for="toctree-checkbox-8">
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
+  <label for="toctree-checkbox-9">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -440,8 +467,8 @@
     <a class="reference internal" href="darts.utils.data.html">
      TimeSeries Datasets
     </a>
-    <input checked="" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
-    <label for="toctree-checkbox-9">
+    <input checked="" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
+    <label for="toctree-checkbox-10">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -570,18 +597,28 @@
 <h1>Encoder Base Classes<a class="headerlink" href="#encoder-base-classes" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.encoder_base.CovariateIndexGenerator">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoder_base.</span></span><span class="sig-name descname"><span class="pre">CovariateIndexGenerator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_index_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ReferenceIndexType.NONE</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoder_base.html#CovariateIndexGenerator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoder_base.CovariateIndexGenerator" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoder_base.</span></span><span class="sig-name descname"><span class="pre">CovariateIndexGenerator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoder_base.html#CovariateIndexGenerator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoder_base.CovariateIndexGenerator" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the emitted past series.</p></li>
 <li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the emitted future series.</p></li>
-<li><p><strong>reference_index</strong> – If a reference index should be saved, set <cite>reference_index</cite> to one of <cite>(ReferenceIndexType.PREDICTION,
-ReferenceIndexType.START)</cite></p></li>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoder_base.CovariateIndexGenerator.base_component_name" title="darts.utils.data.encoder_base.CovariateIndexGenerator.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the index generator base component name.</p></td>
+</tr>
+</tbody>
+</table>
 <p class="rubric">Methods</p>
 <table class="longtable table autosummary">
 <colgroup>
@@ -597,6 +634,19 @@ ReferenceIndexType.START)</cite></p></li>
 </tr>
 </tbody>
 </table>
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoder_base.CovariateIndexGenerator.base_component_name">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">base_component_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.utils.data.encoder_base.CovariateIndexGenerator.base_component_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the index generator base component name.
+- “pc”: past covariates
+- “fc”: future covariates</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.data.encoder_base.CovariateIndexGenerator.generate_inference_series">
 <em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">generate_inference_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoder_base.html#CovariateIndexGenerator.generate_inference_series"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoder_base.CovariateIndexGenerator.generate_inference_series" title="Permalink to this definition">¶</a></dt>
@@ -610,7 +660,7 @@ ReferenceIndexType.START)</cite></p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>]</p>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -627,7 +677,7 @@ ReferenceIndexType.START)</cite></p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>]</p>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -639,6 +689,21 @@ ReferenceIndexType.START)</cite></p></li>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoder_base.</span></span><span class="sig-name descname"><span class="pre">Encoder</span></span><a class="reference internal" href="../_modules/darts/utils/data/encoder_base.html#Encoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoder_base.Encoder" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>Abstract class for all encoders</p>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoder_base.Encoder.fit_called" title="darts.utils.data.encoder_base.Encoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoder_base.Encoder.requires_fit" title="darts.utils.data.encoder_base.Encoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
+</tr>
+</tbody>
+</table>
 <p class="rubric">Methods</p>
 <table class="longtable table autosummary">
 <colgroup>
@@ -691,13 +756,48 @@ ReferenceIndexType.START)</cite></p></li>
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoder_base.Encoder.fit_called">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fit_called</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoder_base.Encoder.fit_called" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoder_base.Encoder.requires_fit">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">requires_fit</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoder_base.Encoder.requires_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference
+with <cite>Encoder.encode_inference()</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.encoder_base.FutureCovariateIndexGenerator">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoder_base.</span></span><span class="sig-name descname"><span class="pre">FutureCovariateIndexGenerator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_index_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ReferenceIndexType.NONE</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoder_base.html#FutureCovariateIndexGenerator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoder_base.FutureCovariateIndexGenerator" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoder_base.</span></span><span class="sig-name descname"><span class="pre">FutureCovariateIndexGenerator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoder_base.html#FutureCovariateIndexGenerator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoder_base.FutureCovariateIndexGenerator" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.data.encoder_base.CovariateIndexGenerator" title="darts.utils.data.encoder_base.CovariateIndexGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoder_base.CovariateIndexGenerator</span></code></a></p>
 <p>Generates index for future covariates on train and inference datasets.</p>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoder_base.FutureCovariateIndexGenerator.base_component_name" title="darts.utils.data.encoder_base.FutureCovariateIndexGenerator.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the index generator base component name.</p></td>
+</tr>
+</tbody>
+</table>
 <p class="rubric">Methods</p>
 <table class="longtable table autosummary">
 <colgroup>
@@ -718,11 +818,21 @@ ReferenceIndexType.START)</cite></p></li>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the emitted past series.</p></li>
 <li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the emitted future series.</p></li>
-<li><p><strong>reference_index</strong> – If a reference index should be saved, set <cite>reference_index</cite> to one of <cite>(ReferenceIndexType.PREDICTION,
-ReferenceIndexType.START)</cite></p></li>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoder_base.FutureCovariateIndexGenerator.base_component_name" title="darts.utils.data.encoder_base.FutureCovariateIndexGenerator.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the index generator base component name.</p></td>
+</tr>
+</tbody>
+</table>
 <p class="rubric">Methods</p>
 <table class="longtable table autosummary">
 <colgroup>
@@ -738,6 +848,19 @@ ReferenceIndexType.START)</cite></p></li>
 </tr>
 </tbody>
 </table>
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoder_base.FutureCovariateIndexGenerator.base_component_name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">base_component_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.utils.data.encoder_base.FutureCovariateIndexGenerator.base_component_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the index generator base component name.
+- “pc”: past covariates
+- “fc”: future covariates</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.data.encoder_base.FutureCovariateIndexGenerator.generate_inference_series">
 <span class="sig-name descname"><span class="pre">generate_inference_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoder_base.html#FutureCovariateIndexGenerator.generate_inference_series"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoder_base.FutureCovariateIndexGenerator.generate_inference_series" title="Permalink to this definition">¶</a></dt>
@@ -749,7 +872,7 @@ ReferenceIndexType.START)</cite></p></li>
 </div></blockquote>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>]</p>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -761,7 +884,7 @@ ReferenceIndexType.START)</cite></p></li>
 reference to extract the time index.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>]</p>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -770,9 +893,21 @@ reference to extract the time index.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.encoder_base.PastCovariateIndexGenerator">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoder_base.</span></span><span class="sig-name descname"><span class="pre">PastCovariateIndexGenerator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_index_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ReferenceIndexType.NONE</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoder_base.html#PastCovariateIndexGenerator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoder_base.PastCovariateIndexGenerator" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoder_base.</span></span><span class="sig-name descname"><span class="pre">PastCovariateIndexGenerator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoder_base.html#PastCovariateIndexGenerator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoder_base.PastCovariateIndexGenerator" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.data.encoder_base.CovariateIndexGenerator" title="darts.utils.data.encoder_base.CovariateIndexGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoder_base.CovariateIndexGenerator</span></code></a></p>
 <p>Generates index for past covariates on train and inference datasets</p>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoder_base.PastCovariateIndexGenerator.base_component_name" title="darts.utils.data.encoder_base.PastCovariateIndexGenerator.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the index generator base component name.</p></td>
+</tr>
+</tbody>
+</table>
 <p class="rubric">Methods</p>
 <table class="longtable table autosummary">
 <colgroup>
@@ -793,11 +928,21 @@ reference to extract the time index.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the emitted past series.</p></li>
 <li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the emitted future series.</p></li>
-<li><p><strong>reference_index</strong> – If a reference index should be saved, set <cite>reference_index</cite> to one of <cite>(ReferenceIndexType.PREDICTION,
-ReferenceIndexType.START)</cite></p></li>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoder_base.PastCovariateIndexGenerator.base_component_name" title="darts.utils.data.encoder_base.PastCovariateIndexGenerator.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the index generator base component name.</p></td>
+</tr>
+</tbody>
+</table>
 <p class="rubric">Methods</p>
 <table class="longtable table autosummary">
 <colgroup>
@@ -813,6 +958,19 @@ ReferenceIndexType.START)</cite></p></li>
 </tr>
 </tbody>
 </table>
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoder_base.PastCovariateIndexGenerator.base_component_name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">base_component_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.utils.data.encoder_base.PastCovariateIndexGenerator.base_component_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the index generator base component name.
+- “pc”: past covariates
+- “fc”: future covariates</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.data.encoder_base.PastCovariateIndexGenerator.generate_inference_series">
 <span class="sig-name descname"><span class="pre">generate_inference_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoder_base.html#PastCovariateIndexGenerator.generate_inference_series"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoder_base.PastCovariateIndexGenerator.generate_inference_series" title="Permalink to this definition">¶</a></dt>
@@ -824,7 +982,7 @@ ReferenceIndexType.START)</cite></p></li>
 </div></blockquote>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>]</p>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -841,32 +999,10 @@ ReferenceIndexType.START)</cite></p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>]</p>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>]</p>
 </dd>
 </dl>
 </dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="darts.utils.data.encoder_base.ReferenceIndexType">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoder_base.</span></span><span class="sig-name descname"><span class="pre">ReferenceIndexType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoder_base.html#ReferenceIndexType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoder_base.ReferenceIndexType" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
-<p>An enumeration.</p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="darts.utils.data.encoder_base.ReferenceIndexType.NONE">
-<span class="sig-name descname"><span class="pre">NONE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#darts.utils.data.encoder_base.ReferenceIndexType.NONE" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="darts.utils.data.encoder_base.ReferenceIndexType.PREDICTION">
-<span class="sig-name descname"><span class="pre">PREDICTION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#darts.utils.data.encoder_base.ReferenceIndexType.PREDICTION" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="darts.utils.data.encoder_base.ReferenceIndexType.START">
-<span class="sig-name descname"><span class="pre">START</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#darts.utils.data.encoder_base.ReferenceIndexType.START" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
 
 </dd></dl>
 
@@ -970,7 +1106,7 @@ user-defined covariates.</p>
 <dt class="sig sig-object py" id="darts.utils.data.encoder_base.SingleEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoder_base.</span></span><span class="sig-name descname"><span class="pre">SingleEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index_generator</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoder_base.html#SingleEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoder_base.SingleEncoder" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.data.encoder_base.Encoder" title="darts.utils.data.encoder_base.Encoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoder_base.Encoder</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
-<p>Abstract class for single index encoders.
+<p><cite>SingleEncoder</cite>: Abstract class for single index encoders.
 Single encoders can be used to implement new encoding techniques.
 Each single encoder must implement an <cite>_encode()</cite> method that carries the encoding logic.</p>
 <p>The <cite>_encode()</cite> method must take an <cite>index</cite> as input and generate a encoded single <cite>TimeSeries</cite> as output.</p>
@@ -982,7 +1118,19 @@ Each single encoder must implement an <cite>_encode()</cite> method that carries
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoder_base.SingleEncoder.accept_transformer" title="darts.utils.data.encoder_base.SingleEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>Whether or not the SingleEncoder sub class accepts to be transformed.</p></td>
+<td><p>Whether the <cite>SingleEncoder</cite> sub class accepts to be transformed.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoder_base.SingleEncoder.base_component_name" title="darts.utils.data.encoder_base.SingleEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoder_base.SingleEncoder.components" title="darts.utils.data.encoder_base.SingleEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoder_base.SingleEncoder.fit_called" title="darts.utils.data.encoder_base.SingleEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoder_base.SingleEncoder.requires_fit" title="darts.utils.data.encoder_base.SingleEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1020,7 +1168,19 @@ For future covariate encoders use a <cite>FutureCovariateIndexGenerator</cite>.<
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoder_base.SingleEncoder.accept_transformer" title="darts.utils.data.encoder_base.SingleEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>Whether or not the SingleEncoder sub class accepts to be transformed.</p></td>
+<td><p>Whether the <cite>SingleEncoder</cite> sub class accepts to be transformed.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoder_base.SingleEncoder.base_component_name" title="darts.utils.data.encoder_base.SingleEncoder.base_component_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">base_component_name</span></code></a></p></td>
+<td><p>Returns the base encoder base component name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoder_base.SingleEncoder.components" title="darts.utils.data.encoder_base.SingleEncoder.components"><code class="xref py py-obj docutils literal notranslate"><span class="pre">components</span></code></a></p></td>
+<td><p>Returns the encoded component names.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoder_base.SingleEncoder.fit_called" title="darts.utils.data.encoder_base.SingleEncoder.fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_called</span></code></a></p></td>
+<td><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoder_base.SingleEncoder.requires_fit" title="darts.utils.data.encoder_base.SingleEncoder.requires_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_fit</span></code></a></p></td>
+<td><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference with <cite>Encoder.encode_inference()</cite>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1042,10 +1202,57 @@ For future covariate encoders use a <cite>FutureCovariateIndexGenerator</cite>.<
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.data.encoder_base.SingleEncoder.accept_transformer">
 <em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoder_base.SingleEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Whether or not the SingleEncoder sub class accepts to be transformed.</p>
+<dd><p>Whether the <cite>SingleEncoder</cite> sub class accepts to be transformed.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoder_base.SingleEncoder.base_component_name">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">base_component_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.utils.data.encoder_base.SingleEncoder.base_component_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the base encoder base component name. The string follows the given format:
+<cite>“darts_enc_{covariate_temp}_{encoder}_{attribute}”</cite>, where the elements are:</p>
+<ul class="simple">
+<li><p>covariate_temp: “pc” or “fc” for past, or future covariates respectively.</p></li>
+<li><dl class="simple">
+<dt>encoder: the SingleEncoder type used:</dt><dd><ul>
+<li><p>“cyc” (cyclic temporal encoder),</p></li>
+<li><p>“dta” (datetime attribute encoder),</p></li>
+<li><p>“pos” (positional integer index encoder),</p></li>
+<li><p>“cus” (custom callable index encoder)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>attribute: the attribute used for the underlying encoder. Some examples:</dt><dd><ul>
+<li><p>“month_sin”, “month_cos” (for “cyc”)</p></li>
+<li><p>“month” (for “dta”)</p></li>
+<li><p>“relative” (for “pos”)</p></li>
+<li><p>“custom” (for “cus”)</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoder_base.SingleEncoder.components">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">components</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">pandas.core.indexes.base.Index</span></em><a class="headerlink" href="#darts.utils.data.encoder_base.SingleEncoder.components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the encoded component names. Only available after <cite>Encoder.encode_train()</cite> or
+<cite>Encoder.encode_inference()</cite> have been called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1087,6 +1294,29 @@ For future covariate encoders use a <cite>FutureCovariateIndexGenerator</cite>.<
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoder_base.SingleEncoder.fit_called">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fit_called</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoder_base.SingleEncoder.fit_called" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether the <cite>Encoder</cite> object has been fitted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoder_base.SingleEncoder.requires_fit">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">requires_fit</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.utils.data.encoder_base.SingleEncoder.requires_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the <cite>Encoder</cite> sub class must be fit with <cite>Encoder.encode_train()</cite> before inference
+with <cite>Encoder.encode_inference()</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
 </dd>
 </dl>
 </dd></dl>

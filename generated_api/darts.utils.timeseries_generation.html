@@ -234,11 +234,33 @@
   </ul>
  </li>
  <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.metrics.html">
-   Metrics
+  <a class="reference internal" href="darts.explainability.html">
+   Explainability
   </a>
   <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
   <label for="toctree-checkbox-4">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.explainability_result.html">
+     ExplainabilityResult
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.shap_explainer.html">
+     Shap Explainer for RegressionModels
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.metrics.html">
+   Metrics
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+  <label for="toctree-checkbox-5">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -254,8 +276,8 @@
   <a class="reference internal" href="darts.models.html">
    Models
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
-  <label for="toctree-checkbox-5">
+  <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+  <label for="toctree-checkbox-6">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -264,8 +286,8 @@
     <a class="reference internal" href="darts.models.filtering.html">
      Filtering Models
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
-    <label for="toctree-checkbox-6">
+    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
+    <label for="toctree-checkbox-7">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -291,8 +313,8 @@
     <a class="reference internal" href="darts.models.forecasting.html">
      Forecasting Models
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
-    <label for="toctree-checkbox-7">
+    <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
+    <label for="toctree-checkbox-8">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -393,6 +415,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_ets.html">
+       StatsForecastETS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.tbats.html">
        BATS and TBATS
       </a>
@@ -430,8 +457,8 @@
   <a class="reference internal" href="darts.utils.html">
    Utils
   </a>
-  <input checked="" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
-  <label for="toctree-checkbox-8">
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
+  <label for="toctree-checkbox-9">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -440,8 +467,8 @@
     <a class="reference internal" href="darts.utils.data.html">
      TimeSeries Datasets
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
-    <label for="toctree-checkbox-9">
+    <input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
+    <label for="toctree-checkbox-10">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -570,7 +597,7 @@
 <h1>Utils for time series generation<a class="headerlink" href="#utils-for-time-series-generation" title="Permalink to this headline">¶</a></h1>
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.timeseries_generation.autoregressive_timeseries">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">autoregressive_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coef</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'D'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'autoregressive'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#autoregressive_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.autoregressive_timeseries" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">autoregressive_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coef</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_values</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'autoregressive'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#autoregressive_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.autoregressive_timeseries" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a univariate, autoregressive TimeSeries whose values are calculated using specified coefficients <cite>coef</cite> and
 starting values <cite>start_values</cite>.</p>
 <dl class="field-list simple">
@@ -586,9 +613,12 @@ either <cite>length</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
 <li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
-<li><p><strong>freq</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The time difference between two adjacent entries in the returned TimeSeries. Only effective if <cite>start</cite> is a
-pandas Timestamp. A DateOffset alias is expected; see
-<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.</p></li>
+<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
+a DateOffset alias is expected; see
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.
+By default, “D” (daily) is used.
+If <cite>start</cite> is an integer, <cite>freq</cite> will be interpreted as the step size in the underlying RangeIndex.
+The freq is optional for generating an integer index (if not specified, 1 is used).</p></li>
 <li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
 </ul>
 </dd>
@@ -603,7 +633,7 @@ pandas Timestamp. A DateOffset alias is expected; see
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.timeseries_generation.constant_timeseries">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">constant_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq='D'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='constant'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#constant_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.constant_timeseries" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">constant_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='constant'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#constant_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.constant_timeseries" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a constant univariate TimeSeries with the given value, length (or end date), start date and frequency.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -615,9 +645,12 @@ either <cite>length</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
 <li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
-<li><p><strong>freq</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – <p>The time difference between two adjacent entries in the returned TimeSeries. Only effective if <cite>start</cite> is a
-pandas Timestamp. A DateOffset alias is expected; see
-<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.</p>
+<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – <p>The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
+a DateOffset alias is expected; see
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.
+By default, “D” (daily) is used.
+If <cite>start</cite> is an integer, <cite>freq</cite> will be interpreted as the step size in the underlying RangeIndex.
+The freq is optional for generating an integer index (if not specified, 1 is used).</p>
 </p></li>
 <li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
 <li><p><strong>dtype</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
@@ -634,7 +667,7 @@ pandas Timestamp. A DateOffset alias is expected; see
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.timeseries_generation.datetime_attribute_timeseries">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">datetime_attribute_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_hot=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cyclic=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">until=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_length=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#datetime_attribute_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.datetime_attribute_timeseries" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">datetime_attribute_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_hot=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cyclic=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">until=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_length=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_columns=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#datetime_attribute_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.datetime_attribute_timeseries" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a new TimeSeries with index <cite>time_index</cite> and one or more dimensions containing
 (optionally one-hot encoded or cyclic encoded) pd.DatatimeIndex attribute information derived from the index.</p>
 <dl class="field-list simple">
@@ -655,6 +688,20 @@ and int for range indexed series, should match or exceed forecasting window.</p>
 <li><p><strong>add_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Extend the time_index by add_length, should match or exceed forecasting window.
 Set only one of until and add_length.</p></li>
 <li><p><strong>dtype</strong> – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
+<li><p><strong>with_columns</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – <p>Optionally, specify the output component names.
+* If <cite>one_hot</cite> and <cite>cyclic</cite> are <code class="docutils literal notranslate"><span class="pre">False</span></code>, must be a string
+* If <cite>cyclic</cite> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, must be a list of two strings. The first string for the sine, the second for the</p>
+<blockquote>
+<div><p>cosine component name.</p>
+</div></blockquote>
+<ul>
+<li><dl class="simple">
+<dt>If <cite>one_hot</cite> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, must be a list of strings of the same length as the generated one hot encoded</dt><dd><p>features.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -668,7 +715,7 @@ Set only one of until and add_length.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.timeseries_generation.gaussian_timeseries">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">gaussian_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean=0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">std=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq='D'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='gaussian'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#gaussian_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.gaussian_timeseries" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">gaussian_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean=0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">std=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='gaussian'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#gaussian_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.gaussian_timeseries" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a gaussian univariate TimeSeries by sampling all the series values independently,
 from a gaussian distribution with mean <cite>mean</cite> and standard deviation <cite>std</cite>.</p>
 <dl class="field-list simple">
@@ -688,9 +735,12 @@ either <cite>length</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
 <li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
-<li><p><strong>freq</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – <p>The time difference between two adjacent entries in the returned TimeSeries. Only effective if <cite>start</cite> is a
-pandas Timestamp. A DateOffset alias is expected; see
-<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.</p>
+<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – <p>The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
+a DateOffset alias is expected; see
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.
+By default, “D” (daily) is used.
+If <cite>start</cite> is an integer, <cite>freq</cite> will be interpreted as the step size in the underlying RangeIndex.
+The freq is optional for generating an integer index (if not specified, 1 is used).</p>
 </p></li>
 <li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
 <li><p><strong>dtype</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
@@ -701,6 +751,35 @@ pandas Timestamp. A DateOffset alias is expected; see
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="darts.utils.timeseries_generation.generate_index">
+<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">generate_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#generate_index"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.generate_index" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
+or a pandas RangeIndex. The index starts at</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The start of the returned index. If a pandas Timestamp is passed, the index will be a pandas
+DatetimeIndex. If an integer is passed, the index will be a pandas RangeIndex index. Works only with
+either <cite>length</cite> or <cite>end</cite>.</p></li>
+<li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
+set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
+<li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
+<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – <p>The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
+a DateOffset alias is expected; see
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.
+By default, “D” (daily) is used.
+If <cite>start</cite> is an integer, <cite>freq</cite> will be interpreted as the step size in the underlying RangeIndex.
+The freq is optional for generating an integer index (if not specified, 1 is used).</p>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -737,7 +816,7 @@ Set only one of until and add_length.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.timeseries_generation.linear_timeseries">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">linear_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_value=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_value=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq='D'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#linear_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.linear_timeseries" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">linear_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_value=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_value=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#linear_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.linear_timeseries" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a univariate TimeSeries with a starting value of <cite>start_value</cite> that increases linearly such that
 it takes on the value <cite>end_value</cite> at the last entry of the TimeSeries. This means that
 the difference between two adjacent entries will be equal to
@@ -753,9 +832,12 @@ either <cite>length</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
 <li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
-<li><p><strong>freq</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – <p>The time difference between two adjacent entries in the returned TimeSeries. Only effective if <cite>start</cite> is a
-pandas Timestamp. A DateOffset alias is expected; see
-<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.</p>
+<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – <p>The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
+a DateOffset alias is expected; see
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.
+By default, “D” (daily) is used.
+If <cite>start</cite> is an integer, <cite>freq</cite> will be interpreted as the step size in the underlying RangeIndex.
+The freq is optional for generating an integer index (if not specified, 1 is used).</p>
 </p></li>
 <li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
 <li><p><strong>dtype</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
@@ -772,7 +854,7 @@ pandas Timestamp. A DateOffset alias is expected; see
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.timeseries_generation.random_walk_timeseries">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">random_walk_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean=0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">std=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq='D'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='random_walk'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#random_walk_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.random_walk_timeseries" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">random_walk_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean=0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">std=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='random_walk'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#random_walk_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.random_walk_timeseries" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a random walk univariate TimeSeries, where each step is obtained by sampling a gaussian distribution
 with mean <cite>mean</cite> and standard deviation <cite>std</cite>.</p>
 <dl class="field-list simple">
@@ -786,9 +868,12 @@ either <cite>length</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
 <li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
-<li><p><strong>freq</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – <p>The time difference between two adjacent entries in the returned TimeSeries. Only effective if <cite>start</cite> is a
-pandas Timestamp. A DateOffset alias is expected; see
-<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.</p>
+<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – <p>The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
+a DateOffset alias is expected; see
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.
+By default, “D” (daily) is used.
+If <cite>start</cite> is an integer, <cite>freq</cite> will be interpreted as the step size in the underlying RangeIndex.
+The freq is optional for generating an integer index (if not specified, 1 is used).</p>
 </p></li>
 <li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
 <li><p><strong>dtype</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
@@ -805,7 +890,7 @@ pandas Timestamp. A DateOffset alias is expected; see
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.timeseries_generation.sine_timeseries">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">sine_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value_frequency=0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_amplitude=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_phase=0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_y_offset=0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq='D'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='sine'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#sine_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.sine_timeseries" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">sine_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value_frequency=0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_amplitude=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_phase=0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_y_offset=0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='sine'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#sine_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.sine_timeseries" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a univariate TimeSeries with a sinusoidal value progression with a given frequency, amplitude,
 phase and y offset.</p>
 <dl class="field-list simple">
@@ -821,9 +906,12 @@ either <cite>length</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
 <li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
-<li><p><strong>freq</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – <p>The time difference between two adjacent entries in the returned TimeSeries. Only effective if <cite>start</cite> is a
-pandas Timestamp. A DateOffset alias is expected; see
-<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.</p>
+<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – <p>The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
+a DateOffset alias is expected; see
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.
+By default, “D” (daily) is used.
+If <cite>start</cite> is an integer, <cite>freq</cite> will be interpreted as the step size in the underlying RangeIndex.
+The freq is optional for generating an integer index (if not specified, 1 is used).</p>
 </p></li>
 <li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
 <li><p><strong>dtype</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>

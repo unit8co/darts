@@ -234,11 +234,33 @@
   </ul>
  </li>
  <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.metrics.html">
-   Metrics
+  <a class="reference internal" href="darts.explainability.html">
+   Explainability
   </a>
   <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
   <label for="toctree-checkbox-4">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.explainability_result.html">
+     ExplainabilityResult
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.shap_explainer.html">
+     Shap Explainer for RegressionModels
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.metrics.html">
+   Metrics
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+  <label for="toctree-checkbox-5">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -254,8 +276,8 @@
   <a class="reference internal" href="darts.models.html">
    Models
   </a>
-  <input checked="" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
-  <label for="toctree-checkbox-5">
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+  <label for="toctree-checkbox-6">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -264,8 +286,8 @@
     <a class="reference internal" href="darts.models.filtering.html">
      Filtering Models
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
-    <label for="toctree-checkbox-6">
+    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
+    <label for="toctree-checkbox-7">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -291,8 +313,8 @@
     <a class="reference internal" href="darts.models.forecasting.html">
      Forecasting Models
     </a>
-    <input checked="" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
-    <label for="toctree-checkbox-7">
+    <input checked="" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
+    <label for="toctree-checkbox-8">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -393,6 +415,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_ets.html">
+       StatsForecastETS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.tbats.html">
        BATS and TBATS
       </a>
@@ -430,8 +457,8 @@
   <a class="reference internal" href="darts.utils.html">
    Utils
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
-  <label for="toctree-checkbox-8">
+  <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
+  <label for="toctree-checkbox-9">
    <i class="fas fa-chevron-down">
    </i>
   </label>
@@ -440,8 +467,8 @@
     <a class="reference internal" href="darts.utils.data.html">
      TimeSeries Datasets
     </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
-    <label for="toctree-checkbox-9">
+    <input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
+    <label for="toctree-checkbox-10">
      <i class="fas fa-chevron-down">
      </i>
     </label>
@@ -633,7 +660,7 @@ Default is ‘c’ for models without integration, and no trend for models with 
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.varima.VARIMA.predict" title="darts.models.forecasting.varima.VARIMA.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, series, future_covariates, ...])</p></td>
 <td><p>If the <cite>series</cite> parameter is not set, forecasts values for <cite>n</cite> time steps after the end of the training series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.varima.VARIMA.residuals" title="darts.models.forecasting.varima.VARIMA.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, forecast_horizon, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.varima.VARIMA.residuals" title="darts.models.forecasting.varima.VARIMA.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, past_covariates, ...])</p></td>
 <td><p>Compute the residuals produced by this model on a univariate time series.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.varima.VARIMA.save" title="darts.models.forecasting.varima.VARIMA.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path])</p></td>
@@ -682,13 +709,30 @@ In case of <code class="docutils literal notranslate"><span class="pre">pandas.T
 directly.</p></li>
 <li><p><strong>forecast_horizon</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The forecast horizon for the point prediction.</p></li>
 <li><p><strong>stride</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of time steps between two consecutive training sets.</p></li>
-<li><p><strong>retrain</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to retrain the model for every prediction or not. Not all models support setting
-<cite>retrain</cite> to <cite>False</cite>. Notably, this is supported by neural networks based models.</p></li>
+<li><p><strong>retrain</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[…, <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]]) – <p>Whether and/or on which condition to retrain the model before predicting.
+This parameter supports 3 different datatypes: <code class="docutils literal notranslate"><span class="pre">bool</span></code>, (positive) <code class="docutils literal notranslate"><span class="pre">int</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">Callable</span></code> (returning a <code class="docutils literal notranslate"><span class="pre">bool</span></code>).
+In the case of <code class="docutils literal notranslate"><span class="pre">bool</span></code>: retrain the model at each step (<cite>True</cite>), or never retrains the model (<cite>False</cite>).
+In the case of <code class="docutils literal notranslate"><span class="pre">int</span></code>: the model is retrained every <cite>retrain</cite> iterations.
+In the case of <code class="docutils literal notranslate"><span class="pre">Callable</span></code>: the model is retrained whenever callable returns <cite>True</cite>.
+Arguments passed to the callable are as follows:</p>
+<blockquote>
+<div><ul>
+<li><p><cite>pred_time (pd.Timestamp or int)</cite>: timestamp of forecast time (end of the training series)</p></li>
+<li><p><cite>train_series (TimeSeries)</cite>: train series up to <cite>pred_time</cite></p></li>
+<li><p><cite>past_covariates (TimeSeries)</cite>: past_covariates series up to <cite>pred_time</cite></p></li>
+<li><p><cite>future_covariates (TimeSeries)</cite>: future_covariates series up
+to <cite>min(pred_time + series.freq * forecast_horizon, series.end_time())</cite></p></li>
+</ul>
+</div></blockquote>
+<p>Note: some models do require being retrained every time
+and do not support anything else than <cite>retrain=True</cite>.</p>
+</p></li>
 <li><p><strong>overlap_end</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether the returned forecasts can go beyond the series’ end or not</p></li>
 <li><p><strong>last_points_only</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the whole historical forecasts or only the last point of each forecast to compute the error</p></li>
 <li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – A function that takes two <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instances as inputs and returns an error value.</p></li>
 <li><p><strong>reduction</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]) – A function used to combine the individual error scores obtained when <cite>last_points_only</cite> is set to False.
-If explicitely set to <cite>None</cite>, the method will return a list of the individual error scores instead.
+If explicitly set to <cite>None</cite>, the method will return a list of the individual error scores instead.
 Set to <code class="docutils literal notranslate"><span class="pre">np.mean</span></code> by default.</p></li>
 <li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to print progress</p></li>
 </ul>
@@ -844,8 +888,25 @@ In case of <code class="docutils literal notranslate"><span class="pre">pandas.T
 directly.</p></li>
 <li><p><strong>forecast_horizon</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The forecast horizon for the predictions</p></li>
 <li><p><strong>stride</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of time steps between two consecutive predictions.</p></li>
-<li><p><strong>retrain</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to retrain the model for every prediction or not. Not all models support setting
-<cite>retrain</cite> to <cite>False</cite>. Notably, this is supported by neural networks based models.</p></li>
+<li><p><strong>retrain</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[…, <code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]]) – <p>Whether and/or on which condition to retrain the model before predicting.
+This parameter supports 3 different datatypes: <code class="docutils literal notranslate"><span class="pre">bool</span></code>, (positive) <code class="docutils literal notranslate"><span class="pre">int</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">Callable</span></code> (returning a <code class="docutils literal notranslate"><span class="pre">bool</span></code>).
+In the case of <code class="docutils literal notranslate"><span class="pre">bool</span></code>: retrain the model at each step (<cite>True</cite>), or never retrains the model (<cite>False</cite>).
+In the case of <code class="docutils literal notranslate"><span class="pre">int</span></code>: the model is retrained every <cite>retrain</cite> iterations.
+In the case of <code class="docutils literal notranslate"><span class="pre">Callable</span></code>: the model is retrained whenever callable returns <cite>True</cite>.
+Arguments passed to the callable are as follows:</p>
+<blockquote>
+<div><ul>
+<li><p><cite>pred_time (pd.Timestamp or int)</cite>: timestamp of forecast time (end of the training series)</p></li>
+<li><p><cite>train_series (TimeSeries)</cite>: train series up to <cite>pred_time</cite></p></li>
+<li><p><cite>past_covariates (TimeSeries)</cite>: past_covariates series up to <cite>pred_time</cite></p></li>
+<li><p><cite>future_covariates (TimeSeries)</cite>: future_covariates series up
+to <cite>min(pred_time + series.freq * forecast_horizon, series.end_time())</cite></p></li>
+</ul>
+</div></blockquote>
+<p>Note: some models do require being retrained every time
+and do not support anything else than <cite>retrain=True</cite>.</p>
+</p></li>
 <li><p><strong>overlap_end</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether the returned forecasts can go beyond the series’ end or not</p></li>
 <li><p><strong>last_points_only</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to retain only the last point of each historical forecast.
 If set to True, the method returns a single <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the successive point forecasts.
@@ -921,7 +982,7 @@ for deterministic models.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.varima.VARIMA.residuals">
-<span class="sig-name descname"><span class="pre">residuals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.varima.VARIMA.residuals" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">residuals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.varima.VARIMA.residuals" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the residuals produced by this model on a univariate time series.</p>
 <p>This function computes the difference between the actual observations from <cite>series</cite>
 and the fitted values vector <cite>p</cite> obtained by training the model on <cite>series</cite>.
@@ -932,12 +993,14 @@ The vector of residuals will be shorter than <cite>series</cite> due to the mini
 training series length required by the model and the gap introduced by <cite>forecast_horizon</cite>.
 Most commonly, the term “residuals” implies a value for <cite>forecast_horizon</cite> of 1; but
 this can be configured.</p>
-<p>This method works only on univariate series and does not currently support covariates. It uses the median
+<p>This method works only on univariate series. It uses the median
 prediction (when dealing with stochastic forecasts).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The univariate TimeSeries instance which the residuals will be computed for.</p></li>
+<li><p><strong>past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – One or several past-observed covariate time series.</p></li>
+<li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – One or several future-known covariate time series.</p></li>
 <li><p><strong>forecast_horizon</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The forecasting horizon used to predict each fitted value.</p></li>
 <li><p><strong>retrain</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to train the model at each iteration, for models that support it.
 If False, the model is not trained at all. Default: True</p></li>

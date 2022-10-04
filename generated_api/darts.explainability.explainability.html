@@ -1,0 +1,780 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>&lt;no title&gt; &#8212; darts  documentation</title>
+    
+  <link href="../_static/css/theme.css" rel="stylesheet">
+  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="ExplainabilityResult" href="darts.explainability.explainability_result.html" />
+    <link rel="prev" title="Explainability" href="darts.explainability.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../index.html">
+  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../README.html">
+  Home
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../userguide.html">
+  User Guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="darts.html">
+  API Reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../examples.html">
+  Examples
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    <ul class="nav bd-sidenav">
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.dataprocessing.html">
+   Data Processing
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <label for="toctree-checkbox-1">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.dataprocessing.transformers.html">
+     Data Transformers
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
+    <label for="toctree-checkbox-2">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">
+       Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.boxcox.html">
+       Box-Cox Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
+       Fittable Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">
+       Invertible Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">
+       Mapper and InvertibleMapper
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.missing_values_filler.html">
+       Missing Values Filler
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.reconciliation.html">
+       Hierarchical Reconciliation
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.scaler.html">
+       Scaler
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.static_covariates_transformer.html">
+       Static Covariates Transformer
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.dataprocessing.pipeline.html">
+     Pipeline
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.datasets.html">
+   Datasets
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
+  <label for="toctree-checkbox-3">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="simple">
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.explainability.html">
+   Explainability
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
+  <label for="toctree-checkbox-4">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.explainability_result.html">
+     ExplainabilityResult
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.shap_explainer.html">
+     Shap Explainer for RegressionModels
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.metrics.html">
+   Metrics
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+  <label for="toctree-checkbox-5">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.metrics.metrics.html">
+     Metrics
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.models.html">
+   Models
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+  <label for="toctree-checkbox-6">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.models.filtering.html">
+     Filtering Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
+    <label for="toctree-checkbox-7">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.gaussian_process_filter.html">
+       Gaussian Processes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.kalman_filter.html">
+       Kalman Filter
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.moving_average.html">
+       Moving Average
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.models.forecasting.html">
+     Forecasting Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
+    <label for="toctree-checkbox-8">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.arima.html">
+       ARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.auto_arima.html">
+       AutoARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.baselines.html">
+       Baseline Models
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.block_rnn_model.html">
+       Block Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.catboost_model.html">
+       CatBoost model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.croston.html">
+       Croston method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.exponential_smoothing.html">
+       Exponential Smoothing
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.fft.html">
+       Fast Fourier Transform
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.gradient_boosted_model.html">
+       LightGBM Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
+       Kalman Filter Forecaster
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
+       Linear Regression model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nbeats.html">
+       N-BEATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nhits.html">
+       N-HiTS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
+       Facebook Prophet
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.random_forest.html">
+       Random Forest
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.regression_ensemble_model.html">
+       Regression ensemble model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.regression_model.html">
+       Regression Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
+       Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">
+       StatsForecastAutoARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_ets.html">
+       StatsForecastETS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tbats.html">
+       BATS and TBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tcn_model.html">
+       Temporal Convolutional Network
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tft_model.html">
+       Temporal Fusion Transformer (TFT)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.theta.html">
+       Theta Method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.transformer_model.html">
+       Transformer Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.varima.html">
+       VARIMA
+      </a>
+     </li>
+    </ul>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.utils.html">
+   Utils
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
+  <label for="toctree-checkbox-9">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.utils.data.html">
+     TimeSeries Datasets
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
+    <label for="toctree-checkbox-10">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.encoder_base.html">
+       Encoder Base Classes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.encoders.html">
+       Time Axes Encoders
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.horizon_based_dataset.html">
+       Horizon-Based Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.inference_dataset.html">
+       Inference Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.sequential_dataset.html">
+       Sequential Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.shifted_dataset.html">
+       Shifted Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.training_dataset.html">
+       Training Datasets Base Classes
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.likelihood_models.html">
+     Likelihood Models
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.losses.html">
+     PyTorch Loss Functions
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.missing_values.html">
+     Utils for filling missing values
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.model_selection.html">
+     Model selection utilities
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.statistics.html">
+     Time Series Statistics
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.timeseries_generation.html">
+     Utils for time series generation
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.torch.html">
+     Utils for Pytorch and its usage
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.utils.html">
+     Additional util functions
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="darts.timeseries.html">
+   Timeseries
+  </a>
+ </li>
+</ul>
+
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+              
+              <div class="toc-item">
+                
+<div class="tocsection onthispage pt-5 pb-3">
+    <i class="fas fa-list"></i> On this page
+</div>
+
+<nav id="bd-toc-nav">
+    <ul class="simple visible nav section-nav flex-column">
+</ul>
+
+</nav>
+              </div>
+              
+              <div class="toc-item">
+                
+              </div>
+              
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <span class="target" id="module-darts.explainability.explainability"></span><p>Forecasting Model Explainer Base Class</p>
+<p>A forecasting model explainer takes a fitted forecasting model as input and applies an Explainability model
+to it. Its purpose is to explain each past input contribution to a given model forecast. This ‘explanation’
+depends on the characteristics of the XAI model chosen (shap, lime etc…).</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.explainability.explainability.ForecastingModelExplainer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.explainability.explainability.</span></span><span class="sig-name descname"><span class="pre">ForecastingModelExplainer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">background_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">background_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">background_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/explainability/explainability.html#ForecastingModelExplainer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.explainability.explainability.ForecastingModelExplainer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<p>The base class for forecasting model explainers. It defines the <em>minimal</em> behavior that all
+forecasting model explainers support.</p>
+<p>Naming:</p>
+<ul class="simple">
+<li><p>A background series is a <cite>TimeSeries</cite> with which to ‘train’ the <cite>Explainer</cite> model.</p></li>
+<li><p>A foreground series is the <cite>TimeSeries</cite> to explain using the fitted <cite>Explainer</cite> model.</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ForecastingModel</span></code>) – A <cite>ForecastingModel</cite> to be explained. It must be fitted first.</p></li>
+<li><p><strong>background_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – <p>A series or list of series to <em>train</em> the <cite>ForecastingModelExplainer</cite> along with any foreground series.
+Consider using a reduced well-chosen background to reduce computation time.</p>
+<blockquote>
+<div><ul>
+<li><p>optional if <cite>model</cite> was fit on a single target series. By default, it is the <cite>series</cite> used</p></li>
+</ul>
+<p>at fitting time.
+- mandatory if <cite>model</cite> was fit on multiple (sequence of) target series.</p>
+</div></blockquote>
+</p></li>
+<li><p><strong>background_past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A past covariates series or list of series that the model needs once fitted.</p></li>
+<li><p><strong>background_future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A future covariates series or list of series that the model needs once fitted.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.explainability.explainability.ForecastingModelExplainer.explain" title="darts.explainability.explainability.ForecastingModelExplainer.explain"><code class="xref py py-obj docutils literal notranslate"><span class="pre">explain</span></code></a>([foreground_series, ...])</p></td>
+<td><p>Explains a foreground time series, returns an <code class="xref py py-class docutils literal notranslate"><span class="pre">ExplainabilityResult</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.explainability.explainability.ForecastingModelExplainer.explain">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">explain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">foreground_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">foreground_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">foreground_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">horizons</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/explainability/explainability.html#ForecastingModelExplainer.explain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.explainability.explainability.ForecastingModelExplainer.explain" title="Permalink to this definition">¶</a></dt>
+<dd><p>Explains a foreground time series, returns an <code class="xref py py-class docutils literal notranslate"><span class="pre">ExplainabilityResult</span></code>.</p>
+<p>Results can be retrieved via the method
+<code class="xref py py-func docutils literal notranslate"><span class="pre">ExplainabilityResult.get_explanation(horizon,</span> <span class="pre">target_component)()</span></code>.
+The result is a multivariate <cite>TimeSeries</cite> instance containing the ‘explanation’
+for the (horizon, target_component) forecast at any timestamp forecastable corresponding to
+the foreground <cite>TimeSeries</cite> input.</p>
+<p>The component name convention of this multivariate <cite>TimeSeries</cite> is:
+<code class="docutils literal notranslate"><span class="pre">&quot;{name}_{type_of_cov}_lag_{idx}&quot;</span></code>, where:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">{name}</span></code> is the component name from the original foreground series (target, past, or future).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{type_of_cov}</span></code> is the covariates type. It can take 3 different values:
+<code class="docutils literal notranslate"><span class="pre">&quot;target&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;past_cov&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;future_cov&quot;</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{idx}</span></code> is the lag index.</p></li>
+</ul>
+<p><strong>Example:</strong></p>
+<p>Say we have a model with 2 target components named <code class="docutils literal notranslate"><span class="pre">&quot;T_0&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;T_1&quot;</span></code>,
+3 past covariates with default component names <code class="docutils literal notranslate"><span class="pre">&quot;0&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;1&quot;</span></code>, and <code class="docutils literal notranslate"><span class="pre">&quot;2&quot;</span></code>,
+and one future covariate with default component name <code class="docutils literal notranslate"><span class="pre">&quot;0&quot;</span></code>.
+Also, <code class="docutils literal notranslate"><span class="pre">horizons</span> <span class="pre">=</span> <span class="pre">[1,</span> <span class="pre">2]</span></code>.
+The model is a regression model, with <code class="docutils literal notranslate"><span class="pre">lags</span> <span class="pre">=</span> <span class="pre">3</span></code>, <code class="docutils literal notranslate"><span class="pre">lags_past_covariates=[-1,</span> <span class="pre">-3]</span></code>,
+<code class="docutils literal notranslate"><span class="pre">lags_future_covariates</span> <span class="pre">=</span> <span class="pre">[0]</span></code>.</p>
+<p>We provide <cite>foreground_series</cite>, <cite>foreground_past_covariates</cite>, <cite>foreground_future_covariates</cite> each of length 5.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">explain_results</span> <span class="o">=</span> <span class="n">explainer</span><span class="o">.</span><span class="n">explain</span><span class="p">(</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">foreground_series</span><span class="o">=</span><span class="n">foreground_series</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">foreground_past_covariates</span><span class="o">=</span><span class="n">foreground_past_covariates</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">foreground_future_covariates</span><span class="o">=</span><span class="n">foreground_future_covariates</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">horizons</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">target_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;T_0&quot;</span><span class="p">,</span> <span class="s2">&quot;T_1&quot;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">output</span> <span class="o">=</span> <span class="n">explain_results</span><span class="o">.</span><span class="n">get_explanation</span><span class="p">(</span><span class="n">horizon</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s2">&quot;T_1&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Then the method returns a multivariate TimeSeries containing the <em>explanations</em> of
+the corresponding <cite>ForecastingModelExplainer</cite>, with the following component names:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>T_0_target_lag-1</p></li>
+<li><p>T_0_target_lag-2</p></li>
+<li><p>T_0_target_lag-3</p></li>
+<li><p>T_1_target_lag-1</p></li>
+<li><p>T_1_target_lag-2</p></li>
+<li><p>T_1_target_lag-3</p></li>
+<li><p>0_past_cov_lag-1</p></li>
+<li><p>0_past_cov_lag-3</p></li>
+<li><p>1_past_cov_lag-1</p></li>
+<li><p>1_past_cov_lag-3</p></li>
+<li><p>2_past_cov_lag-1</p></li>
+<li><p>2_past_cov_lag-3</p></li>
+<li><p>0_fut_cov_lag_0</p></li>
+</ul>
+</div></blockquote>
+<p>This series has length 3, as the model can explain 5-3+1 forecasts
+(timestamp indexes 4, 5, and 6)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>foreground_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the target <cite>TimeSeries</cite> to be explained. Can be multivariate.
+If not provided, the background <cite>TimeSeries</cite> will be explained instead.</p></li>
+<li><p><strong>foreground_past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, past covariate timeseries if needed by the ForecastingModel.</p></li>
+<li><p><strong>foreground_future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, future covariate timeseries if needed by the ForecastingModel.</p></li>
+<li><p><strong>horizons</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Collection</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]) – Optionally, a collection of integers representing the future lags to be explained.
+Horizon 1 corresponds to the first timestamp being forecasted.
+All values must be no larger than <cite>output_chunk_length</cite> of the explained model.</p></li>
+<li><p><strong>target_components</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Collection</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]) – <p>Optionally, A list of string naming the target components to be explained.</p>
+<dl class="field-list simple">
+<dt class="field-odd">returns</dt>
+<dd class="field-odd"><p>The forecast explanations.</p>
+</dd>
+<dt class="field-even">rtype</dt>
+<dd class="field-even"><p>ExplainabilityResult</p>
+</dd>
+</dl>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="darts.explainability.explainability_result.html#darts.explainability.explainability_result.ExplainabilityResult" title="darts.explainability.explainability_result.ExplainabilityResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExplainabilityResult</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'> 
+    <a class='left-prev' id="prev-link" href="darts.explainability.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">Explainability</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="darts.explainability.explainability_result.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">ExplainabilityResult</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>
