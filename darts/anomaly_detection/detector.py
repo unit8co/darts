@@ -5,18 +5,19 @@ import numpy as np
 from typing import Union, Any, Dict, Sequence, Tuple
 from darts.datasets import AirPassengersDataset
 
+
 class _Detector(ABC):
-    "Base class for all detectors (TS_anomaly_score -> TS_binary_prediction)" 
+    "Base class for all detectors (TS_anomaly_score -> TS_binary_prediction)"
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         pass
 
     def score(
-            self, 
-            series: Union[TimeSeries, Sequence[TimeSeries]],
-            anomaly_true: Union[TimeSeries, Sequence[TimeSeries]],
-            scoring: str = "recall",
-             ) -> Union[float, Sequence[float]]:
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        anomaly_true: Union[TimeSeries, Sequence[TimeSeries]],
+        scoring: str = "recall",
+    ) -> Union[float, Sequence[float]]:
 
         """Detect anomalies and score the results against true anomalies.
 
@@ -38,7 +39,7 @@ class _Detector(ABC):
         """
 
         if scoring == "recall":
-            scoring_fn = recall_score  
+            scoring_fn = recall_score
         elif scoring == "precision":
             scoring_fn = precision_score
         elif scoring == "f1":
@@ -52,11 +53,11 @@ class _Detector(ABC):
             )
 
         return scoring_fn(
-                y_true = anomaly_true.pd_series().to_numpy(),
-                y_pred = self.detect(series).to_numpy()
-                )
+            y_true=anomaly_true.pd_series().to_numpy(),
+            y_pred=self.detect(series).to_numpy(),
+        )
 
- 
+
 class _NonTrainableDetector(_Detector):
     "Base class of Detectors that do not need training."
 
@@ -65,23 +66,22 @@ class _NonTrainableDetector(_Detector):
         pass
 
     def detect(
-        self, 
-        series: Union[TimeSeries, Sequence[TimeSeries]], 
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Detect anomalies from given time series.
         Parameters
         ----------
         series: Darts.Series
-            Time series to detect anomalies from. 
+            Time series to detect anomalies from.
         Returns
         -------
         Darts.Series
             Binary prediciton
         """
         # check input (type, size, values)
-            
-        return self._detect_core(series)
 
+        return self._detect_core(series)
 
 
 class ThresholdAD(_NonTrainableDetector):
@@ -114,8 +114,6 @@ class ThresholdAD(_NonTrainableDetector):
         return detected
 
 
-
-
 class _TrainableDetector(_Detector):
     "Base class of Detectors that need training."
 
@@ -133,15 +131,15 @@ class _TrainableDetector(_Detector):
         self._fit_core(series)
 
     def detect(
-        self, 
-        series: Union[TimeSeries, Sequence[TimeSeries]], 
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
 
         """Detect anomalies from given time series.
         Parameters
         ----------
         series: Darts.Series
-            Time series to detect anomalies from. 
+            Time series to detect anomalies from.
         Returns
         -------
         Darts.Series
@@ -154,7 +152,7 @@ class _TrainableDetector(_Detector):
             raise ValueError(
                 "Model needs to be trained first! Call .fit() or .fit_detect() "
             )
-            
+
         return self._detect_core(series)
 
     def fit_detect(
@@ -175,7 +173,6 @@ class _TrainableDetector(_Detector):
         return self.detect(series)
 
 
-
 class QuantileAD(_TrainableDetector):
     """Detector that detects anomaly based on quantiles of historical data.
     This detector compares time series values with user-specified quantiles
@@ -185,10 +182,10 @@ class QuantileAD(_TrainableDetector):
     ----------
     low: float, optional
         Quantile of historical data lower which a value is regarded as anomaly.
-        Must be between 0 and 1. 
+        Must be between 0 and 1.
     high: float, optional
         Quantile of historical data above which a value is regarded as anomaly.
-        Must be between 0 and 1. 
+        Must be between 0 and 1.
     Attributes
     ----------
     abs_low_: float
@@ -197,9 +194,7 @@ class QuantileAD(_TrainableDetector):
         The fitted upper bound of normal range.
     """
 
-    def __init__(
-        self, low: Union[float, None], high: Union[float, None]
-    ) -> None:
+    def __init__(self, low: Union[float, None], high: Union[float, None]) -> None:
         super().__init__()
         self.low = low
         self.high = high
@@ -214,23 +209,6 @@ class QuantileAD(_TrainableDetector):
         series = series.pd_series()
         detected = (series > self.abs_high_) | (series < self.abs_low_)
         return detected
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 """
