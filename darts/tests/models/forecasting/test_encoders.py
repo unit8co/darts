@@ -337,8 +337,8 @@ class EncoderTestCase(DartsBaseTestClass):
                 comps_expected = ["dta_month"]
                 requires_fit = False
             elif issubclass(enc_cls, IntegerIndexEncoder):
-                attr = "absolute"
-                comps_expected = ["pos_absolute"]
+                attr = "relative"
+                comps_expected = ["pos_relative"]
                 requires_fit = True
             elif issubclass(enc_cls, CallableIndexEncoder):
 
@@ -463,8 +463,8 @@ class EncoderTestCase(DartsBaseTestClass):
                 "future": ["year", "month"],
             },
             "position": {
-                "past": ["absolute", "relative"],
-                "future": ["relative", "absolute"],
+                "past": ["relative"],
+                "future": ["relative"],
             },
             "custom": {
                 "past": [lambda idx: idx.month, lambda idx: idx.year],
@@ -481,7 +481,6 @@ class EncoderTestCase(DartsBaseTestClass):
                 "darts_enc_pc_cyc_day_cos",
                 "darts_enc_pc_dta_month",
                 "darts_enc_pc_dta_year",
-                "darts_enc_pc_pos_absolute",
                 "darts_enc_pc_pos_relative",
                 "darts_enc_pc_cus_custom",
                 "darts_enc_pc_cus_custom_1",
@@ -496,7 +495,6 @@ class EncoderTestCase(DartsBaseTestClass):
                 "darts_enc_fc_dta_year",
                 "darts_enc_fc_dta_month",
                 "darts_enc_fc_pos_relative",
-                "darts_enc_fc_pos_absolute",
                 "darts_enc_fc_cus_custom",
                 "darts_enc_fc_cus_custom_1",
             ]
@@ -714,56 +712,6 @@ class EncoderTestCase(DartsBaseTestClass):
         input_chunk_length = 12
         output_chunk_length = 6
 
-        # ===> test absolute position encoder <===
-        encoder_params = {"position": {"past": ["absolute"]}}
-        encs = SequentialEncoder(
-            add_encoders=encoder_params,
-            input_chunk_length=input_chunk_length,
-            output_chunk_length=output_chunk_length,
-            takes_past_covariates=True,
-            takes_future_covariates=True,
-        )
-
-        t1, _ = encs.encode_train(ts)
-        t2, _ = encs.encode_train(
-            TimeSeries.from_times_and_values(ts.time_index + ts.freq, ts.values())
-        )
-        t3, _ = encs.encode_train(
-            TimeSeries.from_times_and_values(ts.time_index - ts.freq, ts.values())
-        )
-
-        # absolute encoder takes the first observed index as a reference (from training)
-        vals = np.arange(len(ts)).reshape((len(ts), 1))
-        self.assertTrue(
-            (t1.time_index == ts.time_index).all() and (t1.values() == vals).all()
-        )
-        # test that the position values are updated correctly
-        self.assertTrue(
-            (t2.time_index == ts.time_index + ts.freq).all()
-            and (t2.values() == vals + 1).all()
-        )
-        self.assertTrue(
-            (t3.time_index == ts.time_index - ts.freq).all()
-            and (t3.values() == vals - 1).all()
-        )
-        # quickly test inference encoding
-        # n > output_chunk_length
-        t4, _ = encs.encode_inference(output_chunk_length + 1, ts)
-
-        self.assertTrue(
-            (
-                t4.values()[:, 0]
-                == np.arange(len(ts) - input_chunk_length, len(ts) + 1)
-            ).all()
-        )
-        # n <= output_chunk_length
-        t5, _ = encs.encode_inference(output_chunk_length - 1, ts)
-        self.assertTrue(
-            (
-                t5.values()[:, 0] == np.arange(len(ts) - input_chunk_length, len(ts))
-            ).all()
-        )
-
         # ===> test relative position encoder <===
         encoder_params = {"position": {"past": ["relative"]}}
         encs = SequentialEncoder(
@@ -776,10 +724,14 @@ class EncoderTestCase(DartsBaseTestClass):
 
         t1, _ = encs.encode_train(ts)
         t2, _ = encs.encode_train(
-            TimeSeries.from_times_and_values(ts.time_index + ts.freq, ts.values())
+            TimeSeries.from_times_and_values(
+                ts.time_index[:20] + ts.freq, ts[:20].values()
+            )
         )
         t3, _ = encs.encode_train(
-            TimeSeries.from_times_and_values(ts.time_index - ts.freq, ts.values())
+            TimeSeries.from_times_and_values(
+                ts.time_index[:18] - ts.freq, ts[:18].values()
+            )
         )
         # relative encoder takes the end of the training series as reference
         vals = np.arange(-len(ts) + 1, 1).reshape((len(ts), 1))
@@ -787,12 +739,12 @@ class EncoderTestCase(DartsBaseTestClass):
             (t1.time_index == ts.time_index).all() and (t1.values() == vals).all()
         )
         self.assertTrue(
-            (t2.time_index == ts.time_index + ts.freq).all()
-            and (t2.values() == vals + 1).all()
+            (t2.time_index == ts.time_index[:20] + ts.freq).all()
+            and (t2.values() == vals[-20:]).all()
         )
         self.assertTrue(
-            (t3.time_index == ts.time_index - ts.freq).all()
-            and (t3.values() == vals - 1).all()
+            (t3.time_index == ts.time_index[:18] - ts.freq).all()
+            and (t3.values() == vals[-18:]).all()
         )
         # quickly test inference encoding
         # n > output_chunk_length
@@ -801,7 +753,13 @@ class EncoderTestCase(DartsBaseTestClass):
             (t4.values()[:, 0] == np.arange(-input_chunk_length + 1, 1 + 1)).all()
         )
         # n <= output_chunk_length
-        t5, _ = encs.encode_inference(output_chunk_length - 1, ts)
+        t5, _ = encs.encode_inference(
+            output_chunk_length - 1,
+            TimeSeries.from_times_and_values(
+                ts.time_index[:20] + ts.freq, ts[:20].values()
+            ),
+        )
+        # t5, _ = encs.encode_inference(output_chunk_length - 1, ts)
         self.assertTrue(
             (t5.values()[:, 0] == np.arange(-input_chunk_length + 1, 0 + 1)).all()
         )
@@ -850,7 +808,7 @@ class EncoderTestCase(DartsBaseTestClass):
             start_value=1, end_value=2, length=60, freq="T", column_name="cov_in"
         )
         encoder_params = {
-            "position": {"future": ["absolute"]},
+            "position": {"future": ["relative"]},
             "cyclic": {"past": ["minute"]},
             "transformer": Scaler(),
         }
@@ -872,10 +830,10 @@ class EncoderTestCase(DartsBaseTestClass):
         test_routine_cyclic(pc1)
         # all others should be transformed to values between 0 and 1
         self.assertAlmostEqual(
-            fc1["darts_enc_fc_pos_absolute"].values(copy=False).min(), 0.0, delta=10e-9
+            fc1["darts_enc_fc_pos_relative"].values(copy=False).min(), 0.0, delta=10e-9
         )
         self.assertAlmostEqual(
-            fc1["darts_enc_fc_pos_absolute"].values(copy=False).max(), 1.0, delta=10e-9
+            fc1["darts_enc_fc_pos_relative"].values(copy=False).max(), 1.0, delta=10e-9
         )
 
         # ===> validation set test <===
@@ -892,10 +850,10 @@ class EncoderTestCase(DartsBaseTestClass):
         test_routine_cyclic(pc2)
         # make sure that when calling encoders the second time, scalers are not fit again (for validation and inference)
         self.assertAlmostEqual(
-            fc2["darts_enc_fc_pos_absolute"].values(copy=False).min(), 1.0, delta=10e-9
+            fc2["darts_enc_fc_pos_relative"].values(copy=False).min(), 0.0, delta=10e-9
         )
         self.assertAlmostEqual(
-            fc2["darts_enc_fc_pos_absolute"].values(copy=False).max(), 2.0, delta=10e-9
+            fc2["darts_enc_fc_pos_relative"].values(copy=False).max(), 1.0, delta=10e-9
         )
 
         fc_inf = tg.linear_timeseries(
@@ -906,14 +864,14 @@ class EncoderTestCase(DartsBaseTestClass):
         # cyclic encodings should not be transformed
         test_routine_cyclic(pc3)
         # index 0 is also start of train target series and value should be 0
-        self.assertAlmostEqual(fc3["darts_enc_fc_pos_absolute"][0].values()[0, 0], 0.0)
+        self.assertAlmostEqual(fc3["darts_enc_fc_pos_relative"][0].values()[0, 0], 0.0)
         # index len(ts1) - 1 is the prediction point and value should be 0
         self.assertAlmostEqual(
-            fc3["darts_enc_fc_pos_absolute"][len(ts1) - 1].values()[0, 0], 1.0
+            fc3["darts_enc_fc_pos_relative"][len(ts1) - 1].values()[0, 0], 1.0
         )
         # the future should scale proportional to distance to prediction point
         self.assertAlmostEqual(
-            fc3["darts_enc_fc_pos_absolute"][80 - 1].values()[0, 0], 80 / 60, delta=0.01
+            fc3["darts_enc_fc_pos_relative"][80 - 1].values()[0, 0], 80 / 60, delta=0.01
         )
 
     def test_transformer_multi_series(self):
