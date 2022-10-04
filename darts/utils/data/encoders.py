@@ -72,12 +72,11 @@ The SingleEncoders from {X}{SingleEncoder} are:
             'dayofweek', 'day_of_week', 'hour', 'minute', 'second', 'microsecond', 'nanosecond', 'quarter',
             'dayofyear', 'day_of_year', 'week', 'weekofyear', 'week_of_year').
 *   `IntegerIndexEncoder`
-        Adds absolute or relative index positions as integer values (positions) derived from `series` time index.
+        Adds the relative index positions as integer values (positions) derived from `series` time index.
         `series` can either have a pd.DatetimeIndex or an integer index.
 
         attribute
-            Either 'absolute' or 'relative'.
-            'absolute' will generate position values ranging from 0 to inf where 0 is set at the start of `series`.
+            Currently, only 'relative' is supported.
             'relative' will generate position values relative to the forecasting/prediction point. Values range
             from -inf to inf where 0 is set at the forecasting point.
 *   `CallableIndexEncoder`
@@ -128,7 +127,7 @@ TorchForecastingModel (this is only meant to illustrate many features at once).
     add_encoders = {
         'cyclic': {'future': ['month']},
         'datetime_attribute': {'future': ['hour', 'dayofweek']},
-        'position': {'past': ['absolute'], 'future': ['relative']},
+        'position': {'past': ['relative'], 'future': ['relative']},
         'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
         'transformer': Scaler()
     }
@@ -426,7 +425,7 @@ class IntegerIndexEncoder(SingleEncoder):
     @property
     def accept_transformer(self) -> List[bool]:
         """`IntegerIndexEncoder` accepts transformations. Note that transforming 'relative' `IntegerIndexEncoder`
-        will return an 'absolute' index."""
+        will return the absolute position (in the transformed space)."""
         return [True]
 
     @property
@@ -671,7 +670,7 @@ class SequentialEncoder(Encoder):
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
-                    'position': {'past': ['absolute'], 'future': ['relative']},
+                    'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
                     'transformer': Scaler()
                 }
@@ -1087,7 +1086,7 @@ class SequentialEncoder(Encoder):
         Raises
         ------
         ValueError
-            1) if the outermost key is other than (`past`, `future`, `absolute`)
+            1) if the outermost key is other than (`past`, `future`)
             2) if the innermost values are other than type `str` or `Sequence`
         """
 

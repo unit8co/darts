@@ -770,7 +770,7 @@ class EncoderTestCase(DartsBaseTestClass):
         input_chunk_length = 12
         output_chunk_length = 6
 
-        # ===> test absolute position encoder <===
+        # ===> test callable index encoder <===
         encoder_params = {
             "custom": {"past": [lambda index: index.year, lambda index: index.year - 1]}
         }
