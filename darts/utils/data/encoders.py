@@ -72,12 +72,11 @@ The SingleEncoders from {X}{SingleEncoder} are:
             'dayofweek', 'day_of_week', 'hour', 'minute', 'second', 'microsecond', 'nanosecond', 'quarter',
             'dayofyear', 'day_of_year', 'week', 'weekofyear', 'week_of_year').
 *   `IntegerIndexEncoder`
-        Adds absolute or relative index positions as integer values (positions) derived from `series` time index.
+        Adds the relative index positions as integer values (positions) derived from `series` time index.
         `series` can either have a pd.DatetimeIndex or an integer index.
 
         attribute
-            Either 'absolute' or 'relative'.
-            'absolute' will generate position values ranging from 0 to inf where 0 is set at the start of `series`.
+            Currently, only 'relative' is supported.
             'relative' will generate position values relative to the forecasting/prediction point. Values range
             from -inf to inf where 0 is set at the forecasting point.
 *   `CallableIndexEncoder`
@@ -128,7 +127,7 @@ TorchForecastingModel (this is only meant to illustrate many features at once).
     add_encoders = {
         'cyclic': {'future': ['month']},
         'datetime_attribute': {'future': ['hour', 'dayofweek']},
-        'position': {'past': ['absolute'], 'future': ['relative']},
+        'position': {'past': ['relative'], 'future': ['relative']},
         'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
         'transformer': Scaler()
     }
@@ -152,12 +151,10 @@ from darts.utils.data.encoder_base import (
     Encoder,
     FutureCovariateIndexGenerator,
     PastCovariateIndexGenerator,
-    ReferenceIndexType,
     SequentialEncoderTransformer,
     SingleEncoder,
     SupportedIndex,
 )
-from darts.utils.data.utils import _index_diff
 from darts.utils.timeseries_generation import datetime_attribute_timeseries
 from darts.utils.utils import seq2series, series2seq
 
@@ -172,7 +169,7 @@ VALID_ENCODER_DTYPES = (str, Sequence)
 
 TRANSFORMER_KEYS = ["transformer"]
 VALID_TRANSFORMER_DTYPES = FittableDataTransformer
-INTEGER_INDEX_ATTRIBUTES = ["absolute", "relative"]
+INTEGER_INDEX_ATTRIBUTES = ["relative"]
 
 
 class CyclicTemporalEncoder(SingleEncoder):
@@ -198,9 +195,11 @@ class CyclicTemporalEncoder(SingleEncoder):
         super().__init__(index_generator)
         self.attribute = attribute
 
-    def _encode(self, index: SupportedIndex, dtype: np.dtype) -> TimeSeries:
+    def _encode(
+        self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype
+    ) -> TimeSeries:
         """applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`."""
-        super()._encode(index, dtype)
+        super()._encode(index, target_end, dtype)
         return datetime_attribute_timeseries(
             index,
             attribute=self.attribute,
@@ -303,9 +302,11 @@ class DatetimeAttributeEncoder(SingleEncoder):
         super().__init__(index_generator)
         self.attribute = attribute
 
-    def _encode(self, index: SupportedIndex, dtype: np.dtype) -> TimeSeries:
+    def _encode(
+        self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype
+    ) -> TimeSeries:
         """Applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`."""
-        super()._encode(index, dtype)
+        super()._encode(index, target_end, dtype)
         return datetime_attribute_timeseries(
             index,
             attribute=self.attribute,
@@ -394,72 +395,37 @@ class IntegerIndexEncoder(SingleEncoder):
             An instance of `CovariateIndexGenerator` with methods `generate_train_series()` and
             `generate_inference_series()`. Used to generate the index for encoders.
         attribute
-            Either 'absolute' or 'relative'. If 'absolute', the generated encoded values will range from (0, inf)
-            and the train target series will be used as a reference to set the 0-index. If 'relative', the generated
-            encoded values will range from (-inf, inf) and the train target series end time will be used as a reference
-            to evaluate the relative index positions.
+            Currently only 'relative' is supported. The generated encoded values will range from (-inf, inf) and the
+            target series end time will be used as a reference to evaluate the relative index positions.
         """
         raise_if_not(
             isinstance(attribute, str) and attribute in INTEGER_INDEX_ATTRIBUTES,
             f"Encountered invalid encoder argument `{attribute}` for encoder `position`. "
-            f'Attribute must be one of `("absolute", "relative")`.',
+            f'Attribute must be `"relative"`.',
             logger,
         )
-
         super().__init__(index_generator)
 
         self.attribute = attribute
-        self.reference_index: Optional[
-            Tuple[int, Optional[Union[pd.Timestamp, int]]]
-        ] = None
-        self.was_called = False
 
-    def _encode(self, index: SupportedIndex, dtype: np.dtype) -> TimeSeries:
+    def _encode(
+        self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype
+    ) -> TimeSeries:
         """Applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`.
-        1)  for attribute=='absolute', the reference point/index is one step before start of the train target series
-        2)  for attribute=='relative', the reference point/index is the overall prediction/forecast index
+        For attribute=='relative', the reference point/index is the prediction/forecast index of the target series.
         """
-        super()._encode(index, dtype)
-
-        # load reference index from index_generators
-        if not self.was_called:
-            self.reference_index = self.index_generator.reference_index
-            self.was_called = True
-
-        current_start_value = index[0]
-
-        # extract reference index
-        reference_index, reference_value = self.reference_index
-
-        # get the difference between last index and reference index for each case
-        index_diff = _index_diff(
-            self=current_start_value, other=reference_value, freq=index.freq
-        )
-        # set the start integer index value for the current index
-        current_start_index = (
-            reference_index - index_diff
-            if self.attribute == "absolute"
-            else -index_diff
-        )
-
-        encoded = TimeSeries.from_times_and_values(
+        idx_larger_end = (index <= target_end).sum() - 1
+        super()._encode(index, target_end, dtype)
+        return TimeSeries.from_times_and_values(
             times=index,
-            values=np.arange(current_start_index, current_start_index + len(index)),
+            values=np.arange(-idx_larger_end, -idx_larger_end + len(index)),
             columns=[self.base_component_name + self.attribute],
         ).astype(np.dtype(dtype))
-
-        # update reference index for 'absolute' case to avoid having to evaluate longer differences (cost-intensive)
-        if self.attribute == "absolute":
-            self.reference_index = (
-                current_start_index + len(encoded) - 1,
-                encoded.time_index[-1],
-            )
-        return encoded
 
     @property
     def accept_transformer(self) -> List[bool]:
         """`IntegerIndexEncoder` accepts transformations. Note that transforming 'relative' `IntegerIndexEncoder`
-        will return an 'absolute' index."""
+        will return the absolute position (in the transformed space)."""
         return [True]
 
     @property
@@ -488,22 +454,13 @@ class PastIntegerIndexEncoder(IntegerIndexEncoder):
         output_chunk_length
             The length of the emitted future series.
         attribute
-            Either 'absolute' or 'relative'. If 'absolute', the generated encoded values will range from (0, inf)
-            and the train target series will be used as a reference to set the 0-index. If 'relative', the generated
-            encoded values will range from (-inf, inf) and the train target series end time will be used as a reference
-            to evaluate the relative index positions.
+            Currently only 'relative' is supported. The generated encoded values will range from (-inf, inf) and the
+            target series end time will be used as a reference to evaluate the relative index positions.
         """
-        reference_index_type = (
-            ReferenceIndexType.PREDICTION
-            if attribute == "relative"
-            else ReferenceIndexType.START
-        )
-
         super().__init__(
             index_generator=PastCovariateIndexGenerator(
                 input_chunk_length,
                 output_chunk_length,
-                reference_index_type=reference_index_type,
             ),
             attribute=attribute,
         )
@@ -525,22 +482,13 @@ class FutureIntegerIndexEncoder(IntegerIndexEncoder):
         output_chunk_length
             The length of the emitted future series.
         attribute
-            Either 'absolute' or 'relative'. If 'absolute', the generated encoded values will range from (0, inf)
-            and the train target series will be used as a reference to set the 0-index. If 'relative', the generated
-            encoded values will range from (-inf, inf) and the train target series end time will be used as a reference
-            to evaluate the relative index positions.
+            Currently only 'relative' is supported. The generated encoded values will range from (-inf, inf) and the
+            target series end time will be used as a reference to evaluate the relative index positions.
         """
-        reference_index_type = (
-            ReferenceIndexType.PREDICTION
-            if attribute == "relative"
-            else ReferenceIndexType.START
-        )
-
         super().__init__(
             index_generator=FutureCovariateIndexGenerator(
                 input_chunk_length,
                 output_chunk_length,
-                reference_index_type=reference_index_type,
             ),
             attribute=attribute,
         )
@@ -576,9 +524,11 @@ class CallableIndexEncoder(SingleEncoder):
 
         self.attribute = attribute
 
-    def _encode(self, index: SupportedIndex, dtype: np.dtype) -> TimeSeries:
+    def _encode(
+        self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype
+    ) -> TimeSeries:
         """Apply the user-defined callable to encode the index"""
-        super()._encode(index, dtype)
+        super()._encode(index, target_end, dtype)
 
         return TimeSeries.from_times_and_values(
             times=index,
@@ -720,7 +670,7 @@ class SequentialEncoder(Encoder):
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
-                    'position': {'past': ['absolute'], 'future': ['relative']},
+                    'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
                     'transformer': Scaler()
                 }
@@ -1136,7 +1086,7 @@ class SequentialEncoder(Encoder):
         Raises
         ------
         ValueError
-            1) if the outermost key is other than (`past`, `future`, `absolute`)
+            1) if the outermost key is other than (`past`, `future`)
             2) if the innermost values are other than type `str` or `Sequence`
         """
 
