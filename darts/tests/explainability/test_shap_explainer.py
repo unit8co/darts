@@ -28,7 +28,7 @@ class ShapExplainerTestCase(DartsBaseTestClass):
     add_encoders = {
         "cyclic": {"past": ["month", "day"]},
         "datetime_attribute": {"future": ["hour", "dayofweek"]},
-        "position": {"past": ["absolute"], "future": ["relative"]},
+        "position": {"past": ["relative"], "future": ["relative"]},
         "custom": {"past": [lambda idx: (idx.year - 1950) / 50]},
         "transformer": Scaler(scaler),
     }
@@ -281,14 +281,14 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         self.assertEqual(len(explanation), 537)
 
         # list of foregrounds: encoders have to be corrected first.
-        # results = shap_explain.explain(
-        #     foreground_series=[self.target_ts, self.target_ts[:100]],
-        #     foreground_past_covariates=[self.past_cov_ts, self.past_cov_ts[:40]],
-        #     foreground_future_covariates=[self.fut_cov_ts, self.fut_cov_ts[:40]],
-        # )
-        # ts_res = results.get_explanation(horizon=2, component="power")
+        results = shap_explain.explain(
+            foreground_series=[self.target_ts, self.target_ts[:100]],
+            foreground_past_covariates=[self.past_cov_ts, self.past_cov_ts[:40]],
+            foreground_future_covariates=[self.fut_cov_ts, self.fut_cov_ts[:40]],
+        )
+        ts_res = results.get_explanation(horizon=2, component="power")
 
-        # self.assertEqual(len(ts_res), 2)
+        self.assertEqual(len(ts_res), 2)
         # explain with a new foreground, minimum required. We should obtain one
         # timeseries with only one time element
         results = shap_explain.explain(
@@ -322,30 +322,30 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             "0_past_cov_lag-3",
             "1_past_cov_lag-3",
             "2_past_cov_lag-3",
-            "month_sin_past_cov_lag-3",
-            "month_cos_past_cov_lag-3",
-            "day_sin_past_cov_lag-3",
-            "day_cos_past_cov_lag-3",
-            "absolute_idx_past_cov_lag-3",
-            "custom_past_cov_lag-3",
+            "darts_enc_pc_cyc_month_sin_past_cov_lag-3",
+            "darts_enc_pc_cyc_month_cos_past_cov_lag-3",
+            "darts_enc_pc_cyc_day_sin_past_cov_lag-3",
+            "darts_enc_pc_cyc_day_cos_past_cov_lag-3",
+            "darts_enc_pc_pos_relative_past_cov_lag-3",
+            "darts_enc_pc_cus_custom_past_cov_lag-3",
             "0_past_cov_lag-2",
             "1_past_cov_lag-2",
             "2_past_cov_lag-2",
-            "month_sin_past_cov_lag-2",
-            "month_cos_past_cov_lag-2",
-            "day_sin_past_cov_lag-2",
-            "day_cos_past_cov_lag-2",
-            "absolute_idx_past_cov_lag-2",
-            "custom_past_cov_lag-2",
+            "darts_enc_pc_cyc_month_sin_past_cov_lag-2",
+            "darts_enc_pc_cyc_month_cos_past_cov_lag-2",
+            "darts_enc_pc_cyc_day_sin_past_cov_lag-2",
+            "darts_enc_pc_cyc_day_cos_past_cov_lag-2",
+            "darts_enc_pc_pos_relative_past_cov_lag-2",
+            "darts_enc_pc_cus_custom_past_cov_lag-2",
             "0_past_cov_lag-1",
             "1_past_cov_lag-1",
             "2_past_cov_lag-1",
-            "month_sin_past_cov_lag-1",
-            "month_cos_past_cov_lag-1",
-            "day_sin_past_cov_lag-1",
-            "day_cos_past_cov_lag-1",
-            "absolute_idx_past_cov_lag-1",
-            "custom_past_cov_lag-1",
+            "darts_enc_pc_cyc_month_sin_past_cov_lag-1",
+            "darts_enc_pc_cyc_month_cos_past_cov_lag-1",
+            "darts_enc_pc_cyc_day_sin_past_cov_lag-1",
+            "darts_enc_pc_cyc_day_cos_past_cov_lag-1",
+            "darts_enc_pc_pos_relative_past_cov_lag-1",
+            "darts_enc_pc_cus_custom_past_cov_lag-1",
             "0_fut_cov_lag0",
             "1_fut_cov_lag0",
             "hour_fut_cov_lag0",
