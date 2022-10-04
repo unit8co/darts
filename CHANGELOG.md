@@ -12,8 +12,7 @@ Darts is still in an early development phase, and we cannot always guarantee bac
 ### For users of the library:
 
 **Improved**
-- New explainability feature. The class `darts.explainability.shap_explainer` can provide Shap-values explanations of the importance
-of each lag and each dimension in producing each forecasting lag for `RegressionModel`s. [#909](https://github.com/unit8co/darts/pull/909) by [Maxime Dumonal](https://github.com/dumjax).
+- New explainability feature. The class `ShapExplainer` in `darts.explainability` can provide Shap-values explanations of the importance of each lag and each dimension in producing each forecasting lag for `RegressionModel`s. [#909](https://github.com/unit8co/darts/pull/909) by [Maxime Dumonal](https://github.com/dumjax).
 - New model: `StatsForecastsETS`. Similarly to `StatsForecastsAutoARIMA`, this model offers the ETS model from Nixtla's `statsforecasts` library as a local forecasting model supporting future covariates. [#1171](https://github.com/unit8co/darts/pull/1171) by [Julien Herzen](https://github.com/hrzn).
 - Added support for past and future covariates to `residuals()` function. [#1223](https://github.com/unit8co/darts/pull/1223) by [Eliane Maalouf](https://github.com/eliane-maalouf).
 - Added support for retraining model(s) every `n` iteration and on custom conditions in `historical_forecasts` method of `ForecastingModel`s. [#1139](https://github.com/unit8co/darts/pull/1139) by [Francesco Bruzzesi](https://github.com/fbruzzesi).
