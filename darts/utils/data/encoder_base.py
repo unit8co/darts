@@ -505,19 +505,23 @@ class SequentialEncoderTransformer:
         if not self.fit_called:
             self._update_mask(covariate)
             if any(self.transform_mask):
-                transformed = self.transformer.fit_transform(
-                    covariate, component_mask=self.transform_mask
+                # fit the transformer on all encoded values by concatenating multi-series input encodings
+                self.transformer.fit(
+                    series=TimeSeries.from_values(
+                        np.concatenate([cov.values() for cov in covariate]),
+                        columns=covariate[0].components,
+                    ),
+                    component_mask=self.transform_mask,
                 )
-            else:
-                transformed = covariate
             self._fit_called = True
+
+        if any(self.transform_mask):
+            transformed = [
+                self.transformer.transform(cov, component_mask=self.transform_mask)
+                for cov in covariate
+            ]
         else:
-            if any(self.transform_mask):
-                transformed = self.transformer.transform(
-                    covariate, component_mask=self.transform_mask
-                )
-            else:
-                transformed = covariate
+            transformed = covariate
         return transformed
 
     def _update_mask(self, covariate: List[TimeSeries]) -> None:
