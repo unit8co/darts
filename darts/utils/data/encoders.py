@@ -848,7 +848,7 @@ class SequentialEncoder(Encoder):
         """Launches the encode sequence for past covariate and future covariate for either training or
         inference/prediction.
 
-        If `n` is `None` it is a prediction, otherwise it is training.
+        If `n` is not `None` it is a prediction, otherwise it is training.
         """
 
         if not self.encoding_available:
@@ -899,7 +899,7 @@ class SequentialEncoder(Encoder):
     ) -> List[TimeSeries]:
         """Sequentially encodes the index of all input target/covariate TimeSeries
 
-        If `n` is `None` it is a prediction and method `encoder.encode_inference()` is called.
+        If `n` is not `None` it is a prediction and method `encoder.encode_inference()` is called.
         Otherwise, it is a training case and `encoder.encode_train()` is called.
         """
         encode_method = "encode_train" if n is None else "encode_inference"

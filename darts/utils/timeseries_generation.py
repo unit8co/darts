@@ -710,8 +710,8 @@ def datetime_attribute_timeseries(
     else:
         if cyclic:
             if attribute == "day":
-                periods = [time_index[i].days_in_month for i in time_index.month]
-                freq = 2 * np.pi * np.reciprocal(periods)
+                periods = time_index.days_in_month.values
+                freq = 2 * np.pi * np.reciprocal(periods.astype(dtype))
             else:
                 period = num_values_dict[attribute]
                 freq = 2 * np.pi / period
