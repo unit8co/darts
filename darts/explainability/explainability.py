@@ -7,11 +7,10 @@ depends on the characteristics of the XAI model chosen (shap, lime etc...).
 
 """
 from abc import ABC, abstractmethod
-from typing import Collection, Dict, Optional, Sequence, Union
-
-from numpy import integer
+from typing import Collection, Optional, Sequence, Union
 
 from darts import TimeSeries
+from darts.explainability.explainability_result import ExplainabilityResult
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.utils.statistics import stationarity_tests
@@ -20,68 +19,6 @@ from darts.utils.utils import series2seq
 logger = get_logger(__name__)
 
 MIN_BACKGROUND_SAMPLE = 10
-
-
-class ExplainabilityResult(ABC):
-    """
-    Class to store the explainability results of a `ForecastingModelExplainer`, and to
-    easily access the results.
-    """
-
-    def __init__(
-        self,
-        explained_forecasts: Union[
-            Dict[integer, Dict[str, TimeSeries]],
-            Sequence[Dict[integer, Dict[str, TimeSeries]]],
-        ],
-    ):
-
-        self.explained_forecasts = explained_forecasts
-        if isinstance(self.explained_forecasts, list):
-            self.available_horizons = list(self.explained_forecasts[0].keys())
-            h_0 = self.available_horizons[0]
-            self.available_components = list(self.explained_forecasts[0][h_0].keys())
-        else:
-            self.available_horizons = list(self.explained_forecasts.keys())
-            h_0 = self.available_horizons[0]
-            self.available_components = list(self.explained_forecasts[h_0].keys())
-
-    def get_explanation(
-        self, horizon: int, component: Optional[str] = None
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-
-        raise_if(
-            component is None and len(self.available_components) > 1,
-            ValueError(
-                "The component parameter is required when the model has more than one component."
-            ),
-            logger,
-        )
-
-        if component is None:
-            component = self.available_components[0]
-
-        raise_if_not(
-            horizon in self.available_horizons,
-            "Horizon {} is not available. Available horizons are: {}".format(
-                horizon, self.available_horizons
-            ),
-        )
-
-        raise_if_not(
-            component in self.available_components,
-            "Component {} is not available. Available components are: {}".format(
-                component, self.available_components
-            ),
-        )
-
-        if isinstance(self.explained_forecasts, list):
-            return [
-                self.explained_forecasts[i][horizon][component]
-                for i in range(len(self.explained_forecasts))
-            ]
-        else:
-            return self.explained_forecasts[horizon][component]
 
 
 class ForecastingModelExplainer(ABC):
@@ -97,13 +34,14 @@ class ForecastingModelExplainer(ABC):
             Union[TimeSeries, Sequence[TimeSeries]]
         ] = None,
     ):
-        """The base class for forecasting model explainers. It defines the *minimal* behavior that all
+        """
+        The base class for forecasting model explainers. It defines the *minimal* behavior that all
         forecasting model explainers support.
 
         Naming:
-        - A background series is a `TimeSeries` with which we 'train' the `Explainer` model.
 
-        - A foreground series is the `TimeSeries` we will explain according to the fitted `Explainer` model.
+        - A background series is a `TimeSeries` with which to 'train' the `Explainer` model.
+        - A foreground series is the `TimeSeries` to explain using the fitted `Explainer` model.
 
         Parameters
         ----------
@@ -112,10 +50,11 @@ class ForecastingModelExplainer(ABC):
         background_series
             A series or list of series to *train* the `ForecastingModelExplainer` along with any foreground series.
             Consider using a reduced well-chosen background to reduce computation time.
+
                 - optional if `model` was fit on a single target series. By default, it is the `series` used
                 at fitting time.
-
                 - mandatory if `model` was fit on multiple (sequence of) target series.
+
         background_past_covariates
             A past covariates series or list of series that the model needs once fitted.
         background_future_covariates
@@ -268,8 +207,7 @@ class ForecastingModelExplainer(ABC):
         target_components: Optional[Collection[str]] = None,
     ) -> ExplainabilityResult:
         """
-        Main method of the ForecastingExplainer class.
-        Return a ExplainabilityResult instance.
+        Explains a foreground time series, returns an :class:`ExplainabilityResult`.
 
         Results can be retrieved via the ExplainabilityResult.get_explanation(horizon, target_component)
         The result is a multivariate `TimeSeries` instance containing the 'explanation'

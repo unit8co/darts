@@ -90,8 +90,8 @@ class ShapExplainer(ForecastingModelExplainer):
         background_series
             One or several series to *train* the `ForecastingModelExplainer` along with any foreground series.
             Consider using a reduced well-chosen backgroundto to reduce computation time.
-                - optional if `model` was fit on a single target series. By default, it is the `series` used
-                at fitting time.
+                - optional if `model` was fit on a single target series. By default,
+                  it is the `series` used at fitting time.
 
                 - mandatory if `model` was fit on multiple (list of) target series.
         background_past_covariates
@@ -100,8 +100,10 @@ class ShapExplainer(ForecastingModelExplainer):
             A future covariates series or list of series that the model needs once fitted.
         background_num_samples
             Optionally, whether to sample a subset of the original background. Randomly picks
-            `background_num_samples` training samples of the constructed training dataset (using `shap.utils.sample()`).
-            Generally for faster computation, especially when `shap_method` is ``"kernel"`` or ``"permutation"``.
+            `background_num_samples` training samples of the constructed training dataset
+            (using ``shap.utils.sample()``).
+            Generally used for faster computation, especially when `shap_method` is
+            ``"kernel"`` or ``"permutation"``.
         shap_method
             Optionally, the shap method we want to apply. By default, an attempt is made
             to select the most appropriate method based on a pre-defined set of known models.
@@ -420,10 +422,8 @@ class ShapExplainer(ForecastingModelExplainer):
             if isinstance(horizons, int):
                 horizons = [horizons]
 
-            raise_if(
-                any([max(horizons) > self.n, min(horizons) < 1]),
-                "One of the horizons is too large. Please review your horizons input.",
-            )
+            raise_if(max(horizons) > self.n, "One of the horizons is too large.")
+            raise_if(min(horizons) < 1, "One of the horizons is too small.")
         else:
             horizons = range(1, self.n + 1)
 
