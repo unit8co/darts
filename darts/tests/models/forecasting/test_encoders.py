@@ -829,12 +829,29 @@ class EncoderTestCase(DartsBaseTestClass):
         self.assertTrue((ts.time_index.year.values - 1 == t1.values()[:, 1]).all())
 
     def test_transformer(self):
+        def test_routine_cyclic(past_covs):
+            for curve in ["sin", "cos"]:
+                self.assertAlmostEqual(
+                    past_covs[f"darts_enc_pc_cyc_minute_{curve}"]
+                    .all_values(copy=False)
+                    .min(),
+                    -1.0,
+                    delta=1e-9,
+                )
+                self.assertAlmostEqual(
+                    past_covs[f"darts_enc_pc_cyc_minute_{curve}"]
+                    .values(copy=False)
+                    .max(),
+                    1.0,
+                    delta=0.1e-9,
+                )
+
         ts1 = tg.linear_timeseries(
             start_value=1, end_value=2, length=60, freq="T", column_name="cov_in"
         )
         encoder_params = {
             "position": {"future": ["absolute"]},
-            "cyclic": {"future": ["minute"]},
+            "cyclic": {"past": ["minute"]},
             "transformer": Scaler(),
         }
 
@@ -846,29 +863,19 @@ class EncoderTestCase(DartsBaseTestClass):
             takes_future_covariates=True,
         )
 
-        _, t1 = encs.encode_train(ts1, future_covariate=ts1)
+        pc1, fc1 = encs.encode_train(ts1, future_covariate=ts1)
 
         # ===> train set test <===
         # user supplied covariates should not be transformed
-        self.assertTrue(t1["cov_in"] == ts1)
+        self.assertTrue(fc1["cov_in"] == ts1)
         # cyclic encodings should not be transformed
-        for curve in ["sin", "cos"]:
-            self.assertAlmostEqual(
-                t1[f"darts_enc_fc_cyc_minute_{curve}"].all_values(copy=False).min(),
-                -1.0,
-                delta=10e-9,
-            )
-            self.assertAlmostEqual(
-                t1[f"darts_enc_fc_cyc_minute_{curve}"].values(copy=False).max(),
-                1.0,
-                delta=10e-9,
-            )
+        test_routine_cyclic(pc1)
         # all others should be transformed to values between 0 and 1
         self.assertAlmostEqual(
-            t1["darts_enc_fc_pos_absolute"].values(copy=False).min(), 0.0, delta=10e-9
+            fc1["darts_enc_fc_pos_absolute"].values(copy=False).min(), 0.0, delta=10e-9
         )
         self.assertAlmostEqual(
-            t1["darts_enc_fc_pos_absolute"].values(copy=False).max(), 1.0, delta=10e-9
+            fc1["darts_enc_fc_pos_absolute"].values(copy=False).max(), 1.0, delta=10e-9
         )
 
         # ===> validation set test <===
@@ -880,29 +887,33 @@ class EncoderTestCase(DartsBaseTestClass):
             freq=ts1.freq,
             column_name="cov_in",
         )
-        _, t2 = encs.encode_train(ts2, future_covariate=ts2)
+        pc2, fc2 = encs.encode_train(ts2, future_covariate=ts2)
+        # cyclic encodings should not be transformed
+        test_routine_cyclic(pc2)
         # make sure that when calling encoders the second time, scalers are not fit again (for validation and inference)
         self.assertAlmostEqual(
-            t2["darts_enc_fc_pos_absolute"].values(copy=False).min(), 1.0, delta=10e-9
+            fc2["darts_enc_fc_pos_absolute"].values(copy=False).min(), 1.0, delta=10e-9
         )
         self.assertAlmostEqual(
-            t2["darts_enc_fc_pos_absolute"].values(copy=False).max(), 2.0, delta=10e-9
+            fc2["darts_enc_fc_pos_absolute"].values(copy=False).max(), 2.0, delta=10e-9
         )
 
         fc_inf = tg.linear_timeseries(
             start_value=1, end_value=3, length=80, freq="T", column_name="cov_in"
         )
-        _, t3 = encs.encode_inference(n=12, target=ts1, future_covariate=fc_inf)
+        pc3, fc3 = encs.encode_inference(n=60, target=ts1, future_covariate=fc_inf)
 
+        # cyclic encodings should not be transformed
+        test_routine_cyclic(pc3)
         # index 0 is also start of train target series and value should be 0
-        self.assertAlmostEqual(t3["darts_enc_fc_pos_absolute"][0].values()[0, 0], 0.0)
+        self.assertAlmostEqual(fc3["darts_enc_fc_pos_absolute"][0].values()[0, 0], 0.0)
         # index len(ts1) - 1 is the prediction point and value should be 0
         self.assertAlmostEqual(
-            t3["darts_enc_fc_pos_absolute"][len(ts1) - 1].values()[0, 0], 1.0
+            fc3["darts_enc_fc_pos_absolute"][len(ts1) - 1].values()[0, 0], 1.0
         )
         # the future should scale proportional to distance to prediction point
         self.assertAlmostEqual(
-            t3["darts_enc_fc_pos_absolute"][80 - 1].values()[0, 0], 80 / 60, delta=0.01
+            fc3["darts_enc_fc_pos_absolute"][80 - 1].values()[0, 0], 80 / 60, delta=0.01
         )
 
     def helper_test_cyclic_encoder(

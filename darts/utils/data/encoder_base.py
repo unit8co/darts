@@ -504,14 +504,20 @@ class SequentialEncoderTransformer:
         """
         if not self.fit_called:
             self._update_mask(covariate)
-            transformed = self.transformer.fit_transform(
-                covariate, component_mask=self.transform_mask
-            )
+            if any(self.transform_mask):
+                transformed = self.transformer.fit_transform(
+                    covariate, component_mask=self.transform_mask
+                )
+            else:
+                transformed = covariate
             self._fit_called = True
         else:
-            transformed = self.transformer.transform(
-                covariate, component_mask=self.transform_mask
-            )
+            if any(self.transform_mask):
+                transformed = self.transformer.transform(
+                    covariate, component_mask=self.transform_mask
+                )
+            else:
+                transformed = covariate
         return transformed
 
     def _update_mask(self, covariate: List[TimeSeries]) -> None:
