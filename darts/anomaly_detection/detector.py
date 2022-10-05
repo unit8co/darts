@@ -5,19 +5,18 @@ import numpy as np
 from typing import Union, Any, Dict, Sequence, Tuple
 from darts.datasets import AirPassengersDataset
 
-
 class _Detector(ABC):
-    "Base class for all detectors (TS_anomaly_score -> TS_binary_prediction)"
+    "Base class for all detectors (TS_anomaly_score -> TS_binary_prediction)" 
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         pass
 
     def score(
-        self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        anomaly_true: Union[TimeSeries, Sequence[TimeSeries]],
-        scoring: str = "recall",
-    ) -> Union[float, Sequence[float]]:
+            self, 
+            series: Union[TimeSeries, Sequence[TimeSeries]],
+            anomaly_true: Union[TimeSeries, Sequence[TimeSeries]],
+            scoring: str = "recall",
+             ) -> Union[float, Sequence[float]]:
 
         """Detect anomalies and score the results against true anomalies.
 
@@ -39,7 +38,7 @@ class _Detector(ABC):
         """
 
         if scoring == "recall":
-            scoring_fn = recall_score
+            scoring_fn = recall_score  
         elif scoring == "precision":
             scoring_fn = precision_score
         elif scoring == "f1":
@@ -53,11 +52,11 @@ class _Detector(ABC):
             )
 
         return scoring_fn(
-            y_true=anomaly_true.pd_series().to_numpy(),
-            y_pred=self.detect(series).to_numpy(),
-        )
+                y_true = anomaly_true.all_values().flatten(),
+                y_pred = self.detect(series).all_values().flatten()
+                )
 
-
+ 
 class _NonTrainableDetector(_Detector):
     "Base class of Detectors that do not need training."
 
@@ -66,22 +65,23 @@ class _NonTrainableDetector(_Detector):
         pass
 
     def detect(
-        self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        self, 
+        series: Union[TimeSeries, Sequence[TimeSeries]], 
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Detect anomalies from given time series.
         Parameters
         ----------
         series: Darts.Series
-            Time series to detect anomalies from.
+            Time series to detect anomalies from. 
         Returns
         -------
         Darts.Series
             Binary prediciton
         """
         # check input (type, size, values)
-
+            
         return self._detect_core(series)
+
 
 
 class ThresholdAD(_NonTrainableDetector):
@@ -106,12 +106,13 @@ class ThresholdAD(_NonTrainableDetector):
         self.high = high
 
     def _detect_core(self, series: TimeSeries) -> TimeSeries:
-        series = series.pd_series()
         detected = (
-            series > (self.high if (self.high is not None) else float("inf"))
-        ) | (series < (self.low if (self.low is not None) else -float("inf")))
+            series.pd_series() > (self.high if (self.high is not None) else float("inf"))
+        ) | (series.pd_series() < (self.low if (self.low is not None) else -float("inf"))).astype(int)
 
-        return detected
+        return TimeSeries.from_series(detected)
+
+
 
 
 class _TrainableDetector(_Detector):
@@ -119,7 +120,7 @@ class _TrainableDetector(_Detector):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self._fitted = 0  # type: int
+        self._fit_called = False  
 
     def fit(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> None:
         """Train the detector with given time series.
@@ -131,15 +132,15 @@ class _TrainableDetector(_Detector):
         self._fit_core(series)
 
     def detect(
-        self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        self, 
+        series: Union[TimeSeries, Sequence[TimeSeries]], 
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
 
         """Detect anomalies from given time series.
         Parameters
         ----------
         series: Darts.Series
-            Time series to detect anomalies from.
+            Time series to detect anomalies from. 
         Returns
         -------
         Darts.Series
@@ -148,11 +149,11 @@ class _TrainableDetector(_Detector):
 
         # check input (type, size, values)
 
-        if self._fitted == 0:
+        if not self._fit_called:
             raise ValueError(
-                "Model needs to be trained first! Call .fit() or .fit_detect() "
+                "Model needs to be trained first. Call .fit() or .fit_detect() "
             )
-
+            
         return self._detect_core(series)
 
     def fit_detect(
@@ -173,6 +174,7 @@ class _TrainableDetector(_Detector):
         return self.detect(series)
 
 
+
 class QuantileAD(_TrainableDetector):
     """Detector that detects anomaly based on quantiles of historical data.
     This detector compares time series values with user-specified quantiles
@@ -182,10 +184,10 @@ class QuantileAD(_TrainableDetector):
     ----------
     low: float, optional
         Quantile of historical data lower which a value is regarded as anomaly.
-        Must be between 0 and 1.
+        Must be between 0 and 1. 
     high: float, optional
         Quantile of historical data above which a value is regarded as anomaly.
-        Must be between 0 and 1.
+        Must be between 0 and 1. 
     Attributes
     ----------
     abs_low_: float
@@ -194,7 +196,9 @@ class QuantileAD(_TrainableDetector):
         The fitted upper bound of normal range.
     """
 
-    def __init__(self, low: Union[float, None], high: Union[float, None]) -> None:
+    def __init__(
+        self, low: Union[float, None], high: Union[float, None]
+    ) -> None:
         super().__init__()
         self.low = low
         self.high = high
@@ -203,12 +207,29 @@ class QuantileAD(_TrainableDetector):
 
         self.abs_high_ = series.pd_series().quantile(self.high)
         self.abs_low_ = series.pd_series().quantile(self.low)
-        self._fitted = 1
+        self._fit_called = True
 
     def _detect_core(self, series: TimeSeries) -> TimeSeries:
         series = series.pd_series()
         detected = (series > self.abs_high_) | (series < self.abs_low_)
-        return detected
+        return TimeSeries.from_series(detected)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 """
