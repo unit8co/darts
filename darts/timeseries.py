@@ -1907,7 +1907,7 @@ class TimeSeries:
                 if self._has_datetime_index:
                     return pd.date_range(start=start, end=end, freq=self._freq).size
                 else:
-                    return start - end
+                    return end - start + 1
 
             gap_df["gap_start"] = gap_starts
             gap_df["gap_end"] = gap_ends
