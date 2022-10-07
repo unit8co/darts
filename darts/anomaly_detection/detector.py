@@ -1,9 +1,16 @@
+"""
+Detector
+-------
+
+describe
+"""
+
 from abc import ABC, abstractmethod
+from typing import Any, Dict, Sequence, Union
+
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+
 from darts import TimeSeries
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-import numpy as np
-from typing import Union, Any, Dict, Sequence, Tuple
-from darts.datasets import AirPassengersDataset
 
 class _Detector(ABC):
     "Base class for all detectors (TS_anomaly_score -> TS_binary_prediction)" 
@@ -111,8 +118,6 @@ class ThresholdAD(_NonTrainableDetector):
         ) | (series.pd_series() < (self.low if (self.low is not None) else -float("inf"))).astype(int)
 
         return TimeSeries.from_series(detected)
-
-
 
 
 class _TrainableDetector(_Detector):

@@ -1,17 +1,25 @@
-from abc import ABC, abstractmethod
-from darts import TimeSeries
+"""
+Scorer
+-------
 
-from sklearn.metrics import roc_auc_score
+describe
+"""
+
+from abc import ABC, abstractmethod
+from typing import Any, Dict, Optional, Sequence, Union
 
 import numpy as np
-from typing import Union, Any, Dict, Sequence, Tuple
-from darts.datasets import AirPassengersDataset
-from darts.logging import raise_if, raise_if_not
-
+from scipy.stats import wasserstein_distance
 from sklearn.cluster import KMeans
+from sklearn.metrics import average_precision_score, roc_auc_score
+from sklearn.mixture import GaussianMixture
 from sklearn.neighbors import LocalOutlierFactor
 
-class _Scorer(ABC):
+from darts import TimeSeries
+from darts.logging import raise_if, raise_if_not
+
+
+class Scorer(ABC):
     "Base class for all scores ([TS, TS] -> TS_anomaly_score)" 
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -29,10 +37,16 @@ class _Scorer(ABC):
         
         if scoring == "AUC_ROC":
             scoring_fn = roc_auc_score  
+        elif scoring == "AUC_PR":
+            scoring_fn = average_precision_score  
         else:
             raise ValueError(
-                "Argument `scoring` must be one of 'AUC_ROC'"
+                "Argument `scoring` must be one of 'AUC_ROC', 'AUC_PR'"
             )
+
+    
+        series = series.slice_intersect(true_anomaly)
+        true_anomaly = true_anomaly.slice_intersect(series)
 
         return scoring_fn(
             y_true = true_anomaly.all_values().flatten(),
@@ -40,7 +54,7 @@ class _Scorer(ABC):
             )
 
 
-class _NonTrainableScorer(_Scorer):
+class NonTrainableScorer(Scorer):
     "Base class of Detectors that do not need training."
 
     def compute(
@@ -64,11 +78,12 @@ class _NonTrainableScorer(_Scorer):
             
         return self._compute_core(series_1, series_2)
 
+
     def compute_score(
                 self, 
-                series_1: Union[TimeSeries, Sequence[TimeSeries]], 
-                series_2: Union[TimeSeries, Sequence[TimeSeries]],
                 true_anomaly: Union[TimeSeries, Sequence[TimeSeries]],
+                series_1: Union[TimeSeries, Sequence[TimeSeries]], 
+                series_2: Union[TimeSeries, Sequence[TimeSeries]]=None,
                 scoring: str = "AUC_ROC"
             ) -> Union[float, Sequence[float]]:
         """
@@ -91,9 +106,8 @@ class _NonTrainableScorer(_Scorer):
         return  self.score(anomaly_score, true_anomaly, scoring)
 
 
-class _TrainableScorer(_Scorer):
+class TrainableScorer(Scorer):
     "Base class of Detectors that do need training."
-    # need to output an error if score is called and it was not trained
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -101,7 +115,8 @@ class _TrainableScorer(_Scorer):
 
     def compute(
             self, 
-            series: Union[TimeSeries, Sequence[TimeSeries]], 
+            series_1: Union[TimeSeries, Sequence[TimeSeries]], 
+            series_2: Union[TimeSeries, Sequence[TimeSeries]] = None
         ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         Parameters
@@ -120,15 +135,22 @@ class _TrainableScorer(_Scorer):
             not self._fit_called,
             "The Scorer has not been fitted yet. Call `fit()` first",
         )
-        
+
+        if series_2 == None:
+            series = series_1
+        else:
+            series = self._diff(series_1, series_2)
+
         return self._compute_core(series)
 
     def compute_score(
                 self, 
-                series: Union[TimeSeries, Sequence[TimeSeries]], 
                 true_anomaly: Union[TimeSeries, Sequence[TimeSeries]],
+                series_1: Union[TimeSeries, Sequence[TimeSeries]], 
+                series_2: Union[TimeSeries, Sequence[TimeSeries]]=None,
                 scoring: str = "AUC_ROC",
             ) -> Union[float, Sequence[float]]:
+
         """
         Parameters
         ----------
@@ -143,12 +165,14 @@ class _TrainableScorer(_Scorer):
         # check inputs (type, size, values)
         # check if same timestamp!
 
-        anomaly_score = self.compute(series)
+        anomaly_score = self.compute(series_1, series_2)
         return  self.score(anomaly_score, true_anomaly, scoring)
 
     def fit(
             self, 
-            series: Union[TimeSeries, Sequence[TimeSeries]], 
+            series_1: Union[TimeSeries, Sequence[TimeSeries]], 
+            series_2: Union[TimeSeries, Sequence[TimeSeries]] = None,
+            scorer_fit_params: Optional[Dict[str, Any]] = None
             ) -> Union[float, Sequence[float]]:
         """
         Parameters
@@ -163,86 +187,120 @@ class _TrainableScorer(_Scorer):
         # check inputs (type, size, values)
         # check if same timestamp!
 
-        self._fit_core(series)
+        if scorer_fit_params==None:
+            scorer_fit_params= {}
 
-    def fit_compute(
-                self, 
-                series_train: Union[TimeSeries, Sequence[TimeSeries]], 
-                series_test: Union[TimeSeries, Sequence[TimeSeries]],
-            ) -> Union[float, Sequence[float]]:
-        """
-        Parameters
-        ----------
-        series_1: Darts.Series
-        series_2: Darts.Series
-     
-        Returns
-        -------
-        Darts.Series
-            anomaly score
-        """
-        # check inputs (type, size, values)
-        # check if same timestamp!
+        if series_2 == None:
+            series = series_1
+        else:
+            series = self._diff(series_1, series_2)
 
-        self._fit_core(series_train)
-        return self._compute_core(series_test)
+        self._fit_core(series, scorer_fit_params)
 
-    def fit_compute_score(
-                self, 
-                series_train: Union[TimeSeries, Sequence[TimeSeries]], 
-                series_test: Union[TimeSeries, Sequence[TimeSeries]],
-                true_anomaly: Union[TimeSeries, Sequence[TimeSeries]],
-                scoring: str = "AUC_ROC"
-            ) -> Union[float, Sequence[float]]:
-        """
-        Parameters
-        ----------
-        series_1: Darts.Series
-        series_2: Darts.Series
-        true_anomalies: Binary Darts.Series
-     
-        Returns
-        -------
-        Darts.Series
-            anomaly score
-        """
-        # check inputs (type, size, values)
-        # check if same timestamp!
+    def _diff(self, series_1, series_2):
 
-        self._fit_core(series_train)
-        anomaly_score = self._compute_core(series_test)
-        return  self.score(anomaly_score, true_anomaly, scoring)
+        if self.metric_function == "l1":
+            return (series_1 - series_2.slice_intersect(series_1)).map(lambda x: np.abs(x))
+        elif self.metric_function == "l2":
+            return (series_1 - series_2.slice_intersect(series_1))**2
+        elif self.metric_function == "diff":
+             return (series_1 - series_2.slice_intersect(series_1)) 
+        else :
+            return series_1 
 
+    def _check_norm(self):
+        accepted_norms = ["l1","l2","diff"]
 
+        raise_if_not(
+            self.metric_function in accepted_norms,
+            "Metric should be l1, l2 or diff",
+        )
 
-class KmeansAnomaly(_TrainableScorer):
-    """ Likelihood anomaly score
+class GaussianMixtureScorer(TrainableScorer):
+    """ GaussianMixtureScorer anomaly score
     """
-    def __init__(self, k: Union[int, list[int]]) -> None:
+    def __init__(self, n_components: int = 1, metric_function="l1") -> None:
         super().__init__()
-        self.k = k 
-        self.model = KMeans(n_clusters=k)
+        self.n_components = n_components 
+        self.metric_function = metric_function
+        super()._check_norm()
+        self.model = GaussianMixture(n_components=n_components)
 
-    def _fit_core(self, series: Union[TimeSeries, Sequence[TimeSeries]]):
+    def _fit_core(self, series: Union[TimeSeries, Sequence[TimeSeries]], scorer_fit_params):
+
+        raise_if_not(scorer_fit_params == {}, 
+        ".fit() of GaussianMixtureScorer has no parameters",
+        )
+
         self._fit_called = True  
         self.model.fit(series.all_values().flatten().reshape(-1, 1))
+
+    def _compute_core(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> Union[TimeSeries, Sequence[TimeSeries]]:
+
+        np_anomaly_score= np.exp(self.model.score_samples(series.all_values().flatten().reshape(-1, 1)))
+        return TimeSeries.from_times_and_values(series._time_index , np_anomaly_score)
+
+class KmeansScorer(TrainableScorer):
+    """ Kmean anomaly score
+    """
+    def __init__(self, k: Union[int, list[int]] = 2, metric_function="l1") -> None:
+        super().__init__()
+        self.k = k 
+        self.metric_function = metric_function
+        self._check_norm()
+        self.model = KMeans(n_clusters=k)
+
+    def _fit_core(self, series: Union[TimeSeries, Sequence[TimeSeries]], scorer_fit_params):
+
+        self._fit_called = True  
+        self.model.fit(series.all_values().flatten().reshape(-1, 1), **scorer_fit_params)
 
     def _compute_core(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> Union[TimeSeries, Sequence[TimeSeries]]:
         # return distance to the clostest centroid  
         np_anomaly_score= self.model.transform(series.all_values().flatten().reshape(-1, 1)).min(axis=1)
         return TimeSeries.from_times_and_values(series._time_index , np_anomaly_score)
 
-class LocalOutlierFactorAnomaly(_TrainableScorer):
+class WasserteinScorer(TrainableScorer):
+    """ WasserteinScorer anomaly score
+    """
+    def __init__(self, window: int = 10, metric_function="l1") -> None:
+        super().__init__()
+        self.metric_function = metric_function
+        super()._check_norm()
+        self.window= window
+
+    def _fit_core(self, series: Union[TimeSeries, Sequence[TimeSeries]], scorer_fit_params):
+
+        raise_if_not(scorer_fit_params == {}, 
+        ".fit() of WasserteinScorer has no parameters",
+        )
+
+        self._fit_called = True  
+        self.training_data =  series.all_values().flatten()
+
+    def _compute_core(self, series:Union[TimeSeries, Sequence[TimeSeries]]) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        # return distance to the clostest centroid  
+        distance = []
+
+        for i in range(len(series)-self.window+1):
+            distance.append(wasserstein_distance(self.training_data, series[i:i+self.window].all_values().flatten()))
+
+        return TimeSeries.from_times_and_values(series._time_index[self.window-1:] , distance)
+
+
+class LocalOutlierFactorScorer(TrainableScorer):
     """ LocalOutlierFactor anomaly score
     """
-    def __init__(self, n_neighbors: int) -> None:
+    def __init__(self, n_neighbors: int = 2, metric_function="l1") -> None:
         super().__init__()
         self.n_neighbors = n_neighbors 
+        self.metric_function = metric_function
+        super()._check_norm()
         self.model = LocalOutlierFactor(n_neighbors=n_neighbors, novelty=True)
 
-    def _fit_core(self, series: Union[TimeSeries, Sequence[TimeSeries]]):
+    def _fit_core(self, series: Union[TimeSeries, Sequence[TimeSeries]], scorer_fit_params):
         self._fit_called = True  
-        self.model.fit(series.all_values().flatten().reshape(-1, 1))
+        self.model.fit(series.all_values().flatten().reshape(-1, 1), **scorer_fit_params)
 
     def _compute_core(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> Union[TimeSeries, Sequence[TimeSeries]]:
         # return distance to the clostest centroid  
@@ -250,7 +308,7 @@ class LocalOutlierFactorAnomaly(_TrainableScorer):
         return TimeSeries.from_times_and_values(series._time_index , np_anomaly_score)
 
 
-class L2(_NonTrainableScorer):
+class L2(NonTrainableScorer):
     """ L2 distance metric
     """
 
@@ -262,7 +320,7 @@ class L2(_NonTrainableScorer):
         return (series_1 - series_2)**2
 
 
-class L1(_NonTrainableScorer):
+class L1(NonTrainableScorer):
     """ L1 distance metric
     """
 
@@ -272,7 +330,7 @@ class L1(_NonTrainableScorer):
     def _compute_core(self, series_1: Union[TimeSeries, Sequence[TimeSeries]], series_2: Union[TimeSeries, Sequence[TimeSeries]]) -> Union[TimeSeries, Sequence[TimeSeries]]:
         return (series_1 - series_2).map(lambda x: np.abs(x))
 
-class difference(_NonTrainableScorer):
+class difference(NonTrainableScorer):
     """ difference distance metric
     """
 
@@ -281,58 +339,3 @@ class difference(_NonTrainableScorer):
 
     def _compute_core(self, series_1: Union[TimeSeries, Sequence[TimeSeries]], series_2: Union[TimeSeries, Sequence[TimeSeries]]) -> Union[TimeSeries, Sequence[TimeSeries]]:
         return series_1 - series_2
-
-
-
-# To implement!! 
-class Likelihood(_TrainableScorer):
-    """ Likelihood anomaly score
-    """
-
-
-
-
-
-
-
-
-
-"""
-import pandas as pd
-
-series = AirPassengersDataset().load()
-series_train, series_test = series.split_before(pd.Timestamp("19580101"))
-np_anomalies = np.random.choice(a = [0,1], size = len(series_test), p = [0.5, 0.5])
-anomalies = TimeSeries.from_times_and_values(series_test._time_index, np_anomalies)
-
-series_test_pred = series_test * anomalies
-
-dif = L1().compute(series_test, series_test_pred)
-score = L1().compute_score(series_test, series_test_pred, anomalies)
-    
-model = KmeansAnomaly(4)
-modelA = KmeansAnomaly(4)
-
-model.fit(series_train)
-pred2 = modelA.fit_compute_score(series_train, series_test, anomalies)
-
-pred = model.compute(series_test)
-pred1 = model.compute_score(series_test, anomalies)
-
-print(pred)
-print(pred1)
-print(pred2)
-
-model1 = LocalOutlierFactorAnomaly(20)
-model2 = LocalOutlierFactorAnomaly(30)
-
-model1.fit(series_train)
-pred3 = model2.fit_compute_score(series_train, series_test, anomalies)
-
-pred4 = model1.compute(series_test)
-pred5 = model1.compute_score(series_test, anomalies)
-
-print(pred3)
-print(pred4)
-print(pred5)
-"""
