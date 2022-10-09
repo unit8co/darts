@@ -74,7 +74,7 @@ class ForecastingWindowTransformer(BaseDataTransformer):
         "ewmsum": (pd.DataFrame.ewm, "sum", ([], [])),  # exponential weighted sum
     }
 
-    #TODO: add atrribute to indicate if transformer is being called from pipeline, standalone or from model (useful to set column names for example)
+    # TODO: add atrribute to indicate if transformer is being called from pipeline, standalone or from model (useful to set column names for example)
     def __init__(
         self,
         window_transformations: Union[dict, List[dict]],
@@ -236,12 +236,14 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                             logger,
                         )
 
-
                 if "step" in transformation:
 
                     raise_if_not(
-                        (isinstance(transformation["step"], int)
-                        and transformation["step"] > 0) or transformation["step"] is None,
+                        (
+                            isinstance(transformation["step"], int)
+                            and transformation["step"] > 0
+                        )
+                        or transformation["step"] is None,
                         f"`window_transformation` at index {idx} must contain a positive integer for the 'step'. ",
                     )
                     raise_user_warning(
@@ -282,10 +284,7 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                             transformation["series_id"]
                         ]
 
-                if (
-                    "comp_id" in transformation
-                    and transformation["comp_id"] is None
-                ):
+                if "comp_id" in transformation and transformation["comp_id"] is None:
                     window_transformations[idx].pop("comp_id")
 
                 if (
@@ -299,10 +298,23 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                         )
                         or (
                             isinstance(transformation["comp_id"], list)
-                            and (all(
-                                isinstance(x, int) and x >= 0
-                                for x in transformation["comp_id"]
-                            )or (all(isinstance(x, list) and (all(isinstance(y, int) and y >=0 for y in x)) for x in transformation["comp_id"]) ))
+                            and (
+                                all(
+                                    isinstance(x, int) and x >= 0
+                                    for x in transformation["comp_id"]
+                                )
+                                or (
+                                    all(
+                                        isinstance(x, list)
+                                        and (
+                                            all(
+                                                isinstance(y, int) and y >= 0 for y in x
+                                            )
+                                        )
+                                        for x in transformation["comp_id"]
+                                    )
+                                )
+                            )
                         ),
                         f"`window_transformation` at index {idx} must contain a positive integer or 0 for the 'comp_id', or a non-empty "
                         f"list containing positive integers/0. ",
@@ -313,7 +325,6 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                         ]
 
         self.window_transformations = window_transformations
-
 
     def _transform_iterator(
         self, series: Union[TimeSeries, Sequence[TimeSeries]]
@@ -329,7 +340,11 @@ class ForecastingWindowTransformer(BaseDataTransformer):
             # check whether different transformations are to be performed for different series and different components
             if "series_id" not in transformation and "comp_id" not in transformation:
                 # apply the transformation to all series and all components
-                series_subset += [(s.univariate_component(c), transformation, builtins) for s in series for c in range(s.width)]
+                series_subset += [
+                    (s.univariate_component(c), transformation, builtins)
+                    for s in series
+                    for c in range(s.width)
+                ]
 
             elif "series_id" in transformation and "comp_id" not in transformation:
                 # apply the transformation to a specific series and all its components
@@ -337,56 +352,87 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                     len(series) - 1 >= max(transformation["series_id"]),
                     f"`window_transformation` at index {idx} has a 'series_id' that is greater than the number of series. ",
                 )
-                series_subset += [(series[s_idx].univariate_component(c), transformation, builtins) for s_idx in transformation["series_id"] for c in range(series[s_idx].width)]
+                series_subset += [
+                    (series[s_idx].univariate_component(c), transformation, builtins)
+                    for s_idx in transformation["series_id"]
+                    for c in range(series[s_idx].width)
+                ]
 
             elif "series_id" not in transformation and "comp_id" in transformation:
                 # apply the transformation to all series on a specific component only in each series
                 # test that component exists in each relevant series
                 raise_if_not(
-                    all(c_idx <= series[s_idx].width - 1 for s_idx in range(len(series)) for c_idx in
-                        transformation["comp_id"]),
-                    f"Some components are not available in the provided series."
+                    all(
+                        c_idx <= series[s_idx].width - 1
+                        for s_idx in range(len(series))
+                        for c_idx in transformation["comp_id"]
+                    ),
+                    f"Some components are not available in the provided series.",
                 )
 
                 series_subset += [
-                    (s.univariate_component(c), transformation, builtins) for (s, c) in itertools.product(series, transformation["comp_id"])
+                    (s.univariate_component(c), transformation, builtins)
+                    for (s, c) in itertools.product(series, transformation["comp_id"])
                 ]
 
             else:
                 # apply the transformation to a specific component in a specific series
                 # if a different component is provided for each selected series
                 if all(isinstance(x, list) for x in transformation["comp_id"]) and len(
-                        transformation["comp_id"]) == len(transformation["series_id"]):
+                    transformation["comp_id"]
+                ) == len(transformation["series_id"]):
                     # test that components exist in the corresponding series
                     raise_if_not(
-                        all(max(c_idxvec) <= series[s_idx].width - 1 for (s_idx, c_idxvec) in
-                            zip(transformation["series_id"], transformation["comp_id"])),
-                        f"Some components are not available in the provided series."
+                        all(
+                            max(c_idxvec) <= series[s_idx].width - 1
+                            for (s_idx, c_idxvec) in zip(
+                                transformation["series_id"], transformation["comp_id"]
+                            )
+                        ),
+                        f"Some components are not available in the provided series.",
                     )
                     series_subset += [
-                        (series[s_idx].univariate_component(c_idx), transformation,builtins) for (s_idx, c_idx)
-                        in itertools.chain(*[list(itertools.product([s_idvec], c_idvec)) for (s_idvec, c_idvec) in
-                                             zip(transformation["series_id"], transformation["comp_id"])])
+                        (
+                            series[s_idx].univariate_component(c_idx),
+                            transformation,
+                            builtins,
+                        )
+                        for (s_idx, c_idx) in itertools.chain(
+                            *[
+                                list(itertools.product([s_idvec], c_idvec))
+                                for (s_idvec, c_idvec) in zip(
+                                    transformation["series_id"],
+                                    transformation["comp_id"],
+                                )
+                            ]
+                        )
                     ]
                 # if the same components are provided for all the selected series
                 else:
                     # test that the components exist in each series
                     raise_if_not(
-                        all(c_idx <= series[s_idx].width - 1 for s_idx in transformation["series_id"] for c_idx in
-                            transformation["comp_id"]),
-                        f"Some components are not available in the provided series."
+                        all(
+                            c_idx <= series[s_idx].width - 1
+                            for s_idx in transformation["series_id"]
+                            for c_idx in transformation["comp_id"]
+                        ),
+                        f"Some components are not available in the provided series.",
                     )
-                    series_subset += [(series[s_id].univariate_component(c_id), transformation, builtins) for (s_id, c_id) in
-                                     itertools.product(transformation["series_id"], transformation["comp_id"])]
-
+                    series_subset += [
+                        (
+                            series[s_id].univariate_component(c_id),
+                            transformation,
+                            builtins,
+                        )
+                        for (s_id, c_id) in itertools.product(
+                            transformation["series_id"], transformation["comp_id"]
+                        )
+                    ]
 
         return iter(series_subset)
 
     def ts_transform(
-        series: TimeSeries,
-        transformation,
-        builtins,
-        **kwargs
+        series: TimeSeries, transformation, builtins, **kwargs
     ) -> TimeSeries:
         """
         Applies the transformation to the given TimeSeries.
@@ -449,7 +495,9 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                     function_expected_args.intersection(set(keys))
                 )
                 function_available_kwargs = {
-                    k: v for k, v in transformation.items() if k in function_available_keys
+                    k: v
+                    for k, v in transformation.items()
+                    if k in function_available_keys
                 }
 
                 return function_group_available_kwargs, function_available_kwargs
@@ -460,9 +508,11 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                 }
                 return function_available_kwargs
             else:
-                raise_log(Exception("The transformation function is not valid."), logger)
+                raise_log(
+                    Exception("The transformation function is not valid."), logger
+                )
 
-        #series = series2seq(series)
+        # series = series2seq(series)
 
         fillna = kwargs.get("fillna", "bfill")
 
@@ -474,7 +524,6 @@ class ForecastingWindowTransformer(BaseDataTransformer):
             copy=True
         )  # get the series values in a dataframe. TODO: check if copy is necessary
 
-
         if isinstance(fn, str):
             # verification of the value of the string should have been already validated in the constructor
 
@@ -485,7 +534,9 @@ class ForecastingWindowTransformer(BaseDataTransformer):
             if function_group == "rolling":
                 transf_ts = []
                 for window in transformation["window"]:
-                    copy_transformation = copy.deepcopy(transformation)  # to avoid writing the original dict
+                    copy_transformation = copy.deepcopy(
+                        transformation
+                    )  # to avoid writing the original dict
                     copy_transformation["window"] = window
                     # get function_group and function kwargs
                     function_group_kwargs, function_kwargs = _get_function_kwargs(
@@ -494,12 +545,11 @@ class ForecastingWindowTransformer(BaseDataTransformer):
 
                     if "closed" not in function_group_kwargs:
                         function_group_kwargs[
-                            "closed"] = "left"  # to garantee that the latest value is not included in the window
+                            "closed"
+                        ] = "left"  # to garantee that the latest value is not included in the window
 
                     transf_df_ts = getattr(
-                        getattr(df_ts, function_group)(
-                            **function_group_kwargs
-                        ),
+                        getattr(df_ts, function_group)(**function_group_kwargs),
                         function_name,
                     )(**function_kwargs)
 
@@ -507,12 +557,12 @@ class ForecastingWindowTransformer(BaseDataTransformer):
 
                     transf_ts.append(transf_df_ts)
             else:
-                function_group_kwargs, function_kwargs = _get_function_kwargs(transformation, BUILTIN_TRANSFORMS)
+                function_group_kwargs, function_kwargs = _get_function_kwargs(
+                    transformation, BUILTIN_TRANSFORMS
+                )
 
                 transf_ts = getattr(
-                    getattr(df_ts, function_group)(
-                        **function_group_kwargs
-                    ),
+                    getattr(df_ts, function_group)(**function_group_kwargs),
                     function_name,
                 )(**function_kwargs)
 
@@ -521,7 +571,9 @@ class ForecastingWindowTransformer(BaseDataTransformer):
         else:  # user provided function with "rolling" key
             function_kwargs = _get_function_kwargs(transformation, BUILTIN_TRANSFORMS)
             if "rolling" in function_kwargs:
-                window = function_kwargs["window"]  # TODO : make list of windows compatible
+                window = function_kwargs[
+                    "window"
+                ]  # TODO : make list of windows compatible
                 function_kwargs.pop("rolling")
                 function_kwargs.pop("window")
                 transf_ts = df_ts.rolling(window).apply(fn, **function_kwargs)
@@ -529,8 +581,6 @@ class ForecastingWindowTransformer(BaseDataTransformer):
             else:  # if no rolling argument, apply function as provided by the user
                 transf_ts = df_ts.apply(lambda x: fn(x))
             # TODO : set new column name ?
-
-
 
         # check if return original series
         """ this code below is not possible, because ts_transform() only takes one TimeSeries and returns on TimeSeries 
@@ -544,13 +594,14 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                 transf_ts.append(pd.concat(orig_dfs, axis= 1))  # name of the added column remains the same from the original series
         """
         # validate output and return pandas.DataFrame
-        transf_ts = pd.concat(transf_ts, axis=1) if isinstance(transf_ts, list) else transf_ts
+        transf_ts = (
+            pd.concat(transf_ts, axis=1) if isinstance(transf_ts, list) else transf_ts
+        )
 
         # fill NAs
         transf_ts.fillna(method=fillna, inplace=True)  # managed by pandas
 
         return TimeSeries.from_dataframe(transf_ts)
-
 
     # TODO : to remove
     """
@@ -638,7 +689,7 @@ class ForecastingWindowTransformer(BaseDataTransformer):
         return transf_ts
     """
 
-    #TODO: to remove
+    # TODO: to remove
     """
     def _get_function_kwargs(self, transformation):
         
