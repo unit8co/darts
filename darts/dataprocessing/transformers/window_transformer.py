@@ -120,9 +120,9 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                         transformed_series_1 = window_transformer.transform(all_series)
 
                         zscore_fn = lambda x: (x[-1] - x.mean()) / x.std()
-                        window_transformations_2 = {'function': zscore_fn , 'rolling':True, 'window':[3] 'series_id': 0, 'comp_id':[0,1,2]}
+                        window_transformations_2 = {'function': zscore_fn , 'rolling':True, 'window':[3], 'series_id': 0, 'comp_id':[0,1,2]}
                         window_transformer_2 = ForecastingWindowTransformer(window_transformations_2)
-                        transformed_series_2 = window_transformer.transform(all_series)
+                        transformed_series_2 = window_transformer_2.transform(all_series)
                     ..
         name
             A specific name for the transformer.
@@ -429,19 +429,24 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                         )
                     ]
 
-        return iter(series_subset)
+        return iter(series_subset)  # the iterator object for ts_transform function
 
     def ts_transform(
         series: TimeSeries, transformation, builtins, **kwargs
     ) -> TimeSeries:
         """
         Applies the transformation to the given TimeSeries.
-        This function is called by the `transform` method of the `BaseDataTransformer` class.
+        This function is called by the `transform` method of the `BaseDataTransformer` class. It takes only one TimeSeries
+        as input and returns the transformed TimeSeries.
 
         Parameters
         ----------
         series
             The TimeSeries to be transformed.
+        transformation
+            The transformation to be applied.
+        builtins
+            The built-in transformations read from the ForecastingWindowTransformer class.
 
         Returns
         -------
@@ -457,6 +462,8 @@ class ForecastingWindowTransformer(BaseDataTransformer):
             ----------
             transformation
                 The transformation dictionary.
+            builtins
+                The built-in transformations read from the ForecastingWindowTransformer class.
 
             Returns
             -------
@@ -512,8 +519,6 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                     Exception("The transformation function is not valid."), logger
                 )
 
-        # series = series2seq(series)
-
         fillna = kwargs.get("fillna", "bfill")
 
         BUILTIN_TRANSFORMS = builtins
@@ -532,7 +537,7 @@ class ForecastingWindowTransformer(BaseDataTransformer):
 
             # if rolling, we need to run through window list
             if function_group == "rolling":
-                transf_ts = []
+                transf_ts = []  # list to get all windows resulting transformations
                 for window in transformation["window"]:
                     copy_transformation = copy.deepcopy(
                         transformation
@@ -546,7 +551,7 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                     if "closed" not in function_group_kwargs:
                         function_group_kwargs[
                             "closed"
-                        ] = "left"  # to garantee that the latest value is not included in the window
+                        ] = "left"  # to garantee that the latest value is not included in the window: forecasting safe
 
                     transf_df_ts = getattr(
                         getattr(df_ts, function_group)(**function_group_kwargs),
@@ -571,28 +576,17 @@ class ForecastingWindowTransformer(BaseDataTransformer):
         else:  # user provided function with "rolling" key
             function_kwargs = _get_function_kwargs(transformation, BUILTIN_TRANSFORMS)
             if "rolling" in function_kwargs:
-                window = function_kwargs[
-                    "window"
-                ]  # TODO : make list of windows compatible
+                transf_ts = []
+                window_list_copy = copy.deepcopy(function_kwargs["window"])
                 function_kwargs.pop("rolling")
                 function_kwargs.pop("window")
-                transf_ts = df_ts.rolling(window).apply(fn, **function_kwargs)
+                for window in window_list_copy:  # run through window list
+                    transf_ts.append(df_ts.rolling(window).apply(fn, **function_kwargs))
 
             else:  # if no rolling argument, apply function as provided by the user
                 transf_ts = df_ts.apply(lambda x: fn(x))
             # TODO : set new column name ?
 
-        # check if return original series
-        """ this code below is not possible, because ts_transform() only takes one TimeSeries and returns on TimeSeries 
-        if original_series:
-            if len(transf_ts[0].index) != len(df_ts.index): # any of the original series should be ok for this test,
-                                                            # because they all have the same index TODO: verify this
-                raise ValueError(
-                    "The transformed series and the original series have different lengths and cannot be concatenated together."
-                )
-            else:
-                transf_ts.append(pd.concat(orig_dfs, axis= 1))  # name of the added column remains the same from the original series
-        """
         # validate output and return pandas.DataFrame
         transf_ts = (
             pd.concat(transf_ts, axis=1) if isinstance(transf_ts, list) else transf_ts
@@ -602,141 +596,6 @@ class ForecastingWindowTransformer(BaseDataTransformer):
         transf_ts.fillna(method=fillna, inplace=True)  # managed by pandas
 
         return TimeSeries.from_dataframe(transf_ts)
-
-    # TODO : to remove
-    """
-    def _apply_transformation(
-        self, series, transformation, builtins, fillna
-    ):
-        
-        fn = transformation["function"]
-
-        transf_ts = []
-        orig_dfs = []
-
-        # run through the series
-        for idx, ts in enumerate(series):
-            series_name = str(ts.columns[0])
-
-            df_ts = ts.pd_dataframe(
-                copy=True
-            )  # get the series values in a dataframe. TODO: check if copy is necessary
-            orig_dfs.append(df_ts)
-
-            if isinstance(fn, str):
-                # verification of the value of the string should have been already validated in the constructor
-
-                function_group = self.BUILTIN_TRANSFORMS[fn][0].__name__
-                function_name = self.BUILTIN_TRANSFORMS[fn][1]
-
-                # if rolling, we need to run through window list
-                if function_group == "rolling":
-
-                    for window in transformation["window"]:
-                        copy_transformation = copy.deepcopy(transformation) # to avoid writing the original dict
-                        copy_transformation["window"] = window
-                        # get function_group and function kwargs
-                        function_group_kwargs, function_kwargs = self._get_function_kwargs(
-                            copy_transformation
-                        )
-
-                        if "closed" not in function_group_kwargs:
-                            function_group_kwargs[
-                                "closed"] = "left"  # to garantee that the latest value is not included in the window
-
-                        transf_df_ts = getattr(
-                            getattr(df_ts, function_group)(
-                                **function_group_kwargs
-                            ),
-                            function_name,
-                        )(**function_kwargs)
-
-                        # TODO : set new feature column name by series_id, comp_id and function name, window_size?
-
-                        transf_ts.append(transf_df_ts)
-                else:
-                    transf_df_ts = getattr(
-                        getattr(df_ts, function_group)(
-                            **function_group_kwargs
-                        ),
-                        function_name,
-                    )(**function_kwargs)
-
-                    # TODO :set new feature column name by series_id, comp_id and function name, window_size?
-
-                    transf_ts.append(transf_df_ts)
-            else: # user provided function with "rolling" key
-                function_kwargs = self._get_function_kwargs(transformation)
-                if "rolling" in function_kwargs:
-                    window = function_kwargs["window"] #TODO : make list of windows
-                    function_kwargs.pop("rolling")
-                    function_kwargs.pop("window")
-                    transf_df_ts = df_ts.rolling(window).apply(fn, **function_kwargs)
-
-                else:  # if no rolling argument, apply function as provided by the user
-                    transf_df_ts = df_ts.apply(lambda x: fn(x))
-                # TODO : set new column name ?
-
-                transf_ts.append(transf_df_ts)
-
-        # validate output and return pandas.DataFrame
-        transf_ts = pd.concat(transf_ts, axis=1)
-
-        # fill NAs
-        transf_ts.fillna(method=fillna, inplace= True)  # managed by pandas
-
-        #print(transf_ts)
-        return transf_ts
-    """
-
-    # TODO: to remove
-    """
-    def _get_function_kwargs(self, transformation):
-        
-        fn = transformation["function"]
-        useless_keys = ["function", "series_id", "comp_id"]
-        keys = list(transformation.keys() - useless_keys)
-
-        if fn in self.BUILTIN_TRANSFORMS:
-            # if builtin function, get the kwargs for the function group and the specific function
-
-            function_group_expected_args = set(
-                self.BUILTIN_TRANSFORMS[fn][0].__code__.co_varnames
-            )
-            function_group_available_keys = list(
-                function_group_expected_args.intersection(set(keys))
-            )
-            function_group_available_kwargs = {
-                k: v
-                for k, v in transformation.items()
-                if k in function_group_available_keys
-            }
-
-            function_expected_args = set(
-                getattr(
-                    getattr(pd.DataFrame(), self.BUILTIN_TRANSFORMS[fn][0].__name__)(
-                        **function_group_available_kwargs
-                    ),
-                    fn,
-                ).__code__.co_varnames
-            )
-            function_available_keys = list(
-                function_expected_args.intersection(set(keys))
-            )
-            function_available_kwargs = {
-                k: v for k, v in transformation.items() if k in function_available_keys
-            }
-
-            return function_group_available_kwargs, function_available_kwargs
-        elif callable(fn):
-            # if user function, get the kwargs for the function
-            function_available_kwargs = {
-                k: v for k, v in transformation.items() if k in keys
-            }
-            return function_available_kwargs
-        else:
-            raise_log(Exception("The transformation function is not valid."), logger)
-    """
 
     # TODO: move to forecasting model class
     def construct_transformation_dictionary(cls, series_configurations):

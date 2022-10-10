@@ -223,6 +223,7 @@ def suppress_lightning_warnings(suppress_all: bool = False):
             ".*Trying to infer the `batch_size` from an ambiguous collection.*",
         )
 
+
 def raise_user_warning(condition, message, logger):
     """
     Checks provided boolean condition and raises a warning if it evaluates to True.
@@ -237,4 +238,3 @@ def raise_user_warning(condition, message, logger):
     """
     if condition:
         logger.warning("UserWarning:" + message)
-
