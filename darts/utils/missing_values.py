@@ -83,10 +83,18 @@ def extract_subseries(
     min_gap_size
         The minimum number of contiguous missing values to consider a gap as significant. Defaults to 1.
 
+    mode
+        Only for multivariate TimeSeries. The definition of a gap; presence of a NaN in any column ("any")
+        or NaNs in all the columns ("all") for a given timestamp. Defaults to "all".
+
     Returns
     -------
     subseries
         A list of TimeSeries, sub-series without significant gaps of missing values
+
+    See Also
+    --------
+    TimeSeries.gaps : return the gaps in the TimeSeries
     """
 
     # Remove null values from the series extremes

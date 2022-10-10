@@ -81,13 +81,13 @@ class UtilsTestCase(DartsBaseTestClass):
         )
         series = TimeSeries.from_dataframe(dataframe)
 
-        # gaps is characterized by NaN in all the covariates
+        # gaps is characterized by NaN in all the covariate columns
         subseries_all = extract_subseries(series, mode="all")
         self.assertEqual(len(subseries_all), 2)
         self.assertEqual(subseries_all[0], series[:2])
         self.assertEqual(subseries_all[1], series[3:])
 
-        # gaps is characterized by NaN in any the covariates
+        # gaps is characterized by NaN in any of the covariate columns
         subseries_any = extract_subseries(series, mode="any")
         self.assertEqual(len(subseries_any), 3)
         self.assertEqual(subseries_any[0], series[:2])
