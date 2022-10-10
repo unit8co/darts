@@ -327,7 +327,11 @@ class WindowTransformationsTestCase(unittest.TestCase):
         """
         times1 = pd.date_range("20130101", "20130110")
         series_1 = TimeSeries.from_times_and_values(times1, range(1, 11))
-        user_fn = lambda x: x.sum()
+
+        def user_fn(x):
+            return (
+                x.sum()
+            )  # instead of user_fn = lambda x: x.sum() to avoid linting error
 
         window_transformations = [
             {"function": user_fn, "window": 1, "rolling": True, "closed": "left"}
@@ -358,7 +362,11 @@ class WindowTransformationsTestCase(unittest.TestCase):
     def test_user_defined_norolling_output_formatting(self):
         times1 = pd.date_range("20130101", "20130110")
         series_1 = TimeSeries.from_times_and_values(times1, range(1, 11))
-        user_fn = lambda x: x.sum()
+
+        def user_fn(x):
+            return (
+                x.sum()
+            )  # instead of user_fn = lambda x: x.sum() to avoid linting error
 
         window_transformations = [{"function": user_fn, "window": 1, "closed": "left"}]
         window_transformer = ForecastingWindowTransformer(window_transformations)

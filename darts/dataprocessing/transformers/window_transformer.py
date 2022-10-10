@@ -635,9 +635,7 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                         logger,
                     )
                     try:
-                        cols = (
-                            transf_ts.columns
-                        )  # to test if columns are present and raise error if not
+                        transf_ts.columns  # to test if columns are present and raise error if not
                     except AttributeError as e:
                         raise_log(e, logger)
 
