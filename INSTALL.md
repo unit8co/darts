@@ -67,9 +67,9 @@ Before you start make sure that you have rosetta2 installed by running:
 ```
 pgrep oahd
 ``` 
-Internally rosetta is known as oah, so if you will see process id then it means that you are ready to go. 
+If you see some process id you are ready to go, as internally rosetta is known as oah.
 
-If pgrep won't return any id then install rosetta2: 
+If pgrep doesn't return any id then install rosetta2:
 ```
 softwareupdate --install-rosetta
 ```
