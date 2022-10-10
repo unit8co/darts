@@ -15,10 +15,10 @@ time series and a binary ground truth time series indicating the presence of ano
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Optional, Sequence, Union
 
-from darts.anomaly_detection.score import Scorer, TrainableScorer
-from darts.logging import raise_if, raise_if_not
+from darts.anomaly_detection.score import Scorer
+from darts.logging import raise_if_not
 from darts.models.filtering.filtering_model import FilteringModel
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.timeseries import TimeSeries
@@ -104,10 +104,10 @@ class ForecastingAnomalyModel(AnomalyModel):
             Fitted Anomaly model (forecasting model and scorer(s))
         """
 
-        if model_fit_params == None:
+        if model_fit_params is None:
             model_fit_params = {}
 
-        if hist_forecasts_params == None:
+        if hist_forecasts_params is None:
             hist_forecasts_params = {}
 
         # fit forecasting model
@@ -143,7 +143,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             Anomaly score time series
         """
 
-        if hist_forecasts_params == None:
+        if hist_forecasts_params is None:
             hist_forecasts_params = {}
 
         raise_if_not(
@@ -190,7 +190,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             Score for the time series
         """
 
-        if hist_forecasts_params == None:
+        if hist_forecasts_params is None:
             hist_forecasts_params = {}
 
         raise_if_not(
@@ -268,7 +268,7 @@ class FilteringAnomalyModel(AnomalyModel):
             Fitted Anomaly model (filtering model and scorer(s))
         """
 
-        if filter_fit_params == None:
+        if filter_fit_params is None:
             filter_fit_params = {}
 
         # fit filtering model
@@ -299,7 +299,7 @@ class FilteringAnomalyModel(AnomalyModel):
             Anomaly score time series
         """
 
-        if filter_params == None:
+        if filter_params is None:
             filter_params = {}
 
         pred = self.filter.filter(series, **filter_params)
@@ -339,7 +339,7 @@ class FilteringAnomalyModel(AnomalyModel):
             Score for the time series
         """
 
-        if filter_params == None:
+        if filter_params is None:
             filter_params = {}
 
         pred = self.filter.filter(series, **filter_params)

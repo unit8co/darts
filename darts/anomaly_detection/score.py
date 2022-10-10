@@ -101,7 +101,7 @@ class Scorer(ABC):
                 "The Scorer has not been fitted yet. Call `fit()` first",
             )
 
-            if series_2 == None:
+            if series_2 is None:
                 series = series_1
             else:
                 series = self._diff(series_1, series_2)
@@ -110,7 +110,7 @@ class Scorer(ABC):
 
         else:
             raise_if(
-                series_2 == None,
+                series_2 is None,
                 "The Scorer expects two time series input. Only one was given.",
             )
             return self._compute_core(series_1, series_2)
@@ -195,10 +195,10 @@ class TrainableScorer(Scorer):
         # check inputs (type, size, values)
         # check if same timestamp!
 
-        if scorer_fit_params == None:
+        if scorer_fit_params is None:
             scorer_fit_params = {}
 
-        if series_2 == None:
+        if series_2 is None:
             series = series_1
         else:
             series = self._diff(series_1, series_2)

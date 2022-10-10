@@ -17,7 +17,7 @@ from typing import Any, Sequence, Union
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
 from darts import TimeSeries
-from darts.logging import raise_if, raise_if_not
+from darts.logging import raise_if_not
 
 
 class Detector(ABC):
