@@ -312,7 +312,7 @@ class WindowTransformationsTestCase(unittest.TestCase):
 
         window_transformations = [
             {"function": "sum", "window": 1}
-        ]  # if user doesn't specifie closed = 'left'; we default to closed = 'left'
+        ]  # if user doesn't specify closed = 'left'; we default to closed = 'left'
         window_transformer = ForecastingWindowTransformer(
             window_transformations=window_transformations
         )
@@ -325,7 +325,48 @@ class WindowTransformationsTestCase(unittest.TestCase):
         is safe to use in forecasting pipelines
 
         """
-        pass
+        times1 = pd.date_range("20130101", "20130110")
+        series_1 = TimeSeries.from_times_and_values(times1, range(1, 11))
+        user_fn = lambda x: x.sum()
+
+        window_transformations = [
+            {"function": user_fn, "window": 1, "rolling": True, "closed": "left"}
+        ]  # if user specifies closed = 'left'
+        expected_transformed_series = TimeSeries.from_times_and_values(
+            times1, [1, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        )  # closed = 'left' would basically not account for the value at the current
+        # timestep for the computation of the window transformation
+        window_transformer = ForecastingWindowTransformer(
+            window_transformations=window_transformations
+        )
+        transformed_series = window_transformer.transform(series_1)
+        self.assertEqual(transformed_series, expected_transformed_series)
+
+        window_transformations = [
+            {
+                "function": user_fn,
+                "window": 1,
+                "rolling": True,
+            }  # default closed = 'left'
+        ]
+        window_transformer = ForecastingWindowTransformer(
+            window_transformations=window_transformations
+        )
+        transformed_series = window_transformer.transform(series_1)
+        self.assertEqual(transformed_series, expected_transformed_series)
+
+    def test_user_defined_norolling_output_formatting(self):
+        times1 = pd.date_range("20130101", "20130110")
+        series_1 = TimeSeries.from_times_and_values(times1, range(1, 11))
+        user_fn = lambda x: x.sum()
+
+        window_transformations = [{"function": user_fn, "window": 1, "closed": "left"}]
+        window_transformer = ForecastingWindowTransformer(window_transformations)
+
+        with self.assertRaises(
+            AttributeError
+        ):  # user defined function should set column name (if we don't set it)
+            window_transformer.transform(series_1)
 
     def test_transformers_pipline(self):
         """

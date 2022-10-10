@@ -71,7 +71,8 @@ class ForecastingWindowTransformer(BaseDataTransformer):
         "ewmsum": (pd.DataFrame.ewm, "sum", ([], [])),  # exponential weighted sum
     }
 
-    # TODO: add atrribute to indicate if transformer is being called from pipeline, standalone or from model (useful to set column names for example)
+    # TODO: add atrribute to indicate if transformer is being called from pipeline,
+    #  standalone or from model (useful to set column names for example)
     def __init__(
         self,
         window_transformations: Union[dict, List[dict]],
@@ -93,8 +94,10 @@ class ForecastingWindowTransformer(BaseDataTransformer):
             Two option are available for callable functions:
              1) the function is provided along a 'rolling':True item and a 'window' value: in this case the function is
              applied to a rolling window of the input series.
-             2) no 'rolling':True is provided, the function is applied as is to the input TimeSeries and should return a
-             TimeSeries.
+             2) no 'rolling':True item is provided, the function is applied as is to the input. The provided function
+              should take a pandas.DataFrame as input and return a pandas.DataFrame as output with the necessary column
+              names and index formatting to allow for correct following casting into a TimeSeries object. The provided
+              function does not need to cast the pandas.DataFrame into a TimeSeries.
 
             When using the builtin functions, the 'window' key should be provided for the
             pandas.DataFrame.rolling functions group.
@@ -173,7 +176,7 @@ class ForecastingWindowTransformer(BaseDataTransformer):
             for idx, transformation in enumerate(window_transformations):
                 raise_if_not(
                     isinstance(transformation, dict),
-                    f"`window_transformation` must contain dictionaries. Element at index {idx} is not a dictionary.",
+                    f"`window_transformations` must contain dictionaries. Element at index {idx} is not a dictionary.",
                 )
 
                 raise_if_not(
@@ -183,28 +186,31 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                         callable(transformation["function"])
                         or (transformation["function"] in builtin_keys_list)
                     ),
-                    f"`window_transformation` at index {idx} must contain the 'function' key and be callable or one of"
-                    f" {builtin_keys_list}. ",
+                    f"`window_transformations` dictionary at index {idx} must contain the 'function' key and be "
+                    f"callable or one of {builtin_keys_list}.",
                 )
 
-                raise_if_not(
-                    # test that mandatory arguments are provided
-                    # (tests that intersection between two sets is equal to the set of mandatory arguments)
-                    transformation["function"] in builtin_keys_list
-                    and set(
-                        itertools.chain(
-                            *self.BUILTIN_TRANSFORMS[transformation["function"]][2]
-                        )
-                    ).intersection(set(transformation.keys()))
-                    == set(
-                        itertools.chain(
-                            *self.BUILTIN_TRANSFORMS[transformation["function"]][2]
-                        )
-                    ),
-                    f"`window_transformation` dictionary at index {idx} must contain at least the following keys  "
-                    f"{list(itertools.chain(*self.BUILTIN_TRANSFORMS[transformation['function']][2]))} for built-in "
-                    f"{self.BUILTIN_TRANSFORMS[transformation['function']][0].__name__}.{transformation['function']}.",
-                )
+                if isinstance(transformation["function"], str):
+                    raise_if_not(
+                        # test that mandatory arguments for builtins are provided
+                        # (tests that intersection between two sets is equal to the set of mandatory arguments)
+                        transformation["function"] in builtin_keys_list
+                        and set(
+                            itertools.chain(
+                                *self.BUILTIN_TRANSFORMS[transformation["function"]][2]
+                            )
+                        ).intersection(set(transformation.keys()))
+                        == set(
+                            itertools.chain(
+                                *self.BUILTIN_TRANSFORMS[transformation["function"]][2]
+                            )
+                        ),
+                        f"`window_transformation` dictionary at index {idx} must contain at least the following keys "
+                        f"{list(itertools.chain(*self.BUILTIN_TRANSFORMS[transformation['function']][2]))} "
+                        f"for built-in {self.BUILTIN_TRANSFORMS[transformation['function']][0].__name__}"
+                        f".{transformation['function']}"
+                        f".",
+                    )
 
                 if "window" in transformation:
                     raise_if_not(
@@ -287,7 +293,7 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                     if isinstance(transformation["series_id"], int):
                         window_transformations[idx]["series_id"] = [
                             transformation["series_id"]
-                        ]
+                        ]  # make list
 
                 if "comp_id" in transformation and transformation["comp_id"] is None:
                     window_transformations[idx].pop("comp_id")
@@ -327,7 +333,7 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                     if isinstance(transformation["comp_id"], int):
                         window_transformations[idx]["comp_id"] = [
                             transformation["comp_id"]
-                        ]
+                        ]  # make list
 
         self.window_transformations = window_transformations
 
@@ -453,6 +459,22 @@ class ForecastingWindowTransformer(BaseDataTransformer):
             The transformation to be applied.
         builtins
             The built-in transformations read from the ForecastingWindowTransformer class.
+        kwargs
+            The keyword arguments received from the user when calling transform().
+            Expecting either 'navalue' and/or 'fillnamethod' to be passed in order to fill missing values.
+            Behaviour:
+            - if 'navalue' is passed and no 'fillnamethod' keyword (or set to None),
+               then the missing values are filled with this value.
+            - if 'fillnamethod' is passed and no 'navalue' keyword (or set to None),
+                then the missing values are filled with the method specified.
+            - if both 'navalue' and 'fillnamethod' are provided and are not None,
+                then a ValueError is raised catching pandas ValueError because cannot be provided to pandas.fillna().
+            - if both 'navalue' and 'fillnamethod' are explicitly None,
+                then the missing values are not filled.
+            - if neither 'navalue' nor 'fillnamethod' are provided,
+                then the missing values are filled as if fillnamethod='bfill' (backfill).
+            - if 'navalue' is None and no 'fillnamethod' is provided,
+                then the missing values are filled as if fillnamethod='bfill' (backfill).
 
         Returns
         -------
@@ -525,7 +547,17 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                     Exception("The transformation function is not valid."), logger
                 )
 
-        fillna = kwargs.get("fillna", "bfill")
+        # get the kwargs from the transform() function call.
+        fillnamethod = kwargs.get(
+            "fillnamethod",
+            "bfill"
+            if (
+                ("navalue" not in kwargs)
+                or ("navalue" in kwargs and kwargs["navalue"] is None)
+            )
+            else None,
+        )
+        navalue = kwargs.get("navalue", None)
 
         BUILTIN_TRANSFORMS = builtins
 
@@ -564,8 +596,6 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                         function_name,
                     )(**function_kwargs)
 
-                    # TODO : set new feature column name by series_id, comp_id and function name, window_size?
-
                     transf_ts.append(transf_df_ts)
             else:
                 function_group_kwargs, function_kwargs = _get_function_kwargs(
@@ -577,29 +607,68 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                     function_name,
                 )(**function_kwargs)
 
-                # TODO :set new feature column name by series_id, comp_id and function name, window_size?
-
         else:  # user provided function with "rolling" key
             function_kwargs = _get_function_kwargs(transformation, BUILTIN_TRANSFORMS)
             if "rolling" in function_kwargs:
                 transf_ts = []
                 window_list_copy = copy.deepcopy(function_kwargs["window"])
+                closed = (
+                    function_kwargs["closed"] if "closed" in function_kwargs else "left"
+                )  # forecasting safe
                 function_kwargs.pop("rolling")
                 function_kwargs.pop("window")
+                function_kwargs.pop("closed") if "closed" in function_kwargs else None
                 for window in window_list_copy:  # run through window list
-                    transf_ts.append(df_ts.rolling(window).apply(fn, **function_kwargs))
+                    transf_ts.append(
+                        df_ts.rolling(window=window, closed=closed).apply(
+                            fn, **function_kwargs
+                        )
+                    )
 
             else:  # if no rolling argument, apply function as provided by the user
-                transf_ts = df_ts.apply(lambda x: fn(x))
-            # TODO : set new column name ?
+                try:
+                    transf_ts = df_ts.apply(lambda x: fn(x))
+                    raise_user_warning(
+                        len(transf_ts.index) == len(df_ts.index),
+                        "The transformation function must return a dataframe with the same index "
+                        "as the input dataframe.",
+                        logger,
+                    )
+                    try:
+                        cols = (
+                            transf_ts.columns
+                        )  # to test if columns are present and raise error if not
+                    except AttributeError as e:
+                        raise_log(e, logger)
+
+                except Exception as e:
+                    raise_log(e, logger)
+
+        # TODO : set new column names ? some defaults are provided by pandas,
+        #  but not for the user provided function without rolling
 
         # validate output and return pandas.DataFrame
         transf_ts = (
             pd.concat(transf_ts, axis=1) if isinstance(transf_ts, list) else transf_ts
         )
 
-        # fill NAs
-        transf_ts.fillna(method=fillna, inplace=True)  # managed by pandas
+        # fill NAs - default is to fill NAs backwards (bfill)
+        # pandas.fillna allows to either provide a value or a method to fillna, not both
+        # https: // pandas.pydata.org / docs / reference / api / pandas.DataFrame.fillna.html
+        if fillnamethod is not None or navalue is not None:
+            try:
+                transf_ts.fillna(
+                    value=navalue, method=fillnamethod, inplace=True
+                )  # managed by pandas
+            except ValueError:
+                raise_log(
+                    ValueError(
+                        "You provided both keywords arguments, navalue and fillnamethod. "
+                        "Only one or the other can be provided. You can either set one of them "
+                        "to None or not provide it as keyword in the transform() function call."
+                    ),
+                    logger,
+                )
 
         return TimeSeries.from_dataframe(transf_ts)
 
