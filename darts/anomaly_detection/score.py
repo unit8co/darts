@@ -2,13 +2,13 @@
 Scorer
 -------
 
-Scorers can be trainable (TrainableScorer) or not trainable (NonTrainableScorer). The main functions are `fit()` 
-(only for the trainable scorer), `compute()` and `score()`. 
+Scorers can be trainable (TrainableScorer) or not trainable (NonTrainableScorer). The main functions are `fit()`
+(only for the trainable scorer), `compute()` and `score()`.
 
-`fit()` learns the function `f()`, over the history of one time series. The function `compute()` takes as input 
-two time series, and applies the function `f()` to obtain an anomaly score time series. The function `score()` 
-returns the score of an agnostic threshold metric (AUC-ROC or AUC-PR), between an anomaly score time series and a 
-binary ground truth time series indicating the presence of anomalies.  
+`fit()` learns the function `f()`, over the history of one time series. The function `compute()` takes as input
+two time series, and applies the function `f()` to obtain an anomaly score time series. The function `score()`
+returns the score of an agnostic threshold metric (AUC-ROC or AUC-PR), between an anomaly score time series and a
+binary ground truth time series indicating the presence of anomalies.
 """
 
 from abc import ABC, abstractmethod

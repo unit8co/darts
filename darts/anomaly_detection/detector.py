@@ -2,13 +2,13 @@
 Detector
 -------
 
-Detectors can be trainable (TrainableDetector) or not trainable (NonTrainableDetector). The main functions are 
+Detectors can be trainable (TrainableDetector) or not trainable (NonTrainableDetector). The main functions are
 `fit()` (only for the trainable scorer), `detect()` and `score()`.
 
-`fit()` learns the function `f()`, over the history of one anomaly score time series. The function `detect()` 
-takes an anomaly score time series as input, and applies the function `f()` to obtain a binary prediction. 
-The function `score()` returns the metric score (accuracy/precision/recall/f1), between a binary prediction 
-time series and a binary ground truth time series indicating the presence of anomalies.  
+`fit()` learns the function `f()`, over the history of one anomaly score time series. The function `detect()`
+takes an anomaly score time series as input, and applies the function `f()` to obtain a binary prediction.
+The function `score()` returns the metric score (accuracy/precision/recall/f1), between a binary prediction
+time series and a binary ground truth time series indicating the presence of anomalies.
 """
 
 from abc import ABC, abstractmethod

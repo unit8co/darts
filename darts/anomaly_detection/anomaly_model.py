@@ -2,16 +2,15 @@
 AnomalyModel
 -------
 Anomaly models expect a model and a scorer, and will take as input a time series and returns its anomaly score
-as a time series. 
+as a time series.
 
-The model can be a forecasting method (ForecastingAnomalyModel) or a filtering method (FilteringAnomalyModel). 
-The main functions are `fit()` (only for the trainable model/scorer), `score()` and `score_metric()`. `fit()` 
+The model can be a forecasting method (ForecastingAnomalyModel) or a filtering method (FilteringAnomalyModel).
+The main functions are `fit()` (only for the trainable model/scorer), `score()` and `score_metric()`. `fit()`
 will train the model and/or the scorer, over the history of one time series. `score()` will apply the model on
-the time series input, and the scorer on the prediction of the model and the time series input. The `score()` 
-will output the anomaly score of the time series input. The function `score_metric()` is the same as `score()`, 
-but outputs the score of an agnostic threshold metric (AUC-ROC or AUC-PR), between the predicted anomaly score 
-time series and a binary ground truth time series indicating the presence of anomalies.  
-
+the time series input, and the scorer on the prediction of the model and the time series input. The `score()`
+will output the anomaly score of the time series input. The function `score_metric()` is the same as `score()`,
+but outputs the score of an agnostic threshold metric (AUC-ROC or AUC-PR), between the predicted anomaly score
+time series and a binary ground truth time series indicating the presence of anomalies.
 """
 
 from abc import ABC, abstractmethod
@@ -65,7 +64,7 @@ class ForecastingAnomalyModel(AnomalyModel):
 
         raise_if_not(
             isinstance(model, ForecastingModel),
-            "Model must be a darts.models.forecasting not a {}".format(type(model)),
+            f"Model must be a darts.models.forecasting not a {type(model)}",
         )
         self.model = model
 
@@ -148,7 +147,7 @@ class ForecastingAnomalyModel(AnomalyModel):
 
         raise_if_not(
             self.model._fit_called,
-            "Model {} has not been trained. Please call .fit()".format(self.model),
+            f"Model {self.model} has not been trained. Please call .fit()",
         )
 
         pred = self.model.historical_forecasts(
@@ -195,7 +194,7 @@ class ForecastingAnomalyModel(AnomalyModel):
 
         raise_if_not(
             self.model._fit_called,
-            "Model {} has not been trained. Please call .fit()".format(self.model),
+            f"Model {self.model} has not been trained. Please call .fit()",
         )
 
         pred = self.model.historical_forecasts(
@@ -234,7 +233,7 @@ class FilteringAnomalyModel(AnomalyModel):
 
         raise_if_not(
             isinstance(filter, FilteringModel),
-            "Model must be a darts.models.filtering not a {}".format(type(filter)),
+            f"Model must be a darts.models.filtering not a {type(filter)}",
         )
         self.filter = filter
 
@@ -338,7 +337,6 @@ class FilteringAnomalyModel(AnomalyModel):
         float
             Score for the time series
         """
-
         if filter_params is None:
             filter_params = {}
 
