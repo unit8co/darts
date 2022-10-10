@@ -1,5 +1,3 @@
-import numpy as np
-
 from darts.timeseries import TimeSeries
 from darts.logging import (
     get_logger,
@@ -7,8 +5,8 @@ from darts.logging import (
     raise_log,
     raise_user_warning,
 )
-from typing import List, Optional, Sequence, Tuple, Union, Callable, Iterator
-from darts.utils.utils import _check_quantiles, seq2series, series2seq
+from typing import List, Sequence, Tuple, Union, Iterator
+from darts.utils.utils import series2seq
 import pandas as pd
 import itertools
 import copy
@@ -41,7 +39,6 @@ class ForecastingWindowTransformer(BaseDataTransformer):
         "corr": (pd.DataFrame.rolling, "corr", (["window"], [])),
         "cov": (pd.DataFrame.rolling, "cov", (["window"], [])),
         "skew": (pd.DataFrame.rolling, "skew", (["window"], [])),
-        "kurt": (pd.DataFrame.rolling, "kurt", (["window"], [])),
         "quantile": (pd.DataFrame.rolling, "quantile", (["window"], ["quantile"])),
         "sem": (
             pd.DataFrame.rolling,
@@ -94,33 +91,40 @@ class ForecastingWindowTransformer(BaseDataTransformer):
             applied from {BUILTIN_TRANSFORMS}, or a callable function that can be applied to the input series.
 
             Two option are available for callable functions:
-             1) the function is provided along a 'rolling':True item and a 'window' value: in this case the function is applied
-                to a rolling window of the input series.
-             2) no 'rolling':True is provided, the function is applied as is to the input TimeSeries and should return a TimeSeries.
+             1) the function is provided along a 'rolling':True item and a 'window' value: in this case the function is
+             applied to a rolling window of the input series.
+             2) no 'rolling':True is provided, the function is applied as is to the input TimeSeries and should return a
+             TimeSeries.
 
-            When using the builtin functions, the 'window' key should be provided for the pandas.DataFrame.rolling functions group.
+            When using the builtin functions, the 'window' key should be provided for the
+            pandas.DataFrame.rolling functions group.
             The 'window' value should be a positive integer representing the size of the window to be used for the
             transformation. The 'window' value can be a list of integers, in which case the transformation will be
             applied multiple times, once with each window size value in the list.
             Two optional keys can be provided for more flexibility: 'series_id' and 'comp_id'.
-            The 'series_id' key specifies the index of the series in the input sequence of series to which the transformation should be applied.
-            The 'comp_id' key specifies the index of the component of the series to which the transformation should be applied.
-            When 'series_id' and 'comp_id' are not provided, the transformation is applied to all the series and components.
-            All other keys provided will be treated as keyword arguments for the function group (i.e., pandas.DataFrame.rolling or pandas.DataFrame.ewm)
-            or for the specific function in that group (i.e., pandas.DataFrame.rolling.mean/std/max/min... or pandas.DataFrame.ewm.mean/std/sum).
+            The 'series_id' key specifies the index of the series in the input sequence of series to which the
+            transformation should be applied.
+            The 'comp_id' key specifies the index of the component of the series to which the transformation
+            should be applied.
+            When 'series_id' and 'comp_id' are not provided, the transformation is applied to all the series
+            and components.
+            All other keys provided will be treated as keyword arguments for the function group
+            (i.e., pandas.DataFrame.rolling or pandas.DataFrame.ewm) or for the specific function in that group
+            (i.e., pandas.DataFrame.rolling.mean/std/max/min... or pandas.DataFrame.ewm.mean/std/sum).
             Example of use:
 
                     .. highlight:: python
                     .. code-block:: python
                         from darts.dataprocessing.transformers import ForecastingWindowTransformer
                         all_series = [series_1, series_2, series_3] # each series could have multiple components
-                        window_transformations_1 = [{'function':'mean', 'window':[3], 'series_id': 0, 'comp_id':[0,1,2]},
+                        window_transformations_1 = [{'function':'mean','window':[3],'series_id': 0,'comp_id':[0,1,2]},
                                                     {'function':'quantile', 'window':[3, 5, 30], 'quantile':0.5}]
                          window_transformer_1 = ForecastingWindowTransformer(window_transformations_1)
                         transformed_series_1 = window_transformer.transform(all_series)
 
                         zscore_fn = lambda x: (x[-1] - x.mean()) / x.std()
-                        window_transformations_2 = {'function': zscore_fn , 'rolling':True, 'window':[3], 'series_id': 0, 'comp_id':[0,1,2]}
+                        window_transformations_2 = {'function': zscore_fn ,'rolling':True,'window':[3],'series_id': 0,
+                                                                                                    'comp_id':[0,1,2]}
                         window_transformer_2 = ForecastingWindowTransformer(window_transformations_2)
                         transformed_series_2 = window_transformer_2.transform(all_series)
                     ..
@@ -141,8 +145,8 @@ class ForecastingWindowTransformer(BaseDataTransformer):
         if window_transformations is None:
             raise_log(
                 ValueError(
-                    f"window_transformations argument should be provided and "
-                    f"must be a non-empty dictionary or a non-empty list of dictionaries."
+                    "window_transformations argument should be provided and "
+                    "must be a non-empty dictionary or a non-empty list of dictionaries."
                 ),
                 logger,
             )
@@ -158,7 +162,7 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                     isinstance(window_transformations, list)
                     and len(window_transformations) > 0
                 ),
-                f"`window_transformations` must be a non-empty dictionary or a non-empty list of dictionaries. ",
+                "`window_transformations` must be a non-empty dictionary or a non-empty list of dictionaries. ",
             )
 
             if isinstance(window_transformations, dict):
@@ -211,7 +215,7 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                     if isinstance(transformation["window"], int):
                         raise_if_not(
                             transformation["window"] > 0,
-                            f"`window_transformation` at index {idx} must contain a positive integer for the 'window'. ",
+                            f"`window_transformation` at index {idx} must contain a positive integer for the 'window'.",
                         )
                         window_transformations[idx]["window"] = [
                             transformation["window"]
@@ -225,13 +229,14 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                         for idws, window in enumerate(transformation["window"]):
                             raise_if_not(
                                 isinstance(window, int) and window > 0,
-                                f"`window_transformation` at index {idx} must contain only positive integers for the 'window'. "
-                                f"Found {window} at index {idws}.",
+                                f"`window_transformation` at index {idx} must contain only positive integers for the "
+                                f"'window'. Found {window} at index {idws}.",
                             )
                     else:
                         raise_log(
                             ValueError(
-                                f"`window_transformation` at index {idx} must contain a positive integer or a list of positive integers for the 'window'. "
+                                f"`window_transformation` at index {idx} must contain a positive integer or a list "
+                                f"of positive integers for the 'window'. "
                             ),
                             logger,
                         )
@@ -276,8 +281,8 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                                 for x in transformation["series_id"]
                             )
                         ),
-                        f"`window_transformation` at index {idx} must contain a positive integer or 0 for the 'series_id', "
-                        f"or a non-empty list containing positive integers/0. ",
+                        f"`window_transformation` at index {idx} must contain a positive integer or 0 for the "
+                        f"'series_id', or a non-empty list containing positive integers/0. ",
                     )
                     if isinstance(transformation["series_id"], int):
                         window_transformations[idx]["series_id"] = [
@@ -316,8 +321,8 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                                 )
                             )
                         ),
-                        f"`window_transformation` at index {idx} must contain a positive integer or 0 for the 'comp_id', or a non-empty "
-                        f"list containing positive integers/0. ",
+                        f"`window_transformation` at index {idx} must contain a positive integer or 0 "
+                        f"for the 'comp_id', or a non-empty list containing positive integers/0. ",
                     )
                     if isinstance(transformation["comp_id"], int):
                         window_transformations[idx]["comp_id"] = [
@@ -350,7 +355,8 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                 # apply the transformation to a specific series and all its components
                 raise_if_not(
                     len(series) - 1 >= max(transformation["series_id"]),
-                    f"`window_transformation` at index {idx} has a 'series_id' that is greater than the number of series. ",
+                    f"`window_transformation` at index {idx} has a 'series_id' that is greater than "
+                    f"the number of series. ",
                 )
                 series_subset += [
                     (series[s_idx].univariate_component(c), transformation, builtins)
@@ -367,7 +373,7 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                         for s_idx in range(len(series))
                         for c_idx in transformation["comp_id"]
                     ),
-                    f"Some components are not available in the provided series.",
+                    "Some components are not available in the provided series.",
                 )
 
                 series_subset += [
@@ -389,7 +395,7 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                                 transformation["series_id"], transformation["comp_id"]
                             )
                         ),
-                        f"Some components are not available in the provided series.",
+                        "Some components are not available in the provided series.",
                     )
                     series_subset += [
                         (
@@ -416,7 +422,7 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                             for s_idx in transformation["series_id"]
                             for c_idx in transformation["comp_id"]
                         ),
-                        f"Some components are not available in the provided series.",
+                        "Some components are not available in the provided series.",
                     )
                     series_subset += [
                         (
@@ -436,8 +442,8 @@ class ForecastingWindowTransformer(BaseDataTransformer):
     ) -> TimeSeries:
         """
         Applies the transformation to the given TimeSeries.
-        This function is called by the `transform` method of the `BaseDataTransformer` class. It takes only one TimeSeries
-        as input and returns the transformed TimeSeries.
+        This function is called by the `transform` method of the `BaseDataTransformer` class.
+        It takes only one TimeSeries as input and returns the transformed TimeSeries.
 
         Parameters
         ----------

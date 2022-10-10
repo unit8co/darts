@@ -1,11 +1,9 @@
-import logging
 import unittest
 
 from darts.dataprocessing.transformers.window_transformer import (
     ForecastingWindowTransformer,
 )
 from darts.utils.timeseries_generation import linear_timeseries as lt
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 import pandas as pd
 from darts import TimeSeries
 from darts.dataprocessing.pipeline import Pipeline
@@ -272,7 +270,8 @@ class WindowTransformationsTestCase(unittest.TestCase):
         )
         transformed_series = window_transformer.transform(all_series)
         self.assertEqual(len(transformed_series), 10)
-        # self.assertEqual(len(transformed_series), 15) TODO: validate how to return multiple window sizes for same function
+        # self.assertEqual(len(transformed_series), 15)
+        # TODO: validate how to return multiple window sizes for same function
 
         # series out of range
         window_transformations = {"function": "mean", "window": 3, "series_id": 3}
@@ -292,7 +291,8 @@ class WindowTransformationsTestCase(unittest.TestCase):
 
     def test_forecasting_safe_builtin_rolling(self):
         """
-        Test that the forecasting window transformer, based on built_in rolling fucntions, is safe to use in forecasting pipelines
+        Test that the forecasting window transformer, based on built_in rolling fucntions,
+        is safe to use in forecasting pipelines
 
         """
         times1 = pd.date_range("20130101", "20130110")
@@ -321,7 +321,8 @@ class WindowTransformationsTestCase(unittest.TestCase):
 
     def test_forecasting_safe_user_defined_rolling(self):
         """
-        Test that the forecasting window transformer, based on user defined rolling function, is safe to use in forecasting pipelines
+        Test that the forecasting window transformer, based on user defined rolling function,
+        is safe to use in forecasting pipelines
 
         """
         pass
