@@ -3,7 +3,7 @@ Detector
 -------
 
 Detectors can be trainable (TrainableDetector) or not trainable (NonTrainableDetector). The main functions are 
-`fit()` (only for the trainable scorer), `detect()` and `score()`. 
+`fit()` (only for the trainable scorer), `detect()` and `score()`.
 
 `fit()` learns the function `f()`, over the history of one anomaly score time series. The function `detect()` 
 takes an anomaly score time series as input, and applies the function `f()` to obtain a binary prediction. 
