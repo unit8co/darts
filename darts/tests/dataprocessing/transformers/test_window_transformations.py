@@ -1,12 +1,13 @@
 import unittest
 
+import pandas as pd
+
+from darts import TimeSeries
+from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers.window_transformer import (
     ForecastingWindowTransformer,
 )
 from darts.utils.timeseries_generation import linear_timeseries as lt
-import pandas as pd
-from darts import TimeSeries
-from darts.dataprocessing.pipeline import Pipeline
 
 
 class WindowTransformationsTestCase(unittest.TestCase):

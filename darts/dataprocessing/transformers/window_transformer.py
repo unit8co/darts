@@ -1,17 +1,13 @@
-from darts.timeseries import TimeSeries
-from darts.logging import (
-    get_logger,
-    raise_if_not,
-    raise_log,
-    raise_user_warning,
-)
-from typing import List, Sequence, Tuple, Union, Iterator
-from darts.utils.utils import series2seq
-import pandas as pd
-import itertools
 import copy
+import itertools
+from typing import Iterator, List, Sequence, Tuple, Union
+
+import pandas as pd
 
 from darts.dataprocessing.transformers import BaseDataTransformer
+from darts.logging import get_logger, raise_if_not, raise_log, raise_user_warning
+from darts.timeseries import TimeSeries
+from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
 
