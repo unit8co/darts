@@ -35,7 +35,7 @@ Read our `user guide on covariates <https://unit8co.github.io/darts/userguide/co
 import pickle
 from collections import defaultdict
 from inspect import signature
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -1857,17 +1857,19 @@ class TimeSeries:
     =============
     """
 
-    def gaps(self, mode: str = "all") -> pd.DataFrame:
+    def gaps(self, mode: Literal["all", "any"] = "all") -> pd.DataFrame:
         """
         A function to compute and return gaps in the TimeSeries. Works only on deterministic time series (1 sample).
+
         Parameters
         ----------
         mode
             Only relevant for multivariate time series. The mode defines how gaps are defined. Set to
             'any' if a NaN value in any columns should be considered as as gaps. 'all' will only
             consider periods where all columns' values are NaN. Defaults to 'all'.
+
         Returns
-        -------/
+        -------
         pd.DataFrame
             A pandas.DataFrame containing a row for every gap (rows with all-NaN values in underlying DataFrame)
             in this time series. The DataFrame contains three columns that include the start and end time stamps
@@ -1907,7 +1909,7 @@ class TimeSeries:
                 if self._has_datetime_index:
                     return pd.date_range(start=start, end=end, freq=self._freq).size
                 else:
-                    return end - start + 1
+                    return int((end - start) / self._freq) + 1
 
             gap_df["gap_start"] = gap_starts
             gap_df["gap_end"] = gap_ends
@@ -2304,6 +2306,7 @@ class TimeSeries:
         (contiguous all-NaN values) larger than `max_gap_size`.
 
         This method is only applicable to deterministic series (i.e., having 1 sample).
+
         Parameters
         ----------
         max_gap_size
