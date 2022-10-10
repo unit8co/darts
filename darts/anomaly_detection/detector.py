@@ -12,7 +12,7 @@ time series and a binary ground truth time series indicating the presence of ano
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Sequence, Union
+from typing import Any, Sequence, Union
 
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
