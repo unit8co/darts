@@ -63,6 +63,17 @@ instead of trying to install directly with native arm64 packages, many of the de
 issues. The following is a proposed procedure, if you tested other procedures on similar hardware and they worked, 
 please let us know about them by opening an issue or by updating this file and opening a PR. 
 
+Before you start make sure that you have rosetta2 installed by running: 
+```
+pgrep oahd
+``` 
+Internally rosetta is known as oah, so if you will see process id then it means that you are ready to go. 
+
+If pgrep won't return any id then install rosetta2: 
+```
+softwareupdate --install-rosetta
+```
+
 Below are the necessary instructions to create and configure the environment:
 - Start by installing conda (e.g., with miniforge : `brew install miniforge`).
 - Create the x_64 environment : `CONDA_SUBDIR=osx-64 conda create -n env_name python=3.9 pip`
