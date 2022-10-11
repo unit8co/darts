@@ -231,7 +231,7 @@ class Prophet(DualCovariatesForecastingModel):
         prior_scale: Optional[float] = None,
         mode: Optional[str] = None,
     ) -> None:
-        """Adds a custom seasonality to the model that reapeats after every n `seasonal_periods` timesteps.
+        """Adds a custom seasonality to the model that repeats after every n `seasonal_periods` timesteps.
         An example for `seasonal_periods`: If you have hourly data (frequency='H') and your seasonal cycle repeats
         after 48 hours -> `seasonal_periods=48`.
 

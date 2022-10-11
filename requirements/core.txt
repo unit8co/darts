@@ -17,3 +17,4 @@ statsmodels>=0.13.0
 tbats>=1.1.0
 tqdm>=4.60.0
 xarray>=0.17.0
+shap>=0.40.0

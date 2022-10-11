@@ -4,7 +4,6 @@ Encoder Base Classes
 """
 
 from abc import ABC, abstractmethod
-from enum import Enum, auto
 from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
@@ -12,18 +11,12 @@ import pandas as pd
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import FittableDataTransformer
-from darts.logging import get_logger
-from darts.utils.timeseries_generation import _generate_index
+from darts.logging import get_logger, raise_if
+from darts.utils.timeseries_generation import generate_index
 
 SupportedIndex = Union[pd.DatetimeIndex, pd.RangeIndex]
 EncoderOutputType = Optional[Union[Sequence[TimeSeries], List[TimeSeries]]]
 logger = get_logger(__name__)
-
-
-class ReferenceIndexType(Enum):
-    PREDICTION = auto()
-    START = auto()
-    NONE = auto()
 
 
 class CovariateIndexGenerator(ABC):
@@ -31,7 +24,6 @@ class CovariateIndexGenerator(ABC):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
-        reference_index_type: ReferenceIndexType = ReferenceIndexType.NONE,
     ):
         """
         Parameters
@@ -40,19 +32,14 @@ class CovariateIndexGenerator(ABC):
             The length of the emitted past series.
         output_chunk_length
             The length of the emitted future series.
-        reference_index
-            If a reference index should be saved, set `reference_index` to one of `(ReferenceIndexType.PREDICTION,
-            ReferenceIndexType.START)`
         """
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
-        self.reference_index_type = reference_index_type
-        self.reference_index: Optional[Tuple[int, Union[pd.Timestamp, int]]] = None
 
     @abstractmethod
     def generate_train_series(
         self, target: TimeSeries, covariate: Optional[TimeSeries] = None
-    ) -> SupportedIndex:
+    ) -> Tuple[SupportedIndex, pd.Timestamp]:
         """
         Implement a method that extracts the required covariate index for training.
 
@@ -68,7 +55,7 @@ class CovariateIndexGenerator(ABC):
     @abstractmethod
     def generate_inference_series(
         self, n: int, target: TimeSeries, covariate: Optional[TimeSeries] = None
-    ) -> SupportedIndex:
+    ) -> Tuple[SupportedIndex, pd.Timestamp]:
         """
         Implement a method that extracts the required covariate index for prediction.
 
@@ -83,31 +70,33 @@ class CovariateIndexGenerator(ABC):
         """
         pass
 
+    @property
+    @abstractmethod
+    def base_component_name(self) -> str:
+        """Returns the index generator base component name.
+        - "pc": past covariates
+        - "fc": future covariates
+        """
+        pass
+
 
 class PastCovariateIndexGenerator(CovariateIndexGenerator):
     """Generates index for past covariates on train and inference datasets"""
 
     def generate_train_series(
         self, target: TimeSeries, covariate: Optional[TimeSeries] = None
-    ) -> SupportedIndex:
+    ) -> Tuple[SupportedIndex, pd.Timestamp]:
 
         super().generate_train_series(target, covariate)
-
-        # save a reference index if specified
-        if (
-            self.reference_index_type is not ReferenceIndexType.NONE
-            and self.reference_index is None
-        ):
-            if self.reference_index_type is ReferenceIndexType.PREDICTION:
-                self.reference_index = (len(target) - 1, target.end_time())
-            else:  # save the time step before start of target series
-                self.reference_index = (-1, target.start_time() - target.freq)
-
-        return covariate.time_index if covariate is not None else target.time_index
+        target_end = target.end_time()
+        return (
+            covariate.time_index if covariate is not None else target.time_index,
+            target_end,
+        )
 
     def generate_inference_series(
         self, n: int, target: TimeSeries, covariate: Optional[TimeSeries] = None
-    ) -> SupportedIndex:
+    ) -> Tuple[SupportedIndex, pd.Timestamp]:
         """For prediction (`n` is given) with past covariates we have to distinguish between two cases:
         1)  If past covariates are given, we can use them as reference
         2)  If past covariates are missing, we need to generate a time index that starts `input_chunk_length`
@@ -115,14 +104,24 @@ class PastCovariateIndexGenerator(CovariateIndexGenerator):
         """
 
         super().generate_inference_series(n, target, covariate)
+        target_end = target.end_time()
         if covariate is not None:
-            return covariate.time_index
+            return covariate.time_index, target_end
         else:
-            return _generate_index(
-                start=target.end_time() - target.freq * (self.input_chunk_length - 1),
-                length=self.input_chunk_length + max(0, n - self.output_chunk_length),
-                freq=target.freq,
+            return (
+                generate_index(
+                    start=target.end_time()
+                    - target.freq * (self.input_chunk_length - 1),
+                    length=self.input_chunk_length
+                    + max(0, n - self.output_chunk_length),
+                    freq=target.freq,
+                ),
+                target_end,
             )
+
+    @property
+    def base_component_name(self) -> str:
+        return "pc"
 
 
 class FutureCovariateIndexGenerator(CovariateIndexGenerator):
@@ -130,43 +129,44 @@ class FutureCovariateIndexGenerator(CovariateIndexGenerator):
 
     def generate_train_series(
         self, target: TimeSeries, covariate: Optional[TimeSeries] = None
-    ) -> SupportedIndex:
+    ) -> Tuple[SupportedIndex, pd.Timestamp]:
         """For training (when `n` is `None`) we can simply use the future covariates (if available) or target as
         reference to extract the time index.
         """
 
         super().generate_train_series(target, covariate)
-
-        # save a reference index if specified
-        if (
-            self.reference_index_type is not ReferenceIndexType.NONE
-            and self.reference_index is None
-        ):
-            if self.reference_index_type is ReferenceIndexType.PREDICTION:
-                self.reference_index = (len(target) - 1, target.end_time())
-            else:  # save the time step before start of target series
-                self.reference_index = (-1, target.start_time() - target.freq)
-
-        return covariate.time_index if covariate is not None else target.time_index
+        target_end = target.end_time()
+        return (
+            covariate.time_index if covariate is not None else target.time_index,
+            target_end,
+        )
 
     def generate_inference_series(
         self, n: int, target: TimeSeries, covariate: Optional[TimeSeries] = None
-    ) -> SupportedIndex:
+    ) -> Tuple[SupportedIndex, pd.Timestamp]:
         """For prediction (`n` is given) with future covariates we have to distinguish between two cases:
         1)  If future covariates are given, we can use them as reference
         2)  If future covariates are missing, we need to generate a time index that starts `input_chunk_length`
             before the end of `target` and ends `max(n, output_chunk_length)` after the end of `target`
         """
         super().generate_inference_series(n, target, covariate)
-
+        target_end = target.end_time()
         if covariate is not None:
-            return covariate.time_index
+            return covariate.time_index, target_end
         else:
-            return _generate_index(
-                start=target.end_time() - target.freq * (self.input_chunk_length - 1),
-                length=self.input_chunk_length + max(n, self.output_chunk_length),
-                freq=target.freq,
+            return (
+                generate_index(
+                    start=target.end_time()
+                    - target.freq * (self.input_chunk_length - 1),
+                    length=self.input_chunk_length + max(n, self.output_chunk_length),
+                    freq=target.freq,
+                ),
+                target_end,
             )
+
+    @property
+    def base_component_name(self) -> str:
+        return "fc"
 
 
 class Encoder(ABC):
@@ -176,6 +176,7 @@ class Encoder(ABC):
     def __init__(self):
         self.attribute = None
         self.dtype = np.float64
+        self._fit_called = False
 
     @abstractmethod
     def encode_train(
@@ -183,7 +184,7 @@ class Encoder(ABC):
         target: TimeSeries,
         covariate: Optional[TimeSeries] = None,
         merge_covariate: bool = True,
-        **kwargs
+        **kwargs,
     ) -> TimeSeries:
         """Each subclass must implement a method to encode covariate index for training.
 
@@ -205,7 +206,7 @@ class Encoder(ABC):
         target: TimeSeries,
         covariate: Optional[TimeSeries] = None,
         merge_covariate: bool = True,
-        **kwargs
+        **kwargs,
     ) -> TimeSeries:
         """Each subclass must implement a method to encode covariate index for prediction
 
@@ -238,9 +239,48 @@ class Encoder(ABC):
         """
         return covariate.stack(encoded) if covariate is not None else encoded
 
+    @staticmethod
+    def _drop_encoded_components(
+        covariate: Optional[TimeSeries], components: pd.Index
+    ) -> Optional[TimeSeries]:
+        """Avoid pitfalls: `encode_train()` or `encode_inference()` can be called multiple times or chained.
+        Exclude any encoded components from `covariate` to generate and add the new encodings at a later time.
+        """
+        if covariate is None:
+            return covariate
+
+        duplicate_components = components[components.isin(covariate.components)]
+        # case 1: covariate only consists of encoded components
+        if len(duplicate_components) == len(covariate.components):
+            covariate = None
+        # case 2: covariate has also non-encoded components
+        elif len(duplicate_components) and len(duplicate_components) < len(
+            covariate.components
+        ):
+            covariate = covariate[
+                list(
+                    covariate.components[
+                        ~covariate.components.isin(duplicate_components)
+                    ]
+                )
+            ]
+        return covariate
+
+    @property
+    def fit_called(self) -> bool:
+        """Returns whether the `Encoder` object has been fitted."""
+        return self._fit_called
+
+    @property
+    @abstractmethod
+    def requires_fit(self) -> bool:
+        """Whether the `Encoder` sub class must be fit with `Encoder.encode_train()` before inference
+        with `Encoder.encode_inference()`."""
+        pass
+
 
 class SingleEncoder(Encoder, ABC):
-    """Abstract class for single index encoders.
+    """`SingleEncoder`: Abstract class for single index encoders.
     Single encoders can be used to implement new encoding techniques.
     Each single encoder must implement an `_encode()` method that carries the encoding logic.
 
@@ -263,16 +303,20 @@ class SingleEncoder(Encoder, ABC):
 
         super().__init__()
         self.index_generator = index_generator
+        self._components = pd.Index([])
 
     @abstractmethod
-    def _encode(self, index: SupportedIndex, dtype: np.dtype) -> TimeSeries:
+    def _encode(
+        self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype
+    ) -> TimeSeries:
         """Single Encoders must implement an _encode() method to encode the index.
 
         Parameters
         ----------
         index
             The index generated from `self.index_generator` for either the train or inference dataset.
-            :param dtype:
+        target_end
+            The end time of the target series.
         dtype
             The dtype of the encoded index
         """
@@ -283,7 +327,7 @@ class SingleEncoder(Encoder, ABC):
         target: TimeSeries,
         covariate: Optional[TimeSeries] = None,
         merge_covariate: bool = True,
-        **kwargs
+        **kwargs,
     ) -> TimeSeries:
         """Returns encoded index for training.
 
@@ -298,12 +342,31 @@ class SingleEncoder(Encoder, ABC):
         merge_covariate
             Whether or not to merge the encoded TimeSeries with `covariate`.
         """
-        index = self.index_generator.generate_train_series(target, covariate)
-        encoded = self._encode(index, target.dtype)
-        if merge_covariate:
-            return self._merge_covariate(encoded, covariate=covariate)
-        else:
-            return encoded
+        # exclude encoded components from covariate to add the newly encoded components later
+        covariate = self._drop_encoded_components(covariate, self.components)
+
+        # generate index and encodings
+        index, target_end = self.index_generator.generate_train_series(
+            target, covariate
+        )
+        encoded = self._encode(index, target_end, target.dtype)
+
+        # optionally, merge encodings with original `covariate` series
+        encoded = (
+            self._merge_covariate(encoded, covariate=covariate)
+            if merge_covariate
+            else encoded
+        )
+
+        # save encoded component names
+        if self.components.empty:
+            components = encoded.components
+            if covariate is not None:
+                components = components[~components.isin(covariate.components)]
+            self._components = components
+
+        self._fit_called = True
+        return encoded
 
     def encode_inference(
         self,
@@ -311,7 +374,7 @@ class SingleEncoder(Encoder, ABC):
         target: TimeSeries,
         covariate: Optional[TimeSeries] = None,
         merge_covariate: bool = True,
-        **kwargs
+        **kwargs,
     ) -> TimeSeries:
         """Returns encoded index for inference/prediction.
 
@@ -328,19 +391,70 @@ class SingleEncoder(Encoder, ABC):
         merge_covariate
             Whether or not to merge the encoded TimeSeries with `covariate`.
         """
-        index = self.index_generator.generate_inference_series(n, target, covariate)
-        encoded = self._encode(index, target.dtype)
+        # some encoders must be fit before `encode_inference()`
+        raise_if(
+            not self.fit_called and self.requires_fit,
+            f"`{self.__class__.__name__}` object must be trained before inference. "
+            f"Call method `encode_train()` before `encode_inference()`.",
+            logger=logger,
+        )
 
-        if merge_covariate:
-            return self._merge_covariate(encoded, covariate=covariate)
-        else:
-            return encoded
+        # exclude encoded components from covariate to add the newly encoded components later
+        covariate = self._drop_encoded_components(covariate, self.components)
+
+        # generate index and encodings
+        index, target_end = self.index_generator.generate_inference_series(
+            n, target, covariate
+        )
+        encoded = self._encode(index, target_end, target.dtype)
+
+        # optionally, merge encodings with original `covariate` series
+        encoded = (
+            self._merge_covariate(encoded, covariate=covariate)
+            if merge_covariate
+            else encoded
+        )
+
+        # optionally, save encoded component names also at inference as some encoders do not have to be trained before
+        if self.components.empty:
+            components = encoded.components
+            if covariate is not None:
+                components = components[~components.isin(covariate.components)]
+            self._components = components
+
+        return encoded
 
     @property
     @abstractmethod
     def accept_transformer(self) -> List[bool]:
-        """Whether or not the SingleEncoder sub class accepts to be transformed."""
+        """Whether the `SingleEncoder` sub class accepts to be transformed."""
         pass
+
+    @property
+    def components(self) -> pd.Index:
+        """Returns the encoded component names. Only available after `Encoder.encode_train()` or
+        `Encoder.encode_inference()` have been called."""
+        return self._components
+
+    @property
+    @abstractmethod
+    def base_component_name(self) -> str:
+        """Returns the base encoder base component name. The string follows the given format:
+        `"darts_enc_{covariate_temp}_{encoder}_{attribute}"`, where the elements are:
+
+        * covariate_temp: "pc" or "fc" for past, or future covariates respectively.
+        * encoder: the SingleEncoder type used:
+            * "cyc" (cyclic temporal encoder),
+            * "dta" (datetime attribute encoder),
+            * "pos" (positional integer index encoder),
+            * "cus" (custom callable index encoder)
+        * attribute: the attribute used for the underlying encoder. Some examples:
+            * "month_sin", "month_cos" (for "cyc")
+            * "month" (for "dta")
+            * "relative" (for "pos")
+            * "custom" (for "cus")
+        """
+        return f"darts_enc_{self.index_generator.base_component_name}"
 
 
 class SequentialEncoderTransformer:
@@ -380,14 +494,24 @@ class SequentialEncoderTransformer:
         """
         if not self.fit_called:
             self._update_mask(covariate)
-            transformed = self.transformer.fit_transform(
-                covariate, component_mask=self.transform_mask
-            )
+            if any(self.transform_mask):
+                # fit the transformer on all encoded values by concatenating multi-series input encodings
+                self.transformer.fit(
+                    series=TimeSeries.from_values(
+                        np.concatenate([cov.values() for cov in covariate]),
+                        columns=covariate[0].components,
+                    ),
+                    component_mask=self.transform_mask,
+                )
             self._fit_called = True
+
+        if any(self.transform_mask):
+            transformed = [
+                self.transformer.transform(cov, component_mask=self.transform_mask)
+                for cov in covariate
+            ]
         else:
-            transformed = self.transformer.transform(
-                covariate, component_mask=self.transform_mask
-            )
+            transformed = covariate
         return transformed
 
     def _update_mask(self, covariate: List[TimeSeries]) -> None:

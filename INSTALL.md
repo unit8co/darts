@@ -56,12 +56,23 @@ brew unlink libomp
 brew install libomp.rb
 ```
 
-#### Test environment Appple M1 processor 
+#### Test environment Apple M1 processor
 
 We currently recommend to run Darts in an x_64 emulated environment on Mac computers with the Silicon M1 processor,
 instead of trying to install directly with native arm64 packages, many of the dependent packages still have compatibility 
 issues. The following is a proposed procedure, if you tested other procedures on similar hardware and they worked, 
 please let us know about them by opening an issue or by updating this file and opening a PR. 
+
+Before you start make sure that you have rosetta2 installed by running: 
+```
+pgrep oahd
+``` 
+If you see some process id you are ready to go, as internally rosetta is known as oah.
+
+If pgrep doesn't return any id then install rosetta2:
+```
+softwareupdate --install-rosetta
+```
 
 Below are the necessary instructions to create and configure the environment:
 - Start by installing conda (e.g., with miniforge : `brew install miniforge`).
@@ -75,7 +86,7 @@ Below are the necessary instructions to create and configure the environment:
   ```
 - Install darts: `pip install darts`
   - With this method of installation, lightgbm might still have issues finding the libomp library.
-  The following procedure is to garantee that the correct libomp (11.1.0) library is linked.
+  The following procedure is to guarantee that the correct libomp (11.1.0) library is linked.
     - Unlink the existing libomp, from terminal : `brew unlink libomp`
     - Setup a homebrew installer that is compatible with x_64 packages (follow this [blog](https://medium.com/mkdir-awesome/how-to-install-x86-64-homebrew-packages-on-apple-m1-macbook-54ba295230f) 
     post):

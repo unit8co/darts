@@ -64,7 +64,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
-                    'position': {'past': ['absolute'], 'future': ['relative']},
+                    'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
                     'transformer': Scaler()
                 }
@@ -111,6 +111,10 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
 
             else:
                 self.kwargs["loss_function"] = likelihood_map[likelihood]
+
+        # suppress writing catboost info files when user does not specifically ask to
+        if "allow_writing_files" not in kwargs:
+            kwargs["allow_writing_files"] = False
 
         super().__init__(
             lags=lags,
@@ -161,7 +165,9 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
         verbose
-            An integer or a boolean that can be set to 1 to display catboost's default verbose output.
+            An integer or a boolean that can be set to 1 to display catboost's default verbose output
+        **kwargs
+            Additional kwargs passed to `catboost.CatboostRegressor.fit()`
         """
 
         if val_series is not None:
@@ -222,3 +228,14 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
 
     def _is_probabilistic(self) -> bool:
         return self.likelihood is not None
+
+    @property
+    def min_train_series_length(self) -> int:
+        # Catboost requires a minimum of 2 train samples, therefore the min_train_series_length should be one more than
+        # for other regression models
+        return max(
+            3,
+            -self.lags["target"][0] + self.output_chunk_length + 1
+            if "target" in self.lags
+            else self.output_chunk_length,
+        )

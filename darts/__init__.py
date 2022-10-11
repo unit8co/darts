@@ -10,7 +10,7 @@ from matplotlib import cycler
 
 from .timeseries import TimeSeries, concatenate
 
-__version__ = "0.21.0"
+__version__ = "0.22.0"
 
 colors = cycler(
     color=["black", "003DFD", "b512b8", "11a9ba", "0d780f", "f77f07", "ba0f0f"]
