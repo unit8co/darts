@@ -49,11 +49,9 @@ class RegressionModel(GlobalForecastingModel):
         lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
         output_chunk_length: int = 1,
         add_encoders: Optional[dict] = None,
-        window_transformations: Optional[dict] = None,
         model=None,
     ):
         """Regression Model
-
         Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.
 
         Parameters
@@ -99,7 +97,6 @@ class RegressionModel(GlobalForecastingModel):
             support multi-output regression for multivariate timeseries, in which case one regressor
             will be used per component in the multivariate series.
             If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.
-
         """
 
         super().__init__(add_encoders=add_encoders)
@@ -108,7 +105,6 @@ class RegressionModel(GlobalForecastingModel):
         self.lags = {}
         self.output_chunk_length = None
         self.input_dim = None
-        self.window_transformations = window_transformations
 
         # model checks
         if self.model is None:
@@ -313,7 +309,6 @@ class RegressionModel(GlobalForecastingModel):
 
         return training_samples, training_labels
 
-
     def _fit_model(
         self,
         target_series,
@@ -330,13 +325,6 @@ class RegressionModel(GlobalForecastingModel):
         training_samples, training_labels = self._create_lagged_data(
             target_series, past_covariates, future_covariates, max_samples_per_ts
         )
-
-        # If window transformations have been specified then create the features and concat to the lagged data.
-        if self.window_transformations:
-            windowed_training_samples = self._create_windowed_data()
-            training_samples = pd.concat(
-                [training_samples, windowed_training_samples], axis=1
-            )
 
         # if training_labels is of shape (n_samples, 1) flatten it to shape (n_samples,)
         if len(training_labels.shape) == 2 and training_labels.shape[1] == 1:
