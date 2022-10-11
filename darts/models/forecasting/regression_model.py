@@ -49,9 +49,11 @@ class RegressionModel(GlobalForecastingModel):
         lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
         output_chunk_length: int = 1,
         add_encoders: Optional[dict] = None,
+        window_transformations: Optional[dict] = None,
         model=None,
     ):
         """Regression Model
+
         Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.
 
         Parameters
@@ -97,6 +99,7 @@ class RegressionModel(GlobalForecastingModel):
             support multi-output regression for multivariate timeseries, in which case one regressor
             will be used per component in the multivariate series.
             If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.
+
         """
 
         super().__init__(add_encoders=add_encoders)
@@ -105,6 +108,7 @@ class RegressionModel(GlobalForecastingModel):
         self.lags = {}
         self.output_chunk_length = None
         self.input_dim = None
+        self.window_transformations = window_transformations
 
         # model checks
         if self.model is None:
@@ -309,6 +313,138 @@ class RegressionModel(GlobalForecastingModel):
 
         return training_samples, training_labels
 
+    def _create_windowed_data(
+        self, target_series, past_covariates, future_covariates, max_samples_per_ts
+    ):
+        """
+        Function to create windowed transformations. The function uses the window_transformations passed to the
+        RegressionModel. A number of simple windowing operations will be implemented as well as accepting a user
+        written function.
+        """
+        if isinstance(target_series, TimeSeries):
+            target_series = [target_series]
+            past_covariates = [past_covariates] if past_covariates else None
+            future_covariates = [future_covariates] if future_covariates else None
+
+        Xs = []
+        # iterate over series
+        for idx, target_ts in enumerate(target_series):
+            covariates = [
+                (
+                    past_covariates[idx].pd_dataframe(copy=False)
+                    if past_covariates
+                    else None,
+                    self.window_transformations.get("past"),
+                ),
+                (
+                    future_covariates[idx].pd_dataframe(copy=False)
+                    if future_covariates
+                    else None,
+                    self.window_transformations.get("future"),
+                ),
+            ]
+
+            df_X = []
+            df_target = target_ts.pd_dataframe(copy=False)
+
+            # TODO: what is the correct place to put these implemented windowing functions
+            def windowed_average(series, window):
+                return 0
+
+            def ewm_average(series, window):
+                return 0
+
+            # mapping from string to windowing function
+            allowed_windowing_functions = {
+                "mean": windowed_average,
+                "ewma": ewm_average,
+            }
+
+            #
+            def _get_function_args_from_dict(transformation):
+                if transformation["function"] is str:
+                    if transformation["function"] in allowed_windowing_functions.keys():
+                        transformation_function = allowed_windowing_functions[
+                            transformation["function"]
+                        ]
+                    else:
+                        raise Exception(
+                            f"Expect function to be one of {allowed_windowing_functions.keys()},"
+                            f'instead received {transformation["function"]}'
+                        )
+                elif callable(transformation["function"]):
+                    transformation_function = transformation["function"]
+                else:
+                    raise Exception(
+                        "Function value must be either a string or callable function."
+                    )
+
+                kwargs = transformation.pop("function")
+
+                return kwargs, transformation_function
+
+            # X: target lags
+            # TODO: Handle the different string to function options.
+            if "target" in self.window_transformations:
+                if self.window_transformations["target"] is dict:
+                    window_transformations_target = [
+                        self.window_transformations["target"]
+                    ]
+                elif self.window_transformations["target"] is list:
+                    window_transformations_target = self.window_transformations[
+                        "target"
+                    ]
+                else:
+                    raise Exception(
+                        f"Expected target transformations to be either dict or list of dicts instead"
+                        f'received {type(self.window_transformations["target"])}'
+                    )
+
+                for transformation in window_transformations_target:
+                    transformation = window_transformations_target
+
+                    assert (
+                        "function" in transformation.keys()
+                    ), 'Window transformation must contain a "function" key.'
+
+                    kwargs, transformation_function = _get_function_args_from_dict(
+                        transformation
+                    )
+
+                    df_target.apply(lambda x: transformation_function(x, kwargs))
+                    df_X.append(df_target)
+
+            # TODO: How to combine lags with windowing to avoid forward looking bias
+            # X: covariate lags
+            for df_cov, lags in covariates:
+                if lags:
+                    for lag in lags:
+                        df_X.append(df_cov.shift(-lag))
+
+            # TODO: This is copied and pasted from the lagging code, is this still needed?
+            # combine lags
+            df_X = pd.concat(df_X, axis=1)
+            X = df_X.dropna().values
+
+            # keep most recent max_samples_per_ts samples
+            if max_samples_per_ts:
+                X = X[-max_samples_per_ts:]
+
+            raise_if(
+                X.shape[0] == 0,
+                "Unable to build any training samples of the target series "
+                + (f"at index {idx} " if len(target_series) > 1 else "")
+                + "and the corresponding covariate series; "
+                "There is no time step for which all required lags are available and are not NaN values.",
+            )
+
+            Xs.append(X)
+
+        # combine samples from all series
+        X = np.concatenate(Xs, axis=0)
+
+        return X
+
     def _fit_model(
         self,
         target_series,
@@ -325,6 +461,13 @@ class RegressionModel(GlobalForecastingModel):
         training_samples, training_labels = self._create_lagged_data(
             target_series, past_covariates, future_covariates, max_samples_per_ts
         )
+
+        # If window transformations have been specified then create the features and concat to the lagged data.
+        if self.window_transformations:
+            windowed_training_samples = self._create_windowed_data()
+            training_samples = pd.concat(
+                [training_samples, windowed_training_samples], axis=1
+            )
 
         # if training_labels is of shape (n_samples, 1) flatten it to shape (n_samples,)
         if len(training_labels.shape) == 2 and training_labels.shape[1] == 1:
