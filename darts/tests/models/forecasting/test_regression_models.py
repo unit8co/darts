@@ -663,6 +663,29 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             self.multivariate_multiseries_accuracies,
         )
 
+    def test_min_train_series_length(self):
+        model = LightGBMModel(lags=4)
+        min_train_series_length_expected = (
+            -model.lags["target"][0] + model.output_chunk_length + 1
+        )
+        self.assertEqual(
+            min_train_series_length_expected, model.min_train_series_length
+        )
+        model = CatBoostModel(lags=2)
+        min_train_series_length_expected = (
+            -model.lags["target"][0] + model.output_chunk_length + 1
+        )
+        self.assertEqual(
+            min_train_series_length_expected, model.min_train_series_length
+        )
+        model = LightGBMModel(lags=[-4, -3, -2])
+        min_train_series_length_expected = (
+            -model.lags["target"][0] + model.output_chunk_length + 1
+        )
+        self.assertEqual(
+            min_train_series_length_expected, model.min_train_series_length
+        )
+
     def test_historical_forecast(self):
         model = self.models[1](lags=5)
         result = model.historical_forecasts(
