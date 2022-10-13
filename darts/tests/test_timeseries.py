@@ -1035,6 +1035,10 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             [1] * 10 + 1 * [np.nan] + [1] * 13 + 5 * [np.nan] + [1] * 18 + 9 * [np.nan],
             index=times4,
         )
+        pd_series7 = pd.Series(
+            [1] * 10 + 1 * [0] + [1] * 13 + 5 * [2] + [1] * 18 + 9 * [6],
+            index=times4,
+        )
 
         series1 = TimeSeries.from_series(pd_series1)
         series2 = TimeSeries.from_series(pd_series2)
@@ -1042,6 +1046,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         series4 = TimeSeries.from_series(pd_series4)
         series5 = TimeSeries.from_series(pd_series5)
         series6 = TimeSeries.from_series(pd_series6)
+        series7 = TimeSeries.from_series(pd_series7)
 
         gaps1 = series1.gaps()
         self.assertTrue(
@@ -1111,12 +1116,19 @@ class TimeSeriesTestCase(DartsBaseTestClass):
                 )
             ).all()
         )
+        gaps7 = series7.gaps()
+        self.assertTrue(gaps7.empty)
 
         # test gaps detection on integer-indexed series
         values = np.array([1, 2, np.nan, np.nan, 3, 4, np.nan, 6])
         times = pd.RangeIndex(8)
         ts = TimeSeries.from_times_and_values(times, values)
         np.testing.assert_equal(ts.gaps().values, np.array([[2, 3, 2], [6, 6, 1]]))
+
+        values = np.array([1, 2, 7, 8, 3, 4, 0, 6])
+        times = pd.RangeIndex(8)
+        ts = TimeSeries.from_times_and_values(times, values)
+        self.assertTrue(ts.gaps().empty)
 
     def test_longest_contiguous_slice(self):
         times = pd.date_range("20130101", "20130111")
