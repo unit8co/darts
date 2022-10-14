@@ -50,6 +50,7 @@ class RegressionModel(GlobalForecastingModel):
         output_chunk_length: int = 1,
         add_encoders: Optional[dict] = None,
         model=None,
+        multi_models: Optional[bool] = True,
     ):
         """Regression Model
         Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.
@@ -105,6 +106,7 @@ class RegressionModel(GlobalForecastingModel):
         self.lags = {}
         self.output_chunk_length = None
         self.input_dim = None
+        self.multi_models = multi_models
 
         # model checks
         if self.model is None:
@@ -305,6 +307,7 @@ class RegressionModel(GlobalForecastingModel):
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,
             max_samples_per_ts=max_samples_per_ts,
+            multi_models=self.multi_models,
         )
 
         return training_samples, training_labels
@@ -323,8 +326,9 @@ class RegressionModel(GlobalForecastingModel):
         """
 
         training_samples, training_labels = self._create_lagged_data(
-            target_series, past_covariates, future_covariates, max_samples_per_ts
-        )
+                target_series, past_covariates, future_covariates, max_samples_per_ts
+            )
+
 
         # if training_labels is of shape (n_samples, 1) flatten it to shape (n_samples,)
         if len(training_labels.shape) == 2 and training_labels.shape[1] == 1:
@@ -508,7 +512,7 @@ class RegressionModel(GlobalForecastingModel):
 
         # check that the input sizes of the target series and covariates match
         pred_input_dim = {
-            "target": series[0].width,
+            "target": series[0].width, # DO ALL SERIES IN A GIVEN SEQUENCE HAVE THE SAME WIDTH?
             "past": past_covariates[0].width if past_covariates else None,
             "future": future_covariates[0].width if future_covariates else None,
         }
