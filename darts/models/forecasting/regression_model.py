@@ -626,7 +626,7 @@ class RegressionModel(GlobalForecastingModel):
                     else series_matrix
                 )
                 np_X.append(
-                    target_matrix[:, [l - shift for l in self.lags["target"]]].reshape(
+                    target_matrix[:, [lag - shift for lag in self.lags["target"]]].reshape(
                         len(series) * num_samples, -1
                     )
                 )
