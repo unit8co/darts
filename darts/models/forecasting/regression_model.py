@@ -626,9 +626,9 @@ class RegressionModel(GlobalForecastingModel):
                     else series_matrix
                 )
                 np_X.append(
-                    target_matrix[:, [lag - shift for lag in self.lags["target"]]].reshape(
-                        len(series) * num_samples, -1
-                    )
+                    target_matrix[
+                        :, [lag - shift for lag in self.lags["target"]]
+                    ].reshape(len(series) * num_samples, -1)
                 )
             # retrieve covariate lags, enforce order (dict only preserves insertion order for python 3.6+)
             for cov_type in ["past", "future"]:
