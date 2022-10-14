@@ -98,6 +98,10 @@ class RegressionModel(GlobalForecastingModel):
             support multi-output regression for multivariate timeseries, in which case one regressor
             will be used per component in the multivariate series.
             If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.
+
+        multi_models
+            If True, a separate model will be trained for each future lag to predict. If False, a single model is
+            trained to predict at step 'output_chunk_length' in the future. Default: True.
         """
 
         super().__init__(add_encoders=add_encoders)
@@ -223,6 +227,8 @@ class RegressionModel(GlobalForecastingModel):
         )
         self.output_chunk_length = output_chunk_length
 
+        self.pred_dim = self.output_chunk_length if self.multi_models else 1
+
     @property
     def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
         lags_covariates = {
@@ -326,9 +332,8 @@ class RegressionModel(GlobalForecastingModel):
         """
 
         training_samples, training_labels = self._create_lagged_data(
-                target_series, past_covariates, future_covariates, max_samples_per_ts
-            )
-
+            target_series, past_covariates, future_covariates, max_samples_per_ts
+        )
 
         # if training_labels is of shape (n_samples, 1) flatten it to shape (n_samples,)
         if len(training_labels.shape) == 2 and training_labels.shape[1] == 1:
@@ -512,7 +517,9 @@ class RegressionModel(GlobalForecastingModel):
 
         # check that the input sizes of the target series and covariates match
         pred_input_dim = {
-            "target": series[0].width, # DO ALL SERIES IN A GIVEN SEQUENCE HAVE THE SAME WIDTH?
+            "target": series[
+                0
+            ].width,  # DO ALL SERIES IN A GIVEN SEQUENCE HAVE THE SAME WIDTH?
             "past": past_covariates[0].width if past_covariates else None,
             "future": future_covariates[0].width if future_covariates else None,
         }
@@ -558,8 +565,10 @@ class RegressionModel(GlobalForecastingModel):
                         + ((n_pred_steps - 1) * self.output_chunk_length) * ts.freq
                     )
                     # calculating first and last required time steps
-                    first_req_ts = first_pred_ts + (lags[0]-shift) * ts.freq #shift lags if using one_shot
-                    last_req_ts = last_pred_ts + (lags[-1]-shift) * ts.freq
+                    first_req_ts = (
+                        first_pred_ts + (lags[0] - shift) * ts.freq
+                    )  # shift lags if using one_shot
+                    last_req_ts = last_pred_ts + (lags[-1] - shift) * ts.freq
 
                     # check for sufficient covariate data
                     raise_if_not(
@@ -590,7 +599,10 @@ class RegressionModel(GlobalForecastingModel):
         series_matrix = None
         if "target" in self.lags:
             series_matrix = np.stack(
-                [ts[self.lags["target"][0]-shift :].values(copy=False) for ts in series]
+                [
+                    ts[self.lags["target"][0] - shift :].values(copy=False)
+                    for ts in series
+                ]
             )
 
         # repeat series_matrix to shape (num_samples * num_series, n_lags, n_components)
@@ -655,10 +667,8 @@ class RegressionModel(GlobalForecastingModel):
     ) -> np.ndarray:
         prediction = self.model.predict(x, **kwargs)
         k = x.shape[0]
-        if self.multi_models:
-            return prediction.reshape(k, self.output_chunk_length, -1)
-        else:
-            return prediction.reshape(k, 1, -1)
+
+        return prediction.reshape(k, self.pred_dim, -1)
 
     def __str__(self):
         return self.model.__str__()
@@ -709,18 +719,17 @@ class _LikelihoodMixin:
         X is of shape (n_series * n_samples, n_regression_features)
         """
         k = x.shape[0]
+
         if num_samples == 1:
             # return median
             fitted = self._model_container[0.5]
-            return fitted.predict(x, **kwargs).reshape(k, self.output_chunk_length, -1)
+            return fitted.predict(x, **kwargs).reshape(k, self.pred_dim, -1)
 
         model_outputs = []
         for quantile, fitted in self._model_container.items():
             self.model = fitted
             # model output has shape (n_series * n_samples, output_chunk_length, n_components)
-            model_output = fitted.predict(x, **kwargs).reshape(
-                k, self.output_chunk_length, -1
-            )
+            model_output = fitted.predict(x, **kwargs).reshape(k, self.pred_dim, -1)
             model_outputs.append(model_output)
         model_outputs = np.stack(model_outputs, axis=-1)
         # model_outputs has shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
@@ -753,7 +762,7 @@ class _LikelihoodMixin:
             else:
                 output_slice = model_output[0, :, :]
 
-            return output_slice.reshape(k, self.output_chunk_length, -1)
+            return output_slice.reshape(k, self.pred_dim, -1)
 
         # probabilistic case
         # univariate & single-chunk output
@@ -774,7 +783,7 @@ class _LikelihoodMixin:
         where the last 2 dimensions are mu and sigma.
         """
         shape = model_output.shape
-        chunk_len = self.output_chunk_length
+        chunk_len = self.pred_dim
 
         # treating each component separately
         mu_sigma_list = [model_output[i, :, :] for i in range(shape[0])]
@@ -798,9 +807,7 @@ class _LikelihoodMixin:
         """
         k = x.shape[0]
 
-        model_output = self.model.predict(x, **kwargs).reshape(
-            k, self.output_chunk_length, -1
-        )
+        model_output = self.model.predict(x, **kwargs).reshape(k, self.pred_dim, -1)
         if num_samples == 1:
             return model_output
 
