@@ -27,13 +27,13 @@ class AnomalyModel(ABC):
     "Base class for all Anomaly Model"
 
     @abstractmethod
-    def score(
+    def fit(
         self, series: Union[TimeSeries, Sequence[TimeSeries]]
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         pass
 
     @abstractmethod
-    def fit(
+    def score(
         self, series: Union[TimeSeries, Sequence[TimeSeries]]
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         pass
@@ -76,9 +76,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         for scorer in self.scorers:
             raise_if_not(
                 isinstance(scorer, Scorer),
-                "Scorer must be a darts.anomaly_detection.score not a {}".format(
-                    type(scorer)
-                ),
+                f"Scorer must be a darts.anomaly_detection.score not a {type(scorer)}",
             )
 
     def fit(
@@ -157,7 +155,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         anomaly_scores = []
 
         for i, scorer in enumerate(self.scorers):
-            anomaly_scores.append(scorer.compute(pred, series.slice_intersect(pred)))
+            anomaly_scores.append(scorer.compute(pred, series))
 
         if i == 0:
             return anomaly_scores[0]
@@ -169,7 +167,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         series: TimeSeries,
         true_anomalies: TimeSeries,
         hist_forecasts_params: Optional[Dict[str, Any]] = None,
-        return_metric="AUC_ROC",
+        metric="AUC_ROC",
     ):
         """Predicts the given input time series with the forecasting model, and applies the
         scorer(s) on the filtered time series and the given input time series. Returns the
@@ -182,6 +180,8 @@ class ForecastingAnomalyModel(AnomalyModel):
             The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
         hist_forecasts_params: dict, optional
             parameters of the Darts `.historical_forecasts()` forecasting model
+        metric: str
+            The selected metric to use. Can be 'AUC_ROC' (default value) or 'AUC_PR'
 
         Returns
         -------
@@ -205,9 +205,7 @@ class ForecastingAnomalyModel(AnomalyModel):
 
         for i, scorer in enumerate(self.scorers):
             anomaly_scores.append(
-                scorer.compute_score(
-                    true_anomalies, pred, series.slice_intersect(pred), return_metric
-                )
+                scorer.compute_score(true_anomalies, pred, series, metric)
             )
 
         if i == 0:
@@ -245,9 +243,7 @@ class FilteringAnomalyModel(AnomalyModel):
         for scorer in self.scorers:
             raise_if_not(
                 isinstance(scorer, Scorer),
-                "Scorer must be a darts.anomaly_detection.score not a {}".format(
-                    type(scorer)
-                ),
+                f"Scorer must be a darts.anomaly_detection.score not a {type(scorer)}",
             )
 
     def fit(
@@ -306,7 +302,7 @@ class FilteringAnomalyModel(AnomalyModel):
         anomaly_scores = []
 
         for i, scorer in enumerate(self.scorers):
-            anomaly_scores.append(scorer.compute(pred, series.slice_intersect(pred)))
+            anomaly_scores.append(scorer.compute(pred, series))
 
         if i == 0:
             return anomaly_scores[0]
@@ -318,7 +314,7 @@ class FilteringAnomalyModel(AnomalyModel):
         series: TimeSeries,
         true_anomalies: TimeSeries,
         filter_params: Optional[Dict[str, Any]] = None,
-        return_metric="AUC_ROC",
+        metric="AUC_ROC",
     ):
         """Filters the given input time series with the filtering model, and applies the scorer(s)
         on the filtered time series and the given input time series. Returns the score(s)
@@ -331,6 +327,8 @@ class FilteringAnomalyModel(AnomalyModel):
             The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
         filter_params: dict, optional
             parameters of the Darts `.filter()` filtering model
+        metric: str
+            The selected metric to use. Can be 'AUC_ROC' (default value) or 'AUC_PR'
 
         Returns
         -------
@@ -346,9 +344,7 @@ class FilteringAnomalyModel(AnomalyModel):
 
         for i, scorer in enumerate(self.scorers):
             anomaly_scores.append(
-                scorer.compute_score(
-                    true_anomalies, pred, series.slice_intersect(pred), return_metric
-                )
+                scorer.compute_score(true_anomalies, pred, series, metric)
             )
 
         if i == 0:

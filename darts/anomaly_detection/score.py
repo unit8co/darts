@@ -12,7 +12,7 @@ binary ground truth time series indicating the presence of anomalies.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Sequence, Union
+from typing import Any, Optional, Sequence, Union
 
 import numpy as np
 from scipy.stats import wasserstein_distance
@@ -28,18 +28,97 @@ from darts.logging import raise_if, raise_if_not
 class Scorer(ABC):
     "Base class for all scorers"
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, characteristic_length: Optional[int] = None) -> None:
+
+        if characteristic_length is None:
+            characteristic_length = 0
+
+        self.characteristic_length = characteristic_length
+
+    @abstractmethod
+    def compute(self, input_1: Any, input_2: Any) -> Any:
         pass
 
     @abstractmethod
     def _compute_core(self, input_1: Any, input_2: Any) -> Any:
         pass
 
+    def window_adjustment_anomalies(
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        """Slides a window of size self.characteristic_length along the input series, and replaces the value of the
+        input time series by the maximum of the values contained in the window (past self.characteristic_length and
+        itself points).
+
+        The binary time series output represents if there is an anomaly (=1) or not (=0) in the past
+        self.characteristic_length points + itself. The new series will equal the length of the input series
+        - self.characteristic_length. Its first point will start at the first time index of the input time series +
+        self.characteristic_length points.
+
+        Parameters
+        ----------
+        series: Binary Darts TimeSeries
+
+        Returns
+        -------
+        Binary Darts TimeSeries
+        """
+
+        if self.characteristic_length == 0:
+            return series
+        else:
+            values = [
+                series[ind : ind + self.characteristic_length + 1]
+                .max(axis=0)
+                .all_values()
+                .flatten()[0]
+                for (ind, _) in enumerate(
+                    series[self.characteristic_length :].pd_series()
+                )
+            ]
+            return TimeSeries.from_times_and_values(
+                series._time_index[self.characteristic_length :], values
+            )
+
+    def window_adjustment_series(
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        """Slides a window of size self.characteristic_length along the input series, and replaces the value of
+        the input time series by the mean of the values contained in the window (past self.characteristic_length
+        and itself points).
+
+        Parameters
+        ----------
+        series: Darts TimeSeries
+
+        Returns
+        -------
+        Darts TimeSeries
+        """
+
+        if self.characteristic_length == 0:
+            return series
+        else:
+            values = [
+                series[ind : ind + self.characteristic_length + 1]
+                .mean(axis=0)
+                .all_values()
+                .flatten()[0]
+                for (ind, _) in enumerate(
+                    series[self.characteristic_length :].pd_series()
+                )
+            ]
+            return TimeSeries.from_times_and_values(
+                series._time_index[self.characteristic_length :], values
+            )
+
     def score(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
         actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
-        scoring: str = "AUC_ROC",
+        metric: str = "AUC_ROC",
     ) -> Union[float, Sequence[float]]:
         """Scores the results against true anomalies.
 
@@ -49,9 +128,8 @@ class Scorer(ABC):
             Time series to detect anomalies from.
         actual_anomalies: Darts TimeSeries
             True anomalies.
-        scoring: str, optional
-            Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR".
-            Default: "AUC_ROC"
+        metric: str,
+            The selected metric to use. Can be 'AUC_ROC' (default value) or 'AUC_PR'
 
         Returns
         -------
@@ -59,61 +137,41 @@ class Scorer(ABC):
             Score of the time series
         """
 
-        if scoring == "AUC_ROC":
+        if metric == "AUC_ROC":
             scoring_fn = roc_auc_score
-        elif scoring == "AUC_PR":
+        elif metric == "AUC_PR":
             scoring_fn = average_precision_score
         else:
-            raise ValueError("Argument `scoring` must be one of 'AUC_ROC', 'AUC_PR'")
+            raise ValueError("Argument `metric` must be one of 'AUC_ROC', 'AUC_PR'")
 
-        series = series.slice_intersect(actual_anomalies)
-        actual_anomalies = actual_anomalies.slice_intersect(series)
+        self.sanity_check(series, actual_anomalies)
+
+        series, actual_anomalies = self.return_intersect(series, actual_anomalies)
 
         return scoring_fn(
             y_true=actual_anomalies.all_values().flatten(),
             y_score=series.all_values().flatten(),
         )
 
-    def compute(
+    def return_intersect(
         self,
         series_1: Union[TimeSeries, Sequence[TimeSeries]],
-        series_2: Union[TimeSeries, Sequence[TimeSeries]] = None,
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        """Computes the anomaly score between the two given time series.
+        series_2: Union[TimeSeries, Sequence[TimeSeries]],
+    ) -> tuple:
+        """Returns the values of series_1 and the values of series_2 that share the same time index.
+        (Intersection in time of the two time series)
 
         Parameters
         ----------
         series_1: Darts TimeSeries
-        series_2: Darts TimeSeries, optional
+        series_2: Darts TimeSeries
 
         Returns
         -------
-        Darts TimeSeries
-            Anomaly score time series
+        tuple of Darts TimeSeries
         """
-        # check inputs (type, size, values)
-        # check if same timestamp!
 
-        if self.trainable:
-
-            raise_if_not(
-                self._fit_called,
-                "The Scorer has not been fitted yet. Call `fit()` first",
-            )
-
-            if series_2 is None:
-                series = series_1
-            else:
-                series = self._diff(series_1, series_2)
-
-            return self._compute_core(series)
-
-        else:
-            raise_if(
-                series_2 is None,
-                "The Scorer expects two time series input. Only one was given.",
-            )
-            return self._compute_core(series_1, series_2)
+        return series_1.slice_intersect(series_2), series_2.slice_intersect(series_1)
 
     def compute_score(
         self,
@@ -140,29 +198,121 @@ class Scorer(ABC):
         float
             Score for the time series
         """
-        # check inputs (type, size, values) -> of anomaly_score
-        # check if same timestamp -> of anomaly_score
-
         anomaly_score = self.compute(series_1, series_2)
 
-        return self.score(anomaly_score, actual_anomalies, scoring)
+        return self.score(
+            anomaly_score, self.window_adjustment_anomalies(actual_anomalies), scoring
+        )
+
+    def sanity_check(
+        self,
+        series_1: Union[TimeSeries, Sequence[TimeSeries]],
+        series_2: Union[TimeSeries, Sequence[TimeSeries]] = None,
+    ):
+        """Performs sanity check on the given inputs
+
+        Parameters
+        ----------
+        series_1: Darts TimeSeries
+        series_2: Darts TimeSeries, optional
+        """
+
+        # check if type input is a Darts TimeSeries
+        raise_if_not(
+            isinstance(series_1, TimeSeries),
+            f"Series input must be type darts.timeseries.TimeSeries and not {type(series_1)}",
+        )
+
+        if series_2 is not None:
+
+            # check if type input is a Darts TimeSeries
+            raise_if_not(
+                isinstance(series_2, TimeSeries),
+                f"Series input must be type darts.timeseries.TimeSeries and not {type(series_2)}",
+            )
+
+            # check if the time intersection between the two inputs time series is not empty
+            raise_if_not(
+                len(series_1._time_index.intersection(series_2._time_index)) > 0,
+                "Series must have a non-empty intersection timestamps",
+            )
+
+            # check if the two inputs time series have the same width
+            raise_if_not(
+                series_1.width == series_2.width, "Series must have the same width"
+            )
 
 
 class NonTrainableScorer(Scorer):
     "Base class of scorers that do not need training."
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, characteristic_length) -> None:
+        super().__init__(characteristic_length=characteristic_length)
         self.trainable = False
+
+    def compute(
+        self,
+        series_1: Union[TimeSeries, Sequence[TimeSeries]],
+        series_2: Union[TimeSeries, Sequence[TimeSeries]],
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        """Computes the anomaly score between the two given time series.
+
+        Parameters
+        ----------
+        series_1: Darts TimeSeries
+        series_2: Darts TimeSeries, optional
+
+        Returns
+        -------
+        Darts TimeSeries
+            Anomaly score time series
+        """
+        self.sanity_check(series_1, series_2)
+
+        series_1, series_2 = self.return_intersect(series_1, series_2)
+
+        return self.window_adjustment_series(self._compute_core(series_1, series_2))
 
 
 class TrainableScorer(Scorer):
     "Base class of scorers that do need training."
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, characteristic_length) -> None:
+        super().__init__(characteristic_length=characteristic_length)
         self._fit_called = False
         self.trainable = True
+
+    def compute(
+        self,
+        series_1: Union[TimeSeries, Sequence[TimeSeries]],
+        series_2: Union[TimeSeries, Sequence[TimeSeries]] = None,
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        """Computes the anomaly score between the two given time series.
+
+        Parameters
+        ----------
+        series_1: Darts TimeSeries
+        series_2: Darts TimeSeries, optional
+
+        Returns
+        -------
+        Darts TimeSeries
+            Anomaly score time series
+        """
+        raise_if_not(
+            self._fit_called,
+            "The Scorer has not been fitted yet. Call `fit()` first",
+        )
+
+        self.sanity_check(series_1, series_2)
+
+        if series_2 is None:
+            series = series_1
+        else:
+            series_1, series_2 = self.return_intersect(series_1, series_2)
+            series = self._diff(series_1, series_2)
+
+        return self.window_adjustment_series(self._compute_core(series))
 
     @abstractmethod
     def _fit_core(self, input: Any) -> Any:
@@ -172,7 +322,6 @@ class TrainableScorer(Scorer):
         self,
         series_1: Union[TimeSeries, Sequence[TimeSeries]],
         series_2: Union[TimeSeries, Sequence[TimeSeries]] = None,
-        scorer_fit_params: Optional[Dict[str, Any]] = None,
     ) -> Union[float, Sequence[float]]:
         """Fits the scorer on the given time series input.
 
@@ -183,8 +332,6 @@ class TrainableScorer(Scorer):
         ----------
         series_1: Darts TimeSeries
         series_2: Darts TimeSeries, optional
-        scorer_fit_params: dict, optional
-            parameters of the scorer model
 
         Returns
         -------
@@ -192,18 +339,15 @@ class TrainableScorer(Scorer):
             Fitted Scorer.
         """
 
-        # check inputs (type, size, values)
-        # check if same timestamp!
-
-        if scorer_fit_params is None:
-            scorer_fit_params = {}
+        self.sanity_check(series_1, series_2)
 
         if series_2 is None:
             series = series_1
         else:
+            series_1, series_2 = self.return_intersect(series_1, series_2)
             series = self._diff(series_1, series_2)
 
-        self._fit_core(series, scorer_fit_params)
+        self._fit_core(series)
 
     def _diff(self, series_1, series_2):
         """Applies the distance_function to the two time series
@@ -237,28 +381,26 @@ class TrainableScorer(Scorer):
 
         raise_if_not(
             self.distance_function in accepted_norms,
-            "Metric should be l1, l2 or diff",
+            "Metric should be 'l1', 'l2' or 'diff'",
         )
 
 
 class GaussianMixtureScorer(TrainableScorer):
     """GaussianMixtureScorer anomaly score"""
 
-    def __init__(self, n_components: int = 1, distance_function="l1") -> None:
-        super().__init__()
+    def __init__(
+        self,
+        characteristic_length: Optional[int] = None,
+        n_components: int = 1,
+        distance_function="l1",
+    ) -> None:
+        super().__init__(characteristic_length=characteristic_length)
         self.n_components = n_components
         self.distance_function = distance_function
         super()._check_norm()
         self.model = GaussianMixture(n_components=n_components)
 
-    def _fit_core(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]], scorer_fit_params
-    ):
-
-        raise_if_not(
-            scorer_fit_params == {},
-            ".fit() of GaussianMixtureScorer has no parameters",
-        )
+    def _fit_core(self, series: Union[TimeSeries, Sequence[TimeSeries]]):
 
         self._fit_called = True
         self.model.fit(series.all_values().flatten().reshape(-1, 1))
@@ -276,21 +418,22 @@ class GaussianMixtureScorer(TrainableScorer):
 class KmeansScorer(TrainableScorer):
     """Kmean anomaly score"""
 
-    def __init__(self, k: Union[int, list[int]] = 2, distance_function="l1") -> None:
-        super().__init__()
+    def __init__(
+        self,
+        characteristic_length: Optional[int] = None,
+        k: Union[int, list[int]] = 2,
+        distance_function="l1",
+    ) -> None:
+        super().__init__(characteristic_length=characteristic_length)
         self.k = k
         self.distance_function = distance_function
         self._check_norm()
         self.model = KMeans(n_clusters=k)
 
-    def _fit_core(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]], scorer_fit_params
-    ):
+    def _fit_core(self, series: Union[TimeSeries, Sequence[TimeSeries]]):
 
         self._fit_called = True
-        self.model.fit(
-            series.all_values().flatten().reshape(-1, 1), **scorer_fit_params
-        )
+        self.model.fit(series.all_values().flatten().reshape(-1, 1))
 
     def _compute_core(
         self, series: Union[TimeSeries, Sequence[TimeSeries]]
@@ -305,20 +448,22 @@ class KmeansScorer(TrainableScorer):
 class WasserteinScorer(TrainableScorer):
     """WasserteinScorer anomaly score"""
 
-    def __init__(self, window: int = 10, distance_function="l1") -> None:
-        super().__init__()
+    def __init__(
+        self, characteristic_length: Optional[int] = None, distance_function="l1"
+    ) -> None:
+        if characteristic_length is None:
+            characteristic_length = 10
+        super().__init__(characteristic_length=characteristic_length)
         self.distance_function = distance_function
         super()._check_norm()
-        self.window = window
 
-    def _fit_core(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]], scorer_fit_params
-    ):
-
-        raise_if_not(
-            scorer_fit_params == {},
-            ".fit() of WasserteinScorer has no parameters",
+        raise_if(
+            self.characteristic_length == 0,
+            "characteristic_length must be stricly higher than 0,"
+            "(preferably higher than 10 as it is the number of samples of the test distribution)",
         )
+
+    def _fit_core(self, series: Union[TimeSeries, Sequence[TimeSeries]]):
 
         self._fit_called = True
         self.training_data = series.all_values().flatten()
@@ -329,36 +474,46 @@ class WasserteinScorer(TrainableScorer):
         # return distance to the clostest centroid
         distance = []
 
-        for i in range(len(series) - self.window + 1):
+        for i in range(len(series) - self.characteristic_length + 1):
             distance.append(
                 wasserstein_distance(
                     self.training_data,
-                    series[i : i + self.window].all_values().flatten(),
+                    series[i : i + self.characteristic_length + 1]
+                    .all_values()
+                    .flatten(),
                 )
             )
 
         return TimeSeries.from_times_and_values(
-            series._time_index[self.window - 1 :], distance
+            series._time_index[self.characteristic_length - 1 :], distance
         )
+
+    def window_adjustment_series(
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+
+        return series
 
 
 class LocalOutlierFactorScorer(TrainableScorer):
     """LocalOutlierFactor anomaly score"""
 
-    def __init__(self, n_neighbors: int = 2, distance_function="l1") -> None:
-        super().__init__()
+    def __init__(
+        self,
+        characteristic_length: Optional[int] = None,
+        n_neighbors: int = 2,
+        distance_function="l1",
+    ) -> None:
+        super().__init__(characteristic_length=characteristic_length)
         self.n_neighbors = n_neighbors
         self.distance_function = distance_function
         super()._check_norm()
         self.model = LocalOutlierFactor(n_neighbors=n_neighbors, novelty=True)
 
-    def _fit_core(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]], scorer_fit_params
-    ):
+    def _fit_core(self, series: Union[TimeSeries, Sequence[TimeSeries]]):
         self._fit_called = True
-        self.model.fit(
-            series.all_values().flatten().reshape(-1, 1), **scorer_fit_params
-        )
+        self.model.fit(series.all_values().flatten().reshape(-1, 1))
 
     def _compute_core(
         self, series: Union[TimeSeries, Sequence[TimeSeries]]
@@ -373,8 +528,8 @@ class LocalOutlierFactorScorer(TrainableScorer):
 class L2(NonTrainableScorer):
     """L2 distance metric"""
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, characteristic_length: Optional[int] = None) -> None:
+        super().__init__(characteristic_length=characteristic_length)
 
     def _compute_core(
         self,
@@ -387,8 +542,8 @@ class L2(NonTrainableScorer):
 class L1(NonTrainableScorer):
     """L1 distance metric"""
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, characteristic_length: Optional[int] = None) -> None:
+        super().__init__(characteristic_length=characteristic_length)
 
     def _compute_core(
         self,
@@ -401,8 +556,8 @@ class L1(NonTrainableScorer):
 class difference(NonTrainableScorer):
     """difference distance metric"""
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, characteristic_length: Optional[int] = None) -> None:
+        super().__init__(characteristic_length=characteristic_length)
 
     def _compute_core(
         self,
