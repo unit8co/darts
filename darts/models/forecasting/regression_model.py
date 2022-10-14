@@ -532,6 +532,14 @@ class RegressionModel(GlobalForecastingModel):
             "future": (future_covariates, self.lags.get("future")),
         }
 
+        # prepare one_shot shift and step
+        if self.multi_models:
+            shift = 0
+            step = self.output_chunk_length
+        else:
+            shift = self.output_chunk_length - 1
+            step = 1
+
         # dictionary containing covariate data over time span required for prediction
         covariate_matrices = {}
         # dictionary containing covariate lags relative to minimum covariate lag
@@ -550,8 +558,8 @@ class RegressionModel(GlobalForecastingModel):
                         + ((n_pred_steps - 1) * self.output_chunk_length) * ts.freq
                     )
                     # calculating first and last required time steps
-                    first_req_ts = first_pred_ts + lags[0] * ts.freq
-                    last_req_ts = last_pred_ts + lags[-1] * ts.freq
+                    first_req_ts = first_pred_ts + (lags[0]-shift) * ts.freq #shift lags if using one_shot
+                    last_req_ts = last_pred_ts + (lags[-1]-shift) * ts.freq
 
                     # check for sufficient covariate data
                     raise_if_not(
@@ -582,7 +590,7 @@ class RegressionModel(GlobalForecastingModel):
         series_matrix = None
         if "target" in self.lags:
             series_matrix = np.stack(
-                [ts[self.lags["target"][0] :].values(copy=False) for ts in series]
+                [ts[self.lags["target"][0]-shift :].values(copy=False) for ts in series]
             )
 
         # repeat series_matrix to shape (num_samples * num_series, n_lags, n_components)
@@ -595,7 +603,7 @@ class RegressionModel(GlobalForecastingModel):
         # prediction
         predictions = []
         # t_pred indicates the number of time steps after the first prediction
-        for t_pred in range(0, n, self.output_chunk_length):
+        for t_pred in range(0, n, step):
             np_X = []
             # retrieve target lags
             if "target" in self.lags:
@@ -606,7 +614,7 @@ class RegressionModel(GlobalForecastingModel):
                     else series_matrix
                 )
                 np_X.append(
-                    target_matrix[:, self.lags["target"]].reshape(
+                    target_matrix[:, [l - shift for l in self.lags["target"]]].reshape(
                         len(series) * num_samples, -1
                     )
                 )
@@ -647,7 +655,10 @@ class RegressionModel(GlobalForecastingModel):
     ) -> np.ndarray:
         prediction = self.model.predict(x, **kwargs)
         k = x.shape[0]
-        return prediction.reshape(k, self.output_chunk_length, -1)
+        if self.multi_models:
+            return prediction.reshape(k, self.output_chunk_length, -1)
+        else:
+            return prediction.reshape(k, 1, -1)
 
     def __str__(self):
         return self.model.__str__()
