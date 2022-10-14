@@ -39,10 +39,11 @@ series, and some of the models offer a rich support for probabilistic forecastin
 * [Temporal Convolutional Networks and Forecasting](https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4)
 * [Probabilistic Forecasting](https://medium.com/unit8-machine-learning-publication/probabilistic-forecasting-in-darts-e88fbe83344e)
 * [Transfer Learning for Time Series Forecasting](https://medium.com/unit8-machine-learning-publication/transfer-learning-for-time-series-forecasting-87f39e375278)
+* [Hierarchical Forecast Reconciliation](https://medium.com/unit8-machine-learning-publication/hierarchical-forecast-reconciliation-with-darts-8b4b058bb543)
 
 ## Quick Install
 
-We recommend to first setup a clean Python environment for your project with at least Python 3.7 using your favorite tool
+We recommend to first setup a clean Python environment for your project with Python 3.7+ using your favorite tool
 ([conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html "conda-env"),
 [venv](https://docs.python.org/3/library/venv.html), [virtualenv](https://virtualenv.pypa.io/en/latest/) with
 or without [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/)).
@@ -63,10 +64,10 @@ import pandas as pd
 from darts import TimeSeries
 
 # Read a pandas DataFrame
-df = pd.read_csv('AirPassengers.csv', delimiter=",")
+df = pd.read_csv("AirPassengers.csv", delimiter=",")
 
 # Create a TimeSeries, specifying the time and value columns
-series = TimeSeries.from_dataframe(df, 'Month', '#Passengers')
+series = TimeSeries.from_dataframe(df, "Month", "#Passengers")
 
 # Set aside the last 36 months as a validation series
 train, val = series[:-36], series[-36:]
@@ -86,7 +87,7 @@ Plot the median, 5th and 95th percentiles:
 import matplotlib.pyplot as plt
 
 series.plot()
-prediction.plot(label='forecast', low_quantile=0.05, high_quantile=0.95)
+prediction.plot(label="forecast", low_quantile=0.05, high_quantile=0.95)
 plt.legend()
 ```
 
@@ -112,6 +113,7 @@ plt.legend()
   These can make the forecasts add up in a way that respects the underlying hierarchy.
 * **Regression Models:** It is possible to plug-in any scikit-learn compatible model
   to obtain forecasts as functions of lagged values of the target series and covariates.
+* **Explainability:** Darts has the ability to *explain* forecasting models by using Shap values.
 * **Data processing:** Tools to easily apply (and revert) common transformations on
   time series data (scaling, filling missing values, boxcox, ...)
 * **Metrics:** A variety of metrics for evaluating time series' goodness of fit;
@@ -134,8 +136,9 @@ Model | Univariate | Multivariate | Probabilistic | Multiple-series training | P
 `ARIMA` | ✅ | | ✅ | | | ✅ | |
 `VARIMA` | ✅ | ✅ | | | | ✅ | |
 `AutoARIMA` | ✅ | | | | | ✅ | |
-`StatsForecastAutoARIMA` (faster AutoARIMA) | ✅ | | ✅ | | | ✅ | | [statsforecast](https://github.com/Nixtla/statsforecast)
+`StatsForecastAutoARIMA` (faster AutoARIMA) | ✅ | | ✅ | | | ✅ | | [Nixtla's statsforecast](https://github.com/Nixtla/statsforecast)
 `ExponentialSmoothing` | ✅ | | ✅ | | | | |
+`StatsForecastETS` | ✅ | | | | | ✅ | | [Nixtla's statsforecast](https://github.com/Nixtla/statsforecast)
 `BATS` and `TBATS` | ✅ | | ✅ | | | | | [TBATS paper](https://robjhyndman.com/papers/ComplexSeasonality.pdf)
 `Theta` and `FourTheta` | ✅ | | | | | | | [Theta](https://robjhyndman.com/papers/Theta.pdf) & [4 Theta](https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R)
 `Prophet` (see [install notes](https://github.com/unit8co/darts/blob/master/INSTALL.md#enabling-support-for-facebook-prophet)) | ✅ | | ✅ | | | ✅ | | [Prophet repo](https://github.com/facebook/prophet)

@@ -68,3 +68,28 @@ class UtilsTestCase(DartsBaseTestClass):
         for sub, start, end in zip(subseries, start_times, end_times):
             self.assertEqual(sub.start_time(), pd.to_datetime(start))
             self.assertEqual(sub.end_time(), pd.to_datetime(end))
+
+        # Multivariate timeserie
+        times = pd.date_range("20130206", "20130215")
+        dataframe = pd.DataFrame(
+            {
+                "0": [1, 1, np.nan, 1, 2, 1, 1, 1, 1, 1],
+                "1": [1, 1, np.nan, 1, 3, np.nan, np.nan, 1, 1, 1],
+                "2": [1, 1, np.nan, 1, 4, np.nan, np.nan, np.nan, np.nan, 1],
+            },
+            index=times,
+        )
+        series = TimeSeries.from_dataframe(dataframe)
+
+        # gaps is characterized by NaN in all the covariate columns
+        subseries_all = extract_subseries(series, mode="all")
+        self.assertEqual(len(subseries_all), 2)
+        self.assertEqual(subseries_all[0], series[:2])
+        self.assertEqual(subseries_all[1], series[3:])
+
+        # gaps is characterized by NaN in any of the covariate columns
+        subseries_any = extract_subseries(series, mode="any")
+        self.assertEqual(len(subseries_any), 3)
+        self.assertEqual(subseries_any[0], series[:2])
+        self.assertEqual(subseries_any[1], series[3:5])
+        self.assertEqual(subseries_any[2], series[-1])
