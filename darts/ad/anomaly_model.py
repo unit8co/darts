@@ -1,16 +1,20 @@
 """
 AnomalyModel
--------
-Anomaly models expect a model and a scorer, and will take as input a time series and returns its anomaly score
-as a time series.
+------------
 
-The model can be a forecasting method (ForecastingAnomalyModel) or a filtering method (FilteringAnomalyModel).
-The main functions are `fit()` (only for the trainable model/scorer), `score()` and `score_metric()`. `fit()`
-will train the model and/or the scorer, over the history of one time series. `score()` will apply the model on
-the time series input, and the scorer on the prediction of the model and the time series input. The `score()`
-will output the anomaly score of the time series input. The function `score_metric()` is the same as `score()`,
-but outputs the score of an agnostic threshold metric (AUC-ROC or AUC-PR), between the predicted anomaly score
-time series and a binary ground truth time series indicating the presence of anomalies.
+An anomaly model expect a model and a scorer. It offers a ``score()``function, which takes
+as input a time series and returns its anomaly score as a ``TimeSeries``.
+
+The model can be a forecasting method (:class:`ForecastingAnomalyModel`) or a filtering method
+(:class:`FilteringAnomalyModel`).
+The main functions are ``fit()`` (only for the trainable model/scorer), ``score()`` and
+``score_metric()``. ``fit()`` trains the model and/or the scorer over the history of one or multiple series.
+``score()`` applies the model on the time series input and and calls the scorer to return an anomaly score of
+the input series.
+
+The function ``score_metric()` is the same as ``score()``, but outputs the score of an agnostic
+threshold metric (AUC-ROC or AUC-PR), between the predicted anomaly score time series, and some known binary
+ground-truth time series indicating the presence of actual anomalies.
 """
 
 from abc import ABC, abstractmethod
@@ -24,7 +28,7 @@ from darts.timeseries import TimeSeries
 
 
 class AnomalyModel(ABC):
-    "Base class for all Anomaly Model"
+    "Base class for all anomaly models"
 
     @abstractmethod
     def fit(
@@ -49,16 +53,19 @@ class ForecastingAnomalyModel(AnomalyModel):
     def __init__(
         self, model: ForecastingModel, scorer: Union[Scorer, Sequence[Scorer]]
     ):
-        """Forecasting Anomaly Model
+        """Forecasting-based Anomaly Model
+
+        Wraps around a Darts forecasting model and an anomaly scorer to compute anomaly scores
+        by comparing how actuals deviate from the model's predictions.
 
         Parameters
         ----------
         model : ForecastingModel
-            A forecasting model from Darts that will be used to predict the actual time series
+            A Darts forecasting model
         scorer : Scorer
             A scorer that will be used to convert the actual and predicted time series to
-            an anomaly score time series. If a list of n scorer is given, the anomaly model will test each
-            one of the scorers and output n anomaly score.
+            an anomaly score ``TimeSeries``. If a list of `N` scorer is given, the anomaly model will call each
+            one of the scorers and output a list of `N` anomaly scores ``TimeSeries``.
         """
         super().__init__()
 
