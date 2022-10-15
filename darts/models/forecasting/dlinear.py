@@ -1,10 +1,6 @@
 """
 D-Linear
-------
-https://github.com/cure-lab/LTSF-Linear
-
-Copyright 2022 DLinear Authors. All rights reserved.
-
+--------
 """
 
 import torch
@@ -34,7 +30,7 @@ class _MovingAvg(nn.Module):
         return x
 
 
-class _seriesDecomp(nn.Module):
+class _SeriesDecomp(nn.Module):
     """
     Series decomposition block
     """
@@ -51,7 +47,7 @@ class _seriesDecomp(nn.Module):
 
 class _DLinearModule(PLPastCovariatesModule):
     """
-    DLinear
+    DLinear module
     """
 
     def __init__(
@@ -59,8 +55,9 @@ class _DLinearModule(PLPastCovariatesModule):
         input_dim,
         output_dim,
         nr_params,
-        individual,
-        enc_in,
+        shared_weights,
+        kernel_size,
+        const_init,
         **kwargs,
     ):
         """PyTorch module implementing the DLinear architecture.
@@ -73,10 +70,13 @@ class _DLinearModule(PLPastCovariatesModule):
             Number of output components in the target
         nr_params
             The number of parameters of the likelihood (or 1 if no likelihood is used).
-        individual
-            A linear layer for each variate(channel) individually
-        enc_in
-            Then number of channels when individual is used
+        shared_weights
+            Whether to use shared weights for the components of the series.
+            ** Ignores covariates when True. **
+        kernel_size
+            The size of the kernel for the moving average
+        const_init
+            Whether to initialize the weights to 1/in_len
         **kwargs
             all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
 
@@ -89,78 +89,80 @@ class _DLinearModule(PLPastCovariatesModule):
         -------
         y of shape `(batch_size, output_chunk_length, target_size/output_dim, nr_params)`
             Tensor containing the output of the NBEATS module.
-
         """
+
+        # TODO: could we support future covariates with a simple extension?
+
         super().__init__(**kwargs)
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.nr_params = nr_params
-        self.seq_len = self.input_chunk_length
-        self.pred_len = self.output_chunk_length
+        self.const_init = const_init
 
         # Decomposition Kernel Size
-        kernel_size = 25
-        self.decomposition = _seriesDecomp(kernel_size)
-        self.individual = individual
-        self.channels = enc_in
+        self.decomposition = _SeriesDecomp(kernel_size)
+        self.shared_weights = shared_weights
 
-        if self.individual:
-            self.Linear_Seasonal = nn.ModuleList()
-            self.Linear_Trend = nn.ModuleList()
-            self.Linear_Decoder = nn.ModuleList()
-            for i in range(self.channels):
-                self.Linear_Seasonal.append(nn.Linear(self.seq_len, self.pred_len))
-                self.Linear_Seasonal[i].weight = nn.Parameter(
-                    (1 / self.seq_len) * torch.ones([self.pred_len, self.seq_len])
+        def _create_linear_layer(in_dim, out_dim):
+            layer = nn.Linear(in_dim, out_dim)
+            if self.const_init:
+                layer.weight = nn.Parameter(
+                    (1.0 / in_dim) * torch.ones(layer.weight.shape)
                 )
-                self.Linear_Trend.append(nn.Linear(self.seq_len, self.pred_len))
-                self.Linear_Trend[i].weight = nn.Parameter(
-                    (1 / self.seq_len) * torch.ones([self.pred_len, self.seq_len])
-                )
-                self.Linear_Decoder.append(nn.Linear(self.seq_len, self.pred_len))
+            return layer
+
+        if self.shared_weights:
+            layer_in_dim = self.input_chunk_length
+            layer_out_dim = self.output_chunk_length * self.nr_params
+
         else:
-            self.Linear_Seasonal = nn.Linear(self.seq_len, self.pred_len)
-            self.Linear_Trend = nn.Linear(self.seq_len, self.pred_len)
-            self.Linear_Decoder = nn.Linear(self.seq_len, self.pred_len)
-            self.Linear_Seasonal.weight = nn.Parameter(
-                (1 / self.seq_len) * torch.ones([self.pred_len, self.seq_len])
-            )
-            self.Linear_Trend.weight = nn.Parameter(
-                (1 / self.seq_len) * torch.ones([self.pred_len, self.seq_len])
-            )
+            layer_in_dim = self.input_chunk_length * self.input_dim
+            layer_out_dim = self.output_chunk_length * self.output_dim * self.nr_params
+
+        self.linear_seasonal = _create_linear_layer(layer_in_dim, layer_out_dim)
+        self.linear_trend = _create_linear_layer(layer_in_dim, layer_out_dim)
 
     def forward(self, x_in: tuple):
-        x, _ = x_in
-        # x: [Batch, Input length, Channel]
+        x, _ = x_in  # x: (batch, in_len, in_dim)
+        batch, _, _ = x.shape
 
-        seasonal_init, trend_init = self.decomposition(x)
-        seasonal_init, trend_init = seasonal_init.permute(0, 2, 1), trend_init.permute(
-            0, 2, 1
-        )
-        if self.individual:
-            seasonal_output = torch.zeros(
-                [seasonal_init.size(0), seasonal_init.size(1), self.pred_len],
-                dtype=seasonal_init.dtype,
-            ).to(seasonal_init.device)
-            trend_output = torch.zeros(
-                [trend_init.size(0), trend_init.size(1), self.pred_len],
-                dtype=trend_init.dtype,
-            ).to(trend_init.device)
-            for i in range(self.channels):
-                seasonal_output[:, i, :] = self.Linear_Seasonal[i](
-                    seasonal_init[:, i, :]
-                )
-                trend_output[:, i, :] = self.Linear_Trend[i](trend_init[:, i, :])
+        if self.shared_weights:
+            # discard covariates, to ensure that in_dim == out_dim
+            x = x[:, :, : self.output_dim]
+
+            # extract trend
+            res, trend = self.decomposition(x)
+
+            # permute to (batch, in_dim, in_len) and apply linear layer on last dimension
+            seasonal_output = self.linear_seasonal(res.permute(0, 2, 1))
+            trend_output = self.linear_trend(trend.permute(0, 2, 1))
+
+            x = seasonal_output + trend_output
+
+            # extract nr_params
+            x = x.view(batch, self.output_dim, self.output_chunk_length, self.nr_params)
+
+            # permute back to (batch, out_len, out_dim, nr_params)
+            x = x.permute(0, 2, 1, 3)
+
         else:
-            seasonal_output = self.Linear_Seasonal(seasonal_init)
-            trend_output = self.Linear_Trend(trend_init)
+            res, trend = self.decomposition(x)
 
-        x = seasonal_output + trend_output
-        x = x.permute(0, 2, 1)
+            # (in_len * in_dim) => (out_len * out_dim * out_nr_params)
+            seasonal_output = self.linear_seasonal(res.view(batch, -1))
+            trend_output = self.linear_trend(trend.view(batch, -1))
+            seasonal_output = seasonal_output.view(
+                batch, self.output_chunk_length, self.output_dim * self.nr_params
+            )
+            trend_output = trend_output.view(
+                batch, self.output_chunk_length, self.output_dim * self.nr_params
+            )
 
-        x = x.view(
-            x.shape[0], self.output_chunk_length, self.input_dim, self.nr_params
-        )[:, :, : self.output_dim, :]
+            x = seasonal_output + trend_output
+
+            # extract nr_params
+            x = x.view(batch, self.output_chunk_length, self.output_dim, self.nr_params)
+
         return x
 
 
@@ -169,8 +171,9 @@ class DLinearModel(PastCovariatesTorchModel):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
-        individual: bool = False,
-        enc_in: int = 10,
+        shared_weights: bool = False,
+        kernel_size: int = 25,
+        const_init: bool = True,
         **kwargs,
     ):
         """An implementation of the DLinear model, as presented in [1]_.
@@ -181,10 +184,22 @@ class DLinearModel(PastCovariatesTorchModel):
             The length of the input sequence fed to the model.
         output_chunk_length
             The length of the forecast of the model.
-        individual
-            A linear layer for each variate (channel) individually (default='False').
-        enc_in
-            Then number of channels when individual is used (default='10').
+        shared_weights
+            Whether to use shared weights across components of multivariate series.
+
+            .. warning::
+                When set to True, covariates will be ignored as a 1-to-1 mapping is
+                required between input dimensions and output dimensions.
+            ..
+
+            Setting it to False corresponds to the "individual" weights version of the model
+            as described in the paper. Default: False.
+
+        kernel_size
+            The size of the kernel for the moving average (default=25).
+        const_init
+            Whether to initialize the weights to 1/in_len. If False, the default PyTorch
+            initialization is used (default='True').
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -323,8 +338,9 @@ class DLinearModel(PastCovariatesTorchModel):
         # extract pytorch lightning module kwargs
         self.pl_module_params = self._extract_pl_module_params(**self.model_params)
 
-        self.individual = individual
-        self.enc_in = enc_in
+        self.shared_weights = shared_weights
+        self.kernel_size = kernel_size
+        self.const_init = const_init
 
     def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
@@ -338,8 +354,9 @@ class DLinearModel(PastCovariatesTorchModel):
             input_dim=input_dim,
             output_dim=output_dim,
             nr_params=nr_params,
-            individual=self.individual,
-            enc_in=self.enc_in,
+            shared_weights=self.shared_weights,
+            kernel_size=self.kernel_size,
+            const_init=self.const_init,
             **self.pl_module_params,
         )
 
