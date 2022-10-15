@@ -114,7 +114,6 @@ class _DLinearModule(PLPastCovariatesModule):
         if self.shared_weights:
             layer_in_dim = self.input_chunk_length
             layer_out_dim = self.output_chunk_length * self.nr_params
-
         else:
             layer_in_dim = self.input_chunk_length * self.input_dim
             layer_out_dim = self.output_chunk_length * self.output_dim * self.nr_params
@@ -177,6 +176,9 @@ class DLinearModel(PastCovariatesTorchModel):
         **kwargs,
     ):
         """An implementation of the DLinear model, as presented in [1]_.
+
+        This implementation is improved by allowing the optional use of past covariates,
+        and by making the model optionally probabilistic.
 
         Parameters
         ----------

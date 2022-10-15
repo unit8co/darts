@@ -1,23 +1,19 @@
 """
 N-Linear
 ------
-https://github.com/cure-lab/LTSF-Linear
-
-Copyright 2022 DLinear Authors. All rights reserved.
-
-
 """
 
 import torch
 import torch.nn as nn
 
+from darts.logging import raise_if
 from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 
 
 class _NLinearModule(PLPastCovariatesModule):
     """
-    NLinear
+    NLinear module
     """
 
     def __init__(
@@ -25,6 +21,9 @@ class _NLinearModule(PLPastCovariatesModule):
         input_dim,
         output_dim,
         nr_params,
+        shared_weights,
+        const_init,
+        normalize,
         **kwargs,
     ):
         """PyTorch module implementing the N-HiTS architecture.
@@ -37,6 +36,14 @@ class _NLinearModule(PLPastCovariatesModule):
             Number of output components in the target
         nr_params
             The number of parameters of the likelihood (or 1 if no likelihood is used).
+        shared_weights
+            Whether to use shared weights for the components of the series.
+            ** Ignores covariates when True. **
+        normalize
+            Whether to apply the "normalization" described in the paper.
+        const_init
+            Whether to initialize the weights to 1/in_len
+
         **kwargs
             all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
 
@@ -55,23 +62,65 @@ class _NLinearModule(PLPastCovariatesModule):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.nr_params = nr_params
-        self.seq_len = self.input_chunk_length
-        self.pred_len = self.output_chunk_length
+        self.shared_weights = shared_weights
+        self.const_init = const_init
+        self.normalize = normalize
 
-        self.Linear = nn.Linear(self.seq_len, self.pred_len * self.nr_params)
+        def _create_linear_layer(in_dim, out_dim):
+            layer = nn.Linear(in_dim, out_dim)
+            if self.const_init:
+                layer.weight = nn.Parameter(
+                    (1.0 / in_dim) * torch.ones(layer.weight.shape)
+                )
+            return layer
+
+        if self.shared_weights:
+            layer_in_dim = self.input_chunk_length
+            layer_out_dim = self.output_chunk_length * self.nr_params
+        else:
+            layer_in_dim = self.input_chunk_length * self.input_dim
+            layer_out_dim = self.output_chunk_length * self.output_dim * self.nr_params
+
+        self.layer = _create_linear_layer(layer_in_dim, layer_out_dim)
 
     def forward(self, x_in: tuple):
-        x, _ = x_in
-        # x: [Batch, Input length, Channel]
+        x, _ = x_in  # x: (batch, in_len, in_dim)
+        batch, _, _ = x.shape
 
-        seq_last = x[:, -1:, :].detach()
-        x = x - seq_last
-        x = self.Linear(x.permute(0, 2, 1)).permute(0, 2, 1)
-        x = x + seq_last
+        if self.shared_weights:
+            # discard covariates, to ensure that in_dim == out_dim
+            x = x[:, :, : self.output_dim]
+            x = x.permute(0, 2, 1)  # (batch, out_dim, in_len)
 
-        x = x.view(
-            x.shape[0], self.output_chunk_length, self.input_dim, self.nr_params
-        )[:, :, : self.output_dim, :]
+            if self.normalize:
+                seq_last = x[:, :, -1:].detach()  # (batch, out_dim, 1)
+                x = x - seq_last
+
+            x = self.layer(x)  # (batch, out_dim, out_len * nr_params)
+
+            if self.normalize:
+                x = x + seq_last
+
+            # extract nr_params
+            x = x.view(batch, self.output_dim, self.output_chunk_length, self.nr_params)
+
+            # permute back to (batch, out_len, out_dim, nr_params)
+            x = x.permute(0, 2, 1, 3)
+        else:
+            if self.normalize:
+                seq_last = x[:, -1:, :].detach()  # (batch, 1, in_dim)
+                x = x - seq_last
+
+            x = self.layer(x.view(batch, -1))  # (batch, out_len * out_dim * nr_params)
+            x = x.view(
+                batch, self.output_chunk_length, self.output_dim * self.nr_params
+            )
+
+            if self.normalize:
+                x = x + seq_last  # Note: works only when nr_params == 1
+
+            x = x.view(batch, self.output_chunk_length, self.output_dim, self.nr_params)
+
         return x
 
 
@@ -80,9 +129,17 @@ class NLinearModel(PastCovariatesTorchModel):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
+        shared_weights: bool = False,
+        const_init: bool = True,
+        normalize: bool = False,
         **kwargs,
     ):
         """An implementation of the NLinear model, as presented in [1]_.
+
+        This implementation is improved by allowing the optional use of past covariates.
+
+        This implementation is improved by allowing the optional use of past covariates,
+        and by making the model optionally probabilistic.
 
         Parameters
         ----------
@@ -90,6 +147,28 @@ class NLinearModel(PastCovariatesTorchModel):
             The length of the input sequence fed to the model.
         output_chunk_length
             The length of the forecast of the model.
+        shared_weights
+            Whether to use shared weights across components of multivariate series.
+
+            .. warning::
+                When set to True, covariates will be ignored as a 1-to-1 mapping is
+                required between input dimensions and output dimensions.
+            ..
+
+            Setting it to False corresponds to the "individual" weights version of the model
+            as described in the paper. Default: False.
+
+        const_init
+            Whether to initialize the weights to 1/in_len. If False, the default PyTorch
+            initialization is used (default='True').
+        normalize
+            Whether to apply the simple "normalization" proposed in the paper, which consists
+            in subtracting the last value of the input sequence from the input sequence. Default: False.
+
+            .. note::
+                This cannot be applied to probabilistic models.
+            ..
+
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -226,6 +305,17 @@ class NLinearModel(PastCovariatesTorchModel):
         # extract pytorch lightning module kwargs
         self.pl_module_params = self._extract_pl_module_params(**self.model_params)
 
+        self.shared_weights = shared_weights
+        self.const_init = const_init
+        self.normalize = normalize
+
+        raise_if(
+            "likelihood" in self.model_params
+            and self.model_params["likelihood"] is not None
+            and self.normalize,
+            "normalize = True cannot be used with probabilistic NLinearModel",
+        )
+
     def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
         input_dim = train_sample[0].shape[1] + (
@@ -238,6 +328,9 @@ class NLinearModel(PastCovariatesTorchModel):
             input_dim=input_dim,
             output_dim=output_dim,
             nr_params=nr_params,
+            shared_weights=self.shared_weights,
+            const_init=self.const_init,
+            normalize=self.normalize,
             **self.pl_module_params,
         )
 
