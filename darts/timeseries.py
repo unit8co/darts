@@ -35,7 +35,7 @@ Read our `user guide on covariates <https://unit8co.github.io/darts/userguide/co
 import pickle
 from collections import defaultdict
 from inspect import signature
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -1857,15 +1857,21 @@ class TimeSeries:
     =============
     """
 
-    def gaps(self) -> pd.DataFrame:
+    def gaps(self, mode: Literal["all", "any"] = "all") -> pd.DataFrame:
         """
-        A function to compute and return gaps in the TimeSeries.
-        Works only on deterministic time series.
+        A function to compute and return gaps in the TimeSeries. Works only on deterministic time series (1 sample).
+
+        Parameters
+        ----------
+        mode
+            Only relevant for multivariate time series. The mode defines how gaps are defined. Set to
+            'any' if a NaN value in any columns should be considered as as gaps. 'all' will only
+            consider periods where all columns' values are NaN. Defaults to 'all'.
 
         Returns
         -------
         pd.DataFrame
-            A dataframe containing a row for every gap (rows with all-NaN values in underlying DataFrame)
+            A pandas.DataFrame containing a row for every gap (rows with all-NaN values in underlying DataFrame)
             in this time series. The DataFrame contains three columns that include the start and end time stamps
             of the gap and the integer length of the gap (in `self.freq` units if the series is indexed
             by a DatetimeIndex).
@@ -1873,7 +1879,17 @@ class TimeSeries:
 
         df = self.pd_dataframe()
 
-        is_nan_series = df.isna().all(axis=1).astype(int)
+        if mode == "all":
+            is_nan_series = df.isna().all(axis=1).astype(int)
+        elif mode == "any":
+            is_nan_series = df.isna().any(axis=1).astype(int)
+        else:
+            raise_log(
+                ValueError(
+                    f"Keyword mode accepts only 'any' or 'all'. Provided {mode}"
+                ),
+                logger,
+            )
         diff = pd.Series(np.diff(is_nan_series.values), index=is_nan_series.index[:-1])
         gap_starts = diff[diff == 1].index + self._freq
         gap_ends = diff[diff == -1].index
@@ -1883,21 +1899,25 @@ class TimeSeries:
         if is_nan_series.iloc[-1] == 1:
             gap_ends = gap_ends.insert(len(gap_ends), self.end_time())
 
-        gap_df = pd.DataFrame()
-        gap_df["gap_start"] = gap_starts
-        gap_df["gap_end"] = gap_ends
+        gap_df = pd.DataFrame(columns=["gap_start", "gap_end"])
 
-        def intvl(start, end):
-            if self._has_datetime_index:
-                return pd.date_range(start=start, end=end, freq=self._freq).size
-            else:
-                return int((end - start) / self._freq) + 1
+        if gap_starts.size == 0:
+            return gap_df
+        else:
 
-        gap_df["gap_size"] = gap_df.apply(
-            lambda row: intvl(start=row.gap_start, end=row.gap_end), axis=1
-        )
+            def intvl(start, end):
+                if self._has_datetime_index:
+                    return pd.date_range(start=start, end=end, freq=self._freq).size
+                else:
+                    return int((end - start) / self._freq) + 1
 
-        return gap_df
+            gap_df["gap_start"] = gap_starts
+            gap_df["gap_end"] = gap_ends
+            gap_df["gap_size"] = gap_df.apply(
+                lambda row: intvl(start=row.gap_start, end=row.gap_end), axis=1
+            )
+
+            return gap_df
 
     def copy(self) -> "TimeSeries":
         """
@@ -2278,22 +2298,37 @@ class TimeSeries:
             new_series, static_covariates=self.static_covariates
         )
 
-    def longest_contiguous_slice(self, max_gap_size: int = 0) -> "TimeSeries":
+    def longest_contiguous_slice(
+        self, max_gap_size: int = 0, mode: str = "all"
+    ) -> "TimeSeries":
         """
         Return the largest TimeSeries slice of this deterministic series that contains no gaps
         (contiguous all-NaN values) larger than `max_gap_size`.
 
         This method is only applicable to deterministic series (i.e., having 1 sample).
 
+        Parameters
+        ----------
+        max_gap_size
+            Indicate the maximum gap size that the TimeSerie can contain
+        mode
+            Only relevant for multivariate time series. The mode defines how gaps are defined. Set to
+            'any' if a NaN value in any columns should be considered as as gaps. 'all' will only
+            consider periods where all columns' values are NaN. Defaults to 'all'.
+
         Returns
         -------
         TimeSeries
             a new series constituting the largest slice of the original with no or bounded gaps
+
+        See Also
+        --------
+        TimeSeries.gaps : return the gaps in the TimeSeries
         """
         if not (np.isnan(self._xa)).any():
             return self.copy()
         stripped_series = self.strip()
-        gaps = stripped_series.gaps()
+        gaps = stripped_series.gaps(mode=mode)
         relevant_gaps = gaps[gaps["gap_size"] > max_gap_size]
 
         curr_slice_start = stripped_series.start_time()

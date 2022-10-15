@@ -56,12 +56,23 @@ brew unlink libomp
 brew install libomp.rb
 ```
 
-#### Test environment Appple M1 processor 
+#### Test environment Apple M1 processor
 
 We currently recommend to run Darts in an x_64 emulated environment on Mac computers with the Silicon M1 processor,
 instead of trying to install directly with native arm64 packages, many of the dependent packages still have compatibility 
 issues. The following is a proposed procedure, if you tested other procedures on similar hardware and they worked, 
 please let us know about them by opening an issue or by updating this file and opening a PR. 
+
+Before you start make sure that you have rosetta2 installed by running: 
+```
+pgrep oahd
+``` 
+If you see some process id you are ready to go, as internally rosetta is known as oah.
+
+If pgrep doesn't return any id then install rosetta2:
+```
+softwareupdate --install-rosetta
+```
 
 Below are the necessary instructions to create and configure the environment:
 - Start by installing conda (e.g., with miniforge : `brew install miniforge`).
@@ -101,6 +112,10 @@ If the conda setup is causing too many problems, we also provide a Docker image 
 To run the example notebooks without installing our libraries natively on your machine, you can use our Docker image:
 ```bash
 ./gradlew docker && ./gradlew dockerRun
+```
+If you are having M1/M2 chipset then you should change the default platform: (unfortunately not all libraries support ARM architecture)
+```bash
+DOCKER_DEFAULT_PLATFORM=linux/amd64 ./gradlew docker && ./gradlew dockerRun
 ```
 
 Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.
