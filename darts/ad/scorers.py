@@ -1,9 +1,9 @@
 """
-Scorer
-------
+Anomaly Scorers
+---------------
 
-Scorers can be trainable (TrainableScorer) or not trainable (NonTrainableScorer). The main functions are `fit()`
-(only for the trainable scorer), `compute()` and `score()`.
+Anomaly scorers can be trainable (TrainableScorer) or not trainable (NonTrainableScorer).
+The main functions are `fit()` (only for the trainable scorer), `compute()` and `score()`.
 
 `fit()` learns the function `f()`, over the history of one time series. The function `compute()` takes as input
 two time series, and applies the function `f()` to obtain an anomaly score time series. The function `score()`
