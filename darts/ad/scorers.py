@@ -1,6 +1,6 @@
 """
 Scorer
--------
+------
 
 Scorers can be trainable (TrainableScorer) or not trainable (NonTrainableScorer). The main functions are `fit()`
 (only for the trainable scorer), `compute()` and `score()`.

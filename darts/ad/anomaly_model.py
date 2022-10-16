@@ -20,7 +20,7 @@ ground-truth time series indicating the presence of actual anomalies.
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Sequence, Union
 
-from darts.anomaly_detection.score import Scorer
+from darts.ad.score import Scorer
 from darts.logging import raise_if_not
 from darts.models.filtering.filtering_model import FilteringModel
 from darts.models.forecasting.forecasting_model import ForecastingModel
@@ -60,9 +60,9 @@ class ForecastingAnomalyModel(AnomalyModel):
 
         Parameters
         ----------
-        model : ForecastingModel
+        model
             A Darts forecasting model
-        scorer : Scorer
+        scorer
             A scorer that will be used to convert the actual and predicted time series to
             an anomaly score ``TimeSeries``. If a list of `N` scorer is given, the anomaly model will call each
             one of the scorers and output a list of `N` anomaly scores ``TimeSeries``.
@@ -71,7 +71,7 @@ class ForecastingAnomalyModel(AnomalyModel):
 
         raise_if_not(
             isinstance(model, ForecastingModel),
-            f"Model must be a darts.models.forecasting not a {type(model)}",
+            f"Model must be a Darts ForecastingModel, found: {type(model)}",
         )
         self.model = model
 
@@ -83,7 +83,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         for scorer in self.scorers:
             raise_if_not(
                 isinstance(scorer, Scorer),
-                f"Scorer must be a darts.anomaly_detection.score not a {type(scorer)}",
+                f"Scorer must be a Darts Scorer, found: {type(scorer)}",
             )
 
     def fit(
@@ -92,15 +92,17 @@ class ForecastingAnomalyModel(AnomalyModel):
         model_fit_params: Optional[Dict[str, Any]] = None,
         hist_forecasts_params: Optional[Dict[str, Any]] = None,
     ):
-        """Train the model and the scorer(s) on the given time series.
+        """Train the model (if not already fitted) and the
+        scorer(s) (if fittable) on the given time series.
 
         Parameters
         ----------
-        series : Darts TimeSeries
-        model_fit_params: dict, optional
-            parameters of the Darts `.fit()` forecasting model
-        hist_forecasts_params: dict, optional
-            parameters of the Darts `.historical_forecasts()` forecasting model
+        series
+            The series to train on
+        model_fit_params
+            Parameters to be passed on to the forecast model ``fit()`` method
+        hist_forecasts_params
+            Parameters of the Darts `.historical_forecasts()` forecasting model
 
         Returns
         -------
@@ -250,7 +252,7 @@ class FilteringAnomalyModel(AnomalyModel):
         for scorer in self.scorers:
             raise_if_not(
                 isinstance(scorer, Scorer),
-                f"Scorer must be a darts.anomaly_detection.score not a {type(scorer)}",
+                f"Scorer must be a Darts Scorer not a {type(scorer)}",
             )
 
     def fit(
