@@ -113,6 +113,10 @@ To run the example notebooks without installing our libraries natively on your m
 ```bash
 ./gradlew docker && ./gradlew dockerRun
 ```
+If you are having M1/M2 chipset then you should change the default platform: (unfortunately not all libraries support ARM architecture)
+```bash
+DOCKER_DEFAULT_PLATFORM=linux/amd64 ./gradlew docker && ./gradlew dockerRun
+```
 
 Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.
 
