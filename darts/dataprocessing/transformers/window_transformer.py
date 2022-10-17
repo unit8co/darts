@@ -78,7 +78,7 @@ class ForecastingWindowTransformer(BaseDataTransformer):
     ):
         """
         A transformer that applies window transformation to a TimeSeries or a Sequence of TimeSeries. It expects a
-        dictionary or a list of dictionaries.
+        dictionary or a list of dictionaries specifying the window transformation(s) to be applied.
 
         Parameters
         ----------
