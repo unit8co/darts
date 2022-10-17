@@ -123,7 +123,7 @@ class ForecastingWindowTransformer(BaseDataTransformer):
 
                         zscore_fn = lambda x: (x[-1] - x.mean()) / x.std()
                         window_transformations_2 = {'function': zscore_fn , 'rolling': True, 'window': [3], 'series_id': 0,
-                                                                                                    'comp_id':[0,1,2]}
+                                                                                                    'comp_id': [0,1,2]}
                         window_transformer_2 = ForecastingWindowTransformer(window_transformations_2)
                         transformed_series_2 = window_transformer_2.transform(all_series)
                     ..
