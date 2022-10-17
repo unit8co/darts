@@ -118,7 +118,7 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                         all_series = [series_1, series_2, series_3] # each series could have multiple components
                         window_transformations_1 = [{'function':'mean','window':[3],'series_id': 0,'comp_id':[0,1,2]},
                                                     {'function':'quantile', 'window':[3, 5, 30], 'quantile':0.5}]
-                         window_transformer_1 = ForecastingWindowTransformer(window_transformations_1)
+                        window_transformer_1 = ForecastingWindowTransformer(window_transformations_1)
                         transformed_series_1 = window_transformer.transform(all_series)
 
                         zscore_fn = lambda x: (x[-1] - x.mean()) / x.std()
