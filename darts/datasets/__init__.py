@@ -648,3 +648,41 @@ class UberTLCDataset(DatasetLoaderCSV):
             ts = TimeSeries.from_dataframe(tmp, "date", ["locationID"])
             ts_list.append(ts)
         return ts_list
+
+
+class ILINetDataset(DatasetLoaderCSV):
+    """
+    ILI describes the ratio of patients seen with influenzalike illness and the number of patients. It includes
+    weekly data from the Centers for Disease Control and Prevention of the United States from 1997 to 2022
+
+    Field Descriptions:
+    DATE: The recorded date
+    % WEIGHTED ILI: Combined state-specific data of patients visit to healthcare providers for ILI reported each week weighted by state population
+    % UNWEIGHTED ILI: Combined state-specific data of patients visit to healthcare providers for ILI reported each week unweighted by state population
+    AGE 0-4: Number of patients between 0 and 4 years of age
+    AGE 25-49: Number of patients between 25 and 49 years of age
+    AGE 25-64: Number of patients between 25 and 64 years of age
+    AGE 5-24: Number of patients between 5 and 24 years of age
+    AGE 50-64: Number of patients between 50 and 64 years of age
+    AGE 65: Number of patients above (>=65) 65 years of age
+    ILITOTAL: Total number of ILI patients. For this system, ILI is defined as fever (temperature of 100°F [37.8°C] or greater) and a cough and/or a sore throat
+    NUM. OF PROVIDERS: Number of outpatient healthcare providers
+    TOTAL PATIENTS: Total number of patients
+
+    References
+    ----------
+    .. [1] https://gis.cdc.gov/grasp/fluview/fluportaldashboard.html
+    .. [2] https://www.cdc.gov/flu/weekly/overview.htm#Outpatient
+    .. [3] https://arxiv.org/pdf/2205.13504.pdf
+    """
+
+    def __init__(self):
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                "ILINet.csv",
+                uri=_DEFAULT_PATH + "/ILINet.csv",
+                hash="5a82522dd351b26d9f2c7bc0a4618486",
+                header_time="DATE",
+                format_time="%Y-%m-%d",
+            )
+        )
