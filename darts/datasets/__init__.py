@@ -680,9 +680,10 @@ class ILINetDataset(DatasetLoaderCSV):
         super().__init__(
             metadata=DatasetLoaderMetadata(
                 "ILINet.csv",
-                uri=_DEFAULT_PATH + "/ILINet.csv",
-                hash="5a82522dd351b26d9f2c7bc0a4618486",
+                uri="https://raw.githubusercontent.com/unit8co/darts/Improvement/Add_new_datasets_617/datasets/ILINet.csv",
+                hash="90f9cd7f01bee6bd063f7bc127a7610e",
                 header_time="DATE",
                 format_time="%Y-%m-%d",
+                freq="W",
             )
         )
