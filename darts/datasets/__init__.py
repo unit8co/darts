@@ -681,7 +681,7 @@ class ILINetDataset(DatasetLoaderCSV):
             metadata=DatasetLoaderMetadata(
                 "ILINet.csv",
                 uri="https://raw.githubusercontent.com/unit8co/darts/Improvement/Add_new_datasets_617/datasets/ILINet.csv",
-                hash="5a82522dd351b26d9f2c7bc0a4618486",
+                hash="1419043b50f7be0595698d79a3e51be4",
                 header_time="DATE",
                 format_time="%Y-%m-%d",
                 freq="W",
