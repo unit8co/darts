@@ -653,7 +653,7 @@ class UberTLCDataset(DatasetLoaderCSV):
 class ILINetDataset(DatasetLoaderCSV):
     """
     ILI describes the ratio of patients seen with influenzalike illness and the number of patients. It includes
-    weekly data from the Centers for Disease Control and Prevention of the United States from 1997 to 2022
+    weekly data from the Centers for Disease Control and Prevention of the United States from 2002 to 2022
 
     Field Descriptions:
     DATE: The recorded date
@@ -681,7 +681,7 @@ class ILINetDataset(DatasetLoaderCSV):
             metadata=DatasetLoaderMetadata(
                 "ILINet.csv",
                 uri="https://raw.githubusercontent.com/unit8co/darts/Improvement/Add_new_datasets_617/datasets/ILINet.csv",
-                hash="6fbb4820f869c1590348d9ca706522d6",
+                hash="51e7e981bd740098c2c45cd266542965",
                 header_time="DATE",
                 format_time="%Y-%m-%d",
                 freq="W",
