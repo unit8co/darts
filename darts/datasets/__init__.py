@@ -687,3 +687,50 @@ class ILINetDataset(DatasetLoaderCSV):
                 freq="W",
             )
         )
+
+
+class ExchangeRateDataset(DatasetLoaderCSV):
+    """
+    The collection of the daily exchange rates of eight foreign countries including Australia, British, Canada,
+    Switzerland, China, Japan, New Zealand and Singapore ranging from 1990 to 2010.
+
+    References
+    ----------
+    .. [1] https://github.com/laiguokun/multivariate-time-series-data
+    """
+
+    def __init__(self):
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                "exchange_rate.csv",
+                uri=_DEFAULT_PATH + "/ILINet.csv",
+                hash="9219e9a03eb54c6e40d7eb1c9b3b6f7c",
+                header_time="Date",
+                format_time="%Y-%m-%d",
+                freq="D",
+            )
+        )
+
+
+class TrafficDataset(DatasetLoaderCSV):
+    """
+    The raw data is in http://pems.dot.ca.gov. The data in this repo is a collection of 48 months (2015-2016)
+    hourly data from the California Department of Transportation. The data describes the road occupancy rates (between 0 and 1)
+    measured by different sensors on San Francisco Bay area freeways.
+
+    References
+    ----------
+    .. [1] https://github.com/laiguokun/multivariate-time-series-data
+    """
+
+    def __init__(self):
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                "traffic.csv",
+                uri=_DEFAULT_PATH + "/traffic.csv",
+                hash="a2105f364ef70aec06c757304833f72a",
+                header_time="Date",
+                format_time="%Y-%m-%d",
+                freq="1H",
+            )
+        )
