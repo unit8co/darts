@@ -798,7 +798,7 @@ class WeatherDataset(DatasetLoaderCSV):
                 hash="a2942a05638ba311bc7935bcc087a30f",
                 header_time="Date Time",
                 format_time="%d.%m.%Y %H:%M:%S",
-                freq="10M",
+                freq="10min",
                 multivariate=multivariate,
             )
         )
