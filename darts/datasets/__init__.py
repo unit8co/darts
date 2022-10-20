@@ -709,7 +709,7 @@ class ExchangeRateDataset(DatasetLoaderCSV):
         super().__init__(
             metadata=DatasetLoaderMetadata(
                 "exchange_rate.csv",
-                uri="https://raw.githubusercontent.com/unit8co/darts/Improvement/Add_new_datasets_617/datasets//exchange_rate.csv",
+                uri="https://raw.githubusercontent.com/unit8co/darts/Improvement/Add_new_datasets_617/datasets/exchange_rate.csv",
                 hash="9219e9a03eb54c6e40d7eb1c9b3b6f7c",
                 header_time="Date",
                 format_time="%Y-%m-%d",
@@ -751,7 +751,7 @@ class TrafficDataset(DatasetLoaderCSV):
         super().__init__(
             metadata=DatasetLoaderMetadata(
                 "traffic.csv",
-                uri="https://raw.githubusercontent.com/unit8co/darts/Improvement/Add_new_datasets_617/datasets//traffic.csv",
+                uri="https://raw.githubusercontent.com/unit8co/darts/Improvement/Add_new_datasets_617/datasets/traffic.csv",
                 hash="a2105f364ef70aec06c757304833f72a",
                 header_time="Date",
                 format_time="%Y-%m-%d %H:%M:%S",
@@ -763,6 +763,49 @@ class TrafficDataset(DatasetLoaderCSV):
     def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
         """
         Load the TrafficDataset dataset as a list of univariate timeseries, one for each ID.
+        """
+        return [
+            series[label]
+            for label in _build_tqdm_iterator(
+                series, verbose=False, total=len(series.columns)
+            )
+        ]
+
+
+class WeatherDataset(DatasetLoaderCSV):
+    """
+    Weather includes 21 indicators of weather, such as air
+    temperature, and humidity. Its data is recorded every
+    10 min for 2020 in Germany.
+
+    References
+    ----------
+    .. [1] https://www.bgc-jena.mpg.de/wetter/
+    .. [2] https://arxiv.org/pdf/2205.13504.pdf
+    """
+
+    def __init__(self, multivariate: bool = True):
+        """
+        Parameters
+        ----------
+        multivariate: bool
+            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.
+        """
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                "weather.csv",
+                uri="https://raw.githubusercontent.com/unit8co/darts/Improvement/Add_new_datasets_617/datasets/weather.csv",
+                hash="ae839a0470791637994e4ab4c32f5c6b",
+                header_time="Date Time",
+                format_time="%Y-%m-%d %H:%M:%S",
+                freq="10M",
+                multivariate=multivariate,
+            )
+        )
+
+    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+        """
+        Load the WeatherDataset dataset as a list of univariate timeseries, one for weather indicator.
         """
         return [
             series[label]
