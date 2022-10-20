@@ -795,9 +795,9 @@ class WeatherDataset(DatasetLoaderCSV):
             metadata=DatasetLoaderMetadata(
                 "weather.csv",
                 uri="https://raw.githubusercontent.com/unit8co/darts/Improvement/Add_new_datasets_617/datasets/weather.csv",
-                hash="ae839a0470791637994e4ab4c32f5c6b",
+                hash="a2942a05638ba311bc7935bcc087a30f",
                 header_time="Date Time",
-                format_time="%Y-%m-%d %H:%M:%S",
+                format_time="%d.%m.%Y %H:%M:%S",
                 freq="10M",
                 multivariate=multivariate,
             )
