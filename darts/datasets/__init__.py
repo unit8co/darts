@@ -680,7 +680,7 @@ class ILINetDataset(DatasetLoaderCSV):
         super().__init__(
             metadata=DatasetLoaderMetadata(
                 "ILINet.csv",
-                uri=_DEFAULT_PATH + "/ILINet.csv",
+                uri="https://raw.githubusercontent.com/unit8co/darts/Improvement/Add_new_datasets_617/datasets/ILINet.csv",
                 hash="c9cbd6cc0a92b21cd95bec2706212d8d",
                 header_time="DATE",
                 format_time="%Y-%m-%d",
@@ -699,17 +699,35 @@ class ExchangeRateDataset(DatasetLoaderCSV):
     .. [1] https://github.com/laiguokun/multivariate-time-series-data
     """
 
-    def __init__(self):
+    def __init__(self, multivariate: bool = True):
+        """
+        Parameters
+        ----------
+        multivariate: bool
+            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.
+        """
         super().__init__(
             metadata=DatasetLoaderMetadata(
                 "exchange_rate.csv",
-                uri=_DEFAULT_PATH + "/ILINet.csv",
+                uri="https://raw.githubusercontent.com/unit8co/darts/Improvement/Add_new_datasets_617/datasets//exchange_rate.csv",
                 hash="9219e9a03eb54c6e40d7eb1c9b3b6f7c",
                 header_time="Date",
                 format_time="%Y-%m-%d",
                 freq="D",
+                multivariate=multivariate,
             )
         )
+
+    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+        """
+        Load the ExchangeRateDataset dataset as a list of univariate timeseries, one for each country.
+        """
+        return [
+            series[label]
+            for label in _build_tqdm_iterator(
+                series, verbose=False, total=len(series.columns)
+            )
+        ]
 
 
 class TrafficDataset(DatasetLoaderCSV):
@@ -723,14 +741,32 @@ class TrafficDataset(DatasetLoaderCSV):
     .. [1] https://github.com/laiguokun/multivariate-time-series-data
     """
 
-    def __init__(self):
+    def __init__(self, multivariate: bool = True):
+        """
+        Parameters
+        ----------
+        multivariate: bool
+            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.
+        """
         super().__init__(
             metadata=DatasetLoaderMetadata(
                 "traffic.csv",
-                uri=_DEFAULT_PATH + "/traffic.csv",
+                uri="https://raw.githubusercontent.com/unit8co/darts/Improvement/Add_new_datasets_617/datasets//traffic.csv",
                 hash="a2105f364ef70aec06c757304833f72a",
                 header_time="Date",
-                format_time="%Y-%m-%d",
+                format_time="%Y-%m-%d %H:%M:%S",
                 freq="1H",
+                multivariate=multivariate,
             )
         )
+
+    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+        """
+        Load the TrafficDataset dataset as a list of univariate timeseries, one for each ID.
+        """
+        return [
+            series[label]
+            for label in _build_tqdm_iterator(
+                series, verbose=False, total=len(series.columns)
+            )
+        ]
