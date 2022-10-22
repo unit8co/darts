@@ -37,7 +37,7 @@ class CovariatesIndexGenerator(ABC):
         self.output_chunk_length = output_chunk_length
 
     @abstractmethod
-    def generate_train_series(
+    def generate_train_idx(
         self, target: TimeSeries, covariates: Optional[TimeSeries] = None
     ) -> Tuple[SupportedIndex, pd.Timestamp]:
         """
@@ -53,7 +53,7 @@ class CovariatesIndexGenerator(ABC):
         pass
 
     @abstractmethod
-    def generate_inference_series(
+    def generate_inference_idx(
         self, n: int, target: TimeSeries, covariates: Optional[TimeSeries] = None
     ) -> Tuple[SupportedIndex, pd.Timestamp]:
         """
@@ -83,18 +83,18 @@ class CovariatesIndexGenerator(ABC):
 class PastCovariatesIndexGenerator(CovariatesIndexGenerator):
     """Generates index for past covariates on train and inference datasets"""
 
-    def generate_train_series(
+    def generate_train_idx(
         self, target: TimeSeries, covariates: Optional[TimeSeries] = None
     ) -> Tuple[SupportedIndex, pd.Timestamp]:
 
-        super().generate_train_series(target, covariates)
+        super().generate_train_idx(target, covariates)
         target_end = target.end_time()
         return (
             covariates.time_index if covariates is not None else target.time_index,
             target_end,
         )
 
-    def generate_inference_series(
+    def generate_inference_idx(
         self, n: int, target: TimeSeries, covariates: Optional[TimeSeries] = None
     ) -> Tuple[SupportedIndex, pd.Timestamp]:
         """For prediction (`n` is given) with past covariates we have to distinguish between two cases:
@@ -103,7 +103,7 @@ class PastCovariatesIndexGenerator(CovariatesIndexGenerator):
             before the end of `target` and ends `max(0, n - output_chunk_length)` after the end of `target`
         """
 
-        super().generate_inference_series(n, target, covariates)
+        super().generate_inference_idx(n, target, covariates)
         target_end = target.end_time()
         if covariates is not None:
             return covariates.time_index, target_end
@@ -127,21 +127,21 @@ class PastCovariatesIndexGenerator(CovariatesIndexGenerator):
 class FutureCovariatesIndexGenerator(CovariatesIndexGenerator):
     """Generates index for future covariates on train and inference datasets."""
 
-    def generate_train_series(
+    def generate_train_idx(
         self, target: TimeSeries, covariates: Optional[TimeSeries] = None
     ) -> Tuple[SupportedIndex, pd.Timestamp]:
         """For training (when `n` is `None`) we can simply use the future covariates (if available) or target as
         reference to extract the time index.
         """
 
-        super().generate_train_series(target, covariates)
+        super().generate_train_idx(target, covariates)
         target_end = target.end_time()
         return (
             covariates.time_index if covariates is not None else target.time_index,
             target_end,
         )
 
-    def generate_inference_series(
+    def generate_inference_idx(
         self, n: int, target: TimeSeries, covariates: Optional[TimeSeries] = None
     ) -> Tuple[SupportedIndex, pd.Timestamp]:
         """For prediction (`n` is given) with future covariates we have to distinguish between two cases:
@@ -149,7 +149,7 @@ class FutureCovariatesIndexGenerator(CovariatesIndexGenerator):
         2)  If future covariates are missing, we need to generate a time index that starts `input_chunk_length`
             before the end of `target` and ends `max(n, output_chunk_length)` after the end of `target`
         """
-        super().generate_inference_series(n, target, covariates)
+        super().generate_inference_idx(n, target, covariates)
         target_end = target.end_time()
         if covariates is not None:
             return covariates.time_index, target_end
@@ -297,8 +297,8 @@ class SingleEncoder(Encoder, ABC):
         Parameters
         ----------
         index_generator
-            An instance of `CovariatesIndexGenerator` with methods `generate_train_series()` and
-            `generate_inference_series()`. Used to generate the index for encoders.
+            An instance of `CovariatesIndexGenerator` with methods `generate_train_idx()` and
+            `generate_inference_idx()`. Used to generate the index for encoders.
         """
 
         super().__init__()
@@ -346,9 +346,7 @@ class SingleEncoder(Encoder, ABC):
         covariates = self._drop_encoded_components(covariates, self.components)
 
         # generate index and encodings
-        index, target_end = self.index_generator.generate_train_series(
-            target, covariates
-        )
+        index, target_end = self.index_generator.generate_train_idx(target, covariates)
         encoded = self._encode(index, target_end, target.dtype)
 
         # optionally, merge encodings with original `covariates` series
@@ -403,7 +401,7 @@ class SingleEncoder(Encoder, ABC):
         covariates = self._drop_encoded_components(covariates, self.components)
 
         # generate index and encodings
-        index, target_end = self.index_generator.generate_inference_series(
+        index, target_end = self.index_generator.generate_inference_idx(
             n, target, covariates
         )
         encoded = self._encode(index, target_end, target.dtype)

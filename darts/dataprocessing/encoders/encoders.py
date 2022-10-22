@@ -182,8 +182,8 @@ class CyclicTemporalEncoder(SingleEncoder):
         Parameters
         ----------
         index_generator
-            An instance of `CovariatesIndexGenerator` with methods `generate_train_series()` and
-            `generate_inference_series()`. Used to generate the index for encoders.
+            An instance of `CovariatesIndexGenerator` with methods `generate_train_idx()` and
+            `generate_inference_idx()`. Used to generate the index for encoders.
         attribute
             The attribute of the underlying pd.DatetimeIndex from  for which to apply cyclic encoding.
             Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
@@ -289,8 +289,8 @@ class DatetimeAttributeEncoder(SingleEncoder):
         Parameters
         ----------
         index_generator
-            An instance of `CovariatesIndexGenerator` with methods `generate_train_series()` and
-            `generate_inference_series()`. Used to generate the index for encoders.
+            An instance of `CovariatesIndexGenerator` with methods `generate_train_idx()` and
+            `generate_inference_idx()`. Used to generate the index for encoders.
         attribute
             The attribute of the underlying pd.DatetimeIndex from  for which to add scalar information.
             Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
@@ -392,8 +392,8 @@ class IntegerIndexEncoder(SingleEncoder):
         Parameters
         ----------
         index_generator
-            An instance of `CovariatesIndexGenerator` with methods `generate_train_series()` and
-            `generate_inference_series()`. Used to generate the index for encoders.
+            An instance of `CovariatesIndexGenerator` with methods `generate_train_idx()` and
+            `generate_inference_idx()`. Used to generate the index for encoders.
         attribute
             Currently only 'relative' is supported. The generated encoded values will range from (-inf, inf) and the
             target series end time will be used as a reference to evaluate the relative index positions.
@@ -504,8 +504,8 @@ class CallableIndexEncoder(SingleEncoder):
         Parameters
         ----------
         index_generator
-            An instance of `CovariatesIndexGenerator` with methods `generate_train_series()` and
-            `generate_inference_series()`. Used to generate the index for encoders.
+            An instance of `CovariatesIndexGenerator` with methods `generate_train_idx()` and
+            `generate_inference_idx()`. Used to generate the index for encoders.
         attribute
             A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.RangeIndex)` as input
             and returns a np.ndarray of shape `(len(index),)`.
