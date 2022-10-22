@@ -1617,7 +1617,9 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         )
 
     @property
-    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
+    def _model_encoder_settings(
+        self,
+    ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
         input_chunk_length = self.input_chunk_length
         output_chunk_length = self.output_chunk_length
         takes_past_covariates = True
@@ -1627,6 +1629,8 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
             output_chunk_length,
             takes_past_covariates,
             takes_future_covariates,
+            None,
+            None,
         )
 
 
@@ -1692,7 +1696,9 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
         )
 
     @property
-    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
+    def _model_encoder_settings(
+        self,
+    ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
         input_chunk_length = self.input_chunk_length
         output_chunk_length = self.output_chunk_length
         takes_past_covariates = False
@@ -1702,6 +1708,8 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             output_chunk_length,
             takes_past_covariates,
             takes_future_covariates,
+            None,
+            None,
         )
 
 
@@ -1760,7 +1768,9 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
         )
 
     @property
-    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
+    def _model_encoder_settings(
+        self,
+    ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
         input_chunk_length = self.input_chunk_length
         output_chunk_length = self.output_chunk_length
         takes_past_covariates = False
@@ -1770,6 +1780,8 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
             output_chunk_length,
             takes_past_covariates,
             takes_future_covariates,
+            None,
+            None,
         )
 
 
@@ -1824,7 +1836,9 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         pass
 
     @property
-    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
+    def _model_encoder_settings(
+        self,
+    ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
         input_chunk_length = self.input_chunk_length
         output_chunk_length = self.output_chunk_length
         takes_past_covariates = True
@@ -1834,6 +1848,8 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
             output_chunk_length,
             takes_past_covariates,
             takes_future_covariates,
+            None,
+            None,
         )
 
 
@@ -1889,7 +1905,9 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         raise NotImplementedError()
 
     @property
-    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
+    def _model_encoder_settings(
+        self,
+    ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
         input_chunk_length = self.input_chunk_length
         output_chunk_length = self.output_chunk_length
         takes_past_covariates = True
@@ -1899,4 +1917,6 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
             output_chunk_length,
             takes_past_covariates,
             takes_future_covariates,
+            None,
+            None,
         )

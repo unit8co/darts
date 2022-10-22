@@ -1253,10 +1253,13 @@ class GlobalForecastingModel(ForecastingModel, ABC):
 
     @property
     @abstractmethod
-    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
+    def _model_encoder_settings(
+        self,
+    ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
         """Abstract property that returns model specific encoder settings that are used to initialize the encoders.
 
-        Must return Tuple (input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates)
+        Must return Tuple (input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates,
+        past_covariates_lags, future_covariates_lags).
         """
         pass
 
@@ -1268,6 +1271,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             output_chunk_length,
             takes_past_covariates,
             takes_future_covariates,
+            past_covariates_lags,
+            future_covariates_lags,
         ) = self._model_encoder_settings
 
         return SequentialEncoder(
@@ -1276,6 +1281,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             output_chunk_length=output_chunk_length,
             takes_past_covariates=takes_past_covariates,
             takes_future_covariates=takes_future_covariates,
+            past_covariates_lags=past_covariates_lags,
+            future_covariates_lags=future_covariates_lags,
         )
 
     def generate_fit_encodings(
@@ -1358,17 +1365,11 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             logger=logger,
         )
         return self.encoders.encode_inference(
-            n=self._get_encoders_n(n),
+            n=n,
             target=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
-
-    def _get_encoders_n(self, n) -> int:
-        """Returns the number of prediction steps for generating with `model.encoders.generate_predict_encodings()`.
-        Subclasses can have different requirements for setting `n`. The most general case simply returns `n` as is.
-        """
-        return n
 
 
 class DualCovariatesForecastingModel(ForecastingModel, ABC):

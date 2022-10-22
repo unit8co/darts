@@ -416,7 +416,11 @@ class EncoderTestCase(DartsBaseTestClass):
                 covs_train2 = encoder.encode_train(
                     target=ts, covariates=covs_train, merge_covariates=merge_covs
                 )
-                assert covs_train2 == covs_train
+                if merge_covs:
+                    assert covs_train2 == covs_train
+                else:
+                    overlap = covs_train.slice_intersect(covs_train2)
+                    assert covs_train2 == overlap
 
                 # we can use the output of `encode_train()` as input for `encode_inference()`. The encoded components
                 # are dropped internally and appended again at the end
@@ -429,11 +433,13 @@ class EncoderTestCase(DartsBaseTestClass):
                 # We get only the minimum required time spans with `merge_covariates=False` as input covariates will
                 # are not in output of `encode_train()/inference()`
                 else:
+                    overlap = covs_inf.slice_intersect(covs_inf2)
                     if isinstance(
                         encoder.index_generator, PastCovariatesIndexGenerator
                     ):
                         assert len(covs_inf2) == input_chunk_length
                         assert covs_inf2.end_time() == ts.end_time()
+                        assert covs_inf2 == overlap
                     else:
                         assert (
                             len(covs_inf2) == input_chunk_length + output_chunk_length
@@ -442,6 +448,8 @@ class EncoderTestCase(DartsBaseTestClass):
                             covs_inf2.end_time()
                             == ts.end_time() + ts.freq * output_chunk_length
                         )
+                        overlap_inf = covs_inf2.slice_intersect(overlap)
+                        assert overlap_inf == overlap
 
                 # we can use the output of `encode_inference()` as input for `encode_inference()` and get the
                 # same results (encoded components get overwritten)
@@ -728,9 +736,8 @@ class EncoderTestCase(DartsBaseTestClass):
         ts = tg.linear_timeseries(length=24, freq="MS")
         input_chunk_length = 12
         output_chunk_length = 6
-
         # ===> test relative position encoder <===
-        encoder_params = {"position": {"past": ["relative"]}}
+        encoder_params = {"position": {"past": ["relative"], "future": ["relative"]}}
         encs = SequentialEncoder(
             add_encoders=encoder_params,
             input_chunk_length=input_chunk_length,
@@ -738,47 +745,113 @@ class EncoderTestCase(DartsBaseTestClass):
             takes_past_covariates=True,
             takes_future_covariates=True,
         )
+        # relative encoder takes the end of the training series as reference
+        vals = np.arange(-len(ts) + 1, 1).reshape((len(ts), 1))
 
-        t1, _ = encs.encode_train(ts)
-        t2, _ = encs.encode_train(
+        pc1, fc1 = encs.encode_train(ts)
+        self.assertTrue(
+            pc1.time_index.equals(ts.time_index[:-output_chunk_length])
+            and (pc1.values() == vals[:-output_chunk_length]).all()
+        )
+        self.assertTrue(
+            fc1.time_index.equals(ts.time_index) and (fc1.values() == vals).all()
+        )
+
+        pc2, fc2 = encs.encode_train(
             TimeSeries.from_times_and_values(
                 ts.time_index[:20] + ts.freq, ts[:20].values()
             )
         )
-        t3, _ = encs.encode_train(
+        self.assertTrue(
+            (pc2.time_index.equals(ts.time_index[: 20 - output_chunk_length] + ts.freq))
+            and (pc2.values() == vals[-20:-output_chunk_length]).all()
+        )
+        self.assertTrue(
+            fc2.time_index.equals(ts.time_index[:20] + ts.freq)
+            and (fc2.values() == vals[-20:]).all()
+        )
+
+        pc3, fc3 = encs.encode_train(
             TimeSeries.from_times_and_values(
                 ts.time_index[:18] - ts.freq, ts[:18].values()
             )
         )
-        # relative encoder takes the end of the training series as reference
-        vals = np.arange(-len(ts) + 1, 1).reshape((len(ts), 1))
         self.assertTrue(
-            (t1.time_index == ts.time_index).all() and (t1.values() == vals).all()
+            pc3.time_index.equals(ts.time_index[: 18 - output_chunk_length] - ts.freq)
+            and (pc3.values() == vals[-18:-output_chunk_length]).all()
         )
         self.assertTrue(
-            (t2.time_index == ts.time_index[:20] + ts.freq).all()
-            and (t2.values() == vals[-20:]).all()
+            fc3.time_index.equals(ts.time_index[:18] - ts.freq)
+            and (fc3.values() == vals[-18:]).all()
         )
-        self.assertTrue(
-            (t3.time_index == ts.time_index[:18] - ts.freq).all()
-            and (t3.values() == vals[-18:]).all()
-        )
+
         # quickly test inference encoding
         # n > output_chunk_length
-        t4, _ = encs.encode_inference(output_chunk_length + 1, ts)
+        n = output_chunk_length + 1
+        pc4, fc4 = encs.encode_inference(n, ts)
         self.assertTrue(
-            (t4.values()[:, 0] == np.arange(-input_chunk_length + 1, 1 + 1)).all()
+            (pc4.univariate_values() == np.arange(-input_chunk_length + 1, 1 + 1)).all()
+        )
+        self.assertTrue(
+            (fc4.univariate_values() == np.arange(-input_chunk_length + 1, 1 + n)).all()
         )
         # n <= output_chunk_length
-        t5, _ = encs.encode_inference(
-            output_chunk_length - 1,
+        n = output_chunk_length - 1
+        t5, fc5 = encs.encode_inference(
+            n,
             TimeSeries.from_times_and_values(
                 ts.time_index[:20] + ts.freq, ts[:20].values()
             ),
         )
-        # t5, _ = encs.encode_inference(output_chunk_length - 1, ts)
         self.assertTrue(
-            (t5.values()[:, 0] == np.arange(-input_chunk_length + 1, 0 + 1)).all()
+            (t5.univariate_values() == np.arange(-input_chunk_length + 1, 0 + 1)).all()
+        )
+        self.assertTrue(
+            (
+                fc5.univariate_values()
+                == np.arange(-input_chunk_length + 1, output_chunk_length + 1)
+            ).all()
+        )
+
+        # quickly test with lags
+        min_pc_lag = -input_chunk_length - 2  # = -14
+        max_pc_lag = -6
+        min_fc_lag = 2
+        max_fc_lag = 8
+        encs = SequentialEncoder(
+            add_encoders=encoder_params,
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            takes_past_covariates=True,
+            takes_future_covariates=True,
+            past_covariates_lags=[min_pc_lag, max_pc_lag],
+            future_covariates_lags=[min_fc_lag, max_fc_lag],
+        )
+        pc1, fc1 = encs.encode_train(ts)
+        self.assertTrue(
+            pc1.start_time() == pd.Timestamp("1999-11-01", freq=ts.freq)
+            and pc1.end_time() == pd.Timestamp("2001-01-01", freq=ts.freq)
+            and (pc1.univariate_values() == np.arange(-25, -10)).all()
+            and pc1[ts.start_time()].univariate_values()[0] == -23
+        )
+        self.assertTrue(
+            fc1.start_time() == pd.Timestamp("2001-03-01", freq=ts.freq)
+            and fc1.end_time() == pd.Timestamp("2002-03-01", freq=ts.freq)
+            and (fc1.univariate_values() == np.arange(-9, 4)).all()
+            and fc1[ts.end_time()].univariate_values()[0] == 0
+        )
+
+        n = 2
+        pc2, fc2 = encs.encode_inference(n=n, target=ts)
+        self.assertTrue(
+            pc2.start_time() == pd.Timestamp("2000-11-01", freq=ts.freq)
+            and pc2.end_time() == pd.Timestamp("2001-07-01", freq=ts.freq)
+            and (pc2.univariate_values() == np.arange(-13, -4)).all()
+        )
+        self.assertTrue(
+            fc2.start_time() == pd.Timestamp("2002-03-01", freq=ts.freq)
+            and fc2.end_time() == pd.Timestamp("2002-09-01", freq=ts.freq)
+            and (fc2.univariate_values() == np.arange(3, 10)).all()
         )
 
     def test_callable_encoder(self):
@@ -789,7 +862,10 @@ class EncoderTestCase(DartsBaseTestClass):
 
         # ===> test callable index encoder <===
         encoder_params = {
-            "custom": {"past": [lambda index: index.year, lambda index: index.year - 1]}
+            "custom": {
+                "past": [lambda index: index.year, lambda index: index.year - 1],
+                "future": [lambda index: index.year],
+            }
         }
         encs = SequentialEncoder(
             add_encoders=encoder_params,
@@ -799,9 +875,34 @@ class EncoderTestCase(DartsBaseTestClass):
             takes_future_covariates=True,
         )
 
-        t1, _ = encs.encode_train(ts)
-        self.assertTrue((ts.time_index.year.values == t1.values()[:, 0]).all())
-        self.assertTrue((ts.time_index.year.values - 1 == t1.values()[:, 1]).all())
+        # train set
+        pc, fc = encs.encode_train(ts)
+        # past covariates
+        np.testing.assert_array_equal(
+            ts[:-output_chunk_length].time_index.year.values, pc.values()[:, 0]
+        )
+        np.testing.assert_array_equal(
+            ts[:-output_chunk_length].time_index.year.values - 1, pc.values()[:, 1]
+        )
+        # future covariates
+        np.testing.assert_array_equal(ts.time_index.year.values, fc.values()[:, 0])
+
+        # inference set
+        pc, fc = encs.encode_inference(n=12, target=ts)
+        year_index = tg.generate_index(
+            start=ts.end_time() - ts.freq * (input_chunk_length - 1),
+            length=24,
+            freq=ts.freq,
+        )
+        # past covariates
+        np.testing.assert_array_equal(
+            year_index[:-output_chunk_length].year.values, pc.values()[:, 0]
+        )
+        np.testing.assert_array_equal(
+            year_index[:-output_chunk_length].year.values - 1, pc.values()[:, 1]
+        )
+        # future covariates
+        np.testing.assert_array_equal(year_index.year.values, fc.values()[:, 0])
 
     def test_transformer_single_series(self):
         def test_routine_cyclic(past_covs):
@@ -912,10 +1013,11 @@ class EncoderTestCase(DartsBaseTestClass):
             "transformer": Scaler(),
         }
 
+        ocl = 6
         enc_base = SequentialEncoder(
             add_encoders=encoder_params,
             input_chunk_length=11,
-            output_chunk_length=6,
+            output_chunk_length=ocl,
             takes_past_covariates=True,
             takes_future_covariates=True,
         )
@@ -927,7 +1029,7 @@ class EncoderTestCase(DartsBaseTestClass):
         # user supplied covariates should not be transformed
         self.assertTrue(fc[0]["cov"] == ts1)
         self.assertTrue(fc[1]["cov"] == ts2)
-        # check that first covariate series ranges from 0. to 1. and second from 0.5 to 1.
+        # check that first covariate series ranges from 0. to 1. and second from ~0.7 to 1.
         for covs, cov_name in zip(
             [pc, fc], ["darts_enc_pc_dta_minute", "darts_enc_fc_dta_minute"]
         ):
@@ -937,15 +1039,23 @@ class EncoderTestCase(DartsBaseTestClass):
             self.assertAlmostEqual(
                 covs[0][cov_name].values(copy=False).max(), 1.0, delta=10e-9
             )
-            self.assertAlmostEqual(
-                covs[1][cov_name].values(copy=False).min(), 0.5, delta=10e-9
+            self.assertEqual(
+                covs[0][cov_name].univariate_values(copy=False)[-4],
+                covs[1][cov_name].univariate_values(copy=False)[-4],
             )
+            if "pc" in cov_name:
+                self.assertAlmostEqual(
+                    covs[1][cov_name].values(copy=False).min(), 0.714, delta=1e-2
+                )
+            else:
+                self.assertAlmostEqual(
+                    covs[1][cov_name].values(copy=False).min(), 0.5, delta=1e-2
+                )
             self.assertAlmostEqual(
                 covs[1][cov_name].values(copy=False).max(), 1.0, delta=10e-9
             )
 
-        # check the same for inference (future covs will be identical to `encode_train()` as we give covariates
-        # as input)
+        # check the same for inference
         pc, fc = enc.encode_inference(
             n=6, target=[ts1, ts2], future_covariates=[ts1_inf, ts2_inf]
         )
@@ -953,24 +1063,26 @@ class EncoderTestCase(DartsBaseTestClass):
             [pc, fc], ["darts_enc_pc_dta_minute", "darts_enc_fc_dta_minute"]
         ):
             for cov in covs:
-                self.assertAlmostEqual(
-                    cov[cov_name].values(copy=False).min(), 0.5, delta=10e-9
-                )
-                self.assertAlmostEqual(
-                    cov[cov_name].values(copy=False).max(), 1.0, delta=10e-9
-                )
+                if "pc" in cov_name:
+                    self.assertEqual(
+                        cov[cov_name][-(ocl + 1)].univariate_values()[0], 1.0
+                    )
+                else:
+                    self.assertEqual(
+                        cov[cov_name][ts1.end_time()].univariate_values()[0], 1.0
+                    )
 
         # check the same for only supplying single series as input
         pc, fc = enc.encode_inference(n=6, target=ts2, future_covariates=ts2_inf)
         for cov, cov_name in zip(
             [pc, fc], ["darts_enc_pc_dta_minute", "darts_enc_fc_dta_minute"]
         ):
-            self.assertAlmostEqual(
-                cov[cov_name].values(copy=False).min(), 0.5, delta=10e-9
-            )
-            self.assertAlmostEqual(
-                cov[cov_name].values(copy=False).max(), 1.0, delta=10e-9
-            )
+            if "pc" in cov_name:
+                self.assertEqual(cov[cov_name][-(ocl + 1)].univariate_values()[0], 1.0)
+            else:
+                self.assertEqual(
+                    cov[cov_name][ts1.end_time()].univariate_values()[0], 1.0
+                )
 
         # ====> TEST Transformation starting from single-TimeSeries input: transformer is fit per component of a single
         # encoded series
@@ -978,7 +1090,6 @@ class EncoderTestCase(DartsBaseTestClass):
         pc, fc = enc.encode_train(ts2, future_covariates=ts2)
         # user supplied covariates should not be transformed
         self.assertTrue(fc["cov"] == ts2)
-        # check that first covariate series ranges from 0. to 1. and second from 0.5 to 1.
         for covs, cov_name in zip(
             [pc, fc], ["darts_enc_pc_dta_minute", "darts_enc_fc_dta_minute"]
         ):
@@ -994,9 +1105,14 @@ class EncoderTestCase(DartsBaseTestClass):
         for covs, cov_name in zip(
             [pc, fc], ["darts_enc_pc_dta_minute", "darts_enc_fc_dta_minute"]
         ):
-            self.assertAlmostEqual(
-                covs[0][cov_name].values(copy=False).min(), -1.0, delta=10e-9
-            )
+            if "pc" in cov_name:
+                self.assertAlmostEqual(
+                    covs[0][cov_name].values(copy=False).min(), -2.5, delta=10e-9
+                )
+            else:
+                self.assertAlmostEqual(
+                    covs[0][cov_name].values(copy=False).min(), -1.0, delta=10e-9
+                )
             self.assertAlmostEqual(
                 covs[0][cov_name].values(copy=False).max(), 1.0, delta=10e-9
             )
@@ -1007,8 +1123,7 @@ class EncoderTestCase(DartsBaseTestClass):
                 covs[1][cov_name].values(copy=False).max(), 1.0, delta=10e-9
             )
 
-        # check inference with single series (future covs will be identical to `encode_train()` as we give covariates
-        # as input)
+        # check inference with single series
         pc, fc = enc.encode_inference(n=6, target=ts2, future_covariates=ts2_inf)
         for cov, cov_name in zip(
             [pc, fc], ["darts_enc_pc_dta_minute", "darts_enc_fc_dta_minute"]
@@ -1016,9 +1131,14 @@ class EncoderTestCase(DartsBaseTestClass):
             self.assertAlmostEqual(
                 cov[cov_name].values(copy=False).min(), 0.0, delta=10e-9
             )
-            self.assertAlmostEqual(
-                cov[cov_name].values(copy=False).max(), 1.0, delta=10e-9
-            )
+            if "pc" in cov_name:
+                self.assertAlmostEqual(
+                    cov[cov_name].values(copy=False).max(), 2.5, delta=10e-9
+                )
+            else:
+                self.assertAlmostEqual(
+                    cov[cov_name].values(copy=False).max(), 1.0, delta=10e-9
+                )
 
         # check the same for supplying multiple series as input
         pc, fc = enc.encode_inference(
@@ -1031,9 +1151,14 @@ class EncoderTestCase(DartsBaseTestClass):
                 self.assertAlmostEqual(
                     cov[cov_name].values(copy=False).min(), 0.0, delta=10e-9
                 )
-                self.assertAlmostEqual(
-                    cov[cov_name].values(copy=False).max(), 1.0, delta=10e-9
-                )
+                if "pc" in cov_name:
+                    self.assertAlmostEqual(
+                        cov[cov_name].values(copy=False).max(), 2.5, delta=10e-9
+                    )
+                else:
+                    self.assertAlmostEqual(
+                        cov[cov_name].values(copy=False).max(), 1.0, delta=10e-9
+                    )
 
     def helper_test_cyclic_encoder(
         self,
@@ -1161,7 +1286,16 @@ class EncoderTestCase(DartsBaseTestClass):
             encoded.append(
                 encoder.encode_train(ts, cov, merge_covariates=merge_covariates)
             )
-        self.assertTrue(encoded == result)
+
+        expected_result = result
+        # when user does not give covariates, and a past covariate encoder is used, the generate train covariates are
+        # `output_chunk_length` steps shorter than the target series
+        if covariates[0] is None and isinstance(
+            encoder.index_generator, PastCovariatesIndexGenerator
+        ):
+            expected_result = [res[: -self.output_chunk_length] for res in result]
+
+        self.assertTrue(encoded == expected_result)
 
     def helper_test_encoder_single_inference(
         self,

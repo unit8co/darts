@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.dataprocessing.encoders.encoder_base import (
@@ -107,18 +108,34 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
         self.assertTrue(idx.equals(self.cov_time_train_short.time_index))
         # generated index must be equal to input target index when no covariates are defined
         idx, _ = ig.generate_train_idx(self.target_time, None)
-        self.assertTrue(idx.equals(self.cov_time_train.time_index))
+        self.assertEqual(idx[0], self.target_time.start_time())
+        if isinstance(ig, PastCovariatesIndexGenerator):
+            self.assertEqual(
+                idx[-1],
+                self.target_time.end_time()
+                - self.output_chunk_length * self.target_time.freq,
+            )
+        else:
+            self.assertEqual(idx[-1], self.target_time.end_time())
 
         # integer index
         # generated index must be equal to input covariate index
         idx, _ = ig.generate_train_idx(self.target_int, self.cov_int_train)
         self.assertTrue(idx.equals(self.cov_int_train.time_index))
         # generated index must be equal to input covariate index
-        idx, _ = ig.generate_train_idx(self.target_time, self.cov_int_train_short)
+        idx, _ = ig.generate_train_idx(self.target_int, self.cov_int_train_short)
         self.assertTrue(idx.equals(self.cov_int_train_short.time_index))
         # generated index must be equal to input target index when no covariates are defined
         idx, _ = ig.generate_train_idx(self.target_int, None)
-        self.assertTrue(idx.equals(self.cov_int_train.time_index))
+        self.assertEqual(idx[0], self.target_int.start_time())
+        if isinstance(ig, PastCovariatesIndexGenerator):
+            self.assertEqual(
+                idx[-1],
+                self.target_int.end_time()
+                - self.output_chunk_length * self.target_int.freq,
+            )
+        else:
+            self.assertEqual(idx[-1], self.target_int.end_time())
 
     def helper_test_index_generator_inference(self, ig, is_past=False):
         """
@@ -177,6 +194,71 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
         )
         self.assertTrue(idx.equals(self.cov_int_inf_long.time_index))
 
+    def test_past_index_generator_creation(self):
+        # ==> test failures
+        # one lag is >= 0 (not possible for past covariates)
+        with pytest.raises(ValueError):
+            _ = PastCovariatesIndexGenerator(
+                1,
+                1,
+                covariates_lags=[-1, 1],
+            )
+        with pytest.raises(ValueError):
+            _ = PastCovariatesIndexGenerator(
+                1,
+                1,
+                covariates_lags=[0, -1],
+            )
+
+        min_lag, max_lag = -2, -1
+        ig = PastCovariatesIndexGenerator(
+            1,
+            1,
+            covariates_lags=[min_lag, max_lag],
+        )
+        self.assertEqual(ig.shift_start, min_lag)
+        self.assertEqual(ig.shift_end, max_lag)
+
+        min_lag, max_lag = -1, -1
+        ig = PastCovariatesIndexGenerator(
+            1,
+            1,
+            covariates_lags=[min_lag, max_lag],
+        )
+        self.assertEqual(ig.shift_start, min_lag)
+        self.assertEqual(ig.shift_end, max_lag)
+
+    def test_future_index_generator_creation(self):
+        # future covariates index generator (ig) can technically be used like a past covariates ig
+        min_lag, max_lag = -2, -1
+        ig = FutureCovariatesIndexGenerator(
+            1,
+            1,
+            covariates_lags=[min_lag, max_lag],
+        )
+        self.assertEqual(ig.shift_start, min_lag)
+        self.assertEqual(ig.shift_end, max_lag)
+
+        min_lag, max_lag = -1, -1
+        ig = FutureCovariatesIndexGenerator(
+            1,
+            1,
+            covariates_lags=[min_lag, max_lag],
+        )
+        self.assertEqual(ig.shift_start, min_lag)
+        self.assertEqual(ig.shift_end, max_lag)
+
+        # different to past covariates ig, future ig can take positive and negative lags
+        min_lag, max_lag = -2, 1
+        ig = FutureCovariatesIndexGenerator(
+            1,
+            1,
+            covariates_lags=[min_lag, max_lag],
+        )
+        self.assertEqual(ig.shift_start, min_lag)
+        # when `max_lag` >= 0, we add one step to `shift_end`, as future lags start at 0 meaning first prediction step
+        self.assertEqual(ig.shift_end, max_lag + 1)
+
     def test_past_index_generator(self):
         ig = PastCovariatesIndexGenerator(
             self.input_chunk_length, self.output_chunk_length
@@ -185,6 +267,105 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
         self.helper_test_index_generator_train(ig)
         self.helper_test_index_generator_inference(ig, is_past=True)
 
+    def test_past_index_generator_with_lags(self):
+        icl = self.input_chunk_length
+        ocl = self.output_chunk_length
+        freq = self.target_time.freq
+        target = self.target_time
+
+        def test_routine_train(
+            self, icl, ocl, min_lag, max_lag, start_expected, end_expected
+        ):
+            idxg = PastCovariatesIndexGenerator(
+                icl,
+                ocl,
+                covariates_lags=[min_lag, max_lag],
+            )
+            idx, _ = idxg.generate_train_idx(target, None)
+            self.assertEqual(idx[0], pd.Timestamp(start_expected, freq=freq))
+            self.assertEqual(idx[-1], pd.Timestamp(end_expected, freq=freq))
+            # check case 0: we give covariates, index will always be the covariate time index
+            idx, _ = idxg.generate_train_idx(target, self.cov_time_train)
+            self.assertTrue(idx.equals(self.cov_time_train.time_index))
+            return idxg
+
+        def test_routine_inf(self, idxg, n, start_expected, end_expected):
+            idx, _ = idxg.generate_inference_idx(n, target, None)
+            self.assertEqual(idx[0], pd.Timestamp(start_expected, freq=freq))
+            self.assertEqual(idx[-1], pd.Timestamp(end_expected, freq=freq))
+            # check case 0: we give covariates, index will always be the covariate time index
+            idx, _ = idxg.generate_inference_idx(n, target, self.cov_time_inf_short)
+            self.assertTrue(idx.equals(self.cov_time_inf_short.time_index))
+
+        # lags are required for RegressionModels
+        # case 1: abs(min_lags) == icl and abs(max_lag) == -1:
+        # will give identical results as without setting lags
+        min_lag = -12  # = -icl
+        max_lag = -1
+        expected_start = "2000-01-01"
+        expected_end = "2001-06-01"
+        ig = test_routine_train(
+            self, icl, ocl, min_lag, max_lag, expected_start, expected_end
+        )
+        self.helper_test_index_types(ig)
+        self.helper_test_index_generator_train(ig)
+        self.helper_test_index_generator_inference(ig, is_past=True)
+        # check inference for n <= ocl
+        expected_start = "2001-01-01"
+        expected_end = "2001-12-01"
+        test_routine_inf(self, ig, 1, expected_start, expected_end)
+        test_routine_inf(self, ig, ocl, expected_start, expected_end)
+        # check inference for n > ocl
+        test_routine_inf(self, ig, ocl + 1, expected_start, "2002-01-01")
+
+        # case 2: abs(min_lag) < icl and abs(max_lag) == -1:
+        # the start time of covariates begins before target start
+        min_lag, max_lag = -11, -1
+        expected_start = "2000-02-01"
+        expected_end = "2001-06-01"
+        ig = test_routine_train(
+            self, icl, ocl, min_lag, max_lag, expected_start, expected_end
+        )
+        # check inference for n <= ocl
+        expected_start = "2001-02-01"
+        expected_end = "2001-12-01"
+        test_routine_inf(self, ig, 1, expected_start, expected_end)
+        test_routine_inf(self, ig, ocl, expected_start, expected_end)
+        # check inference for n > ocl
+        test_routine_inf(self, ig, ocl + 1, expected_start, "2002-01-01")
+
+        # case 3: abs(min_lag) > icl and abs(max_lag) == -1:
+        # the start time of covariates begins before target start
+        min_lag, max_lag = -13, -1
+        expected_start = "1999-12-01"
+        expected_end = "2001-06-01"
+        ig = test_routine_train(
+            self, icl, ocl, min_lag, max_lag, expected_start, expected_end
+        )
+        # check inference for n <= ocl
+        expected_start = "2000-12-01"
+        expected_end = "2001-12-01"
+        test_routine_inf(self, ig, 1, expected_start, expected_end)
+        test_routine_inf(self, ig, ocl, expected_start, expected_end)
+        # check inference for n > ocl
+        test_routine_inf(self, ig, ocl + 1, expected_start, "2002-01-01")
+
+        # case 4: abs(min_lag) > icl and abs(max_lag) > -1:
+        # the start time of covariates begins before target start
+        min_lag, max_lag = -13, -2
+        expected_start = "1999-12-01"
+        expected_end = "2001-05-01"
+        ig = test_routine_train(
+            self, icl, ocl, min_lag, max_lag, expected_start, expected_end
+        )
+        # check inference for n <= ocl
+        expected_start = "2000-12-01"
+        expected_end = "2001-11-01"
+        test_routine_inf(self, ig, 1, expected_start, expected_end)
+        test_routine_inf(self, ig, ocl, expected_start, expected_end)
+        # check inference for n > ocl
+        test_routine_inf(self, ig, ocl + 1, expected_start, "2001-12-01")
+
     def test_future_index_generator(self):
         ig = FutureCovariatesIndexGenerator(
             self.input_chunk_length, self.output_chunk_length
@@ -192,3 +373,178 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
         self.helper_test_index_types(ig)
         self.helper_test_index_generator_train(ig)
         self.helper_test_index_generator_inference(ig, is_past=False)
+
+    def test_future_index_generator_with_lags(self):
+        icl = self.input_chunk_length
+        ocl = self.output_chunk_length
+        freq = self.target_time.freq
+        target = self.target_time
+
+        def test_routine_train(
+            self, icl, ocl, min_lag, max_lag, start_expected, end_expected
+        ):
+            idxg = FutureCovariatesIndexGenerator(
+                icl,
+                ocl,
+                covariates_lags=[min_lag, max_lag],
+            )
+            idx, _ = idxg.generate_train_idx(target, None)
+            self.assertEqual(idx[0], pd.Timestamp(start_expected, freq=freq))
+            self.assertEqual(idx[-1], pd.Timestamp(end_expected, freq=freq))
+            # check case 0: we give covariates, index will always be the covariate time index
+            idx, _ = idxg.generate_train_idx(target, self.cov_time_train)
+            self.assertTrue(idx.equals(self.cov_time_train.time_index))
+            return idxg
+
+        def test_routine_inf(self, idxg, n, start_expected, end_expected):
+            idx, _ = idxg.generate_inference_idx(n, target, None)
+            self.assertTrue(idx[0], pd.Timestamp(start_expected, freq=freq))
+            self.assertTrue(idx[-1], pd.Timestamp(end_expected, freq=freq))
+            # check case 0: we give covariates, index will always be the covariate time index
+            idx, _ = idxg.generate_inference_idx(n, target, self.cov_time_inf_short)
+            self.assertTrue(idx.equals(self.cov_time_inf_short.time_index))
+
+        # INFO: test cases 1, 2, and 3 only have lags in the past which yields identical results as using a
+        # PastCovariatesIndexGenerator
+        # case 1: abs(min_lag) < icl and abs(max_lag) == -1:
+        # the start time of covariates begins before target start
+        min_lag, max_lag = -11, -1
+        expected_start = "2000-02-01"
+        expected_end = "2001-06-01"
+        ig = test_routine_train(
+            self, icl, ocl, min_lag, max_lag, expected_start, expected_end
+        )
+        # check inference for n <= ocl
+        expected_start = "2001-02-01"
+        expected_end = "2001-12-01"
+        test_routine_inf(self, ig, 1, expected_start, expected_end)
+        test_routine_inf(self, ig, ocl, expected_start, expected_end)
+        # check inference for n > ocl
+        test_routine_inf(self, ig, ocl + 1, expected_start, "2002-01-01")
+
+        # case 2: abs(min_lag) > icl and abs(max_lag) == -1:
+        # the start time of covariates begins before target start
+        min_lag, max_lag = -13, -1
+        expected_start = "1999-12-01"
+        expected_end = "2001-06-01"
+        ig = test_routine_train(
+            self, icl, ocl, min_lag, max_lag, expected_start, expected_end
+        )
+        # check inference for n <= ocl
+        expected_start = "2000-12-01"
+        expected_end = "2001-12-01"
+        test_routine_inf(self, ig, 1, expected_start, expected_end)
+        test_routine_inf(self, ig, ocl, expected_start, expected_end)
+        # check inference for n > ocl
+        test_routine_inf(self, ig, ocl + 1, expected_start, "2002-01-01")
+
+        # case 3: abs(min_lag) > icl and abs(max_lag) > -1:
+        # the start time of covariates begins before target start
+        min_lag, max_lag = -13, -2
+        expected_start = "1999-12-01"
+        expected_end = "2001-05-01"
+        ig = test_routine_train(
+            self, icl, ocl, min_lag, max_lag, expected_start, expected_end
+        )
+        # check inference for n <= ocl
+        expected_start = "2000-12-01"
+        expected_end = "2001-11-01"
+        test_routine_inf(self, ig, 1, expected_start, expected_end)
+        test_routine_inf(self, ig, ocl, expected_start, expected_end)
+        # check inference for n > ocl
+        test_routine_inf(self, ig, ocl + 1, expected_start, "2001-12-01")
+
+        # INFO: the following test cases have lags in the future which is different to PastCovariatesIndexGenerator
+        # case 4: abs(min_lags) == icl and max_lag == (ocl - 1):
+        # will give identical results as without setting lags
+        min_lag = -12  # -icl
+        max_lag = 5  # (ocl - 1)
+        expected_start = "2000-01-01"
+        expected_end = "2001-12-01"
+        ig = test_routine_train(
+            self, icl, ocl, min_lag, max_lag, expected_start, expected_end
+        )
+        self.helper_test_index_types(ig)
+        self.helper_test_index_generator_train(ig)
+        self.helper_test_index_generator_inference(ig, is_past=False)
+        # check inference for n <= ocl
+        expected_start = "2001-01-01"
+        expected_end = "2002-06-01"
+        test_routine_inf(self, ig, 1, expected_start, expected_end)
+        test_routine_inf(self, ig, ocl, expected_start, expected_end)
+        # check inference for n > ocl
+        test_routine_inf(self, ig, ocl + 1, expected_start, "2002-07-01")
+
+        # case 5: abs(min_lag) == icl and max_lag < (ocl - 1)
+        # the end of covariates should be one time step after beginning of last output chunk with max_lag = 0
+        min_lag, max_lag = -12, 0
+        expected_start = "2000-01-01"
+        expected_end = "2001-07-01"
+        ig = test_routine_train(
+            self, icl, ocl, min_lag, max_lag, expected_start, expected_end
+        )
+        expected_start = "2001-01-01"
+        expected_end = "2002-01-01"
+        test_routine_inf(self, ig, 1, expected_start, expected_end)
+        test_routine_inf(self, ig, ocl, expected_start, expected_end)
+        # check inference for n > ocl
+        test_routine_inf(self, ig, ocl + 1, expected_start, "2002-02-01")
+
+        # case 6: abs(min_lag) == icl and max_lag > (ocl - 1)
+        # the end of covariates is after the end of target series with max_lag = (ocl - 1) + 1
+        min_lag, max_lag = -12, 17
+        expected_start = "2000-01-01"
+        expected_end = "2002-12-01"
+        ig = test_routine_train(
+            self, icl, ocl, min_lag, max_lag, expected_start, expected_end
+        )
+        expected_start = "2001-01-01"
+        expected_end = "2003-01-01"
+        test_routine_inf(self, ig, 1, expected_start, expected_end)
+        test_routine_inf(self, ig, ocl, expected_start, expected_end)
+        # check inference for n > ocl
+        test_routine_inf(self, ig, ocl + 1, expected_start, "2003-02-01")
+
+        # case 7: min_lag >= 0 and max_lag <= (ocl - 1)
+        # only future part of future covariates (no historical part)
+        min_lag, max_lag = 0, 2
+        expected_start = "2001-01-01"
+        expected_end = "2001-09-01"
+        ig = test_routine_train(
+            self, icl, ocl, min_lag, max_lag, expected_start, expected_end
+        )
+        expected_start = "2002-01-01"
+        expected_end = "2002-03-01"
+        test_routine_inf(self, ig, 1, expected_start, expected_end)
+        test_routine_inf(self, ig, ocl, expected_start, expected_end)
+        # check inference for n > ocl
+        test_routine_inf(self, ig, ocl + 1, expected_start, "2002-04-01")
+
+        # case 8: min_lag >= 0 and max_lag > (ocl - 1)
+        # only future part of future covariates (no historical part)
+        min_lag, max_lag = 0, 17
+        expected_start = "2001-01-01"
+        expected_end = "2002-12-01"
+        ig = test_routine_train(
+            self, icl, ocl, min_lag, max_lag, expected_start, expected_end
+        )
+        expected_start = "2002-01-01"
+        expected_end = "2003-01-01"
+        test_routine_inf(self, ig, 1, expected_start, expected_end)
+        test_routine_inf(self, ig, ocl, expected_start, expected_end)
+        # check inference for n > ocl
+        test_routine_inf(self, ig, ocl + 1, expected_start, "2003-02-01")
+
+        # case 9: abs(min_lag) > icl and max_lag > (ocl - 1)
+        min_lag, max_lag = -13, 17
+        expected_start = "1999-12-01"
+        expected_end = "2002-12-01"
+        ig = test_routine_train(
+            self, icl, ocl, min_lag, max_lag, expected_start, expected_end
+        )
+        expected_start = "2000-12-01"
+        expected_end = "2002-03-01"
+        test_routine_inf(self, ig, 1, expected_start, expected_end)
+        test_routine_inf(self, ig, ocl, expected_start, expected_end)
+        # check inference for n > ocl
+        test_routine_inf(self, ig, ocl + 1, expected_start, "2002-04-01")

@@ -58,7 +58,7 @@ class RegressionModel(GlobalForecastingModel):
         ----------
         lags
             Lagged target values used to predict the next time step. If an integer is given the last `lags` past lags
-            are used (from -1 backward). Otherwise a list of integers with lags is required (each lag must be < 0).
+            are used (from -1 backward). Otherwise, a list of integers with lags is required (each lag must be < 0).
         lags_past_covariates
             Number of lagged past_covariates values used to predict the next time step. If an integer is given the last
             `lags_past_covariates` past lags are used (inclusive, starting from lag -1). Otherwise a list of integers
@@ -222,44 +222,20 @@ class RegressionModel(GlobalForecastingModel):
         self.output_chunk_length = output_chunk_length
 
     @property
-    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
-        lags_covariates = {
-            lag for key in ["past", "future"] for lag in self.lags.get(key, [])
-        }
-        if lags_covariates:
-            # for lags < 0 we need to take `n` steps backwards from past and/or historic future covariates
-            # for minimum lag = -1 -> steps_back_inclusive = 1
-            # inclusive means n steps back including the end of the target series
-            n_steps_back_inclusive = abs(min(min(lags_covariates), 0))
-            # for lags >= 0 we need to take `n` steps ahead from future covariates
-            # for maximum lag = 0 -> output_chunk_length = 1
-            # exclusive means n steps ahead after the last step of the target series
-            n_steps_ahead_exclusive = max(max(lags_covariates), 0) + 1
-            takes_past_covariates = "past" in self.lags
-            takes_future_covariates = "future" in self.lags
-        else:
-            n_steps_back_inclusive = 0
-            n_steps_ahead_exclusive = 0
-            takes_past_covariates = False
-            takes_future_covariates = False
+    def _model_encoder_settings(
+        self,
+    ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
+        target_lags = self.lags.get("target", [0])
+        past_covariates_lags = self.lags.get("past", None)
+        future_covariates_lags = self.lags.get("future", None)
         return (
-            n_steps_back_inclusive,
-            n_steps_ahead_exclusive,
-            takes_past_covariates,
-            takes_future_covariates,
+            abs(min(target_lags)),
+            self.output_chunk_length,
+            past_covariates_lags is not None,
+            future_covariates_lags is not None,
+            past_covariates_lags,
+            future_covariates_lags,
         )
-
-    def _get_encoders_n(self, n) -> int:
-        """Returns the `n` encoder prediction steps specific to RegressionModels.
-        This will generate slightly more past covariates than the minimum requirement when using past and future
-        covariate lags simultaneously. This is because encoders were written for TorchForecastingModels where we only
-        needed `n` future covariates. For RegressionModel we need `n + max_future_lag`
-        """
-        _, n_steps_ahead, _, takes_future_covariates = self._model_encoder_settings
-        if not takes_future_covariates:
-            return n
-        else:
-            return n + (n_steps_ahead - 1)
 
     @property
     def min_train_series_length(self) -> int:
@@ -522,7 +498,6 @@ class RegressionModel(GlobalForecastingModel):
         )
 
         # prediction preprocessing
-
         covariates = {
             "past": (past_covariates, self.lags.get("past")),
             "future": (future_covariates, self.lags.get("future")),
