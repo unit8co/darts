@@ -24,9 +24,18 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
         },
         index=times2,
     )
+    dataframe4 = pd.DataFrame(
+        {
+            "0": [1, 1, np.nan, 1, 1, 1, 1, 1, 1, 1],
+            "1": [1, 1, np.nan, 1, 1, np.nan, np.nan, 1, 1, 1],
+            "2": [1, 1, np.nan, 1, 1, np.nan, np.nan, np.nan, np.nan, 1],
+        },
+        index=times2,
+    )
     series1 = TimeSeries.from_dataframe(dataframe1)
     series2 = TimeSeries.from_dataframe(dataframe2)
     series3 = TimeSeries.from_dataframe(dataframe3)
+    series4 = TimeSeries.from_dataframe(dataframe4)
 
     def test_creation(self):
         series_test = TimeSeries.from_dataframe(self.dataframe1)
@@ -179,8 +188,6 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
 
         # test cyclic
         times_month = pd.date_range("20130101", "20140610")
-        start = times_month[0]
-        end = times_month[-1]
 
         seriesE = TimeSeries.from_times_and_values(
             times_month, np.repeat(0.1, len(times_month))
@@ -193,14 +200,11 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
         self.assertTrue(
             np.allclose(np.add(np.square(values_sin), np.square(values_cos)), 1)
         )
-        start_of_month = [
-            pd.Timestamp(year=start.year, month=m, day=1) - start
-            for m in range(start.month, end.month)
-        ]
-        start_of_month_idx = [stamp.days for stamp in start_of_month]
 
-        self.assertTrue(np.allclose(values_sin[start_of_month_idx], 0))
-        self.assertTrue(np.allclose(values_cos[start_of_month_idx], 1))
+        df = seriesF.pd_dataframe()
+        df = df[df.index.day == 1]
+        self.assertTrue(np.allclose(df["day_sin"].values, 0.2, atol=0.03))
+        self.assertTrue(np.allclose(df["day_cos"].values, 0.97, atol=0.03))
 
     def test_add_holidays(self):
         times = pd.date_range(start=pd.Timestamp("20201201"), periods=30, freq="D")
@@ -255,3 +259,39 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
         seriesB = self.series1.drop_columns(["0", "1"])
         self.assertIn("2", seriesB.columns.values)
         self.assertEqual(len(seriesB.columns), 1)
+
+    def test_gaps(self):
+        gaps1_all = self.series1.gaps(mode="all")
+        self.assertTrue(gaps1_all.empty)
+        gaps1_any = self.series1.gaps(mode="any")
+        self.assertTrue(gaps1_any.empty)
+
+        gaps4_all = self.series4.gaps(mode="all")
+        self.assertTrue(
+            (
+                gaps4_all["gap_start"] == pd.DatetimeIndex([pd.Timestamp("20130208")])
+            ).all()
+        )
+        self.assertTrue(
+            (gaps4_all["gap_end"] == pd.DatetimeIndex([pd.Timestamp("20130208")])).all()
+        )
+        self.assertEqual(gaps4_all["gap_size"].values.tolist(), [1])
+
+        gaps4_any = self.series4.gaps(mode="any")
+        self.assertTrue(
+            (
+                gaps4_any["gap_start"]
+                == pd.DatetimeIndex(
+                    [pd.Timestamp("20130208"), pd.Timestamp("20130211")]
+                )
+            ).all()
+        )
+        self.assertTrue(
+            (
+                gaps4_any["gap_end"]
+                == pd.DatetimeIndex(
+                    [pd.Timestamp("20130208"), pd.Timestamp("20130214")]
+                )
+            ).all()
+        )
+        self.assertEqual(gaps4_any["gap_size"].values.tolist(), [1, 4])

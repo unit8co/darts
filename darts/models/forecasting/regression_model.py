@@ -28,13 +28,13 @@ from collections import OrderedDict
 from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
-import pandas as pd
 from catboost import CatBoostRegressor
 from sklearn.linear_model import LinearRegression
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
+from darts.utils.data.tabularization import _create_lagged_data
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import _check_quantiles, seq2series, series2seq
 
@@ -87,7 +87,7 @@ class RegressionModel(GlobalForecastingModel):
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
-                    'position': {'past': ['absolute'], 'future': ['relative']},
+                    'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
                     'transformer': Scaler()
                 }
@@ -270,6 +270,14 @@ class RegressionModel(GlobalForecastingModel):
             else self.output_chunk_length,
         )
 
+    def get_multioutput_estimator(self, horizon, target_dim):
+        raise_if_not(
+            isinstance(self.model, MultiOutputRegressor),
+            "The sklearn model is not a MultiOutputRegressor object.",
+        )
+
+        return self.model.estimators_[horizon + target_dim]
+
     def _get_last_prediction_time(self, series, forecast_horizon, overlap_end):
         # overrides the ForecastingModel _get_last_prediction_time, taking care of future lags if any
         extra_shift = max(0, max(lags[-1] for lags in self.lags.values()))
@@ -284,89 +292,22 @@ class RegressionModel(GlobalForecastingModel):
     def _create_lagged_data(
         self, target_series, past_covariates, future_covariates, max_samples_per_ts
     ):
-        """
-        Helper function that creates training/validation matrices (X and y as required in sklearn), given series and
-        max_samples_per_ts.
+        lags = self.lags.get("target")
+        lags_past_covariates = self.lags.get("past")
+        lags_future_covariates = self.lags.get("future")
 
-        X has the following structure:
-        lags_target | lags_past_covariates | lags_future_covariates
+        training_samples, training_labels, _ = _create_lagged_data(
+            target_series=target_series,
+            output_chunk_length=self.output_chunk_length,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            lags=lags,
+            lags_past_covariates=lags_past_covariates,
+            lags_future_covariates=lags_future_covariates,
+            max_samples_per_ts=max_samples_per_ts,
+        )
 
-        Where each lags_X has the following structure (lags_X=[-2,-1] and X has 2 components):
-        lag_-2_comp_1_X | lag_-2_comp_2_X | lag_-1_comp_1_X | lag_-1_comp_2_X
-
-        y has the following structure (output_chunk_length=4 and target has 2 components):
-        lag_+0_comp_1_target | lag_+0_comp_2_target | ... | lag_+3_comp_1_target | lag_+3_comp_2_target
-        """
-
-        # ensure list of TimeSeries format
-        if isinstance(target_series, TimeSeries):
-            target_series = [target_series]
-            past_covariates = [past_covariates] if past_covariates else None
-            future_covariates = [future_covariates] if future_covariates else None
-
-        Xs, ys = [], []
-        # iterate over series
-        for idx, target_ts in enumerate(target_series):
-            covariates = [
-                (
-                    past_covariates[idx].pd_dataframe(copy=False)
-                    if past_covariates
-                    else None,
-                    self.lags.get("past"),
-                ),
-                (
-                    future_covariates[idx].pd_dataframe(copy=False)
-                    if future_covariates
-                    else None,
-                    self.lags.get("future"),
-                ),
-            ]
-
-            df_X = []
-            df_y = []
-            df_target = target_ts.pd_dataframe(copy=False)
-
-            # y: output chunk length lags of target
-            for future_target_lag in range(self.output_chunk_length):
-                df_y.append(df_target.shift(-future_target_lag))
-
-            # X: target lags
-            if "target" in self.lags:
-                for lag in self.lags["target"]:
-                    df_X.append(df_target.shift(-lag))
-
-            # X: covariate lags
-            for df_cov, lags in covariates:
-                if lags:
-                    for lag in lags:
-                        df_X.append(df_cov.shift(-lag))
-
-            # combine lags
-            df_X = pd.concat(df_X, axis=1)
-            df_y = pd.concat(df_y, axis=1)
-            df_X_y = pd.concat([df_X, df_y], axis=1)
-            X_y = df_X_y.dropna().values
-
-            # keep most recent max_samples_per_ts samples
-            if max_samples_per_ts:
-                X_y = X_y[-max_samples_per_ts:]
-
-            raise_if(
-                X_y.shape[0] == 0,
-                "Unable to build any training samples of the target series "
-                + (f"at index {idx} " if len(target_series) > 1 else "")
-                + "and the corresponding covariate series; "
-                "There is no time step for which all required lags are available and are not NaN values.",
-            )
-
-            X, y = np.split(X_y, [df_X.shape[1]], axis=1)
-            Xs.append(X)
-            ys.append(y)
-
-        # combine samples from all series
-        X = np.concatenate(Xs, axis=0)
-        y = np.concatenate(ys, axis=0)
-        return X, y
+        return training_samples, training_labels
 
     def _fit_model(
         self,

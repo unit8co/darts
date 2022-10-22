@@ -4,15 +4,35 @@
 Darts is still in an early development phase, and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
-- Added support for retraining model(s) every `n` iteration and on custom condition in `historical_forecasts` method of `ForecastingModel` abstract class. Addressed issues [#135](https://github.com/unit8co/darts/issues/135) and [#623](https://github.com/unit8co/darts/issues/623) by [Francesco Bruzzesi](https://github.com/fbruzzesi).
+
+[Full Changelog](https://github.com/unit8co/darts/compare/0.22.0...master)
+
+
+## [0.22.0](https://github.com/unit8co/darts/tree/0.22.0) (2022-10-04)
+### For users of the library:
+
+**Improved**
+- New explainability feature. The class `ShapExplainer` in `darts.explainability` can provide Shap-values explanations of the importance of each lag and each dimension in producing each forecasting lag for `RegressionModel`s. [#909](https://github.com/unit8co/darts/pull/909) by [Maxime Dumonal](https://github.com/dumjax).
+- New model: `StatsForecastsETS`. Similarly to `StatsForecastsAutoARIMA`, this model offers the ETS model from Nixtla's `statsforecasts` library as a local forecasting model supporting future covariates. [#1171](https://github.com/unit8co/darts/pull/1171) by [Julien Herzen](https://github.com/hrzn).
+- Added support for past and future covariates to `residuals()` function. [#1223](https://github.com/unit8co/darts/pull/1223) by [Eliane Maalouf](https://github.com/eliane-maalouf).
+- Added support for retraining model(s) every `n` iteration and on custom conditions in `historical_forecasts` method of `ForecastingModel`s. [#1139](https://github.com/unit8co/darts/pull/1139) by [Francesco Bruzzesi](https://github.com/fbruzzesi).
+- Added support for beta-NLL in `GaussianLikelihood`s, as proposed in [this paper](https://arxiv.org/abs/2203.09168). [#1162](https://github.com/unit8co/darts/pull/1162) by [Julien Herzen](https://github.com/hrzn).
 - New LayerNorm alternatives, RMSNorm and LayerNormNoBias [#1113](https://github.com/unit8co/darts/issues/1113) by [Greg DeVos](https://github.com/gdevos010).
-- Fixed type hinting for ExponentialSmoothing model [#1185](https://https://github.com/unit8co/darts/pull/1185) by [Rijk van der Meulen](https://github.com/rijkvandermeulen)
+- 🔴 Improvements to encoders: improve fitting behavior of encoders' transformers and solve a couple of issues. Remove support for absolute index encoding. [#1257](https://github.com/unit8co/darts/pull/1257) by [Dennis Bader](https://github.com/dennisbader).
 - Overwrite min_train_series_length for Catboost and LightGBM [#1214](https://https://github.com/unit8co/darts/pull/1214) by [Anne de Vries](https://github.com/anne-devries).
+- New example notebook showcasing and end-to-end example of hyperparameter optimization with Optuna [#1242](https://github.com/unit8co/darts/pull/1242) by [Julien Herzen](https://github.com/hrzn).
+- New user guide section on hyperparameter optimization with Optuna and Ray Tune [#1242](https://github.com/unit8co/darts/pull/1242) by [Julien Herzen](https://github.com/hrzn).
+- Documentation on model saving and loading. [#1210](https://github.com/unit8co/darts/pull/1210) by [Amadej Kocbek](https://github.com/amadejkocbek).
 - 🔴 `torch_device_str` has been removed from all torch models in favor of Pytorch Lightning's `pl_trainer_kwargs` method [#1244](https://github.com/unit8co/darts/pull/1244) by [Greg DeVos](https://github.com/gdevos010).
 
-
-[Full Changelog](https://github.com/unit8co/darts/compare/0.21.0...master)
-
+**Fixed**
+- An issue with `add_encoders` in `RegressionModel`s when fit/predict were called with a single target series. [#1193](https://github.com/unit8co/darts/pull/1193) by [Dennis Bader](https://github.com/dennisbader).
+- Some issues with integer-indexed series. [#1191](https://github.com/unit8co/darts/pull/1191) by [Julien Herzen](https://github.com/hrzn).
+- A bug when using the latest versions (>=1.1.1) of Prophet. [#1208](https://github.com/unit8co/darts/pull/1208) by [Julien Herzen](https://github.com/hrzn).
+- An issue with calling `fit_transform()` on reconciliators. [#1165](https://github.com/unit8co/darts/pull/1165) by [Julien Herzen](https://github.com/hrzn).
+- A bug in `GaussianLikelihood` object causing issues with confidence intervals. [#1162](https://github.com/unit8co/darts/pull/1162) by [Julien Herzen](https://github.com/hrzn).
+- An issue which prevented plotting `TimeSeries` of length 1. [#1206](https://github.com/unit8co/darts/issues/1206) by [Julien Herzen](https://github.com/hrzn).
+- Type hinting for ExponentialSmoothing model [#1185](https://https://github.com/unit8co/darts/pull/1185) by [Rijk van der Meulen](https://github.com/rijkvandermeulen)
 
 ## [0.21.0](https://github.com/unit8co/darts/tree/0.21.0) (2022-08-12)
 
