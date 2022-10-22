@@ -338,7 +338,7 @@ class _NHiTSModule(PLPastCovariatesModule):
         Parameters
         ----------
         input_dim
-            The number of input components (target + optional covariate)
+            The number of input components (target + optional covariates)
         output_dim
             Number of output components in the target
         nr_params
@@ -586,7 +586,7 @@ class NHiTSModel(PastCovariatesTorchModel):
             will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
             transform the generated covariates. This happens all under one hood and only needs to be specified at
             model creation.
-            Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
             ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
 
             .. highlight:: python
