@@ -32,7 +32,9 @@ Read our `user guide on covariates <https://unit8co.github.io/darts/userguide/co
 ``TimeSeries`` documentation for more information on covariates.
 """
 
+import itertools
 import pickle
+import re
 from collections import defaultdict
 from inspect import signature
 from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
@@ -43,8 +45,6 @@ import pandas as pd
 import xarray as xr
 from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
-import itertools
-import re
 
 from .logging import get_logger, raise_if, raise_if_not, raise_log, raise_user_warning
 
@@ -59,9 +59,33 @@ STATIC_COV_TAG = "static_covariates"
 DEFAULT_GLOBAL_STATIC_COV_NAME = "global_components"
 HIERARCHY_TAG = "hierarchy"
 
-BUILTIN_TRANSFORMS_WINDOW = ["count", "sum", "mean", "median", "min", "max", "std", "var", "skew", "kurt", "corr",
-                             "cov", "quantile", "sem", "rank"]
-BUILTIN_TRANSFORMS_EWM = ["mean", "var", "std", "corr", "cov", "sum", "skew"] # Exponential Moving Window
+BUILTIN_TRANSFORMS_WINDOW = [
+    "count",
+    "sum",
+    "mean",
+    "median",
+    "min",
+    "max",
+    "std",
+    "var",
+    "skew",
+    "kurt",
+    "corr",
+    "cov",
+    "quantile",
+    "sem",
+    "rank",
+]
+BUILTIN_TRANSFORMS_EWM = [
+    "mean",
+    "var",
+    "std",
+    "corr",
+    "cov",
+    "sum",
+    "skew",
+]  # Exponential Moving Window
+
 
 class TimeSeries:
     def __init__(self, xa: xr.DataArray):
@@ -1393,8 +1417,8 @@ class TimeSeries:
 
         Each of the series components will appear as a column in the DataFrame.
         If the series is stochastic, the samples are returned as columns of the dataframe with column names
-        as 'component_sample' (e.g. with two components and two samples:
-        'comp0_sample0', 'comp0_sample1' 'comp1_sample0' 'comp1_sample1').
+        as 'component_s#' (e.g. with two components and two samples:
+        'comp0_s0', 'comp0_s1' 'comp1_s0' 'comp1_s1').
 
         Parameters
         ----------
@@ -1408,25 +1432,34 @@ class TimeSeries:
         """
         if not self.is_deterministic:
 
-            raise_user_warning(True,
-                               "You are transforming a stochastic TimeSeries (i.e., contains several samples). "
-                               "The resulting DataFrame is a 2D object with all samples on the columns. "
-                               "If this is not the expected behavior consider calling a function "
-                               "adapted to stochastic TimeSeries like quantile_df()."
-                               , logger
-                               )
+            raise_user_warning(
+                True,
+                "You are transforming a stochastic TimeSeries (i.e., contains several samples). "
+                "The resulting DataFrame is a 2D object with all samples on the columns. "
+                "If this is not the expected behavior consider calling a function "
+                "adapted to stochastic TimeSeries like quantile_df().",
+                logger,
+            )
 
             comp_name = list(self._xa.get_index(DIMS[1]))
             samples = range(self.n_samples)
-            df_col_names = ['_s'.join((comp_name, str(sample_id)))
-                            for comp_name, sample_id in itertools.product(comp_name, samples)]
+            df_col_names = [
+                "_s".join((comp_name, str(sample_id)))
+                for comp_name, sample_id in itertools.product(comp_name, samples)
+            ]
 
             if copy:
-                return pd.DataFrame(self._xa.stack(data=(DIMS[1], DIMS[2])).values.copy(),
-                                    index = self._time_index.copy(), columns=df_col_names.copy())
+                return pd.DataFrame(
+                    self._xa.stack(data=(DIMS[1], DIMS[2])).values.copy(),
+                    index=self._time_index.copy(),
+                    columns=df_col_names.copy(),
+                )
             else:
-                return pd.DataFrame(self._xa.stack(data=(DIMS[1], DIMS[2])).values,
-                                    index=self._time_index, columns=df_col_names)
+                return pd.DataFrame(
+                    self._xa.stack(data=(DIMS[1], DIMS[2])).values,
+                    index=self._time_index,
+                    columns=df_col_names,
+                )
         else:
             if copy:
                 return pd.DataFrame(
@@ -2741,7 +2774,7 @@ class TimeSeries:
             )
         )
 
-    def stack(self, other: "TimeSeries", axis = 1) -> "TimeSeries":
+    def stack(self, other: "TimeSeries", axis=1) -> "TimeSeries":
         """
         Stacks another univariate or multivariate TimeSeries with the same time index on top of
         the current one (along the component axis).
@@ -2764,7 +2797,9 @@ class TimeSeries:
         TimeSeries
             A new multivariate and/or multi_sample TimeSeries instance.
         """
-        return concatenate([self, other], axis=axis) #added axis parameter to easily make multi_sample test series
+        return concatenate(
+            [self, other], axis=axis
+        )  # added axis parameter to easily make multi_sample test series
 
     def drop_columns(self, col_names: Union[List[str], str]) -> "TimeSeries":
         """
@@ -3028,25 +3063,27 @@ class TimeSeries:
 
         return self.__class__(new_xa)
 
-    def window_transform(self,
-                         window_transformations: Union[Dict, Sequence[Dict]],
-                         treat_na: Optional[Union[str, Union[int, float]]] = None,
-                         forecasting_safe: Optional[bool] = True,
-                         target: Optional["TimeSeries"] = None,
-                         keep_non_transformed: Optional[bool] = False) -> "TimeSeries":
+    def window_transform(
+        self,
+        window_transformations: Union[Dict, Sequence[Dict]],
+        treat_na: Optional[Union[str, Union[int, float]]] = None,
+        forecasting_safe: Optional[bool] = True,
+        target: Optional["TimeSeries"] = None,
+        keep_non_transformed: Optional[bool] = False,
+    ) -> "TimeSeries":
         """
         Parameters:
         -----------
 
         window_transformations
             A dictionary or a list of dictionaries. Each dictionary should contain at least the 'function' key.
-            
-            The 'function' value should be a string with the name of one of the builtin transformation functions, 
-            or a callable function provided by the user that can be applied to the input series 
+
+            The 'function' value should be a string with the name of one of the builtin transformation functions,
+            or a callable function provided by the user that can be applied to the input series
             by using pandas.DatFrame.rolling object.
-            
+
             The two following options are available for built-in transformation functions:
-            1) Based on pandas.DataFrame.Rolling windows, the 'function' key should have one of 
+            1) Based on pandas.DataFrame.Rolling windows, the 'function' key should have one of
                 {BUILTIN_TRANSFORMS_WINDOW}.
             2) Based on pandas.DataFrame.ewm (Exponentially-weighted window), the 'function' key should have one of
                 {BUILTIN_TRANSFORMS_EWM} prefixed by 'ewm_'. For example, 'function': 'ewm_mean', 'ewm_sum'.
@@ -3056,8 +3093,8 @@ class TimeSeries:
             transformation.
 
             An optional key can be provided for more flexibility: 'components'.
-            The 'components' key can be a string or a list of strings specifying the names of the components 
-            of the series on which the transformation should be applied. 
+            The 'components' key can be a string or a list of strings specifying the names of the components
+            of the series on which the transformation should be applied.
             If not provided, the transformation will be applied to all components of the series.
 
             All other dictionary items provided will be treated as keyword arguments for the function group
@@ -3128,18 +3165,22 @@ class TimeSeries:
             The output becomes (transformed_time_series, truncated_target)
         """
 
-        #setup built_in transformations
+        # setup built_in transformations
         def _mk_entry_rolling(fn):
-            if fn == 'quantile':
+            if fn == "quantile":
                 return (pd.DataFrame.rolling, fn, (["window"], ["quantile"]))
-            else :
-                return (pd.DataFrame.rolling, fn, (["window"],[]))
+            else:
+                return (pd.DataFrame.rolling, fn, (["window"], []))
 
         def _mk_entry_ewm(fn):
             return (pd.DataFrame.ewm, fn, ([], []))
 
-        _builtin_transforms = {fn: _mk_entry_rolling(fn) for fn in BUILTIN_TRANSFORMS_WINDOW}
-        _builtin_transforms.update({"ewm_"+fn: _mk_entry_ewm(fn) for fn in BUILTIN_TRANSFORMS_EWM})
+        _builtin_transforms = {
+            fn: _mk_entry_rolling(fn) for fn in BUILTIN_TRANSFORMS_WINDOW
+        }
+        _builtin_transforms.update(
+            {"ewm_" + fn: _mk_entry_ewm(fn) for fn in BUILTIN_TRANSFORMS_EWM}
+        )
 
         # helper function to read kwargs from input dictionary
         def _get_kwargs(transformation, _builtin_transforms):
@@ -3213,8 +3254,9 @@ class TimeSeries:
 
                 # all other arguments are treated as function arguments
                 function_available_kwargs = {
-                    k: v for k, v in transformation.items()
-                        if k in available_keys and k not in function_group_available_keys
+                    k: v
+                    for k, v in transformation.items()
+                    if k in available_keys and k not in function_group_available_keys
                 }
                 return function_group_available_kwargs, function_available_kwargs
             else:
@@ -3333,7 +3375,10 @@ class TimeSeries:
                         logger,
                     )
 
-                if "components" in transformation and transformation["components"] is None:
+                if (
+                    "components" in transformation
+                    and transformation["components"] is None
+                ):
                     window_transformations[idx].pop("components")
 
                 if (
@@ -3346,12 +3391,20 @@ class TimeSeries:
                         ]  # make list
 
                     raise_if_not(
-
-                            all(isinstance(comp, str) for comp in transformation["components"])
-                            and all(comp in self.columns.to_list() for comp in transformation["components"]),
+                        all(
+                            isinstance(comp, str)
+                            for comp in transformation["components"]
+                        )
+                        and all(
+                            comp in self.columns.to_list()
+                            for comp in transformation["components"]
+                        ),
                         f"`window_transformation` at index {idx} must contain strings that correspond to the input "
                         f"series components' names.",
                     )
+
+                if "series_id" in transformation:
+                    window_transformations[idx].pop("series_id")
 
         # read series dataframe
         ts_df = self.pd_dataframe(copy=False)
@@ -3359,8 +3412,10 @@ class TimeSeries:
         # store some original attributes of the series
         original_components = set(self.columns.to_list())
         n_samples = self.n_samples
-        sample_prefix = '_s'
-        previously_added_non_transformed = set() # to avoid adding multiple times the same non-transformed columns
+        sample_prefix = "_s"
+        previously_added_non_transformed = (
+            set()
+        )  # to avoid adding multiple times the same non-transformed columns
 
         resulting_transformations = pd.DataFrame()
         new_columns = []
@@ -3375,97 +3430,159 @@ class TimeSeries:
                 ] = "left"  # to garantee that the latest value is not included in the window: forecasting safe
             else:
                 raise_user_warning(
-                    "closed" in transformation and transformation["closed"] != "left" and forecasting_safe,
+                    "closed" in transformation
+                    and transformation["closed"] != "left"
+                    and forecasting_safe,
                     f"`window_transformation` at index {idx} has a 'closed' parameter different from 'left'."
                     f"The resulting transformed series is not guaranteed to be forecasting safe.",
-                    logger
+                    logger,
                 )
 
-            comps_to_transform = set(
-                transformation['components']) if 'components' in transformation else original_components
+            comps_to_transform = (
+                set(transformation["components"])
+                if "components" in transformation
+                else original_components
+            )
             comps_not_to_transform = original_components - comps_to_transform
 
             if not self.is_deterministic:
-                filter_df_columns = [df_col for df_col in ts_df.columns.to_list()
-                                     if re.sub(f"{sample_prefix}.*$", "", df_col) in comps_to_transform]
+                filter_df_columns = [
+                    df_col
+                    for df_col in ts_df.columns.to_list()
+                    if re.sub(f"{sample_prefix}.*$", "", df_col) in comps_to_transform
+                ]
 
-                filter_df_non_transformed = [df_col for df_col in ts_df.columns.to_list()
-                                     if re.sub(f"{sample_prefix}.*$", "", df_col) in comps_not_to_transform]
+                filter_df_non_transformed = [
+                    df_col
+                    for df_col in ts_df.columns.to_list()
+                    if re.sub(f"{sample_prefix}.*$", "", df_col)
+                    in comps_not_to_transform
+                ]
             else:
-                filter_df_columns = [df_col for df_col in ts_df.columns.to_list() if df_col in comps_to_transform]
-                filter_df_non_transformed = [df_col for df_col in ts_df.columns.to_list() if df_col
-                                          in comps_not_to_transform]
+                filter_df_columns = [
+                    df_col
+                    for df_col in ts_df.columns.to_list()
+                    if df_col in comps_to_transform
+                ]
+                filter_df_non_transformed = [
+                    df_col
+                    for df_col in ts_df.columns.to_list()
+                    if df_col in comps_not_to_transform
+                ]
 
             function_group_kwargs, function_kwargs = _get_kwargs(
                 transformation, _builtin_transforms
             )
 
-            if isinstance(fn, str): # built-in function
+            if isinstance(fn, str):  # built-in function
                 function_group = _builtin_transforms[fn][0].__name__
                 function_name = _builtin_transforms[fn][1]
 
-                new_columns.extend([f"{fn}#{idx}_{comp_name}" for comp_name in comps_to_transform])
+                new_columns.extend(
+                    [f"{fn}#{idx}_{comp_name}" for comp_name in comps_to_transform]
+                )
                 # apply transformation to the selected components
-                resulting_transformations = pd.concat([resulting_transformations, getattr(
-                    getattr(ts_df[filter_df_columns], function_group)(**function_group_kwargs),
-                    function_name,
-                )(**function_kwargs)], axis=1)
+                resulting_transformations = pd.concat(
+                    [
+                        resulting_transformations,
+                        getattr(
+                            getattr(ts_df[filter_df_columns], function_group)(
+                                **function_group_kwargs
+                            ),
+                            function_name,
+                        )(**function_kwargs),
+                    ],
+                    axis=1,
+                )
 
-
-            elif isinstance(transformation["function"], Callable):  # user provided function
-                new_columns.extend([f"userFn#{idx}_{comp_name}" for comp_name in comps_to_transform])
-                resulting_transformations = pd.concat([resulting_transformations,
-                                ts_df[filter_df_columns].rolling(**function_group_kwargs).apply(fn, **function_kwargs)],
-                                                      axis=1)
+            elif isinstance(
+                transformation["function"], Callable
+            ):  # user provided function
+                new_columns.extend(
+                    [f"userFn#{idx}_{comp_name}" for comp_name in comps_to_transform]
+                )
+                resulting_transformations = pd.concat(
+                    [
+                        resulting_transformations,
+                        ts_df[filter_df_columns]
+                        .rolling(**function_group_kwargs)
+                        .apply(fn, **function_kwargs),
+                    ],
+                    axis=1,
+                )
 
             else:
-                raise_log(ValueError("The transformation function is not valid."), logger)
+                raise_log(
+                    ValueError("The transformation function is not valid."), logger
+                )
 
             # filter out non_transformed components
             if keep_non_transformed:
                 # retrieve what needs to be kept but was not already kept (in case of multiple transformations)
-                to_add = set(filter_df_non_transformed) - previously_added_non_transformed
-                resulting_transformations = pd.concat([resulting_transformations, ts_df[list(to_add)]],
-                                                      axis=1)
-                previously_added_non_transformed = previously_added_non_transformed.union(to_add) # update set
+                to_add = (
+                    set(filter_df_non_transformed) - previously_added_non_transformed
+                )
+                resulting_transformations = pd.concat(
+                    [resulting_transformations, ts_df[list(to_add)]], axis=1
+                )
+                previously_added_non_transformed = (
+                    previously_added_non_transformed.union(to_add)
+                )  # update set
                 if not self.is_deterministic:
-                    new_columns.extend(set([re.sub(f"{sample_prefix}.*$", "", comp_name) for comp_name in to_add]))
+                    new_columns.extend(
+                        set(
+                            [
+                                re.sub(f"{sample_prefix}.*$", "", comp_name)
+                                for comp_name in to_add
+                            ]
+                        )
+                    )
                 else:
                     new_columns.extend(to_add)
 
         # Treat NAs
         if isinstance(treat_na, int) or isinstance(treat_na, float):
-            resulting_transformations.fillna(value = treat_na, inplace=True)
+            resulting_transformations.fillna(value=treat_na, inplace=True)
         elif forecasting_safe:
             resulting_transformations.dropna(inplace=True)
-            raise_user_warning(forecasting_safe,
-                               "Enforcing forecasting safe by dropping NAs in the transformed series.",
-                               logger)
+            raise_user_warning(
+                forecasting_safe,
+                "Enforcing forecasting safe by dropping NAs in the transformed series.",
+                logger,
+            )
         elif isinstance(treat_na, str):
             if treat_na == "dropna":
                 resulting_transformations.dropna(inplace=True)
 
-            if treat_na == "bfill" and not forecasting_safe: # forecasting_safe should take over treat_na
+            if (
+                treat_na == "bfill" and not forecasting_safe
+            ):  # forecasting_safe should take over treat_na
                 resulting_transformations.fillna(method="bfill", inplace=True)
         elif treat_na is None and not forecasting_safe:
             pass
         else:
             pass
 
-        #revert dataframe to TimeSeries
+        # revert dataframe to TimeSeries
         new_index = resulting_transformations.index
-        transformed_time_series = TimeSeries.from_times_and_values(times = new_index,
-                                        values=resulting_transformations.values.reshape(len(new_index), -1, n_samples),
-                                                                   columns=new_columns)
+        transformed_time_series = TimeSeries.from_times_and_values(
+            times=new_index,
+            values=resulting_transformations.values.reshape(
+                len(new_index), -1, n_samples
+            ),
+            columns=new_columns,
+        )
         # truncate target ?
         if target is not None and (forecasting_safe or treat_na == "dropna"):
-            raise_if_not(isinstance(target, TimeSeries), "The target must be a TimeSeries instance.", logger)
+            raise_if_not(
+                isinstance(target, TimeSeries),
+                "The target must be a TimeSeries instance.",
+                logger,
+            )
             truncated_target = target.slice_intersect(transformed_time_series)
             return transformed_time_series, truncated_target
         else:
             return transformed_time_series
-
-
 
     def to_json(self) -> str:
         """
@@ -4943,4 +5060,3 @@ def concatenate(
         )
 
     return TimeSeries.from_xarray(da_concat, fill_missing_dates=False)
-
