@@ -27,6 +27,7 @@ import numpy as np
 import pandas as pd
 
 from darts import metrics
+from darts.dataprocessing.encoders import SequentialEncoder
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
 from darts.utils import (
@@ -36,7 +37,6 @@ from darts.utils import (
     _retrain_wrapper,
     _with_sanity_checks,
 )
-from darts.utils.data.encoders import SequentialEncoder
 from darts.utils.timeseries_generation import (
     _build_forecast_series,
     _generate_new_dates,
@@ -109,7 +109,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         # This is only used if the model has been fit on one time series.
         self.training_series: Optional[TimeSeries] = None
 
-        # Static covariates sample from the (first) target series used for training the model through the `fit()`
+        # static covariates sample from the (first) target series used for training the model through the `fit()`
         # function.
         self.static_covariates: Optional[pd.DataFrame] = None
 
@@ -1314,8 +1314,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         )
         return self.encoders.encode_train(
             target=series,
-            past_covariate=past_covariates,
-            future_covariate=future_covariates,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
         )
 
     def generate_predict_encodings(
@@ -1360,8 +1360,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         return self.encoders.encode_inference(
             n=self._get_encoders_n(n),
             target=series,
-            past_covariate=past_covariates,
-            future_covariate=future_covariates,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
         )
 
     def _get_encoders_n(self, n) -> int:
@@ -1604,7 +1604,7 @@ class TransferableDualCovariatesForecastingModel(DualCovariatesForecastingModel,
                 future_covariates,
             ) = future_covariates.split_after(series.end_time())
 
-            # in case future covariate have more values on the left end side that we don't need
+            # in case future covariates have more values on the left end side that we don't need
             if not series.has_same_time_as(historic_future_covariates):
                 historic_future_covariates = historic_future_covariates.slice_intersect(
                     series
