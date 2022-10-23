@@ -216,8 +216,8 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
             1,
             covariates_lags=[min_lag, max_lag],
         )
-        self.assertEqual(ig.shift_start, min_lag)
-        self.assertEqual(ig.shift_end, max_lag)
+        self.assertEqual(ig.shift_start, min_lag + 1)
+        self.assertEqual(ig.shift_end, max_lag + 1)
 
         min_lag, max_lag = -1, -1
         ig = PastCovariatesIndexGenerator(
@@ -225,8 +225,18 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
             1,
             covariates_lags=[min_lag, max_lag],
         )
-        self.assertEqual(ig.shift_start, min_lag)
-        self.assertEqual(ig.shift_end, max_lag)
+        self.assertEqual(ig.shift_start, min_lag + 1)
+        self.assertEqual(ig.shift_end, max_lag + 1)
+
+        # check that min/max lags are extracted from list of lags
+        min_lag, max_lag = -10, -3
+        ig = PastCovariatesIndexGenerator(
+            1,
+            1,
+            covariates_lags=[-5, min_lag, max_lag, -4],
+        )
+        self.assertEqual(ig.shift_start, min_lag + 1)
+        self.assertEqual(ig.shift_end, max_lag + 1)
 
     def test_future_index_generator_creation(self):
         # future covariates index generator (ig) can technically be used like a past covariates ig
@@ -236,8 +246,8 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
             1,
             covariates_lags=[min_lag, max_lag],
         )
-        self.assertEqual(ig.shift_start, min_lag)
-        self.assertEqual(ig.shift_end, max_lag)
+        self.assertEqual(ig.shift_start, min_lag + 1)
+        self.assertEqual(ig.shift_end, max_lag + 1)
 
         min_lag, max_lag = -1, -1
         ig = FutureCovariatesIndexGenerator(
@@ -245,8 +255,8 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
             1,
             covariates_lags=[min_lag, max_lag],
         )
-        self.assertEqual(ig.shift_start, min_lag)
-        self.assertEqual(ig.shift_end, max_lag)
+        self.assertEqual(ig.shift_start, min_lag + 1)
+        self.assertEqual(ig.shift_end, max_lag + 1)
 
         # different to past covariates ig, future ig can take positive and negative lags
         min_lag, max_lag = -2, 1
@@ -255,8 +265,18 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
             1,
             covariates_lags=[min_lag, max_lag],
         )
-        self.assertEqual(ig.shift_start, min_lag)
+        self.assertEqual(ig.shift_start, min_lag + 1)
         # when `max_lag` >= 0, we add one step to `shift_end`, as future lags start at 0 meaning first prediction step
+        self.assertEqual(ig.shift_end, max_lag + 1)
+
+        # check that min/max lags are extracted from list of lags
+        min_lag, max_lag = -10, 5
+        ig = FutureCovariatesIndexGenerator(
+            1,
+            1,
+            covariates_lags=[-5, min_lag, max_lag, -1],
+        )
+        self.assertEqual(ig.shift_start, min_lag + 1)
         self.assertEqual(ig.shift_end, max_lag + 1)
 
     def test_past_index_generator(self):
