@@ -694,7 +694,6 @@ class ILINetDataset(DatasetLoaderCSV):
         """
         Load the ILINetDataset dataset as a list of univariate timeseries.
         """
-        print(series.head())
         return [TimeSeries.from_series(series[label]) for label in series]
 
 
