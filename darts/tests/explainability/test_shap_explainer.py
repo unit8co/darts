@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import shap
 import sklearn
+from dateutil.relativedelta import relativedelta
 from sklearn.preprocessing import MinMaxScaler
 
 from darts import TimeSeries
@@ -371,6 +372,70 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         shap_explain = ShapExplainer(m)
 
         self.assertTrue(isinstance(shap_explain.explain(), ExplainabilityResult))
+
+    def test_explain_with_lags_future_covariates_series_of_same_length_as_target(self):
+        model = LightGBMModel(
+            lags=4,
+            lags_past_covariates=[-1, -2, -3],
+            lags_future_covariates=[-1, 1, 2],
+            output_chunk_length=1,
+        )
+
+        model.fit(
+            series=self.target_ts,
+            past_covariates=self.past_cov_ts,
+            future_covariates=self.fut_cov_ts,
+        )
+
+        shap_explain = ShapExplainer(model)
+        explanation_results = shap_explain.explain()
+        for component in ["power", "price"]:
+            explanation = explanation_results.get_explanation(
+                horizon=1, component=component
+            )
+
+            # The fut_cov_ts have the same length as the target_ts. Hence, if we pass lags_future_covariates this means
+            # that the last prediction can be made max(lags_future_covariates) before the end of the series (in this
+            # case 2).
+            self.assertEqual(
+                explanation.end_time(),
+                self.target_ts.end_time() - relativedelta(days=2),
+            )
+
+    def test_explain_with_lags_future_covariates_series_extending_into_future(self):
+
+        date_start = date(2012, 12, 12)
+        date_end = date(
+            2014, 6, 7
+        )  # Making the future covariates extend further into the future
+        days = pd.date_range(date_start, date_end, freq="d")
+        fut_cov = np.random.normal(0, 1, len(days)).astype("float32")
+        fut_cov_ts = TimeSeries.from_times_and_values(days, fut_cov.reshape(-1, 1))
+
+        model = LightGBMModel(
+            lags=4,
+            lags_past_covariates=[-1, -2, -3],
+            lags_future_covariates=[-1, 1, 2],
+            output_chunk_length=1,
+        )
+
+        model.fit(
+            series=self.target_ts,
+            past_covariates=self.past_cov_ts,
+            future_covariates=fut_cov_ts,
+        )
+
+        shap_explain = ShapExplainer(model)
+        explanation_results = shap_explain.explain()
+        for component in ["power", "price"]:
+            explanation = explanation_results.get_explanation(
+                horizon=1, component=component
+            )
+
+            # The fut_cov_ts extends further into the future than the target_ts. Hence, at prediction time we know the
+            # values of lagged future covariates and we thus no longer expect the end_time() of the explanation
+            # TimeSeries to differ from the end_time() of the target TimeSeries
+            self.assertEqual(explanation.end_time(), self.target_ts.end_time())
 
     def test_plot(self):
 
