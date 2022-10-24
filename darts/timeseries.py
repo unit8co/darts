@@ -3070,6 +3070,7 @@ class TimeSeries:
         forecasting_safe: Optional[bool] = True,
         target: Optional["TimeSeries"] = None,
         keep_non_transformed: Optional[bool] = False,
+        store_window_transformation: Optional[bool] = False,
     ) -> "TimeSeries":
         """
         Parameters:
@@ -3114,19 +3115,19 @@ class TimeSeries:
             For user provided functions, extra arguments in the transformation dictionary are passed to the function.
             Darts sets by default that the user provided function will receive numpy arrays as input. User can modify
             this behavior by adding item 'raw':False in the transformation dictionary.
-            It is expected that the function returns a single value.
+            It is expected that the function returns a single value for each window.
             Other possible configurations can be found in the pandas.DataFrame.Rolling().apply() documentation:
             https://pandas.pydata.org/docs/reference/window.html
 
         treat_na
-            Specify how to treat missing values in the resulting TimeSeries. Can be 'dropna' to truncate the
+            String to specify how to treat missing values in the resulting TimeSeries. Can be 'dropna' to truncate the
             TimeSeries and drop observations with missing values, 'bfill' to specify that NAs should be filled with the
             last valid observation. Can also be a value, in which case NAs will be filled with this value.
 
         forecasting_safe
             If True, Darts enforces that the resulting TimeSeries is safe to be used in forecasting models as target
             or as features. This parameter guarantees that the window transformation will not include any future values
-            in the current timestep and will not fill NAs with future values.
+            in the current timestep and will not fill NAs with future values. Default is True.
             Only pandas.DataFrame.Rolling functions can be currently guaranteed to be forecasting-safe.
 
         target
@@ -3136,7 +3137,12 @@ class TimeSeries:
         keep_non_transformed
             If True, the resulting TimeSeries will contain the non-transformed components along the transformed
             ones. The non-transformed components maintain their original name while the transformed components are
-            named with the transformation name as a prefix.
+            named with the transformation name as a prefix. Default is False.
+
+        store_window_transformation
+            If True, the resulting TimeSeries will contain the window transformation parameters as an attribute.
+            Useful for debugging.
+            Default is False.
 
         Example of use:
 
@@ -3148,8 +3154,8 @@ class TimeSeries:
                                                     {'function':'quantile', 'window':3, 'quantile':0.5}]
                         window_transformer_1 = series.window_transform(window_transformations_1, treat_na='dropna')
 
-                        scaler = lambda x: x.mean()/x.std()
-                        window_transformations_2 = {'function': zscore_fn , 'window': 3,
+                        zscore = lambda x: (x[-1] - x.mean())/x.std()
+                        window_transformations_2 = {'function': zscore , 'window': 3,
                                                     'components': 'comp_1'}
                         window_transformer_2 = series.window_transform(window_transformations_2, treat_na='dropna')
                     ..
@@ -3296,7 +3302,7 @@ class TimeSeries:
             for idx, transformation in enumerate(window_transformations):
                 raise_if_not(
                     isinstance(transformation, dict),
-                    f"`window_transformations` must contain dictionaries. Element at index {idx} is not a dictionary.",
+                    "`window_transformations` must contain dictionaries.",
                 )
 
                 raise_if_not(
@@ -3307,7 +3313,7 @@ class TimeSeries:
                         or (transformation["function"] in _builtin_transforms)
                     ),
                     f"`window_transformation` dictionary at index {idx} must contain the 'function' key and be "
-                    f"callable or one of {_builtin_transforms.keys()}.",
+                    f"callable or one of {list(_builtin_transforms.keys())}.",
                 )
 
                 if isinstance(transformation["function"], str):
@@ -3339,20 +3345,20 @@ class TimeSeries:
                 if "window" in transformation:
                     raise_if_not(
                         transformation["window"] is not None,
-                        f"`window_transformation` dictionary at index {idx} must contain a non-empty 'window' key.",
+                        f"`window_transformation` at index {idx} must contain a positive integer for 'window'.",
                     )
 
                     if isinstance(transformation["window"], int):
                         raise_if_not(
                             transformation["window"] > 0,
-                            f"`window_transformation` at index {idx} must contain a positive integer for the 'window'.",
+                            f"`window_transformation` at index {idx} must contain a positive integer for 'window'.",
                         )
 
                     else:
                         raise_log(
                             ValueError(
-                                f"`window_transformation` at index {idx} must contain a positive integer for the "
-                                f"'window' parameter. "
+                                f"`window_transformation` at index {idx} must contain a positive integer for "
+                                f"'window'. "
                             ),
                             logger,
                         )
@@ -3365,7 +3371,7 @@ class TimeSeries:
                             and transformation["step"] > 0
                         )
                         or transformation["step"] is None,
-                        f"`window_transformation` at index {idx} must contain a positive integer for the 'step'. ",
+                        f"`window_transformation` at index {idx} must contain a positive integer for 'step'. ",
                     )
                     raise_user_warning(
                         transformation["step"] > 1,
@@ -3399,12 +3405,15 @@ class TimeSeries:
                             comp in self.columns.to_list()
                             for comp in transformation["components"]
                         ),
-                        f"`window_transformation` at index {idx} must contain strings that correspond to the input "
-                        f"series components' names.",
+                        f"`window_transformation` at index {idx} must contain strings for the components' names among "
+                        f"{self.columns.to_list()}.",
                     )
 
                 if "series_id" in transformation:
                     window_transformations[idx].pop("series_id")
+
+        if store_window_transformation:
+            self.window_transformations = window_transformations
 
         # read series dataframe
         ts_df = self.pd_dataframe(copy=False)
@@ -3424,19 +3433,21 @@ class TimeSeries:
         for idx, transformation in enumerate(window_transformations):
             fn = transformation["function"]
 
-            if "closed" not in transformation or forecasting_safe:
-                transformation[
-                    "closed"
-                ] = "left"  # to garantee that the latest value is not included in the window: forecasting safe
-            else:
+            if (
+                "closed" not in transformation or forecasting_safe
+            ):  # forecasting_safe takes over "closed"
                 raise_user_warning(
                     "closed" in transformation
                     and transformation["closed"] != "left"
                     and forecasting_safe,
-                    f"`window_transformation` at index {idx} has a 'closed' parameter different from 'left'."
-                    f"The resulting transformed series is not guaranteed to be forecasting safe.",
+                    f"`window_transformation` at index {idx} with 'closed' key was replaced with value 'left' "
+                    f"to guarantee forecasting safe behavior.",
                     logger,
                 )
+
+                transformation[
+                    "closed"
+                ] = "left"  # to garantee that the latest value is not included in the window: forecasting safe
 
             comps_to_transform = (
                 set(transformation["components"])
@@ -3479,7 +3490,10 @@ class TimeSeries:
                 function_name = _builtin_transforms[fn][1]
 
                 new_columns.extend(
-                    [f"{fn}#{idx}_{comp_name}" for comp_name in comps_to_transform]
+                    [
+                        f"{fn}{transformation['window'] if 'window' in transformation else idx}_{comp_name}"
+                        for comp_name in comps_to_transform
+                    ]
                 )
                 # apply transformation to the selected components
                 resulting_transformations = pd.concat(
@@ -3499,7 +3513,10 @@ class TimeSeries:
                 transformation["function"], Callable
             ):  # user provided function
                 new_columns.extend(
-                    [f"userFn#{idx}_{comp_name}" for comp_name in comps_to_transform]
+                    [
+                        f"userFn{transformation['window'] if 'window' in transformation else idx}_{comp_name}"
+                        for comp_name in comps_to_transform
+                    ]
                 )
                 resulting_transformations = pd.concat(
                     [
@@ -3543,24 +3560,34 @@ class TimeSeries:
         # Treat NAs
         if isinstance(treat_na, int) or isinstance(treat_na, float):
             resulting_transformations.fillna(value=treat_na, inplace=True)
+            raise_user_warning(
+                forecasting_safe,
+                f"NAs were replaced by provided value {treat_na}.",
+                logger,
+            )
         elif forecasting_safe:
             resulting_transformations.dropna(inplace=True)
             raise_user_warning(
                 forecasting_safe,
-                "Enforcing forecasting safe by dropping NAs in the transformed series.",
+                "Enforcing forecasting safe. Resulting series is truncated by dropping NAs.",
+                # TODO: ASSUMES NAs ARE AT THE BEGINNING OF THE SERIES, IS THIS A SAFE ASSUMPTION?
                 logger,
             )
         elif isinstance(treat_na, str):
             if treat_na == "dropna":
-                resulting_transformations.dropna(inplace=True)
+                resulting_transformations.dropna(
+                    inplace=True
+                )  # drop NAs anywhere in the series
 
             if (
                 treat_na == "bfill" and not forecasting_safe
             ):  # forecasting_safe should take over treat_na
                 resulting_transformations.fillna(method="bfill", inplace=True)
         elif treat_na is None and not forecasting_safe:
+            # leaves NAs in the series
             pass
         else:
+            # leaves NAs in the series
             pass
 
         # revert dataframe to TimeSeries

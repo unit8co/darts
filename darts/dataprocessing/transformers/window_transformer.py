@@ -1,4 +1,3 @@
-import itertools
 from typing import Iterator, List, Sequence, Tuple, Union
 
 from darts.dataprocessing.transformers import BaseDataTransformer
@@ -45,8 +44,8 @@ class ForecastingWindowTransformer(BaseDataTransformer):
             of the series on which the transformation should be applied.
             If not provided, the transformation will be applied to all components of the series.
             2) When the input to the transformer is a sequence of TimeSeries, the 'series_id' key can be a positive
-            integer >= 0 or a list of postivie integers >= 0 specifying the indices of the series on which the transformation
-            should be applied. Series indices in the sequence start at 0.
+            integer >= 0 or a list of postivie integers >= 0 specifying the indices of the series on which
+            the transformation should be applied. Series indices in the sequence start at 0.
             If not provided, the transformation will be applied to all series in the sequence.
             The following are possbible combination scenarios for the 'components' and 'series_id' keys:
              - 'components' and 'series_id' are not provided: the transformation will be applied to all components in
@@ -79,9 +78,32 @@ class ForecastingWindowTransformer(BaseDataTransformer):
             For user provided functions, extra arguments in the transformation dictionary are passed to the function.
             Darts sets by default that the user provided function will receive numpy arrays as input. User can modify
             this behavior by adding item 'raw':False in the transformation dictionary.
-            It is expected that the function returns a single value.
+            It is expected that the function returns a single value for each window.
             Other possible configurations can be found in the pandas.DataFrame.Rolling().apply() documentation:
             https://pandas.pydata.org/docs/reference/window.html
+
+            When calling transform(), user can pass different keyword arguments to configure the transformed series
+            output:
+            1) treat_na
+            String to specify how to treat missing values in the resulting transformed TimeSeries.
+            Can be 'dropna' to truncate the TimeSeries and drop observations with missing values,
+            'bfill' to specify that NAs should be filled with the last valid observation.
+            Can also be a value, in which case NAs will be filled with this value.
+
+            2) forecasting_safe
+            If True, Darts enforces that the resulting TimeSeries is safe to be used in forecasting models as target
+            or as features. This parameter guarantees that the window transformation will not include any future values
+            in the current timestep and will not fill NAs with future values. Default is True.
+            Only pandas.DataFrame.Rolling functions can be currently guaranteed to be forecasting-safe.
+
+            3) target
+            If forecasting_safe is True and the target TimeSeries is provided, then the target TimeSeries will be
+            truncated to align it with the window transformed TimeSeries.
+
+            4) keep_non_transformed
+            If True, the resulting TimeSeries will contain the non-transformed components along the transformed
+            ones. The non-transformed components maintain their original name while the transformed components are
+            named with the transformation name as a prefix. Default is False.
 
         name
             A specific name for the transformer.
@@ -107,6 +129,18 @@ class ForecastingWindowTransformer(BaseDataTransformer):
             )
 
         if window_transformations is not None:
+
+            raise_if_not(
+                (
+                    isinstance(window_transformations, dict)
+                    and len(window_transformations) > 0
+                )
+                or (
+                    isinstance(window_transformations, list)
+                    and len(window_transformations) > 0
+                ),
+                "`window_transformations` must be a non-empty dictionary or a non-empty list of dictionaries. ",
+            )
 
             if isinstance(window_transformations, dict):
                 window_transformations = [
@@ -187,12 +221,7 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                 # apply the transformation to all series on specific components only in each series
                 # test that component exists in each relevant series is implemented in TimeSeries.window_transform()
                 # This scenario does not make sense unless series in the sequence have the same components names !
-                series_subset += [
-                    (s[c], transformation)
-                    for (s, c) in itertools.product(
-                        series, transformation["components"]
-                    )
-                ]
+                series_subset += [(s, transformation) for s in series]
 
             else:
                 # apply the transformation to a specific component in a specific series
@@ -205,29 +234,22 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                     # testing that components exist in the corresponding series is implemented
                     # in TimeSeries.window_transform()
                     components_list = transformation["components"]
-                    series_subset += [
-                        (series[s_idx], transformation.update({"components": c_idvec}))
-                        for (
-                            s_idx,
-                            c_idvec,
-                        ) in zip(  # pair each series with its components
-                            transformation["series_id"],
-                            components_list,
-                        )
-                    ]
+                    for (s_idx, c_idvec) in zip(
+                        transformation["series_id"], components_list
+                    ):
+                        # pair each series with its components
+                        transformation.update({"components": c_idvec})
+                        series_subset += [(series[s_idx], transformation.copy())]
+                        # copy to avoid having the same final iteration dictionary for all series
                 else:
                     # if the same components are provided for all the selected series (series would need to have same
                     # components names)!
                     # testing that the components exist in each series is implemented in TimeSeries.window_transform()
                     series_subset += [
-                        (
-                            series[s_id][c_id],
-                            transformation,
-                        )
-                        for (s_id, c_id) in itertools.product(
-                            transformation["series_id"], transformation["comp_id"]
-                        )
+                        (series[s_idx], transformation)
+                        for s_idx in transformation["series_id"]
                     ]
+                    # copy to avoid having the same final iteration dictionary for all series
 
         return iter(series_subset)  # the iterator object for ts_transform function
 
