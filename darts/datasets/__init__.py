@@ -652,7 +652,7 @@ class UberTLCDataset(DatasetLoaderCSV):
 
 class ILINetDataset(DatasetLoaderCSV):
     """
-    ILI describes the ratio of patients seen with influenzalike illness and the number of patients. It includes
+    ILI describes the number of patients seen with influenzalike illness and the total number of patients. It includes
     weekly data from the Centers for Disease Control and Prevention of the United States from 1997 to 2022
 
     Components Descriptions:
