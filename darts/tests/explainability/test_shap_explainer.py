@@ -404,10 +404,9 @@ class ShapExplainerTestCase(DartsBaseTestClass):
 
     def test_explain_with_lags_future_covariates_series_extending_into_future(self):
 
+        # Constructing future covariates TimeSeries that extends further into the future than the target series
         date_start = date(2012, 12, 12)
-        date_end = date(
-            2014, 6, 7
-        )  # Making the future covariates extend further into the future
+        date_end = date(2014, 6, 7)
         days = pd.date_range(date_start, date_end, freq="d")
         fut_cov = np.random.normal(0, 1, len(days)).astype("float32")
         fut_cov_ts = TimeSeries.from_times_and_values(days, fut_cov.reshape(-1, 1))
@@ -436,6 +435,42 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             # values of lagged future covariates and we thus no longer expect the end_time() of the explanation
             # TimeSeries to differ from the end_time() of the target TimeSeries
             self.assertEqual(explanation.end_time(), self.target_ts.end_time())
+
+    def test_explain_with_lags_covariates_series_older_timestamps_than_target(self):
+
+        # Constructing covariates TimeSeries with older timestamps than target
+        date_start = date(2012, 12, 10)
+        date_end = date(2014, 6, 5)
+        days = pd.date_range(date_start, date_end, freq="d")
+        fut_cov = np.random.normal(0, 1, len(days)).astype("float32")
+        fut_cov_ts = TimeSeries.from_times_and_values(days, fut_cov.reshape(-1, 1))
+        past_cov = np.random.normal(0, 1, len(days)).astype("float32")
+        past_cov_ts = TimeSeries.from_times_and_values(days, past_cov.reshape(-1, 1))
+
+        model = LightGBMModel(
+            lags=None,
+            lags_past_covariates=[-1, -2],
+            lags_future_covariates=[-1, -2],
+            output_chunk_length=1,
+        )
+
+        model.fit(
+            series=self.target_ts,
+            past_covariates=past_cov_ts,
+            future_covariates=fut_cov_ts,
+        )
+
+        shap_explain = ShapExplainer(model)
+        explanation_results = shap_explain.explain()
+        for component in ["power", "price"]:
+            explanation = explanation_results.get_explanation(
+                horizon=1, component=component
+            )
+
+            # The covariates series (past and future) start two time periods earlier than the target series. This in
+            # combination with the LightGBM configuration (lags=None and 'largest' covariates lags=-2) means that at
+            # the start of the target series we have sufficient information to explain the prediction.
+            self.assertEqual(explanation.start_time(), self.target_ts.start_time())
 
     def test_plot(self):
 
