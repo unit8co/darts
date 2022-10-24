@@ -667,12 +667,14 @@ class ILINetDataset(DatasetLoaderCSV):
     ILITOTAL: Total number of ILI patients. For this system, ILI is defined as fever (temperature of 100°F [37.8°C] or greater) and a cough and/or a sore throat
     NUM. OF PROVIDERS: Number of outpatient healthcare providers
     TOTAL PATIENTS: Total number of patients
+    Source: [1][2][3][4]_
 
     References
     ----------
     .. [1] https://gis.cdc.gov/grasp/fluview/fluportaldashboard.html
     .. [2] https://www.cdc.gov/flu/weekly/overview.htm#Outpatient
     .. [3] https://arxiv.org/pdf/2205.13504.pdf
+    .. [4] https://gis.cdc.gov/grasp/fluview/FluViewPhase2QuickReferenceGuide.pdf
     """
 
     def __init__(self, multivariate: bool = True):
@@ -700,6 +702,7 @@ class ExchangeRateDataset(DatasetLoaderCSV):
     """
     The collection of the daily exchange rates of eight foreign countries including Australia, British, Canada,
     Switzerland, China, Japan, New Zealand and Singapore ranging from 1990 to 2010.
+    Source: [1]_
 
     References
     ----------
@@ -736,6 +739,7 @@ class TrafficDataset(DatasetLoaderCSV):
     """
     The data in this repo is a collection of 48 months (2015-2016) hourly data from the California Department of Transportation. The data describes
     the road occupancy rates (between 0 and 1) measured by 862 different sensors on San Francisco Bay area freeways. The raw data is in http://pems.dot.ca.gov.
+    Source: [1]_
 
     References
     ----------
@@ -773,6 +777,7 @@ class WeatherDataset(DatasetLoaderCSV):
     Weather includes 21 indicators of weather, such as air
     temperature, and humidity. Its data is recorded every
     10 min for 2020 in Germany.
+    Source: [1][2]_
 
     References
     ----------
