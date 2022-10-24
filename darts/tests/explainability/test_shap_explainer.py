@@ -395,8 +395,8 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             )
 
             # The fut_cov_ts have the same length as the target_ts. Hence, if we pass lags_future_covariates this means
-            # that the last prediction can be made max(lags_future_covariates) before the end of the series (in this
-            # case 2).
+            # that the last prediction can be made max(lags_future_covariates) time periods before the end of the
+            # series (in this case 2 time periods).
             self.assertEqual(
                 explanation.end_time(),
                 self.target_ts.end_time() - relativedelta(days=2),
@@ -414,7 +414,7 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         model = LightGBMModel(
             lags=4,
             lags_past_covariates=[-1, -2, -3],
-            lags_future_covariates=[-1, 1, 2],
+            lags_future_covariates=[2],
             output_chunk_length=1,
         )
 
@@ -468,8 +468,8 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             )
 
             # The covariates series (past and future) start two time periods earlier than the target series. This in
-            # combination with the LightGBM configuration (lags=None and 'largest' covariates lags=-2) means that at
-            # the start of the target series we have sufficient information to explain the prediction.
+            # combination with the LightGBM configuration (lags=None and 'largest' covariates lags equal to -2) means
+            # that at the start of the target series we have sufficient information to explain the prediction.
             self.assertEqual(explanation.start_time(), self.target_ts.start_time())
 
     def test_plot(self):
