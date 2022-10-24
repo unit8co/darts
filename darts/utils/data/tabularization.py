@@ -111,7 +111,7 @@ def _create_lagged_data(
             if lags_cov:
 
                 if not is_training and df_cov.index[-1] < df_target.index[-1]:
-                    # We extend the past covariates dataframes
+                    # We extend the covariates dataframes
                     # to have the same timestamps as the target at the end
                     #  so that when we create the lags with shifts
                     # we don't have nan on the last rows. Only useful for inference.
