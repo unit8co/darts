@@ -700,8 +700,8 @@ class ILINetDataset(DatasetLoaderCSV):
 
 class ExchangeRateDataset(DatasetLoaderCSV):
     """
-    The collection of the daily exchange rates of eight foreign countries including Australia, British, Canada,
-    Switzerland, China, Japan, New Zealand and Singapore ranging from 1990 to 2010.
+    The collection of the daily exchange rates of eight foreign countries, including Australia, British, Canada, Switzerland, China, Japan, New Zealand,
+    and Singapore, ranging from 1990 to 2016. Unfortunately, there were some inconsistencies concerning the dates, so the resulting TimeSeries is integer-indexed.
     Source: [1]_
 
     References
@@ -720,10 +720,7 @@ class ExchangeRateDataset(DatasetLoaderCSV):
             metadata=DatasetLoaderMetadata(
                 "exchange_rate.csv",
                 uri="https://raw.githubusercontent.com/unit8co/darts/Improvement/Add_new_datasets_617/datasets/exchange_rate.csv",
-                hash="9219e9a03eb54c6e40d7eb1c9b3b6f7c",
-                header_time="Date",
-                format_time="%Y-%m-%d",
-                freq="D",
+                hash="6e35621a9eb6a9dd5465cf52a22b1339",
                 multivariate=multivariate,
             )
         )
