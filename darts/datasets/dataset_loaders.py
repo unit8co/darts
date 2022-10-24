@@ -194,7 +194,6 @@ class DatasetLoaderCSV(DatasetLoader):
     ) -> Union[TimeSeries, List[TimeSeries]]:
 
         df = pd.read_csv(path_to_file)
-
         if metadata.header_time is not None:
             df = self._format_time_column(df)
             series = TimeSeries.from_dataframe(
@@ -212,6 +211,17 @@ class DatasetLoaderCSV(DatasetLoader):
                     ) from None
         else:
             df.sort_index(inplace=True)
-
             series = TimeSeries.from_dataframe(df)
+
+        if (
+            self._metadata.multivariate is not None
+            and self._metadata.multivariate is False
+        ):
+            try:
+                series = self._to_multi_series(series.pd_dataframe())
+            except Exception as e:
+                raise DatasetLoadingException(
+                    "Could not convert to multi-series. Reason:" + e.__repr__()
+                ) from None
+
         return series

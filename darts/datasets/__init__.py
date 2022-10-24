@@ -721,6 +721,7 @@ class ExchangeRateDataset(DatasetLoaderCSV):
                 "exchange_rate.csv",
                 uri="https://raw.githubusercontent.com/unit8co/darts/Improvement/Add_new_datasets_617/datasets/exchange_rate.csv",
                 hash="6e35621a9eb6a9dd5465cf52a22b1339",
+                header_time=None,
                 multivariate=multivariate,
             )
         )
