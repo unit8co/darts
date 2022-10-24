@@ -655,8 +655,7 @@ class ILINetDataset(DatasetLoaderCSV):
     ILI describes the ratio of patients seen with influenzalike illness and the number of patients. It includes
     weekly data from the Centers for Disease Control and Prevention of the United States from 1997 to 2022
 
-    Field Descriptions:
-    DATE: The recorded date
+    Components Descriptions:
     % WEIGHTED ILI: Combined state-specific data of patients visit to healthcare providers for ILI reported each week weighted by state population
     % UNWEIGHTED ILI: Combined state-specific data of patients visit to healthcare providers for ILI reported each week unweighted by state population
     AGE 0-4: Number of patients between 0 and 4 years of age
@@ -676,7 +675,7 @@ class ILINetDataset(DatasetLoaderCSV):
     .. [3] https://arxiv.org/pdf/2205.13504.pdf
     """
 
-    def __init__(self):
+    def __init__(self, multivariate: bool = True):
         super().__init__(
             metadata=DatasetLoaderMetadata(
                 "ILINet.csv",
@@ -685,8 +684,16 @@ class ILINetDataset(DatasetLoaderCSV):
                 header_time="DATE",
                 format_time="%Y-%m-%d",
                 freq="W",
+                multivariate=multivariate,
             )
         )
+
+    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+        """
+        Load the ILINetDataset dataset as a list of univariate timeseries.
+        """
+        print(series.head())
+        return [TimeSeries.from_series(series[label]) for label in series]
 
 
 class ExchangeRateDataset(DatasetLoaderCSV):
@@ -722,19 +729,13 @@ class ExchangeRateDataset(DatasetLoaderCSV):
         """
         Load the ExchangeRateDataset dataset as a list of univariate timeseries, one for each country.
         """
-        return [
-            series[label]
-            for label in _build_tqdm_iterator(
-                series, verbose=False, total=len(series.columns)
-            )
-        ]
+        return [TimeSeries.from_series(series[label]) for label in series]
 
 
 class TrafficDataset(DatasetLoaderCSV):
     """
-    The raw data is in http://pems.dot.ca.gov. The data in this repo is a collection of 48 months (2015-2016)
-    hourly data from the California Department of Transportation. The data describes the road occupancy rates (between 0 and 1)
-    measured by different sensors on San Francisco Bay area freeways.
+    The data in this repo is a collection of 48 months (2015-2016) hourly data from the California Department of Transportation. The data describes
+    the road occupancy rates (between 0 and 1) measured by 862 different sensors on San Francisco Bay area freeways. The raw data is in http://pems.dot.ca.gov.
 
     References
     ----------
@@ -764,12 +765,7 @@ class TrafficDataset(DatasetLoaderCSV):
         """
         Load the TrafficDataset dataset as a list of univariate timeseries, one for each ID.
         """
-        return [
-            series[label]
-            for label in _build_tqdm_iterator(
-                series, verbose=False, total=len(series.columns)
-            )
-        ]
+        return [TimeSeries.from_series(series[label]) for label in series]
 
 
 class WeatherDataset(DatasetLoaderCSV):
@@ -807,9 +803,4 @@ class WeatherDataset(DatasetLoaderCSV):
         """
         Load the WeatherDataset dataset as a list of univariate timeseries, one for weather indicator.
         """
-        return [
-            series[label]
-            for label in _build_tqdm_iterator(
-                series, verbose=False, total=len(series.columns)
-            )
-        ]
+        return [TimeSeries.from_series(series[label]) for label in series]
