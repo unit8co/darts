@@ -377,7 +377,7 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         model = LightGBMModel(
             lags=4,
             lags_past_covariates=[-1, -2, -3],
-            lags_future_covariates=[-1, 1, 2],
+            lags_future_covariates=[2],
             output_chunk_length=1,
         )
 
