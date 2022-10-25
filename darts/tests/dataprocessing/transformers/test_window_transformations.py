@@ -251,10 +251,57 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
         self.assertEqual(transformed_ts.n_samples, 2)
 
     def test_ts_windowtransf_output_nabehavior(self):
-        pass
+        times = pd.date_range("20130101", "20130110")
+        series = TimeSeries.from_times_and_values(times, range(1, 11))
+        window_transformations = {"function": "sum", "window": 1}
+
+        # fill na with a specific value
+        transformed_ts = series.window_transform(window_transformations, treat_na=100)
+        expected_transformed_series = TimeSeries.from_times_and_values(
+            times, [100, 1, 2, 3, 4, 5, 6, 7, 8, 9], columns=["sum1_0"]
+        )
+        self.assertEqual(transformed_ts, expected_transformed_series)
+
+        # dropna
+        transformed_ts = series.window_transform(
+            window_transformations, treat_na="dropna"
+        )
+        expected_transformed_series = TimeSeries.from_times_and_values(
+            times[1:], [1, 2, 3, 4, 5, 6, 7, 8, 9], columns=["sum1_0"]
+        )
+        self.assertEqual(transformed_ts, expected_transformed_series)
+
+        # backfill na
+        transformed_ts = series.window_transform(
+            window_transformations, treat_na="bfill", forecasting_safe=False
+        )
+        # backfill works only with forecasting_safe=False
+        expected_transformed_series = TimeSeries.from_times_and_values(
+            times, [1, 1, 2, 3, 4, 5, 6, 7, 8, 9], columns=["sum1_0"]
+        )
+        self.assertEqual(transformed_ts, expected_transformed_series)
 
     def test_ts_windowtransf_truncate_target(self):
-        pass
+        times = pd.date_range("20130101", "20130110")
+        target = TimeSeries.from_times_and_values(times, range(1, 11))
+
+        expected_truncated_target = TimeSeries.from_times_and_values(
+            times[2:], [3, 4, 5, 6, 7, 8, 9, 10], columns=["0"]
+        )
+
+        covariate_ts = target + 10
+        window_transformations = {"function": "sum", "window": 2}
+
+        _, truncated_target = covariate_ts.window_transform(
+            window_transformations, target=target
+        )
+        self.assertEqual(expected_truncated_target, truncated_target)
+
+        # when no truncation happens, should return the same target
+        _, truncated_target = covariate_ts.window_transform(
+            window_transformations, target=target, forecasting_safe=False
+        )
+        self.assertEqual(target, truncated_target)
 
     def test_ts_windowtransf_forecasting_safe(self):
 

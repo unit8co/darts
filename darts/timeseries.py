@@ -3577,7 +3577,7 @@ class TimeSeries:
             if treat_na == "dropna":
                 resulting_transformations.dropna(
                     inplace=True
-                )  # drop NAs anywhere in the series
+                )  # drops NAs anywhere in the series
 
             if (
                 treat_na == "bfill" and not forecasting_safe
@@ -3589,6 +3589,13 @@ class TimeSeries:
         else:
             # leaves NAs in the series
             pass
+        # NOTE : there is the possibility to give the key "min_periods" in the transformation dictionary
+        # to specify the minimum number of observations in window required to have a value (otherwise NaN).
+        # if set to 0, then there will not be no NAs in the series and where there should have been a value of
+        # 0.0 is put instead. The default behavior is that the minimum number of observations is the window
+        # size and will be dropped by default (forecasting safe behavior) but we can easily enforce other
+        # behaviors by setting the key "min_periods" in the transformation dictionary and playing with
+        # treat_na and forecasting_safe.
 
         # revert dataframe to TimeSeries
         new_index = resulting_transformations.index
@@ -3600,7 +3607,7 @@ class TimeSeries:
             columns=new_columns,
         )
         # truncate target ?
-        if target is not None and (forecasting_safe or treat_na == "dropna"):
+        if target is not None:
             raise_if_not(
                 isinstance(target, TimeSeries),
                 "The target must be a TimeSeries instance.",
