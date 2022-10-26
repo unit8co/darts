@@ -249,6 +249,44 @@ class RegressionModel(GlobalForecastingModel):
             takes_future_covariates,
         )
 
+    @property
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Union[int, None],
+        Union[int, None],
+        Union[int, None],
+        Union[int, None],
+        Union[int, None],
+    ]:
+        """
+        Returns a 5-tuple containing in order:
+        (minimum target lag, maximum target lag, min past covariate lag, min future covariate lag, max future covariate
+        lag). If the model has no series or covariates, the corresponding value should be set to None.
+            - If no target series as input: minimum target lag = None.
+            - max target lag starts from 1 (corresponding to index 0), meaning that if we have an output_chunk_length
+            of 1, we should input 1.
+            - If no past covariates as input: min past covariate lag = None.
+            - If no future covariates as input: min future covariate lag = None, max future covariate lag = None.
+        """
+        min_target_lag = self.lags.get("target")[0] if "target" in self.lags else None
+        max_target_lag = self.output_chunk_length
+        min_past_cov_lag = self.lags.get("past")[0] if "past" in self.lags else None
+        min_future_cov_lag = (
+            self.lags.get("future")[0] if "future" in self.lags else None
+        )
+        max_future_cov_lag = (
+            self.lags.get("future")[-1] if "future" in self.lags else None
+        )
+
+        return (
+            min_target_lag,
+            max_target_lag,
+            min_past_cov_lag,
+            min_future_cov_lag,
+            max_future_cov_lag,
+        )
+
     def _get_encoders_n(self, n) -> int:
         """Returns the `n` encoder prediction steps specific to RegressionModels.
         This will generate slightly more past covariates than the minimum requirement when using past and future

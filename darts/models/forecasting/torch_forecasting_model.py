@@ -1629,6 +1629,25 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
             takes_future_covariates,
         )
 
+    @property
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Union[int, None],
+        Union[int, None],
+        Union[int, None],
+        Union[int, None],
+        Union[int, None],
+    ]:
+
+        return (
+            -self.input_chunk_length,
+            self.output_chunk_length,
+            -self.input_chunk_length if self._expect_past_covariates else None,
+            None,
+            None,
+        )
+
 
 class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
 
@@ -1704,6 +1723,25 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             takes_future_covariates,
         )
 
+    @property
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Union[int, None],
+        Union[int, None],
+        Union[int, None],
+        Union[int, None],
+        Union[int, None],
+    ]:
+
+        return (
+            -self.input_chunk_length,
+            self.output_chunk_length,
+            None,
+            0 if self._expect_future_covariates else None,
+            self.output_chunk_length if self._expect_future_covariates else None,
+        )
+
 
 class DualCovariatesTorchModel(TorchForecastingModel, ABC):
 
@@ -1772,6 +1810,25 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
             takes_future_covariates,
         )
 
+    @property
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Union[int, None],
+        Union[int, None],
+        Union[int, None],
+        Union[int, None],
+        Union[int, None],
+    ]:
+
+        return (
+            -self.input_chunk_length,
+            self.output_chunk_length,
+            None,
+            -self.input_chunk_length if self._expect_future_covariates else None,
+            self.output_chunk_length if self._expect_future_covariates else None,
+        )
+
 
 class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
     def _build_train_dataset(
@@ -1834,6 +1891,25 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
             output_chunk_length,
             takes_past_covariates,
             takes_future_covariates,
+        )
+
+    @property
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Union[int, None],
+        Union[int, None],
+        Union[int, None],
+        Union[int, None],
+        Union[int, None],
+    ]:
+
+        return (
+            -self.input_chunk_length,
+            self.output_chunk_length,
+            -self.input_chunk_length if self._expect_past_covariates else None,
+            -self.input_chunk_length if self._expect_future_covariates else None,
+            self.output_chunk_length if self._expect_future_covariates else None,
         )
 
 
@@ -1899,4 +1975,23 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
             output_chunk_length,
             takes_past_covariates,
             takes_future_covariates,
+        )
+
+    @property
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Union[int, None],
+        Union[int, None],
+        Union[int, None],
+        Union[int, None],
+        Union[int, None],
+    ]:
+
+        return (
+            -self.input_chunk_length,
+            self.output_chunk_length,
+            -self.input_chunk_length if self._expect_past_covariates else None,
+            0 if self._expect_future_covariates else None,
+            self.output_chunk_length if self._expect_future_covariates else None,
         )

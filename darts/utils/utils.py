@@ -207,61 +207,57 @@ def _historical_forecasts_general_checks(series, kwargs):
         stride > 0, "The provided stride parameter must be a positive integer.", logger
     )
 
+    series = series2seq(series)
+
     # check start parameter
     if hasattr(n, "start"):
         if isinstance(n.start, float):
             raise_if_not(
                 0.0 <= n.start < 1.0, "`start` should be between 0.0 and 1.0.", logger
             )
-        elif isinstance(n.start, pd.Timestamp):
-            raise_if(
-                n.start not in series,
-                "`start` timestamp must be an entry in the time series' time index",
-            )
-            raise_if(
-                n.start == series.end_time(),
-                "`start` timestamp is the last timestamp of the series",
-                logger,
-            )
         elif isinstance(n.start, (int, np.int64)):
             raise_if_not(n.start >= 0, logger=logger)
             raise_if(
-                n.start > len(series),
+                any([n.start > len(serie) for serie in series]),
                 "`start` index should be smaller than length of the series",
                 logger,
             )
-        else:
+        elif n.start and not isinstance(n.start, pd.Timestamp):
             raise_log(
                 TypeError(
-                    "`start` needs to be either `float`, `int` or `pd.Timestamp`"
+                    "`start` needs to be either `float`, `int`, `pd.Timestamp` or `None`"
                 ),
                 logger,
             )
 
-    start = series.get_timestamp_at_point(n.start)
+    if n.start is not None:
+        for idx, serie in enumerate(series):
 
-    # check start parameter
-    raise_if(
-        start == series.end_time(),
-        "`start` timestamp is the last timestamp of the series",
-        logger,
-    )
-    raise_if(
-        start == series.start_time(),
-        "`start` corresponds to the first timestamp of the series, resulting in empty training set",
-        logger,
-    )
+            start = serie.get_timestamp_at_point(n.start)
 
-    # check that overlap_end and start together form a valid combination
-    overlap_end = n.overlap_end
+            # check start parameter
+            raise_if(
+                start == serie.end_time(),
+                f"`start` timestamp is the last timestamp of the series {idx}.",
+                logger,
+            )
+            raise_if(
+                start == serie.start_time(),
+                "`start` corresponds to the first timestamp of the series {}, resulting "
+                "in empty training set".format(idx),
+                logger,
+            )
 
-    if not overlap_end:
-        raise_if_not(
-            start + series.freq * forecast_horizon in series,
-            "`start` timestamp is too late in the series to make any predictions with"
-            "`overlap_end` set to `False`.",
-            logger,
-        )
+            # check that overlap_end and start together form a valid combination
+            overlap_end = n.overlap_end
+
+            if not overlap_end:
+                raise_if_not(
+                    start + serie.freq * forecast_horizon in serie,
+                    "`start` timestamp is too late in the series {} to make any predictions with"
+                    "`overlap_end` set to `False`.".format(idx),
+                    logger,
+                )
 
 
 def _parallel_apply(
