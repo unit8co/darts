@@ -285,7 +285,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             max_future_cov_lag,
         ) = self.extreme_lags
 
-        if series is not None:
+        intersect_ = None
+
+        if series is not None and min_target_lag:
             if series.has_range_index:
                 # RangeIndex always excludes the last point, contrary to DatetimeIndex
                 intersect_ = pd.RangeIndex(
@@ -331,8 +333,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         past_covariates.end_time(),
                     )
                 ]
-
-            intersect_ = intersect_.intersection(tmp_)
+            if intersect_ is not None:
+                intersect_ = intersect_.intersection(tmp_)
+            else:
+                intersect_ = tmp_
 
         if future_covariates is not None:
             if future_covariates.has_range_index:
@@ -359,7 +363,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         - max_future_cov_lag * future_covariates.freq,
                     )
                 ]
-            intersect_ = intersect_.intersection(tmp_)
+            if intersect_ is not None:
+                intersect_ = intersect_.intersection(tmp_)
+            else:
+                intersect_ = tmp_
 
         return intersect_ if len(intersect_) > 0 else None
 
@@ -1941,3 +1948,20 @@ class TransferableDualCovariatesForecastingModel(DualCovariatesForecastingModel,
 
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
         return True
+
+    @property
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Union[int, None],
+        Union[int, None],
+        Union[int, None],
+        Union[int, None],
+        Union[int, None],
+    ]:
+        """
+        Returns a 5-tuple containing in order:
+        (minimum target lag, maximum target lag, min past covariate lag, min future covariate lag, max future covariate
+        lag).
+        """
+        return (-1, 1, None, 0, 0)
