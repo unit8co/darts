@@ -73,7 +73,7 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
         >>> print(min(series_transformed.values()))
         [-1.]
         >>> print(max(series_transformed.values()))
-        [2.]
+        [1.]
         """
 
         super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
