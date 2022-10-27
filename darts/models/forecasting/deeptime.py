@@ -343,28 +343,32 @@ class _DeepTimeModule(PLPastCovariatesModule):
         # define a scheduler for each optimizer
         lr_sched_kws = {k: v for k, v in self.lr_scheduler_kwargs.items()}
 
+        total_epochs = lr_sched_kws["total_epochs"]
         warmup_epochs = lr_sched_kws["warmup_epochs"]
-        T_max = lr_sched_kws["T_max"]
         eta_min = lr_sched_kws["eta_min"]
         scheduler_fns = []
 
-        def no_scheduler(T_cur):
+        def no_scheduler(current_epoch):
             return 1
 
-        def cosine_annealing(T_cur):
+        def cosine_annealing(current_epoch):
             return (
                 eta_min
                 + 0.5
                 * (eta_max - eta_min)
                 * (
                     1.0
-                    + np.cos((T_cur - warmup_epochs) / (T_max - warmup_epochs) * np.pi)
+                    + np.cos(
+                        (current_epoch - warmup_epochs)
+                        / (total_epochs - warmup_epochs)
+                        * np.pi
+                    )
                 )
             ) / lr
 
-        def cosine_annealing_with_linear_warmup(T_cur):
-            if T_cur < warmup_epochs:
-                return T_cur / warmup_epochs
+        def cosine_annealing_with_linear_warmup(current_epoch):
+            if current_epoch < warmup_epochs:
+                return current_epoch / warmup_epochs
             else:
                 return (
                     eta_min
@@ -373,7 +377,9 @@ class _DeepTimeModule(PLPastCovariatesModule):
                     * (
                         1.0
                         + np.cos(
-                            (T_cur - warmup_epochs) / (T_max - warmup_epochs) * np.pi
+                            (current_epoch - warmup_epochs)
+                            / (total_epochs - warmup_epochs)
+                            * np.pi
                         )
                     )
                 ) / lr
@@ -563,9 +569,15 @@ class DeepTimeModel(PastCovariatesTorchModel):
                 "weight_decay": 0.0,
             }
 
+            raise_if_not(
+                self.n_epochs > 0,
+                "`self.n_epochs` should be greater than 0, it is used to declare the learning rate scheduler.",
+                logger,
+            )
+
             self.pl_module_params["lr_scheduler_kwargs"] = {
                 "warmup_epochs": 5,
-                "T_max": self.n_epochs,
+                "total_epochs": self.n_epochs,
                 "eta_min": 0.0,
                 "scheduler_names": [
                     "cosine_annealing",
@@ -583,8 +595,8 @@ class DeepTimeModel(PastCovariatesTorchModel):
 
             raise_if_not(
                 "lr_scheduler_kwargs" in self.pl_module_params.keys(),
-                "`lr_scheduler_kwargs` should contain the following arguments: `Tmax` and "
-                "`warmup_epochs` in order to create the optimizer.",
+                "`lr_scheduler_kwargs` should contain the following arguments: `eta_min`, "
+                "`warmup_epochs` and `scheduler_names` in order to create the optimizer.",
                 logger,
             )
 
@@ -592,7 +604,6 @@ class DeepTimeModel(PastCovariatesTorchModel):
                 "weight_decay",
                 "lambda_lr",
                 "lr",
-                "T_max",
                 "warmup_epochs",
                 "eta_min",
                 "scheduler_names",
