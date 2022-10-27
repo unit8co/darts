@@ -268,22 +268,6 @@ class _DeepTimeModule(PLPastCovariatesModule):
 
         self.adaptive_weights = RidgeRegressor()
 
-        if self.legacy_optimiser:
-            # define three parameters groups: RidgeRegressor, no decay (bias and norm), decay
-            (
-                optimiser_cls,
-                optimiser_kwg,
-                scheduler_cls,
-                scheduler_kwg,
-            ) = self.params_legacy_optimizers()
-
-            kwargs["optimizer_cls"] = optimiser_cls
-            kwargs["optimizer_kwargs"] = optimiser_kwg
-            kwargs["scheduler_cls"] = optimiser_cls
-            kwargs["scheduler_kwargs"] = optimiser_kwg
-
-            # TODO: configure_optimiser should be called again...
-
     def forward(self, x_in: Tensor) -> Tensor:
         x, _ = x_in  # x_in: (past_target|past_covariate, static_covariates)
 
@@ -327,13 +311,13 @@ class _DeepTimeModule(PLPastCovariatesModule):
         # would it be clearer with the unsqueeze operator?
         return torch.reshape(coords, (1, lookback_len + horizon_len, 1))
 
-    def params_legacy_optimizers(self):
-        """Generate arguments needed to configure the orignal article optimizer"""
+    def configure_optimizers(self):
         # we have to create copies because we cannot save model.parameters into object state (not serializable)
         optimizer_kws = {k: v for k, v in self.optimizer_kwargs.items()}
 
-        group1 = []  # lambda
-        group2 = []  # no decay
+        # define three parameters groups
+        group1 = []  # lambda (RidgeRegressor)
+        group2 = []  # no decay (bias and norm)
         group3 = []  # decay
         no_decay_list = (
             "bias",
@@ -346,75 +330,77 @@ class _DeepTimeModule(PLPastCovariatesModule):
                 group2.append(param)
             else:
                 group3.append(param)
-
-        # parameters for the optimiser
-        optimiser_class = torch.optim.Adam
-        optimiser_params = [
-            {
-                "params": group1,
-                "weight_decay": optimizer_kws["weight_decay"],
-                "lr": optimizer_kws["lambda_lr"],
-            },
-            {"params": group2, "weight_decay": optimizer_kws["weight_decay"]},
-            {"params": group3},
-        ]
-
-        # parameters for the scheduler
-        warmup_epochs = self.scheduler_kwargs["warmup_epochs"]
-        T_max = self.scheduler_kwargs["Tmax"]
-        eta_min = 0.0
-        scheduler_fns = []
-        for param_group, scheduler in zip(
-            [group1, group2, group3],
+        optimizer = torch.optim.Adam(
             [
-                "cosine_annealing",
-                "cosine_annealing_with_linear_warmup",
-                "cosine_annealing_with_linear_warmup",
+                {"params": group1, "weight_decay": 0, "lr": optimizer_kws["lambda_lr"]},
+                {"params": group2, "weight_decay": 0},
+                {"params": group3},
             ],
+            lr=optimizer_kws["lr"],
+            weight_decay=optimizer_kws["weight_decay"],
+        )
+
+        # define a scheduler for each optimizer
+        lr_sched_kws = {k: v for k, v in self.lr_scheduler_kwargs.items()}
+
+        warmup_epochs = lr_sched_kws["warmup_epochs"]
+        T_max = lr_sched_kws["T_max"]
+        eta_min = lr_sched_kws["eta_min"]
+        scheduler_fns = []
+
+        def no_scheduler(T_cur):
+            return 1
+
+        def cosine_annealing(T_cur):
+            return (
+                eta_min
+                + 0.5
+                * (eta_max - eta_min)
+                * (
+                    1.0
+                    + np.cos((T_cur - warmup_epochs) / (T_max - warmup_epochs) * np.pi)
+                )
+            ) / lr
+
+        def cosine_annealing_with_linear_warmup(T_cur):
+            if T_cur < warmup_epochs:
+                return T_cur / warmup_epochs
+            else:
+                return (
+                    eta_min
+                    + 0.5
+                    * (eta_max - eta_min)
+                    * (
+                        1.0
+                        + np.cos(
+                            (T_cur - warmup_epochs) / (T_max - warmup_epochs) * np.pi
+                        )
+                    )
+                ) / lr
+
+        for param_group, scheduler in zip(
+            optimizer.param_groups, lr_sched_kws["scheduler_names"]
         ):
-            lr = eta_max = optimizer_kws["lambda_lr"]
-            if scheduler == "cosine_annealing":
-                fn = (
-                    lambda T_cur: (
-                        eta_min
-                        + 0.5
-                        * (eta_max - eta_min)
-                        * (
-                            1.0
-                            + np.cos(
-                                (T_cur - warmup_epochs)
-                                / (T_max - warmup_epochs)
-                                * np.pi
-                            )
-                        )
-                    )
-                    / lr
-                )
+            if scheduler == "none":
+                fn = no_scheduler
+            elif scheduler == "cosine_annealing":
+                lr = eta_max = param_group["lr"]
+                fn = cosine_annealing
             elif scheduler == "cosine_annealing_with_linear_warmup":
-                fn = (
-                    lambda T_cur: T_cur / warmup_epochs
-                    if T_cur < warmup_epochs
-                    else (
-                        eta_min
-                        + 0.5
-                        * (eta_max - eta_min)
-                        * (
-                            1.0
-                            + np.cos(
-                                (T_cur - warmup_epochs)
-                                / (T_max - warmup_epochs)
-                                * np.pi
-                            )
-                        )
-                    )
-                    / lr
-                )
-
+                lr = eta_max = param_group["lr"]
+                fn = cosine_annealing_with_linear_warmup
+            else:
+                raise ValueError(f"No such scheduler, {scheduler}")
             scheduler_fns.append(fn)
-        scheduler_class = torch.optim.lr_scheduler.lambda_lr
-        scheduler_params = {"lr_lambda": scheduler_fns}
 
-        return optimiser_class, optimiser_params, scheduler_class, scheduler_params
+        lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
+            optimizer, lr_lambda=scheduler_fns
+        )
+
+        return [optimizer], {
+            "scheduler": lr_scheduler,
+            "monitor": "val_loss",
+        }
 
     # TODO: must be implemented since inheriting from PLPastCovariatesModule
     """
@@ -569,20 +555,59 @@ class DeepTimeModel(PastCovariatesTorchModel):
             f"n_fourier_feats: {n_fourier_feats} must be divisible by 2 * len(scales) = {2 * len(scales)}",
             logger,
         )
-        raise_if_not(
-            not legacy_optimiser
-            or (
-                "weight_decay" in self.pl_module_params["optimizer_kwargs"]
-                and "lambda_lr" in self.pl_module_params["optimizer_kwargs"]
-                and "lr" in self.pl_module_params["optimizer_kwargs"]
-                and "Tmax" in self.pl_module_params["scheduler_kwargs"]
-                and "warmup_epochs" in self.pl_module_params["scheduler_kwargs"]
-            ),
-            "At least one argument is missing to use the legacy optimiser. `weight_decay`, "
-            "`lambda_lr` and `lr` must be defined in `optimizer_kwargs` whereas `Tmax` and "
-            "'warmup_epochs must be defined in `scheduler_kwargs`.",
-            logger,
-        )
+
+        if legacy_optimiser:
+            self.pl_module_params["optimizer_kwargs"] = {
+                "lr": 1e-3,
+                "lambda_lr": 1.0,
+                "weight_decay": 0.0,
+            }
+
+            self.pl_module_params["lr_scheduler_kwargs"] = {
+                "warmup_epochs": 5,
+                "T_max": self.n_epochs,
+                "eta_min": 0.0,
+                "scheduler_names": [
+                    "cosine_annealing",
+                    "cosine_annealing_with_linear_warmup",
+                    "cosine_annealing_with_linear_warmup",
+                ],
+            }
+        else:
+            raise_if_not(
+                "optimizer_kwargs" in self.pl_module_params.keys(),
+                "`optimizer_kwargs` should contain the following arguments: `weight_decay`, "
+                "`lambda_lr` and `lr` in order to create the optimizer.",
+                logger,
+            )
+
+            raise_if_not(
+                "lr_scheduler_kwargs" in self.pl_module_params.keys(),
+                "`lr_scheduler_kwargs` should contain the following arguments: `Tmax` and "
+                "`warmup_epochs` in order to create the optimizer.",
+                logger,
+            )
+
+            expected_params = {
+                "weight_decay",
+                "lambda_lr",
+                "lr",
+                "T_max",
+                "warmup_epochs",
+                "eta_min",
+                "scheduler_names",
+            }
+            optimizer_params = self.pl_module_params["optimizer_kwargs"].keys()
+            scheduler_params = self.pl_module_params["lr_scheduler_kwargs"].keys()
+            provided_params = set(optimizer_params).union(set(scheduler_params))
+            missing_params = expected_params - provided_params
+            raise_if_not(
+                not legacy_optimiser and len(missing_params) == 0,
+                f"Missing argument(s) for the optimiser: {missing_params}. `weight_decay`, "
+                "`lambda_lr` and `lr` must be defined in `optimizer_kwargs` whereas `Tmax`, "
+                "`scheduler_names` and `warmup_epochs` must be defined in `scheduler_kwargs`.",
+                logger,
+            )
 
         self.inr_num_layers = inr_num_layers
         self.inr_layers_width = inr_layers_width

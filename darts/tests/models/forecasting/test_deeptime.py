@@ -50,7 +50,7 @@ if TORCH_AVAILABLE:
                 inr_layers_width=20,
                 n_fourier_feats=64,
                 scales=[0.01, 0.1, 1, 5, 10, 20, 50, 100],
-                legacy_optimiser=False,
+                legacy_optimiser=True,
                 random_state=42,
             )
             model.fit(large_ts[:98])
@@ -65,7 +65,7 @@ if TORCH_AVAILABLE:
                 inr_layers_width=20,
                 n_fourier_feats=64,
                 scales=[0.01, 0.1, 1, 5, 10, 20, 50, 100],
-                legacy_optimiser=False,
+                legacy_optimiser=True,
                 random_state=42,
             )
             model2.fit(small_ts[:98])
@@ -87,10 +87,10 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 n_epochs=10,
                 inr_num_layers=5,
-                inr_layers_width=32,
+                inr_layers_width=64,
                 n_fourier_feats=256,  # must have enough fourier components to capture low freq
                 scales=[0.01, 0.1, 1, 5, 10, 20, 50, 100],
-                legacy_optimiser=False,
+                legacy_optimiser=True,
                 random_state=42,
             )
             model.fit(series_multivariate)
@@ -114,7 +114,7 @@ if TORCH_AVAILABLE:
                 inr_layers_width=20,
                 n_fourier_feats=64,
                 scales=[0.01, 0.1, 1, 5, 10, 20, 50, 100],
-                legacy_optimiser=False,
+                legacy_optimiser=True,
                 random_state=42,
             )
             model.fit(series_multivariate, past_covariates=series_covariates)
@@ -138,7 +138,7 @@ if TORCH_AVAILABLE:
                     inr_layers_width=20,
                     n_fourier_feats=17,
                     scales=[0.01, 0.1, 1, 5, 10, 20, 50, 100],
-                    legacy_optimiser=False,
+                    legacy_optimiser=True,
                     random_state=42,
                 )
 
@@ -154,7 +154,7 @@ if TORCH_AVAILABLE:
                 inr_layers_width=20,
                 n_fourier_feats=64,
                 scales=[0.01, 0.1, 1, 5, 10, 20, 50, 100],
-                legacy_optimiser=False,
+                legacy_optimiser=True,
                 random_state=42,
             )
             model.fit(ts)
@@ -171,7 +171,7 @@ if TORCH_AVAILABLE:
                 inr_layers_width=20,
                 n_fourier_feats=64,
                 scales=[0.01, 0.1, 1, 5, 10, 20, 50, 100],
-                legacy_optimiser=False,
+                legacy_optimiser=True,
                 activation="LeakyReLU",
                 random_state=42,
             )
@@ -186,7 +186,7 @@ if TORCH_AVAILABLE:
                     inr_layers_width=20,
                     n_fourier_feats=64,
                     scales=[0.01, 0.1, 1, 5, 10, 20, 50, 100],
-                    legacy_optimiser=False,
+                    legacy_optimiser=True,
                     activation="invalid",
                     random_state=42,
                 )
