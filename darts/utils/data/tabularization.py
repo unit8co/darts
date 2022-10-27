@@ -102,14 +102,8 @@ def _create_lagged_data(
                 )
 
         # X: covariate lags
-        for idx, (df_cov, lags_cov) in enumerate(covariates):
-
-            if idx == 0:
-                covariate_name = "past"
-            else:
-                covariate_name = "future"
+        for covariate_name, (df_cov, lags_cov) in zip(["past", "future"], covariates):
             if lags_cov:
-
                 if not is_training:
                     # We extend the covariates dataframes
                     # to have the same timestamps as the target at the end
