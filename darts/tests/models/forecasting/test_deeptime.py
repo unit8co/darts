@@ -31,7 +31,7 @@ if TORCH_AVAILABLE:
             with self.assertRaises(ValueError):
                 # if a list is passed to the `layer_widths` argument, it must have a length equal to `num_stacks`
                 DeepTimeModel(
-                    input_chunk_length=1,
+                    input_chunk_length=2,
                     output_chunk_length=1,
                     inr_num_layers=3,
                     inr_layers_width=[1],
@@ -43,7 +43,7 @@ if TORCH_AVAILABLE:
 
             # Test basic fit and predict
             model = DeepTimeModel(
-                input_chunk_length=1,
+                input_chunk_length=2,
                 output_chunk_length=1,
                 n_epochs=10,
                 inr_num_layers=2,
@@ -58,7 +58,7 @@ if TORCH_AVAILABLE:
 
             # Test whether model trained on one series is better than one trained on another
             model2 = DeepTimeModel(
-                input_chunk_length=1,
+                input_chunk_length=2,
                 output_chunk_length=1,
                 n_epochs=10,
                 inr_num_layers=2,
@@ -98,6 +98,7 @@ if TORCH_AVAILABLE:
 
             # the theoretical result should be [[1.01, 1.02], [0.505, 0.51]].
             # We just test if the given result is not too far on average.
+            print(res)
             self.assertTrue(
                 abs(np.average(res - np.array([[1.01, 1.02], [0.505, 0.51]])) < 0.03)
             )
@@ -131,7 +132,7 @@ if TORCH_AVAILABLE:
                 # wrong number of scales and n_fourier feats
                 # n_fourier_feats must be divisiable by 2*len(scales)
                 DeepTimeModel(
-                    input_chunk_length=1,
+                    input_chunk_length=2,
                     output_chunk_length=1,
                     n_epochs=10,
                     inr_num_layers=2,
@@ -147,7 +148,7 @@ if TORCH_AVAILABLE:
 
             # Test basic fit and predict
             model = DeepTimeModel(
-                input_chunk_length=1,
+                input_chunk_length=2,
                 output_chunk_length=1,
                 n_epochs=10,
                 inr_num_layers=2,
@@ -164,7 +165,7 @@ if TORCH_AVAILABLE:
             ts = tg.constant_timeseries(length=50, value=10)
 
             model = DeepTimeModel(
-                input_chunk_length=1,
+                input_chunk_length=2,
                 output_chunk_length=1,
                 n_epochs=10,
                 inr_num_layers=2,
@@ -179,7 +180,7 @@ if TORCH_AVAILABLE:
 
             with self.assertRaises(ValueError):
                 model = DeepTimeModel(
-                    input_chunk_length=1,
+                    input_chunk_length=2,
                     output_chunk_length=1,
                     n_epochs=10,
                     inr_num_layers=2,

@@ -57,12 +57,6 @@ class GaussianFourierFeatureTransform(nn.Module):
             f"Expected 2 or more dimensional input (got {x.dim()}D input)",
             logger,
         )
-        dim = x.shape[-1]
-        raise_if_not(
-            dim == self.input_dim,
-            f"Expected input to have {self.input_dim} channels (got {dim} channels)",
-            logger,
-        )
 
         x = torch.einsum("... t n, n d -> ... t d", [x, self.B])
         x = 2 * np.pi * x
@@ -72,7 +66,7 @@ class GaussianFourierFeatureTransform(nn.Module):
 class INR(nn.Module):
     def __init__(
         self,
-        input_size: int,
+        input_dim: int,
         num_layers: int,
         hidden_layers_width: int,
         n_fourier_feats: int,
@@ -86,7 +80,7 @@ class INR(nn.Module):
 
         Parameters
             ----------
-            input_size
+            input_dim
                 The dimensionality of the input time series.
             num_layers
                 The number of fully connected layers.
@@ -115,7 +109,7 @@ class INR(nn.Module):
         """
         super().__init__()
 
-        self.input_size = input_size
+        self.input_dim = input_dim
         self.num_layers = num_layers
         self.n_fourier_feats = n_fourier_feats
         self.scales = scales
@@ -133,11 +127,11 @@ class INR(nn.Module):
 
         if n_fourier_feats == 0:
             feats_size = self.hidden_layers_width[0]
-            self.features = nn.Linear(self.input_size, feats_size)
+            self.features = nn.Linear(self.input_dim, feats_size)
         else:
             feats_size = self.n_fourier_feats
             self.features = GaussianFourierFeatureTransform(
-                self.input_size, feats_size, self.scales
+                self.input_dim, feats_size, self.scales
             )
 
         # Fully Connected Network
@@ -257,7 +251,7 @@ class _DeepTimeModule(PLPastCovariatesModule):
         self.activation = activation
 
         self.inr = INR(
-            input_size=self.input_chunk_length,
+            input_dim=self.input_dim + 1,
             num_layers=self.inr_num_layers,
             hidden_layers_width=self.inr_layers_width,
             n_fourier_feats=self.n_fourier_feats,
@@ -271,27 +265,11 @@ class _DeepTimeModule(PLPastCovariatesModule):
     def forward(self, x_in: Tensor) -> Tensor:
         x, _ = x_in  # x_in: (past_target|past_covariate, static_covariates)
 
-        batch_size, _, in_dim = x.shape  # x: (batch, in_len, in_dim)
-        coords = self.get_coords(self.input_chunk_length, self.output_chunk_length).to(
-            x.device
-        )
+        batch_size, _, _ = x.shape  # x: (batch_size, in_len, in_dim)
+        coords = self.get_coords(self.input_chunk_length, self.output_chunk_length)
 
-        # multivariate
-        if self.output_dim > 1:
-            time = torch.zeros(
-                size=(
-                    batch_size,
-                    self.input_chunk_length + self.output_chunk_length,
-                    self.output_dim,
-                )
-            ).to(x.device)
-            coords = coords.repeat(batch_size, 1, 1)
-            coords = torch.cat([coords, time], dim=-1)
-            time_reprs = self.inr(coords)
-        # univariate
-        else:
-            time_reprs = self.inr(coords)
-            time_reprs = time_reprs.repeat(batch_size, 1, 1)
+        time_reprs = self.inr(coords)
+        time_reprs = time_reprs.repeat(batch_size, 1, self.input_dim)
 
         lookback_reprs = time_reprs[:, : -self.output_chunk_length]
         horizon_reprs = time_reprs[:, -self.output_chunk_length :]
@@ -300,6 +278,7 @@ class _DeepTimeModule(PLPastCovariatesModule):
         # apply weights to the horizon
         y = torch.einsum("... d o, ... t d -> ... t o", [w, horizon_reprs]) + b
 
+        # taken from nbeats, could be simplified
         y = y.view(
             y.shape[0], self.output_chunk_length, self.input_dim, self.nr_params
         )[:, :, : self.output_dim, :]
