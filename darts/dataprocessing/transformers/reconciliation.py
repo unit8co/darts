@@ -147,7 +147,7 @@ class MinTReconciliator(FittableDataTransformer):
         """
         MinT Reconcilator.
 
-        This implements the MinT reconcilation approach presented in [1]_ and
+        This implements the MinT reconciliation approach presented in [1]_ and
         summarised in [2]_.
 
         Parameters

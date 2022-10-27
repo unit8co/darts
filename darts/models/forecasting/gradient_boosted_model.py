@@ -59,7 +59,7 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
             will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
             transform the generated covariates. This happens all under one hood and only needs to be specified at
             model creation.
-            Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
             ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
 
             .. highlight:: python
@@ -68,7 +68,7 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
-                    'position': {'past': ['absolute'], 'future': ['relative']},
+                    'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
                     'transformer': Scaler()
                 }
@@ -203,3 +203,14 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
 
     def _is_probabilistic(self) -> bool:
         return self.likelihood is not None
+
+    @property
+    def min_train_series_length(self) -> int:
+        # LightGBM requires a minimum of 2 train samples, therefore the min_train_series_length should be one more than
+        # for other regression models
+        return max(
+            3,
+            -self.lags["target"][0] + self.output_chunk_length + 1
+            if "target" in self.lags
+            else self.output_chunk_length,
+        )

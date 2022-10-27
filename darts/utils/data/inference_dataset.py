@@ -109,6 +109,7 @@ class GenericInferenceDataset(InferenceDataset):
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         covariate_type: CovariateType = CovariateType.PAST,
+        use_static_covariates: bool = True,
     ):
         """
         Contains (past_target, past_covariates | historic_future_covariates, future_past_covariates | future_covariate,
@@ -116,7 +117,7 @@ class GenericInferenceDataset(InferenceDataset):
 
         "future_past_covariates" are past covariates that happen to be also known in the future - those
         are needed for forecasting with n > output_chunk_length by any model relying on past covariates.
-        For this reason, when n > output_chunk_length, this dataset will also emmit the "future past_covariates".
+        For this reason, when n > output_chunk_length, this dataset will also emit the "future past_covariates".
 
         "historic_future_covariates" are historic future covariates that are given for the input_chunk in the past.
 
@@ -133,6 +134,8 @@ class GenericInferenceDataset(InferenceDataset):
             The length of the target series the model takes as input.
         output_chunk_length
             The length of the target series the model emits in output.
+        use_static_covariates
+            Whether to use/include static covariate data from input series.
         """
         super().__init__()
 
@@ -148,6 +151,7 @@ class GenericInferenceDataset(InferenceDataset):
         self.n = n
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
+        self.use_static_covariates = use_static_covariates
 
         raise_if_not(
             (covariates is None or len(self.target_series) == len(self.covariates)),
@@ -216,7 +220,11 @@ class GenericInferenceDataset(InferenceDataset):
                 else None
             )
 
-        static_covariate = target_series.static_covariates_values(copy=False)
+        if self.use_static_covariates:
+            static_covariate = target_series.static_covariates_values(copy=False)
+        else:
+            static_covariate = None
+
         return (
             past_target,
             past_covariate,
@@ -235,6 +243,7 @@ class PastCovariatesInferenceDataset(InferenceDataset):
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         covariate_type: CovariateType = CovariateType.PAST,
+        use_static_covariates: bool = True,
     ):
         """
         Contains (past_target, past_covariates, future_past_covariates, static_covariates).
@@ -242,7 +251,7 @@ class PastCovariatesInferenceDataset(InferenceDataset):
         "future_past_covariates" are past covariates that happen to be also known in the future - those
         are needed for forecasting with n > output_chunk_length by any model relying on past covariates.
 
-        For this reason, when n > output_chunk_length, this dataset will also emmit the "future past_covariates".
+        For this reason, when n > output_chunk_length, this dataset will also emit the "future past_covariates".
 
         Parameters
         ----------
@@ -256,7 +265,9 @@ class PastCovariatesInferenceDataset(InferenceDataset):
         input_chunk_length
             The length of the target series the model takes as input.
         output_chunk_length
-            The length of the target series the model emmits in output.
+            The length of the target series the model emits in output.
+        use_static_covariates
+            Whether to use/include static covariate data from input series.
         """
 
         super().__init__()
@@ -268,6 +279,7 @@ class PastCovariatesInferenceDataset(InferenceDataset):
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
             covariate_type=covariate_type,
+            use_static_covariates=use_static_covariates,
         )
 
     def __len__(self):
@@ -293,6 +305,7 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
         n: int = 1,
         input_chunk_length: int = 12,
         covariate_type: CovariateType = CovariateType.FUTURE,
+        use_static_covariates: bool = True,
     ):
         """
         Contains (past_target, future_covariates, static_covariates) tuples
@@ -308,6 +321,8 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
             Forecast horizon: The number of time steps to predict after the end of the target series.
         input_chunk_length
             The length of the target series the model takes as input.
+        use_static_covariates
+            Whether to use/include static covariate data from input series.
         """
         super().__init__()
 
@@ -318,6 +333,7 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
             input_chunk_length=input_chunk_length,
             output_chunk_length=n,
             covariate_type=covariate_type,
+            use_static_covariates=use_static_covariates,
         )
 
     def __len__(self):
@@ -338,6 +354,7 @@ class DualCovariatesInferenceDataset(InferenceDataset):
         n: int = 1,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
+        use_static_covariates: bool = True,
     ):
         """
         Contains (past_target, historic_future_covariates, future_covariates, static_covariates) tuples.
@@ -354,7 +371,9 @@ class DualCovariatesInferenceDataset(InferenceDataset):
         input_chunk_length
             The length of the target series the model takes as input.
         output_chunk_length
-            The length of the target series the model emmits in output.
+            The length of the target series the model emits in output.
+        use_static_covariates
+            Whether to use/include static covariate data from input series.
         """
         super().__init__()
 
@@ -366,6 +385,7 @@ class DualCovariatesInferenceDataset(InferenceDataset):
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
             covariate_type=CovariateType.HISTORIC_FUTURE,
+            use_static_covariates=use_static_covariates,
         )
 
         # This dataset is in charge of serving future covariates
@@ -375,6 +395,7 @@ class DualCovariatesInferenceDataset(InferenceDataset):
             n=n,
             input_chunk_length=input_chunk_length,
             covariate_type=CovariateType.FUTURE,
+            use_static_covariates=use_static_covariates,
         )
 
     def __len__(self):
@@ -415,6 +436,7 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
         n: int = 1,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
+        use_static_covariates: bool = True,
     ):
         """
         Contains (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates,
@@ -437,7 +459,9 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
         input_chunk_length
             The length of the target series the model takes as input.
         output_chunk_length
-            The length of the target series the model emmits in output.
+            The length of the target series the model emits in output.
+        use_static_covariates
+            Whether to use/include static covariate data from input series.
         """
         super().__init__()
 
@@ -449,6 +473,7 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
             covariate_type=CovariateType.PAST,
+            use_static_covariates=use_static_covariates,
         )
 
         # This dataset is in charge of serving historic and future future covariates
@@ -458,6 +483,7 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
             n=n,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
+            use_static_covariates=use_static_covariates,
         )
 
     def __len__(self):
@@ -503,6 +529,7 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
         n: int = 1,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
+        use_static_covariates: bool = True,
     ):
         """
         Contains (past_target, past_covariates, future_covariates, future_past_covariates, static_covariates) tuples.
@@ -524,7 +551,9 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
         input_chunk_length
             The length of the target series the model takes as input.
         output_chunk_length
-            The length of the target series the model emmits in output.
+            The length of the target series the model emits in output.
+        use_static_covariates
+            Whether to use/include static covariate data from input series.
         """
         super().__init__()
 
@@ -536,6 +565,7 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
             covariate_type=CovariateType.PAST,
+            use_static_covariates=use_static_covariates,
         )
 
         # This dataset is in charge of serving future covariates
@@ -545,6 +575,7 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
             n=n,
             input_chunk_length=input_chunk_length,
             covariate_type=CovariateType.FUTURE,
+            use_static_covariates=use_static_covariates,
         )
 
     def __len__(self):

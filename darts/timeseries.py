@@ -35,7 +35,7 @@ Read our `user guide on covariates <https://unit8co.github.io/darts/userguide/co
 import pickle
 from collections import defaultdict
 from inspect import signature
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -141,8 +141,6 @@ class TimeSeries:
         # As of xarray 0.18.2, this sorting discards the freq of the index for some reason
         # https://github.com/pydata/xarray/issues/5466
         # We sort only if the time axis is not already sorted (monotically increasing).
-
-        # TODO also avoid sorting if index is RangeIndex (already sorted by definition)
         self._xa = (
             xa.copy()
             if xa.get_index(self._time_dim).is_monotonic_increasing
@@ -207,7 +205,7 @@ class TimeSeries:
                 logger,
             )
         else:
-            self._freq = 1
+            self._freq = self._time_index.step
             self._freq_str = None
 
         # check static covariates
@@ -440,7 +438,8 @@ class TimeSeries:
         filepath_or_buffer
             The path to the CSV file, or the file object; consistent with the argument of `pandas.read_csv` function
         time_col
-            The time column name. If set, the column will be cast to a pandas DatetimeIndex.
+            The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains
+            timestamps) or a RangeIndex with step size of 1 (if it contains integers).
             If not set, the pandas RangeIndex will be used.
         value_cols
             A string or list of strings representing the value column(s) to be extracted from the CSV file. If set to
@@ -530,7 +529,8 @@ class TimeSeries:
         df
             The DataFrame
         time_col
-            The time column name. If set, the column will be cast to a pandas DatetimeIndex.
+            The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains
+            timestamps) or a RangeIndex with step size of 1 (if it contains integers).
             If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is
             either a pandas DatetimeIndex or a pandas RangeIndex. If a DatetimeIndex is
             used, it is better if it has no holes; alternatively setting `fill_missing_dates` can in some casees solve
@@ -703,7 +703,8 @@ class TimeSeries:
             A string or list of strings representing the columns from the DataFrame by which to extract the
             individual TimeSeries groups.
         time_col
-            The time column name. If set, the column will be cast to a pandas DatetimeIndex.
+            The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains
+            timestamps) or a RangeIndex with step size of 1 (if it contains integers).
             If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is
             either a pandas DatetimeIndex or a pandas RangeIndex. If a DatetimeIndex is
             used, it is better if it has no holes; alternatively setting `fill_missing_dates` can in some casees solve
@@ -1861,15 +1862,21 @@ class TimeSeries:
     =============
     """
 
-    def gaps(self) -> pd.DataFrame:
+    def gaps(self, mode: Literal["all", "any"] = "all") -> pd.DataFrame:
         """
-        A function to compute and return gaps in the TimeSeries.
-        Works only on deterministic time series.
+        A function to compute and return gaps in the TimeSeries. Works only on deterministic time series (1 sample).
+
+        Parameters
+        ----------
+        mode
+            Only relevant for multivariate time series. The mode defines how gaps are defined. Set to
+            'any' if a NaN value in any columns should be considered as as gaps. 'all' will only
+            consider periods where all columns' values are NaN. Defaults to 'all'.
 
         Returns
         -------
         pd.DataFrame
-            A dataframe containing a row for every gap (rows with all-NaN values in underlying DataFrame)
+            A pandas.DataFrame containing a row for every gap (rows with all-NaN values in underlying DataFrame)
             in this time series. The DataFrame contains three columns that include the start and end time stamps
             of the gap and the integer length of the gap (in `self.freq` units if the series is indexed
             by a DatetimeIndex).
@@ -1877,7 +1884,17 @@ class TimeSeries:
 
         df = self.pd_dataframe()
 
-        is_nan_series = df.isna().all(axis=1).astype(int)
+        if mode == "all":
+            is_nan_series = df.isna().all(axis=1).astype(int)
+        elif mode == "any":
+            is_nan_series = df.isna().any(axis=1).astype(int)
+        else:
+            raise_log(
+                ValueError(
+                    f"Keyword mode accepts only 'any' or 'all'. Provided {mode}"
+                ),
+                logger,
+            )
         diff = pd.Series(np.diff(is_nan_series.values), index=is_nan_series.index[:-1])
         gap_starts = diff[diff == 1].index + self._freq
         gap_ends = diff[diff == -1].index
@@ -1887,21 +1904,25 @@ class TimeSeries:
         if is_nan_series.iloc[-1] == 1:
             gap_ends = gap_ends.insert(len(gap_ends), self.end_time())
 
-        gap_df = pd.DataFrame()
-        gap_df["gap_start"] = gap_starts
-        gap_df["gap_end"] = gap_ends
+        gap_df = pd.DataFrame(columns=["gap_start", "gap_end"])
 
-        def intvl(start, end):
-            if self._has_datetime_index:
-                return pd.date_range(start=start, end=end, freq=self._freq).size
-            else:
-                return start - end
+        if gap_starts.size == 0:
+            return gap_df
+        else:
 
-        gap_df["gap_size"] = gap_df.apply(
-            lambda row: intvl(start=row.gap_start, end=row.gap_end), axis=1
-        )
+            def intvl(start, end):
+                if self._has_datetime_index:
+                    return pd.date_range(start=start, end=end, freq=self._freq).size
+                else:
+                    return int((end - start) / self._freq) + 1
 
-        return gap_df
+            gap_df["gap_start"] = gap_starts
+            gap_df["gap_end"] = gap_ends
+            gap_df["gap_size"] = gap_df.apply(
+                lambda row: intvl(start=row.gap_start, end=row.gap_end), axis=1
+            )
+
+            return gap_df
 
     def copy(self) -> "TimeSeries":
         """
@@ -1920,7 +1941,7 @@ class TimeSeries:
         self, point: Union[pd.Timestamp, float, int], after=True
     ) -> int:
         """
-        Converts a point along the time axis into an integer index.
+        Converts a point along the time axis index into an integer index ranging in (0, len(series)-1).
 
         Parameters
         ----------
@@ -1936,8 +1957,9 @@ class TimeSeries:
             In case of a ``float``, the parameter will be treated as the proportion of the time series
             that should lie before the point.
 
-            In the case of ``int``, the parameter will returned as such, provided that it is in the series. Otherwise
-            it will raise a ValueError.
+            If an ``int`` and series is datetime-indexed, the value of `point` is returned.
+            If an ``int`` and series is integer-indexed, the index position of `point` in the RangeIndex is returned
+            (accounting for steps).
         after
             If the provided pandas Timestamp is not in the time series index, whether to return the index of the
             next timestamp or the index of the previous one.
@@ -1952,12 +1974,20 @@ class TimeSeries:
             )
             point_index = int((len(self) - 1) * point)
         elif isinstance(point, (int, np.int64)):
-            raise_if(
-                point not in range(len(self)),
+            if self.has_datetime_index or (self.start_time() == 0 and self.freq == 1):
+                point_index = point
+            else:
+                point_index_float = (point - self.start_time()) / self.freq
+                point_index = int(point_index_float)
+                raise_if(
+                    point_index != point_index_float,
+                    "The provided point is not a valid index for this series.",
+                )
+            raise_if_not(
+                0 <= point_index < len(self),
                 "point (int) should be a valid index in series",
                 logger,
             )
-            point_index = point
         elif isinstance(point, pd.Timestamp):
             raise_if_not(
                 self._has_datetime_index,
@@ -2096,8 +2126,11 @@ class TimeSeries:
         self, start_ts: Union[pd.Timestamp, int], end_ts: Union[pd.Timestamp, int]
     ):
         """
-        Return a new TimeSeries, starting later than `start_ts` and ending before `end_ts`, inclusive on both ends.
-        The timestamps don't have to be in the series.
+        Return a new TimeSeries, starting later than `start_ts` and ending before `end_ts`.
+        For series having DatetimeIndex, this is inclusive on both ends. For series having a RangeIndex,
+        `end_ts` is exclusive.
+
+        `start_ts` and `end_ts` don't have to be in the series.
 
         Parameters
         ----------
@@ -2123,9 +2156,15 @@ class TimeSeries:
                 "indexed using an integer-based RangeIndex.",
                 logger,
             )
-            idx = pd.DatetimeIndex(
-                filter(lambda t: start_ts <= t <= end_ts, self._time_index)
-            )
+            if start_ts in self._time_index and end_ts in self._time_index:
+                return self[
+                    start_ts:end_ts
+                ]  # we assume this is faster than the filtering below
+            else:
+                idx = pd.DatetimeIndex(
+                    filter(lambda t: start_ts <= t <= end_ts, self._time_index)
+                )
+                return self[idx]
         else:
             raise_if(
                 self._has_datetime_index,
@@ -2133,8 +2172,23 @@ class TimeSeries:
                 "the series is indexed with a DatetimeIndex.",
                 logger,
             )
-            idx = pd.RangeIndex(start_ts, end_ts, step=1)
-        return self[idx]
+            # get closest timestamps if either start or end are not in the index
+            effective_start_ts = (
+                min(self._time_index, key=lambda t: abs(t - start_ts))
+                if start_ts not in self._time_index
+                else start_ts
+            )
+            effective_end_ts = (
+                min(self._time_index, key=lambda t: abs(t - end_ts))
+                if end_ts not in self._time_index
+                else end_ts
+            )
+            if end_ts >= effective_end_ts + self.freq:
+                # if the requested end_ts is further off from the end of the time series,
+                # we have to increase effectiv_end_ts to make the last timestamp inclusive.
+                effective_end_ts += self.freq
+            idx = pd.RangeIndex(effective_start_ts, effective_end_ts, step=self.freq)
+            return self[idx]
 
     def slice_n_points_after(
         self, start_ts: Union[pd.Timestamp, int], n: int
@@ -2249,22 +2303,37 @@ class TimeSeries:
             new_series, static_covariates=self.static_covariates
         )
 
-    def longest_contiguous_slice(self, max_gap_size: int = 0) -> "TimeSeries":
+    def longest_contiguous_slice(
+        self, max_gap_size: int = 0, mode: str = "all"
+    ) -> "TimeSeries":
         """
         Return the largest TimeSeries slice of this deterministic series that contains no gaps
         (contiguous all-NaN values) larger than `max_gap_size`.
 
         This method is only applicable to deterministic series (i.e., having 1 sample).
 
+        Parameters
+        ----------
+        max_gap_size
+            Indicate the maximum gap size that the TimeSerie can contain
+        mode
+            Only relevant for multivariate time series. The mode defines how gaps are defined. Set to
+            'any' if a NaN value in any columns should be considered as as gaps. 'all' will only
+            consider periods where all columns' values are NaN. Defaults to 'all'.
+
         Returns
         -------
         TimeSeries
             a new series constituting the largest slice of the original with no or bounded gaps
+
+        See Also
+        --------
+        TimeSeries.gaps : return the gaps in the TimeSeries
         """
         if not (np.isnan(self._xa)).any():
             return self.copy()
         stripped_series = self.strip()
-        gaps = stripped_series.gaps()
+        gaps = stripped_series.gaps(mode=mode)
         relevant_gaps = gaps[gaps["gap_size"] > max_gap_size]
 
         curr_slice_start = stripped_series.start_time()
@@ -2514,7 +2583,9 @@ class TimeSeries:
                 freq=self._freq,
             )
         else:
-            idx = pd.RangeIndex(len(self), len(self) + len(values), 1)
+            idx = pd.RangeIndex(
+                len(self), len(self) + self.freq * len(values), step=self.freq
+            )
 
         return self.append(
             self.__class__.from_times_and_values(
@@ -2578,7 +2649,7 @@ class TimeSeries:
         Notes
         -----
         If there are a large number of static covariates variables (i.e., the static covariates have a very large
-        dimension), there might be a noticable performance penalty for creating ``TimeSeries`` objects, unless
+        dimension), there might be a noticeable performance penalty for creating ``TimeSeries`` objects, unless
         the covariates already have the same ``dtype`` as the series data.
 
         Examples
@@ -2857,7 +2928,7 @@ class TimeSeries:
 
         Return a new TimeSeries instance. If `fn` takes 1 argument it is simply applied on the backing array
         of shape (time, n_components, n_samples).
-        If it takes 2 arguments, it is applied repeteadly on the (ts, value[ts]) tuples, where
+        If it takes 2 arguments, it is applied repeatedly on the (ts, value[ts]) tuples, where
         "ts" denotes a timestamp value, and "value[ts]" denote the array of values at this timestamp, of shape
         (n_components, n_samples).
 
@@ -3098,7 +3169,16 @@ class TimeSeries:
             )
             kwargs["label"] = label_to_use
 
-            p = central_series.plot(*args, **kwargs)
+            if central_series.shape[0] > 1:
+                p = central_series.plot(*args, **kwargs)
+            else:
+                p = plt.plot(
+                    [self.start_time()],
+                    central_series.values[0],
+                    "o",
+                    *args,
+                    **kwargs,
+                )
             color_used = p[0].get_color() if default_formatting else None
             kwargs["alpha"] = alpha if alpha is not None else alpha_confidence_intvls
 
@@ -3110,17 +3190,26 @@ class TimeSeries:
             ):
                 low_series = comp.quantile(q=low_quantile, dim=DIMS[2])
                 high_series = comp.quantile(q=high_quantile, dim=DIMS[2])
-                plt.fill_between(
-                    self.time_index,
-                    low_series,
-                    high_series,
-                    color=color_used,
-                    alpha=(
-                        alpha_confidence_intvls
-                        if "alpha" not in kwargs
-                        else kwargs["alpha"]
-                    ),
-                )
+                if low_series.shape[0] > 1:
+                    plt.fill_between(
+                        self.time_index,
+                        low_series,
+                        high_series,
+                        color=color_used,
+                        alpha=(
+                            alpha_confidence_intvls
+                            if "alpha" not in kwargs
+                            else kwargs["alpha"]
+                        ),
+                    )
+                else:
+                    plt.plot(
+                        [self.start_time(), self.start_time()],
+                        [low_series.values[0], high_series.values[0]],
+                        "-+",
+                        color=color_used,
+                        lw=2,
+                    )
 
         plt.legend()
         plt.title(self._xa.name)
@@ -3979,6 +4068,15 @@ class TimeSeries:
 
         .. warning::
             slices use pandas convention of including both ends of the slice.
+
+        Notes
+        -----
+        For integer-indexed series, integers or slices of integer will return the result
+        of ``isel()``. That is, if integer ``i`` is provided, it returns the ``i``-th value
+        along the series, which is not necessarily the value where the time index is equal to ``i``
+        (e.g., if the time index does not start at 0). In contrast, calling this method with a
+        ``pd.RangeIndex`` returns the result of ``sel()`` - i.e., the values where the time
+        index matches the provided range index.
         """
 
         def _check_dt():
@@ -4083,7 +4181,11 @@ class TimeSeries:
             time_idx = xa_.get_index(self._time_dim)
             if time_idx.is_integer() and not isinstance(time_idx, pd.RangeIndex):
                 xa_ = xa_.assign_coords(
-                    {self._time_dim: pd.RangeIndex(start=key, stop=key + 1)}
+                    {
+                        self._time_dim: pd.RangeIndex(
+                            start=key, stop=key + self.freq, step=self.freq
+                        )
+                    }
                 )
 
             _set_freq_in_xa(xa_)  # indexing may discard the freq so we restore it...
@@ -4313,9 +4415,9 @@ def concatenate(
                 "of the first series.",
             )
 
-            from darts.utils.timeseries_generation import _generate_index
+            from darts.utils.timeseries_generation import generate_index
 
-            tindex = _generate_index(
+            tindex = generate_index(
                 start=series[0].start_time(),
                 freq=series[0].freq_str,
                 length=da_concat.shape[0],

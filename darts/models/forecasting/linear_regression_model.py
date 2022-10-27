@@ -3,7 +3,7 @@ Linear Regression model
 -----------------------
 
 A forecasting model using a linear regression of some of the target series' lags, as well as optionally some
-covariate series' lags in order to obtain a forecast.
+covariate series lags in order to obtain a forecast.
 """
 from typing import List, Optional, Sequence, Tuple, Union
 
@@ -57,7 +57,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
             transform the generated covariates. This happens all under one hood and only needs to be specified at
             model creation.
-            Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
             ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
 
             .. highlight:: python
@@ -66,7 +66,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
-                    'position': {'past': ['absolute'], 'future': ['relative']},
+                    'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
                     'transformer': Scaler()
                 }

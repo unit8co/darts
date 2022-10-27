@@ -775,24 +775,6 @@ class TFTModel(MixedCovariatesTorchModel):
         nr_epochs_val_period
             Number of epochs to wait before evaluating the validation loss (if a validation
             ``TimeSeries`` is passed to the :func:`fit()` method). Default: ``1``.
-        torch_device_str
-            Optionally, a string indicating the torch device to use. By default, ``torch_device_str`` is ``None``
-            which will run on CPU. Set it to ``"cuda"`` to use all available GPUs or ``"cuda:i"`` to only use
-            GPU ``i`` (``i`` must be an integer). For example "cuda:0" will use the first GPU only.
-
-            .. deprecated:: v0.17.0
-                ``torch_device_str`` has been deprecated in v0.17.0 and will be removed in a future version.
-                Instead, specify this with keys ``"accelerator", "gpus", "auto_select_gpus"`` in your
-                ``pl_trainer_kwargs`` dict. Some examples for setting the devices inside the ``pl_trainer_kwargs``
-                dict:
-
-                - ``{"accelerator": "cpu"}`` for CPU,
-                - ``{"accelerator": "gpu", "gpus": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
-                - ``{"accelerator": "gpu", "gpus": -1, "auto_select_gpus": True}`` to use all available GPUS.
-
-                For more info, see here:
-                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
-                https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html#select-gpu-devices
         force_reset
             If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
             be discarded). Default: ``False``.
@@ -808,7 +790,7 @@ class TFTModel(MixedCovariatesTorchModel):
             will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
             transform the generated covariates. This happens all under one hood and only needs to be specified at
             model creation.
-            Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
             ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
 
             .. highlight:: python
@@ -817,7 +799,7 @@ class TFTModel(MixedCovariatesTorchModel):
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
-                    'position': {'past': ['absolute'], 'future': ['relative']},
+                    'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
                     'transformer': Scaler()
                 }
@@ -834,6 +816,19 @@ class TFTModel(MixedCovariatesTorchModel):
             object. Check the `PL Trainer documentation
             <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
             supported kwargs. Default: ``None``.
+            Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
+            "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
+            dict:
+
+
+            - ``{"accelerator": "cpu"}`` for CPU,
+            - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
+            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
+
+            For more info, see here:
+            https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
+            https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus
+
             With parameter ``"callbacks"`` you can add custom or PyTorch-Lightning built-in callbacks to Darts'
             :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.
             The model will stop training early if the validation loss `val_loss` does not improve beyond
@@ -1110,6 +1105,7 @@ class TFTModel(MixedCovariatesTorchModel):
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             max_samples_per_ts=max_samples_per_ts,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
@@ -1133,6 +1129,7 @@ class TFTModel(MixedCovariatesTorchModel):
             n=n,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
+            use_static_covariates=self._supports_static_covariates(),
         )
 
     @staticmethod

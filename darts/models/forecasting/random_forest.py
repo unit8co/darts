@@ -3,7 +3,7 @@ Random Forest
 -------------
 
 A forecasting model using a random forest regression. It uses some of the target series' lags, as well as optionally
-some covariate series' lags in order to obtain a forecast.
+some covariate series lags in order to obtain a forecast.
 
 See [1]_ for a reference around random forests.
 
@@ -62,7 +62,7 @@ class RandomForest(RegressionModel):
             will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
             transform the generated covariates. This happens all under one hood and only needs to be specified at
             model creation.
-            Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
             ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
 
             .. highlight:: python
@@ -71,7 +71,7 @@ class RandomForest(RegressionModel):
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
-                    'position': {'past': ['absolute'], 'future': ['relative']},
+                    'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
                     'transformer': Scaler()
                 }

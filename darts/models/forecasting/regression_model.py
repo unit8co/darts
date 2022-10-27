@@ -28,15 +28,15 @@ from collections import OrderedDict
 from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
-import pandas as pd
 from catboost import CatBoostRegressor
 from sklearn.linear_model import LinearRegression
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
+from darts.utils.data.tabularization import _create_lagged_data
 from darts.utils.multioutput import MultiOutputRegressor
-from darts.utils.utils import _check_quantiles
+from darts.utils.utils import _check_quantiles, seq2series, series2seq
 
 logger = get_logger(__name__)
 
@@ -78,7 +78,7 @@ class RegressionModel(GlobalForecastingModel):
             will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
             transform the generated covariates. This happens all under one hood and only needs to be specified at
             model creation.
-            Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
             ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
 
             .. highlight:: python
@@ -87,7 +87,7 @@ class RegressionModel(GlobalForecastingModel):
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'future': ['hour', 'dayofweek']},
-                    'position': {'past': ['absolute'], 'future': ['relative']},
+                    'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
                     'transformer': Scaler()
                 }
@@ -158,7 +158,7 @@ class RegressionModel(GlobalForecastingModel):
             raise_if(
                 isinstance(lags_future_covariates[0], bool)
                 or isinstance(lags_future_covariates[1], bool),
-                "`lags_future_covariates` tuple must contain intergers, not bool",
+                "`lags_future_covariates` tuple must contain integers, not bool",
             )
 
         # set lags
@@ -249,7 +249,7 @@ class RegressionModel(GlobalForecastingModel):
             takes_future_covariates,
         )
 
-    def _get_encoders_n(self, n):
+    def _get_encoders_n(self, n) -> int:
         """Returns the `n` encoder prediction steps specific to RegressionModels.
         This will generate slightly more past covariates than the minimum requirement when using past and future
         covariate lags simultaneously. This is because encoders were written for TorchForecastingModels where we only
@@ -270,6 +270,14 @@ class RegressionModel(GlobalForecastingModel):
             else self.output_chunk_length,
         )
 
+    def get_multioutput_estimator(self, horizon, target_dim):
+        raise_if_not(
+            isinstance(self.model, MultiOutputRegressor),
+            "The sklearn model is not a MultiOutputRegressor object.",
+        )
+
+        return self.model.estimators_[horizon + target_dim]
+
     def _get_last_prediction_time(self, series, forecast_horizon, overlap_end):
         # overrides the ForecastingModel _get_last_prediction_time, taking care of future lags if any
         extra_shift = max(0, max(lags[-1] for lags in self.lags.values()))
@@ -284,89 +292,22 @@ class RegressionModel(GlobalForecastingModel):
     def _create_lagged_data(
         self, target_series, past_covariates, future_covariates, max_samples_per_ts
     ):
-        """
-        Helper function that creates training/validation matrices (X and y as required in sklearn), given series and
-        max_samples_per_ts.
+        lags = self.lags.get("target")
+        lags_past_covariates = self.lags.get("past")
+        lags_future_covariates = self.lags.get("future")
 
-        X has the following structure:
-        lags_target | lags_past_covariates | lags_future_covariates
+        training_samples, training_labels, _ = _create_lagged_data(
+            target_series=target_series,
+            output_chunk_length=self.output_chunk_length,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            lags=lags,
+            lags_past_covariates=lags_past_covariates,
+            lags_future_covariates=lags_future_covariates,
+            max_samples_per_ts=max_samples_per_ts,
+        )
 
-        Where each lags_X has the following structure (lags_X=[-2,-1] and X has 2 components):
-        lag_-2_comp_1_X | lag_-2_comp_2_X | lag_-1_comp_1_X | lag_-1_comp_2_X
-
-        y has the following structure (output_chunk_length=4 and target has 2 components):
-        lag_+0_comp_1_target | lag_+0_comp_2_target | ... | lag_+3_comp_1_target | lag_+3_comp_2_target
-        """
-
-        # ensure list of TimeSeries format
-        if isinstance(target_series, TimeSeries):
-            target_series = [target_series]
-            past_covariates = [past_covariates] if past_covariates else None
-            future_covariates = [future_covariates] if future_covariates else None
-
-        Xs, ys = [], []
-        # iterate over series
-        for idx, target_ts in enumerate(target_series):
-            covariates = [
-                (
-                    past_covariates[idx].pd_dataframe(copy=False)
-                    if past_covariates
-                    else None,
-                    self.lags.get("past"),
-                ),
-                (
-                    future_covariates[idx].pd_dataframe(copy=False)
-                    if future_covariates
-                    else None,
-                    self.lags.get("future"),
-                ),
-            ]
-
-            df_X = []
-            df_y = []
-            df_target = target_ts.pd_dataframe(copy=False)
-
-            # y: output chunk length lags of target
-            for future_target_lag in range(self.output_chunk_length):
-                df_y.append(df_target.shift(-future_target_lag))
-
-            # X: target lags
-            if "target" in self.lags:
-                for lag in self.lags["target"]:
-                    df_X.append(df_target.shift(-lag))
-
-            # X: covariate lags
-            for df_cov, lags in covariates:
-                if lags:
-                    for lag in lags:
-                        df_X.append(df_cov.shift(-lag))
-
-            # combine lags
-            df_X = pd.concat(df_X, axis=1)
-            df_y = pd.concat(df_y, axis=1)
-            df_X_y = pd.concat([df_X, df_y], axis=1)
-            X_y = df_X_y.dropna().values
-
-            # keep most recent max_samples_per_ts samples
-            if max_samples_per_ts:
-                X_y = X_y[-max_samples_per_ts:]
-
-            raise_if(
-                X_y.shape[0] == 0,
-                "Unable to build any training samples of the target series "
-                + (f"at index {idx} " if len(target_series) > 1 else "")
-                + "and the corresponding covariate series; "
-                "There is no time step for which all required lags are available and are not NaN values.",
-            )
-
-            X, y = np.split(X_y, [df_X.shape[1]], axis=1)
-            Xs.append(X)
-            ys.append(y)
-
-        # combine samples from all series
-        X = np.concatenate(Xs, axis=0)
-        y = np.concatenate(ys, axis=0)
-        return X, y
+        return training_samples, training_labels
 
     def _fit_model(
         self,
@@ -423,57 +364,38 @@ class RegressionModel(GlobalForecastingModel):
         **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
         """
+        # guarantee that all inputs are either list of TimeSeries or None
+        series = series2seq(series)
+        past_covariates = series2seq(past_covariates)
+        future_covariates = series2seq(future_covariates)
 
         self.encoders = self.initialize_encoders()
         if self.encoders.encoding_available:
-            past_covariates, future_covariates = self.encoders.encode_train(
-                target=series,
-                past_covariate=past_covariates,
-                future_covariate=future_covariates,
+            past_covariates, future_covariates = self.generate_fit_encodings(
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
             )
 
-        super().fit(
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-        )
+        for covs, name in zip([past_covariates, future_covariates], ["past", "future"]):
+            raise_if(
+                covs is not None and name not in self.lags,
+                f"`{name}_covariates` not None in `fit()` method call, but `lags_{name}_covariates` is None in "
+                f"constructor.",
+            )
 
-        raise_if(
-            past_covariates is not None and "past" not in self.lags,
-            "`past_covariates` not None in `fit()` method call, but `lags_past_covariates` is None in constructor.",
-        )
-
-        raise_if(
-            past_covariates is None and "past" in self.lags,
-            "`past_covariates` is None in `fit()` method call, but `lags_past_covariates` is not None in "
-            "constructor.",
-        )
-
-        raise_if(
-            future_covariates is not None and "future" not in self.lags,
-            "`future_covariates` not None in `fit()` method call, but `lags_future_covariates` is None in "
-            "constructor.",
-        )
-
-        raise_if(
-            future_covariates is None and "future" in self.lags,
-            "`future_covariates` is None in `fit()` method call, but `lags_future_covariates` is not None in "
-            "constructor.",
-        )
+            raise_if(
+                covs is None and name in self.lags,
+                f"`{name}_covariates` is None in `fit()` method call, but `lags_{name}_covariates` is not None in "
+                "constructor.",
+            )
 
         # saving the dims of all input series to check at prediction time
-        if isinstance(series, TimeSeries):
-            self.input_dim = {
-                "target": series.width,
-                "past": past_covariates.width if past_covariates else None,
-                "future": future_covariates.width if future_covariates else None,
-            }
-        else:
-            self.input_dim = {
-                "target": series[0].width,
-                "past": past_covariates[0].width if past_covariates else None,
-                "future": future_covariates[0].width if future_covariates else None,
-            }
+        self.input_dim = {
+            "target": series[0].width,
+            "past": past_covariates[0].width if past_covariates else None,
+            "future": future_covariates[0].width if future_covariates else None,
+        }
 
         # if multi-output regression
         if not series[0].is_univariate or self.output_chunk_length > 1:
@@ -504,6 +426,12 @@ class RegressionModel(GlobalForecastingModel):
             and n_jobs_multioutput_wrapper is not None
         ):
             logger.warning("Provided `n_jobs_multioutput_wrapper` wasn't used.")
+
+        super().fit(
+            series=seq2series(series),
+            past_covariates=seq2series(past_covariates),
+            future_covariates=seq2series(future_covariates),
+        )
 
         self._fit_model(
             series, past_covariates, future_covariates, max_samples_per_ts, **kwargs
@@ -548,16 +476,6 @@ class RegressionModel(GlobalForecastingModel):
             logger,
         )
 
-        if self.encoders.encoding_available:
-            past_covariates, future_covariates = self.encoders.encode_inference(
-                n=self._get_encoders_n(n),
-                target=series,
-                past_covariate=past_covariates,
-                future_covariate=future_covariates,
-            )
-
-        super().predict(n, series, past_covariates, future_covariates, num_samples)
-
         if series is None:
             # then there must be a single TS, and that was saved in super().fit as self.training_series
             raise_if(
@@ -566,20 +484,27 @@ class RegressionModel(GlobalForecastingModel):
             )
             series = self.training_series
 
-        if past_covariates is None and self.past_covariate_series is not None:
-            past_covariates = self.past_covariate_series
-        if future_covariates is None and self.future_covariate_series is not None:
-            future_covariates = self.future_covariate_series
+        called_with_single_series = True if isinstance(series, TimeSeries) else False
 
-        called_with_single_series = False
+        # guarantee that all inputs are either list of TimeSeries or None
+        series = series2seq(series)
+        past_covariates = series2seq(past_covariates)
+        future_covariates = series2seq(future_covariates)
 
-        if isinstance(series, TimeSeries):
-            called_with_single_series = True
-            series = [series]
-            past_covariates = [past_covariates] if past_covariates is not None else None
-            future_covariates = (
-                [future_covariates] if future_covariates is not None else None
+        if self.encoders.encoding_available:
+            past_covariates, future_covariates = self.generate_predict_encodings(
+                n=n,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
             )
+
+        if past_covariates is None and self.past_covariate_series is not None:
+            past_covariates = series2seq(self.past_covariate_series)
+        if future_covariates is None and self.future_covariate_series is not None:
+            future_covariates = series2seq(self.future_covariate_series)
+
+        super().predict(n, series, past_covariates, future_covariates, num_samples)
 
         # check that the input sizes of the target series and covariates match
         pred_input_dim = {
@@ -636,22 +561,24 @@ class RegressionModel(GlobalForecastingModel):
                         f"but it ranges only from {cov.start_time()} until {cov.end_time()}.",
                     )
 
-                    if cov.has_datetime_index:
-                        covariate_matrices[cov_type].append(
-                            cov[first_req_ts:last_req_ts].values()
-                        )
-                    else:
-                        # include last_req_ts when slicing series with integer indices
-                        covariate_matrices[cov_type].append(
-                            cov[first_req_ts : last_req_ts + 1].values()
-                        )
+                    # Note: we use slice() rather than the [] operator because
+                    # for integer-indexed series [] does not act on the time index.
+                    last_req_ts = (
+                        # For range indexes, we need to make the end timestamp inclusive here
+                        last_req_ts + ts.freq
+                        if ts.has_range_index
+                        else last_req_ts
+                    )
+                    covariate_matrices[cov_type].append(
+                        cov.slice(first_req_ts, last_req_ts).values(copy=False)
+                    )
 
                 covariate_matrices[cov_type] = np.stack(covariate_matrices[cov_type])
 
         series_matrix = None
         if "target" in self.lags:
             series_matrix = np.stack(
-                [ts[self.lags["target"][0] :].values() for ts in series]
+                [ts[self.lags["target"][0] :].values(copy=False) for ts in series]
             )
 
         # repeat series_matrix to shape (num_samples * num_series, n_lags, n_components)

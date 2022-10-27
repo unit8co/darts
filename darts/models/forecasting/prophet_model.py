@@ -155,7 +155,7 @@ class Prophet(DualCovariatesForecastingModel):
         predict_df = self._generate_predict_df(n=n, future_covariates=future_covariates)
 
         if num_samples == 1:
-            forecast = self.model.predict(predict_df)["yhat"].values
+            forecast = self.model.predict(predict_df, vectorized=True)["yhat"].values
         else:
             forecast = np.expand_dims(
                 self._stochastic_samples(predict_df, n_samples=num_samples), axis=1
@@ -203,7 +203,7 @@ class Prophet(DualCovariatesForecastingModel):
 
         predict_df["trend"] = self.model.predict_trend(predict_df)
 
-        forecast = self.model.sample_posterior_predictive(predict_df)
+        forecast = self.model.sample_posterior_predictive(predict_df, vectorized=True)
 
         # reset default number of uncertainty_samples
         self.model.uncertainty_samples = n_samples_default
@@ -221,7 +221,7 @@ class Prophet(DualCovariatesForecastingModel):
 
         predict_df = self._generate_predict_df(n=n, future_covariates=future_covariates)
 
-        return self.model.predict(predict_df)
+        return self.model.predict(predict_df, vectorized=True)
 
     def add_seasonality(
         self,
@@ -231,7 +231,7 @@ class Prophet(DualCovariatesForecastingModel):
         prior_scale: Optional[float] = None,
         mode: Optional[str] = None,
     ) -> None:
-        """Adds a custom seasonality to the model that reapeats after every n `seasonal_periods` timesteps.
+        """Adds a custom seasonality to the model that repeats after every n `seasonal_periods` timesteps.
         An example for `seasonal_periods`: If you have hourly data (frequency='H') and your seasonal cycle repeats
         after 48 hours -> `seasonal_periods=48`.
 

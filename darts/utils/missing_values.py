@@ -70,7 +70,7 @@ def fill_missing_values(
 
 
 def extract_subseries(
-    series: TimeSeries, min_gap_size: Optional[int] = 1
+    series: TimeSeries, min_gap_size: Optional[int] = 1, mode: str = "all"
 ) -> List[TimeSeries]:
     """
     Partitions the series into a sequence of sub-series by using significant gaps of missing values
@@ -83,10 +83,18 @@ def extract_subseries(
     min_gap_size
         The minimum number of contiguous missing values to consider a gap as significant. Defaults to 1.
 
+    mode
+        Only for multivariate TimeSeries. The definition of a gap; presence of a NaN in any column ("any")
+        or NaNs in all the columns ("all") for a given timestamp. Defaults to "all".
+
     Returns
     -------
     subseries
         A list of TimeSeries, sub-series without significant gaps of missing values
+
+    See Also
+    --------
+    TimeSeries.gaps : return the gaps in the TimeSeries
     """
 
     # Remove null values from the series extremes
@@ -97,15 +105,19 @@ def extract_subseries(
         return [series]
 
     # Get start/end times of sub-series without gaps of missing values
-    gaps_df = series.gaps().query(f"gap_size>={min_gap_size}")
-    start_times = [series.start_time()] + (gaps_df["gap_end"] + freq).to_list()
-    end_times = (gaps_df["gap_start"] - freq).to_list() + [series.end_time() + freq]
+    gaps_df = series.gaps(mode=mode)
+    if gaps_df.empty:
+        return series
+    else:
+        gaps_df = gaps_df.query(f"gap_size>={min_gap_size}")
+        start_times = [series.start_time()] + (gaps_df["gap_end"] + freq).to_list()
+        end_times = (gaps_df["gap_start"] - freq).to_list() + [series.end_time() + freq]
 
-    subseries = []
-    for start, end in zip(start_times, end_times):
-        subseries.append(series[start:end])
+        subseries = []
+        for start, end in zip(start_times, end_times):
+            subseries.append(series[start:end])
 
-    return subseries
+        return subseries
 
 
 def _const_fill(series: TimeSeries, fill: float = 0) -> TimeSeries:

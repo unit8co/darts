@@ -476,7 +476,7 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
                 batch_prediction[-1] = batch_prediction[-1][:, :roll_size, :]
 
             # ==========> PAST INPUT <==========
-            # roll over input series to contain the latest target and covariate
+            # roll over input series to contain the latest target and covariates
             input_past = torch.roll(input_past, -roll_size, 1)
 
             # update target input to include next `roll_size` predictions
@@ -658,7 +658,7 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
                 batch_prediction[-1] = batch_prediction[-1][:, :roll_size, :]
 
             # ==========> PAST INPUT <==========
-            # roll over input series to contain the latest target and covariate
+            # roll over input series to contain the latest target and covariates
             input_past = torch.roll(input_past, -roll_size, 1)
 
             # update target input to include next `roll_size` predictions

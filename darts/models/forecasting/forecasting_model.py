@@ -27,6 +27,7 @@ import numpy as np
 import pandas as pd
 
 from darts import metrics
+from darts.dataprocessing.encoders import SequentialEncoder
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
 from darts.utils import (
@@ -36,7 +37,6 @@ from darts.utils import (
     _retrain_wrapper,
     _with_sanity_checks,
 )
-from darts.utils.data.encoders import SequentialEncoder
 from darts.utils.timeseries_generation import (
     _build_forecast_series,
     _generate_new_dates,
@@ -109,7 +109,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         # This is only used if the model has been fit on one time series.
         self.training_series: Optional[TimeSeries] = None
 
-        # Static covariates sample from the (first) target series used for training the model through the `fit()`
+        # static covariates sample from the (first) target series used for training the model through the `fit()`
         # function.
         self.static_covariates: Optional[pd.DataFrame] = None
 
@@ -149,7 +149,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     def _supports_range_index(self) -> bool:
         """Checks if the forecasting model supports a range index.
-        Some models may not support this, if for instance the rely on underlying dates.
+        Some models may not support this, if for instance they rely on underlying dates.
 
         By default, returns True. Needs to be overwritten by models that do not support
         range indexing and raise meaningful exception.
@@ -274,7 +274,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         args
             The args parameter(s) provided to the historical_forecasts function.
         kwargs
-            The kwargs paramter(s) provided to the historical_forecasts function.
+            The kwargs parameter(s) provided to the historical_forecasts function.
 
         Raises
         ------
@@ -525,7 +525,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     pd.RangeIndex(
                         start=last_points_times[0],
                         stop=last_points_times[-1] + 1,
-                        step=1,
+                        step=series.freq * stride,
                     ),
                     np.array(last_points_values),
                     columns=series.columns,
@@ -627,7 +627,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             A function that takes two ``TimeSeries`` instances as inputs and returns an error value.
         reduction
             A function used to combine the individual error scores obtained when `last_points_only` is set to False.
-            If explicitely set to `None`, the method will return a list of the individual error scores instead.
+            If explicitly set to `None`, the method will return a list of the individual error scores instead.
             Set to ``np.mean`` by default.
         verbose
             Whether to print progress
@@ -878,6 +878,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def residuals(
         self,
         series: TimeSeries,
+        past_covariates: Optional[TimeSeries] = None,
+        future_covariates: Optional[TimeSeries] = None,
         forecast_horizon: int = 1,
         retrain: bool = True,
         verbose: bool = False,
@@ -894,13 +896,17 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Most commonly, the term "residuals" implies a value for `forecast_horizon` of 1; but
         this can be configured.
 
-        This method works only on univariate series and does not currently support covariates. It uses the median
+        This method works only on univariate series. It uses the median
         prediction (when dealing with stochastic forecasts).
 
         Parameters
         ----------
         series
             The univariate TimeSeries instance which the residuals will be computed for.
+        past_covariates
+            One or several past-observed covariate time series.
+        future_covariates
+            One or several future-known covariate time series.
         forecast_horizon
             The forecasting horizon used to predict each fitted value.
         retrain
@@ -913,7 +919,25 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         TimeSeries
             The vector of residuals.
         """
-        series._assert_univariate()
+        try:
+            series._assert_univariate()
+        except (AttributeError, TypeError):
+            raise ValueError(
+                "series must be of type TimeSeries. "
+                "If Sequence[TimeSeries] is provided, select the series to compute residuals for."
+            )
+
+        if past_covariates is not None:
+            raise_if_not(
+                isinstance(past_covariates, TimeSeries),
+                "past_covariates should be of type TimeSeries",
+            )
+
+        if future_covariates is not None:
+            raise_if_not(
+                isinstance(future_covariates, TimeSeries),
+                "future_covariates should be of type TimeSeries",
+            )
 
         # get first index not contained in the first training set
         first_index = series.time_index[self.min_train_series_length]
@@ -921,6 +945,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         # compute fitted values
         p = self.historical_forecasts(
             series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
             start=first_index,
             forecast_horizon=forecast_horizon,
             stride=1,
@@ -1252,6 +1278,98 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             takes_future_covariates=takes_future_covariates,
         )
 
+    def generate_fit_encodings(
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+    ) -> Tuple[
+        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
+    ]:
+        """Generates the covariate encodings that were used/generated for fitting the model and returns a tuple of
+        past, and future covariates series with the original and encoded covariates stacked together. The encodings are
+        generated by the encoders defined at model creation with parameter `add_encoders`. Pass the same `series`,
+        `past_covariates`, and  `future_covariates` that you used to train/fit the model.
+
+        Parameters
+        ----------
+        series
+            The series or sequence of series with the target values used when fitting the model.
+        past_covariates
+            Optionally, the series or sequence of series with the past-observed covariates used when fitting the model.
+        future_covariates
+            Optionally, the series or sequence of series with the future-known covariates used when fitting the model.
+
+        Returns
+        -------
+        Tuple[Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]]
+            A tuple of (past covariates, future covariates). Each covariate contains the original as well as the
+            encoded covariates.
+        """
+        raise_if(
+            self.encoders is None or not self.encoders.encoding_available,
+            "Encodings are not available. Consider adding parameter `add_encoders` at model creation and fitting the "
+            "model with `model.fit()` before.",
+            logger=logger,
+        )
+        return self.encoders.encode_train(
+            target=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
+    def generate_predict_encodings(
+        self,
+        n: int,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+    ) -> Tuple[
+        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
+    ]:
+        """Generates covariate encodings for the inference/prediction set and returns a tuple of past, and future
+        covariates series with the original and encoded covariates stacked together. The encodings are generated by the
+        encoders defined at model creation with parameter `add_encoders`. Pass the same `series`, `past_covariates`,
+        and `future_covariates` that you intend to use for prediction.
+
+        Parameters
+        ----------
+        n
+            The number of prediction time steps after the end of `series` intended to be used for prediction.
+        series
+            The series or sequence of series with target values intended to be used for prediction.
+        past_covariates
+            Optionally, the past-observed covariates series intended to be used for prediction. The dimensions must
+            match those of the covariates used for training.
+        future_covariates
+            Optionally, the future-known covariates series intended to be used for prediction. The dimensions must
+            match those of the covariates used for training.
+
+        Returns
+        -------
+        Tuple[Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]]
+            A tuple of (past covariates, future covariates). Each covariate contains the original as well as the
+            encoded covariates.
+        """
+        raise_if(
+            self.encoders is None or not self.encoders.encoding_available,
+            "Encodings are not available. Consider adding parameter `add_encoders` at model creation and fitting the "
+            "model with `model.fit()` before.",
+            logger=logger,
+        )
+        return self.encoders.encode_inference(
+            n=self._get_encoders_n(n),
+            target=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
+    def _get_encoders_n(self, n) -> int:
+        """Returns the number of prediction steps for generating with `model.encoders.generate_predict_encodings()`.
+        Subclasses can have different requirements for setting `n`. The most general case simply returns `n` as is.
+        """
+        return n
+
 
 class DualCovariatesForecastingModel(ForecastingModel, ABC):
     """The base class for the forecasting models that are not global, but support future covariates.
@@ -1486,7 +1604,7 @@ class TransferableDualCovariatesForecastingModel(DualCovariatesForecastingModel,
                 future_covariates,
             ) = future_covariates.split_after(series.end_time())
 
-            # in case future covariate have more values on the left end side that we don't need
+            # in case future covariates have more values on the left end side that we don't need
             if not series.has_same_time_as(historic_future_covariates):
                 historic_future_covariates = historic_future_covariates.slice_intersect(
                     series
