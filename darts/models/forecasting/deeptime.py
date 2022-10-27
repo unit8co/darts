@@ -206,6 +206,7 @@ class _DeepTimeModule(PLPastCovariatesModule):
         inr_layers_width: Union[int, List[int]],
         n_fourier_feats: int,
         scales: list[float],
+        legacy_optimiser: bool,
         dropout: float,
         activation: str,
         **kwargs,
@@ -228,6 +229,8 @@ class _DeepTimeModule(PLPastCovariatesModule):
             Number of Fourier components to sample to represent to time-serie in the frequency domain
         scales
             Scaling factors applied to the normal distribution sampled for Fourier components' magnitude
+        legacy_optimiser
+            Determine if the optimiser policy defined in the original article should be used
         dropout
             The dropout probability to be used in fully connected layers (default=0). This is compatible with
             Monte Carlo dropout at inference time for model uncertainty estimation (enabled with
@@ -248,11 +251,11 @@ class _DeepTimeModule(PLPastCovariatesModule):
         self.inr_layers_width = inr_layers_width
         self.n_fourier_feats = n_fourier_feats
         self.scales = scales
+        self.legacy_optimiser = legacy_optimiser
 
         self.dropout = dropout
         self.activation = activation
 
-        # single INR for both univariate and multivariate
         self.inr = INR(
             input_size=self.input_chunk_length,
             num_layers=self.inr_num_layers,
@@ -263,8 +266,23 @@ class _DeepTimeModule(PLPastCovariatesModule):
             activation=self.activation,
         )
 
-        # lambda_ constructor argument should be connected to torch lightning
         self.adaptive_weights = RidgeRegressor()
+
+        if self.legacy_optimiser:
+            # define three parameters groups: RidgeRegressor, no decay (bias and norm), decay
+            (
+                optimiser_cls,
+                optimiser_kwg,
+                scheduler_cls,
+                scheduler_kwg,
+            ) = self.params_legacy_optimizers()
+
+            kwargs["optimizer_cls"] = optimiser_cls
+            kwargs["optimizer_kwargs"] = optimiser_kwg
+            kwargs["scheduler_cls"] = optimiser_cls
+            kwargs["scheduler_kwargs"] = optimiser_kwg
+
+            # TODO: configure_optimiser should be called again...
 
     def forward(self, x_in: Tensor) -> Tensor:
         x, _ = x_in  # x_in: (past_target|past_covariate, static_covariates)
@@ -273,15 +291,6 @@ class _DeepTimeModule(PLPastCovariatesModule):
         coords = self.get_coords(self.input_chunk_length, self.output_chunk_length).to(
             x.device
         )
-
-        """
-        I don't understand why this code is there... Why would the time have last dim greater than 0?!
-        if y_time.shape[-1] != 0:
-            time = torch.cat([x_time, y_time], dim=1)
-            coords = repeat(coords, '1 t 1 -> b t 1', b=time.shape[0])
-            coords = torch.cat([coords, time], dim=-1)
-            time_reprs = self.inr(coords)
-        """
 
         # multivariate
         if self.output_dim > 1:
@@ -318,6 +327,104 @@ class _DeepTimeModule(PLPastCovariatesModule):
         # would it be clearer with the unsqueeze operator?
         return torch.reshape(coords, (1, lookback_len + horizon_len, 1))
 
+    def params_legacy_optimizers(self):
+        """Generate arguments needed to configure the orignal article optimizer"""
+        # we have to create copies because we cannot save model.parameters into object state (not serializable)
+        optimizer_kws = {k: v for k, v in self.optimizer_kwargs.items()}
+
+        group1 = []  # lambda
+        group2 = []  # no decay
+        group3 = []  # decay
+        no_decay_list = (
+            "bias",
+            "norm",
+        )
+        for param_name, param in self.named_parameters():
+            if "_lambda" in param_name:
+                group1.append(param)
+            elif any([mod in param_name for mod in no_decay_list]):
+                group2.append(param)
+            else:
+                group3.append(param)
+
+        # parameters for the optimiser
+        optimiser_class = torch.optim.Adam
+        optimiser_params = [
+            {
+                "params": group1,
+                "weight_decay": optimizer_kws["weight_decay"],
+                "lr": optimizer_kws["lambda_lr"],
+            },
+            {"params": group2, "weight_decay": optimizer_kws["weight_decay"]},
+            {"params": group3},
+        ]
+
+        # parameters for the scheduler
+        warmup_epochs = self.scheduler_kwargs["warmup_epochs"]
+        T_max = self.scheduler_kwargs["Tmax"]
+        eta_min = 0.0
+        scheduler_fns = []
+        for param_group, scheduler in zip(
+            [group1, group2, group3],
+            [
+                "cosine_annealing",
+                "cosine_annealing_with_linear_warmup",
+                "cosine_annealing_with_linear_warmup",
+            ],
+        ):
+            lr = eta_max = optimizer_kws["lambda_lr"]
+            if scheduler == "cosine_annealing":
+                fn = (
+                    lambda T_cur: (
+                        eta_min
+                        + 0.5
+                        * (eta_max - eta_min)
+                        * (
+                            1.0
+                            + np.cos(
+                                (T_cur - warmup_epochs)
+                                / (T_max - warmup_epochs)
+                                * np.pi
+                            )
+                        )
+                    )
+                    / lr
+                )
+            elif scheduler == "cosine_annealing_with_linear_warmup":
+                fn = (
+                    lambda T_cur: T_cur / warmup_epochs
+                    if T_cur < warmup_epochs
+                    else (
+                        eta_min
+                        + 0.5
+                        * (eta_max - eta_min)
+                        * (
+                            1.0
+                            + np.cos(
+                                (T_cur - warmup_epochs)
+                                / (T_max - warmup_epochs)
+                                * np.pi
+                            )
+                        )
+                    )
+                    / lr
+                )
+
+            scheduler_fns.append(fn)
+        scheduler_class = torch.optim.lr_scheduler.lambda_lr
+        scheduler_params = {"lr_lambda": scheduler_fns}
+
+        return optimiser_class, optimiser_params, scheduler_class, scheduler_params
+
+    # TODO: must be implemented since inheriting from PLPastCovariatesModule
+    """
+    def _produce_train_output():
+        raise NotImplementedError()
+
+    def _get_batch_prediction():
+        raise NotImplementedError()
+    """
+
 
 class DeepTimeModel(PastCovariatesTorchModel):
     def __init__(
@@ -328,6 +435,7 @@ class DeepTimeModel(PastCovariatesTorchModel):
         inr_layers_width: Union[int, List[int]] = 256,
         n_fourier_feats: int = 4096,
         scales: list[float] = [0.01, 0.1, 1, 5, 10, 20, 50, 100],
+        legacy_optimiser: bool = True,
         dropout: float = 0.1,
         activation: str = "ReLU",
         **kwargs,
@@ -355,6 +463,8 @@ class DeepTimeModel(PastCovariatesTorchModel):
             Number of Fourier components to sample to represent to time-serie in the frequency domain
         scales
             Scaling factors applied to the normal distribution sampled for Fourier components' magnitude
+        legacy_optimiser
+            Determine if the optimiser policy defined in the original article should be used (default=True).
         dropout
             The dropout probability to be used in fully connected layers (default=0). This is compatible with
             Monte Carlo dropout at inference time for model uncertainty estimation (enabled with
@@ -459,11 +569,26 @@ class DeepTimeModel(PastCovariatesTorchModel):
             f"n_fourier_feats: {n_fourier_feats} must be divisible by 2 * len(scales) = {2 * len(scales)}",
             logger,
         )
+        raise_if_not(
+            not legacy_optimiser
+            or (
+                "weight_decay" in self.pl_module_params["optimizer_kwargs"]
+                and "lambda_lr" in self.pl_module_params["optimizer_kwargs"]
+                and "lr" in self.pl_module_params["optimizer_kwargs"]
+                and "Tmax" in self.pl_module_params["scheduler_kwargs"]
+                and "warmup_epochs" in self.pl_module_params["scheduler_kwargs"]
+            ),
+            "At least one argument is missing to use the legacy optimiser. `weight_decay`, "
+            "`lambda_lr` and `lr` must be defined in `optimizer_kwargs` whereas `Tmax` and "
+            "'warmup_epochs must be defined in `scheduler_kwargs`.",
+            logger,
+        )
 
         self.inr_num_layers = inr_num_layers
         self.inr_layers_width = inr_layers_width
         self.n_fourier_feats = n_fourier_feats
         self.scales = scales
+        self.legacy_optimiser = legacy_optimiser
 
         self.dropout = dropout
         self.activation = activation
@@ -473,7 +598,10 @@ class DeepTimeModel(PastCovariatesTorchModel):
     def _supports_static_covariates() -> bool:
         return False
 
-    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
+    def _create_model(
+        self,
+        train_sample: Tuple[torch.Tensor],
+    ) -> torch.nn.Module:
         input_dim = train_sample[0].shape[1] + (
             train_sample[1].shape[1] if train_sample[1] is not None else 0
         )
@@ -485,13 +613,13 @@ class DeepTimeModel(PastCovariatesTorchModel):
             input_dim=input_dim,
             output_dim=output_dim,
             nr_params=nr_params,
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
             inr_num_layers=self.inr_num_layers,
             inr_layers_width=self.inr_layers_width,
             n_fourier_feats=self.n_fourier_feats,
             scales=self.scales,
+            legacy_optimiser=self.legacy_optimiser,
             dropout=self.dropout,
             activation=self.activation,
+            **self.pl_module_params,
         )
         return model
