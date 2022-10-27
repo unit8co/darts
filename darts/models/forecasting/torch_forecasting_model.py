@@ -178,7 +178,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
             transform the generated covariates. This happens all under one hood and only needs to be specified at
             model creation.
-            Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
             ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
 
             .. highlight:: python
@@ -1458,7 +1458,7 @@ Below we define the 5 torch model types:
 def _basic_compare_sample(train_sample: Tuple, predict_sample: Tuple):
     """
     For all models relying on one type of covariates only (Past, Future, Dual), we can rely on the fact
-    that training/inference datasets have target and a covariate in first and second position to do the checks.
+    that training/inference datasets have target and covariates in first and second position to do the checks.
     """
     tgt_train, cov_train, static_train = train_sample[:2] + (train_sample[-2],)
     tgt_pred, cov_pred, static_pred = predict_sample[:2] + (predict_sample[-2],)
