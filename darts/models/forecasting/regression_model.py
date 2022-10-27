@@ -262,12 +262,7 @@ class RegressionModel(GlobalForecastingModel):
         """
         Returns a 5-tuple containing in order:
         (minimum target lag, maximum target lag, min past covariate lag, min future covariate lag, max future covariate
-        lag). If the model has no series or covariates, the corresponding value should be set to None.
-            - If no target series as input: minimum target lag = None.
-            - max target lag starts from 1 (corresponding to index 0), meaning that if we have an output_chunk_length
-            of 1, we should input 1.
-            - If no past covariates as input: min past covariate lag = None.
-            - If no future covariates as input: min future covariate lag = None, max future covariate lag = None.
+        lag).
         """
         min_target_lag = self.lags.get("target")[0] if "target" in self.lags else None
         max_target_lag = self.output_chunk_length
