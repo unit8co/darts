@@ -600,11 +600,10 @@ class RegressionModel(GlobalForecastingModel):
         if "target" in self.lags:
             series_matrix = np.stack(
                 [
-                    ts[self.lags["target"][0] - shift :].values(copy=False)
+                    ts.values(copy=False)[self.lags["target"][0] - shift :, :]
                     for ts in series
                 ]
             )
-
         # repeat series_matrix to shape (num_samples * num_series, n_lags, n_components)
         # [series 0 sample 0, series 0 sample 1, ..., series n sample k]
         series_matrix = np.repeat(series_matrix, num_samples, axis=0)

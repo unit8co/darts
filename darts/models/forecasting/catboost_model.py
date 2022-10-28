@@ -27,6 +27,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         likelihood: str = None,
         quantiles: List = None,
         random_state: Optional[int] = None,
+        multi_models: Optional[bool] = True,
         **kwargs,
     ):
         """CatBoost Model
@@ -79,6 +80,9 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         random_state
             Control the randomness in the fitting procedure and for sampling.
             Default: ``None``.
+        multi_models
+            If True, a separate model will be trained for each future lag to predict. If False, a single model is
+            trained to predict at step 'output_chunk_length' in the future. Default: True.
         **kwargs
             Additional keyword arguments passed to `catboost.CatBoostRegressor`.
         """
@@ -123,6 +127,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             output_chunk_length=output_chunk_length,
             add_encoders=add_encoders,
             model=CatBoostRegressor(**kwargs),
+            multi_models=multi_models,
         )
 
     def __str__(self):
