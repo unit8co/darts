@@ -2,8 +2,8 @@
 Anomaly Scorers
 ---------------
 
-Anomaly scorers can be trainable (TrainableScorer) or not trainable (NonTrainableScorer).
-The main functions are `fit()` (only for the trainable scorer), `compute()` and `score()`.
+Anomaly scorers can be trainable (FittableAnomalyScorer) or not trainable (NonFittableAnomalyScorer).
+The main functions are `fit()` (only for the trainable anomaly scorer), `compute()` and `score()`.
 
 `fit()` learns the function `f()`, over the history of one time series. The function `compute()` takes as input
 two time series, and applies the function `f()` to obtain an anomaly score time series. The function `score()`
@@ -12,7 +12,7 @@ binary ground truth time series indicating the presence of anomalies.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from scipy.stats import wasserstein_distance
@@ -25,15 +25,20 @@ from darts import TimeSeries
 from darts.logging import raise_if, raise_if_not
 
 
-class Scorer(ABC):
-    "Base class for all scorers"
+class AnomalyScorer(ABC):
+    "Base class for all anomaly scorers"
 
-    def __init__(self, characteristic_length: Optional[int] = None) -> None:
+    def __init__(self, window: Optional[int] = None) -> None:
 
-        if characteristic_length is None:
-            characteristic_length = 0
+        if window is None:
+            window = 1
 
-        self.characteristic_length = characteristic_length
+        raise_if_not(
+            window > 0,
+            f"window must be stricly greater than 0, found {window}",
+        )
+
+        self.window = window
 
     @abstractmethod
     def compute(self, input_1: Any, input_2: Any) -> Any:
@@ -43,98 +48,33 @@ class Scorer(ABC):
     def _compute_core(self, input_1: Any, input_2: Any) -> Any:
         pass
 
-    def window_adjustment_anomalies(
+    # this function has nothing to do with the AnomalyScorer itself...
+    def eval_accuracy_from_scores(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        """Slides a window of size self.characteristic_length along the input series, and replaces the value of the
-        input time series by the maximum of the values contained in the window (past self.characteristic_length and
-        itself points).
-
-        The binary time series output represents if there is an anomaly (=1) or not (=0) in the past
-        self.characteristic_length points + itself. The new series will equal the length of the input series
-        - self.characteristic_length. Its first point will start at the first time index of the input time series +
-        self.characteristic_length points.
-
-        Parameters
-        ----------
-        series: Binary Darts TimeSeries
-
-        Returns
-        -------
-        Binary Darts TimeSeries
-        """
-
-        if self.characteristic_length == 0:
-            return series
-        else:
-            values = [
-                series[ind : ind + self.characteristic_length + 1]
-                .max(axis=0)
-                .all_values()
-                .flatten()[0]
-                for (ind, _) in enumerate(
-                    series[self.characteristic_length :].pd_series()
-                )
-            ]
-            return TimeSeries.from_times_and_values(
-                series._time_index[self.characteristic_length :], values
-            )
-
-    def window_adjustment_series(
-        self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        """Slides a window of size self.characteristic_length along the input series, and replaces the value of
-        the input time series by the mean of the values contained in the window (past self.characteristic_length
-        and itself points).
-
-        Parameters
-        ----------
-        series: Darts TimeSeries
-
-        Returns
-        -------
-        Darts TimeSeries
-        """
-
-        if self.characteristic_length == 0:
-            return series
-        else:
-            values = [
-                series[ind : ind + self.characteristic_length + 1]
-                .mean(axis=0)
-                .all_values()
-                .flatten()[0]
-                for (ind, _) in enumerate(
-                    series[self.characteristic_length :].pd_series()
-                )
-            ]
-            return TimeSeries.from_times_and_values(
-                series._time_index[self.characteristic_length :], values
-            )
-
-    def score(
-        self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
+        anomaly_score: Union[TimeSeries, Sequence[TimeSeries]],
         actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
         metric: str = "AUC_ROC",
-    ) -> Union[float, Sequence[float]]:
+    ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
         """Scores the results against true anomalies.
+
+        checks:
+        - anomaly_score and actual_anomalies are the same type, length, width/dimension
+        - actual_anomalies is binary and has values belonging to the two classes (1 and 0)
 
         Parameters
         ----------
-        series: Darts TimeSeries
+        anomaly_score
             Time series to detect anomalies from.
-        actual_anomalies: Darts TimeSeries
-            True anomalies.
-        metric: str,
-            The selected metric to use. Can be 'AUC_ROC' (default value) or 'AUC_PR'
+        actual_anomalies
+            The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
+        metric
+            Optionally, Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR".
+            Default: "AUC_ROC"
 
         Returns
         -------
-        float
-            Score of the time series
+        Union[float, Sequence[float], Sequence[Sequence[float]]]
+            Score of the anomaly time series
         """
 
         if metric == "AUC_ROC":
@@ -144,77 +84,131 @@ class Scorer(ABC):
         else:
             raise ValueError("Argument `metric` must be one of 'AUC_ROC', 'AUC_PR'")
 
-        self.sanity_check(series, actual_anomalies)
-
-        series, actual_anomalies = self.return_intersect(series, actual_anomalies)
-
-        return scoring_fn(
-            y_true=actual_anomalies.all_values().flatten(),
-            y_score=series.all_values().flatten(),
+        list_anomaly_score, list_actual_anomalies = self._convert_to_list(
+            anomaly_score, actual_anomalies
         )
 
-    def return_intersect(
+        sol = []
+        for index, (s_score, s_anomalies) in enumerate(
+            zip(list_anomaly_score, list_actual_anomalies)
+        ):
+            s_anomalies = self.window_adjustment_anomalies(s_anomalies)
+
+            raise_if_not(
+                np.array_equal(
+                    s_anomalies.values(copy=False),
+                    s_anomalies.values(copy=False).astype(bool),
+                ),
+                "'actual_anomalies' must be a binary time series.",
+            )
+
+            self._sanity_check(s_score, s_anomalies)
+            s_score, s_anomalies = self._return_intersect(s_score, s_anomalies)
+
+            raise_if(
+                s_anomalies.sum(axis=0).values(copy=False).flatten().min() == 0,
+                f"'actual_anomalies' does not contain anomalies. {metric} cannot be computed.",
+            )
+
+            raise_if(
+                s_anomalies.sum(axis=0).values(copy=False).flatten().max()
+                == len(s_anomalies),
+                f"'actual_anomalies' contains only anomalies. {metric} cannot be computed."
+                + ["", f" Think about reducing the window (window={self.window})"][
+                    self.window > 1
+                ],
+            )
+
+            metrics = []
+            for width in range(s_score.width):
+                metrics.append(
+                    scoring_fn(
+                        y_true=s_anomalies.all_values()[:, width],
+                        y_score=s_score.all_values()[:, width],
+                    )
+                )
+
+            if width == 0:
+                sol.append(metrics[0])
+            else:
+                sol.append(metrics)
+
+        if index == 0:
+            return sol[0]
+        else:
+            return sol
+
+    def _return_intersect(
         self,
-        series_1: Union[TimeSeries, Sequence[TimeSeries]],
-        series_2: Union[TimeSeries, Sequence[TimeSeries]],
-    ) -> tuple:
+        series_1: TimeSeries,
+        series_2: TimeSeries,
+    ) -> tuple[TimeSeries, TimeSeries]:
         """Returns the values of series_1 and the values of series_2 that share the same time index.
         (Intersection in time of the two time series)
 
         Parameters
         ----------
-        series_1: Darts TimeSeries
-        series_2: Darts TimeSeries
+        series_1
+            1st time series
+        series_2:
+            2nd time series
 
         Returns
         -------
-        tuple of Darts TimeSeries
+        Tuple[TimeSeries, TimeSeries]
         """
 
         return series_1.slice_intersect(series_2), series_2.slice_intersect(series_1)
 
-    def compute_score(
+    def eval_accuracy(
         self,
         actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
         series_1: Union[TimeSeries, Sequence[TimeSeries]],
         series_2: Union[TimeSeries, Sequence[TimeSeries]] = None,
         scoring: str = "AUC_ROC",
-    ) -> Union[float, Sequence[float]]:
+    ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
         """Computes the anomaly score between the two given time series, and returns the score
         of an agnostic threshold metric.
 
         Parameters
         ----------
-        actual_anomalies: Binary Darts TimeSeries
+        actual_anomalies
             The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
-        series_1: Darts TimeSeries
-        series_2: Darts TimeSeries, optional
-        scoring: str, optional
-            Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR".
+        series_1
+            1st time series
+        series_2
+            Optionally, 2nd time series
+        scoring:
+            Optionally, Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR".
             Default: "AUC_ROC"
 
         Returns
         -------
-        float
+        Union[float, Sequence[float], Sequence[Sequence[float]]]
             Score for the time series
         """
         anomaly_score = self.compute(series_1, series_2)
 
-        return self.score(
-            anomaly_score, self.window_adjustment_anomalies(actual_anomalies), scoring
-        )
+        return self.eval_accuracy_from_scores(anomaly_score, actual_anomalies, scoring)
 
-    def sanity_check(
+    def _sanity_check(
         self,
-        series_1: Union[TimeSeries, Sequence[TimeSeries]],
-        series_2: Union[TimeSeries, Sequence[TimeSeries]] = None,
+        series_1: TimeSeries,
+        series_2: TimeSeries = None,
     ):
         """Performs sanity check on the given inputs
 
+        Checks if the two inputs:
+        - are 'Darts TimeSeries'
+        - have the same width/dimension
+        - if their intersection in time is not null
+
         Parameters
         ----------
-        series_1: Darts TimeSeries
-        series_2: Darts TimeSeries, optional
+        series_1
+            1st time series
+        series_2:
+            Optionally, 2nd time series
         """
 
         # check if type input is a Darts TimeSeries
@@ -231,23 +225,100 @@ class Scorer(ABC):
                 f"Series input must be type darts.timeseries.TimeSeries and not {type(series_2)}",
             )
 
+            # check if the two inputs time series have the same width
+            raise_if_not(
+                series_1.width == series_2.width,
+                f"Series must have the same width, found {series_1.width} and {series_2.width}",
+            )
+
             # check if the time intersection between the two inputs time series is not empty
             raise_if_not(
                 len(series_1._time_index.intersection(series_2._time_index)) > 0,
                 "Series must have a non-empty intersection timestamps",
             )
 
-            # check if the two inputs time series have the same width
+    def _convert_to_list(
+        self,
+        series_1: Union[TimeSeries, Sequence[TimeSeries]],
+        series_2: Union[TimeSeries, Sequence[TimeSeries]] = None,
+    ) -> Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
+        """If not already, it converts the inputs into a Sequence. Additionaly, it checks if the two sequences
+        contain the same number TimeSeries.
+
+        Parameters
+        ----------
+        series_1
+            1st time series
+        series_2
+            Optionally, 2nd time series
+
+        Returns
+        -------
+        Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]
+        """
+
+        series_1 = [series_1] if not isinstance(series_1, Sequence) else series_1
+
+        if series_2 is not None:
+
+            series_2 = [series_2] if not isinstance(series_2, Sequence) else series_2
+
             raise_if_not(
-                series_1.width == series_2.width, "Series must have the same width"
+                len(series_1) == len(series_2),
+                f"Sequences of series must be of the same length, found length: \
+                {len(series_1)} and {len(series_2)}",
+            )
+
+        return series_1, series_2
+
+    def window_adjustment_anomalies(
+        self,
+        series: TimeSeries,
+    ) -> TimeSeries:
+        """Slides a window of size self.window along the input series, and replaces the value of the
+        input time series by the maximum of the values contained in the window.
+
+        The binary time series output represents if there is an anomaly (=1) or not (=0) in the past
+        self.window points. The new series will equal the length of the input series
+        - self.window. Its first point will start at the first time index of the input time series +
+        self.window points.
+
+        Parameters
+        ----------
+        series:
+            Binary time series
+
+        Returns
+        -------
+        Binary TimeSeries
+        """
+        if self.window == 1:
+            # the process results in replacing every value by itself -> return directly the series
+            return series
+        else:
+
+            self._sanity_check(series)
+
+            np_series = series.all_values(copy=False)
+
+            values = [
+                np_series[ind : ind + self.window].max(axis=0)
+                for ind in range(len(np_series) - self.window + 1)
+            ]
+
+            return TimeSeries.from_times_and_values(
+                series._time_index[self.window - 1 :], values
             )
 
 
-class NonTrainableScorer(Scorer):
-    "Base class of scorers that do not need training."
+class NonFittableAnomalyScorer(AnomalyScorer):
+    "Base class of anomaly scorers that do not need training."
 
-    def __init__(self, characteristic_length) -> None:
-        super().__init__(characteristic_length=characteristic_length)
+    def __init__(self) -> None:
+        # window for NonFittableAnomalyScorer are always set to None
+        super().__init__(window=None)
+
+        # indicates if the scorer is trainable or not
         self.trainable = False
 
     def compute(
@@ -259,28 +330,49 @@ class NonTrainableScorer(Scorer):
 
         Parameters
         ----------
-        series_1: Darts TimeSeries
-        series_2: Darts TimeSeries, optional
+        series_1
+            1st time series
+        series_2:
+            2nd time series
 
         Returns
         -------
-        Darts TimeSeries
+        Union[TimeSeries, Sequence[TimeSeries]]
             Anomaly score time series
         """
-        self.sanity_check(series_1, series_2)
+        series_1, series_2 = self._convert_to_list(series_1, series_2)
 
-        series_1, series_2 = self.return_intersect(series_1, series_2)
+        anomaly_scores = []
 
-        return self.window_adjustment_series(self._compute_core(series_1, series_2))
+        for index, (s1, s2) in enumerate(zip(series_1, series_2)):
+
+            self._sanity_check(s1, s2)
+            s1, s2 = self._return_intersect(s1, s2)
+
+            anomaly_scores.append(self._compute_core(s1, s2))
+
+        if index == 0:
+            return anomaly_scores[0]
+        else:
+            return anomaly_scores
 
 
-class TrainableScorer(Scorer):
+class FittableAnomalyScorer(AnomalyScorer):
     "Base class of scorers that do need training."
 
-    def __init__(self, characteristic_length) -> None:
-        super().__init__(characteristic_length=characteristic_length)
-        self._fit_called = False
+    def __init__(self, window, reduced_function) -> None:
+        super().__init__(window=window)
+
+        # indicates if the scorer is trainable or not
         self.trainable = True
+
+        # indicates if the scorer has been trained yet
+        self._fit_called = False
+
+        # function used in ._diff() to convert 2 time series into 1
+        if reduced_function is None:
+            reduced_function = "abs_diff"
+        self.reduced_function = reduced_function
 
     def compute(
         self,
@@ -289,30 +381,60 @@ class TrainableScorer(Scorer):
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Computes the anomaly score between the two given time series.
 
+        If 2 time series are given, a reduced function, given as a parameter in the __init__ method
+        (reduced_function), will be applied to transform the 2 time series into 1. Default: "abs_diff"
+
         Parameters
         ----------
-        series_1: Darts TimeSeries
-        series_2: Darts TimeSeries, optional
+        series_1
+            1st time series
+        series_2:
+            Optionally, 2nd time series
 
         Returns
         -------
-        Darts TimeSeries
+        Union[TimeSeries, Sequence[TimeSeries]]
             Anomaly score time series
         """
+
         raise_if_not(
             self._fit_called,
             "The Scorer has not been fitted yet. Call `fit()` first",
         )
 
-        self.sanity_check(series_1, series_2)
+        series_1, series_2 = self._convert_to_list(series_1, series_2)
 
+        list_series = []
         if series_2 is None:
-            series = series_1
+            # only one input given
+            for s in series_1:
+                self._sanity_check(s)
+            list_series = series_1
         else:
-            series_1, series_2 = self.return_intersect(series_1, series_2)
-            series = self._diff(series_1, series_2)
+            # two inputs given -> need to reduce them into 1
+            for (s1, s2) in zip(series_1, series_2):
+                self._sanity_check(s1, s2)
+                s1, s2 = self._return_intersect(s1, s2)
+                list_series.append(self._diff(s1, s2))
 
-        return self.window_adjustment_series(self._compute_core(series))
+        anomaly_scores = []
+        for index, series in enumerate(list_series):
+            self._check_window_size(series)
+            anomaly_scores.append(self._compute_core(series))
+
+        if index == 0:
+            return anomaly_scores[0]
+        else:
+            return anomaly_scores
+
+    def _check_window_size(self, series: TimeSeries):
+        """Checks if the parameter window is less or equal to the length of the given series"""
+
+        raise_if_not(
+            self.window <= len(series),
+            f"Window size {self.window} is greater than the targeted series length {len(series)}, \
+            must be lower or equal.",
+        )
 
     @abstractmethod
     def _fit_core(self, input: Any) -> Any:
@@ -322,16 +444,18 @@ class TrainableScorer(Scorer):
         self,
         series_1: Union[TimeSeries, Sequence[TimeSeries]],
         series_2: Union[TimeSeries, Sequence[TimeSeries]] = None,
-    ) -> Union[float, Sequence[float]]:
+    ):
         """Fits the scorer on the given time series input.
 
-        If 2 time series are given, a distance function, given as input, will be applied
-        to transform the 2 time series into 1.
+        If 2 time series are given, a reduced function, given as a parameter in the __init__ method
+        (reduced_function), will be applied to transform the 2 time series into 1. Default: "abs_diff"
 
         Parameters
         ----------
-        series_1: Darts TimeSeries
-        series_2: Darts TimeSeries, optional
+        series_1
+            1st time series
+        series_2:
+            Optionally, 2nd time series
 
         Returns
         -------
@@ -339,229 +463,535 @@ class TrainableScorer(Scorer):
             Fitted Scorer.
         """
 
-        self.sanity_check(series_1, series_2)
+        series_1, series_2 = self._convert_to_list(series_1, series_2)
 
+        list_series = []
         if series_2 is None:
-            series = series_1
+            # only one input given
+            for s in series_1:
+                self._sanity_check(s)
+            list_series = series_1
         else:
-            series_1, series_2 = self.return_intersect(series_1, series_2)
-            series = self._diff(series_1, series_2)
+            # two inputs given -> need to reduce them into 1
+            for (s1, s2) in zip(series_1, series_2):
+                self._sanity_check(s1, s2)
+                s1, s2 = self._return_intersect(s1, s2)
+                list_series.append(self._diff(s1, s2))
 
-        self._fit_core(series)
+        self._fit_core(list_series)
 
-    def _diff(self, series_1, series_2):
-        """Applies the distance_function to the two time series
+    def _diff(self, series_1: TimeSeries, series_2: TimeSeries) -> TimeSeries:
+        """Applies the reduced_function to the two time series. Converts two time series into 1.
+
+        series_1 and series_2 must be of the same length L and width/dimension W.
 
         Parameters
         ----------
-        series_1: Darts TimeSeries
-        series_2: Darts TimeSeries
+        series_1
+            1st time series
+        series_2:
+            2nd time series
 
         Returns
         -------
-        Darts TimeSeries
-            Output of the distance_function given the two time series
+        TimeSeries
+            series of length L and width/dimension W.
         """
 
-        if self.distance_function == "l1":
-            return (series_1 - series_2.slice_intersect(series_1)).map(
-                lambda x: np.abs(x)
-            )
-        elif self.distance_function == "l2":
-            return (series_1 - series_2.slice_intersect(series_1)) ** 2
-        elif self.distance_function == "diff":
-            return series_1 - series_2.slice_intersect(series_1)
+        if self.reduced_function == "abs_diff":
+            return (series_1 - series_2).map(lambda x: np.abs(x))
+        elif self.reduced_function == "diff":
+            return series_1 - series_2
         else:
-            return series_1
-
-    def _check_norm(self):
-        """Checks if the given distance_function is known"""
-
-        accepted_norms = ["l1", "l2", "diff"]
-
-        raise_if_not(
-            self.distance_function in accepted_norms,
-            "Metric should be 'l1', 'l2' or 'diff'",
-        )
+            # found an non-existent reduced_function
+            raise ValueError(
+                f"Metric should be 'diff' or 'abs_diff', found {self.reduced_function}"
+            )
 
 
-class GaussianMixtureScorer(TrainableScorer):
-    """GaussianMixtureScorer anomaly score"""
+class GaussianMixtureScorer(FittableAnomalyScorer):
+    """GaussianMixtureScorer anomaly score
+
+    Wrapped around the GaussianMixture scikit-learn function.
+    Source code: <https://github.com/scikit-learn/scikit-learn/blob/f3f51f9b6/sklearn/mixture/_gaussian_mixture.py#L456>
+    """
 
     def __init__(
         self,
-        characteristic_length: Optional[int] = None,
+        window: Optional[int] = None,
         n_components: int = 1,
-        distance_function="l1",
+        reduced_function=None,
     ) -> None:
-        super().__init__(characteristic_length=characteristic_length)
+
+        """
+        A Gaussian mixture model is trained on the training data when the ``fit()`` method is called.
+        The ``compute()`` method will compute the log-likelihood of each sample.
+
+        TODO: stride in training is equal to w, and in score stride is equal to 1. Give the option to change
+        these parameters.
+
+        Training:
+
+        The input can be a series (univariate or multivariate) or a list of series. The series will be partitioned
+        into equal size subsequences. If the series is multivariate (width>1), then the subsequence will be of size
+        window * width, with window being a given parameter.
+        If the series is of length n, width d and the window is set to w, the training phase will generate (n-w+1)/w
+        data samples of length d * w. If a list of series is given of length l, each series will be partitioned into
+        subsequences, and the results will be concatenated into an array of length l * number of subsequences.
+
+        The Gaussian mixture model will be fitted on the generated subsequences. The model will estimate its parameters
+        with the EM algorithm.
+
+        Compute score:
+
+        The input is a series (univariate or multivariate) or a list of series. The given series must have the same
+        width d as the data used to train the GaussianMixture model. A window of size w is rolled on the series with
+        a stride equal to 1. It is the same window used during the training phase. At each timestamp, the previous w
+        values will be used to form a vector of size w * width of the series. The ``score_samples()`` of the Gaussian
+        mixture model will be called, with the vector as parameter. It will return the log-likelihood of the vector,
+        and the exponential function is applied. The output will be a series of width 1 and length n-w+1, with n being
+        the length of the input series. Each value will represent how anomalous the sample of the w previous values is.
+
+        If a list is given, a for loop will iterate through the list, and the function ``compute_core()`` will be
+        applied independently on each series.
+
+        Parameters
+        ----------
+        window
+            Size of the window used to create the subsequences of the series.
+        n_components
+            Optionally, the number of mixture components of the GaussianMixture model.
+        reduced_function
+            Optionally, reduced function to use if two series are given. It will transform the two series into one.
+            This allows the KMeansScorer to apply KMeans on the original series or on its residuals (difference between
+            the prediction and the original series). Must be one of "abs_diff" and "diff" (defined in ``_diff()``).
+            Default: "abs_diff"
+        """
+
+        super().__init__(window=window, reduced_function=reduced_function)
         self.n_components = n_components
-        self.distance_function = distance_function
-        super()._check_norm()
         self.model = GaussianMixture(n_components=n_components)
 
-    def _fit_core(self, series: Union[TimeSeries, Sequence[TimeSeries]]):
+    def __str__(self):
+        return f"GaussianMixtureScorer (n_components={self.n_components}, window={self.window}, \
+        reduced_function={self.reduced_function})"
 
+    def _fit_core(self, series: Sequence[TimeSeries]):
         self._fit_called = True
-        self.model.fit(series.all_values().flatten().reshape(-1, 1))
+        self.width_trained_on = series[0].width
+        self.model.fit(
+            np.concatenate(
+                [s.all_values().reshape(-1, self.window * s.width) for s in series]
+            )
+        )
 
-    def _compute_core(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]]
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+    def _compute_core(self, series: TimeSeries) -> TimeSeries:
+
+        raise_if_not(
+            self.width_trained_on == series.width,
+            f"Input must have the same width of the data used for training the GaussianMixture model, \
+            found width: {self.width_trained_on} and {series.width}",
+        )
 
         np_anomaly_score = np.exp(
-            self.model.score_samples(series.all_values().flatten().reshape(-1, 1))
+            self.model.score_samples(
+                np.array(
+                    [
+                        np.array(series.all_values()[i : i + self.window])
+                        for i in range(len(series) - self.window + 1)
+                    ]
+                ).reshape(-1, self.window * series.width)
+            )
         )
-        return TimeSeries.from_times_and_values(series._time_index, np_anomaly_score)
+        return TimeSeries.from_times_and_values(
+            series._time_index[self.window - 1 :], np_anomaly_score
+        )
 
 
-class KmeansScorer(TrainableScorer):
-    """Kmean anomaly score"""
+class KMeansScorer(FittableAnomalyScorer):
+    """KMeans anomaly score
+
+    Wrapped around the KMeans scikit-learn function.
+    Source code: <https://github.com/scikit-learn/scikit-learn/blob/f3f51f9b6/sklearn/cluster/_kmeans.py#L1126>.
+    """
 
     def __init__(
         self,
-        characteristic_length: Optional[int] = None,
+        window: Optional[int] = None,
         k: Union[int, list[int]] = 2,
-        distance_function="l1",
+        reduced_function=None,
     ) -> None:
-        super().__init__(characteristic_length=characteristic_length)
+        """
+        A KMeans model is trained on the training data when the ``fit()`` method is called.
+        The ``compute()`` method will return the minimal distance between the centroid and the sample.
+
+        TODO: stride in training is equal to w, and in score stride is equal to 1. Give the option to change
+        these parameters.
+
+        Training:
+
+        The input can be a series (univariate or multivariate) or a list of series. The series will be partitioned into
+        equal size subsequences. If the series is multivariate (width>1), then the subsequence will be of size
+        window * width, with window being a given parameter. If the series is of length n, width d and the window is set
+        to w, the training phase will generate (n-w+1)/w data samples of length d*w. If a list of series is given of
+        length l, each series will be partitioned into subsequences, and the results will be concatenated into an array
+        of length l * number of subsequences.
+
+        The model KMeans will be fitted on the generated subsequences. The model will find k cluster of dimensions
+        equal to the length of the subsequences (d*w).
+
+        Compute score:
+
+        The input is a series (univariate or multivariate) or a list of series. The given series must have the same
+        width d as the data used to train the KMeans model. A window of size w is rolled on the series with a stride
+        equal to 1. It is the same window used during the training phase. At each timestamp, the previous w values
+        will be used to form a vector of size w * width of the series.
+        The KMeans model will then retrieve the closest centroid to this vector, and compute the L1 norm between the
+        centroid and the vector. The output will be a series of width 1 and length n-w+1, with n being the length of
+        the input series. Each value will represent how anomalous the sample of the w previous values is.
+
+        If a list is given, a for loop will iterate through the list, and the function ``compute_core()`` will be
+        applied independently on each series.
+
+        Parameters
+        ----------
+        window
+            Size of the window used to create the subsequences of the series.
+        k
+            The number of clusters to form as well as the number of centroids to generate by the KMeans model
+        reduced_function
+            Optionally, reduced function to use if two series are given. It will transform the two series into one.
+            This allows the KMeansScorer to apply KMeans on the original series or on its residuals (difference between
+            the prediction and the original series). Must be one of "abs_diff" and "diff" (defined in ``_diff()``).
+            Default: "abs_diff"
+        """
+
+        super().__init__(window=window, reduced_function=reduced_function)
         self.k = k
-        self.distance_function = distance_function
-        self._check_norm()
         self.model = KMeans(n_clusters=k)
 
-    def _fit_core(self, series: Union[TimeSeries, Sequence[TimeSeries]]):
+    def __str__(self):
+        return f"KMeansScorer (k={self.k}, window={self.window}, reduced_function={self.reduced_function})"
 
+    def _fit_core(self, series: Sequence[TimeSeries]):
         self._fit_called = True
-        self.model.fit(series.all_values().flatten().reshape(-1, 1))
+        self.width_trained_on = series[0].width
+        self.model.fit(
+            np.concatenate(
+                [s.all_values().reshape(-1, self.window * s.width) for s in series]
+            )
+        )
 
-    def _compute_core(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]]
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+    def _compute_core(self, series: TimeSeries) -> TimeSeries:
+
+        raise_if_not(
+            self.width_trained_on == series.width,
+            f"Input must have the same width of the data used for training the KMeans model, \
+            found width: {self.width_trained_on} and {series.width}",
+        )
+
+        np_series = series.all_values()
+
         # return distance to the clostest centroid
         np_anomaly_score = self.model.transform(
-            series.all_values().flatten().reshape(-1, 1)
+            np.array(
+                [
+                    np.array(np_series[i : i + self.window])
+                    for i in range(len(series) - self.window + 1)
+                ]
+            ).reshape(-1, self.window * series.width)
         ).min(axis=1)
-        return TimeSeries.from_times_and_values(series._time_index, np_anomaly_score)
+
+        return TimeSeries.from_times_and_values(
+            series._time_index[self.window - 1 :], np_anomaly_score
+        )
 
 
-class WasserteinScorer(TrainableScorer):
-    """WasserteinScorer anomaly score"""
+class WasserteinScorer(FittableAnomalyScorer):
+    """WasserteinScorer anomaly score
 
-    def __init__(
-        self, characteristic_length: Optional[int] = None, distance_function="l1"
-    ) -> None:
-        if characteristic_length is None:
-            characteristic_length = 10
-        super().__init__(characteristic_length=characteristic_length)
-        self.distance_function = distance_function
-        super()._check_norm()
+    Wrapped around the Wassertein scipy.stats functon.
+    Source code: <https://github.com/scipy/scipy/blob/v1.9.3/scipy/stats/_stats_py.py#L8675-L8749>.
+    """
 
-        raise_if(
-            self.characteristic_length == 0,
-            "characteristic_length must be stricly higher than 0,"
+    def __init__(self, window: Optional[int] = None, reduced_function=None) -> None:
+        """
+        A Wassertein model is trained on the training data when the ``fit()`` method is called.
+        The ``compute()`` method will return the wassertein distance bewteen the training distribution
+        and the window sample distribution. Both distributions are 1D.
+
+        TODO:
+        - understand better the math behind the Wassertein distance (ex: when the test distribution contains
+        only one sample)
+        - check if there is an equivalent wassertein distance for d-D distributions (currently only accepts 1D)
+
+        Training:
+
+        The input can be a series (univariate or multivariate) or a list of series. All the values will be concatenated
+        to form one continuous array. If the series is of length n and width d, the array will be of length n*d.
+        If a list of series is given of length l, each series will be reduced to an array, and the l arrays will then
+        be concatenated to form a continuous array of length l*d*w.
+
+        The array will be kept in memory, representing the training data distribution.
+        In practice, the series or list of series would represent residuals than can be considered independent
+        and identically distributed (iid).
+
+
+        Compute score:
+
+        The input is a series (univariate or multivariate) or a list of series.
+        A window of size w (given as a parameter named window) is rolled on the series with a stride equal to 1.
+        At each timestamp, the previous w values will be used to form a vector of size w * width of the series.
+        The Wassertein distance will be computed between this vector and the train distribution.
+        The function will return a float number indicating how different these two distributions are.
+        The output will be a series of width 1 and length n-w+1, with n being the length of the input series.
+        Each value will represent how anomalous the sample of the w previous values is.
+
+        If a list is given, a for loop will iterate through the list, and the function ``compute_core()``
+        will be applied independently on each series.
+
+        Parameters
+        ----------
+        window
+            Size of the sliding window that represents the number of samples in the testing distribution to compare
+            with the training distribution in the Wassertein function
+        reduced_function
+            Optionally, reduced function to use if two series are given. It will transform the two series into one.
+            This allows the KMeansScorer to apply KMeans on the original series or on its residuals (difference between
+            the prediction and the original series). Must be one of "abs_diff" and "diff" (defined in ``_diff()``).
+            Default: "abs_diff"
+        """
+
+        if window is None:
+            window = 10
+        super().__init__(window=window, reduced_function=reduced_function)
+
+        raise_if_not(
+            self.window > 0,
+            "window must be stricly higher than 0,"
             "(preferably higher than 10 as it is the number of samples of the test distribution)",
         )
 
-    def _fit_core(self, series: Union[TimeSeries, Sequence[TimeSeries]]):
+    def __str__(self):
+        return f"WasserteinScorer (window={self.window}, reduced_function={self.reduced_function})"
+
+    def _fit_core(self, series: Sequence[TimeSeries]):
 
         self._fit_called = True
-        self.training_data = series.all_values().flatten()
+        self.training_data = np.concatenate([s.all_values().flatten() for s in series])
 
-    def _compute_core(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]]
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        # return distance to the clostest centroid
+    def _compute_core(self, series: TimeSeries) -> TimeSeries:
+
         distance = []
+        np_series = series.all_values().flatten()
 
-        for i in range(len(series) - self.characteristic_length + 1):
+        for i in range(len(series) - self.window + 1):
             distance.append(
                 wasserstein_distance(
                     self.training_data,
-                    series[i : i + self.characteristic_length + 1]
-                    .all_values()
-                    .flatten(),
+                    np_series[i * series.width : (i + self.window + 1) * series.width],
                 )
             )
 
         return TimeSeries.from_times_and_values(
-            series._time_index[self.characteristic_length - 1 :], distance
+            series._time_index[self.window - 1 :], distance
         )
 
-    def window_adjustment_series(
-        self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
 
-        return series
+class LocalOutlierFactorScorer(FittableAnomalyScorer):
+    """LocalOutlierFactor anomaly score
 
-
-class LocalOutlierFactorScorer(TrainableScorer):
-    """LocalOutlierFactor anomaly score"""
+    Wrapped around the LocalOutlierFactor scikit-learn function.
+    Source code: <https://github.com/scikit-learn/scikit-learn/blob/f3f51f9b6/sklearn/neighbors/_lof.py#L19>.
+    """
 
     def __init__(
         self,
-        characteristic_length: Optional[int] = None,
+        window: Optional[int] = None,
         n_neighbors: int = 2,
-        distance_function="l1",
+        reduced_function=None,
     ) -> None:
-        super().__init__(characteristic_length=characteristic_length)
+        """
+        A Local outlier factor model is trained on the training data when the ``fit()`` method is called.
+        The ``compute()`` method will return the local deviation of the density of a given sample with respect to its
+        neighbors. It is local in that the deviation depends on how isolated the object is with respect to the
+        surrounding neighborhood. More precisely, locality is given by k-nearest neighbors, whose distance is used to
+        estimate the local density. By comparing the local density of a sample to the local densities of its neighbors,
+        one can identify samples that have a substantially lower density than their neighbors.
+
+        TODO: stride in training is equal to w, and in score stride is equal to 1. Give the option
+        to change these parameters.
+
+        Training:
+
+        The input can be a series (univariate or multivariate) or a list of series. The series will be partitioned into
+        equal size subsequences. If the series is multivariate (width>1), then the subsequence will be of size
+        window * width, with window being a given parameter.
+        If the series is of length n, width d and the window is set to w, the training phase will generate (n-w+1)/w
+        data samples of length d*w. If a list of series is given of length l, each series will be partitioned into
+        subsequences, and the results will be concatenated into an array of length l * number of subsequences.
+
+        The model LocalOutlierFactor will be fitted on the generated subsequences.
+
+        Compute score:
+
+        The input is a series (univariate or multivariate) or a list of series. The given series must have the same
+        width d as the data used to train the LocalOutlierFactor model. A window of size w is rolled on the series
+        with a stride equal to 1. It is the same window used during the training phase. At each timestamp, the previous
+        w values will be used to form a vector of size w * width of the series.
+        The Local outlier factor model will then return the local deviation of the density of the given vector with
+        respect to its neighbors (constituted in the training phase). The output will be a series of width 1 and length
+        n-w+1, with n being the length of the input series. Each value will represent how anomalous the sample of
+        the w previous values is.
+
+        If a list is given, a for loop will iterate through the list, and the function ``compute_core()`` will be
+        applied independently on each series.
+
+        Parameters
+        ----------
+        window
+            Size of the window used to create the subsequences of the series.
+        n_neighbors
+            Number of neighbors to use by default for kneighbors queries. If n_neighbors is larger than the number of
+            samples provided, all samples will be used.
+        reduced_function
+            Optionally, reduced function to use if two series are given. It will transform the two series into one.
+            This allows the KMeansScorer to apply KMeans on the original series or on its residuals (difference between
+            the prediction and the original series). Must be one of "abs_diff" and "diff" (defined in ``_diff()``).
+            Default: "abs_diff"
+        """
+
+        super().__init__(window=window, reduced_function=reduced_function)
         self.n_neighbors = n_neighbors
-        self.distance_function = distance_function
-        super()._check_norm()
         self.model = LocalOutlierFactor(n_neighbors=n_neighbors, novelty=True)
 
-    def _fit_core(self, series: Union[TimeSeries, Sequence[TimeSeries]]):
+    def __str__(self):
+        return f"LocalOutlierFactor (n_neighbors= {self.n_neighbors}, window={self.window}, \
+            reduced_function={self.reduced_function})"
+
+    def _fit_core(self, series: Sequence[TimeSeries]):
         self._fit_called = True
-        self.model.fit(series.all_values().flatten().reshape(-1, 1))
+        self.width_trained_on = series[0].width
+        self.model.fit(
+            np.concatenate(
+                [s.all_values().reshape(-1, self.window * s.width) for s in series]
+            )
+        )
 
     def _compute_core(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]]
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        self,
+        series: TimeSeries,
+    ) -> TimeSeries:
+
+        raise_if_not(
+            self.width_trained_on == series.width,
+            f"Input must have the same width of the data used for training the Kmeans model, \
+                found width: {self.width_trained_on} and {series.width}",
+        )
+
+        np_series = series.all_values()
         # return distance to the clostest centroid
         np_anomaly_score = np.abs(
-            self.model.score_samples(series.all_values().flatten().reshape(-1, 1))
+            self.model.score_samples(
+                np.array(
+                    [
+                        np.array(np_series[i : i + self.window])
+                        for i in range(len(np_series) - self.window + 1)
+                    ]
+                ).reshape(-1, self.window * series.width)
+            )
         )
-        return TimeSeries.from_times_and_values(series._time_index, np_anomaly_score)
+
+        return TimeSeries.from_times_and_values(
+            series._time_index[self.window - 1 :], np_anomaly_score
+        )
 
 
-class L2(NonTrainableScorer):
-    """L2 distance metric"""
+class L2(NonFittableAnomalyScorer):
+    """L2 distance metric
 
-    def __init__(self, characteristic_length: Optional[int] = None) -> None:
-        super().__init__(characteristic_length=characteristic_length)
+    Returns the L2 norm between each timestamps of two series.
 
-    def _compute_core(
-        self,
-        series_1: Union[TimeSeries, Sequence[TimeSeries]],
-        series_2: Union[TimeSeries, Sequence[TimeSeries]],
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        return (series_1 - series_2) ** 2
+    The input can be univariate or multivariate, it will always return a univariate timesereies.
+    """
 
+    def __init__(self) -> None:
+        super().__init__()
 
-class L1(NonTrainableScorer):
-    """L1 distance metric"""
-
-    def __init__(self, characteristic_length: Optional[int] = None) -> None:
-        super().__init__(characteristic_length=characteristic_length)
+    def __str__(self):
+        return "L2"
 
     def _compute_core(
         self,
-        series_1: Union[TimeSeries, Sequence[TimeSeries]],
-        series_2: Union[TimeSeries, Sequence[TimeSeries]],
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        return (series_1 - series_2).map(lambda x: np.abs(x))
+        series_1: TimeSeries,
+        series_2: TimeSeries,
+    ) -> TimeSeries:
+        return ((series_1 - series_2) ** 2).sum(axis=1).map(lambda x: np.sqrt(x))
 
 
-class difference(NonTrainableScorer):
-    """difference distance metric"""
+class L1(NonFittableAnomalyScorer):
+    """L1 distance metric
 
-    def __init__(self, characteristic_length: Optional[int] = None) -> None:
-        super().__init__(characteristic_length=characteristic_length)
+    Returns the L1 norm between each timestamps of two series.
+
+    The input can be univariate or multivariate, it will always return a univariate timesereies.
+    If the two series are univariate, scorer L1 is equivalent to the scorer AbsDifference.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def __str__(self):
+        return "L1"
 
     def _compute_core(
         self,
-        series_1: Union[TimeSeries, Sequence[TimeSeries]],
-        series_2: Union[TimeSeries, Sequence[TimeSeries]],
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        series_1: TimeSeries,
+        series_2: TimeSeries,
+    ) -> TimeSeries:
+        return (series_1 - series_2).map(lambda x: np.abs(x)).sum(axis=1)
+
+
+class Difference(NonFittableAnomalyScorer):
+    """Difference distance metric
+
+    Returns the difference between each timestamps of two series.
+
+    If the two series are multivariate, it will return a multivariate series.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def __str__(self):
+        return "Difference"
+
+    def _compute_core(
+        self,
+        series_1: TimeSeries,
+        series_2: TimeSeries,
+    ) -> TimeSeries:
         return series_1 - series_2
+
+
+class AbsDifference(NonFittableAnomalyScorer):
+    """Absolute difference distance metric
+
+    Returns the absolute difference between each timestamps of two series.
+
+    If the two series are multivariate, it will return a multivariate series.
+    If the two series are univariate, scorer AbsDifference is equivalent to the scorer L1.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def __str__(self):
+        return "AbsDifference"
+
+    def _compute_core(
+        self,
+        series_1: TimeSeries,
+        series_2: TimeSeries,
+    ) -> TimeSeries:
+        return (series_1 - series_2).map(lambda x: np.abs(x))
