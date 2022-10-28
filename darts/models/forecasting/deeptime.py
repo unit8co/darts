@@ -34,12 +34,31 @@ ACTIVATIONS = [
 
 
 class GaussianFourierFeatureTransform(nn.Module):
-    """
-    https://github.com/ndahlquist/pytorch-fourier-feature-networks
-    Given an input of size [..., time, dim], returns a tensor of size [..., n_fourier_feats, time].
-    """
-
     def __init__(self, input_dim: int, n_fourier_feats: int, scales: List[float]):
+        """
+        Implementation of the Gaussian Fourier features mapping.
+        https://arxiv.org/abs/2006.10739
+        https://github.com/ndahlquist/pytorch-fourier-feature-networks
+
+        Parameters
+        ----------
+        input_dim
+            The dimensionality of the input time series.
+        n_fourier_feats
+            Number of Fourier components to sample to represent to time-serie in the frequency domain
+        scales
+            Scaling factors applied to the normal distribution sampled for Fourier components' magnitude
+
+        Inputs
+        ------
+        x of shape `(1, input_chunk_length+output_chunk_length, 1)`
+            Tensor containing the [0,1] normalised time representation.
+
+        Outputs
+        -------
+        y of shape `(1, input_chunk_length+output_chunk_length, n_fourier_feats)`
+            Tensor containing the Gaussian Fourier features for the processed period.
+        """
         super().__init__()
         self.input_dim = input_dim
         self.n_fourier_feats = n_fourier_feats
@@ -57,7 +76,6 @@ class GaussianFourierFeatureTransform(nn.Module):
             f"Expected 2 or more dimensional input (got {x.dim()}D input)",
             logger,
         )
-
         x = torch.einsum("... t n, n d -> ... t d", [x, self.B])
         x = 2 * np.pi * x
         return torch.cat([torch.sin(x), torch.cos(x)], dim=-1)
@@ -79,33 +97,33 @@ class INR(nn.Module):
         Features can be encoded using either a Linear layer or a Gaussian Fourier Transform
 
         Parameters
-            ----------
-            input_dim
-                The dimensionality of the input time series.
-            num_layers
-                The number of fully connected layers.
-            hidden_layers_width
-                Determines the number of neurons that make up each hidden fully connected layer.
-                If a list is passed, it must have a length equal to `num_layers`. If an integer is passed,
-                every layers will have the same width.
-            n_fourier_feats
-                Number of Fourier components to sample to represent to time-serie in the frequency domain
-            scales
-                Scaling factors applied to the normal distribution sampled for Fourier components' magnitude
-            dropout
-                The fraction of neurons that are dropped at each layer.
-            activation
-                The activation function of fully connected network intermediate layers.
+        ----------
+        input_dim
+            The dimensionality of the input time series.
+        num_layers
+            The number of fully connected layers.
+        hidden_layers_width
+            Determines the number of neurons that make up each hidden fully connected layer.
+            If a list is passed, it must have a length equal to `num_layers`. If an integer is passed,
+            every layers will have the same width.
+        n_fourier_feats
+            Number of Fourier components to sample to represent to time-serie in the frequency domain
+        scales
+            Scaling factors applied to the normal distribution sampled for Fourier components' magnitude
+        dropout
+            The fraction of neurons that are dropped at each layer.
+        activation
+            The activation function of fully connected network intermediate layers.
 
-            Inputs
-            ------
-            x of shape `(batch_size, input_size)`
-                Tensor containing the features of the input sequence.
+        Inputs
+        ------
+        x of shape `(1, input_chunk_length+output_chunk_length, 1)`
+            Tensor containing the [0,1] normalised time representation.
 
-            Outputs
-            -------
-            y of shape `(batch_size, output_chunk_length, target_size, nr_params)`
-                Tensor containing the prediction at the last time step of the sequence.
+        Outputs
+        -------
+        y of shape `(1, input_chunk_length+output_chunk_length, hidden_layers_width)`
+            Tensor containing the implicit neural representation of the time.
         """
         super().__init__()
 
@@ -158,6 +176,7 @@ class INR(nn.Module):
 
 class RidgeRegressor(nn.Module):
     def __init__(self, lambda_init: float = 0.0):
+        """Implementation of the closed form Ridge Regression with a regularization coefficient."""
         super().__init__()
         self._lambda = nn.Parameter(torch.as_tensor(lambda_init, dtype=torch.float))
 
@@ -291,6 +310,10 @@ class _DeepTimeModule(PLPastCovariatesModule):
         return torch.reshape(coords, (1, lookback_len + horizon_len, 1))
 
     def configure_optimizers(self):
+        """Override the configure_optimizers to define three groups of parameters, one for the
+        Ridge Regression weights, one for the biais and norm of the FCN and another of the other
+        weights of the FCN.
+        """
         # we have to create copies because we cannot save model.parameters into object state (not serializable)
         optimizer_kws = {k: v for k, v in self.optimizer_kwargs.items()}
 
@@ -435,7 +458,9 @@ class DeepTimeModel(PastCovariatesTorchModel):
         scales
             Scaling factors applied to the normal distribution sampled for Fourier components' magnitude
         legacy_optimiser
-            Determine if the optimiser policy defined in the original article should be used (default=True).
+            Determine if the optimiser described in the original article should be used. Overwrites the
+            parameters provided in optimizers_cls, optimizers_kwargs, scheduler_cls and scheduler_kwargs.
+            Defaults to True.
         dropout
             The dropout probability to be used in fully connected layers (default=0). This is compatible with
             Monte Carlo dropout at inference time for model uncertainty estimation (enabled with
