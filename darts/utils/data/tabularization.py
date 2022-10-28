@@ -97,7 +97,7 @@ def _create_lagged_data(
         else:
             df_y.append(
                 df_target.shift(-output_chunk_length + 1).rename(
-                    columns=lambda x: f"{x}_horizon_lag{output_chunk_length}"
+                    columns=lambda x: f"{x}_horizon_lag{output_chunk_length-1}"
                 )
             )
 
