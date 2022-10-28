@@ -41,7 +41,7 @@ class ExplainabilityResult(ABC):
             self.available_components = list(self.explained_forecasts[h_0].keys())
 
     def get_explanation(
-        self, horizon: int, component: Optional[str] = None
+        self, horizon: Optional[int] = None, component: Optional[str] = None
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         Returns one or several `TimeSeries` representing the explanations
@@ -64,8 +64,19 @@ class ExplainabilityResult(ABC):
             logger,
         )
 
+        raise_if(
+            horizon is None and len(self.available_horizons) > 1,
+            ValueError(
+                "The horizon parameter is required when the model has more than one horizon."
+            ),
+            logger,
+        )
+
         if component is None:
             component = self.available_components[0]
+
+        if horizon is None:
+            horizon = self.available_horizons[0]
 
         raise_if_not(
             horizon in self.available_horizons,

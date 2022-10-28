@@ -92,6 +92,9 @@ def _create_lagged_data(
                     columns=lambda x: f"{x}_horizon_lag{future_target_lag}"
                 )
             )
+        # we add an empty row if we are in predict mode, as we also want the potential predictable next point
+        if not is_training:
+            df_target.loc[df_target.index[-1] + 1 * df_target.index.freq, :] = np.nan
 
         if lags:
             for lag in lags:
