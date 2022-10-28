@@ -89,16 +89,16 @@ class AnomalyModel(ABC):
         )
 
         acc_anomaly_scores = []
-        for index, scorer in enumerate(self.scorers):
+        for idx, scorer in enumerate(self.scorers):
             acc_anomaly_scores.append(
                 scorer.eval_accuracy_from_scores(
-                    anomaly_score=anomaly_scores[index],
+                    anomaly_score=anomaly_scores[idx],
                     actual_anomalies=actual_anomalies,
                     metric=metric,
                 )
             )
 
-        if index == 0:
+        if len(acc_anomaly_scores) == 1:
             return acc_anomaly_scores[0]
         else:
             return acc_anomaly_scores
@@ -241,13 +241,13 @@ class ForecastingAnomalyModel(AnomalyModel):
             self._check_window_size(list_series, start)
 
             list_pred = []
-            for index, series in enumerate(list_series):
+            for idx, series in enumerate(list_series):
 
                 if list_past_covariates is not None:
-                    past_covariates = list_past_covariates[index]
+                    past_covariates = list_past_covariates[idx]
 
                 if list_future_covariates is not None:
-                    future_covariates = list_future_covariates[index]
+                    future_covariates = list_future_covariates[idx]
 
                 list_pred.append(
                     self._predict_with_forecasting(
@@ -355,13 +355,13 @@ class ForecastingAnomalyModel(AnomalyModel):
         self._check_window_size(list_series, start)
 
         list_pred = []
-        for index, series in enumerate(list_series):
+        for idx, series in enumerate(list_series):
 
             if list_past_covariates is not None:
-                past_covariates = list_past_covariates[index]
+                past_covariates = list_past_covariates[idx]
 
             if list_future_covariates is not None:
-                future_covariates = list_future_covariates[index]
+                future_covariates = list_future_covariates[idx]
 
             list_pred.append(
                 self._predict_with_forecasting(
@@ -374,10 +374,10 @@ class ForecastingAnomalyModel(AnomalyModel):
             )
 
         list_anomaly_scores = []
-        for index, scorer in enumerate(self.scorers):
-            list_anomaly_scores.append(scorer.compute(list_pred, list_series))
+        for scorer in self.scorers:
+            list_anomaly_scores.append(scorer.score(list_pred, list_series))
 
-        if index == 0:
+        if len(list_anomaly_scores) == 1:
             return list_anomaly_scores[0]
         else:
             return list_anomaly_scores
@@ -557,16 +557,16 @@ class ForecastingAnomalyModel(AnomalyModel):
         )
 
         acc_anomaly_scores = []
-        for index, scorer in enumerate(self.scorers):
+        for idx, scorer in enumerate(self.scorers):
             acc_anomaly_scores.append(
                 scorer.eval_accuracy_from_scores(
-                    anomaly_score=list_anomaly_scores[index],
+                    anomaly_score=list_anomaly_scores[idx],
                     actual_anomalies=list_actual_anomalies,
                     metric=metric,
                 )
             )
 
-        if index == 0:
+        if len(acc_anomaly_scores) == 1:
             return acc_anomaly_scores[0]
         else:
             return acc_anomaly_scores
@@ -681,10 +681,10 @@ class FilteringAnomalyModel(AnomalyModel):
             list_pred.append(self.filter.filter(s, **filter_params))
 
         anomaly_scores = []
-        for index, scorer in enumerate(self.scorers):
-            anomaly_scores.append(scorer.compute(list_pred, list_series))
+        for scorer in self.scorers:
+            anomaly_scores.append(scorer.score(list_pred, list_series))
 
-        if index == 0:
+        if len(anomaly_scores) == 1:
             return anomaly_scores[0]
         else:
             return anomaly_scores
@@ -736,16 +736,16 @@ class FilteringAnomalyModel(AnomalyModel):
             anomaly_scores = [anomaly_scores]
 
         acc_anomaly_scores = []
-        for index, scorer in enumerate(self.scorers):
+        for idx, scorer in enumerate(self.scorers):
             acc_anomaly_scores.append(
                 scorer.eval_accuracy_from_scores(
-                    anomaly_score=anomaly_scores[index],
+                    anomaly_score=anomaly_scores[idx],
                     actual_anomalies=list_actual_anomalies,
                     metric=metric,
                 )
             )
 
-        if index == 0:
+        if len(acc_anomaly_scores) == 1:
             return acc_anomaly_scores[0]
         else:
             return acc_anomaly_scores
