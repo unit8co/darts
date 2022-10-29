@@ -1073,7 +1073,7 @@ class LocalForecastingModel(ForecastingModel, ABC):
 
     Local Forecasting Models (LFM) are models that can be trained on a single univariate target series only. In Darts,
     most models in this category tend to be simpler statistical models (such as ETS or FFT). LFMs usually train on
-    the entire target series you supplied when calling :func:`fit()` at once. They can also predict in one go with
+    the entire target series supplied when calling :func:`fit()` at once. They can also predict in one go with
     :func:`predict()` for any number of predictions `n` after the end of the training series.
 
     All implementations must implement the `_fit()` and `_predict()` methods.
@@ -1391,7 +1391,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
 
     Future Covariates Local Forecasting Models (FC-LFM) are models that can be trained on a single uni- or multivariate
     target and optional future covariates series. In Darts, most models in this category tend to be simpler statistical
-    models (such as ARIMA). FC-LFMs usually train on the entire target and future covariates series you supplied when
+    models (such as ARIMA). FC-LFMs usually train on the entire target and future covariates series supplied when
     calling :func:`fit()` at once. They can also predict in one go with :func:`predict()` for any number of predictions
     `n` after the end of the training series. When using future covariates, the values for the future `n` prediction
     steps must be given in the covariate series.
@@ -1566,7 +1566,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
     or multivariate target and optional future covariates series. Additionally, at prediction time, it can be applied
     to new data unrelated to the original series used for fitting the model. Currently in Darts, all models in this
     category wrap to statsmodel models such as VARIMA. TFC-LFMs usually train on the entire target and future covariates
-    series you supplied when calling :func:`fit()` at once. They can also predict in one go with :func:`predict()`
+    series supplied when calling :func:`fit()` at once. They can also predict in one go with :func:`predict()`
     for any number of predictions `n` after the end of the training series. When using future covariates, the values
     for the future `n` prediction steps must be given in the covariate series.
 
