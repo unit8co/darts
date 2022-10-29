@@ -10,6 +10,7 @@ from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.forecasting_model import (
     ForecastingModel,
     GlobalForecastingModel,
+    LocalForecastingModel,
 )
 from darts.timeseries import TimeSeries
 
@@ -28,9 +29,7 @@ class EnsembleModel(GlobalForecastingModel):
         List of forecasting models whose predictions to ensemble
     """
 
-    def __init__(
-        self, models: Union[List[ForecastingModel], List[GlobalForecastingModel]]
-    ):
+    def __init__(self, models: List[ForecastingModel]):
         raise_if_not(
             isinstance(models, list) and models,
             "Cannot instantiate EnsembleModel with an empty list of models",
@@ -38,9 +37,7 @@ class EnsembleModel(GlobalForecastingModel):
         )
 
         is_local_ensemble = all(
-            isinstance(model, ForecastingModel)
-            and not isinstance(model, GlobalForecastingModel)
-            for model in models
+            isinstance(model, LocalForecastingModel) for model in models
         )
         self.is_global_ensemble = all(
             isinstance(model, GlobalForecastingModel) for model in models
@@ -48,7 +45,7 @@ class EnsembleModel(GlobalForecastingModel):
 
         raise_if_not(
             is_local_ensemble or self.is_global_ensemble,
-            "All models must either be GlobalForecastingModel instances, or none of them should be.",
+            "All models must be of the same type: either GlobalForecastingModel, or LocalForecastingModel.",
             logger,
         )
 
@@ -76,12 +73,12 @@ class EnsembleModel(GlobalForecastingModel):
         """
         raise_if(
             not self.is_global_ensemble and not isinstance(series, TimeSeries),
-            "The models are not GlobalForecastingModel's and do not support training on multiple series.",
+            "The models are of type LocalForecastingModel, which does not support training on multiple series.",
             logger,
         )
         raise_if(
             not self.is_global_ensemble and past_covariates is not None,
-            "The models are not GlobalForecastingModel's and do not support past covariates.",
+            "The models are of type LocalForecastingModel, which does not support past covariates.",
             logger,
         )
 
