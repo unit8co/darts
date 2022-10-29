@@ -118,6 +118,15 @@ In turn, the advantage of having `predict()` providing forecasts for potentially
 
 These models are shown with a "✅" under the `Multiple-series training` column on the [model list](https://github.com/unit8co/darts#forecasting-models).
 
+You can also find out programatically, whether a model supports multiple series.
+```python
+from darts.models import RegressionModel
+from darts.models.forecasting.forecasting_model import GlobalForecastingModel
+
+# when True, multiple time series are supported
+supports_multi_ts = issubclass(RegressionModel, GlobalForecastingModel)
+```
+
 [This article](https://medium.com/unit8-machine-learning-publication/training-forecasting-models-on-multiple-time-series-with-darts-dc4be70b1844) provides more explanations about training models on multiple series.
 
 ## Support for Covariates

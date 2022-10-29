@@ -1,4 +1,8 @@
-# Time Axis Encoders
+"""
+Time Axis Encoders
+------------------
+"""
+
 from .encoders import (
     FutureCallableIndexEncoder,
     FutureCyclicEncoder,

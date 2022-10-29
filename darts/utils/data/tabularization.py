@@ -113,11 +113,10 @@ def _create_lagged_data(
         for covariate_name, (df_cov, lags_cov) in zip(["past", "future"], covariates):
             if lags_cov:
                 if not is_training:
-                    # We extend the covariates dataframes
-                    # to have the same timestamps as the target at the end
-                    #  so that when we create the lags with shifts
-                    # we don't have nan on the last rows. Only useful for inference.
-                    df_cov = df_cov.reindex(df_target.index)
+                    # We extend the covariates dataframe
+                    # so that when we create the lags with shifts
+                    # we don't have nan on the last (or first) rows. Only useful for inference.
+                    df_cov = df_cov.reindex(df_target.index.union(df_cov.index))
 
                 for lag in lags_cov:
                     df_X.append(
