@@ -25,6 +25,7 @@ from darts.models import (
     NaiveSeasonal,
     Prophet,
     RandomForest,
+    RegressionModel,
     StatsForecastAutoARIMA,
     StatsForecastETS,
     Theta,
@@ -170,7 +171,8 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
 
     def test_models_runnability(self):
         for model, _ in models:
-            self.asstTrue(isinstance(model, LocalForecastingModel))
+            if not isinstance(model, RegressionModel):
+                self.assertTrue(isinstance(model, LocalForecastingModel))
             prediction = model.fit(self.ts_gaussian).predict(self.forecasting_horizon)
             self.assertTrue(len(prediction) == self.forecasting_horizon)
 
