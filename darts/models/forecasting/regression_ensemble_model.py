@@ -9,8 +9,8 @@ from typing import List, Optional, Sequence, Tuple, Union
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import (
-    ForecastingModel,
     GlobalForecastingModel,
+    LocalForecastingModel,
 )
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
 from darts.models.forecasting.regression_model import RegressionModel
@@ -22,7 +22,9 @@ logger = get_logger(__name__)
 class RegressionEnsembleModel(EnsembleModel):
     def __init__(
         self,
-        forecasting_models: Union[List[ForecastingModel], List[GlobalForecastingModel]],
+        forecasting_models: Union[
+            List[LocalForecastingModel], List[GlobalForecastingModel]
+        ],
         regression_train_n_points: int,
         regression_model=None,
     ):

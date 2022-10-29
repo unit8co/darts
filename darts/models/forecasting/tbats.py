@@ -29,7 +29,7 @@ from tbats import BATS as tbats_BATS
 from tbats import TBATS as tbats_TBATS
 
 from darts.logging import get_logger
-from darts.models.forecasting.forecasting_model import ForecastingModel
+from darts.models.forecasting.forecasting_model import LocalForecastingModel
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
@@ -111,7 +111,7 @@ def _compute_samples(model, predictions, n_samples):
     return samples
 
 
-class _BaseBatsTbatsModel(ForecastingModel, ABC):
+class _BaseBatsTbatsModel(LocalForecastingModel, ABC):
     def __init__(
         self,
         use_box_cox: Optional[bool] = None,

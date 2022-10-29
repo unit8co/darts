@@ -12,14 +12,16 @@ import pandas as pd
 import prophet
 
 from darts.logging import execute_and_suppress_output, get_logger, raise_if
-from darts.models.forecasting.forecasting_model import DualCovariatesForecastingModel
+from darts.models.forecasting.forecasting_model import (
+    FutureCovariatesLocalForecastingModel,
+)
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 logger.level = logging.WARNING  # set to warning to suppress prophet logs
 
 
-class Prophet(DualCovariatesForecastingModel):
+class Prophet(FutureCovariatesLocalForecastingModel):
     def __init__(
         self,
         add_seasonalities: Optional[Union[dict, List[dict]]] = None,

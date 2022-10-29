@@ -12,15 +12,15 @@ import numpy as np
 from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import (
-    ForecastingModel,
     GlobalForecastingModel,
+    LocalForecastingModel,
 )
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
-class NaiveMean(ForecastingModel):
+class NaiveMean(LocalForecastingModel):
     def __init__(self):
         """Naive Mean Model
 
@@ -44,7 +44,7 @@ class NaiveMean(ForecastingModel):
         return self._build_forecast_series(forecast)
 
 
-class NaiveSeasonal(ForecastingModel):
+class NaiveSeasonal(LocalForecastingModel):
     def __init__(self, K: int = 1):
         """Naive Seasonal Model
 
@@ -84,7 +84,7 @@ class NaiveSeasonal(ForecastingModel):
         return self._build_forecast_series(forecast)
 
 
-class NaiveDrift(ForecastingModel):
+class NaiveDrift(LocalForecastingModel):
     def __init__(self):
         """Naive Drift Model
 
@@ -117,7 +117,7 @@ class NaiveDrift(ForecastingModel):
 
 class NaiveEnsembleModel(EnsembleModel):
     def __init__(
-        self, models: Union[List[ForecastingModel], List[GlobalForecastingModel]]
+        self, models: Union[List[LocalForecastingModel], List[GlobalForecastingModel]]
     ):
         """Naive combination model
 
