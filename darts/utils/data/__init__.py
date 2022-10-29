@@ -5,9 +5,6 @@ TimeSeries Datasets
 
 try:
     # Base classes for training datasets:
-    # Sequence Encoder
-    from .encoders import SequentialEncoder
-
     # Implementation (horizon-based)
     from .horizon_based_dataset import HorizonBasedDataset
 

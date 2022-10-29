@@ -7,7 +7,7 @@ The filter is first optionally fitted on the series (using the N4SID
 identification algorithm), and then run on future time steps in order
 to obtain forecasts.
 
-This implementation accepts an optional control signal (future covariate).
+This implementation accepts an optional control signal (future covariates).
 """
 
 from typing import Optional

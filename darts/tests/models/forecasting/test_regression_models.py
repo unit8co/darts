@@ -10,6 +10,10 @@ from sklearn.linear_model import LinearRegression
 
 import darts
 from darts import TimeSeries
+from darts.dataprocessing.encoders import (
+    FutureCyclicEncoder,
+    PastDatetimeAttributeEncoder,
+)
 from darts.logging import get_logger
 from darts.metrics import mae, rmse
 from darts.models import (
@@ -22,7 +26,6 @@ from darts.models import (
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
-from darts.utils.data.encoders import FutureCyclicEncoder, PastDatetimeAttributeEncoder
 
 # from sklearn.multioutput import MultiOutputRegressor
 from darts.utils.multioutput import MultiOutputRegressor
