@@ -8,7 +8,6 @@ from typing import List, Optional, Sequence, Union
 
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.forecasting_model import (
-    ForecastingModel,
     GlobalForecastingModel,
     LocalForecastingModel,
 )
@@ -29,7 +28,9 @@ class EnsembleModel(GlobalForecastingModel):
         List of forecasting models whose predictions to ensemble
     """
 
-    def __init__(self, models: List[ForecastingModel]):
+    def __init__(
+        self, models: Union[List[LocalForecastingModel], List[GlobalForecastingModel]]
+    ):
         raise_if_not(
             isinstance(models, list) and models,
             "Cannot instantiate EnsembleModel with an empty list of models",
