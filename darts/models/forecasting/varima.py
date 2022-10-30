@@ -17,14 +17,14 @@ from statsmodels.tsa.api import VARMAX as staVARMA
 
 from darts.logging import get_logger, raise_if
 from darts.models.forecasting.forecasting_model import (
-    TransferableDualCovariatesForecastingModel,
+    TransferableFutureCovariatesLocalForecastingModel,
 )
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
-class VARIMA(TransferableDualCovariatesForecastingModel):
+class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
     def __init__(self, p: int = 1, d: int = 0, q: int = 0, trend: Optional[str] = None):
         """VARIMA
 
@@ -70,8 +70,8 @@ class VARIMA(TransferableDualCovariatesForecastingModel):
         return series
 
     def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-        # for VARIMA we need to process target `series` before calling TransferableDualCovariatesForecastingModel'
-        # fit() method
+        # for VARIMA we need to process target `series` before calling
+        # TransferableFutureCovariatesLocalForecastingModel's fit() method
         self._last_values = (
             series.last_values()
         )  # needed for back-transformation when d=1
