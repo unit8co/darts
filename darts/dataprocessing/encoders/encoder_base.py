@@ -22,20 +22,41 @@ logger = get_logger(__name__)
 class CovariatesIndexGenerator(ABC):
     def __init__(
         self,
-        input_chunk_length: int,
-        output_chunk_length: int,
+        input_chunk_length: Optional[int] = None,
+        output_chunk_length: Optional[int] = None,
         covariates_lags: Optional[List[int]] = None,
     ):
-        """
+        """:class:`CovariatesIndexGenerator` generates a time index for covariates at training and inference /
+        prediction time with methods :func:`generate_train_idx()`, and :func:`generate_inference_idx()`.
+        Without user `covariates`, it generates the minimum required covariate times spans for the corresponding
+        scenarios described below. With user `covariates`, it simply copies and returns the `covariates` time index.
+
+        It can be used:
+        A   in combination with :class:`LocalForecastingModel`, or in a model agnostic scenario:
+                All parameters can be ignored.
+        B   in combination with :class:`RegressionModel`:
+                Set `input_chunk_length`, `output_chunk_length`, and `covariates_lags`.
+                `input_chunk_length` is the absolute value of the minimum target lag `abs(min(lags))` used with the
+                regression model.
+                Set `output_chunk_length`, and `covariates_lags` with the identical values used at forecasting model
+                creation. For the covariates lags, use `past_covariates_lags` for class:`PastCovariatesIndexGenerator`,
+                and `future_covariates_lags` for class:`PastCovariatesIndexGenerator`.
+        C   in combination with :class:`TorchForecastingModel`:
+                Set `input_chunk_length`, and `output_chunk_length` with the identical values used at forecasting model
+                creation.
+
         Parameters
         ----------
         input_chunk_length
-            The length of the emitted past series.
+            Optionally, the length of the emitted past series. Only required in scenario C.
         output_chunk_length
-            The length of the emitted future series.
+            Optionally, the length of the emitted future series. Only required in scenarios B, and C.
         covariates_lags
-            Optionally, a list of covariates lags used for Darts' RegressionModels.
+            Optionally, a list of covariates lags used for Darts' RegressionModels. Only required in scenario B.
         """
+        # check that parameters match one of the scenarios
+        self._verify_scenario(input_chunk_length, output_chunk_length, covariates_lags)
+
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
 
@@ -64,14 +85,17 @@ class CovariatesIndexGenerator(ABC):
         self, target: TimeSeries, covariates: Optional[TimeSeries] = None
     ) -> Tuple[SupportedIndex, pd.Timestamp]:
         """
-        Generates/extracts time index (or integer index) for train set.
+        Generates/extracts time index (or integer index) for covariates at model training time.
 
         Parameters
         ----------
         target
-            The target TimeSeries used during training
+            The target TimeSeries used during training.
         covariates
-            Optionally, the future covariates used for training
+            Optionally, the covariates used for training.
+            If given, the returned time index is equal to the `covariates` time index. Else, the returned time index
+            covers the minimum required covariate time span for training a specific forecasting model. These
+            requirements are derived from parameters set at :class:`CovariatesIndexGenerator` creation.
         """
         pass
 
@@ -80,16 +104,20 @@ class CovariatesIndexGenerator(ABC):
         self, n: int, target: TimeSeries, covariates: Optional[TimeSeries] = None
     ) -> Tuple[SupportedIndex, pd.Timestamp]:
         """
-        Generates/extracts time index (or integer index) for inference set.
+        Generates/extracts time index (or integer index) for covariates at model inference / prediction time.
 
         Parameters
         ----------
         n
-            The forecast horizon
+            The forecasting horizon.
         target
-            The target TimeSeries used during training or passed to prediction as `series`
+            The target TimeSeries used during training or passed to prediction as `series`.
         covariates
-            Optionally, the future covariates used for prediction
+            Optionally, the covariates used for prediction.
+            If given, the returned time index is equal to the `covariates` time index. Else, the returned time index
+            covers the minimum required covariate time spans for performing inference / prediction with a specific
+            forecasting model. These requirements are derived from parameters set at :class:`CovariatesIndexGenerator`
+            creation.
         """
         pass
 
@@ -101,6 +129,42 @@ class CovariatesIndexGenerator(ABC):
         - "fc": future covariates
         """
         pass
+
+    @staticmethod
+    def _verify_scenario(
+        input_chunk_length: Optional[int] = None,
+        output_chunk_length: Optional[int] = None,
+        covariates_lags: Optional[List[int]] = None,
+    ):
+        # LocalForecastingModel, or model agnostic
+        is_scenario_a = (
+            input_chunk_length is None
+            and output_chunk_length is None
+            and covariates_lags is None
+        )
+        # RegressionModel
+        is_scenario_b = (
+            input_chunk_length is not None
+            and output_chunk_length is not None
+            and covariates_lags is not None
+        )
+        # TorchForecastingModel
+        is_scenario_c = (
+            input_chunk_length is not None
+            and output_chunk_length is not None
+            and covariates_lags is None
+        )
+
+        if not any([is_scenario_a, is_scenario_b, is_scenario_c]):
+            raise_log(
+                ValueError(
+                    "Invalid `CovariatesIndexGenerator` parameter combination: Could not be mapped to an existing "
+                    "scenario, as defined in "
+                    "https://unit8co.github.io/darts/generated_api/darts.dataprocessing.encoders.encoder_base.html"
+                    "#darts.dataprocessing.encoders.encoder_base.CovariatesIndexGenerator"
+                ),
+                logger=logger,
+            )
 
     def _verify_lags(self, min_covariates_lag, max_covariates_lag):
         """Check the bas requirements for `min_covariates_lag` and `max_covariates_lag`:

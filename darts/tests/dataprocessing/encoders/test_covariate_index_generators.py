@@ -194,7 +194,38 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
         )
         self.assertTrue(idx.equals(self.cov_int_inf_long.time_index))
 
+    def helper_test_index_generator_creation(self, ig_cls):
+        # invalid parameter sets
+        with pytest.raises(ValueError):
+            _ = ig_cls(
+                output_chunk_length=3,
+            )
+
+        with pytest.raises(ValueError):
+            _ = ig_cls(
+                output_chunk_length=3,
+                covariates_lags=[-1],
+            )
+
+        # valid parameter sets
+        # TorchForecastingModel scenario
+        _ = ig_cls(
+            input_chunk_length=3,
+            output_chunk_length=3,
+        )
+        # RegressionModel scenario
+        _ = ig_cls(
+            input_chunk_length=3,
+            output_chunk_length=3,
+            covariates_lags=[-1],
+        )
+        # LocalForecastingModel scenario, or model agnostic
+        _ = ig_cls()
+
     def test_past_index_generator_creation(self):
+        # test parameter scenarios
+        self.helper_test_index_generator_creation(ig_cls=PastCovariatesIndexGenerator)
+
         # ==> test failures
         # one lag is >= 0 (not possible for past covariates)
         with pytest.raises(ValueError):
@@ -239,6 +270,9 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
         self.assertEqual(ig.shift_end, max_lag + 1)
 
     def test_future_index_generator_creation(self):
+        # test parameter scenarios
+        self.helper_test_index_generator_creation(ig_cls=FutureCovariatesIndexGenerator)
+
         # future covariates index generator (ig) can technically be used like a past covariates ig
         min_lag, max_lag = -2, -1
         ig = FutureCovariatesIndexGenerator(
