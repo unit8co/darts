@@ -25,7 +25,14 @@ logger = get_logger(__name__)
 
 
 class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
-    def __init__(self, p: int = 1, d: int = 0, q: int = 0, trend: Optional[str] = None):
+    def __init__(
+        self,
+        p: int = 1,
+        d: int = 0,
+        q: int = 0,
+        trend: Optional[str] = None,
+        add_encoders: Optional[dict] = None,
+    ):
         """VARIMA
 
         Parameters
@@ -44,8 +51,28 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
             Parameter controlling the deterministic trend. 'n' indicates no trend,
             'c' a constant term, 't' linear trend in time, and 'ct' includes both.
             Default is 'c' for models without integration, and no trend for models with integration.
+        add_encoders
+            A large number of future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
+            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'position': {'future': ['relative']},
+                    'custom': {'future': [lambda idx: (idx.year - 1950) / 50]},
+                    'transformer': Scaler()
+                }
+            ..
         """
-        super().__init__()
+        super().__init__(add_encoders=add_encoders)
         self.p = p
         self.d = d
         self.q = q

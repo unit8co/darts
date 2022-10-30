@@ -17,7 +17,11 @@ from darts.timeseries import TimeSeries
 
 class Croston(FutureCovariatesLocalForecastingModel):
     def __init__(
-        self, version: str = "classic", alpha_d: float = None, alpha_p: float = None
+        self,
+        version: str = "classic",
+        alpha_d: float = None,
+        alpha_p: float = None,
+        add_encoders: Optional[dict] = None,
     ):
         """An implementation of the `Croston method
         <https://otexts.com/fpp3/counts.html>`_ for intermittent
@@ -42,6 +46,26 @@ class Croston(FutureCovariatesLocalForecastingModel):
             For the "tsb" version, the alpha smoothing parameter to apply on demand.
         alpha_p
             For the "tsb" version, the alpha smoothing parameter to apply on probability.
+        add_encoders
+            A large number of future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
+            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'position': {'future': ['relative']},
+                    'custom': {'future': [lambda idx: (idx.year - 1950) / 50]},
+                    'transformer': Scaler()
+                }
+            ..
 
         References
         ----------
@@ -51,7 +75,7 @@ class Croston(FutureCovariatesLocalForecastingModel):
                Intermittent demand: Linking forecasting to inventory obsolescence.
                European Journal of Operational Research, 214(3):606 – 615, 2011.
         """
-        super().__init__()
+        super().__init__(add_encoders=add_encoders)
         raise_if_not(
             version.lower() in ["classic", "optimized", "sba", "tsb"],
             'The provided "version" parameter must be set to "classic", "optimized", "sba" or "tsb".',

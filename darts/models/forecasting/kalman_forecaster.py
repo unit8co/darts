@@ -26,7 +26,12 @@ logger = get_logger(__name__)
 
 
 class KalmanForecaster(FutureCovariatesLocalForecastingModel):
-    def __init__(self, dim_x: int = 1, kf: Optional[Kalman] = None):
+    def __init__(
+        self,
+        dim_x: int = 1,
+        kf: Optional[Kalman] = None,
+        add_encoders: Optional[dict] = None,
+    ):
         """Kalman filter Forecaster
 
         This model uses a Kalman filter to produce forecasts. It uses a
@@ -50,8 +55,28 @@ class KalmanForecaster(FutureCovariatesLocalForecastingModel):
             calling `predict()`.
             If this is specified, it is still necessary to call `fit()` before calling `predict()`,
             although this will have no effect on the Kalman filter.
+        add_encoders
+            A large number of future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
+            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'position': {'future': ['relative']},
+                    'custom': {'future': [lambda idx: (idx.year - 1950) / 50]},
+                    'transformer': Scaler()
+                }
+            ..
         """
-        super().__init__()
+        super().__init__(add_encoders=add_encoders)
         self.dim_x = dim_x
         self.kf = kf
         self.darts_kf = KalmanFilter(dim_x, kf)
