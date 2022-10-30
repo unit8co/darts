@@ -194,7 +194,7 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
         )
         self.assertTrue(idx.equals(self.cov_int_inf_long.time_index))
 
-    def helper_test_index_generator_creation(self, ig_cls):
+    def helper_test_index_generator_creation(self, ig_cls, is_past=False):
         # invalid parameter sets
         with pytest.raises(ValueError):
             _ = ig_cls(
@@ -219,12 +219,15 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
             output_chunk_length=3,
             covariates_lags=[-1],
         )
-        # LocalForecastingModel scenario, or model agnostic
-        _ = ig_cls()
+        # LocalForecastingModel scenario, or model agnostic (only supported by FutureCovariatesIndexGenerator)
+        if not is_past:
+            _ = ig_cls()
 
     def test_past_index_generator_creation(self):
         # test parameter scenarios
-        self.helper_test_index_generator_creation(ig_cls=PastCovariatesIndexGenerator)
+        self.helper_test_index_generator_creation(
+            ig_cls=PastCovariatesIndexGenerator, is_past=True
+        )
 
         # ==> test failures
         # one lag is >= 0 (not possible for past covariates)
@@ -271,7 +274,9 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
 
     def test_future_index_generator_creation(self):
         # test parameter scenarios
-        self.helper_test_index_generator_creation(ig_cls=FutureCovariatesIndexGenerator)
+        self.helper_test_index_generator_creation(
+            ig_cls=FutureCovariatesIndexGenerator, is_past=False
+        )
 
         # future covariates index generator (ig) can technically be used like a past covariates ig
         min_lag, max_lag = -2, -1
@@ -602,3 +607,25 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
         test_routine_inf(self, ig, ocl, expected_start, expected_end)
         # check inference for n > ocl
         test_routine_inf(self, ig, ocl + 1, expected_start, "2002-04-01")
+
+    def test_future_index_generator_local(self):
+        # test model agnostic scenario (also for LocalForecastingModels)
+        freq = self.target_time.freq
+        target = self.target_time
+
+        idxg = FutureCovariatesIndexGenerator()
+        idx, _ = idxg.generate_train_idx(target=target, covariates=None)
+        self.assertTrue(idx.equals(target.time_index))
+        idx, _ = idxg.generate_train_idx(target=target, covariates=self.cov_time_train)
+        self.assertTrue(idx.equals(self.cov_time_train.time_index))
+
+        n = 10
+        idx, _ = idxg.generate_inference_idx(n=n, target=target, covariates=None)
+        self.assertEqual(idx.freq, freq)
+        self.assertEqual(idx[0], target.end_time() + 1 * freq)
+        self.assertEqual(idx[-1], target.end_time() + n * freq)
+
+        idx, _ = idxg.generate_inference_idx(
+            n=n, target=target, covariates=self.cov_int_inf_short
+        )
+        self.assertTrue(idx.equals(self.cov_int_inf_short.time_index))

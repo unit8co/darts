@@ -33,7 +33,8 @@ class CovariatesIndexGenerator(ABC):
 
         It can be used:
         A   in combination with :class:`LocalForecastingModel`, or in a model agnostic scenario:
-                All parameters can be ignored.
+                All parameters can be ignored. This scenario is only supported by
+                :class:`FutureCovariatesIndexGenerator`.
         B   in combination with :class:`RegressionModel`:
                 Set `input_chunk_length`, `output_chunk_length`, and `covariates_lags`.
                 `input_chunk_length` is the absolute value of the minimum target lag `abs(min(lags))` used with the
@@ -57,6 +58,7 @@ class CovariatesIndexGenerator(ABC):
         # check that parameters match one of the scenarios
         self._verify_scenario(input_chunk_length, output_chunk_length, covariates_lags)
 
+        # input/output chunk length are guaranteed to both be `None`, or both be defined
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
 
@@ -130,15 +132,16 @@ class CovariatesIndexGenerator(ABC):
         """
         pass
 
-    @staticmethod
     def _verify_scenario(
+        self,
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
         covariates_lags: Optional[List[int]] = None,
     ):
-        # LocalForecastingModel, or model agnostic
+        # LocalForecastingModel, or model agnostic (only supported by future covariates)
         is_scenario_a = (
-            input_chunk_length is None
+            isinstance(self, FutureCovariatesIndexGenerator)
+            and input_chunk_length is None
             and output_chunk_length is None
             and covariates_lags is None
         )
@@ -258,7 +261,7 @@ class PastCovariatesIndexGenerator(CovariatesIndexGenerator):
         # for prediction (`n` is given) with past covariates the returned index depends on the following cases:
         # case 0
         #     user supplied covariates: simply return the covariate time index; guarantees that an exception is
-        #     raised if user supplied insufficient covariates
+        #     raised if user supplied insufficient covariates.
         # case 1
         #     only input_chunk_length and output_chunk_length are given: we need to generate a time index that starts
         #     `input_chunk_length - 1` before the end of `target` and ends `max(0, n - output_chunk_length)` after the
@@ -273,14 +276,11 @@ class PastCovariatesIndexGenerator(CovariatesIndexGenerator):
         if covariates is not None:  # case 0
             return covariates.time_index, target_end
 
-        if self.shift_start is None:  # case 1
+        if self.shift_start is None or self.shift_end is None:  # case 1
             steps_back_end = self.input_chunk_length - 1
-        else:  # case 2
-            steps_back_end = -self.shift_start
-
-        if self.shift_end is None:  # case 1
             n_steps = steps_back_end + 1 + max(0, n - self.output_chunk_length)
         else:  # case 2
+            steps_back_end = -self.shift_start
             shift_steps = self.shift_end - self.shift_start + 1
             n_steps = shift_steps + max(0, n - self.output_chunk_length)
 
@@ -322,14 +322,17 @@ class FutureCovariatesIndexGenerator(CovariatesIndexGenerator):
         #     user supplied covariates: simply return the covariate time index; guarantees that models raise an
         #     exception if user supplied insufficient covariates
         # case 1
+        #     user uses a LocalForecastingModel or model agnostic scenario (input_chunk_length is None):
+        #     simply return the target time index.
+        # case 2
         #     only input_chunk_length and output_chunk_length are given: the complete covariate index is within the
         #     target index; always True for all models except RegressionModels.
-        # case 2
+        # case 3
         #     covariate lags were given and (shift_start <= 0 or shift_end <= 0): historic part of future covariates.
         #     if shift_end < there will only be the historic part of future covariates.
         #     If shift_start <= 0 and abs(shift_start - 1) > input_chunk_length: we need to add indices before the
         #     beginning of the target series; can only be True for RegressionModels.
-        # case 3
+        # case 4
         #     covariate lags were given and (shift_start > 0 or shift_end > 0): future part of future covariates.
         #     if shift_start > 0 there will only be the future part of future covariates.
         #     If shift_end > 0 and shift_start > input_chunk_length: we need to add indices after the end of the
@@ -340,14 +343,17 @@ class FutureCovariatesIndexGenerator(CovariatesIndexGenerator):
         if covariates is not None:  # case 0
             return covariates.time_index, target_end
 
-        if self.shift_start is None:  # case 1
+        if self.input_chunk_length is None:  # case 1
+            return target.time_index, target_end
+
+        if self.shift_start is None:  # case 2
             steps_ahead_start = 0
-        else:  # case 2
+        else:  # case 3
             steps_ahead_start = self.input_chunk_length + self.shift_start - 1
 
-        if self.shift_end is None:  # case 1
+        if self.shift_end is None:  # case 2
             steps_ahead_end = 0
-        else:  # case 3
+        else:  # case 4
             steps_ahead_end = -self.output_chunk_length + self.shift_end
         steps_ahead_end = steps_ahead_end if steps_ahead_end else None
 
@@ -367,10 +373,13 @@ class FutureCovariatesIndexGenerator(CovariatesIndexGenerator):
         #     user supplied covariates: simply return the covariate time index; guarantees that an exception is
         #     raised if user supplied insufficient covariates
         # case 1
+        #     user uses a LocalForecastingModel or model agnostic scenario (input_chunk_length is None):
+        #     simply return the target time index.
+        # case 2
         #     only input_chunk_length and output_chunk_length are given: we need to generate a time index that starts
         #     `input_chunk_length - 1` before the end of `target` and ends `max(n, output_chunk_length)` after the
         #     end of `target`; always True for all models except RegressionModels.
-        # case 2
+        # case 3
         #     covariate lags were given: we need to generate a time index that starts `-shift_start`
         #     steps before the end of `target` and has a length of `shift_steps + max(0, n - output_chunk_length)`,
         #     where `shift_steps` is `shift_end - shift_start`; can only be True for RegressionModels.
@@ -379,14 +388,14 @@ class FutureCovariatesIndexGenerator(CovariatesIndexGenerator):
         if covariates is not None:  # case 0
             return covariates.time_index, target_end
 
-        if self.shift_start is None:  # case 1
+        if self.input_chunk_length is None:
+            steps_back_end = -1
+            n_steps = n
+        elif self.shift_start is None:  # case 2
             steps_back_end = self.input_chunk_length - 1
-        else:  # case 2
-            steps_back_end = -self.shift_start
-
-        if self.shift_end is None:  # case 1
             n_steps = steps_back_end + 1 + max(n, self.output_chunk_length)
-        else:  # case 2
+        else:  # case 3
+            steps_back_end = -self.shift_start
             shift_steps = self.shift_end + steps_back_end + 1
             n_steps = shift_steps + max(0, n - self.output_chunk_length)
 
