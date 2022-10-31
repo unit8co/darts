@@ -523,6 +523,9 @@ class FittableAnomalyScorer(AnomalyScorer):
             )
 
 
+# FittableAnomalyScorer
+
+
 class GaussianMixtureScorer(FittableAnomalyScorer):
     """GaussianMixtureScorer anomaly score
 
@@ -1017,49 +1020,7 @@ class LocalOutlierFactorScorer(FittableAnomalyScorer):
         )
 
 
-class L2(NonFittableAnomalyScorer):
-    """L2 distance metric
-
-    Returns the L2 norm between each timestamps of two series.
-
-    The input can be univariate or multivariate, it will always return a univariate timesereies.
-    """
-
-    def __init__(self) -> None:
-        super().__init__()
-
-    def __str__(self):
-        return "L2"
-
-    def _score_core(
-        self,
-        series_1: TimeSeries,
-        series_2: TimeSeries,
-    ) -> TimeSeries:
-        return ((series_1 - series_2) ** 2).sum(axis=1).map(lambda x: np.sqrt(x))
-
-
-class L1(NonFittableAnomalyScorer):
-    """L1 distance metric
-
-    Returns the L1 norm between each timestamps of two series.
-
-    The input can be univariate or multivariate, it will always return a univariate timesereies.
-    If the two series are univariate, scorer L1 is equivalent to the scorer AbsDifference.
-    """
-
-    def __init__(self) -> None:
-        super().__init__()
-
-    def __str__(self):
-        return "L1"
-
-    def _score_core(
-        self,
-        series_1: TimeSeries,
-        series_2: TimeSeries,
-    ) -> TimeSeries:
-        return (series_1 - series_2).map(lambda x: np.abs(x)).sum(axis=1)
+# NonFittableAnomalyScorer
 
 
 class Difference(NonFittableAnomalyScorer):
@@ -1084,24 +1045,64 @@ class Difference(NonFittableAnomalyScorer):
         return series_1 - series_2
 
 
-class AbsDifference(NonFittableAnomalyScorer):
-    """Absolute difference distance metric
+class Norm(NonFittableAnomalyScorer):
+    """Norm anomaly score
 
-    Returns the absolute difference between each timestamps of two series.
-
-    If the two series are multivariate, it will return a multivariate series.
-    If the two series are univariate, scorer AbsDifference is equivalent to the scorer L1.
+    Wrapped around the linalg.norm numpy function.
+    Source code: <https://numpy.org/doc/stable/reference/generated/numpy.linalg.norm.html>.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, ord=None, component_wise=False) -> None:
+        """
+        Returns the norm of a given order for each timestamp of the two input series’ differences.
+
+        If component_wise is set to False, each timestamp of the difference will be considered as a vector
+        and its norm will be computed.
+
+        If component_wise is set to True, it will return the absolute value for each element of the difference,
+        regardless of the norm's order.
+
+        The ``compute()`` method accepts as input two series:
+
+        - If the two series are multivariate of width w:
+            - if component_wise is set to False: it will return a univariate series (width=1).
+            - if component_wise is set to True: it will return a multivariate series of width w
+
+        - If the two series are univariate, it will return a univariate series regardless of the parameter
+        component_wise.
+
+        Parameters
+        ----------
+        ord
+            Order of the norm. Options are listed under 'Notes' at:
+            <https://numpy.org/doc/stable/reference/generated/numpy.linalg.norm.html>.
+            Default: None
+        component_wise
+            Boolean value indicating if the norm needs to be computed element-wise (True)
+            or component-wise (False) equivalent to axis=1.
+            Default: False
+        """
+
+        self.ord = ord
+        self.component_wise = component_wise
         super().__init__()
 
     def __str__(self):
-        return "AbsDifference"
+        return f"Norm (ord={self.ord}, component_wise={self.component_wise})"
 
     def _score_core(
         self,
         series_1: TimeSeries,
         series_2: TimeSeries,
     ) -> TimeSeries:
-        return (series_1 - series_2).map(lambda x: np.abs(x))
+
+        diff = series_1 - series_2
+
+        if self.component_wise:
+            return diff.map(lambda x: np.abs(x))
+
+        diff_np = diff.all_values(copy=False)
+
+        return TimeSeries.from_times_and_values(
+            diff._time_index, np.linalg.norm(diff_np, ord=self.ord, axis=1)
+        )
