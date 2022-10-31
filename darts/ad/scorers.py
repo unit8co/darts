@@ -849,6 +849,202 @@ class KMeansScorer(FittableAnomalyScorer):
         )
 
 
+class LocalOutlierFactorScorer(FittableAnomalyScorer):
+    """LocalOutlierFactor anomaly score
+
+    Wrapped around the LocalOutlierFactor scikit-learn function.
+    Source code: <https://github.com/scikit-learn/scikit-learn/blob/f3f51f9b6/sklearn/neighbors/_lof.py#L19>.
+    """
+
+    def __init__(
+        self,
+        window: Optional[int] = None,
+        n_neighbors: int = 2,
+        reduced_function=None,
+        component_wise=False,
+    ) -> None:
+        """
+        A Local outlier factor model is trained on the training data when the ``fit()`` method is called.
+        The ``score()`` method will return the local deviation of the density of a given sample with respect to its
+        neighbors. It is local in that the deviation depends on how isolated the object is with respect to the
+        surrounding neighborhood. More precisely, locality is given by k-nearest neighbors, whose distance is used to
+        estimate the local density. By comparing the local density of a sample to the local densities of its neighbors,
+        one can identify samples that have a substantially lower density than their neighbors.
+
+        TODO: stride in training is equal to w, and in score stride is equal to 1. Give the option
+        to change these parameters.
+
+        If 2 time series are given in the ``fit()`` or ``score()`` methods, a reduced function, given as a parameter
+        in the __init__ method (reduced_function), will be applied to transform the 2 time series into 1.
+        Default: "abs_diff"
+
+        component_wise is a boolean parameter in the __init__ method indicating how the model should behave with input
+        that is a multivariate series. If set to True, the model will treat each width/dimension of the series
+        independently. If the series has a width of d, the model will train and store the d LocalOutlierFactor models
+        and fit them on each dimension. If set to False, the model will concatenate the widths in the considered window
+        and compute the score using only one trained LocalOutlierFactor model.
+
+        Training:
+
+        The input can be a series (univariate or multivariate) or a list of series. The series will be partitioned into
+        equal size subsequences. If the series is multivariate (width>1), then the subsequence will be of size
+        window * width, with window being a given parameter.
+        If the series is of length n, width d and the window is set to w, the training phase will generate (n-w+1)/w
+        data samples of length d*w. If a list of series is given of length l, each series will be partitioned into
+        subsequences, and the results will be concatenated into an array of length l * number of subsequences.
+
+        The model LocalOutlierFactor will be fitted on the generated subsequences.
+
+        If component_wise is set to True, the algorithm will be applied to each width independently. For each width,
+        a LocalOutlierFactor model will be trained.
+
+        Compute score:
+
+        The input is a series (univariate or multivariate) or a list of series. The given series must have the same
+        width d as the data used to train the LocalOutlierFactor model.
+
+        - If the series is multivariate of width w:
+            - if component_wise is set to False: it will return a univariate series (width=1). It represents
+            the anomaly score of the entire series in the considered window at each timestamp.
+            - if component_wise is set to True: it will return a multivariate series of width w. Each dimension
+            represents the anomaly score of the corresponding dimension of the input.
+
+        - If the series is univariate, it will return a univariate series regardless of the parameter
+        component_wise.
+
+        A window of size w is rolled on the series with a stride equal to 1. It is the same window used during
+        the training phase. At each timestamp, the previous w values will be used to form a vector of size w * width
+        of the series. The Local outlier factor model will then return the local deviation of the density of the given
+        vector with respect to its neighbors (constituted in the training phase). The output will be a series of width
+        1 and length n-w+1, with n being the length of the input series. Each value will represent how anomalous the
+        sample of the w previous values is.
+
+        If a list is given, a for loop will iterate through the list, and the function ``_score_core()`` will be
+        applied independently on each series.
+
+        If component_wise is set to True, the algorithm will be applied to each width independently. For each width,
+        the anomaly score will be computed by the model trained on the corresponding width during the training.
+
+        Parameters
+        ----------
+        window
+            Size of the window used to create the subsequences of the series.
+        n_neighbors
+            Number of neighbors to use by default for kneighbors queries. If n_neighbors is larger than the number of
+            samples provided, all samples will be used.
+        reduced_function
+            Optionally, reduced function to use if two series are given. It will transform the two series into one.
+            This allows the LocalOutlierFactorScorer to apply LocalOutlierFactor model on the original series or on
+            its residuals (difference between the prediction and the original series).
+            Must be one of "abs_diff" and "diff" (defined in ``_diff()``).
+            Default: "abs_diff"
+        component_wise
+            Boolean value indicating if the score needs to be computed for each width/dimension independently (True)
+            or by concatenating the width in the considered window to compute one score (False).
+            Default: False
+        """
+
+        super().__init__(window=window, reduced_function=reduced_function)
+        self.n_neighbors = n_neighbors
+
+        raise_if_not(
+            isinstance(component_wise, bool),
+            f"component_wise must be Boolean, found type: {type(component_wise)}",
+        )
+        self.component_wise = component_wise
+
+    def __str__(self):
+        return f"LocalOutlierFactor (n_neighbors= {self.n_neighbors}, window={self.window}, \
+            reduced_function={self.reduced_function})"
+
+    def _fit_core(
+        self,
+        list_series_1: Sequence[TimeSeries],
+        list_series_2: Sequence[TimeSeries] = None,
+    ):
+
+        if list_series_2 is None:
+            list_series = list_series_1
+        else:
+            list_series = self._diff_sequence(list_series_1, list_series_2)
+
+        self._fit_called = True
+        self.width_trained_on = list_series[0].width
+
+        if not self.component_wise:
+            self.model = LocalOutlierFactor(n_neighbors=self.n_neighbors, novelty=True)
+            self.model.fit(
+                np.concatenate(
+                    [
+                        s.all_values(copy=False).reshape(-1, self.window * s.width)
+                        for s in list_series
+                    ]
+                )
+            )
+        else:
+            models = []
+            for width in range(self.width_trained_on):
+                model = LocalOutlierFactor(n_neighbors=self.n_neighbors, novelty=True)
+                model.fit(
+                    np.concatenate(
+                        [
+                            s.all_values(copy=False)[:, width].reshape(-1, self.window)
+                            for s in list_series
+                        ]
+                    )
+                )
+                models.append(model)
+            self.model = models
+
+    def _score_core(
+        self, series_1: TimeSeries, series_2: TimeSeries = None
+    ) -> TimeSeries:
+
+        if series_2 is None:
+            series = series_1
+        else:
+            series = self._diff(series_1, series_2)
+
+        raise_if_not(
+            self.width_trained_on == series.width,
+            f"Input must have the same width of the data used for training the Kmeans model, \
+                found width: {self.width_trained_on} and {series.width}",
+        )
+
+        np_series = series.all_values(copy=False)
+        np_anomaly_score = []
+
+        if not self.component_wise:
+
+            np_anomaly_score.append(
+                self.model.score_samples(
+                    np.array(
+                        [
+                            np.array(np_series[i : i + self.window])
+                            for i in range(len(series) - self.window + 1)
+                        ]
+                    ).reshape(-1, self.window * series.width)
+                )
+            )
+        else:
+
+            for width in range(self.width_trained_on):
+                np_anomaly_score_width = self.model[width].score_samples(
+                    np.array(
+                        [
+                            np.array(np_series[i : i + self.window, width])
+                            for i in range(len(series) - self.window + 1)
+                        ]
+                    ).reshape(-1, self.window)
+                )
+
+                np_anomaly_score.append(np_anomaly_score_width)
+
+        return TimeSeries.from_times_and_values(
+            series._time_index[self.window - 1 :], list(zip(*np_anomaly_score))
+        )
+
+
 class WassersteinScorer(FittableAnomalyScorer):
     """WassersteinScorer anomaly score
 
@@ -1034,137 +1230,6 @@ class WassersteinScorer(FittableAnomalyScorer):
 
         return TimeSeries.from_times_and_values(
             series._time_index[self.window - 1 :], distance
-        )
-
-
-class LocalOutlierFactorScorer(FittableAnomalyScorer):
-    """LocalOutlierFactor anomaly score
-
-    Wrapped around the LocalOutlierFactor scikit-learn function.
-    Source code: <https://github.com/scikit-learn/scikit-learn/blob/f3f51f9b6/sklearn/neighbors/_lof.py#L19>.
-    """
-
-    def __init__(
-        self,
-        window: Optional[int] = None,
-        n_neighbors: int = 2,
-        reduced_function=None,
-    ) -> None:
-        """
-        A Local outlier factor model is trained on the training data when the ``fit()`` method is called.
-        The ``score()`` method will return the local deviation of the density of a given sample with respect to its
-        neighbors. It is local in that the deviation depends on how isolated the object is with respect to the
-        surrounding neighborhood. More precisely, locality is given by k-nearest neighbors, whose distance is used to
-        estimate the local density. By comparing the local density of a sample to the local densities of its neighbors,
-        one can identify samples that have a substantially lower density than their neighbors.
-
-        TODO: stride in training is equal to w, and in score stride is equal to 1. Give the option
-        to change these parameters.
-
-        If 2 time series are given in the ``fit()`` or ``score()`` methods, a reduced function, given as a parameter
-        in the __init__ method (reduced_function), will be applied to transform the 2 time series into 1.
-        Default: "abs_diff"
-
-        Training:
-
-        The input can be a series (univariate or multivariate) or a list of series. The series will be partitioned into
-        equal size subsequences. If the series is multivariate (width>1), then the subsequence will be of size
-        window * width, with window being a given parameter.
-        If the series is of length n, width d and the window is set to w, the training phase will generate (n-w+1)/w
-        data samples of length d*w. If a list of series is given of length l, each series will be partitioned into
-        subsequences, and the results will be concatenated into an array of length l * number of subsequences.
-
-        The model LocalOutlierFactor will be fitted on the generated subsequences.
-
-        Compute score:
-
-        The input is a series (univariate or multivariate) or a list of series. The given series must have the same
-        width d as the data used to train the LocalOutlierFactor model. A window of size w is rolled on the series
-        with a stride equal to 1. It is the same window used during the training phase. At each timestamp, the previous
-        w values will be used to form a vector of size w * width of the series.
-        The Local outlier factor model will then return the local deviation of the density of the given vector with
-        respect to its neighbors (constituted in the training phase). The output will be a series of width 1 and length
-        n-w+1, with n being the length of the input series. Each value will represent how anomalous the sample of
-        the w previous values is.
-
-        If a list is given, a for loop will iterate through the list, and the function ``_score_core()`` will be
-        applied independently on each series.
-
-        Parameters
-        ----------
-        window
-            Size of the window used to create the subsequences of the series.
-        n_neighbors
-            Number of neighbors to use by default for kneighbors queries. If n_neighbors is larger than the number of
-            samples provided, all samples will be used.
-        reduced_function
-            Optionally, reduced function to use if two series are given. It will transform the two series into one.
-            This allows the LocalOutlierFactorScorer to apply LocalOutlierFactor model on the original series or on
-            its residuals (difference between the prediction and the original series).
-            Must be one of "abs_diff" and "diff" (defined in ``_diff()``).
-            Default: "abs_diff"
-        """
-
-        super().__init__(window=window, reduced_function=reduced_function)
-        self.n_neighbors = n_neighbors
-        self.model = LocalOutlierFactor(n_neighbors=n_neighbors, novelty=True)
-
-    def __str__(self):
-        return f"LocalOutlierFactor (n_neighbors= {self.n_neighbors}, window={self.window}, \
-            reduced_function={self.reduced_function})"
-
-    def _fit_core(
-        self,
-        list_series_1: Sequence[TimeSeries],
-        list_series_2: Sequence[TimeSeries] = None,
-    ):
-
-        if list_series_2 is None:
-            list_series = list_series_1
-        else:
-            list_series = self._diff_sequence(list_series_1, list_series_2)
-
-        self._fit_called = True
-        self.width_trained_on = list_series[0].width
-        self.model.fit(
-            np.concatenate(
-                [
-                    s.all_values(copy=False).reshape(-1, self.window * s.width)
-                    for s in list_series
-                ]
-            )
-        )
-
-    def _score_core(
-        self, series_1: TimeSeries, series_2: TimeSeries = None
-    ) -> TimeSeries:
-
-        if series_2 is None:
-            series = series_1
-        else:
-            series = self._diff(series_1, series_2)
-
-        raise_if_not(
-            self.width_trained_on == series.width,
-            f"Input must have the same width of the data used for training the Kmeans model, \
-                found width: {self.width_trained_on} and {series.width}",
-        )
-
-        np_series = series.all_values(copy=False)
-        # return distance to the clostest centroid
-        np_anomaly_score = np.abs(
-            self.model.score_samples(
-                np.array(
-                    [
-                        np.array(np_series[i : i + self.window])
-                        for i in range(len(np_series) - self.window + 1)
-                    ]
-                ).reshape(-1, self.window * series.width)
-            )
-        )
-
-        return TimeSeries.from_times_and_values(
-            series._time_index[self.window - 1 :], np_anomaly_score
         )
 
 
