@@ -664,6 +664,7 @@ class KMeansScorer(FittableAnomalyScorer):
         window: Optional[int] = None,
         k: Union[int, list[int]] = 2,
         reduced_function=None,
+        component_wise=False,
     ) -> None:
         """
         A KMeans model is trained on the training data when the ``fit()`` method is called.
@@ -675,6 +676,12 @@ class KMeansScorer(FittableAnomalyScorer):
         If 2 time series are given in the ``fit()`` or ``score()`` methods, a reduced function, given as a parameter
         in the __init__ method (reduced_function), will be applied to transform the 2 time series into 1.
         Default: "abs_diff"
+
+        component_wise is a boolean parameter in the __init__ method indicating how the model should behave with input
+        that is a multivariate series. If set to True, the model will treat each width/dimension of the series
+        independently. If the series has a width of d, the model will train and store the d KMeans models and fit them
+        on each dimension. If set to False, the model will concatenate the widths in the considered window and compute
+        the score using only one trained KMeans model.
 
         Training:
 
@@ -688,18 +695,36 @@ class KMeansScorer(FittableAnomalyScorer):
         The model KMeans will be fitted on the generated subsequences. The model will find k cluster of dimensions
         equal to the length of the subsequences (d*w).
 
+        If component_wise is set to True, the algorithm will be applied to each width independently. For each width,
+        a KMeans model will be trained.
+
         Compute score:
 
         The input is a series (univariate or multivariate) or a list of series. The given series must have the same
-        width d as the data used to train the KMeans model. A window of size w is rolled on the series with a stride
-        equal to 1. It is the same window used during the training phase. At each timestamp, the previous w values
-        will be used to form a vector of size w * width of the series.
-        The KMeans model will then retrieve the closest centroid to this vector, and compute the L1 norm between the
-        centroid and the vector. The output will be a series of width 1 and length n-w+1, with n being the length of
-        the input series. Each value will represent how anomalous the sample of the w previous values is.
+        width d as the data used to train the KMeans model.
+
+        - If the series is multivariate of width w:
+            - if component_wise is set to False: it will return a univariate series (width=1). It represents
+            the anomaly score of the entire series in the considered window at each timestamp.
+            - if component_wise is set to True: it will return a multivariate series of width w. Each dimension
+            represents the anomaly score of the corresponding dimension of the input.
+
+        - If the series is univariate, it will return a univariate series regardless of the parameter
+        component_wise.
+
+        A window of size w is rolled on the series with a stride equal to 1. It is the same window used during
+        the training phase. At each timestamp, the previous w values will be used to form a vector of size w * width
+        of the series. The KMeans model will then retrieve the closest centroid to this vector, and compute the
+        euclidean distance between the centroid and the vector. The output will be a series of width 1 and length
+        n-w+1, with n being the length of the input series. Each value will represent how anomalous the sample of
+        the w previous values is.
 
         If a list is given, a for loop will iterate through the list, and the function ``_score_core()`` will be
         applied independently on each series.
+
+        If component_wise is set to True, the algorithm will be applied to each width independently. The distance will
+        be computed between the vector and the closest centroid found by the model trained on the corresponding width
+        during the training.
 
         Parameters
         ----------
@@ -712,11 +737,21 @@ class KMeansScorer(FittableAnomalyScorer):
             This allows the KMeansScorer to apply KMeans on the original series or on its residuals (difference between
             the prediction and the original series). Must be one of "abs_diff" and "diff" (defined in ``_diff()``).
             Default: "abs_diff"
+        component_wise
+            Boolean value indicating if the score needs to be computed for each width/dimension independently (True)
+            or by concatenating the width in the considered window to compute one score (False).
+            Default: False
         """
 
         super().__init__(window=window, reduced_function=reduced_function)
+
+        raise_if_not(
+            isinstance(component_wise, bool),
+            f"component_wise must be Boolean, found type: {type(component_wise)}",
+        )
+        self.component_wise = component_wise
+
         self.k = k
-        self.model = KMeans(n_clusters=k)
 
     def __str__(self):
         return f"KMeansScorer (k={self.k}, window={self.window}, reduced_function={self.reduced_function})"
@@ -734,14 +769,31 @@ class KMeansScorer(FittableAnomalyScorer):
 
         self._fit_called = True
         self.width_trained_on = list_series[0].width
-        self.model.fit(
-            np.concatenate(
-                [
-                    s.all_values(copy=False).reshape(-1, self.window * s.width)
-                    for s in list_series
-                ]
+
+        if not self.component_wise:
+            self.model = KMeans(n_clusters=self.k)
+            self.model.fit(
+                np.concatenate(
+                    [
+                        s.all_values(copy=False).reshape(-1, self.window * s.width)
+                        for s in list_series
+                    ]
+                )
             )
-        )
+        else:
+            models = []
+            for width in range(self.width_trained_on):
+                model = KMeans(n_clusters=self.k)
+                model.fit(
+                    np.concatenate(
+                        [
+                            s.all_values(copy=False)[:, width].reshape(-1, self.window)
+                            for s in list_series
+                        ]
+                    )
+                )
+                models.append(model)
+            self.model = models
 
     def _score_core(
         self, series_1: TimeSeries, series_2: TimeSeries = None
@@ -759,19 +811,41 @@ class KMeansScorer(FittableAnomalyScorer):
         )
 
         np_series = series.all_values(copy=False)
+        np_anomaly_score = []
 
-        # return distance to the clostest centroid
-        np_anomaly_score = self.model.transform(
-            np.array(
-                [
-                    np.array(np_series[i : i + self.window])
-                    for i in range(len(series) - self.window + 1)
-                ]
-            ).reshape(-1, self.window * series.width)
-        ).min(axis=1)
+        if not self.component_wise:
+
+            # return distance to the clostest centroid
+            np_anomaly_score.append(
+                self.model.transform(
+                    np.array(
+                        [
+                            np.array(np_series[i : i + self.window])
+                            for i in range(len(series) - self.window + 1)
+                        ]
+                    ).reshape(-1, self.window * series.width)
+                ).min(axis=1)
+            )  # only return the clostest distance out of the k ones (k centroids)
+        else:
+
+            for width in range(self.width_trained_on):
+                np_anomaly_score_width = (
+                    self.model[width]
+                    .transform(
+                        np.array(
+                            [
+                                np.array(np_series[i : i + self.window, width])
+                                for i in range(len(series) - self.window + 1)
+                            ]
+                        ).reshape(-1, self.window)
+                    )
+                    .min(axis=1)
+                )
+
+                np_anomaly_score.append(np_anomaly_score_width)
 
         return TimeSeries.from_times_and_values(
-            series._time_index[self.window - 1 :], np_anomaly_score
+            series._time_index[self.window - 1 :], list(zip(*np_anomaly_score))
         )
 
 
@@ -874,6 +948,10 @@ class WassersteinScorer(FittableAnomalyScorer):
             "(preferably higher than 10 as it is the number of samples of the test distribution)",
         )
 
+        raise_if_not(
+            isinstance(component_wise, bool),
+            f"component_wise must be Boolean, found type: {type(component_wise)}",
+        )
         self.component_wise = component_wise
 
     def __str__(self):
