@@ -609,7 +609,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
     def test_models_runnability(self):
         train_y, test_y = self.sine_univariate1.split_before(0.7)
-        multi_models_modes = [True]
+        multi_models_modes = [True, False]
         for mode in multi_models_modes:
             for model in self.models:
                 # testing past covariates
