@@ -538,6 +538,7 @@ class GaussianMixtureScorer(FittableAnomalyScorer):
         window: Optional[int] = None,
         n_components: int = 1,
         reduced_function=None,
+        component_wise=False,
     ) -> None:
 
         """
@@ -551,6 +552,12 @@ class GaussianMixtureScorer(FittableAnomalyScorer):
         in the __init__ method (reduced_function), will be applied to transform the 2 time series into 1.
         Default: "abs_diff"
 
+        component_wise is a boolean parameter in the __init__ method indicating how the model should behave with input
+        that is a multivariate series. If set to True, the model will treat each width/dimension of the series
+        independently. If the series has a width of d, the model will train and store the d Gaussian mixture models
+        and fit them on each dimension. If set to False, the model will concatenate the widths in the considered window
+        and compute the score using only one trained Gaussian mixture model.
+
         Training:
 
         The input can be a series (univariate or multivariate) or a list of series. The series will be partitioned
@@ -563,10 +570,24 @@ class GaussianMixtureScorer(FittableAnomalyScorer):
         The Gaussian mixture model will be fitted on the generated subsequences. The model will estimate its parameters
         with the EM algorithm.
 
+        If component_wise is set to True, the algorithm will be applied to each width independently. For each width,
+        a Gaussian mixture model will be trained.
+
         Compute score:
 
         The input is a series (univariate or multivariate) or a list of series. The given series must have the same
-        width d as the data used to train the GaussianMixture model. A window of size w is rolled on the series with
+        width d as the data used to train the GaussianMixture model.
+
+        - If the series is multivariate of width w:
+            - if component_wise is set to False: it will return a univariate series (width=1). It represents
+            the anomaly score of the entire series in the considered window at each timestamp.
+            - if component_wise is set to True: it will return a multivariate series of width w. Each dimension
+            represents the anomaly score of the corresponding dimension of the input.
+
+        - If the series is univariate, it will return a univariate series regardless of the parameter
+        component_wise.
+
+        A window of size w is rolled on the series with
         a stride equal to 1. It is the same window used during the training phase. At each timestamp, the previous w
         values will be used to form a vector of size w * width of the series. The ``score_samples()`` of the Gaussian
         mixture model will be called, with the vector as parameter. It will return the log-likelihood of the vector,
@@ -575,6 +596,9 @@ class GaussianMixtureScorer(FittableAnomalyScorer):
 
         If a list is given, a for loop will iterate through the list, and the function ``_score_core()`` will be
         applied independently on each series.
+
+        If component_wise is set to True, the algorithm will be applied to each width independently. The log-likelihood
+        of the window in width w will be computed by the model trained on the corresponding width w during the training.
 
         Parameters
         ----------
@@ -588,11 +612,20 @@ class GaussianMixtureScorer(FittableAnomalyScorer):
             residuals (difference between the prediction and the original series).
             Must be one of "abs_diff" and "diff" (defined in ``_diff()``).
             Default: "abs_diff"
+        component_wise
+            Boolean value indicating if the score needs to be computed for each width/dimension independently (True)
+            or by concatenating the width in the considered window to compute one score (False).
+            Default: False
         """
 
         super().__init__(window=window, reduced_function=reduced_function)
         self.n_components = n_components
-        self.model = GaussianMixture(n_components=n_components)
+
+        raise_if_not(
+            isinstance(component_wise, bool),
+            f"component_wise must be Boolean, found type: {type(component_wise)}",
+        )
+        self.component_wise = component_wise
 
     def __str__(self):
         return f"GaussianMixtureScorer (n_components={self.n_components}, window={self.window}, \
@@ -611,16 +644,31 @@ class GaussianMixtureScorer(FittableAnomalyScorer):
 
         self._fit_called = True
         self.width_trained_on = list_series[0].width
-        self.model.fit(
-            np.concatenate(
-                [
-                    series.all_values(copy=False).reshape(
-                        -1, self.window * series.width
-                    )
-                    for series in list_series
-                ]
+
+        if not self.component_wise:
+            self.model = GaussianMixture(n_components=self.n_components)
+            self.model.fit(
+                np.concatenate(
+                    [
+                        s.all_values(copy=False).reshape(-1, self.window * s.width)
+                        for s in list_series
+                    ]
+                )
             )
-        )
+        else:
+            models = []
+            for width in range(self.width_trained_on):
+                model = GaussianMixture(n_components=self.n_components)
+                model.fit(
+                    np.concatenate(
+                        [
+                            s.all_values(copy=False)[:, width].reshape(-1, self.window)
+                            for s in list_series
+                        ]
+                    )
+                )
+                models.append(model)
+            self.model = models
 
     def _score_core(
         self, series_1: TimeSeries, series_2: TimeSeries = None
@@ -637,18 +685,39 @@ class GaussianMixtureScorer(FittableAnomalyScorer):
             found width: {self.width_trained_on} and {series.width}",
         )
 
-        np_anomaly_score = np.exp(
-            self.model.score_samples(
-                np.array(
-                    [
-                        np.array(series.all_values(copy=False)[i : i + self.window])
-                        for i in range(len(series) - self.window + 1)
-                    ]
-                ).reshape(-1, self.window * series.width)
+        np_series = series.all_values(copy=False)
+        np_anomaly_score = []
+
+        if not self.component_wise:
+
+            np_anomaly_score.append(
+                np.exp(
+                    self.model.score_samples(
+                        np.array(
+                            [
+                                np.array(np_series[i : i + self.window])
+                                for i in range(len(series) - self.window + 1)
+                            ]
+                        ).reshape(-1, self.window * series.width)
+                    )
+                )
             )
-        )
+        else:
+
+            for width in range(self.width_trained_on):
+                np_anomaly_score_width = self.model[width].score_samples(
+                    np.array(
+                        [
+                            np.array(np_series[i : i + self.window, width])
+                            for i in range(len(series) - self.window + 1)
+                        ]
+                    ).reshape(-1, self.window)
+                )
+
+                np_anomaly_score.append(np.exp(np_anomaly_score_width))
+
         return TimeSeries.from_times_and_values(
-            series._time_index[self.window - 1 :], np_anomaly_score
+            series._time_index[self.window - 1 :], list(zip(*np_anomaly_score))
         )
 
 
