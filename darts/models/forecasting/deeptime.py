@@ -3,7 +3,7 @@ DeepTime
 -------
 """
 
-from typing import List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -88,7 +88,7 @@ class INR(nn.Module):
         num_layers: int,
         hidden_layers_width: int,
         n_fourier_feats: int,
-        scales: list[float],
+        scales: List[float],
         dropout: float,
         activation: str,
     ):
@@ -218,8 +218,7 @@ class _DeepTimeModule(PLPastCovariatesModule):
         inr_num_layers: int,
         inr_layers_width: Union[int, List[int]],
         n_fourier_feats: int,
-        scales: list[float],
-        legacy_optimiser: bool,
+        scales: List[float],
         dropout: float,
         activation: str,
         **kwargs,
@@ -242,8 +241,6 @@ class _DeepTimeModule(PLPastCovariatesModule):
             Number of Fourier components to sample to represent to time-serie in the frequency domain
         scales
             Scaling factors applied to the normal distribution sampled for Fourier components' magnitude
-        legacy_optimiser
-            Determine if the optimiser policy defined in the original article should be used
         dropout
             The dropout probability to be used in fully connected layers (default=0). This is compatible with
             Monte Carlo dropout at inference time for model uncertainty estimation (enabled with
@@ -264,7 +261,6 @@ class _DeepTimeModule(PLPastCovariatesModule):
         self.inr_layers_width = inr_layers_width
         self.n_fourier_feats = n_fourier_feats
         self.scales = scales
-        self.legacy_optimiser = legacy_optimiser
 
         self.dropout = dropout
         self.activation = activation
@@ -428,10 +424,23 @@ class DeepTimeModel(PastCovariatesTorchModel):
         inr_num_layers: int = 5,
         inr_layers_width: Union[int, List[int]] = 256,
         n_fourier_feats: int = 4096,
-        scales: list[float] = [0.01, 0.1, 1, 5, 10, 20, 50, 100],
-        legacy_optimiser: bool = True,
+        scales: List[float] = [0.01, 0.1, 1, 5, 10, 20, 50, 100],
         dropout: float = 0.1,
         activation: str = "ReLU",
+        optimizer_kwargs: Optional[Dict] = {
+            "lr": 1e-3,
+            "lambda_lr": 1.0,
+            "weight_decay": 0.0,
+        },
+        lr_scheduler_kwargs: Optional[Dict] = {
+            "warmup_epochs": 5,
+            "eta_min": 0.0,
+            "scheduler_names": [
+                "cosine_annealing",
+                "cosine_annealing_with_linear_warmup",
+                "cosine_annealing_with_linear_warmup",
+            ],
+        },
         **kwargs,
     ):
         """Deep time-index model with meta-learning (DeepTIMe).
@@ -482,14 +491,19 @@ class DeepTimeModel(PastCovariatesTorchModel):
         optimizer_cls
             The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.
         optimizer_kwargs
-            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
-            for specifying a learning rate). Otherwise the default values of the selected ``optimizer_cls``
-            will be used. Default: ``None``.
+            Optional keyword arguments for the PyTorch optimizer: ``'lr'`` for the INR networks weights and
+            ``'lambda_lr'`` for the Ridge Regression regularisation term. Otherwise the values from the
+            original publication will be used. Default: ``{"lr": 1e-3, "lambda_lr": 1.0, "weight_decay": 0.0}``.
         lr_scheduler_cls
-            Optionally, the PyTorch learning rate scheduler class to be used. Specifying ``None`` corresponds
-            to using a constant learning rate. Default: ``None``.
+            Due to the model architecture, distincts learning rate schedulers can be used for the three groups of
+            parameters: Ridge Regression regularisation term, (biais and norm) and weights of the INR network.
+            They must be provided using the lr_scheduler_kwargs argument.
         lr_scheduler_kwargs
-            Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
+            Optionally, names and keyword arguments for the three learning rate scheduler (respectively Ridge Regression
+            regularisation term, INR biais and norm, and INR weights. Supported scheduler: "none",  "cosine_annealing"
+            and "cosine_annealing_with_linear_warmup".  Default: {"warmup_epochs": 5, "total_epochs": self.n_epochs,
+            "eta_min": 0.0, "scheduler_names": ["cosine_annealing", "cosine_annealing_with_linear_warmup",
+            "cosine_annealing_with_linear_warmup"]}.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
@@ -566,69 +580,52 @@ class DeepTimeModel(PastCovariatesTorchModel):
             logger,
         )
 
-        if legacy_optimiser:
-            self.pl_module_params["optimizer_kwargs"] = {
-                "lr": 1e-3,
-                "lambda_lr": 1.0,
-                "weight_decay": 0.0,
-            }
+        raise_if_not(
+            self.n_epochs > 0,
+            "`self.n_epochs` should be greater than 0, it is used to declare the learning rate schedulers.",
+            logger,
+        )
 
-            raise_if_not(
-                self.n_epochs > 0,
-                "`self.n_epochs` should be greater than 0, it is used to declare the learning rate scheduler.",
-                logger,
-            )
+        raise_if_not(
+            "optimizer_kwargs" in self.pl_module_params.keys(),
+            "`optimizer_kwargs` should contain the following arguments: `weight_decay`, "
+            "`lambda_lr` and `lr` in order to create the optimizer.",
+            logger,
+        )
 
-            self.pl_module_params["lr_scheduler_kwargs"] = {
-                "warmup_epochs": 5,
-                "total_epochs": self.n_epochs,
-                "eta_min": 0.0,
-                "scheduler_names": [
-                    "cosine_annealing",
-                    "cosine_annealing_with_linear_warmup",
-                    "cosine_annealing_with_linear_warmup",
-                ],
-            }
-        else:
-            raise_if_not(
-                "optimizer_kwargs" in self.pl_module_params.keys(),
-                "`optimizer_kwargs` should contain the following arguments: `weight_decay`, "
-                "`lambda_lr` and `lr` in order to create the optimizer.",
-                logger,
-            )
+        raise_if_not(
+            "lr_scheduler_kwargs" in self.pl_module_params.keys(),
+            "`lr_scheduler_kwargs` should contain the following arguments: `eta_min`, "
+            "`warmup_epochs` and `scheduler_names` in order to create the optimizer.",
+            logger,
+        )
 
-            raise_if_not(
-                "lr_scheduler_kwargs" in self.pl_module_params.keys(),
-                "`lr_scheduler_kwargs` should contain the following arguments: `eta_min`, "
-                "`warmup_epochs` and `scheduler_names` in order to create the optimizer.",
-                logger,
-            )
+        expected_params = {
+            "weight_decay",
+            "lambda_lr",
+            "lr",
+            "warmup_epochs",
+            "eta_min",
+            "scheduler_names",
+        }
+        optimizer_params = self.pl_module_params["optimizer_kwargs"].keys()
+        scheduler_params = self.pl_module_params["lr_scheduler_kwargs"].keys()
+        provided_params = set(optimizer_params).union(set(scheduler_params))
+        missing_params = expected_params - provided_params
+        raise_if_not(
+            len(missing_params) == 0,
+            f"Missing argument(s) for the optimiser: {missing_params}. `weight_decay`, "
+            "`lambda_lr` and `lr` must be defined in `optimizer_kwargs` whereas `Tmax`, "
+            "`scheduler_names` and `warmup_epochs` must be defined in `lr_scheduler_kwargs`.",
+            logger,
+        )
 
-            expected_params = {
-                "weight_decay",
-                "lambda_lr",
-                "lr",
-                "warmup_epochs",
-                "eta_min",
-                "scheduler_names",
-            }
-            optimizer_params = self.pl_module_params["optimizer_kwargs"].keys()
-            scheduler_params = self.pl_module_params["lr_scheduler_kwargs"].keys()
-            provided_params = set(optimizer_params).union(set(scheduler_params))
-            missing_params = expected_params - provided_params
-            raise_if_not(
-                not legacy_optimiser and len(missing_params) == 0,
-                f"Missing argument(s) for the optimiser: {missing_params}. `weight_decay`, "
-                "`lambda_lr` and `lr` must be defined in `optimizer_kwargs` whereas `Tmax`, "
-                "`scheduler_names` and `warmup_epochs` must be defined in `scheduler_kwargs`.",
-                logger,
-            )
+        self.pl_module_params["lr_scheduler_kwargs"]["total_epochs"] = self.n_epochs
 
         self.inr_num_layers = inr_num_layers
         self.inr_layers_width = inr_layers_width
         self.n_fourier_feats = n_fourier_feats
         self.scales = scales
-        self.legacy_optimiser = legacy_optimiser
 
         self.dropout = dropout
         self.activation = activation
@@ -657,7 +654,6 @@ class DeepTimeModel(PastCovariatesTorchModel):
             inr_layers_width=self.inr_layers_width,
             n_fourier_feats=self.n_fourier_feats,
             scales=self.scales,
-            legacy_optimiser=self.legacy_optimiser,
             dropout=self.dropout,
             activation=self.activation,
             **self.pl_module_params,
