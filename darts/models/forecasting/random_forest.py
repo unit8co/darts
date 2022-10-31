@@ -100,8 +100,8 @@ class RandomForest(RegressionModel):
             lags_future_covariates=lags_future_covariates,
             output_chunk_length=output_chunk_length,
             add_encoders=add_encoders,
-            model=RandomForestRegressor(**kwargs),
             multi_models=multi_models,
+            model=RandomForestRegressor(**kwargs),
         )
 
     def __str__(self):

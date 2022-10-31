@@ -126,8 +126,8 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             lags_future_covariates=lags_future_covariates,
             output_chunk_length=output_chunk_length,
             add_encoders=add_encoders,
-            model=CatBoostRegressor(**kwargs),
             multi_models=multi_models,
+            model=CatBoostRegressor(**kwargs),
         )
 
     def __str__(self):
