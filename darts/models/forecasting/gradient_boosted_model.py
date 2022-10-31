@@ -113,8 +113,8 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
             lags_future_covariates=lags_future_covariates,
             output_chunk_length=output_chunk_length,
             add_encoders=add_encoders,
-            model=lgb.LGBMRegressor(**kwargs),
             multi_models=multi_models,
+            model=lgb.LGBMRegressor(**kwargs),
         )
 
     def __str__(self):

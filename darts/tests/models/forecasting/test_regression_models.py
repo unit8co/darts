@@ -282,114 +282,119 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     lags_1 = {"target": [-3, -2, -1], "past": [-4, -2], "future": [-5, 2]}
 
     def test_model_construction(self):
-        for model in self.models:
-            # TESTING SINGLE INT
-            # testing lags
-            model_instance = model(lags=5)
-            self.assertEqual(model_instance.lags.get("target"), [-5, -4, -3, -2, -1])
-            # testing lags_past_covariates
-            model_instance = model(lags=None, lags_past_covariates=3)
-            self.assertEqual(model_instance.lags.get("past"), [-3, -2, -1])
-            # testing lags_future covariates
-            model_instance = model(lags=None, lags_future_covariates=(3, 5))
-            self.assertEqual(
-                model_instance.lags.get("future"), [-3, -2, -1, 0, 1, 2, 3, 4]
-            )
+        multi_models_modes = [True, False]
+        for mode in multi_models_modes:
+            for model in self.models:
+                # TESTING SINGLE INT
+                # testing lags
+                model_instance = model(lags=5, multi_models=mode)
+                self.assertEqual(model_instance.lags.get("target"), [-5, -4, -3, -2, -1])
+                # testing lags_past_covariates
+                model_instance = model(lags=None, lags_past_covariates=3, multi_models=mode)
+                self.assertEqual(model_instance.lags.get("past"), [-3, -2, -1])
+                # testing lags_future covariates
+                model_instance = model(lags=None, lags_future_covariates=(3, 5), multi_models=mode)
+                self.assertEqual(
+                    model_instance.lags.get("future"), [-3, -2, -1, 0, 1, 2, 3, 4]
+                )
 
-            # TESTING LIST of int
-            # lags
-            values = [-5, -3, -1]
-            model_instance = model(lags=values)
-            self.assertEqual(model_instance.lags.get("target"), values)
-            # testing lags_past_covariates
-            model_instance = model(lags_past_covariates=values)
-            self.assertEqual(model_instance.lags.get("past"), values)
-            # testing lags_future_covariates
+                # TESTING LIST of int
+                # lags
+                values = [-5, -3, -1]
+                model_instance = model(lags=values, multi_models=mode)
+                self.assertEqual(model_instance.lags.get("target"), values)
+                # testing lags_past_covariates
+                model_instance = model(lags_past_covariates=values, multi_models=mode)
+                self.assertEqual(model_instance.lags.get("past"), values)
+                # testing lags_future_covariates
 
-            with self.assertRaises(ValueError):
-                model()
-            with self.assertRaises(ValueError):
-                model(lags=0)
-            with self.assertRaises(ValueError):
-                model(lags=[-1, 0])
-            with self.assertRaises(ValueError):
-                model(lags=[3, 5])
-            with self.assertRaises(ValueError):
-                model(lags=[-3, -5.0])
-            with self.assertRaises(ValueError):
-                model(lags=-5)
-            with self.assertRaises(ValueError):
-                model(lags=3.6)
-            with self.assertRaises(ValueError):
-                model(lags=None, lags_past_covariates=False)
-            with self.assertRaises(ValueError):
-                model(lags=None)
-            with self.assertRaises(ValueError):
-                model(lags=5, lags_future_covariates=True)
-            with self.assertRaises(ValueError):
-                model(lags=5, lags_future_covariates=(1, -3))
-            with self.assertRaises(ValueError):
-                model(lags=5, lags_future_covariates=(1, 2, 3))
-            with self.assertRaises(ValueError):
-                model(lags=5, lags_future_covariates=(1, True))
-            with self.assertRaises(ValueError):
-                model(lags=5, lags_future_covariates=(1, 1.0))
+                with self.assertRaises(ValueError):
+                    model(multi_models=mode)
+                with self.assertRaises(ValueError):
+                    model(lags=0, multi_models=mode)
+                with self.assertRaises(ValueError):
+                    model(lags=[-1, 0], multi_models=mode)
+                with self.assertRaises(ValueError):
+                    model(lags=[3, 5], multi_models=mode)
+                with self.assertRaises(ValueError):
+                    model(lags=[-3, -5.0], multi_models=mode)
+                with self.assertRaises(ValueError):
+                    model(lags=-5, multi_models=mode)
+                with self.assertRaises(ValueError):
+                    model(lags=3.6, multi_models=mode)
+                with self.assertRaises(ValueError):
+                    model(lags=None, lags_past_covariates=False, multi_models=mode)
+                with self.assertRaises(ValueError):
+                    model(lags=None, multi_models=mode)
+                with self.assertRaises(ValueError):
+                    model(lags=5, lags_future_covariates=True, multi_models=mode)
+                with self.assertRaises(ValueError):
+                    model(lags=5, lags_future_covariates=(1, -3), multi_models=mode)
+                with self.assertRaises(ValueError):
+                    model(lags=5, lags_future_covariates=(1, 2, 3), multi_models=mode)
+                with self.assertRaises(ValueError):
+                    model(lags=5, lags_future_covariates=(1, True), multi_models=mode)
+                with self.assertRaises(ValueError):
+                    model(lags=5, lags_future_covariates=(1, 1.0), multi_models=mode)
 
     def test_training_data_creation(self):
-        # testing _get_training_data function
-        model_instance = RegressionModel(
-            lags=self.lags_1["target"],
-            lags_past_covariates=self.lags_1["past"],
-            lags_future_covariates=self.lags_1["future"],
-        )
+        multi_models_modes = [True, False]
+        for mode in multi_models_modes:
+            # testing _get_training_data function
+            model_instance = RegressionModel(
+                lags=self.lags_1["target"],
+                lags_past_covariates=self.lags_1["past"],
+                lags_future_covariates=self.lags_1["future"],
+                multi_models=mode,
+            )
 
-        max_samples_per_ts = 17
+            max_samples_per_ts = 17
 
-        training_samples, training_labels = model_instance._create_lagged_data(
-            target_series=self.target_series,
-            past_covariates=self.past_covariates,
-            future_covariates=self.future_covariates,
-            max_samples_per_ts=max_samples_per_ts,
-        )
+            training_samples, training_labels = model_instance._create_lagged_data(
+                target_series=self.target_series,
+                past_covariates=self.past_covariates,
+                future_covariates=self.future_covariates,
+                max_samples_per_ts=max_samples_per_ts,
+            )
 
-        # checking number of dimensions
-        self.assertEqual(len(training_samples.shape), 2)  # samples, features
-        self.assertEqual(
-            len(training_labels.shape), 2
-        )  # samples, components (multivariate)
-        self.assertEqual(training_samples.shape[0], training_labels.shape[0])
-        self.assertEqual(
-            training_samples.shape[0], len(self.target_series) * max_samples_per_ts
-        )
-        self.assertEqual(
-            training_samples.shape[1],
-            len(self.lags_1["target"]) * self.target_series[0].width
-            + len(self.lags_1["past"]) * self.past_covariates[0].width
-            + len(self.lags_1["future"]) * self.future_covariates[0].width,
-        )
+            # checking number of dimensions
+            self.assertEqual(len(training_samples.shape), 2)  # samples, features
+            self.assertEqual(
+                len(training_labels.shape), 2
+            )  # samples, components (multivariate)
+            self.assertEqual(training_samples.shape[0], training_labels.shape[0])
+            self.assertEqual(
+                training_samples.shape[0], len(self.target_series) * max_samples_per_ts
+            )
+            self.assertEqual(
+                training_samples.shape[1],
+                len(self.lags_1["target"]) * self.target_series[0].width
+                + len(self.lags_1["past"]) * self.past_covariates[0].width
+                + len(self.lags_1["future"]) * self.future_covariates[0].width,
+            )
 
-        # check last sample
-        self.assertListEqual(
-            list(training_samples[0, :]),
-            [
-                79.0,
-                179.0,
-                279.0,
-                80.0,
-                180.0,
-                280.0,
-                81.0,
-                181.0,
-                281.0,
-                10078.0,
-                10178.0,
-                10080.0,
-                10180.0,
-                20077.0,
-                20084.0,
-            ],
-        )
-        self.assertListEqual(list(training_labels[0]), [82, 182, 282])
+            # check last sample
+            self.assertListEqual(
+                list(training_samples[0, :]),
+                [
+                    79.0,
+                    179.0,
+                    279.0,
+                    80.0,
+                    180.0,
+                    280.0,
+                    81.0,
+                    181.0,
+                    281.0,
+                    10078.0,
+                    10178.0,
+                    10080.0,
+                    10180.0,
+                    20077.0,
+                    20084.0,
+                ],
+            )
+            self.assertListEqual(list(training_labels[0]), [82, 182, 282])
 
     def test_prediction_data_creation(self):
 
