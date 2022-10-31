@@ -553,6 +553,7 @@ class RegressionModel(GlobalForecastingModel):
         relative_cov_lags = {}
         # number of prediction steps given forecast horizon and output_chunk_length
         n_pred_steps = math.ceil(n / self.output_chunk_length)
+        remaining_steps = n % self.output_chunk_length # for multi_models = False
         for cov_type, (covs, lags) in covariates.items():
             if covs is not None:
                 relative_cov_lags[cov_type] = np.array(lags) - lags[0]
@@ -564,6 +565,7 @@ class RegressionModel(GlobalForecastingModel):
                         first_pred_ts
                         + ((n_pred_steps - 1) * self.output_chunk_length) * ts.freq
                     )
+                    last_pred_ts = last_pred_ts if self.multi_models else last_pred_ts + (remaining_steps -1) * ts.freq
                     # calculating first and last required time steps
                     first_req_ts = (
                         first_pred_ts + (lags[0] - shift) * ts.freq
