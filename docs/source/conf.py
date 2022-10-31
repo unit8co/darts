@@ -48,10 +48,10 @@ extensions = [
 autodoc_default_options = {
     "inherited-members": None,
     "show-inheritance": None,
-    "exclude-members": "ForecastingModel,DualCovariatesForecastingModel,TorchForecastingModel,"
-    + "PastCovariatesTorchModel,FutureCovariatesTorchModel,DualCovariatesTorchModel,"
-    + "MixedCovariatesTorchModel,SplitCovariatesTorchModel,"
-    + "TorchParametricProbabilisticForecastingModel,"
+    "exclude-members": "ForecastingModel,LocalForecastingModel,FutureCovariatesLocalForecastingModel,"
+    + "TransferableFutureCovariatesLocalForecastingModel,GlobalForecastingModel,TorchForecastingModel,"
+    + "PastCovariatesTorchModel,FutureCovariatesTorchModel,DualCovariatesTorchModel,MixedCovariatesTorchModel,"
+    + "SplitCovariatesTorchModel,TorchParametricProbabilisticForecastingModel,"
     + "min_train_series_length,uses_future_covariates,uses_past_covariates,"
     + "untrained_model,first_prediction_index,future_covariate_series,past_covariate_series,"
     + "initialize_encoders,register_datapipe_as_function,register_function,functions,"
