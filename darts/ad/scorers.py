@@ -775,46 +775,68 @@ class KMeansScorer(FittableAnomalyScorer):
         )
 
 
-class WasserteinScorer(FittableAnomalyScorer):
-    """WasserteinScorer anomaly score
+class WassersteinScorer(FittableAnomalyScorer):
+    """WassersteinScorer anomaly score
 
-    Wrapped around the Wassertein scipy.stats functon.
+    Wrapped around the Wasserstein scipy.stats functon.
     Source code: <https://github.com/scipy/scipy/blob/v1.9.3/scipy/stats/_stats_py.py#L8675-L8749>.
     """
 
-    def __init__(self, window: Optional[int] = None, reduced_function=None) -> None:
+    def __init__(
+        self, window: Optional[int] = None, reduced_function=None, component_wise=False
+    ) -> None:
         """
-        A Wassertein model is trained on the training data when the ``fit()`` method is called.
-        The ``score()`` method will return the wassertein distance bewteen the training distribution
+        A Wasserstein model is trained on the training data when the ``fit()`` method is called.
+        The ``score()`` method will return the Wasserstein distance bewteen the training distribution
         and the window sample distribution. Both distributions are 1D.
 
         TODO:
-        - understand better the math behind the Wassertein distance (ex: when the test distribution contains
+        - understand better the math behind the Wasserstein distance (ex: when the test distribution contains
         only one sample)
-        - check if there is an equivalent wassertein distance for d-D distributions (currently only accepts 1D)
+        - check if there is an equivalent Wasserstein distance for d-D distributions (currently only accepts 1D)
 
         If 2 time series are given in the ``fit()`` or ``score()`` methods, a reduced function, given as a parameter
         in the __init__ method (reduced_function), will be applied to transform the 2 time series into 1.
         Default: "abs_diff"
 
+        component_wise is a boolean parameter in the __init__ method indicating how the model should behave with input
+        that is a multivariate series. If set to True, the model will treat each width/dimension of the series
+        independently. If set to False, the model will concatenate the widths in the considered window and compute
+        the score.
+
         Training:
 
-        The input can be a series (univariate or multivariate) or a list of series. All the values will be concatenated
-        to form one continuous array. If the series is of length n and width d, the array will be of length n*d.
+        The input can be a series (univariate or multivariate) or a list of series. The element of a list will be
+        concatenated to form one continuous array (by definition, each element have the same width/dimensions).
+
+        If the series is of length n and width d, the array will be of length n*d. If component_wise is True, each
+        width d is treated independently and the data is stored in a list of size d.
+        Each element is an array of length n.
+
         If a list of series is given of length l, each series will be reduced to an array, and the l arrays will then
-        be concatenated to form a continuous array of length l*d*w.
+        be concatenated to form a continuous array of length l*d*n. If component_wise is True, the data is stored in a
+        list of size d. Each element is an array of length l*n.
 
         The array will be kept in memory, representing the training data distribution.
         In practice, the series or list of series would represent residuals than can be considered independent
         and identically distributed (iid).
 
-
         Compute score:
 
         The input is a series (univariate or multivariate) or a list of series.
+
+        - If the series is multivariate of width w:
+            - if component_wise is set to False: it will return a univariate series (width=1). It represents
+            the anomaly score of the entire series in the considered window at each timestamp.
+            - if component_wise is set to True: it will return a multivariate series of width w. Each dimension
+            represents the anomaly score of the corresponding dimension of the input.
+
+        - If the series is univariate, it will return a univariate series regardless of the parameter
+        component_wise.
+
         A window of size w (given as a parameter named window) is rolled on the series with a stride equal to 1.
         At each timestamp, the previous w values will be used to form a vector of size w * width of the series.
-        The Wassertein distance will be computed between this vector and the train distribution.
+        The Wasserstein distance will be computed between this vector and the train distribution.
         The function will return a float number indicating how different these two distributions are.
         The output will be a series of width 1 and length n-w+1, with n being the length of the input series.
         Each value will represent how anomalous the sample of the w previous values is.
@@ -822,17 +844,24 @@ class WasserteinScorer(FittableAnomalyScorer):
         If a list is given, a for loop will iterate through the list, and the function ``_score_core()``
         will be applied independently on each series.
 
+        If component_wise is set to True, the algorithm will be applied to each width independently,
+        and be compared to their corresponding training data samples computed in the ``fit()`` method.
+
         Parameters
         ----------
         window
             Size of the sliding window that represents the number of samples in the testing distribution to compare
-            with the training distribution in the Wassertein function
+            with the training distribution in the Wasserstein function
         reduced_function
             Optionally, reduced function to use if two series are given. It will transform the two series into one.
-            This allows the WasserteinScorer to compute the Wassertein distance on the original series or on its
+            This allows the WassersteinScorer to compute the Wasserstein distance on the original series or on its
             residuals (difference between the prediction and the original series).
             Must be one of "abs_diff" and "diff" (defined in ``_diff()``).
             Default: "abs_diff"
+        component_wise
+            Boolean value indicating if the score needs to be computed for each width/dimension independently (True)
+            or by concatenating the width in the considered window to compute one score (False).
+            Default: False
         """
 
         if window is None:
@@ -844,6 +873,8 @@ class WasserteinScorer(FittableAnomalyScorer):
             "window must be stricly higher than 0,"
             "(preferably higher than 10 as it is the number of samples of the test distribution)",
         )
+
+        self.component_wise = component_wise
 
     def __str__(self):
         return f"WasserteinScorer (window={self.window}, reduced_function={self.reduced_function})"
@@ -860,9 +891,26 @@ class WasserteinScorer(FittableAnomalyScorer):
             list_series = self._diff_sequence(list_series_1, list_series_2)
 
         self._fit_called = True
-        self.training_data = np.concatenate(
-            [s.all_values(copy=False).flatten() for s in list_series]
-        )
+        self.width_trained_on = list_series[0].width
+
+        if self.component_wise and self.width_trained_on > 1:
+
+            concatenated_data = np.concatenate(
+                [s.all_values(copy=False) for s in list_series]
+            )
+
+            training_data = []
+            for width in range(self.width_trained_on):
+                training_data.append(concatenated_data[:, width].flatten())
+
+            self.training_data = training_data
+
+        else:
+            self.training_data = [
+                np.concatenate(
+                    [s.all_values(copy=False).flatten() for s in list_series]
+                )
+            ]
 
     def _score_core(
         self, series_1: TimeSeries, series_2: TimeSeries = None
@@ -873,16 +921,38 @@ class WasserteinScorer(FittableAnomalyScorer):
         else:
             series = self._diff(series_1, series_2)
 
+        raise_if_not(
+            self.width_trained_on == series.width,
+            f"Input must have the same width of the data used for training the Wassertein model, \
+                found width: {self.width_trained_on} and {series.width}",
+        )
+
         distance = []
-        np_series = series.all_values(copy=False).flatten()
+
+        np_series = series.all_values(copy=False)
 
         for i in range(len(series) - self.window + 1):
-            distance.append(
-                wasserstein_distance(
-                    self.training_data,
-                    np_series[i * series.width : (i + self.window + 1) * series.width],
+
+            temp_test = np_series[i : i + self.window + 1]
+
+            if self.component_wise:
+                width_result = []
+                for width in range(self.width_trained_on):
+                    width_result.append(
+                        wasserstein_distance(
+                            self.training_data[width], temp_test[width].flatten()
+                        )
+                    )
+
+                distance.append(width_result)
+
+            else:
+                distance.append(
+                    wasserstein_distance(
+                        self.training_data[0],
+                        temp_test.flatten(),
+                    )
                 )
-            )
 
         return TimeSeries.from_times_and_values(
             series._time_index[self.window - 1 :], distance
