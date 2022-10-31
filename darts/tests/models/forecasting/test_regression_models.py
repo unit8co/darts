@@ -397,6 +397,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             self.assertListEqual(list(training_labels[0]), [82, 182, 282])
 
     def test_prediction_data_creation(self):
+        multi_models_modes = [True, False]
 
         # assigning correct names to variables
         series = [ts[:-50] for ts in self.target_series]
@@ -409,165 +410,253 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             "future": (self.future_covariates, self.lags_1.get("future")),
         }
 
-        # dictionary containing covariate data over time span required for prediction
-        covariate_matrices = {}
-        # dictionary containing covariate lags relative to minimum covariate lag
-        relative_cov_lags = {}
-        # number of prediction steps given forecast horizon and output_chunk_length
-        n_pred_steps = math.ceil(n / output_chunk_length)
-        for cov_type, (covs, lags) in covariates.items():
-            if covs is not None:
-                relative_cov_lags[cov_type] = np.array(lags) - lags[0]
-                covariate_matrices[cov_type] = []
-                for idx, (ts, cov) in enumerate(zip(series, covs)):
-                    first_pred_ts = ts.end_time() + 1 * ts.freq
-                    last_pred_ts = (
-                        first_pred_ts
-                        + ((n_pred_steps - 1) * output_chunk_length) * ts.freq
-                    )
-                    first_req_ts = first_pred_ts + lags[0] * ts.freq
-                    last_req_ts = last_pred_ts + lags[-1] * ts.freq
+        for mode in multi_models_modes:
+            if mode:
+                shift = 0
+                step = output_chunk_length
+            else:
+                shift = output_chunk_length - 1
+                step = 1
 
-                    # not enough covariate data checks excluded, they are tested elsewhere
-
-                    if cov.has_datetime_index:
-                        covariate_matrices[cov_type].append(
-                            cov[first_req_ts:last_req_ts].values()
-                        )
-                    else:
-                        # include last_req_ts when slicing series with integer indices
-                        covariate_matrices[cov_type].append(
-                            cov[first_req_ts : last_req_ts + 1].values()
+            # dictionary containing covariate data over time span required for prediction
+            covariate_matrices = {}
+            # dictionary containing covariate lags relative to minimum covariate lag
+            relative_cov_lags = {}
+            # number of prediction steps given forecast horizon and output_chunk_length
+            n_pred_steps = math.ceil(n / output_chunk_length)
+            remaining_steps = n % output_chunk_length  # for multi_models = False
+            for cov_type, (covs, lags) in covariates.items():
+                if covs is not None:
+                    relative_cov_lags[cov_type] = np.array(lags) - lags[0]
+                    covariate_matrices[cov_type] = []
+                    for idx, (ts, cov) in enumerate(zip(series, covs)):
+                        first_pred_ts = ts.end_time() + 1 * ts.freq
+                        last_pred_ts = (
+                            first_pred_ts
+                            + ((n_pred_steps - 1) * output_chunk_length) * ts.freq
                         )
 
-                covariate_matrices[cov_type] = np.stack(covariate_matrices[cov_type])
+                        last_pred_ts = last_pred_ts if mode else last_pred_ts + (
+                                    remaining_steps - 1) * ts.freq
 
-        series_matrix = None
-        if "target" in self.lags_1:
-            series_matrix = np.stack(
-                [ts[self.lags_1["target"][0] :].values() for ts in series]
+                        first_req_ts = first_pred_ts + (lags[0] - shift) * ts.freq
+                        last_req_ts = last_pred_ts + (lags[-1] - shift) * ts.freq
+
+                        # not enough covariate data checks excluded, they are tested elsewhere
+
+                        if cov.has_datetime_index:
+                            covariate_matrices[cov_type].append(
+                                cov.slice(first_req_ts, last_req_ts).values(copy=False)
+                            )
+                        else:
+                            # include last_req_ts when slicing series with integer indices
+                            covariate_matrices[cov_type].append(
+                                cov[first_req_ts : last_req_ts + 1].values(copy=False)
+                            )
+
+                    covariate_matrices[cov_type] = np.stack(covariate_matrices[cov_type])
+
+            series_matrix = None
+            if "target" in self.lags_1:
+                series_matrix = np.stack(
+                    [ts.values(copy=False)[self.lags_1["target"][0] - shift :, :]
+                    for ts in series]
+                )
+            # prediction preprocessing end
+            self.assertTrue(
+                all([lag >= 0 for lags in relative_cov_lags.values() for lag in lags])
             )
-        # prediction preprocessing end
 
-        # tests
-        self.assertTrue(
-            all([lag >= 0 for lags in relative_cov_lags.values() for lag in lags])
-        )
-        self.assertEqual(
-            covariate_matrices["past"].shape,
-            (
-                len(series),
-                relative_cov_lags["past"][-1]
-                + (n_pred_steps - 1) * output_chunk_length
-                + 1,
-                covariates["past"][0][0].width,
-            ),
-        )
-        self.assertEqual(
-            covariate_matrices["future"].shape,
-            (
-                len(series),
-                relative_cov_lags["future"][-1]
-                + (n_pred_steps - 1) * output_chunk_length
-                + 1,
-                covariates["future"][0][0].width,
-            ),
-        )
-        self.assertEqual(
-            series_matrix.shape,
-            (len(series), -self.lags_1["target"][0], series[0].width),
-        )
-        self.assertListEqual(
-            list(covariate_matrices["past"][0, :, 0]),
-            [
-                10047.0,
-                10048.0,
-                10049.0,
-                10050.0,
-                10051.0,
-                10052.0,
-                10053.0,
-                10054.0,
-                10055.0,
-                10056.0,
-                10057.0,
-                10058.0,
-                10059.0,
-            ],
-        )
-        self.assertListEqual(
-            list(covariate_matrices["future"][0, :, 0]),
-            [
-                20046.0,
-                20047.0,
-                20048.0,
-                20049.0,
-                20050.0,
-                20051.0,
-                20052.0,
-                20053.0,
-                20054.0,
-                20055.0,
-                20056.0,
-                20057.0,
-                20058.0,
-                20059.0,
-                20060.0,
-                20061.0,
-                20062.0,
-                20063.0,
-            ],
-        )
-        self.assertListEqual(list(series_matrix[0, :, 0]), [48.0, 49.0, 50.0])
+            if mode:
+                # tests for multi_models = True
+                self.assertEqual(
+                    covariate_matrices["past"].shape,
+                    (
+                        len(series),
+                        relative_cov_lags["past"][-1]
+                        + (n_pred_steps - 1) * output_chunk_length
+                        + 1,
+                        covariates["past"][0][0].width,
+                    ),
+                )
+                self.assertEqual(
+                    covariate_matrices["future"].shape,
+                    (
+                        len(series),
+                        relative_cov_lags["future"][-1]
+                        + (n_pred_steps - 1) * output_chunk_length
+                        + 1,
+                        covariates["future"][0][0].width,
+                    ),
+                )
+                self.assertEqual(
+                    series_matrix.shape,
+                    (len(series), -self.lags_1["target"][0], series[0].width),
+                )
+                self.assertListEqual(
+                    list(covariate_matrices["past"][0, :, 0]),
+                    [
+                        10047.0,
+                        10048.0,
+                        10049.0,
+                        10050.0,
+                        10051.0,
+                        10052.0,
+                        10053.0,
+                        10054.0,
+                        10055.0,
+                        10056.0,
+                        10057.0,
+                        10058.0,
+                        10059.0,
+                    ],
+                )
+                self.assertListEqual(
+                    list(covariate_matrices["future"][0, :, 0]),
+                    [
+                        20046.0,
+                        20047.0,
+                        20048.0,
+                        20049.0,
+                        20050.0,
+                        20051.0,
+                        20052.0,
+                        20053.0,
+                        20054.0,
+                        20055.0,
+                        20056.0,
+                        20057.0,
+                        20058.0,
+                        20059.0,
+                        20060.0,
+                        20061.0,
+                        20062.0,
+                        20063.0,
+                    ],
+                )
+                self.assertListEqual(list(series_matrix[0, :, 0]), [48.0, 49.0, 50.0])
+            else:
+                # tests for multi_models = False
+                self.assertEqual(
+                    covariate_matrices["past"].shape,
+                    (
+                        len(series),
+                        relative_cov_lags["past"][-1]
+                        + (n_pred_steps - 1) * output_chunk_length + (remaining_steps - 1)
+                        + 1,
+                        covariates["past"][0][0].width,
+                    ),
+                )
+                self.assertEqual(
+                    covariate_matrices["future"].shape,
+                    (
+                        len(series),
+                        relative_cov_lags["future"][-1]
+                        + (n_pred_steps - 1) * output_chunk_length + (remaining_steps - 1)
+                        + 1,
+                        covariates["future"][0][0].width,
+                    ),
+                )
+                self.assertEqual(
+                    series_matrix.shape,
+                    (len(series), -self.lags_1["target"][0] + shift, series[0].width),
+                )
+                self.assertListEqual(
+                    list(covariate_matrices["past"][0, :, 0]),
+                    [
+                        10043.0,
+                        10044.0,
+                        10045.0,
+                        10046.0,
+                        10047.0,
+                        10048.0,
+                        10049.0,
+                        10050.0,
+                        10051.0,
+                        10052.0,
+                        10053.0,
+                        10054.0,
+                        10055.0,
+                        10056.0,
+                    ],
+                )
+                self.assertListEqual(
+                    list(covariate_matrices["future"][0, :, 0]),
+                    [
+                        20042.0,
+                        20043.0,
+                        20044.0,
+                        20045.0,
+                        20046.0,
+                        20047.0,
+                        20048.0,
+                        20049.0,
+                        20050.0,
+                        20051.0,
+                        20052.0,
+                        20053.0,
+                        20054.0,
+                        20055.0,
+                        20056.0,
+                        20057.0,
+                        20058.0,
+                        20059.0,
+                        20060.0,
+                    ],
+                )
+                self.assertListEqual(list(series_matrix[0, :, 0]),
+                                     [44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0])
 
     def test_models_runnability(self):
         train_y, test_y = self.sine_univariate1.split_before(0.7)
-        for model in self.models:
-            # testing past covariates
-            with self.assertRaises(ValueError):
-                # testing lags_past_covariates None but past_covariates during training
-                model_instance = model(lags=4, lags_past_covariates=None)
+        multi_models_modes = [True]
+        for mode in multi_models_modes:
+            for model in self.models:
+                # testing past covariates
+                with self.assertRaises(ValueError):
+                    # testing lags_past_covariates None but past_covariates during training
+                    model_instance = model(lags=4, lags_past_covariates=None, multi_models=mode)
+                    model_instance.fit(
+                        series=self.sine_univariate1,
+                        past_covariates=self.sine_multivariate1,
+                    )
+
+                with self.assertRaises(ValueError):
+                    # testing lags_past_covariates but no past_covariates during fit
+                    model_instance = model(lags=4, lags_past_covariates=3, multi_models=mode)
+                    model_instance.fit(series=self.sine_univariate1)
+
+                # testing future_covariates
+                with self.assertRaises(ValueError):
+                    # testing lags_future_covariates None but future_covariates during training
+                    model_instance = model(lags=4, lags_future_covariates=None, multi_models=mode)
+                    model_instance.fit(
+                        series=self.sine_univariate1,
+                        future_covariates=self.sine_multivariate1,
+                    )
+
+                with self.assertRaises(ValueError):
+                    # testing lags_covariate but no covariate during fit
+                    model_instance = model(lags=4, lags_future_covariates=3, multi_models=mode)
+                    model_instance.fit(series=self.sine_univariate1)
+
+                # testing input_dim
+                model_instance = model(lags=4, lags_past_covariates=2, multi_models=mode)
                 model_instance.fit(
-                    series=self.sine_univariate1,
-                    past_covariates=self.sine_multivariate1,
+                    series=train_y,
+                    past_covariates=self.sine_univariate1.stack(self.sine_univariate1),
                 )
 
-            with self.assertRaises(ValueError):
-                # testing lags_past_covariates but no past_covariates during fit
-                model_instance = model(lags=4, lags_past_covariates=3)
-                model_instance.fit(series=self.sine_univariate1)
-
-            # testing future_covariates
-            with self.assertRaises(ValueError):
-                # testing lags_future_covariates None but future_covariates during training
-                model_instance = model(lags=4, lags_future_covariates=None)
-                model_instance.fit(
-                    series=self.sine_univariate1,
-                    future_covariates=self.sine_multivariate1,
+                self.assertEqual(
+                    model_instance.input_dim, {"target": 1, "past": 2, "future": None}
                 )
 
-            with self.assertRaises(ValueError):
-                # testing lags_covariate but no covariate during fit
-                model_instance = model(lags=4, lags_future_covariates=3)
-                model_instance.fit(series=self.sine_univariate1)
+                with self.assertRaises(ValueError):
+                    prediction = model_instance.predict(n=len(test_y) + 2)
 
-            # testing input_dim
-            model_instance = model(lags=4, lags_past_covariates=2)
-            model_instance.fit(
-                series=train_y,
-                past_covariates=self.sine_univariate1.stack(self.sine_univariate1),
-            )
-
-            self.assertEqual(
-                model_instance.input_dim, {"target": 1, "past": 2, "future": None}
-            )
-
-            with self.assertRaises(ValueError):
-                prediction = model_instance.predict(n=len(test_y) + 2)
-
-            # while it should work with n = 1
-            prediction = model_instance.predict(n=1)
-            self.assertEqual(len(prediction), 1)
+                # while it should work with n = 1
+                prediction = model_instance.predict(n=1)
+                self.assertEqual(len(prediction), 1)
 
     def test_fit(self):
         for model in self.models:

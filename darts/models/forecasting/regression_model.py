@@ -500,6 +500,9 @@ class RegressionModel(GlobalForecastingModel):
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
+        #print('series',series)
+        #print('past_covariate', past_covariates)
+
         if self.encoders.encoding_available:
             past_covariates, future_covariates = self.generate_predict_encodings(
                 n=n,
@@ -547,6 +550,8 @@ class RegressionModel(GlobalForecastingModel):
             shift = self.output_chunk_length - 1
             step = 1
 
+        #print('shift', shift)
+        #print('step', step)
         # dictionary containing covariate data over time span required for prediction
         covariate_matrices = {}
         # dictionary containing covariate lags relative to minimum covariate lag
@@ -565,7 +570,9 @@ class RegressionModel(GlobalForecastingModel):
                         first_pred_ts
                         + ((n_pred_steps - 1) * self.output_chunk_length) * ts.freq
                     )
-                    last_pred_ts = last_pred_ts if self.multi_models else last_pred_ts + (remaining_steps -1) * ts.freq
+                    if not self.multi_models:
+                        last_pred_ts = last_pred_ts + (remaining_steps - 1) * ts.freq \
+                            if remaining_steps else last_pred_ts
                     # calculating first and last required time steps
                     first_req_ts = (
                         first_pred_ts + (lags[0] - shift) * ts.freq
@@ -597,6 +604,7 @@ class RegressionModel(GlobalForecastingModel):
                     )
 
                 covariate_matrices[cov_type] = np.stack(covariate_matrices[cov_type])
+                #print('covariate_matrices', covariate_matrices)
 
         series_matrix = None
         if "target" in self.lags:
@@ -606,6 +614,7 @@ class RegressionModel(GlobalForecastingModel):
                     for ts in series
                 ]
             )
+        #print('series_matrix', series_matrix)
         # repeat series_matrix to shape (num_samples * num_series, n_lags, n_components)
         # [series 0 sample 0, series 0 sample 1, ..., series n sample k]
         series_matrix = np.repeat(series_matrix, num_samples, axis=0)
@@ -634,6 +643,7 @@ class RegressionModel(GlobalForecastingModel):
             # retrieve covariate lags, enforce order (dict only preserves insertion order for python 3.6+)
             for cov_type in ["past", "future"]:
                 if cov_type in covariate_matrices:
+                    #print('relative_cov_lags', relative_cov_lags[cov_type] + t_pred)
                     np_X.append(
                         covariate_matrices[cov_type][
                             :, relative_cov_lags[cov_type] + t_pred
