@@ -436,16 +436,13 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     for idx, (ts, cov) in enumerate(zip(series, covs)):
                         first_pred_ts = ts.end_time() + 1 * ts.freq
                         last_pred_ts = (
-                            first_pred_ts
-                            + ((n_pred_steps - 1) * output_chunk_length) * ts.freq
-                        )
-
-                        last_pred_ts = (
-                            last_pred_ts
+                            (
+                                first_pred_ts
+                                + ((n_pred_steps - 1) * output_chunk_length) * ts.freq
+                            )
                             if mode
-                            else last_pred_ts + (remaining_steps - 1) * ts.freq
+                            else (first_pred_ts + (n - 1) * ts.freq)
                         )
-
                         first_req_ts = first_pred_ts + (lags[0] - shift) * ts.freq
                         last_req_ts = last_pred_ts + (lags[-1] - shift) * ts.freq
 
