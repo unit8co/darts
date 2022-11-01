@@ -1757,9 +1757,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
-        return _, future_covariates_historic.concatenate(
-            future_covariates_future, axis="time"
-        )
+        return _, future_covariates_historic.append(future_covariates_future)
 
     @abstractmethod
     def _predict(

@@ -265,15 +265,14 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
 
     def test_encoders_support(self):
         # test case with pd.DatetimeIndex
-        target = self.ts_gaussian
-        future_covariates = self.ts_gaussian_long
-
         n = 3
+
+        target = self.ts_gaussian[:-3]
+        future_covariates = self.ts_gaussian
+
         future_cov_models = dual_models + [m for m, _ in multivariate_models]
         add_encoders = {"custom": {"future": [lambda x: x.dayofweek]}}
         for model_object in future_cov_models:
-            if isinstance(model_object, KalmanForecaster):
-                continue
             series = (
                 target
                 if not isinstance(model_object, VARIMA)

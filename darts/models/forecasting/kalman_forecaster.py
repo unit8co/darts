@@ -18,14 +18,14 @@ from nfoursid.kalman import Kalman
 from darts.logging import get_logger
 from darts.models.filtering.kalman_filter import KalmanFilter
 from darts.models.forecasting.forecasting_model import (
-    FutureCovariatesLocalForecastingModel,
+    TransferableFutureCovariatesLocalForecastingModel,
 )
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
-class KalmanForecaster(FutureCovariatesLocalForecastingModel):
+class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
     def __init__(
         self,
         dim_x: int = 1,
@@ -92,16 +92,32 @@ class KalmanForecaster(FutureCovariatesLocalForecastingModel):
 
         return self
 
+    def predict(
+        self,
+        n: int,
+        series: Optional[TimeSeries] = None,
+        future_covariates: Optional[TimeSeries] = None,
+        num_samples: int = 1,
+        **kwargs,
+    ) -> TimeSeries:
+        # we override `predict()` to pass a non-None `series`, so that historic_future_covariates
+        # will be passed to `_predict()`
+        series = series if series is not None else self.training_series
+        return super().predict(n, series, future_covariates, num_samples, **kwargs)
+
     def _predict(
         self,
         n: int,
+        series: Optional[TimeSeries] = None,
+        historic_future_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
     ) -> TimeSeries:
 
-        super()._predict(n, future_covariates, num_samples)
-
-        time_index = self._generate_new_dates(n)
+        super()._predict(
+            n, series, historic_future_covariates, future_covariates, num_samples
+        )
+        time_index = self._generate_new_dates(n, input_series=series)
         placeholder_vals = np.zeros((n, self.training_series.width)) * np.nan
         series_future = TimeSeries.from_times_and_values(
             time_index,
@@ -110,9 +126,13 @@ class KalmanForecaster(FutureCovariatesLocalForecastingModel):
             static_covariates=self.training_series.static_covariates,
             hierarchy=self.training_series.hierarchy,
         )
-        whole_series = self.training_series.append(series_future)
+
+        series = series.append(series_future)
+        if historic_future_covariates is not None:
+            future_covariates = historic_future_covariates.append(future_covariates)
+
         filtered_series = self.darts_kf.filter(
-            whole_series, covariates=future_covariates, num_samples=num_samples
+            series=series, covariates=future_covariates, num_samples=num_samples
         )
 
         return filtered_series[-n:]
