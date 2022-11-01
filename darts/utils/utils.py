@@ -368,3 +368,62 @@ def seq2series(
     """
 
     return ts[0] if isinstance(ts, Sequence) and len(ts) == 1 else ts
+
+
+def slice_ts_time_index(
+    time_index: Union[pd.RangeIndex, pd.DatetimeIndex],
+    start: Union[int, pd.Timestamp],
+    end: Union[int, pd.Timestamp],
+) -> Union[pd.RangeIndex, pd.DatetimeIndex]:
+    """
+    Returns a slice of a RangeIndex or DatetimeIndex, given start and end values representing the timestamps.
+    The start and end values can be either integers (in which case they are interpreted as indices),
+    or pd.Timestamps (in which case they are interpreted as actual timestamps).
+    The returned slice is inclusive of the start value and the end value.
+    """
+
+    if type(start) != type(end):
+        raise_log(
+            ValueError(
+                "start and end values must be of the same type (either both integers or both pd.Timestamps)"
+            ),
+            logger,
+        )
+
+    if isinstance(start, pd.Timestamp) and isinstance(time_index, pd.RangeIndex):
+        raise_log(
+            ValueError(
+                "start and end values are a pd.Timestamp, but time_index is a RangeIndex. "
+                "Please provide an integer start value."
+            ),
+            logger,
+        )
+    if isinstance(start, int) and isinstance(time_index, pd.DatetimeIndex):
+        raise_log(
+            ValueError(
+                "start and end value are integer, but time_index is a RangeIndex. "
+                "Please provide an integer end value."
+            ),
+            logger,
+        )
+
+    if isinstance(time_index, pd.RangeIndex):
+        return time_index.intersection(pd.RangeIndex(start, end + 1, step=1))
+    else:
+        return time_index.intersection(pd.date_range(start, end, freq=time_index.freq))
+
+
+def drop_before_ts_time_index(
+    time_index: Union[pd.RangeIndex, pd.DatetimeIndex],
+    split_point: Union[int, pd.Timestamp],
+) -> Union[pd.RangeIndex, pd.DatetimeIndex]:
+
+    return slice_ts_time_index(time_index, split_point, time_index[-1])
+
+
+def drop_after_ts_time_index(
+    time_index: Union[pd.RangeIndex, pd.DatetimeIndex],
+    split_point: Union[int, pd.Timestamp],
+) -> Union[pd.RangeIndex, pd.DatetimeIndex]:
+
+    return slice_ts_time_index(time_index, time_index[0], split_point)

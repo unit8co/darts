@@ -41,7 +41,11 @@ from darts.utils.timeseries_generation import (
     _build_forecast_series,
     _generate_new_dates,
 )
-from darts.utils.utils import series2seq
+from darts.utils.utils import (
+    drop_after_ts_time_index,
+    drop_before_ts_time_index,
+    series2seq,
+)
 
 logger = get_logger(__name__)
 
@@ -255,13 +259,40 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         Returns a 5-tuple containing in order:
         (minimum target lag, maximum target lag, min past covariate lag, min future covariate lag, max future covariate
-        lag). These are bounds on the lags. If the model doesn't accept past covariates, the third element is None.
-        If the model doesn't accept future covariates, the fourth and fifth elements are None.
+        lag). These constitute bounds of lags.
+
+        If the model wasn't fitted with:
+            - target lag (concerning RegressionModels only) the first element is None.
+            - past covariates, the third element is None.
+            - future covariates, the fourth and fifth elements are None.
 
         Should be overridden by models that use past or future covariates, and/or for model that have minimum target
         lag lower than -1, and/or for models that have a maximum target lag higher than 1 (output_chunk_length > 1).
         """
         return (-1, 1, None, None, None)
+
+    @property
+    def min_set_time_index_length(self) -> int:
+        """
+        Class property defining the minimum required length for the time index for training.
+        It differs from min_train_series_length by considering all possible covariates.
+        """
+        (
+            min_target_lag,
+            max_target_lag,
+            min_past_cov_lag,
+            min_future_cov_lag,
+            max_future_cov_lag,
+        ) = self.extreme_lags
+
+        return max(
+            max_target_lag if max_target_lag else 0,
+            max_future_cov_lag if max_future_cov_lag else 0,
+        ) - min(
+            min_target_lag if min_target_lag else 0,
+            min_past_cov_lag if min_past_cov_lag else 0,
+            min_future_cov_lag if min_future_cov_lag else 0,
+        )
 
     def _trainable_or_predictable_time_index(
         self,
@@ -275,6 +306,23 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         within the 3-tuples (series, past_covariates, future_covariates) given the model specifications.
         It returns either a DatetimeIndex or a RangeIndex depending on the type of the index of the series.
         If None is returned, there is no predictable or trainable point in the series.
+        If is_training=False, it returns the predictable time index set of points.
+        If is_training=True, it returns the trainable time index set of points, starting after the last element
+        of the trainable set of points.
+
+
+        Examples:
+
+            - if the model has a target lag of -1, output_chunk_length of 2, and no covariates, and we
+            provide a series with a time index of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], the function will return, if
+            is_training=False, the time index [2, 3, 4, 5, 6, 7, 8, 9] and if is_training=True, the time index
+            [3, 4, 5, 6, 7, 8, 9]. Indeed the first set of points we can use as one input training is [0, 1, 2].
+            - if the model has a target lag of -1, a past cov lag of -3, and output_chunk_length of 4, and
+            if the target has a time index of [3, 4, 5, 6, 7, 8, 9, 10, 11, 12] and the past covariates has
+            a time index of [7, 8, 9, 10, 11, 12, 13, 14, 15, 16], the function will return, if is_training=False,
+            the time index [10, 11, 12, 13, 14, 15, 16] and if is_training=True, the time index [14, 15, 16].
+
+
         """
 
         (
@@ -287,7 +335,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         intersect_ = None
 
-        if series is not None and min_target_lag:
+        if min_target_lag is not None:
             if series.has_range_index:
                 # RangeIndex always excludes the last point, contrary to DatetimeIndex
                 intersect_ = pd.RangeIndex(
@@ -580,7 +628,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ValueError("If not None, train_length needs to be positive."),
                 logger,
             )
-        elif (train_length is not None) and train_length < self.min_train_series_length:
+        elif (
+            train_length is not None
+        ) and train_length < self.min_set_time_index_length:
             raise_log(
                 ValueError(
                     "train_length is too small for the training requirements of this model"
@@ -617,30 +667,74 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             past_cov = past_covariates[idx] if past_covariates else None
             future_cov = future_covariates[idx] if future_covariates else None
 
-            # We will need the trainable points to know where to start and/or end.
+            # if there is a retrain or fit not yet called, we need enough data to train the model
+            # We detect the first timestamp where we have at least one training 'point' available
             if (retrain is not False) or (not self._fit_called):
-                trainable_set_time_index = self._trainable_time_index(
+                historical_forecasts_time_index = self._trainable_time_index(
                     target_ts, past_cov, future_cov
                 )
+
+                starting_point = historical_forecasts_time_index[0]
+
+            # If we don't retrain and model alrady fitted, we can start predicting from the first
+            # predictable timestamp
+            else:
+                historical_forecasts_time_index = self._predictable_time_index(
+                    target_ts, past_cov, future_cov
+                )
+
+                starting_point = historical_forecasts_time_index[0]
+
+            if historical_forecasts_time_index is None:
+                raise_log(
+                    ValueError(
+                        "Given the provided model, series and covariates, there is no point in the "
+                        "common time indexes where we can make a prediction or train the model. "
+                        "Please check the time indexes of the series and covariates."
+                    ),
+                    logger,
+                )
+
+            # We also need the first point to be used for prediction or training
+            min_point_historical_time_index = (
+                starting_point - self.min_set_time_index_length * target_ts.freq
+            )
+
             # prepare the start parameter -> pd.Timestamp
             if start is not None:
                 start_idx = target_ts.get_timestamp_at_point(start)
+                # TODO check if it is in historical_forecasts_time_index
             else:
-                # if retrain is True or fit not yet called, we need enough data to train the model
                 if (retrain is not False) or (not self._fit_called):
-                    first_trainable_point = trainable_set_time_index[0]
-
-                    # if we have a train_length we want to start historical forecasts after the
-                    # the first window of length train_length
                     if train_length:
                         start_idx = (
-                            first_trainable_point + train_length * target_ts.freq
+                            starting_point
+                            + (train_length - self.min_set_time_index_length)
+                            * target_ts.freq
                         )
+
                     # if not we start training right away, but with 2 minimum points
                     # (sklearn check that there are at least 2 points in the training set and it seems
                     # rather reasonable)
                     else:
-                        start_idx = first_trainable_point + 1 * target_ts.freq
+                        start_idx = starting_point + 1 * target_ts.freq
+
+                    if train_length:
+                        historical_forecasts_time_index = drop_before_ts_time_index(
+                            historical_forecasts_time_index,
+                            historical_forecasts_time_index[0]
+                            + (train_length - self.min_set_time_index_length)
+                            * target_ts.freq,
+                        )
+                    # if not we start training right away, but with 2 minimum points, so we start
+                    # 1 time step after the first trainable point.
+                    # (sklearn check that there are at least 2 points in the training set and it seems
+                    # rather reasonable)
+                    else:
+                        historical_forecasts_time_index = drop_before_ts_time_index(
+                            historical_forecasts_time_index,
+                            historical_forecasts_time_index[0] + 1 * target_ts.freq,
+                        )
 
                     if start_idx > target_ts.end_time():
                         raise_log(
@@ -663,25 +757,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         logger.warning(
                             "Model has not been fitted yet, `start` and train_length are not specified. "
                             " The model is not retraining during the historical forecasts. Hence the "
-                            "the first and only fit will be done on a train length = 1 which could lead to "
+                            "the first and only training will be done on 2 samples which could lead to "
                             "hazardous results."
                         )
 
                 else:
                     # if retrain is False and model is fitted already, we just need enough data
                     # to make the first prediction
-
-                    predictable_set_time_index = self._predictable_time_index(
-                        target_ts, past_cov, future_cov
-                    )
-                    start_idx = predictable_set_time_index[0]
-                    if start_idx is None:
-                        raise_log(
-                            ValueError(
-                                "The model cannot be used to make any predictions on the given series."
-                            ),
-                            logger,
-                        )
+                    start_idx = starting_point
 
             # build the prediction times in advance (to be able to use tqdm)
             last_valid_pred_time = self._get_last_prediction_time(
@@ -690,20 +773,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 overlap_end,
             )
 
-            # if we retrain, We have to take the min of the last valid trainable point and the
-            # last possible absolute prediction time we have fixed.
-            if retrain is not False:
-                last_valid_pred_time = min(
-                    last_valid_pred_time,
-                    trainable_set_time_index[-1],
-                )
-            # if we don't retrain, We have to take the min of the last valid predictable point and the
-            # last possible absolute prediction time we have fixed
-            else:
-                last_valid_pred_time = min(
-                    last_valid_pred_time,
-                    predictable_set_time_index[-1],
-                )
+            historical_forecasts_time_index = drop_after_ts_time_index(
+                historical_forecasts_time_index, last_valid_pred_time
+            )
 
             pred_times = [start_idx]
             while pred_times[-1] < last_valid_pred_time:
@@ -714,7 +786,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             if pred_times[-1] > last_valid_pred_time:
                 pred_times.pop(-1)
 
-            iterator = _build_tqdm_iterator(pred_times, verbose)
+            # iterator = _build_tqdm_iterator(pred_times, verbose)
+            iterator = _build_tqdm_iterator(historical_forecasts_time_index, verbose)
 
             # Either store the whole forecasts or only the last points of each forecast, depending on last_points_only
             forecasts = []
@@ -724,12 +797,20 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             # iterate and forecast
             for _counter, pred_time in enumerate(iterator):
+
                 # build the training series
-                train = target_ts.drop_after(pred_time)
+                # Here we want to have the right amount of target timestamps, as if
+                # the past or future covariates series starts after the first element of the target
+                # some models won't allow the training.
+                if min_point_historical_time_index > target_ts.time_index[0]:
+                    train = target_ts.drop_before(
+                        min_point_historical_time_index
+                    ).drop_after(pred_time)
+                else:
+                    train = target_ts.drop_after(pred_time)
+
                 if train_length and len(train) > train_length:
                     train = train[-train_length:]
-
-                # train_cov = covariates.drop_after(pred_time) if covariates else None
 
                 if (not self._fit_called) or retrain_func(
                     counter=_counter,
@@ -796,7 +877,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                                 step=target_ts.freq * stride,
                             ),
                             np.array(last_points_values),
-                            columns=series.columns,
+                            columns=target_ts.columns,
                             static_covariates=target_ts.static_covariates,
                             hierarchy=target_ts.hierarchy,
                         )
@@ -1430,10 +1511,12 @@ class GlobalForecastingModel(ForecastingModel, ABC):
                 self.future_covariate_series = future_covariates
         else:
             self.static_covariates = series[0].static_covariates
-            if past_covariates is not None:
-                self._expect_past_covariates = True
-            if future_covariates is not None:
-                self._expect_future_covariates = True
+
+        if past_covariates is not None:
+            self._expect_past_covariates = True
+        if future_covariates is not None:
+            self._expect_future_covariates = True
+
         self._fit_called = True
 
     @abstractmethod
