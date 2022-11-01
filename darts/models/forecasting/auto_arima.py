@@ -8,13 +8,15 @@ from typing import Optional
 from pmdarima import AutoARIMA as PmdAutoARIMA
 
 from darts.logging import get_logger, raise_if
-from darts.models.forecasting.forecasting_model import DualCovariatesForecastingModel
+from darts.models.forecasting.forecasting_model import (
+    FutureCovariatesLocalForecastingModel,
+)
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
-class AutoARIMA(DualCovariatesForecastingModel):
+class AutoARIMA(FutureCovariatesLocalForecastingModel):
     def __init__(self, *autoarima_args, **autoarima_kwargs):
         """Auto-ARIMA
 

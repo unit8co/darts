@@ -354,17 +354,18 @@ class ETTh1Dataset(DatasetLoaderCSV):
     """
     The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.
     The dataset ranges from 2016/07 to 2018/07 taken hourly.
-    Source: [1][2]_
+    Source: [1]_ [2]_
 
     Field Descriptions:
-    date: The recorded date
-    HUFL: High UseFul Load
-    HULL: High UseLess Load
-    MUFL: Medium UseFul Load
-    MULL: Medium UseLess Load
-    LUFL: Low UseFul Load
-    LULL: Low UseLess Load
-    OT: Oil Temperature (Target)
+
+    * date: The recorded date
+    * HUFL: High UseFul Load
+    * HULL: High UseLess Load
+    * MUFL: Medium UseFul Load
+    * MULL: Medium UseLess Load
+    * LUFL: Low UseFul Load
+    * LULL: Low UseLess Load
+    * OT: Oil Temperature (Target)
 
     References
     ----------
@@ -388,17 +389,18 @@ class ETTh2Dataset(DatasetLoaderCSV):
     """
     The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.
     The dataset ranges from 2016/07 to 2018/07 taken hourly.
-    Source: [1][2]_
+    Source: [1]_ [2]_
 
     Field Descriptions:
-    date: The recorded date
-    HUFL: High UseFul Load
-    HULL: High UseLess Load
-    MUFL: Medium UseFul Load
-    MULL: Medium UseLess Load
-    LUFL: Low UseFul Load
-    LULL: Low UseLess Load
-    OT: Oil Temperature (Target)
+
+    * date: The recorded date
+    * HUFL: High UseFul Load
+    * HULL: High UseLess Load
+    * MUFL: Medium UseFul Load
+    * MULL: Medium UseLess Load
+    * LUFL: Low UseFul Load
+    * LULL: Low UseLess Load
+    * OT: Oil Temperature (Target)
 
     References
     ----------
@@ -422,17 +424,18 @@ class ETTm1Dataset(DatasetLoaderCSV):
     """
     The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.
     The dataset ranges from 2016/07 to 2018/07 recorded every 15 minutes.
-    Source: [1][2]_
+    Source: [1]_ [2]_
 
     Field Descriptions:
-    date: The recorded date
-    HUFL: High UseFul Load
-    HULL: High UseLess Load
-    MUFL: Medium UseFul Load
-    MULL: Medium UseLess Load
-    LUFL: Low UseFul Load
-    LULL: Low UseLess Load
-    OT: Oil Temperature (Target)
+
+    * date: The recorded date
+    * HUFL: High UseFul Load
+    * HULL: High UseLess Load
+    * MUFL: Medium UseFul Load
+    * MULL: Medium UseLess Load
+    * LUFL: Low UseFul Load
+    * LULL: Low UseLess Load
+    * OT: Oil Temperature (Target)
 
     References
     ----------
@@ -456,17 +459,18 @@ class ETTm2Dataset(DatasetLoaderCSV):
     """
     The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.
     The dataset ranges from 2016/07 to 2018/07 recorded every 15 minutes.
-    Source: [1][2]_
+    Source: [1]_ [2]_
 
     Field Descriptions:
-    date: The recorded date
-    HUFL: High UseFul Load
-    HULL: High UseLess Load
-    MUFL: Medium UseFul Load
-    MULL: Medium UseLess Load
-    LUFL: Low UseFul Load
-    LULL: Low UseLess Load
-    OT: Oil Temperature (Target)
+
+    * date: The recorded date
+    * HUFL: High UseFul Load
+    * HULL: High UseLess Load
+    * MUFL: Medium UseFul Load
+    * MULL: Medium UseLess Load
+    * LUFL: Low UseFul Load
+    * LULL: Low UseLess Load
+    * OT: Oil Temperature (Target)
 
     References
     ----------
@@ -648,3 +652,164 @@ class UberTLCDataset(DatasetLoaderCSV):
             ts = TimeSeries.from_dataframe(tmp, "date", ["locationID"])
             ts_list.append(ts)
         return ts_list
+
+
+class ILINetDataset(DatasetLoaderCSV):
+    """
+    ILI describes the number of patients seen with influenzalike illness and the total number of patients. It includes
+    weekly data from the Centers for Disease Control and Prevention of the United States from 1997 to 2022.
+    Source: [1]_ [2]_ [3]_ [4]_
+
+    Components Descriptions:
+
+    * % WEIGHTED ILI: Combined state-specific data of patients visit to healthcare providers for ILI reported each week weighted by state population
+    * % UNWEIGHTED ILI: Combined state-specific data of patients visit to healthcare providers for ILI reported each week unweighted by state population
+    * AGE 0-4: Number of patients between 0 and 4 years of age
+    * AGE 25-49: Number of patients between 25 and 49 years of age
+    * AGE 25-64: Number of patients between 25 and 64 years of age
+    * AGE 5-24: Number of patients between 5 and 24 years of age
+    * AGE 50-64: Number of patients between 50 and 64 years of age
+    * AGE 65: Number of patients above (>=65) 65 years of age
+    * ILITOTAL: Total number of ILI patients. For this system, ILI is defined as fever (temperature of 100°F [37.8°C] or greater) and a cough and/or a sore throat
+    * NUM. OF PROVIDERS: Number of outpatient healthcare providers
+    * TOTAL PATIENTS: Total number of patients
+
+
+
+    References
+    ----------
+    .. [1] https://gis.cdc.gov/grasp/fluview/fluportaldashboard.html
+    .. [2] https://www.cdc.gov/flu/weekly/overview.htm#Outpatient
+    .. [3] https://arxiv.org/pdf/2205.13504.pdf
+    .. [4] https://gis.cdc.gov/grasp/fluview/FluViewPhase2QuickReferenceGuide.pdf
+    """
+
+    def __init__(self, multivariate: bool = True):
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                "ILINet.csv",
+                uri=_DEFAULT_PATH + "/ILINet.csv",
+                hash="c9cbd6cc0a92b21cd95bec2706212d8d",
+                header_time="DATE",
+                format_time="%Y-%m-%d",
+                freq="W",
+                multivariate=multivariate,
+            )
+        )
+
+    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+        """
+        Load the ILINetDataset dataset as a list of univariate timeseries.
+        """
+        return [TimeSeries.from_series(series[label]) for label in series]
+
+
+class ExchangeRateDataset(DatasetLoaderCSV):
+    """
+    The collection of the daily exchange rates of eight foreign countries, including Australia, British, Canada, Switzerland, China, Japan, New Zealand,
+    and Singapore, ranging from 1990 to 2016. Unfortunately, there were some inconsistencies concerning the dates, so the resulting TimeSeries is integer-indexed.
+    Source: [1]_
+
+    References
+    ----------
+    .. [1] https://github.com/laiguokun/multivariate-time-series-data
+    """
+
+    def __init__(self, multivariate: bool = True):
+        """
+        Parameters
+        ----------
+        multivariate: bool
+            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.
+        """
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                "exchange_rate.csv",
+                uri=_DEFAULT_PATH + "/exchange_rate.csv",
+                hash="6e35621a9eb6a9dd5465cf52a22b1339",
+                header_time=None,
+                multivariate=multivariate,
+            )
+        )
+
+    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+        """
+        Load the ExchangeRateDataset dataset as a list of univariate timeseries, one for each country.
+        """
+        return [TimeSeries.from_series(series[label]) for label in series]
+
+
+class TrafficDataset(DatasetLoaderCSV):
+    """
+    The data in this repo is a collection of 48 months (2015-2016) hourly data from the California Department of Transportation. The data describes
+    the road occupancy rates (between 0 and 1) measured by 862 different sensors on San Francisco Bay area freeways. The raw data is in http://pems.dot.ca.gov.
+    Source: [1]_
+
+    References
+    ----------
+    .. [1] https://github.com/laiguokun/multivariate-time-series-data
+    """
+
+    def __init__(self, multivariate: bool = True):
+        """
+        Parameters
+        ----------
+        multivariate: bool
+            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.
+        """
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                "traffic.csv",
+                uri=_DEFAULT_PATH + "/traffic.csv",
+                hash="a2105f364ef70aec06c757304833f72a",
+                header_time="Date",
+                format_time="%Y-%m-%d %H:%M:%S",
+                freq="1H",
+                multivariate=multivariate,
+            )
+        )
+
+    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+        """
+        Load the TrafficDataset dataset as a list of univariate timeseries, one for each ID.
+        """
+        return [TimeSeries.from_series(series[label]) for label in series]
+
+
+class WeatherDataset(DatasetLoaderCSV):
+    """
+    Weather includes 21 indicators of weather, such as air
+    temperature, and humidity. The data was recorded every
+    10 min for 2020 in Germany.
+    Source: [1]_ [2]_
+
+    References
+    ----------
+    .. [1] https://www.bgc-jena.mpg.de/wetter/
+    .. [2] https://arxiv.org/pdf/2205.13504.pdf
+    """
+
+    def __init__(self, multivariate: bool = True):
+        """
+        Parameters
+        ----------
+        multivariate: bool
+            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.
+        """
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                "weather.csv",
+                uri=_DEFAULT_PATH + "/weather.csv",
+                hash="a2942a05638ba311bc7935bcc087a30f",
+                header_time="Date Time",
+                format_time="%d.%m.%Y %H:%M:%S",
+                freq="10min",
+                multivariate=multivariate,
+            )
+        )
+
+    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+        """
+        Load the WeatherDataset dataset as a list of univariate timeseries, one for weather indicator.
+        """
+        return [TimeSeries.from_series(series[label]) for label in series]

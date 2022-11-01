@@ -9,11 +9,13 @@ from statsforecast.models import TSB as CrostonTSB
 from statsforecast.models import CrostonClassic, CrostonOptimized, CrostonSBA
 
 from darts.logging import raise_if, raise_if_not
-from darts.models.forecasting.forecasting_model import DualCovariatesForecastingModel
+from darts.models.forecasting.forecasting_model import (
+    FutureCovariatesLocalForecastingModel,
+)
 from darts.timeseries import TimeSeries
 
 
-class Croston(DualCovariatesForecastingModel):
+class Croston(FutureCovariatesLocalForecastingModel):
     def __init__(
         self, version: str = "classic", alpha_d: float = None, alpha_p: float = None
     ):

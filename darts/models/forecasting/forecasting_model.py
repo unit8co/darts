@@ -27,6 +27,7 @@ import numpy as np
 import pandas as pd
 
 from darts import metrics
+from darts.dataprocessing.encoders import SequentialEncoder
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
 from darts.utils import (
@@ -36,7 +37,6 @@ from darts.utils import (
     _retrain_wrapper,
     _with_sanity_checks,
 )
-from darts.utils.data.encoders import SequentialEncoder
 from darts.utils.timeseries_generation import (
     _build_forecast_series,
     _generate_new_dates,
@@ -114,7 +114,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         # This is only used if the model has been fit on one time series.
         self.training_series: Optional[TimeSeries] = None
 
-        # Static covariates sample from the (first) target series used for training the model through the `fit()`
+        # static covariates sample from the (first) target series used for training the model through the `fit()`
         # function.
         self.static_covariates: Optional[pd.DataFrame] = None
 
@@ -138,7 +138,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         self
             Fitted model.
         """
-        if not isinstance(self, DualCovariatesForecastingModel):
+        if not isinstance(self, FutureCovariatesLocalForecastingModel):
             series._assert_univariate()
         raise_if_not(
             len(series) >= self.min_train_series_length,
@@ -1435,6 +1435,20 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return model
 
 
+class LocalForecastingModel(ForecastingModel, ABC):
+    """The base class for "local" forecasting models, handling only single univariate time series.
+
+    Local Forecasting Models (LFM) are models that can be trained on a single univariate target series only. In Darts,
+    most models in this category tend to be simpler statistical models (such as ETS or FFT). LFMs usually train on
+    the entire target series supplied when calling :func:`fit()` at once. They can also predict in one go with
+    :func:`predict()` for any number of predictions `n` after the end of the training series.
+
+    All implementations must implement the `_fit()` and `_predict()` methods.
+    """
+
+    pass
+
+
 class GlobalForecastingModel(ForecastingModel, ABC):
     """The base class for "global" forecasting models, handling several time series and optional covariates.
 
@@ -1447,7 +1461,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     The name "global" stems from the fact that a training set of a forecasting model of this class is not constrained
     to a temporally contiguous, "local", time series.
 
-    All implementations have to implement the :func:`fit()` and :func:`predict()` methods defined below.
+    All implementations must implement the :func:`fit()` and :func:`predict()` methods.
     The :func:`fit()` method is meant to train the model on one or several training time series, along with optional
     covariates.
 
@@ -1683,8 +1697,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         )
         return self.encoders.encode_train(
             target=series,
-            past_covariate=past_covariates,
-            future_covariate=future_covariates,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
         )
 
     def generate_predict_encodings(
@@ -1729,8 +1743,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         return self.encoders.encode_inference(
             n=self._get_encoders_n(n),
             target=series,
-            past_covariate=past_covariates,
-            future_covariate=future_covariates,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
         )
 
     def _get_encoders_n(self, n) -> int:
@@ -1740,12 +1754,18 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         return n
 
 
-class DualCovariatesForecastingModel(ForecastingModel, ABC):
-    """The base class for the forecasting models that are not global, but support future covariates.
-    Among other things, it lets Darts forecasting models wrap around statsmodels models
-    having a `future_covariates` parameter, which corresponds to future-known covariates.
+class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
+    """The base class for future covariates "local" forecasting models, handling single uni- or multivariate target
+    and optional future covariates time series.
 
-    All implementations have to implement the `_fit()` and `_predict()` methods defined below.
+    Future Covariates Local Forecasting Models (FC-LFM) are models that can be trained on a single uni- or multivariate
+    target and optional future covariates series. In Darts, most models in this category tend to be simpler statistical
+    models (such as ARIMA). FC-LFMs usually train on the entire target and future covariates series supplied when
+    calling :func:`fit()` at once. They can also predict in one go with :func:`predict()` for any number of predictions
+    `n` after the end of the training series. When using future covariates, the values for the future `n` prediction
+    steps must be given in the covariate series.
+
+    All implementations must implement the :func:`_fit()` and :func:`_predict()` methods.
     """
 
     _expect_covariate = False
@@ -1904,12 +1924,22 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
         )
 
 
-class TransferableDualCovariatesForecastingModel(DualCovariatesForecastingModel, ABC):
-    """The base class for the forecasting models that are not global, but support future covariates, and can
-    additionally be applied to new data unrelated to the original series used for fitting the model. Currently,
-    all the derived classes wrap statsmodels models.
+class TransferableFutureCovariatesLocalForecastingModel(
+    FutureCovariatesLocalForecastingModel, ABC
+):
+    """The base class for transferable future covariates "local" forecasting models, handling single uni- or
+    multivariate target and optional future covariates time series. Additionally, at prediction time, it can be
+    applied to new data unrelated to the original series used for fitting the model.
 
-    All implementations have to implement the `_fit()`, `_predict()` methods.
+    Transferable Future Covariates Local Forecasting Models (TFC-LFM) are models that can be trained on a single uni-
+    or multivariate target and optional future covariates series. Additionally, at prediction time, it can be applied
+    to new data unrelated to the original series used for fitting the model. Currently in Darts, all models in this
+    category wrap to statsmodel models such as VARIMA. TFC-LFMs usually train on the entire target and future covariates
+    series supplied when calling :func:`fit()` at once. They can also predict in one go with :func:`predict()`
+    for any number of predictions `n` after the end of the training series. When using future covariates, the values
+    for the future `n` prediction steps must be given in the covariate series.
+
+    All implementations must implement the :func:`_fit()` and :func:`_predict()` methods.
     """
 
     def predict(
@@ -1973,14 +2003,14 @@ class TransferableDualCovariatesForecastingModel(DualCovariatesForecastingModel,
                 future_covariates,
             ) = future_covariates.split_after(series.end_time())
 
-            # in case future covariate have more values on the left end side that we don't need
+            # in case future covariates have more values on the left end side that we don't need
             if not series.has_same_time_as(historic_future_covariates):
                 historic_future_covariates = historic_future_covariates.slice_intersect(
                     series
                 )
 
-        # DualCovariatesForecastingModel performs some checks on self.training_series. We temporary replace that with
-        # the new ts
+        # FutureCovariatesLocalForecastingModel performs some checks on self.training_series. We temporary replace
+        # that with the new ts
         if series is not None:
             self._orig_training_series = self.training_series
             self.training_series = series
@@ -2010,7 +2040,7 @@ class TransferableDualCovariatesForecastingModel(DualCovariatesForecastingModel,
         num_samples: int = 1,
     ) -> TimeSeries:
         """Forecasts values for a certain number of time steps after the end of the series.
-        TransferableDualCovariatesForecastingModel must implement the predict logic in this method.
+        TransferableFutureCovariatesLocalForecastingModel must implement the predict logic in this method.
         """
         pass
 
