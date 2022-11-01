@@ -105,13 +105,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     @abstractmethod
     def __init__(self, *args, **kwargs):
-        # The series used for training the model through the `fit()` function.
+        # The series, and covariates used for training the model through the `fit()` function.
         # This is only used if the model has been fit on one time series.
         self.training_series: Optional[TimeSeries] = None
-
-        # static covariates sample from the (first) target series used for training the model through the `fit()`
-        # function.
+        self.past_covariate_series: Optional[TimeSeries] = None
+        self.future_covariate_series: Optional[TimeSeries] = None
         self.static_covariates: Optional[pd.DataFrame] = None
+
+        self._expect_past_covariates, self._expect_future_covariates = False, False
 
         # state; whether the model has been fit (on a single time series)
         self._fit_called = False
@@ -1256,9 +1257,6 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     provide to :func:`predict()` the series they want to forecast, as well as covariates, if needed.
     """
 
-    _expect_past_covariates, _expect_future_covariates = False, False
-    past_covariate_series, future_covariate_series = None, None
-
     def __init__(self, add_encoders: Optional[dict] = None):
         super().__init__(add_encoders=add_encoders)
 
@@ -1429,8 +1427,6 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
     All implementations must implement the :func:`_fit()` and :func:`_predict()` methods.
     """
 
-    _expect_covariate = False
-
     def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         """Fit/train the model on the (single) provided series.
 
@@ -1450,13 +1446,6 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         self
             Fitted model.
         """
-        self.encoders = self.initialize_encoders()
-        if self.encoders.encoding_available:
-            _, future_covariates = self.generate_fit_encodings(
-                series=series,
-                past_covariates=None,
-                future_covariates=future_covariates,
-            )
 
         if future_covariates is not None:
             if not series.has_same_time_as(future_covariates):
@@ -1467,9 +1456,22 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
                 series.has_same_time_as(future_covariates),
                 "The provided `future_covariates` series must contain at least the same time steps/"
                 "indices as the target `series`.",
-                logger,
+                logger=logger,
             )
-            self._expect_covariate = True
+            self._expect_future_covariates = True
+
+        self.encoders = self.initialize_encoders()
+        if self.encoders.encoding_available:
+            _, future_covariates = self.generate_fit_encodings(
+                series=series,
+                past_covariates=None,
+                future_covariates=future_covariates,
+            )
+            raise_if_not(
+                series.has_same_time_as(future_covariates),
+                "Encoders did not generate valid covariates index.",
+                logger=logger,
+            )
 
         super().fit(series)
 
@@ -1512,32 +1514,16 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
 
         super().predict(n, num_samples)
 
-        # ignore TransferableFutureCovariatesLocalForecastingModel, as encodings were already applied
-        if (
-            self.encoders is not None
-            and self.encoders.encoding_available
-            and not isinstance(self, TransferableFutureCovariatesLocalForecastingModel)
-        ):
-            _, future_covariates = self.generate_predict_encodings(
-                n=n,
-                series=self.training_series,
-                past_covariates=None,
-                future_covariates=future_covariates,
-            )
-
-        if self._expect_covariate and future_covariates is None:
-            raise_log(
-                ValueError(
-                    "The model has been trained with `future_covariates` variable. Some matching "
-                    "`future_covariates` variables have to be provided to `predict()`."
+        # ignore TransferableFutureCovariatesLocalForecastingModel, as already applied
+        if not isinstance(self, TransferableFutureCovariatesLocalForecastingModel):
+            self._verify_passed_predict_covariates(future_covariates)
+            if self.encoders is not None and self.encoders.encoding_available:
+                _, future_covariates = self.generate_predict_encodings(
+                    n=n,
+                    series=self.training_series,
+                    past_covariates=None,
+                    future_covariates=future_covariates,
                 )
-            )
-
-        raise_if(
-            not self._expect_covariate and future_covariates is not None,
-            "The model has been trained without `future_covariates` variable, but the "
-            "`future_covariates` parameter provided to `predict()` is not None.",
-        )
 
         if future_covariates is not None:
             start = self.training_series.end_time() + self.training_series.freq
@@ -1617,6 +1603,23 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
     ]:
         return None, None, False, True, None, None
 
+    def _verify_passed_predict_covariates(self, future_covariates):
+        """Simple check if user supplied/did not supply covariates as done at fitting time."""
+        if self._expect_future_covariates and future_covariates is None:
+            raise_log(
+                ValueError(
+                    "The model has been trained with `future_covariates` variable. Some matching "
+                    "`future_covariates` variables have to be provided to `predict()`."
+                )
+            )
+        if not self._expect_future_covariates and future_covariates is not None:
+            raise_log(
+                ValueError(
+                    "The model has been trained without `future_covariates` variable, but the "
+                    "`future_covariates` parameter provided to `predict()` is not None.",
+                )
+            )
+
 
 class TransferableFutureCovariatesLocalForecastingModel(
     FutureCovariatesLocalForecastingModel, ABC
@@ -1672,20 +1675,13 @@ class TransferableFutureCovariatesLocalForecastingModel(
         -------
         TimeSeries, a single time series containing the `n` next points after then end of the training series.
         """
+        self._verify_passed_predict_covariates(future_covariates)
         if self.encoders is not None and self.encoders.encoding_available:
             _, future_covariates = self.generate_predict_encodings(
                 n=n,
-                series=series,
+                series=series if series is not None else self.training_series,
                 past_covariates=None,
                 future_covariates=future_covariates,
-            )
-
-        if self._expect_covariate and future_covariates is None:
-            raise_log(
-                ValueError(
-                    "The model has been trained with `future_covariates` variable. Some matching "
-                    "`future_covariates` variables have to be provided to `predict()`."
-                )
             )
 
         historic_future_covariates = None
@@ -1730,6 +1726,40 @@ class TransferableFutureCovariatesLocalForecastingModel(
             self.training_series = self._orig_training_series
 
         return result
+
+    def generate_predict_encodings(
+        self,
+        n: int,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+    ) -> Tuple[
+        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
+    ]:
+        raise_if(
+            self.encoders is None or not self.encoders.encoding_available,
+            "Encodings are not available. Consider adding parameter `add_encoders` at model creation and fitting the "
+            "model with `model.fit()` before.",
+            logger=logger,
+        )
+        _, future_covariates_future = self.encoders.encode_inference(
+            n=n,
+            target=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
+        if future_covariates is not None:
+            return _, future_covariates_future
+
+        _, future_covariates_historic = self.encoders.encode_train(
+            target=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+        return _, future_covariates_historic.concatenate(
+            future_covariates_future, axis="time"
+        )
 
     @abstractmethod
     def _predict(

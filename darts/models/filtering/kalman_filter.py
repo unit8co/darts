@@ -55,7 +55,6 @@ class KalmanFilter(FilteringModel, ABC):
         # TODO: Add support for x_init. Needs reimplementation of NFourSID.
 
         super().__init__()
-        self._expect_covariates = False
 
         if kf is None:
             self.kf = None
@@ -68,7 +67,7 @@ class KalmanFilter(FilteringModel, ABC):
             self.dim_y = kf.state_space.y_dim
             self._kf_provided = True
             if self.dim_u > 0:
-                self._expect_covariates = True
+                self._expect_future_covariates = True
 
     def __str__(self):
         return f"KalmanFilter(dim_x={self.dim_x})"
@@ -101,7 +100,7 @@ class KalmanFilter(FilteringModel, ABC):
             Fitted Kalman filter.
         """
         if covariates is not None:
-            self._expect_covariates = True
+            self._expect_future_covariates = True
             covariates = covariates.slice_intersect(series)
             raise_if_not(
                 series.has_same_time_as(covariates),
@@ -181,11 +180,11 @@ class KalmanFilter(FilteringModel, ABC):
         )
 
         raise_if(
-            covariates is not None and not self._expect_covariates,
+            covariates is not None and not self._expect_future_covariates,
             "Covariates were provided, but the Kalman filter was not fitted with covariates.",
         )
 
-        if self._expect_covariates:
+        if self._expect_future_covariates:
             raise_if(
                 covariates is None,
                 "The Kalman filter was fitted with covariates, but these were not provided.",
@@ -205,7 +204,7 @@ class KalmanFilter(FilteringModel, ABC):
         kf = deepcopy(self.kf)
 
         y_values = series.values(copy=False)
-        if self._expect_covariates:
+        if self._expect_future_covariates:
             u_values = covariates.values(copy=False)
 
             # set control signal to 0 if it contains NaNs:

@@ -1,3 +1,4 @@
+import copy
 import os
 import shutil
 import tempfile
@@ -261,6 +262,42 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                     model.fit(target, future_covariates=target[:-1])
                 with self.assertRaises(ValueError):
                     model.fit(target[1:], future_covariates=target[:-1])
+
+    def test_encoders_support(self):
+        # test case with pd.DatetimeIndex
+        target = self.ts_gaussian
+        future_covariates = self.ts_gaussian_long
+
+        n = 3
+        future_cov_models = dual_models + [m for m, _ in multivariate_models]
+        add_encoders = {"custom": {"future": [lambda x: x.dayofweek]}}
+        for model_object in future_cov_models:
+            if isinstance(model_object, KalmanForecaster):
+                continue
+            series = (
+                target
+                if not isinstance(model_object, VARIMA)
+                else target.stack(target.map(np.log))
+            )
+            # test once with user supplied covariates, and once without
+            for fc in [future_covariates, None]:
+                print(model_object)
+                model_params = {
+                    k: vals
+                    for k, vals in copy.deepcopy(model_object.model_params).items()
+                }
+                model_params["add_encoders"] = add_encoders
+                model = model_object.__class__(**model_params)
+
+                # Test models with user supplied covariates
+                model.fit(series, future_covariates=fc)
+
+                prediction = model.predict(n, future_covariates=fc)
+                self.assertTrue(len(prediction) == n)
+
+                if isinstance(model, TransferableFutureCovariatesLocalForecastingModel):
+                    prediction = model.predict(n, series=series, future_covariates=fc)
+                    self.assertTrue(len(prediction) == n)
 
     def test_dummy_series(self):
         values = np.random.uniform(low=-10, high=10, size=100)

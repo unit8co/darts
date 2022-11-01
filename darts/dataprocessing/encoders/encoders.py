@@ -1010,22 +1010,23 @@ class SequentialEncoder(Encoder):
                 [covariates] if isinstance(covariates, TimeSeries) else covariates
             )
 
-        for ts, pc in zip(target, covariates):
+        for ts, covs in zip(target, covariates):
             # drop encoder components if they are in input covariates
-            pc = self._drop_encoded_components(
-                covariates=pc, components=getattr(self, f"{covariates_type}_components")
+            covs = self._drop_encoded_components(
+                covariates=covs,
+                components=getattr(self, f"{covariates_type}_components"),
             )
             encoded = concatenate(
                 [
                     getattr(enc, encode_method)(
-                        target=ts, covariates=pc, merge_covariates=False, n=n
+                        target=ts, covariates=covs, merge_covariates=False, n=n
                     )
                     for enc in encoders
                 ],
                 axis=DIMS[1],
             )
             encoded_sequence.append(
-                self._merge_covariates(encoded=encoded, covariates=pc)
+                self._merge_covariates(encoded=encoded, covariates=covs)
             )
 
         if transformer is not None:
