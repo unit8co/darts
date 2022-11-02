@@ -548,7 +548,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         retrain: Union[bool, int, Callable[..., bool]] = True,
         overlap_end: bool = False,
         last_points_only: bool = False,
-        metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
+        metric: Union[
+            Callable[[TimeSeries, TimeSeries], float],
+            List[Callable[[TimeSeries, TimeSeries], float]],
+        ] = metrics.mape,
         reduction: Union[Callable[[np.ndarray], float], None] = np.mean,
         verbose: bool = False,
     ) -> Union[float, List[float]]:
@@ -624,9 +627,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         last_points_only
             Whether to use the whole historical forecasts or only the last point of each forecast to compute the error
         metric
-            A function that takes two ``TimeSeries`` instances as inputs and returns an error value.
+            A function or a list of function that takes two ``TimeSeries`` instances as inputs and returns an
+            error value.
         reduction
             A function used to combine the individual error scores obtained when `last_points_only` is set to False.
+            When providing several time-series, the function will receive the argument `axis = 1` to obtain single
+            value for each metric function.
             If explicitly set to `None`, the method will return a list of the individual error scores instead.
             Set to ``np.mean`` by default.
         verbose
@@ -651,14 +657,26 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             verbose=verbose,
         )
 
+        if not isinstance(metric, list):
+            metric = [metric]
+
         if last_points_only:
-            return metric(series, forecasts)
+            errors = [metric_f(series, forecasts) for metric_f in metric]
 
-        errors = [metric(series, forecast) for forecast in forecasts]
-        if reduction is None:
+        else:
+            # metric in columns, forecast in rows
+            errors = [
+                [metric_f(series, forecast) for metric_f in metric]
+                for forecast in forecasts
+            ]
+            if reduction is not None:
+                # one value per metric
+                errors = reduction(np.array(errors), axis=0)
+
+        if len(metric) > 1:
             return errors
-
-        return reduction(np.array(errors))
+        else:
+            return errors[0]
 
     @classmethod
     def gridsearch(
