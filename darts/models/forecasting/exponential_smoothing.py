@@ -9,14 +9,14 @@ import numpy as np
 import statsmodels.tsa.holtwinters as hw
 
 from darts.logging import get_logger
-from darts.models.forecasting.forecasting_model import ForecastingModel
+from darts.models.forecasting.forecasting_model import LocalForecastingModel
 from darts.timeseries import TimeSeries
 from darts.utils.utils import ModelMode, SeasonalityMode
 
 logger = get_logger(__name__)
 
 
-class ExponentialSmoothing(ForecastingModel):
+class ExponentialSmoothing(LocalForecastingModel):
     def __init__(
         self,
         trend: Optional[ModelMode] = ModelMode.ADDITIVE,
