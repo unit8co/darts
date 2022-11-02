@@ -410,6 +410,11 @@ class RegressionModel(GlobalForecastingModel):
                 future_covariates=future_covariates,
             )
 
+        if past_covariates is not None:
+            self._uses_past_covariates = True
+        if future_covariates is not None:
+            self._uses_future_covariates = True
+
         for covs, name in zip([past_covariates, future_covariates], ["past", "future"]):
             raise_if(
                 covs is not None and name not in self.lags,

@@ -110,13 +110,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     @abstractmethod
     def __init__(self, *args, **kwargs):
-        # The series used for training the model through the `fit()` function.
+        # The series, and covariates used for training the model through the `fit()` function.
         # This is only used if the model has been fit on one time series.
         self.training_series: Optional[TimeSeries] = None
-
-        # static covariates sample from the (first) target series used for training the model through the `fit()`
-        # function.
+        self.past_covariate_series: Optional[TimeSeries] = None
+        self.future_covariate_series: Optional[TimeSeries] = None
         self.static_covariates: Optional[pd.DataFrame] = None
+
+        self._expect_past_covariates, self._expect_future_covariates = False, False
+
+        self._uses_past_covariates, self._uses_future_covariates = False, False
 
         # state; whether the model has been fit (on a single time series)
         self._fit_called = False
@@ -178,12 +181,26 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return False
 
     @property
-    def uses_past_covariates(self):
+    def supports_past_covariates(self):
         return "past_covariates" in inspect.signature(self.fit).parameters.keys()
 
     @property
-    def uses_future_covariates(self):
+    def supports_future_covariates(self):
         return "future_covariates" in inspect.signature(self.fit).parameters.keys()
+
+    @property
+    def uses_past_covariates(self):
+        """
+        Whether the model uses past covariates, once fitted.
+        """
+        return self._uses_past_covariates
+
+    @property
+    def uses_future_covariates(self):
+        """
+        Whether the model uses future covariates, once fitted.
+        """
+        return self._uses_future_covariates
 
     @abstractmethod
     def predict(self, n: int, num_samples: int = 1) -> TimeSeries:
@@ -313,11 +330,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         Examples:
 
-            - if the model has a target lag of -1, output_chunk_length of 2, and no covariates, and we
+            - If the model has a target lag of -1, output_chunk_length of 2, and no covariates, and we
             provide a series with a time index of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], the function will return, if
             is_training=False, the time index [2, 3, 4, 5, 6, 7, 8, 9] and if is_training=True, the time index
-            [3, 4, 5, 6, 7, 8, 9]. Indeed the first set of points we can use as one input training is [0, 1, 2].
-            - if the model has a target lag of -1, a past cov lag of -3, and output_chunk_length of 4, and
+            [3, 4, 5, 6, 7, 8, 9]. Indeed the first set of points we can use as one training sample is [0, 1, 2],
+            so the time index starts at 3.
+
+            - If the model has a target lag of -1, a past cov lag of -3, and output_chunk_length of 4, and
             if the target has a time index of [3, 4, 5, 6, 7, 8, 9, 10, 11, 12] and the past covariates has
             a time index of [7, 8, 9, 10, 11, 12, 13, 14, 15, 16], the function will return, if is_training=False,
             the time index [10, 11, 12, 13, 14, 15, 16] and if is_training=True, the time index [14, 15, 16].
@@ -335,7 +354,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         intersect_ = None
 
-        if min_target_lag is not None:
+        if (min_target_lag is not None) and (series is not None):
             if series.has_range_index:
                 # RangeIndex always excludes the last point, contrary to DatetimeIndex
                 intersect_ = pd.RangeIndex(
@@ -357,7 +376,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     )
                 ]
 
-        if past_covariates is not None:
+        if (min_past_cov_lag is not None) and (past_covariates is not None):
             if past_covariates.has_range_index:
                 tmp_ = pd.RangeIndex(
                     start=past_covariates.start_time()
@@ -368,9 +387,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     stop=past_covariates.end_time() + 1 * past_covariates.freq,
                     step=past_covariates.freq,
                 )
-
             else:
-
                 tmp_ = past_covariates.time_index[
                     past_covariates.time_index.slice_indexer(
                         past_covariates.start_time()
@@ -386,7 +403,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             else:
                 intersect_ = tmp_
 
-        if future_covariates is not None:
+        if (min_future_cov_lag is not None) and (future_covariates is not None):
             if future_covariates.has_range_index:
                 tmp_ = pd.RangeIndex(
                     start=future_covariates.start_time()
@@ -703,7 +720,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             # prepare the start parameter -> pd.Timestamp
             if start is not None:
                 start_idx = target_ts.get_timestamp_at_point(start)
-                # TODO check if it is in historical_forecasts_time_index
+                historical_forecasts_time_index = drop_before_ts_time_index(
+                    historical_forecasts_time_index,
+                    target_ts.get_timestamp_at_point(start),
+                )
+
             else:
                 if (retrain is not False) or (not self._fit_called):
                     if train_length:
@@ -723,7 +744,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         historical_forecasts_time_index = drop_before_ts_time_index(
                             historical_forecasts_time_index,
                             historical_forecasts_time_index[0]
-                            + (train_length - self.min_set_time_index_length)
+                            + max((train_length - self.min_set_time_index_length), 0)
                             * target_ts.freq,
                         )
                     # if not we start training right away, but with 2 minimum points, so we start
@@ -787,7 +808,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 pred_times.pop(-1)
 
             # iterator = _build_tqdm_iterator(pred_times, verbose)
-            iterator = _build_tqdm_iterator(historical_forecasts_time_index, verbose)
+            iterator = _build_tqdm_iterator(
+                historical_forecasts_time_index[::stride], verbose
+            )
 
             # Either store the whole forecasts or only the last points of each forecast, depending on last_points_only
             forecasts = []
@@ -1470,9 +1493,6 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     provide to :func:`predict()` the series they want to forecast, as well as covariates, if needed.
     """
 
-    _expect_past_covariates, _expect_future_covariates = False, False
-    past_covariate_series, future_covariate_series = None, None
-
     def __init__(self, add_encoders: Optional[dict] = None):
         super().__init__()
 
@@ -1526,10 +1546,15 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         else:
             self.static_covariates = series[0].static_covariates
 
+            if past_covariates is not None:
+                self._expect_past_covariates = True
+            if future_covariates is not None:
+                self._expect_future_covariates = True
+
         if past_covariates is not None:
-            self._expect_past_covariates = True
+            self._uses_past_covariates = True
         if future_covariates is not None:
-            self._expect_future_covariates = True
+            self._uses_future_covariates = True
 
         self._fit_called = True
 
@@ -1624,9 +1649,9 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     ):
         self.fit(
             series=series,
-            past_covariates=past_covariates if self.uses_past_covariates else None,
+            past_covariates=past_covariates if self.supports_past_covariates else None,
             future_covariates=future_covariates
-            if self.uses_future_covariates
+            if self.supports_future_covariates
             else None,
         )
 
@@ -1768,8 +1793,6 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
     All implementations must implement the :func:`_fit()` and :func:`_predict()` methods.
     """
 
-    _expect_covariate = False
-
     def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         """Fit/train the model on the (single) provided series.
 
@@ -1801,7 +1824,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
                 "indices as the target `series`.",
                 logger,
             )
-            self._expect_covariate = True
+            self._expect_future_covariates = True
 
         super().fit(series)
 
@@ -1844,7 +1867,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
 
         super().predict(n, num_samples)
 
-        if self._expect_covariate and future_covariates is None:
+        if self._expect_future_covariates and future_covariates is None:
             raise_log(
                 ValueError(
                     "The model has been trained with `future_covariates` variable. Some matching "
@@ -1853,7 +1876,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
             )
 
         raise_if(
-            not self._expect_covariate and future_covariates is not None,
+            not self._expect_future_covariates and future_covariates is not None,
             "The model has been trained without `future_covariates` variable, but the "
             "`future_covariates` parameter provided to `predict()` is not None.",
         )
@@ -1979,7 +2002,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
         TimeSeries, a single time series containing the `n` next points after then end of the training series.
         """
 
-        if self._expect_covariate and future_covariates is None:
+        if self._expect_future_covariates and future_covariates is None:
             raise_log(
                 ValueError(
                     "The model has been trained with `future_covariates` variable. Some matching "

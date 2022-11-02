@@ -650,6 +650,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 future_covariates=future_covariates,
             )
 
+        if past_covariates is not None:
+            self._uses_past_covariates = True
+        if future_covariates is not None:
+            self._uses_future_covariates = True
+
         self._verify_past_future_covariates(
             past_covariates=past_covariates, future_covariates=future_covariates
         )
@@ -1554,7 +1559,7 @@ def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
 
 class PastCovariatesTorchModel(TorchForecastingModel, ABC):
 
-    uses_future_covariates = False
+    supports_future_covariates = False
 
     def _build_train_dataset(
         self,
@@ -1643,7 +1648,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         return (
             -self.input_chunk_length,
             self.output_chunk_length,
-            -self.input_chunk_length if self._expect_past_covariates else None,
+            -self.input_chunk_length if self.uses_past_covariates else None,
             None,
             None,
         )
@@ -1651,7 +1656,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
 
 class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
 
-    uses_past_covariates = False
+    supports_past_covariates = False
 
     def _build_train_dataset(
         self,
@@ -1743,7 +1748,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
 
 
 class DualCovariatesTorchModel(TorchForecastingModel, ABC):
-    uses_past_covariates = False
+    supports_past_covariates = False
 
     def _build_train_dataset(
         self,
@@ -1905,9 +1910,9 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         return (
             -self.input_chunk_length,
             self.output_chunk_length,
-            -self.input_chunk_length if self._expect_past_covariates else None,
-            -self.input_chunk_length if self._expect_future_covariates else None,
-            self.output_chunk_length if self._expect_future_covariates else None,
+            -self.input_chunk_length if self.uses_past_covariates else None,
+            -self.input_chunk_length if self.uses_future_covariates else None,
+            self.output_chunk_length if self.uses_future_covariates else None,
         )
 
 
@@ -1989,7 +1994,7 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         return (
             -self.input_chunk_length,
             self.output_chunk_length,
-            -self.input_chunk_length if self._expect_past_covariates else None,
+            -self.input_chunk_length if self.uses_past_covariates else None,
             0 if self._expect_future_covariates else None,
-            self.output_chunk_length if self._expect_future_covariates else None,
+            self.output_chunk_length if self.uses_future_covariates else None,
         )
