@@ -10,13 +10,17 @@ from typing import Callable, Iterator, List, Optional, Sequence, Tuple, TypeVar,
 
 import numpy as np
 import pandas as pd
-from IPython import get_ipython
 from joblib import Parallel, delayed
 from tqdm import tqdm
 from tqdm.notebook import tqdm as tqdm_notebook
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+
+try:
+    from IPython import get_ipython
+except ModuleNotFoundError:
+    get_ipython = None
 
 logger = get_logger(__name__)
 
@@ -88,6 +92,8 @@ def _build_tqdm_iterator(iterable, verbose, **kwargs):
     """
 
     def _isnotebook():
+        if get_ipython is None:
+            return False
         try:
             shell = get_ipython().__class__.__name__
             if shell == "ZMQInteractiveShell":

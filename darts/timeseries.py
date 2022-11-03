@@ -36,6 +36,7 @@ import itertools
 import pickle
 import re
 from collections import defaultdict
+from copy import deepcopy
 from inspect import signature
 from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
 
@@ -4648,8 +4649,8 @@ class TimeSeries:
     def __copy__(self, deep: bool = True):
         return self.copy()
 
-    def __deepcopy__(self):
-        return self.__class__(self._xa.copy())
+    def __deepcopy__(self, memo):
+        return self.__class__(deepcopy(self._xa, memo))
 
     def __getitem__(
         self,
