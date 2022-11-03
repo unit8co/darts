@@ -1412,7 +1412,7 @@ class TimeSeries:
         else:
             return pd.Series(self._xa[:, 0, 0].values, index=self._time_index)
 
-    def pd_dataframe(self, copy=True, suppress_warnings = False) -> pd.DataFrame:
+    def pd_dataframe(self, copy=True, suppress_warnings=False) -> pd.DataFrame:
         """
         Return a Pandas DataFrame representation of this time series.
 
