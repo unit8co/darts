@@ -57,7 +57,7 @@ class AnomalyModel(ABC):
     ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
         """Scores the results against true anomalies.
 
-        Expects an anomaly_scores of same length
+        Expects every element of anomaly_scores to have a non-empty time intersection with actual_anomalies.
 
         Parameters
         ----------
@@ -76,15 +76,15 @@ class AnomalyModel(ABC):
         Union[float, Sequence[float], Sequence[Sequence[float]]]
             Score of the anomaly time series
         """
-        anomaly_scores = (
+        list_anomaly_scores = (
             [anomaly_scores]
             if not isinstance(anomaly_scores, Sequence)
             else anomaly_scores
         )
 
         raise_if_not(
-            len(anomaly_scores) == len(self.scorers),
-            f"The number of anomaly scores ({len(anomaly_scores)}) must match the number of scorers ({len(self.scorers)})\
+            len(list_anomaly_scores) == len(self.scorers),
+            f"The number of anomaly scores ({len(list_anomaly_scores)}) must match the number of scorers ({len(self.scorers)})\
             of the anomaly_model",
         )
 
@@ -92,13 +92,13 @@ class AnomalyModel(ABC):
         for idx, scorer in enumerate(self.scorers):
             acc_anomaly_scores.append(
                 scorer.eval_accuracy_from_scores(
-                    anomaly_score=anomaly_scores[idx],
+                    anomaly_score=list_anomaly_scores[idx],
                     actual_anomalies=actual_anomalies,
                     metric=metric,
                 )
             )
 
-        if len(acc_anomaly_scores) == 1:
+        if len(acc_anomaly_scores) == 1 and not isinstance(anomaly_scores, Sequence):
             return acc_anomaly_scores[0]
         else:
             return acc_anomaly_scores
@@ -159,6 +159,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         forecast_horizon: int = None,
         start: Union[pd.Timestamp, float, int] = None,
+        num_samples: int = None,
     ):
         """Train the model (if not already fitted) and the
         scorer(s) (if fittable) on the given time series.
@@ -184,6 +185,9 @@ class ForecastingAnomalyModel(AnomalyModel):
             `series` that will be used as first prediction time.
             In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
             directly.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
+            deterministic models.
 
         Returns
         -------
@@ -256,6 +260,7 @@ class ForecastingAnomalyModel(AnomalyModel):
                         future_covariates=future_covariates,
                         forecast_horizon=forecast_horizon,
                         start=start,
+                        num_samples=num_samples,
                     )
                 )
 
@@ -307,6 +312,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         forecast_horizon: int = None,
         start: Union[pd.Timestamp, float, int] = None,
+        num_samples: int = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Predicts the given input time series with the forecasting model, and applies the scorer(s)
         on the prediction and the given input time series. Outputs the anomaly score of the given
@@ -331,6 +337,9 @@ class ForecastingAnomalyModel(AnomalyModel):
             `series` that will be used as first prediction time.
             In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
             directly.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
+            deterministic models.
 
         Returns
         -------
@@ -370,6 +379,7 @@ class ForecastingAnomalyModel(AnomalyModel):
                     future_covariates=future_covariates,
                     forecast_horizon=forecast_horizon,
                     start=start,
+                    num_samples=num_samples,
                 )
             )
 
@@ -377,7 +387,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         for scorer in self.scorers:
             list_anomaly_scores.append(scorer.score(list_pred, list_series))
 
-        if len(list_anomaly_scores) == 1:
+        if len(list_anomaly_scores) == 1 and not isinstance(series, Sequence):
             return list_anomaly_scores[0]
         else:
             return list_anomaly_scores
@@ -418,6 +428,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         future_covariates: Optional[TimeSeries] = None,
         forecast_horizon: int = None,
         start: Union[pd.Timestamp, float, int] = None,
+        num_samples=None,
     ) -> TimeSeries:
 
         """Compute the historical forecasts that would have been obtained by this model on the `series`.
@@ -444,6 +455,9 @@ class ForecastingAnomalyModel(AnomalyModel):
             `series` that will be used as first prediction time.
             In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
             directly.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
+            deterministic models.
 
         Returns
         -------
@@ -455,8 +469,11 @@ class ForecastingAnomalyModel(AnomalyModel):
             forecast_horizon = 1
 
         if start is None:
-            # in the future: set 'start' to its minimal possible value
+            # TODO: set 'start' to its minimal possible value
             start = 0.5
+
+        if num_samples is None:
+            num_samples = 1
 
         # checks if model accepts to not be retrained in the historical_forecasts()
         if self.model._supports_non_retrainable_historical_forecasts():
@@ -471,17 +488,21 @@ class ForecastingAnomalyModel(AnomalyModel):
             "forecast_horizon": forecast_horizon,
             "start": start,
             "retrain": retrain,
+            "num_samples": num_samples,
             "stride": 1,
             "last_points_only": True,
             "verbose": False,
         }
 
-        # remove None element from dictionary model_fit_params
+        # remove None element from dictionary historical_forecasts_param
         historical_forecasts_param = {
             k: v for k, v in historical_forecasts_param.items() if v is not None
         }
 
-        return self.model.historical_forecasts(series, **historical_forecasts_param)
+        # return the mean of axis 2 (mean of samples per timestamp generated by a probabilistic forecasting)
+        return self.model.historical_forecasts(
+            series, **historical_forecasts_param
+        ).mean(axis=2)
 
     def eval_accuracy(
         self,
@@ -566,7 +587,7 @@ class ForecastingAnomalyModel(AnomalyModel):
                 )
             )
 
-        if len(acc_anomaly_scores) == 1:
+        if len(acc_anomaly_scores) == 1 and not isinstance(series, Sequence):
             return acc_anomaly_scores[0]
         else:
             return acc_anomaly_scores
@@ -684,7 +705,7 @@ class FilteringAnomalyModel(AnomalyModel):
         for scorer in self.scorers:
             anomaly_scores.append(scorer.score(list_pred, list_series))
 
-        if len(anomaly_scores) == 1:
+        if len(anomaly_scores) == 1 and not isinstance(series, Sequence):
             return anomaly_scores[0]
         else:
             return anomaly_scores
@@ -745,7 +766,7 @@ class FilteringAnomalyModel(AnomalyModel):
                 )
             )
 
-        if len(acc_anomaly_scores) == 1:
+        if len(acc_anomaly_scores) == 1 and not isinstance(series, Sequence):
             return acc_anomaly_scores[0]
         else:
             return acc_anomaly_scores

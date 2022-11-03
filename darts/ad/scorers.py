@@ -35,7 +35,7 @@ class AnomalyScorer(ABC):
 
         raise_if_not(
             window > 0,
-            f"window must be stricly greater than 0, found {window}",
+            f"window must be stricly greater than 0, found size {window}",
         )
 
         self.window = window
@@ -133,7 +133,7 @@ class AnomalyScorer(ABC):
             else:
                 sol.append(metrics)
 
-        if len(sol) == 1:
+        if len(sol) == 1 and not isinstance(anomaly_score, Sequence):
             return sol[0]
         else:
             return sol
@@ -351,7 +351,7 @@ class NonFittableAnomalyScorer(AnomalyScorer):
 
             anomaly_scores.append(self._score_core(s1, s2))
 
-        if len(anomaly_scores) == 1:
+        if len(anomaly_scores) == 1 and not isinstance(series_1, Sequence):
             return anomaly_scores[0]
         else:
             return anomaly_scores
@@ -415,7 +415,7 @@ class FittableAnomalyScorer(AnomalyScorer):
                 self._sanity_check(s1, s2)
                 anomaly_scores.append(self._score_core(s1, s2))
 
-        if len(anomaly_scores) == 1:
+        if len(anomaly_scores) == 1 and not isinstance(series_1, Sequence):
             return anomaly_scores[0]
         else:
             return anomaly_scores
@@ -1220,7 +1220,7 @@ class WassersteinScorer(FittableAnomalyScorer):
         self.component_wise = component_wise
 
     def __str__(self):
-        return f"WasserteinScorer (window={self.window}, reduced_function={self.reduced_function})"
+        return f"WassersteinScorer (window={self.window}, reduced_function={self.reduced_function})"
 
     def _fit_core(
         self,
