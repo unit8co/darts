@@ -1412,7 +1412,7 @@ class TimeSeries:
         else:
             return pd.Series(self._xa[:, 0, 0].values, index=self._time_index)
 
-    def pd_dataframe(self, copy=True) -> pd.DataFrame:
+    def pd_dataframe(self, copy=True, suppress_warnings = False) -> pd.DataFrame:
         """
         Return a Pandas DataFrame representation of this time series.
 
@@ -1432,15 +1432,15 @@ class TimeSeries:
             The Pandas DataFrame representation of this time series
         """
         if not self.is_deterministic:
-
-            raise_user_warning(
-                True,
-                "You are transforming a stochastic TimeSeries (i.e., contains several samples). "
-                "The resulting DataFrame is a 2D object with all samples on the columns. "
-                "If this is not the expected behavior consider calling a function "
-                "adapted to stochastic TimeSeries like quantile_df().",
-                logger,
-            )
+            if not suppress_warnings:
+                raise_user_warning(
+                    True,
+                    "You are transforming a stochastic TimeSeries (i.e., contains several samples). "
+                    "The resulting DataFrame is a 2D object with all samples on the columns. "
+                    "If this is not the expected behavior consider calling a function "
+                    "adapted to stochastic TimeSeries like quantile_df().",
+                    logger,
+                )
 
             comp_name = list(self._xa.get_index(DIMS[1]))
             samples = range(self.n_samples)
@@ -3072,6 +3072,7 @@ class TimeSeries:
         target: Optional["TimeSeries"] = None,
         keep_non_transformed: Optional[bool] = False,
         store_window_transformation: Optional[bool] = False,
+        suppress_warnings: Optional[bool] = False,
     ) -> "TimeSeries":
         """
         Parameters:
@@ -3374,13 +3375,14 @@ class TimeSeries:
                         or transformation["step"] is None,
                         f"`window_transformation` at index {idx} must contain a positive integer for 'step'. ",
                     )
-                    raise_user_warning(
-                        transformation["step"] > 1,
-                        f"`window_transformation` at index {idx} has a step greater than 1. "
-                        f"This may lead to a transformed series with a different "
-                        f"frequency than the original input series.",
-                        logger,
-                    )
+                    if not suppress_warnings:
+                        raise_user_warning(
+                            transformation["step"] > 1,
+                            f"`window_transformation` at index {idx} has a step greater than 1. "
+                            f"This may lead to a transformed series with a different "
+                            f"frequency than the original input series.",
+                            logger,
+                        )
 
                 if (
                     "components" in transformation
@@ -3417,7 +3419,7 @@ class TimeSeries:
             self.window_transformations = window_transformations
 
         # read series dataframe
-        ts_df = self.pd_dataframe(copy=False)
+        ts_df = self.pd_dataframe(copy=False, suppress_warnings=True)
 
         # store some original attributes of the series
         original_components = set(self.columns.to_list())
@@ -3437,14 +3439,15 @@ class TimeSeries:
             if (
                 "closed" not in transformation or forecasting_safe
             ):  # forecasting_safe takes over "closed"
-                raise_user_warning(
-                    "closed" in transformation
-                    and transformation["closed"] != "left"
-                    and forecasting_safe,
-                    f"`window_transformation` at index {idx} with 'closed' key was replaced with value 'left' "
-                    f"to guarantee forecasting safe behavior.",
-                    logger,
-                )
+                if not suppress_warnings:
+                    raise_user_warning(
+                        "closed" in transformation
+                        and transformation["closed"] != "left"
+                        and forecasting_safe,
+                        f"`window_transformation` at index {idx} with 'closed' key was replaced with value 'left' "
+                        f"to guarantee forecasting safe behavior.",
+                        logger,
+                    )
 
                 transformation[
                     "closed"
@@ -3561,19 +3564,21 @@ class TimeSeries:
         # Treat NAs
         if isinstance(treat_na, int) or isinstance(treat_na, float):
             resulting_transformations.fillna(value=treat_na, inplace=True)
-            raise_user_warning(
-                forecasting_safe,
-                f"NAs were replaced by provided value {treat_na}.",
-                logger,
-            )
+            if not suppress_warnings:
+                raise_user_warning(
+                    forecasting_safe,
+                    f"NAs were replaced by provided value {treat_na}.",
+                    logger,
+                )
         elif forecasting_safe:
             resulting_transformations.dropna(inplace=True)
-            raise_user_warning(
-                forecasting_safe,
-                "Enforcing forecasting safe. Resulting series is truncated by dropping NAs.",
-                # TODO: ASSUMES NAs ARE AT THE BEGINNING OF THE SERIES, IS THIS A SAFE ASSUMPTION?
-                logger,
-            )
+            if not suppress_warnings:
+                raise_user_warning(
+                    forecasting_safe,
+                    "Enforcing forecasting safe. Resulting series is truncated by dropping NAs.",
+                    # TODO: ASSUMES NAs ARE AT THE BEGINNING OF THE SERIES, IS THIS A SAFE ASSUMPTION?
+                    logger,
+                )
         elif isinstance(treat_na, str):
             if treat_na == "dropna":
                 resulting_transformations.dropna(
