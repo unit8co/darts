@@ -109,8 +109,6 @@ if TORCH_AVAILABLE:
 
                 # the theoretical result should be [[1.01, 1.02], [0.505, 0.51]].
                 # We just test if the given result is not too far on average.
-                print(model_cls)
-                print(res)
                 self.assertTrue(
                     abs(
                         np.average(res - np.array([[1.01, 1.02], [0.505, 0.51]])) < 0.03
