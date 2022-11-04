@@ -27,6 +27,8 @@ try:
         TCNModel,
         TFTModel,
         TransformerModel,
+        NLinearModel,
+        DLinearModel,
     )
     from darts.models.forecasting.torch_forecasting_model import (
         DualCovariatesTorchModel,
@@ -101,6 +103,20 @@ if TORCH_AVAILABLE:
                 "n_epochs": 10,
             },
             100.0,
+        ),
+        (
+            NLinearModel,
+            {
+                "n_epochs": 10,
+            },
+            100,
+        ),
+        (
+            DLinearModel,
+            {
+                "n_epochs": 10,
+            },
+            100,
         ),
     ]
 
