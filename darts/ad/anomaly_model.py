@@ -1,5 +1,5 @@
 """
-AnomalyModel
+Anomaly Model
 ------------
 
 An anomaly model expect a model and a scorer. It offers a ``score()``function, which takes
