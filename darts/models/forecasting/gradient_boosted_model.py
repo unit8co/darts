@@ -4,8 +4,8 @@ LightGBM Model
 
 This is a LightGBM implementation of Gradient Boosted Trees algorithm.
 
-To enable LightGBM support in Darts, follow the detailed install instructions for LightGBM in the README:
-https://github.com/unit8co/darts/blob/master/README.md
+To enable LightGBM support in Darts, follow the detailed install instructions for LightGBM in the INSTALL:
+https://github.com/unit8co/darts/blob/master/INSTALL.md
 """
 
 from typing import List, Optional, Sequence, Tuple, Union
