@@ -60,33 +60,6 @@ STATIC_COV_TAG = "static_covariates"
 DEFAULT_GLOBAL_STATIC_COV_NAME = "global_components"
 HIERARCHY_TAG = "hierarchy"
 
-BUILTIN_TRANSFORMS_WINDOW = [
-    "count",
-    "sum",
-    "mean",
-    "median",
-    "min",
-    "max",
-    "std",
-    "var",
-    "skew",
-    "kurt",
-    "corr",
-    "cov",
-    "quantile",
-    "sem",
-    "rank",
-]
-BUILTIN_TRANSFORMS_EWM = [
-    "mean",
-    "var",
-    "std",
-    "corr",
-    "cov",
-    "sum",
-    "skew",
-]  # Exponential Moving Window
-
 
 class TimeSeries:
     def __init__(self, xa: xr.DataArray):
@@ -3075,51 +3048,58 @@ class TimeSeries:
         suppress_warnings: Optional[bool] = False,
     ) -> "TimeSeries":
         """
-        Parameters:
-        -----------
+        Applies a moving window transformation over this ``TimeSeries``.
 
+        Parameters
+        ----------
         window_transformations
-            A dictionary or a list of dictionaries. Each dictionary should contain at least the 'function' key.
+            A dictionary or a list of dictionaries.
+            Each dictionary specifes a different window transform.
 
-            The 'function' value should be a string with the name of one of the builtin transformation functions,
-            or a callable function provided by the user that can be applied to the input series
-            by using pandas.DatFrame.rolling object.
+            The dictionaries should contain the following keys:
 
-            The two following options are available for built-in transformation functions:
-            1) Based on pandas.DataFrame.Rolling windows, the 'function' key should have one of
-                {BUILTIN_TRANSFORMS_WINDOW}.
-            2) Based on pandas.DataFrame.ewm (Exponentially-weighted window), the 'function' key should have one of
-                {BUILTIN_TRANSFORMS_EWM} prefixed by 'ewm_'. For example, 'function': 'ewm_mean', 'ewm_sum'.
+            :``"function"``: the name of one of the builtin transformation functions, or to a callable function
+                             that can be applied to the input series by using ``pandas.DataFrame.rolling object``.
 
-            The 'window' key should be provided for built-in and for user provided callable functions.
-            The 'window' value should be a positive integer representing the size of the window to be used for the
-            transformation.
+                             The two following options are available for built-in transformation functions:
 
-            An optional key can be provided for more flexibility: 'components'.
-            The 'components' key can be a string or a list of strings specifying the names of the components
-            of the series on which the transformation should be applied.
-            If not provided, the transformation will be applied to all components of the series.
+                             * Based on ``pandas.DataFrame.rolling`` windows, ``"function"`` should map to one of
+                               ``{"count", "sum", "mean", "median", "min", "max", "std", "var", "skew", "kurt",
+                               "corr", "cov", "quantile", "sem", "rank"}``.
+                             * Based on ``pandas.DataFrame.ewm`` (Exponentially-weighted window),
+                               ``"function"`` should be one of ``{"mean", "var", "std", "corr", "cov", "sum",
+                               "skew"}``, prefixed by ``"ewm_"``. For example, ``"function": "ewm_mean"``
+                               or ``"function": "ewm_sum"``.
+
+            :``"window"``: the size of the window (in number of time steps) to be used for the transformation.
+
+            :``"components"``: Optional. A string or list of strings specifying the components to which the
+                               transformation should be applied. If not specified, the transformation will be
+                               applied to all components.
 
             All other dictionary items provided will be treated as keyword arguments for the function group
-            (i.e., pandas.DataFrame.rolling or pandas.DataFrame.ewm) or for the specific function in that group
-            (i.e., pandas.DataFrame.rolling.mean/std/max/min... or pandas.DataFrame.ewm.mean/std/sum).
+            (i.e., ``pandas.DataFrame.rolling`` or ``pandas.DataFrame.ewm``) or for the specific function
+            in that group (i.e., ``pandas.DataFrame.rolling.mean/std/max/min...`` or
+            ``pandas.DataFrame.ewm.mean/std/sum``).
             This allows for more flexibility in configuring how the window slides over the data, by providing for
             example:
-            'center': True/False to set the observation at the current timestep at the center of the windows
-            (default is False),
-            'closed': 'right'/'left'/'both'/'neither' to specify whether the right, left or both ends of the window are
-            excluded (Darts enforces default to 'left', to guarantee the outcome to be forecasting safe);
-            'step':int slides the window of 'step' size between each window evaluation (Darts enforces default to 1
-            to guarantee outcome to have same frequency as the input series).
-            More information on the available options for builtin functions can be found in the pandas documentation:
-            https://pandas.pydata.org/docs/reference/window.html
 
-            For user provided functions, extra arguments in the transformation dictionary are passed to the function.
-            Darts sets by default that the user provided function will receive numpy arrays as input. User can modify
-            this behavior by adding item 'raw':False in the transformation dictionary.
-            It is expected that the function returns a single value for each window.
-            Other possible configurations can be found in the pandas.DataFrame.Rolling().apply() documentation:
-            https://pandas.pydata.org/docs/reference/window.html
+            * ``"center"``: ``True``/``False`` to set the observation at the current timestep at the
+              center of the windows (default is False),
+            * ``"closed"``: ``"right"``/``"left"``/``"both"``/``"neither"`` to specify whether the right,
+              left or both ends of the window are excluded (when `forecasting_safe` is `True`, Darts enforces
+              ``"left"``);
+            * ``"step"``: ``int`` slides the window of 'step' time steps between each window evaluation
+              (Darts defaults to 1, which yields the same frequency as the input series).
+
+            More information on the available options for builtin functions can be found in the
+            `Pandas documentation <https://pandas.pydata.org/docs/reference/window.html>`_.
+
+            For user-provided functions, extra arguments in the transformation dictionary are passed to the function.
+            Darts expects user-provided functions to receive numpy arrays as input. This can be modified by adding
+            item ``"raw": False`` in the transformation dictionary. It is expected that the function returns a single
+            value for each window. Other possible configurations can be found in the
+            `pandas.DataFrame.Rolling().apply() documentation: <https://pandas.pydata.org/docs/reference/window.html>`_.
 
         treat_na
             String to specify how to treat missing values in the resulting TimeSeries. Can be 'dropna' to truncate the
@@ -3172,6 +3152,33 @@ class TimeSeries:
             the target is truncated to align it with the transformed series.
             The output becomes (transformed_time_series, truncated_target)
         """
+
+        BUILTIN_TRANSFORMS_WINDOW = [
+            "count",
+            "sum",
+            "mean",
+            "median",
+            "min",
+            "max",
+            "std",
+            "var",
+            "skew",
+            "kurt",
+            "corr",
+            "cov",
+            "quantile",
+            "sem",
+            "rank",
+        ]
+        BUILTIN_TRANSFORMS_EWM = [
+            "mean",
+            "var",
+            "std",
+            "corr",
+            "cov",
+            "sum",
+            "skew",
+        ]  # Exponential Moving Window
 
         # setup built_in transformations
         def _mk_entry_rolling(fn):
@@ -3551,12 +3558,10 @@ class TimeSeries:
                 )  # update set
                 if not self.is_deterministic:
                     new_columns.extend(
-                        set(
-                            [
-                                re.sub(f"{sample_prefix}.*$", "", comp_name)
-                                for comp_name in to_add
-                            ]
-                        )
+                        {
+                            re.sub(f"{sample_prefix}.*$", "", comp_name)
+                            for comp_name in to_add
+                        }
                     )
                 else:
                     new_columns.extend(to_add)
