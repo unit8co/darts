@@ -1544,9 +1544,9 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
                 if isinstance(future_covariates.time_index, pd.DatetimeIndex)
                 else n
             )
-            future_covariates = future_covariates[
-                start : start + offset * self.training_series.freq
-            ]
+            future_covariates = future_covariates.slice(
+                start, start + offset * self.training_series.freq
+            )
 
             raise_if_not(
                 len(future_covariates) == n,

@@ -2549,10 +2549,6 @@ class TimeSeries:
             attrs=self._xa.attrs,
         )
 
-        # new_xa = xr.concat(objs=[self._xa, other_xa], dim=str(self._time_dim))
-        if not self._has_datetime_index:
-            new_xa = new_xa.reset_index(dims_or_levels=new_xa.dims[0])
-
         return self.__class__.from_xarray(
             new_xa, fill_missing_dates=True, freq=self._freq_str
         )
