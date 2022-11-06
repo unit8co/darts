@@ -462,16 +462,16 @@ class IntegerIndexEncoder(SingleEncoder):
         super()._encode(index, target_end, dtype)
 
         idx_larger_end = (index <= target_end).sum()
+        freq = index.freq if isinstance(index, pd.DatetimeIndex) else index.step
         if idx_larger_end:
             idx_larger_end -= 1
         if index[0] > target_end:
             idx_diff = (
-                len(generate_index(start=target_end, end=index[0], freq=index.freq)) - 1
+                len(generate_index(start=target_end, end=index[0], freq=freq)) - 1
             )
         elif index[-1] < target_end:
             idx_diff = (
-                -len(generate_index(start=index[-1], end=target_end, freq=index.freq))
-                + 1
+                -len(generate_index(start=index[-1], end=target_end, freq=freq)) + 1
             )
         else:
             idx_diff = 0
