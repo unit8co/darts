@@ -698,7 +698,7 @@ class SingleEncoder(Encoder, ABC):
         * attribute: the attribute used for the underlying encoder. Some examples:
             * "month_sin", "month_cos" (for "cyc")
             * "month" (for "dta")
-            * "absolute", "relative" (for "pos")
+            * "relative" (for "pos")
             * "custom" (for "cus")
         """
         return f"darts_enc_{self.index_generator.base_component_name}"
