@@ -992,10 +992,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             add_encoders=self.add_encoders,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
-            takes_past_covariates=takes_past_covariates,
-            takes_future_covariates=takes_future_covariates,
             past_covariates_lags=past_covariates_lags,
             future_covariates_lags=future_covariates_lags,
+            takes_past_covariates=takes_past_covariates,
+            takes_future_covariates=takes_future_covariates,
         )
 
     def generate_fit_encodings(

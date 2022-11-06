@@ -49,11 +49,16 @@ class CovariatesIndexGenerator(ABC):
         Parameters
         ----------
         input_chunk_length
-            Optionally, the length of the emitted past series. Only required in scenario C.
+            Optionally, the number of input target time steps per chunk. Only required in scenarios B, C.
+            Corresponds to `input_chunk_length` for :class:`TorchForecastingModel`, or to the absolute minimum target
+            lag value `abs(min(lags))` for :class:`RegressionModel`.
         output_chunk_length
-            Optionally, the length of the emitted future series. Only required in scenarios B, and C.
+            Optionally, the number of output target time steps per chunk. Only required in scenarios B, and C.
+            Corresponds to `output_chunk_length` for both :class:`TorchForecastingModel`, and :class:`RegressionModel`.
         covariates_lags
             Optionally, a list of covariates lags used for Darts' RegressionModels. Only required in scenario B.
+            Corresponds to `past_covariates_lags` for past covariates, and `future_covariates_lags` for future
+            covariates.
         """
         # check that parameters match one of the scenarios
         self._verify_scenario(input_chunk_length, output_chunk_length, covariates_lags)

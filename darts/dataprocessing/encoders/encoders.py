@@ -233,18 +233,14 @@ class PastCyclicEncoder(CyclicTemporalEncoder):
 
     def __init__(
         self,
-        input_chunk_length: int,
-        output_chunk_length: int,
         attribute: str,
+        input_chunk_length: Optional[int] = None,
+        output_chunk_length: Optional[int] = None,
         covariates_lags: Optional[List[int]] = None,
     ):
         """
         Parameters
         ----------
-        input_chunk_length
-            The length of the emitted past series.
-        output_chunk_length
-            The length of the emitted future series.
         attribute
             The attribute of the underlying pd.DatetimeIndex from  for which to apply cyclic encoding.
             Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
@@ -252,9 +248,20 @@ class PastCyclicEncoder(CyclicTemporalEncoder):
             https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
+        input_chunk_length
+            Optionally, the number of input target time steps per chunk. Only required for
+            :class:`TorchForecastingModel`, and :class:`RegressionModel`.
+            Corresponds to parameter `input_chunk_length` from :class:`TorchForecastingModel`, or to the absolute
+            minimum target lag value `abs(min(lags))` for :class:`RegressionModel`.
+        output_chunk_length
+            Optionally, the number of output target time steps per chunk. Only required for
+            :class:`TorchForecastingModel`, and :class:`RegressionModel`.
+            Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and
+            :class:`RegressionModel`.
         covariates_lags
-            Optionally, a list of integers representing the past covariate lags used for Darts' RegressionModels.
-            Only accepts lag values <= -1.
+            Optionally, a list of integers representing the past covariate lags. Accepts integer lag values <= -1.
+            Only required for :class:`RegressionModel`.
+            Corresponds to parameter `past_covariates_lags` from :class:`RegressionModel`.
         """
         super().__init__(
             index_generator=PastCovariatesIndexGenerator(
@@ -271,18 +278,14 @@ class FutureCyclicEncoder(CyclicTemporalEncoder):
 
     def __init__(
         self,
-        input_chunk_length: int,
-        output_chunk_length: int,
         attribute: str,
+        input_chunk_length: Optional[int] = None,
+        output_chunk_length: Optional[int] = None,
         covariates_lags: Optional[List[int]] = None,
     ):
         """
         Parameters
         ----------
-        input_chunk_length
-            The length of the emitted past series.
-        output_chunk_length
-            The length of the emitted future series.
         attribute
             The attribute of the underlying pd.DatetimeIndex from  for which to apply cyclic encoding.
             Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
@@ -290,8 +293,20 @@ class FutureCyclicEncoder(CyclicTemporalEncoder):
             https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
+        input_chunk_length
+            Optionally, the number of input target time steps per chunk. Only required for
+            :class:`TorchForecastingModel`, and :class:`RegressionModel`.
+            Corresponds to parameter `input_chunk_length` from :class:`TorchForecastingModel`, or to the absolute
+            minimum target lag value `abs(min(lags))` for :class:`RegressionModel`.
+        output_chunk_length
+            Optionally, the number of output target time steps per chunk. Only required for
+            :class:`TorchForecastingModel`, and :class:`RegressionModel`.
+            Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and
+            :class:`RegressionModel`.
         covariates_lags
-            Optionally, a list of integers representing the future covariate lags used for Darts' RegressionModels.
+            Optionally, a list of integers representing the future covariate lags. Accepts all integer values.
+            Only required for :class:`RegressionModel`.
+            Corresponds to parameter `future_covariates_lags` from :class:`RegressionModel`.
         """
         super().__init__(
             index_generator=FutureCovariatesIndexGenerator(
@@ -357,18 +372,14 @@ class PastDatetimeAttributeEncoder(DatetimeAttributeEncoder):
 
     def __init__(
         self,
-        input_chunk_length: int,
-        output_chunk_length: int,
         attribute: str,
+        input_chunk_length: Optional[int] = None,
+        output_chunk_length: Optional[int] = None,
         covariates_lags: Optional[List[int]] = None,
     ):
         """
         Parameters
         ----------
-        input_chunk_length
-            The length of the emitted past series.
-        output_chunk_length
-            The length of the emitted future series.
         attribute
             The attribute of the underlying pd.DatetimeIndex from  for which to add scalar information.
             Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
@@ -376,9 +387,20 @@ class PastDatetimeAttributeEncoder(DatetimeAttributeEncoder):
             https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
+        input_chunk_length
+            Optionally, the number of input target time steps per chunk. Only required for
+            :class:`TorchForecastingModel`, and :class:`RegressionModel`.
+            Corresponds to parameter `input_chunk_length` from :class:`TorchForecastingModel`, or to the absolute
+            minimum target lag value `abs(min(lags))` for :class:`RegressionModel`.
+        output_chunk_length
+            Optionally, the number of output target time steps per chunk. Only required for
+            :class:`TorchForecastingModel`, and :class:`RegressionModel`.
+            Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and
+            :class:`RegressionModel`.
         covariates_lags
-            Optionally, a list of integers representing the past covariate lags used for Darts' RegressionModels.
-            Only accepts lag values <= -1.
+            Optionally, a list of integers representing the past covariate lags. Accepts integer lag values <= -1.
+            Only required for :class:`RegressionModel`.
+            Corresponds to parameter `past_covariates_lags` from :class:`RegressionModel`.
         """
         super().__init__(
             index_generator=PastCovariatesIndexGenerator(
@@ -395,18 +417,14 @@ class FutureDatetimeAttributeEncoder(DatetimeAttributeEncoder):
 
     def __init__(
         self,
-        input_chunk_length: int,
-        output_chunk_length: int,
         attribute: str,
+        input_chunk_length: Optional[int] = None,
+        output_chunk_length: Optional[int] = None,
         covariates_lags: Optional[List[int]] = None,
     ):
         """
         Parameters
         ----------
-        input_chunk_length
-            The length of the emitted past series.
-        output_chunk_length
-            The length of the emitted future series.
         attribute
             The attribute of the underlying pd.DatetimeIndex from  for which to add scalar information.
             Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
@@ -414,8 +432,20 @@ class FutureDatetimeAttributeEncoder(DatetimeAttributeEncoder):
             https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
+        input_chunk_length
+            Optionally, the number of input target time steps per chunk. Only required for
+            :class:`TorchForecastingModel`, and :class:`RegressionModel`.
+            Corresponds to parameter `input_chunk_length` from :class:`TorchForecastingModel`, or to the absolute
+            minimum target lag value `abs(min(lags))` for :class:`RegressionModel`.
+        output_chunk_length
+            Optionally, the number of output target time steps per chunk. Only required for
+            :class:`TorchForecastingModel`, and :class:`RegressionModel`.
+            Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and
+            :class:`RegressionModel`.
         covariates_lags
-            Optionally, a list of integers representing the future covariate lags used for Darts' RegressionModels.
+            Optionally, a list of integers representing the future covariate lags. Accepts all integer values.
+            Only required for :class:`RegressionModel`.
+            Corresponds to parameter `future_covariates_lags` from :class:`RegressionModel`.
         """
         super().__init__(
             index_generator=FutureCovariatesIndexGenerator(
@@ -507,24 +537,31 @@ class PastIntegerIndexEncoder(IntegerIndexEncoder):
 
     def __init__(
         self,
-        input_chunk_length: int,
-        output_chunk_length: int,
         attribute: str,
+        input_chunk_length: Optional[int] = None,
+        output_chunk_length: Optional[int] = None,
         covariates_lags: Optional[List[int]] = None,
     ):
         """
         Parameters
         ----------
-        input_chunk_length
-            The length of the emitted past series.
-        output_chunk_length
-            The length of the emitted future series.
         attribute
             Currently only 'relative' is supported. The generated encoded values will range from (-inf, inf) and the
             target series end time will be used as a reference to evaluate the relative index positions.
+        input_chunk_length
+            Optionally, the number of input target time steps per chunk. Only required for
+            :class:`TorchForecastingModel`, and :class:`RegressionModel`.
+            Corresponds to parameter `input_chunk_length` from :class:`TorchForecastingModel`, or to the absolute
+            minimum target lag value `abs(min(lags))` for :class:`RegressionModel`.
+        output_chunk_length
+            Optionally, the number of output target time steps per chunk. Only required for
+            :class:`TorchForecastingModel`, and :class:`RegressionModel`.
+            Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and
+            :class:`RegressionModel`.
         covariates_lags
-            Optionally, a list of integers representing the past covariate lags used for Darts' RegressionModels.
-            Only accepts lag values <= -1.
+            Optionally, a list of integers representing the past covariate lags. Accepts integer lag values <= -1.
+            Only required for :class:`RegressionModel`.
+            Corresponds to parameter `past_covariates_lags` from :class:`RegressionModel`.
         """
         super().__init__(
             index_generator=PastCovariatesIndexGenerator(
@@ -543,23 +580,31 @@ class FutureIntegerIndexEncoder(IntegerIndexEncoder):
 
     def __init__(
         self,
-        input_chunk_length: int,
-        output_chunk_length: int,
         attribute: str,
+        input_chunk_length: Optional[int] = None,
+        output_chunk_length: Optional[int] = None,
         covariates_lags: Optional[List[int]] = None,
     ):
         """
         Parameters
         ----------
-        input_chunk_length
-            The length of the emitted past series.
-        output_chunk_length
-            The length of the emitted future series.
         attribute
             Currently only 'relative' is supported. The generated encoded values will range from (-inf, inf) and the
             target series end time will be used as a reference to evaluate the relative index positions.
+        input_chunk_length
+            Optionally, the number of input target time steps per chunk. Only required for
+            :class:`TorchForecastingModel`, and :class:`RegressionModel`.
+            Corresponds to parameter `input_chunk_length` from :class:`TorchForecastingModel`, or to the absolute
+            minimum target lag value `abs(min(lags))` for :class:`RegressionModel`.
+        output_chunk_length
+            Optionally, the number of output target time steps per chunk. Only required for
+            :class:`TorchForecastingModel`, and :class:`RegressionModel`.
+            Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and
+            :class:`RegressionModel`.
         covariates_lags
-            Optionally, a list of integers representing the future covariate lags used for Darts' RegressionModels.
+            Optionally, a list of integers representing the future covariate lags. Accepts all integer values.
+            Only required for :class:`RegressionModel`.
+            Corresponds to parameter `future_covariates_lags` from :class:`RegressionModel`.
         """
         super().__init__(
             index_generator=FutureCovariatesIndexGenerator(
@@ -634,27 +679,34 @@ class PastCallableIndexEncoder(CallableIndexEncoder):
 
     def __init__(
         self,
-        input_chunk_length: int,
-        output_chunk_length: int,
         attribute: Callable,
+        input_chunk_length: Optional[int] = None,
+        output_chunk_length: Optional[int] = None,
         covariates_lags: Optional[List[int]] = None,
     ):
         """
         Parameters
         ----------
-        input_chunk_length
-            The length of the emitted past series.
-        output_chunk_length
-            The length of the emitted future series.
         attribute
             A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.RangeIndex)` as input
             and returns a np.ndarray of shape `(len(index),)`.
             An example for a correct `attribute` for `index` of type pd.DatetimeIndex:
             ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.RangeIndex:
             ``attribute = lambda index: (index - 1950) / 50``
+        input_chunk_length
+            Optionally, the number of input target time steps per chunk. Only required for
+            :class:`TorchForecastingModel`, and :class:`RegressionModel`.
+            Corresponds to parameter `input_chunk_length` from :class:`TorchForecastingModel`, or to the absolute
+            minimum target lag value `abs(min(lags))` for :class:`RegressionModel`.
+        output_chunk_length
+            Optionally, the number of output target time steps per chunk. Only required for
+            :class:`TorchForecastingModel`, and :class:`RegressionModel`.
+            Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and
+            :class:`RegressionModel`.
         covariates_lags
-            Optionally, a list of integers representing the past covariate lags used for Darts' RegressionModels.
-            Only accepts lag values <= -1.
+            Optionally, a list of integers representing the past covariate lags. Accepts integer lag values <= -1.
+            Only required for :class:`RegressionModel`.
+            Corresponds to parameter `past_covariates_lags` from :class:`RegressionModel`.
         """
         super().__init__(
             index_generator=PastCovariatesIndexGenerator(
@@ -673,26 +725,34 @@ class FutureCallableIndexEncoder(CallableIndexEncoder):
 
     def __init__(
         self,
-        input_chunk_length: int,
-        output_chunk_length: int,
         attribute: Callable,
+        input_chunk_length: Optional[int] = None,
+        output_chunk_length: Optional[int] = None,
         covariates_lags: Optional[List[int]] = None,
     ):
         """
         Parameters
         ----------
-        input_chunk_length
-            The length of the emitted past series.
-        output_chunk_length
-            The length of the emitted future series.
         attribute
             A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.RangeIndex)` as input
             and returns a np.ndarray of shape `(len(index),)`.
             An example for a correct `attribute` for `index` of type pd.DatetimeIndex:
             ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.RangeIndex:
             ``attribute = lambda index: (index - 1950) / 50``
+        input_chunk_length
+            Optionally, the number of input target time steps per chunk. Only required for
+            :class:`TorchForecastingModel`, and :class:`RegressionModel`.
+            Corresponds to parameter `input_chunk_length` from :class:`TorchForecastingModel`, or to the absolute
+            minimum target lag value `abs(min(lags))` for :class:`RegressionModel`.
+        output_chunk_length
+            Optionally, the number of output target time steps per chunk. Only required for
+            :class:`TorchForecastingModel`, and :class:`RegressionModel`.
+            Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and
+            :class:`RegressionModel`.
         covariates_lags
-            Optionally, a list of integers representing the future covariate lags used for Darts' RegressionModels.
+            Optionally, a list of integers representing the future covariate lags. Accepts all integer values.
+            Only required for :class:`RegressionModel`.
+            Corresponds to parameter `future_covariates_lags` from :class:`RegressionModel`.
         """
 
         super().__init__(
@@ -713,20 +773,18 @@ class SequentialEncoder(Encoder):
     def __init__(
         self,
         add_encoders: Dict,
-        input_chunk_length: int,
-        output_chunk_length: int,
-        takes_past_covariates: bool = False,
-        takes_future_covariates: bool = False,
+        input_chunk_length: Optional[int] = None,
+        output_chunk_length: Optional[int] = None,
         past_covariates_lags: Optional[List[int]] = None,
         future_covariates_lags: Optional[List[int]] = None,
+        takes_past_covariates: bool = False,
+        takes_future_covariates: bool = False,
     ) -> None:
 
         """
-        SequentialEncoder automatically creates encoder objects from parameter `add_encoders` used when creating a
-        `TorchForecastingModel`.
-
-        *   Only kwarg `add_encoders` of type `Optional[Dict]` will be used to extract the encoders.
-            For example: `model = MyModel(..., add_encoders={...}, ...)`
+        SequentialEncoder automatically creates encoder objects from parameter `add_encoders`. `add_encoders` can also
+        be set directly in all of Darts' `ForecastingModels`. This will automatically set up a
+        :class:`SequentialEncoder` tailored to the settings of the underlying forecasting model.
 
         The `add_encoders` dict must follow this convention:
             `{encoder keyword: {temporal keyword: List[attributes]}, ..., transformer keyword: transformer object}`
@@ -783,19 +841,27 @@ class SequentialEncoder(Encoder):
         add_encoders
             A dictionary with the encoder settings.
         input_chunk_length
-            The length of the emitted past series.
+            Optionally, the number of input target time steps per chunk. Only required for
+            :class:`TorchForecastingModel`, and :class:`RegressionModel`.
+            Corresponds to parameter `input_chunk_length` from :class:`TorchForecastingModel`, or to the absolute
+            minimum target lag value `abs(min(lags))` for :class:`RegressionModel`.
         output_chunk_length
-            The length of the emitted future series.
-        takes_past_covariates
-            Whether to accept past covariates
-        takes_future_covariates
-            Whether to accept future covariates
+            Optionally, the number of output target time steps per chunk. Only required for
+            :class:`TorchForecastingModel`, and :class:`RegressionModel`.
+            Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and
+            :class:`RegressionModel`.
         past_covariates_lags
-            Optionally, a list of integers representing the past covariate lags used for Darts' RegressionModels.
-            Only accepts integer lag values <= -1.
+            Optionally, a list of integers representing the past covariate lags. Accepts integer lag values <= -1.
+            Only required for :class:`RegressionModel`.
+            Corresponds to parameter `past_covariates_lags` from :class:`RegressionModel`.
         future_covariates_lags
-            Optionally, a list of integers representing the future covariate lags used for Darts' RegressionModels.
-            Accepts all integer values.
+            Optionally, a list of integers representing the future covariate lags. Accepts all integer values.
+            Only required for :class:`RegressionModel`.
+            Corresponds to parameter `future_covariates_lags` from :class:`RegressionModel`.
+        takes_past_covariates
+            Whether to encode/generate past covariates.
+        takes_future_covariates
+            Whether to encode/generate future covariates.
         """
 
         super().__init__()
@@ -1128,18 +1194,18 @@ class SequentialEncoder(Encoder):
 
         self._past_encoders = [
             self.encoder_map[enc_id](
-                self.input_chunk_length,
-                self.output_chunk_length,
                 attribute=attr,
+                input_chunk_length=self.input_chunk_length,
+                output_chunk_length=self.output_chunk_length,
                 covariates_lags=self.past_covariates_lags,
             )
             for enc_id, attr in past_encoders
         ]
         self._future_encoders = [
             self.encoder_map[enc_id](
-                self.input_chunk_length,
-                self.output_chunk_length,
                 attribute=attr,
+                input_chunk_length=self.input_chunk_length,
+                output_chunk_length=self.output_chunk_length,
                 covariates_lags=self.future_covariates_lags,
             )
             for enc_id, attr in future_encoders
