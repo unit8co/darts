@@ -14,7 +14,7 @@ try:
 
     TORCH_AVAILABLE = True
 except ImportError:
-    logger.warning("Torch not available. TCN tests will be skipped.")
+    logger.warning("Torch not available. DeepTime tests will be skipped.")
     TORCH_AVAILABLE = False
 
 
@@ -29,7 +29,7 @@ if TORCH_AVAILABLE:
 
         def test_creation(self):
             with self.assertRaises(ValueError):
-                # if a list is passed to the `layer_widths` argument, it must have a length equal to `num_stacks`
+                # if the `inr_layer_widths` argument is a list, its length must be equal to `inr_num_layers`
                 DeepTimeModel(
                     input_chunk_length=1,
                     output_chunk_length=1,
@@ -95,7 +95,6 @@ if TORCH_AVAILABLE:
 
             # the theoretical result should be [[1.01, 1.02], [0.505, 0.51]].
             # We just test if the given result is not too far on average.
-            print(res)
             self.assertTrue(
                 abs(np.average(res - np.array([[1.01, 1.02], [0.505, 0.51]])) < 0.03)
             )
@@ -151,6 +150,8 @@ if TORCH_AVAILABLE:
                 n_fourier_feats=64,
                 scales=[0.01, 0.1, 1, 5, 10, 20, 50, 100],
                 random_state=42,
+                log_tensorboard=True,
+                work_dir=self.temp_work_dir,
             )
             model.fit(ts)
             model.predict(n=2)
