@@ -1,3 +1,5 @@
+import unittest
+
 import numpy as np
 
 from darts import TimeSeries
@@ -19,9 +21,6 @@ from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 from darts.utils.likelihood_models import GaussianLikelihood
 
-# import pandas as pd
-
-
 try:
     import torch
 
@@ -34,6 +33,8 @@ except ImportError:
 if TORCH_AVAILABLE:
     IN_LEN = 24
     OUT_LEN = 12
+
+    NB_EPOCH = 1
 
     models_reg_no_cov_cls_kwargs = [
         (LinearRegressionModel, {"lags": 4}, (4, 1)),
@@ -78,7 +79,7 @@ if TORCH_AVAILABLE:
                 "hidden_dim": 10,
                 "n_rnn_layers": 1,
                 "batch_size": 32,
-                "n_epochs": 2,
+                "n_epochs": NB_EPOCH,
             },
             # Min of lags needed and max of lags needed
             (IN_LEN, OUT_LEN),
@@ -90,7 +91,7 @@ if TORCH_AVAILABLE:
                 "model": "RNN",
                 "hidden_dim": 10,
                 "batch_size": 32,
-                "n_epochs": 3,
+                "n_epochs": NB_EPOCH,
             },
             # autoregressive model
             (IN_LEN, 1),
@@ -100,7 +101,7 @@ if TORCH_AVAILABLE:
             {
                 "input_chunk_length": IN_LEN,
                 "training_length": 12,
-                "n_epochs": 2,
+                "n_epochs": NB_EPOCH,
                 "likelihood": GaussianLikelihood(),
             },
             (IN_LEN, 1),
@@ -110,7 +111,7 @@ if TORCH_AVAILABLE:
             {
                 "input_chunk_length": IN_LEN,
                 "output_chunk_length": OUT_LEN,
-                "n_epochs": 2,
+                "n_epochs": NB_EPOCH,
                 "batch_size": 32,
             },
             (IN_LEN, OUT_LEN),
@@ -126,7 +127,7 @@ if TORCH_AVAILABLE:
                 "num_decoder_layers": 2,
                 "dim_feedforward": 16,
                 "batch_size": 32,
-                "n_epochs": 2,
+                "n_epochs": NB_EPOCH,
             },
             (IN_LEN, OUT_LEN),
         ),
@@ -139,7 +140,7 @@ if TORCH_AVAILABLE:
                 "num_blocks": 1,
                 "num_layers": 2,
                 "layer_widths": 12,
-                "n_epochs": 2,
+                "n_epochs": NB_EPOCH,
             },
             (IN_LEN, OUT_LEN),
         ),
@@ -152,7 +153,7 @@ if TORCH_AVAILABLE:
                 "lstm_layers": 1,
                 "num_attention_heads": 4,
                 "add_relative_index": True,
-                "n_epochs": 2,
+                "n_epochs": NB_EPOCH,
             },
             (IN_LEN, OUT_LEN),
         ),
@@ -182,7 +183,12 @@ if TORCH_AVAILABLE:
             start=ts_pass_train.start_time(),
         )
 
-        # same starting point
+        ts_fut_cov_train = tg.gaussian_timeseries(
+            length=len(ts_pass_train),
+            freq=ts_pass_train.freq_str,
+            start=ts_pass_train.start_time(),
+        )
+
         ts_past_cov_valid_same_start = tg.gaussian_timeseries(
             length=len(ts_pass_val),
             freq=ts_pass_val.freq_str,
@@ -206,6 +212,34 @@ if TORCH_AVAILABLE:
             start=ts_pass_val.start_time(),
         )
         ts_past_cov_valid_aft_end = tg.gaussian_timeseries(
+            length=len(ts_pass_val) + 15,
+            freq=ts_pass_val.freq_str,
+            start=ts_pass_val.start_time(),
+        )
+
+        ts_fut_cov_valid_same_start = tg.gaussian_timeseries(
+            length=len(ts_pass_val),
+            freq=ts_pass_val.freq_str,
+            start=ts_pass_val.start_time(),
+        )
+
+        ts_fut_cov_valid_bef_start = tg.gaussian_timeseries(
+            length=len(ts_pass_val) + 16,
+            freq=ts_pass_val.freq_str,
+            start=ts_pass_val.start_time() - 16 * ts_pass_val.freq,
+        )
+        ts_fut_cov_valid_aft_start = tg.gaussian_timeseries(
+            length=len(ts_pass_val) - 7,
+            freq=ts_pass_val.freq_str,
+            start=ts_pass_val.start_time() + 7 * ts_pass_val.freq,
+        )
+
+        ts_fut_cov_valid_bef_end = tg.gaussian_timeseries(
+            length=len(ts_pass_val) - 7,
+            freq=ts_pass_val.freq_str,
+            start=ts_pass_val.start_time(),
+        )
+        ts_fut_cov_valid_aft_end = tg.gaussian_timeseries(
             length=len(ts_pass_val) + 15,
             freq=ts_pass_val.freq_str,
             start=ts_pass_val.start_time(),
@@ -294,21 +328,57 @@ if TORCH_AVAILABLE:
 
                 theorical_forecast_length = np.floor(
                     (
-                        72
-                        - max(
-                            (bounds[0] + bounds[1]), train_length
-                        )  # because we train we have enough data
-                        - forecast_horizon  # because we have overlap_end = False
-                        + 1  # because we include the first element
+                        (
+                            72
+                            - max(
+                                (bounds[0] + bounds[1]), train_length
+                            )  # because we train we have enough data
+                            - forecast_horizon  # because we have overlap_end = False
+                            + 1  # because we include the first element
+                        )
+                        - 1
                     )
-                    / 2  # because of stride
+                    / 2
+                    + 1  # because of stride
+                )  # if odd number of elements, we keep the floor
+
+                self.assertTrue(
+                    len(forecasts) == theorical_forecast_length,
+                    f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
+                    "of retrain=True and overlap_end=False and stride=2",
+                )
+
+                # stride 3
+                forecasts = model.historical_forecasts(
+                    series=self.ts_pass_val_range,
+                    forecast_horizon=forecast_horizon,
+                    train_length=train_length,
+                    stride=3,
+                    retrain=True,
+                    overlap_end=False,
+                )
+
+                theorical_forecast_length = np.floor(
+                    (
+                        (
+                            72
+                            - max(
+                                (bounds[0] + bounds[1]), train_length
+                            )  # because we train we have enough data
+                            - forecast_horizon  # because we have overlap_end = False
+                            + 1  # because we include the first element
+                        )
+                        - 1
+                    )  # the first is always included, so we calculate a modulo on the rest
+                    / 3  # because of stride
+                    + 1  # and we readd the first
                 )  # if odd number of elements, we keep the floor
 
                 # Here to adapt if forecast_horizon or train_length change
                 self.assertTrue(
                     len(forecasts) == theorical_forecast_length,
-                    f"Model {model_cls} does not return the right number of historical forecasts in the case of"
-                    " retrain=True and overlap_end=False and stride=2",
+                    f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
+                    "of retrain=True and overlap_end=False and stride=3",
                 )
 
                 # last points only False
@@ -343,9 +413,8 @@ if TORCH_AVAILABLE:
                     " retrain=True and overlap_end=False, and last_points_only=False",
                 )
 
-        def test_historical_forecasts_auto_start_multiple_no_cov(self):
+        def test_regression_auto_start_multiple_no_cov(self):
 
-            # Regression models
             for model_cls, kwargs, bounds in models_reg_no_cov_cls_kwargs:
                 model = model_cls(
                     **kwargs,
@@ -381,13 +450,17 @@ if TORCH_AVAILABLE:
                     "of retrain=True and overlap_end=False, and a time index of type DateTimeIndex.",
                 )
 
-            # Bunch of torch models
+        @unittest.skipUnless(
+            TORCH_AVAILABLE,
+            "Torch not available. auto start and multiple time series for torch models will be skipped.",
+        )
+        def test_torch_auto_start_multiple_no_cov(self):
+
             for model_cls, kwargs, bounds in models_torch_cls_kwargs:
                 model = model_cls(
                     random_state=0,
                     **kwargs,
                 )
-
                 model.fit(self.ts_pass_train)
 
                 # check historical forecasts for several time series,
@@ -419,6 +492,11 @@ if TORCH_AVAILABLE:
                     " retrain=True and overlap_end=False",
                 )
 
+                model = model_cls(
+                    random_state=0,
+                    **kwargs,
+                )
+                model.fit(self.ts_pass_train)
                 # check historical forecasts for several time series,
                 # retrain True and overlap_end True
                 forecasts = model.historical_forecasts(
@@ -443,6 +521,11 @@ if TORCH_AVAILABLE:
                     == 72 - (bounds[0] + bounds[1] + 1)
                 )
 
+                model = model_cls(
+                    random_state=0,
+                    **kwargs,
+                )
+                model.fit(self.ts_pass_train)
                 # check historical forecasts for several time series,
                 # retrain False and overlap_end False
                 forecasts = model.historical_forecasts(
@@ -464,6 +547,11 @@ if TORCH_AVAILABLE:
                     len(forecasts[0]) == len(forecasts[1]) == 72 - bounds[0] - 10 + 1
                 )
 
+                model = model_cls(
+                    random_state=0,
+                    **kwargs,
+                )
+                model.fit(self.ts_pass_train)
                 # check historical forecasts for several time series,
                 # retrain False and overlap_end True
                 forecasts = model.historical_forecasts(
@@ -486,15 +574,9 @@ if TORCH_AVAILABLE:
                     len(forecasts[0]) == len(forecasts[1]) == 72 - bounds[0]
                 )
 
-        # We test
-        # - multiple time series
-        # - with any combination of retrain and overlap_end
-        # - with any combination of covariates and target
-        # - with shifts between series an covariates in time
-        def test_historical_forecasts_auto_start_multiple_with_cov(self):
+        def test_regression_auto_start_multiple_with_cov(self):
 
             for model_cls, kwargs, bounds in models_reg_cov_cls_kwargs:
-
                 model = model_cls(
                     random_state=0,
                     **kwargs,
@@ -533,17 +615,24 @@ if TORCH_AVAILABLE:
                     " retrain=True and overlap_end=False",
                 )
 
-            # Torch models
+        @unittest.skipUnless(
+            TORCH_AVAILABLE,
+            "Torch not available. auto start and multiple time series for torch models and covariates "
+            "will be skipped.",
+        )
+        def test_torch_auto_start_with_cov(self):
+
+            # # Torch models
             for model_cls, kwargs, bounds in models_torch_cls_kwargs:
+
+                # RNN models don't have past_covariates
+                if model_cls.__name__ == "RNNModel":
+                    continue
 
                 model = model_cls(
                     random_state=0,
                     **kwargs,
                 )
-
-                # RNN models don't have past_covariates
-                if model_cls.__name__ == "RNNModel":
-                    continue
                 model.fit(self.ts_pass_train, self.ts_past_cov_train)
 
                 # Only past covariate
@@ -570,11 +659,17 @@ if TORCH_AVAILABLE:
                     " of retrain=True and overlap_end=False and past_covariates with different start",
                 )
 
+                model = model_cls(
+                    random_state=0,
+                    **kwargs,
+                )
+                model.fit(self.ts_pass_train, self.ts_past_cov_train)
+
                 forecasts = model.historical_forecasts(
                     series=[self.ts_pass_val, self.ts_pass_val],
                     past_covariates=[
+                        self.ts_past_cov_valid_aft_start,
                         self.ts_past_cov_valid_bef_start,
-                        self.ts_past_cov_valid_same_start,
                     ],
                     forecast_horizon=10,
                     stride=1,
@@ -582,10 +677,31 @@ if TORCH_AVAILABLE:
                     overlap_end=False,
                 )
 
+                # we substract the shift of the past_cov_val ts (-5)
                 self.assertTrue(
-                    len(forecasts[0]) == 72 - (bounds[0] + bounds[1] + 1) - 10 + 1,
+                    len(forecasts[0]) == 72 - (bounds[0] + bounds[1] + 1) - 10 + 1 - 5,
                     f"Model {model_cls} does not return the right number of historical forecasts in case "
                     " of retrain=True and overlap_end=False and past_covariates with different start",
+                )
+
+                self.assertTrue(
+                    len(forecasts[1]) == 72 - (bounds[0] + bounds[1] + 1) - 10 + 1,
+                    f"Model {model_cls} does not return the right number of historical forecasts in case "
+                    " of retrain=True and overlap_end=False and past_covariates starting before.",
+                )
+
+            for model_cls, kwargs, bounds in models_torch_cls_kwargs:
+
+                # no PastCovariates models
+                if not model_cls.__name__ == "TFTModel":
+                    continue
+
+                model = model_cls(
+                    random_state=0,
+                    **kwargs,
+                )
+                model.fit(
+                    self.ts_pass_train, self.ts_past_cov_train, self.ts_fut_cov_train
                 )
 
                 forecasts = model.historical_forecasts(
@@ -594,15 +710,25 @@ if TORCH_AVAILABLE:
                         self.ts_past_cov_valid_aft_start,
                         self.ts_past_cov_valid_same_start,
                     ],
+                    future_covariates=[
+                        self.ts_fut_cov_valid_aft_start,
+                        self.ts_fut_cov_valid_bef_start,
+                    ],
                     forecast_horizon=10,
                     stride=1,
                     retrain=True,
                     overlap_end=False,
                 )
 
-                # we substract the shift of the pasct_cov_val ts (-5)
                 self.assertTrue(
-                    len(forecasts[0]) == 72 - (bounds[0] + bounds[1] + 1) - 10 + 1 - 5,
+                    len(forecasts[0]) == 72 - (bounds[0] + bounds[1] + 1) - 10 + 1 - 10,
+                    f"Model {model_cls} does not return the right number of historical forecasts in case "
+                    " of retrain=True and overlap_end=False and past_covariates and future_covariates with "
+                    "different start",
+                )
+
+                self.assertTrue(
+                    len(forecasts[1]) == 72 - (bounds[0] + bounds[1] + 1) - 10 + 1 - 3,
                     f"Model {model_cls} does not return the right number of historical forecasts in case "
                     " of retrain=True and overlap_end=False and past_covariates with different start",
                 )

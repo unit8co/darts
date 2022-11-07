@@ -636,18 +636,27 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
-        forecasts_list = []
-        for idx, target_ts in enumerate(series):
+        # If the model has never been fitted before using historical_forecasts,
+        # we need to know if it uses past or future covariates, when we call
+        # self._historical_forecastable_time_index()
+        if self._fit_called is False:
+            if past_covariates is not None:
+                self._uses_past_covariates = True
+            if future_covariates is not None:
+                self._uses_future_covariates = True
 
-            past_cov = past_covariates[idx] if past_covariates else None
-            future_cov = future_covariates[idx] if future_covariates else None
+        forecasts_list = []
+        for idx, series_ in enumerate(series):
+
+            past_covariates_ = past_covariates[idx] if past_covariates else None
+            future_covariates_ = future_covariates[idx] if future_covariates else None
 
             # Determines the time index the historical forecasts will be made on
             historical_forecasts_time_index = (
                 self._max_historical_forecastable_time_index(
-                    target_ts,
-                    past_cov,
-                    future_cov,
+                    series_,
+                    past_covariates_,
+                    future_covariates_,
                     (retrain is not False) or (not self._fit_called),
                 )
             )
@@ -666,7 +675,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             # We also need the first point to be used for prediction or training
             min_point_historical_time_index = (
-                starting_point - self.training_sample_length * target_ts.freq
+                starting_point - self.training_sample_length * series_.freq
             )
 
             # prepare the start parameter -> pd.Timestamp
@@ -674,7 +683,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
                 historical_forecasts_time_index = drop_before_ts_time_index(
                     historical_forecasts_time_index,
-                    target_ts.get_timestamp_at_point(start),
+                    series_.get_timestamp_at_point(start),
                 )
 
             else:
@@ -685,7 +694,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             historical_forecasts_time_index,
                             historical_forecasts_time_index[0]
                             + max((train_length - self.training_sample_length), 0)
-                            * target_ts.freq,
+                            * series_.freq,
                         )
                     # if not we start training right away, but with 2 minimum points, so we start
                     # 1 time step after the first trainable point.
@@ -694,7 +703,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     else:
                         historical_forecasts_time_index = drop_before_ts_time_index(
                             historical_forecasts_time_index,
-                            historical_forecasts_time_index[0] + 1 * target_ts.freq,
+                            historical_forecasts_time_index[0] + 1 * series_.freq,
                         )
 
                     # if retrain is False, fit hasn't been called yet and train_length None,
@@ -714,7 +723,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             # build the prediction times in advance (to be able to use tqdm)
             last_valid_pred_time = self._get_last_prediction_time(
-                target_ts,
+                series_,
                 forecast_horizon,
                 overlap_end,
             )
@@ -737,53 +746,44 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             for _counter, pred_time in enumerate(iterator):
 
                 # build the training series
-                # Here we want to have the right amount of target timestamps, as if the past or future
-                # covariates series starts after the first element of the target, some models won't allow
-                # the training.
-                if min_point_historical_time_index > target_ts.time_index[0]:
-                    train = target_ts.drop_before(
-                        min_point_historical_time_index
+                if min_point_historical_time_index > series_.time_index[0]:
+                    train_series = series_.drop_before(
+                        min_point_historical_time_index - 1 * series_.freq
                     ).drop_after(pred_time)
                 else:
-                    train = target_ts.drop_after(pred_time)
+                    train_series = series_.drop_after(pred_time)
 
-                if train_length and len(train) > train_length:
-                    train = train[-train_length:]
+                if train_length and len(train_series) > train_length:
+                    train_series = train_series[-train_length:]
 
                 if (not self._fit_called) or retrain_func(
                     counter=_counter,
                     pred_time=pred_time,
-                    train_series=train,
-                    past_covariates=past_covariates[idx].drop_after(pred_time)
-                    if past_covariates and ("past_covariates" in retrain_func_signature)
+                    train_series=train_series,
+                    past_covariates=past_covariates_.drop_after(pred_time)
+                    if past_covariates_
+                    and ("past_covariates" in retrain_func_signature)
                     else None,
-                    future_covariates=future_covariates[idx].drop_after(
+                    future_covariates=future_covariates_.drop_after(
                         min(
-                            pred_time + series.freq * forecast_horizon,
-                            series.end_time(),
+                            pred_time + train_series.freq * forecast_horizon,
+                            series_.end_time(),
                         )
                     )
-                    if future_covariates
-                    and ("future_covariates" in retrain_func_signature)
+                    if future_covariates_
                     else None,
                 ):
                     self._fit_wrapper(
-                        series=train,
-                        past_covariates=past_covariates[idx]
-                        if past_covariates
-                        else None,
-                        future_covariates=future_covariates[idx]
-                        if future_covariates
-                        else None,
+                        series=train_series,
+                        past_covariates=past_covariates_,
+                        future_covariates=future_covariates_,
                     )
 
                 forecast = self._predict_wrapper(
                     n=forecast_horizon,
-                    series=train,
-                    past_covariates=past_covariates[idx] if past_covariates else None,
-                    future_covariates=future_covariates[idx]
-                    if future_covariates
-                    else None,
+                    series=train_series,
+                    past_covariates=past_covariates_,
+                    future_covariates=future_covariates_,
                     num_samples=num_samples,
                 )
 
@@ -794,32 +794,20 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     forecasts.append(forecast)
 
             if last_points_only:
-                if target_ts.has_datetime_index:
-                    forecasts_list.append(
-                        TimeSeries.from_times_and_values(
-                            pd.DatetimeIndex(
-                                last_points_times, freq=target_ts.freq * stride
-                            ),
-                            np.array(last_points_values),
-                            columns=target_ts.columns,
-                            static_covariates=target_ts.static_covariates,
-                            hierarchy=target_ts.hierarchy,
-                        )
+                forecasts_list.append(
+                    TimeSeries.from_times_and_values(
+                        generate_index(
+                            start=last_points_times[0],
+                            end=last_points_times[-1],
+                            freq=series_.freq,
+                        )[::stride],
+                        np.array(last_points_values),
+                        columns=series_.columns,
+                        static_covariates=series_.static_covariates,
+                        hierarchy=series_.hierarchy,
                     )
-                else:
-                    forecasts_list.append(
-                        TimeSeries.from_times_and_values(
-                            pd.RangeIndex(
-                                start=last_points_times[0],
-                                stop=last_points_times[-1] + 1,
-                                step=target_ts.freq * stride,
-                            ),
-                            np.array(last_points_values),
-                            columns=target_ts.columns,
-                            static_covariates=target_ts.static_covariates,
-                            hierarchy=target_ts.hierarchy,
-                        )
-                    )
+                )
+
             else:
                 forecasts_list.append(forecasts)
 
