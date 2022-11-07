@@ -17,14 +17,14 @@ from statsmodels.tsa.arima.model import ARIMA as staARIMA
 
 from darts.logging import get_logger
 from darts.models.forecasting.forecasting_model import (
-    TransferableDualCovariatesForecastingModel,
+    TransferableFutureCovariatesLocalForecastingModel,
 )
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
-class ARIMA(TransferableDualCovariatesForecastingModel):
+class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
     def __init__(
         self,
         p: int = 12,

@@ -8,10 +8,12 @@ from typing import Optional
 from statsforecast.models import ETS
 
 from darts import TimeSeries
-from darts.models.forecasting.forecasting_model import DualCovariatesForecastingModel
+from darts.models.forecasting.forecasting_model import (
+    FutureCovariatesLocalForecastingModel,
+)
 
 
-class StatsForecastETS(DualCovariatesForecastingModel):
+class StatsForecastETS(FutureCovariatesLocalForecastingModel):
     def __init__(self, *ets_args, **ets_kwargs):
         """ETS based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
