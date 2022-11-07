@@ -42,11 +42,7 @@ from darts.utils.timeseries_generation import (
     _generate_new_dates,
     generate_index,
 )
-from darts.utils.utils import (
-    drop_after_ts_time_index,
-    drop_before_ts_time_index,
-    series2seq,
-)
+from darts.utils.utils import drop_after_index, drop_before_index, series2seq
 
 logger = get_logger(__name__)
 
@@ -681,7 +677,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             # prepare the start parameter -> pd.Timestamp
             if start is not None:
 
-                historical_forecasts_time_index = drop_before_ts_time_index(
+                historical_forecasts_time_index = drop_before_index(
                     historical_forecasts_time_index,
                     series_.get_timestamp_at_point(start),
                 )
@@ -690,7 +686,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 if (retrain is not False) or (not self._fit_called):
 
                     if train_length:
-                        historical_forecasts_time_index = drop_before_ts_time_index(
+                        historical_forecasts_time_index = drop_before_index(
                             historical_forecasts_time_index,
                             historical_forecasts_time_index[0]
                             + max((train_length - self.training_sample_length), 0)
@@ -701,7 +697,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     # (sklearn check that there are at least 2 points in the training set and it seems
                     # rather reasonable)
                     else:
-                        historical_forecasts_time_index = drop_before_ts_time_index(
+                        historical_forecasts_time_index = drop_before_index(
                             historical_forecasts_time_index,
                             historical_forecasts_time_index[0] + 1 * series_.freq,
                         )
@@ -728,7 +724,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 overlap_end,
             )
 
-            historical_forecasts_time_index = drop_after_ts_time_index(
+            historical_forecasts_time_index = drop_after_index(
                 historical_forecasts_time_index, last_valid_pred_time
             )
 

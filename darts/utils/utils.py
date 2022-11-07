@@ -16,6 +16,7 @@ from tqdm.notebook import tqdm as tqdm_notebook
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.utils.timeseries_generation import generate_index
 
 try:
     from IPython import get_ipython
@@ -376,16 +377,32 @@ def seq2series(
     return ts[0] if isinstance(ts, Sequence) and len(ts) == 1 else ts
 
 
-def slice_ts_time_index(
-    time_index: Union[pd.RangeIndex, pd.DatetimeIndex],
+def slice_index(
+    index: Union[pd.RangeIndex, pd.DatetimeIndex],
     start: Union[int, pd.Timestamp],
     end: Union[int, pd.Timestamp],
 ) -> Union[pd.RangeIndex, pd.DatetimeIndex]:
     """
-    Returns a slice of a RangeIndex or DatetimeIndex, given start and end values representing the timestamps.
+    Returns a new Index with the same type as the input `index`, but with only the values between `start`
+    and `end` included.
     The start and end values can be either integers (in which case they are interpreted as indices),
     or pd.Timestamps (in which case they are interpreted as actual timestamps).
-    The returned slice is inclusive of the start value and the end value.
+
+
+    Parameters
+    ----------
+    index
+        The index to slice
+    start
+        The start of the returned index.
+    end
+        The end of the returned index.
+
+    Returns
+    -------
+    Index
+        A new index with the same type as the input `index`, but with only the values between `start` and `end`
+        included.
     """
 
     if type(start) != type(end):
@@ -396,7 +413,7 @@ def slice_ts_time_index(
             logger,
         )
 
-    if isinstance(start, pd.Timestamp) and isinstance(time_index, pd.RangeIndex):
+    if isinstance(start, pd.Timestamp) and isinstance(index, pd.RangeIndex):
         raise_log(
             ValueError(
                 "start and end values are a pd.Timestamp, but time_index is a RangeIndex. "
@@ -404,7 +421,7 @@ def slice_ts_time_index(
             ),
             logger,
         )
-    if isinstance(start, int) and isinstance(time_index, pd.DatetimeIndex):
+    if isinstance(start, int) and isinstance(index, pd.DatetimeIndex):
         raise_log(
             ValueError(
                 "start and end value are integer, but time_index is a RangeIndex. "
@@ -413,23 +430,23 @@ def slice_ts_time_index(
             logger,
         )
 
-    if isinstance(time_index, pd.RangeIndex):
-        return time_index.intersection(pd.RangeIndex(start, end + 1, step=1))
-    else:
-        return time_index.intersection(pd.date_range(start, end, freq=time_index.freq))
+    start_idx = index.get_indexer(generate_index(start, length=1), method="nearest")[0]
+    end_idx = index.get_indexer(generate_index(end, length=1), method="nearest")[0]
+
+    return index[start_idx : end_idx + 1]
 
 
-def drop_before_ts_time_index(
+def drop_before_index(
     time_index: Union[pd.RangeIndex, pd.DatetimeIndex],
     split_point: Union[int, pd.Timestamp],
 ) -> Union[pd.RangeIndex, pd.DatetimeIndex]:
 
-    return slice_ts_time_index(time_index, split_point, time_index[-1])
+    return slice_index(time_index, split_point, time_index[-1])
 
 
-def drop_after_ts_time_index(
+def drop_after_index(
     time_index: Union[pd.RangeIndex, pd.DatetimeIndex],
     split_point: Union[int, pd.Timestamp],
 ) -> Union[pd.RangeIndex, pd.DatetimeIndex]:
 
-    return slice_ts_time_index(time_index, time_index[0], split_point)
+    return slice_index(time_index, time_index[0], split_point)
