@@ -654,7 +654,17 @@ class TimeSeries:
                 "a DatetimeIndex, or with a RangeIndex.",
                 logger,
             )
-            time_index = df.index
+            # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
+            # pandas.DataFrame loses the tz information if it's not its index
+            if isinstance(df.index, pd.DatetimeIndex) and df.index.tz is not None:
+                print(
+                    "The provided DatetimeIndex was associated with a timezone, which is currently not supported "
+                    "by xarray. To avoid unexpected behaviour, the tz information was removed, don't forget to "
+                    f"call `ts.time_index.tz_localize({df.index.tz})` when exporting the results."
+                )
+                time_index = df.index.tz_localize(None)
+            else:
+                time_index = df.index
 
         if not time_index.name:
             time_index.name = time_col if time_col else DIMS[0]
@@ -831,6 +841,14 @@ class TimeSeries:
         TimeSeries
             A univariate and deterministic TimeSeries constructed from the inputs.
         """
+        # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
+        if isinstance(pd_series, pd.DatetimeIndex) and pd_series.dt.tz is not None:
+            print(
+                "The `times` argument was associated with a timezone, which is currently not supported "
+                "by xarray. To avoid unexpected behaviour, the tz information was removed, don't forget to "
+                f"call `ts.time_index.tz_localize({pd_series.dt.tz})` when exporting the results."
+            )
+            pd_series = pd_series.dt.tz_localize(None)
 
         df = pd.DataFrame(pd_series)
         return cls.from_dataframe(
@@ -923,6 +941,15 @@ class TimeSeries:
             "the `times` argument must be a RangeIndex, or a DateTimeIndex. Use "
             "TimeSeries.from_values() if you want to use an automatic RangeIndex.",
         )
+
+        # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
+        if isinstance(times, pd.DatetimeIndex) and times.tz is not None:
+            print(
+                "The `times` argument was associated with a timezone, which is currently not supported "
+                "by xarray. To avoid unexpected behaviour, the tz information was removed, don't forget to "
+                f"call `ts.time_index.tz_localize({times.tz})` when exporting the results."
+            )
+            times = times.tz_localize(None)
 
         times_name = DIMS[0] if not times.name else times.name
 
