@@ -1775,7 +1775,7 @@ class TimeSeriesFromDataFrameTestCase(DartsBaseTestClass):
 
     def test_time_col_with_tz(self):
         # numpy and xarray don't support "timezone aware" pd.DatetimeIndex
-        # BUGFIX remove timezone information without convertion
+        # the BUGFIX removes timezone information without conversion
 
         time_range_MS = pd.date_range(
             start="20180501", end="20200301", freq="MS", tz="CET"
