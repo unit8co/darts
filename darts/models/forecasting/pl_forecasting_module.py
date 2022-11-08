@@ -262,11 +262,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
             return
 
         if self.likelihood:
-            _metric = metrics(target, self.likelihood.sample(output))
+            _metric = metrics(self.likelihood.sample(output), target)
         else:
             # If there's no likelihood, nr_params=1, and we need to squeeze out the
             # last dimension of model output, for properly computing the metric.
-            _metric = metrics(target, output.squeeze(dim=-1))
+            _metric = metrics(output.squeeze(dim=-1), target)
 
         self.log_dict(
             _metric,
