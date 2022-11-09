@@ -631,7 +631,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             error value.
         reduction
             A function used to combine the individual error scores obtained when `last_points_only` is set to False.
-            When providing several time-series, the function will receive the argument `axis = 1` to obtain single
+            When providing several metric functions, the function will receive the argument `axis = 0` to obtain single
             value for each metric function.
             If explicitly set to `None`, the method will return a list of the individual error scores instead.
             Set to ``np.mean`` by default.
