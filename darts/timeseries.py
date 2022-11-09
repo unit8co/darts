@@ -657,10 +657,13 @@ class TimeSeries:
             # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
             # pandas.DataFrame loses the tz information if it's not its index
             if isinstance(df.index, pd.DatetimeIndex) and df.index.tz is not None:
-                print(
+                logger.warning(
                     "The provided DatetimeIndex was associated with a timezone, which is currently not supported "
-                    "by xarray. To avoid unexpected behaviour, the tz information was removed, don't forget to "
-                    f"call `ts.time_index.tz_localize({df.index.tz})` when exporting the results."
+                    "by xarray. To avoid unexpected behaviour, the tz information was removed. Consider calling "
+                    f"`ts.time_index.tz_localize({df.index.tz})` when exporting the results."
+                    "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
+                    "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
+                    "original timezone."
                 )
                 time_index = df.index.tz_localize(None)
             else:
@@ -841,15 +844,6 @@ class TimeSeries:
         TimeSeries
             A univariate and deterministic TimeSeries constructed from the inputs.
         """
-        # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
-        if isinstance(pd_series, pd.DatetimeIndex) and pd_series.dt.tz is not None:
-            print(
-                "The `times` argument was associated with a timezone, which is currently not supported "
-                "by xarray. To avoid unexpected behaviour, the tz information was removed, don't forget to "
-                f"call `ts.time_index.tz_localize({pd_series.dt.tz})` when exporting the results."
-            )
-            pd_series = pd_series.dt.tz_localize(None)
-
         df = pd.DataFrame(pd_series)
         return cls.from_dataframe(
             df,
@@ -944,10 +938,13 @@ class TimeSeries:
 
         # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
         if isinstance(times, pd.DatetimeIndex) and times.tz is not None:
-            print(
+            logger.warning(
                 "The `times` argument was associated with a timezone, which is currently not supported "
-                "by xarray. To avoid unexpected behaviour, the tz information was removed, don't forget to "
-                f"call `ts.time_index.tz_localize({times.tz})` when exporting the results."
+                "by xarray. To avoid unexpected behaviour, the tz information was removed. Consider calling "
+                f"`ts.time_index.tz_localize({times.tz})` when exporting the results."
+                "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
+                "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
+                "original timezone."
             )
             times = times.tz_localize(None)
 
