@@ -17,13 +17,15 @@ from nfoursid.kalman import Kalman
 
 from darts.logging import get_logger
 from darts.models.filtering.kalman_filter import KalmanFilter
-from darts.models.forecasting.forecasting_model import DualCovariatesForecastingModel
+from darts.models.forecasting.forecasting_model import (
+    FutureCovariatesLocalForecastingModel,
+)
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
-class KalmanForecaster(DualCovariatesForecastingModel):
+class KalmanForecaster(FutureCovariatesLocalForecastingModel):
     def __init__(self, dim_x: int = 1, kf: Optional[Kalman] = None):
         """Kalman filter Forecaster
 

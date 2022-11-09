@@ -10,7 +10,7 @@ import pandas as pd
 from statsmodels.tsa.stattools import acf
 
 from darts.logging import get_logger
-from darts.models.forecasting.forecasting_model import ForecastingModel
+from darts.models.forecasting.forecasting_model import LocalForecastingModel
 from darts.timeseries import TimeSeries
 from darts.utils.missing_values import fill_missing_values
 
@@ -210,7 +210,7 @@ def _crop_to_match_seasons(
     return series
 
 
-class FFT(ForecastingModel):
+class FFT(LocalForecastingModel):
     def __init__(
         self,
         nr_freqs_to_keep: Optional[int] = 10,
