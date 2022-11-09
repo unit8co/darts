@@ -40,6 +40,61 @@ class AnomalyScorer(ABC):
 
         self.window = window
 
+    def _expects_probabilistic(self) -> bool:
+        """Checks if the scorer expects a probabilistic predictions.
+        By default, returns False. Needs to be overwritten by scorers that do expects
+        probabilistic predictions.
+        """
+        return False
+
+    def _check_probabilistic_case(
+        self, series_1: TimeSeries, series_2: TimeSeries = None
+    ) -> Tuple[TimeSeries, TimeSeries]:
+        """Checks if the scorer is probabilistic and the corresponding rules regarding the two time series inputs are
+        respected.
+
+        For probabilistic scorers, the input must be a probabilistic time series corresponding to the output of a
+        probabilistic forecasting model. The second input must be a deterministic time series corresponding to the
+        actual value of the forecasted time series.
+
+        If the scorer is not probabilistic, both inputs must be deterministic (num_samples==1).
+
+        Parameters
+        ----------
+        series_1
+            1st time series
+        series_2:
+            2nd time series
+
+        Returns
+        -------
+        Tuple[TimeSeries, TimeSeries]
+        """
+
+        if self._expects_probabilistic():
+            raise_if_not(
+                series_1.n_samples > 1,
+                f"Scorer {self.__str__()} is expecting a probabilitic timeseries as its first input \
+                (number of samples must be higher than 1).",
+            )
+
+        else:
+            if series_1.n_samples > 1:
+                # TODO: output a warning "The scorer expects a non probabilitic input
+                # (num of samples needs to be equal to 1)"
+                # mean along each time stamp is computed to reduce the number of samples to 1
+                series_1 = series_1.mean(axis=2)
+
+        if series_2 is not None:
+            # TODO: create a warning rather than an error, and avg on axis 2
+            raise_if_not(
+                series_2.n_samples == 1,
+                f"Scorer {self.__str__()} is expecting a deterministic timeseries as its second input \
+            (number of samples must be equal to 1, found: {series_2.n_samples}).",
+            )
+
+        return series_1, series_2
+
     @abstractmethod
     def score(self, input_1: Any, input_2: Any) -> Any:
         pass
@@ -348,10 +403,15 @@ class NonFittableAnomalyScorer(AnomalyScorer):
 
             self._sanity_check(s1, s2)
             s1, s2 = self._return_intersect(s1, s2)
+            s1, s2 = self._check_probabilistic_case(s1, s2)
 
             anomaly_scores.append(self._score_core(s1, s2))
 
-        if len(anomaly_scores) == 1 and not isinstance(series_1, Sequence):
+        if (
+            len(anomaly_scores) == 1
+            and not isinstance(series_1, Sequence)
+            and not isinstance(series_2, Sequence)
+        ):
             return anomaly_scores[0]
         else:
             return anomaly_scores
@@ -409,10 +469,12 @@ class FittableAnomalyScorer(AnomalyScorer):
         if series_2 is None:
             for series in list_series_1:
                 self._sanity_check(series)
+                series, _ = self._check_probabilistic_case(series)
                 anomaly_scores.append(self._score_core(series, None))
         else:
             for (s1, s2) in zip(list_series_1, list_series_2):
                 self._sanity_check(s1, s2)
+                s1, s2 = self._check_probabilistic_case(s1, s2)
                 anomaly_scores.append(self._score_core(s1, s2))
 
         if len(anomaly_scores) == 1 and not isinstance(series_1, Sequence):
@@ -1389,3 +1451,79 @@ class Norm(NonFittableAnomalyScorer):
             return TimeSeries.from_times_and_values(
                 diff._time_index, np.linalg.norm(diff_np, ord=self.ord, axis=1)
             )
+
+
+class LikelihoodScorer(NonFittableAnomalyScorer):
+    """Parent class for all LikelihoodScorer
+    (GaussianLikelihoodScorer, ExponentialLikelihoodScorer)
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def _score_core(
+        self,
+        series_1: TimeSeries,
+        series_2: TimeSeries,
+    ) -> TimeSeries:
+
+        np_series_1 = series_1.all_values(copy=False)
+        np_series_2 = series_2.all_values(copy=False)
+
+        np_anomaly_scores = []
+        for width in range(series_1.width):
+            np_anomaly_scores.append(
+                self._score_core_likelihood(
+                    np_series_1[:, width], np_series_2[:, width].flatten()
+                )
+            )
+
+        return TimeSeries.from_times_and_values(
+            series_1._time_index, list(zip(*np_anomaly_scores))
+        )
+
+    def _expects_probabilistic(self) -> bool:
+        return True
+
+
+class GaussianLikelihoodScorer(LikelihoodScorer):
+    """GaussianLikelihoodScorer"""
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def __str__(self):
+        return "GaussianLikelihoodScorer"
+
+    def _score_core_likelihood(
+        self,
+        probabilistic_estimations: np.ndarray,
+        deterministic_values: np.ndarray,
+    ) -> np.ndarray:
+
+        return [
+            (1 / np.sqrt(2 * np.pi * x1.std() * x1.std()))
+            * np.exp(-((x2 - x1.mean()) ** 2) / (2 * x1.std() * x1.std()))
+            for (x1, x2) in zip(probabilistic_estimations, deterministic_values)
+        ]
+
+
+class ExponentialLikelihoodScorer(LikelihoodScorer):
+    """ExponentialLikelihoodScorer"""
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def __str__(self):
+        return "ExponentialLikelihoodScorer"
+
+    def _score_core_likelihood(
+        self,
+        probabilistic_estimations: np.ndarray,
+        deterministic_values: np.ndarray,
+    ) -> np.ndarray:
+
+        return [
+            x1.mean() * np.exp(-x1.mean() * x2)
+            for (x1, x2) in zip(probabilistic_estimations, deterministic_values)
+        ]
