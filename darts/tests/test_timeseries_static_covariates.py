@@ -2,6 +2,7 @@ import copy
 import os
 import shutil
 import tempfile
+from itertools import product
 
 import numpy as np
 import pandas as pd
@@ -44,11 +45,11 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
             ],
             columns=["st1", "st2"],
         )
-
         df_long_multi = pd.DataFrame(
             pd.concat([times, x, static_multivar], axis=1),
         )
         df_long_multi.loc[:, "constant"] = 1
+        df_long_multi["total_by_st1"] = df_long_multi[["a", "b", "c"]].sum(axis=1)
         df_long_uni = df_long_multi.drop(columns=["st2"])
 
         cls.n_groups = n_groups
@@ -190,6 +191,31 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
                 time_col="times",
                 value_cols=value_cols,
             )
+
+    def test_timeseries_from_longitudinal_df_with_hierarchy(self):
+        # each st1 is an unit containing 3 subunits (a, b and c), each unit comes with a total column for each timestamp
+        expected_hierarchy = dict()
+        for st1_value, col_name in product(["0", "1", "2", "3", "4"], ["a", "b", "c"]):
+            expected_hierarchy[col_name + " - " + st1_value] = [
+                "total_by_st1 - " + st1_value
+            ]
+            # artificial hierarchical total across the groups, computed in the constructor
+            expected_hierarchy["total_by_st1 - " + st1_value] = ["total"]
+        hierarchical_ts = TimeSeries.from_group_dataframe(
+            df=self.df_long_uni,
+            group_cols=["st1"],
+            time_col="times",
+            static_cols=["constant"],
+            hierarchy_total="total_by_st1",
+            hierarchy_degree=1,
+        )
+
+        self.assertEqual(len(expected_hierarchy), len(hierarchical_ts.hierarchy))
+        identical_items = [
+            hierarchical_ts.hierarchy[col_name] == expected_hierarchy[col_name]
+            for col_name in expected_hierarchy
+        ]
+        self.assertTrue(all(identical_items))
 
     def test_with_static_covariates_univariate(self):
         ts = linear_timeseries(length=10)

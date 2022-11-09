@@ -36,6 +36,7 @@ import pickle
 from collections import defaultdict
 from copy import deepcopy
 from inspect import signature
+from itertools import product
 from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
@@ -684,6 +685,8 @@ class TimeSeries:
         fill_missing_dates: Optional[bool] = False,
         freq: Optional[str] = None,
         fillna_value: Optional[float] = None,
+        hierarchy_degree: Optional[int] = 0,
+        hierarchy_total: Optional[str] = None,
     ) -> Union["TimeSeries", List["TimeSeries"]]:
         """
         Build a list of TimeSeries instances grouped by a selection of columns from a DataFrame.
@@ -777,19 +780,80 @@ class TimeSeries:
                 )
             )
 
-        # create a list with multiple TimeSeries and add static covariates
-        return [
-            TimeSeries.from_dataframe(
-                df=split,
-                time_col=time_col,
-                value_cols=value_cols,
+        # hierarchy is defined at the level of each grouping column
+        if hierarchy_degree == 1:
+            raise_if(
+                hierarchy_total is None,
+                "The argument `hierarchy_total` must be provided in order to automatically generate "
+                "hierarchical relationship between groups",
+                logger,
+            )
+            raise_if(
+                hierarchy_total in group_cols,
+                f"The column indicated by `hierarchy_total` {hierarchy_total} should not be one of "
+                "the grouping columns.",
+                logger,
+            )
+            hierarchy = dict()
+
+            value_cols_TMP = list(set(df.columns) - set(static_cov_cols) - {time_col})
+            intermediate_totals = []
+            for grouping_col in group_cols:
+                for value in product(value_cols_TMP, df[grouping_col].unique()):
+                    if value[0] != hierarchy_total:
+                        group_cols_value = (
+                            value[1] if isinstance(value[1], str) else str(value[1])
+                        )
+                        hierarchy[value[0] + " - " + group_cols_value] = [
+                            hierarchy_total + " - " + group_cols_value
+                        ]
+                        hierarchy[hierarchy_total + " - " + group_cols_value] = [
+                            "total"
+                        ]
+                        intermediate_totals.append(
+                            hierarchy_total + " - " + group_cols_value
+                        )
+        if hierarchy_degree > 0:
+            # convert grouping cols to string to be able to join the columns names
+            df[group_cols] = df[group_cols].astype(str)
+            df_wide = df.pivot(
+                index=time_col, columns=group_cols, values=value_cols_TMP
+            )
+            # encode column second level information into the first level
+            hierarchical_col_name = [
+                " - ".join(col_name) for col_name in df_wide.columns
+            ]
+            df_wide.columns = df_wide.columns.droplevel(1)
+            df_wide.columns = hierarchical_col_name
+            # artificial hierarchy level, aggregate the hierarchy_total column provided by the user
+            # TODO: will contain NaN if the groups have different lengths
+            df_wide["total"] = df_wide[intermediate_totals].sum(axis=1)
+
+            # TODO: if hierarchy_total is not provided, it can be computed from the dataframe
+            # and will results in a strict/exact hierarchy)
+
+            # TODO: put the static columns back OR include them in the pivot and rename them...
+            return TimeSeries.from_dataframe(
+                df=df_wide,
                 fill_missing_dates=fill_missing_dates,
                 freq=freq,
                 fillna_value=fillna_value,
-                static_covariates=static_covs,
+                hierarchy=hierarchy,
             )
-            for static_covs, split in splits
-        ]
+        else:
+            # create a list with multiple TimeSeries and add static covariates
+            return [
+                TimeSeries.from_dataframe(
+                    df=split,
+                    time_col=time_col,
+                    value_cols=value_cols,
+                    fill_missing_dates=fill_missing_dates,
+                    freq=freq,
+                    fillna_value=fillna_value,
+                    static_covariates=static_covs,
+                )
+                for static_covs, split in splits
+            ]
 
     @classmethod
     def from_series(
