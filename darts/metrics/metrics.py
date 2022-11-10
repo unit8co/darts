@@ -1226,20 +1226,20 @@ def nd(
     n_jobs: int = 1,
     verbose: bool = False
 ) -> Union[float, np.ndarray]:
-    """Normalized deviation (ND), described in Supplemental A of
-
-    https://proceedings.neurips.cc/paper/2016/hash/85422afb467e9456013a2a51d4dff702-Abstract.html.
+    """Normalized deviation (ND), described in Annexes A of F. Yu et al. \
+    “Temporal Regularized Matrix Factorization for High-dimensional Time Series Prediction”
 
     For one time serie :math:`y` and its forecast :math:`\\hat{y}`, it is computed as
 
     .. math:: \\frac{
-                        \\frac{1}{\\left| \\Omega_{test} \\right|}
-                            \\sum_{(i,t) \\in \\Omega_{test}}{\\left| \\hat{y}_{i,t} - y_{i,t} \\right|}
-                    }{
-                        \\frac{1}{\\left| \\Omega_{test} \\right|}
-                            \\sum_{(i,t) \\in \\Omega_{test}}{\\left| y_{i,t} \\right|}.
+                \\frac{1}{\\left| \\Omega_{test} \\right|}
+                    \\sum_{(i,t) \\in \\Omega_{test}} {\\left| \\hat{y}_{i,t} - y_{i,t} \\right|}
+              }{
+                \\frac{1}{\\left| \\Omega_{test} \\right|}
+                    \\sum_{(i,t) \\in \\Omega_{test}} {\\left| y_{i,t} \\right|}}.
 
-    where i is the index of the value in the timeserie and t the index of the variate.
+    where :math:`y_{i,t}` is the observation at the t-th time point of the i-th time series and
+    :math:`\\Omega_{test}` the set of observations.
 
     If any of the series is stochastic (containing several samples), the median sample value is considered.
 
@@ -1268,6 +1268,11 @@ def nd(
     verbose
         Optionally, whether to print operations progress
 
+    Raises
+    ------
+    ValueError
+        If :math:`\\sum_{(i,t) \\in \\Omega_{test}} {\\left| y_{i,t} \\right|} = 0`.
+
     Returns
     -------
     float
@@ -1283,4 +1288,4 @@ def nd(
         "The actual series must be strictly positive to compute the ND.",
         logger,
     )
-    return np.mean(np.abs(y_pred - y_true)) / np.mean(np.abs(y_pred))
+    return np.mean(np.abs(y_pred - y_true)) / np.mean(np.abs(y_true))
