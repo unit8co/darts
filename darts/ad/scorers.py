@@ -11,6 +11,7 @@ The function ``eval_accuracy()`` returns the score of an agnostic threshold metr
 anomaly score time series and a binary ground truth time series indicating the presence of anomalies.
 """
 
+import math
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Sequence, Tuple, Union
 
@@ -82,8 +83,8 @@ class AnomalyScorer(ABC):
             if series_1.n_samples > 1:
                 # TODO: output a warning "The scorer expects a non probabilitic input
                 # (num of samples needs to be equal to 1)"
-                # mean along each time stamp is computed to reduce the number of samples to 1
-                series_1 = series_1.mean(axis=2)
+                # median along each time stamp is computed to reduce the number of samples to 1
+                series_1 = series_1.median(axis=2)
 
         if series_2 is not None:
             # TODO: create a warning rather than an error, and avg on axis 2
@@ -369,9 +370,8 @@ class AnomalyScorer(ABC):
 class NonFittableAnomalyScorer(AnomalyScorer):
     "Base class of anomaly scorers that do not need training."
 
-    def __init__(self) -> None:
-        # window for NonFittableAnomalyScorer are always set to None
-        super().__init__(window=None)
+    def __init__(self, window) -> None:
+        super().__init__(window=window)
 
         # indicates if the scorer is trainable or not
         self.trainable = False
@@ -600,7 +600,7 @@ class GaussianMixtureScorer(FittableAnomalyScorer):
         window: Optional[int] = None,
         n_components: int = 1,
         reduced_function=None,
-        component_wise=False,
+        component_wise: bool = False,
     ) -> None:
 
         """
@@ -795,7 +795,7 @@ class KMeansScorer(FittableAnomalyScorer):
         window: Optional[int] = None,
         k: Union[int, list[int]] = 2,
         reduced_function=None,
-        component_wise=False,
+        component_wise: bool = False,
     ) -> None:
         """
         A KMeans model is trained on the training data when the ``fit()`` method is called.
@@ -992,7 +992,7 @@ class LocalOutlierFactorScorer(FittableAnomalyScorer):
         window: Optional[int] = None,
         n_neighbors: int = 2,
         reduced_function=None,
-        component_wise=False,
+        component_wise: bool = False,
     ) -> None:
         """
         A Local outlier factor model is trained on the training data when the ``fit()`` method is called.
@@ -1184,7 +1184,10 @@ class WassersteinScorer(FittableAnomalyScorer):
     """
 
     def __init__(
-        self, window: Optional[int] = None, reduced_function=None, component_wise=False
+        self,
+        window: Optional[int] = None,
+        reduced_function=None,
+        component_wise: bool = False,
     ) -> None:
         """
         A Wasserstein model is trained on the training data when the ``fit()`` method is called.
@@ -1376,7 +1379,7 @@ class Difference(NonFittableAnomalyScorer):
     """
 
     def __init__(self) -> None:
-        super().__init__()
+        super().__init__(window=None)
 
     def __str__(self):
         return "Difference"
@@ -1396,7 +1399,7 @@ class Norm(NonFittableAnomalyScorer):
     Source code: <https://numpy.org/doc/stable/reference/generated/numpy.linalg.norm.html>.
     """
 
-    def __init__(self, ord=None, component_wise=False) -> None:
+    def __init__(self, ord=None, component_wise: bool = False) -> None:
         """
         Returns the norm of a given order for each timestamp of the two input series’ differences.
 
@@ -1429,7 +1432,7 @@ class Norm(NonFittableAnomalyScorer):
 
         self.ord = ord
         self.component_wise = component_wise
-        super().__init__()
+        super().__init__(window=None)
 
     def __str__(self):
         return f"Norm (ord={self.ord}, component_wise={self.component_wise})"
@@ -1453,13 +1456,13 @@ class Norm(NonFittableAnomalyScorer):
             )
 
 
-class LikelihoodScorer(NonFittableAnomalyScorer):
+class NLLScorer(NonFittableAnomalyScorer):
     """Parent class for all LikelihoodScorer
     (GaussianLikelihoodScorer, ExponentialLikelihoodScorer)
     """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, window) -> None:
+        super().__init__(window=window)
 
     def _score_core(
         self,
@@ -1478,22 +1481,65 @@ class LikelihoodScorer(NonFittableAnomalyScorer):
                 )
             )
 
-        return TimeSeries.from_times_and_values(
+        anomaly_scores = TimeSeries.from_times_and_values(
             series_1._time_index, list(zip(*np_anomaly_scores))
         )
+
+        return self.window_adjustment_series(anomaly_scores)
+
+    def window_adjustment_series(
+        self,
+        series: TimeSeries,
+    ) -> TimeSeries:
+        """Slides a window of size self.window along the input series, and replaces the value of
+        the input time series by the mean of the values contained in the window (past self.window
+        and itself points).
+
+        Parameters
+        ----------
+        series_1
+            time series
+
+        Returns
+        -------
+        TimeSeries
+        """
+
+        if self.window == 1:
+            return series
+        else:
+            values = [
+                series[ind : ind + self.window].mean(axis=0).all_values().flatten()[0]
+                for (ind, _) in enumerate(series[self.window - 1 :].pd_series())
+            ]
+            return TimeSeries.from_times_and_values(
+                series._time_index[self.window - 1 :], values
+            )
 
     def _expects_probabilistic(self) -> bool:
         return True
 
+    @abstractmethod
+    def _score_core_likelihood(self, input_1: Any, input_2: Any) -> Any:
+        """For each timestamp, the corresponding distribution is fitted on the probabilistic time-series
+        input_1, and returns the negative log-likelihood of the deterministic time-series input_2
+        given the distribution.
+        """
+        pass
 
-class GaussianLikelihoodScorer(LikelihoodScorer):
-    """GaussianLikelihoodScorer"""
 
-    def __init__(self) -> None:
-        super().__init__()
+class GaussianNLLScorer(NLLScorer):
+    """Gaussian negative log-likelihood Scorer
+
+    Source of PDF function and parameters estimation (MLE):
+    https://programmathically.com/maximum-likelihood-estimation-for-gaussian-distributions/
+    """
+
+    def __init__(self, window: Optional[int] = None) -> None:
+        super().__init__(window=window)
 
     def __str__(self):
-        return "GaussianLikelihoodScorer"
+        return "GaussianNLLScorer"
 
     def _score_core_likelihood(
         self,
@@ -1501,21 +1547,29 @@ class GaussianLikelihoodScorer(LikelihoodScorer):
         deterministic_values: np.ndarray,
     ) -> np.ndarray:
 
+        # TODO: raise error if std of deterministic_values is 0 (dividing by 0 otherwise)
+
         return [
-            (1 / np.sqrt(2 * np.pi * x1.std() * x1.std()))
-            * np.exp(-((x2 - x1.mean()) ** 2) / (2 * x1.std() * x1.std()))
+            -np.log(
+                (1 / np.sqrt(2 * np.pi * x1.std() ** 2))
+                * np.exp(-((x2 - x1.mean()) ** 2) / (2 * x1.std() ** 2))
+            )
             for (x1, x2) in zip(probabilistic_estimations, deterministic_values)
         ]
 
 
-class ExponentialLikelihoodScorer(LikelihoodScorer):
-    """ExponentialLikelihoodScorer"""
+class ExponentialNLLScorer(NLLScorer):
+    """Exponential negative log-likelihood Scorer
 
-    def __init__(self) -> None:
-        super().__init__()
+    Source of PDF function and parameters estimation (MLE):
+    https://www.statlect.com/fundamentals-of-statistics/exponential-distribution-maximum-likelihood
+    """
+
+    def __init__(self, window: Optional[int] = None) -> None:
+        super().__init__(window=window)
 
     def __str__(self):
-        return "ExponentialLikelihoodScorer"
+        return "ExponentialNLLScorer"
 
     def _score_core_likelihood(
         self,
@@ -1524,6 +1578,65 @@ class ExponentialLikelihoodScorer(LikelihoodScorer):
     ) -> np.ndarray:
 
         return [
-            x1.mean() * np.exp(-x1.mean() * x2)
+            -np.log(x1.mean() * np.exp(-x1.mean() * x2))
+            for (x1, x2) in zip(probabilistic_estimations, deterministic_values)
+        ]
+
+
+class PoissonNLLScorer(NLLScorer):
+    """Poisson negative log-likelihood Scorer
+
+    Source of PDF function and parameters estimation (MLE):
+    https://www.statlect.com/fundamentals-of-statistics/Poisson-distribution-maximum-likelihood
+    """
+
+    def __init__(self, window: Optional[int] = None) -> None:
+        super().__init__(window=window)
+
+    def __str__(self):
+        return "PoissonNLLScorer"
+
+    def _score_core_likelihood(
+        self,
+        probabilistic_estimations: np.ndarray,
+        deterministic_values: np.ndarray,
+    ) -> np.ndarray:
+
+        # TODO: raise error if values of deterministic_values are not (int and >=0). Required by the factorial function
+
+        return [
+            -np.log(np.exp(x1.mean()) * (x1.mean() ** x2) / math.factorial(x2))
+            for (x1, x2) in zip(probabilistic_estimations, deterministic_values)
+        ]
+
+
+class LaplaceNLLScorer(NLLScorer):
+    """Laplace negative log-likelihood Scorer
+
+    Source of PDF function and parameters estimation (MLE):
+    https://en.wikipedia.org/wiki/Laplace_distribution
+    """
+
+    def __init__(self, window: Optional[int] = None) -> None:
+        super().__init__(window=window)
+
+    def __str__(self):
+        return "LaplaceNLLScorer"
+
+    def _score_core_likelihood(
+        self,
+        probabilistic_estimations: np.ndarray,
+        deterministic_values: np.ndarray,
+    ) -> np.ndarray:
+
+        # TODO: raise error when all values are equal to the median -> divide by 0
+
+        return [
+            -np.log(
+                (1 / (2 * np.abs(x1 - np.median(x1)).mean()))
+                * np.exp(
+                    -(np.abs(x2 - np.median(x1)) / np.abs(x1 - np.median(x1)).mean())
+                )
+            )
             for (x1, x2) in zip(probabilistic_estimations, deterministic_values)
         ]
