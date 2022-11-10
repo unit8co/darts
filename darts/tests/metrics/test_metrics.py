@@ -347,6 +347,11 @@ class MetricsTestCase(DartsBaseTestClass):
         self.assertAlmostEqual(metrics.rho_risk(s1, s12_stochastic, rho=0.0), 0.0)
         self.assertAlmostEqual(metrics.rho_risk(s2, s12_stochastic, rho=1.0), 0.0)
 
+    def test_nd(self):
+        self.helper_test_multivariate_duplication_equality(metrics.nd)
+        self.helper_test_multiple_ts_duplication_equality(metrics.nd)
+        self.helper_test_nan(metrics.nd)
+
     def test_metrics_arguments(self):
         series00 = self.series0.stack(self.series0)
         series11 = self.series1.stack(self.series1)
@@ -409,6 +414,7 @@ class MetricsTestCase(DartsBaseTestClass):
             metrics.marre,
             metrics.mse,
             metrics.rmsle,
+            metrics.nd,
         ]
 
         for metric in test_metric:

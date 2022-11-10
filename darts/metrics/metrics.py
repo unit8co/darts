@@ -1212,3 +1212,75 @@ def rho_risk(
 
     rho_loss = 2 * (z_true - z_hat_rho) * (rho * pred_below - (1 - rho) * pred_above)
     return rho_loss / z_true
+
+
+@multi_ts_support
+@multivariate_support
+def nd(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    intersect: bool = True,
+    *,
+    reduction: Callable[[np.ndarray], float] = np.mean,
+    inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
+    n_jobs: int = 1,
+    verbose: bool = False
+) -> Union[float, np.ndarray]:
+    """Normalized deviation (ND), described in Supplemental A of
+
+    https://proceedings.neurips.cc/paper/2016/hash/85422afb467e9456013a2a51d4dff702-Abstract.html.
+
+    For one time serie :math:`y` and its forecast :math:`\\hat{y}`, it is computed as
+
+    .. math:: \\frac{
+                        \\frac{1}{\\left| \\Omega_{test} \\right|}
+                            \\sum_{(i,t) \\in \\Omega_{test}}{\\left| \\hat{y}_{i,t} - y_{i,t} \\right|}
+                    }{
+                        \\frac{1}{\\left| \\Omega_{test} \\right|}
+                            \\sum_{(i,t) \\in \\Omega_{test}}{\\left| y_{i,t} \\right|}.
+
+    where i is the index of the value in the timeserie and t the index of the variate.
+
+    If any of the series is stochastic (containing several samples), the median sample value is considered.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    reduction
+        Function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to aggregate
+        the metrics of different components in case of multivariate ``TimeSeries`` instances.
+    inter_reduction
+        Function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
+        This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
+        ``Sequence[TimeSeries]``. Defaults to the identity function, which returns the pairwise metrics for each pair
+        of ``TimeSeries`` received in input. Example: ``inter_reduction=np.mean``, will return the average of the
+        pairwise metrics.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress
+
+    Returns
+    -------
+    float
+        The Normalized devation
+    """
+
+    y_true, y_pred = _get_values_or_raise(
+        actual_series, pred_series, intersect, remove_nan_union=True
+    )
+
+    raise_if_not(
+        (y_true != 0).all(),
+        "The actual series must be strictly positive to compute the ND.",
+        logger,
+    )
+    return np.mean(np.abs(y_pred - y_true)) / np.mean(np.abs(y_pred))

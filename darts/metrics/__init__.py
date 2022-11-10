@@ -11,6 +11,7 @@ from .metrics import (
     marre,
     mase,
     mse,
+    nd,
     ope,
     r2_score,
     rho_risk,
