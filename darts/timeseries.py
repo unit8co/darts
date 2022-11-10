@@ -2862,7 +2862,16 @@ class TimeSeries:
             tg.holidays_timeseries(self.time_index, country_code, prov, state)
         )
 
-    def resample(self, freq: str, method: str = "pad") -> "TimeSeries":
+    def resample(
+        self,
+        freq: str,
+        method: str = "pad",
+        closed: Optional[str] = None,
+        label: Optional[str] = None,
+        base: int = 0,
+        loffset: Optional[Union[str, pd.Timedelta]] = None,
+    ) -> "TimeSeries":
+
         """
         Build a reindexed ``TimeSeries`` with a given frequency.
         Provided method is used to fill holes in reindexed TimeSeries, by default 'pad'.
@@ -2878,13 +2887,29 @@ class TimeSeries:
             'pad': propagate last valid observation forward to next valid
 
             'backfill': use NEXT valid observation to fill.
+        closed
+            Side of each interval to treat as closed, supported arguments are 'left' and 'right'
+        label
+            Side of each interval to use for labeling, supported arguments are 'left' and 'right'
+        base
+            For frequencies that evenly subdivide 1 day, the "origin" of the aggregated intervals.
+            For example, for “24H” frequency, base could range from 0 through 23.
+        loffset
+            Offset used to adjust the resampled time labels. Some pandas date offset strings are supported.
+
         Returns
         -------
         TimeSeries
             A reindexed TimeSeries with given frequency.
         """
 
-        resample = self._xa.resample({self._time_dim: freq})
+        resample = self._xa.resample(
+            indexer={self._time_dim: freq},
+            closed=closed,
+            label=label,
+            base=base,
+            loffset=loffset,
+        )
 
         # TODO: check
         if method == "pad":
