@@ -273,22 +273,53 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         Returns a 5-tuple containing in order:
         (minimum target lag, maximum target lag, min past covariate lag, min future covariate lag, max future covariate
-        lag). These constitute bounds of lags.
+        lag). If 0 is the index of the first prediction, then all lags are relative to this index, except for the
+        maximum target lag, which is relative to the last element of the time series before the first prediction.
+        See examples below.
 
         If the model wasn't fitted with:
-            - target lag (concerning RegressionModels only) the first element is None.
-            - past covariates, the third element is None.
-            - future covariates, the fourth and fifth elements are None.
+            - target lag (concerning RegressionModels only) the first element should be `None`.
+
+            - past covariates, the third element should be `None`.
+
+            - future covariates, the fourth and fifth elements should be `None`.
 
         Should be overridden by models that use past or future covariates, and/or for model that have minimum target
-        lag lower than -1, and/or for models that have a maximum target lag higher than 1 (output_chunk_length > 1).
+        lag and maximum target lags potentially different from -1 and 1.
+
+        Notes
+        -----
+        maximum target lag (second value) cannot be `None` and is always larger than 1.
+        Examples
+        --------
+        >>> model = LinearRegressionModel(lags=3, output_chunk_length=2)
+        >>> model.fit(train_series)
+        >>> model.extreme_lags
+        (-3, 2, None, None, None)
+        >>> model = LinearRegressionModel(lags=[3, 5], past_covariates_lags = 4, output_chunk_length=7)
+        >>> model.fit(train_series, past_covariates=past_covariates)
+        >>> model.extreme_lags
+        (-5, 7, -4, None, None)
+        >>> model = LinearRegressionModel(lags=[3, 5], future_covariates_lags = [4, 6], output_chunk_length=7)
+        >>> model.fit(train_series, future_covariates=future_covariates)
+        >>> model.extreme_lags
+        (-5, 7, None, 4, 6)
+        >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7)
+        >>> model.fit(train_series)
+        >>> model.extreme_lags
+        (-10, 7, None, None, None)
+        >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7, future_covariates_lags=[4, 6])
+        >>> model.fit(train_series, future_covariates)
+        >>> model.extreme_lags
+        (-10, 7, None, 4, 6)
         """
+
         return (-1, 1, None, None, None)
 
     @property
-    def training_sample_length(self) -> int:
+    def training_sample_time_index_length(self) -> int:
         """
-        Class property defining the required length for one training sample.
+        Class property defining the required time_index length for one training sample, for any model.
         """
         (
             min_target_lag,
@@ -299,7 +330,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         ) = self.extreme_lags
 
         return max(
-            max_target_lag if max_target_lag else 0,
+            max_target_lag,
             max_future_cov_lag if max_future_cov_lag else 0,
         ) - min(
             min_target_lag if min_target_lag else 0,
@@ -307,7 +338,33 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             min_future_cov_lag if min_future_cov_lag else 0,
         )
 
-    def _max_historical_forecastable_time_index(
+    @property
+    def predict_sample_time_index_length(self) -> int:
+        """
+        Class property defining the required time_index length for one predict sample, for any model.
+        A predict sample is the minimum required set of series and covariates chunks to be able to predict
+        a single point.
+        """
+        (
+            min_target_lag,
+            max_target_lag,
+            min_past_cov_lag,
+            min_future_cov_lag,
+            max_future_cov_lag,
+        ) = self.extreme_lags
+
+        return (
+            max_future_cov_lag
+            if max_future_cov_lag
+            else 0
+            - min(
+                min_target_lag if min_target_lag else 0,
+                min_past_cov_lag if min_past_cov_lag else 0,
+                min_future_cov_lag if min_future_cov_lag else 0,
+            )
+        )
+
+    def _get_historical_forecastable_time_index(
         self,
         series: Optional[TimeSeries] = None,
         past_covariates: Optional[TimeSeries] = None,
@@ -315,28 +372,17 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         is_training: Optional[bool] = False,
     ) -> Union[pd.DatetimeIndex, pd.RangeIndex, None]:
         """
-        Private function that returns the longest possible time index for which historical forecasts can be made,
-        given the model's properties, the training series, and the covariates, with or without retraining the model.
+        Private function that returns the largest time_index representing the subset of each timestamps
+        for which historical forecasts can be made, given the model's properties, the training series
+        and the covariates.
+            - If ``None`` is returned, there is no point where a forecast can be made.
 
-        If None is returned, there is no point where a forecast can be made.
+            - If ``is_training=False``, it returns the time_index subset of predictable timestamps.
 
-        If is_training=False, it returns the predictable time index set of points.
-        If is_training=True, it returns the trainable time index set of points, starting one step after
-        the last element of the first train sample.
+            - If ``is_training=True``, it returns the time_index subset of trainable timestamps. A trainable
+            timestamp is a timestamp that have at least a training sample of length ``self.training_sample_length``
+             preceding it.
 
-
-        Some examples:
-
-            - If the model has a target lag of -1, output_chunk_length of 2, and no covariates, and we
-            provide a series with a time index of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], the function will return, if
-            is_training=False, the time index [2, 3, 4, 5, 6, 7, 8, 9] and if is_training=True, the time index
-            [3, 4, 5, 6, 7, 8, 9]. Indeed the first set of points we can use as one training sample is [0, 1, 2],
-            so the time index starts at 3.
-
-            - If the model has a target lag of -1, a past cov lag of -3, and output_chunk_length of 4, and
-            if the target has a time index of [3, 4, 5, 6, 7, 8, 9, 10, 11, 12] and the past covariates has
-            a time index of [7, 8, 9, 10, 11, 12, 13, 14, 15, 16], the function will return, if is_training=False,
-            the time index [10, 11, 12, 13, 14, 15, 16] and if is_training=True, the time index [14, 15, 16].
 
         Parameters
         ----------
@@ -347,11 +393,38 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         future_covariates
             Optionally, a future covariates.
         is_training
-            Whether the returned time index should be taking into account the training.
+            Whether the returned time_index should be taking into account the training.
+
         Returns
         -------
         Union[pd.DatetimeIndex, pd.RangeIndex, None]
-            The time index of points that can be used for historical forecasting.
+            The longest time_index that can be used for historical forecasting.
+
+        Examples
+        --------
+        >>> model = LinearRegressionModel(lags=3, output_chunk_length=2)
+        >>> model.fit(train_series)
+        >>> series = TimeSeries.from_times_and_values(pd.date_range('2000-01-01', '2000-01-10'), np.arange(10))
+        >>> model._get_historical_forecastable_time_index(series=series, is_training=False)
+        DatetimeIndex(['2000-01-04', '2000-01-05', '2000-01-06', '2000-01-07',
+               '2000-01-08', '2000-01-09', '2000-01-10'],
+              dtype='datetime64[ns]', freq='D')
+        >>> model._get_historical_forecastable_time_index(series=series, is_training=True)
+        DatetimeIndex(['2000-01-06', '2000-01-08', '2000-01-09', '2000-01-10'],
+                dtype='datetime64[ns]', freq='D')
+
+        >>> model = NBEATSModel(input_chunk_length=3, output_chunk_length=3)
+        >>> model.fit(train_series, train_past_covariates)
+        >>> series = TimeSeries.from_times_and_values(pd.date_range('2000-10-01', '2000-10-09'), np.arange(8))
+        >>> past_covariates = TimeSeries.from_times_and_values(pd.date_range('2000-10-03', '2000-10-20'),
+        np.arange(18))
+        >>> model._get_historical_forecastable_time_index(series=series, past_covariates=past_covariates,
+        is_training=False)
+        DatetimeIndex(['2000-10-06', '2000-10-07', '2000-10-08', '2000-10-09'], dtype='datetime64[ns]', freq='D')
+        >>> model._get_historical_forecastable_time_index(series=series, past_covariates=past_covariates,
+        is_training=True)
+        DatetimeIndex(['2000-10-09'], dtype='datetime64[ns]', freq='D') # Only one point is trainable, and
+        # corresponds to the first point after we reach a common subset of timestamps of training_sample_length length.
         """
 
         (
@@ -490,10 +563,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         model on the training set, emits a forecast of length equal to forecast_horizon, and then moves
         the end of the training set forward by `stride` time steps.
 
-        By default, this method will return one (or sequence of) single time series made up of
+        By default, this method will return one (or a sequence of) single time series made up of
         the last point of each historical forecast.
         This time series will thus have a frequency of ``series.freq * stride``.
-        If `last_points_only` is set to False, it will instead return one (or sequence of) list of the
+        If `last_points_only` is set to False, it will instead return one (or a sequence of) list of the
         historical forecasts series.
 
         By default, this method always re-trains the models on the entire available history,
@@ -573,13 +646,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             If `last_points_only` is set to False, a single (or a sequence of) list of the historical forecasts.
         """
 
-        # TODO: do we need a check here? I'd rather leave these checks to the models/datasets.
-        # if covariates:
-        #     raise_if_not(
-        #         series.end_time() <= covariates.end_time() and covariates.start_time() <= series.start_time(),
-        #         'The provided covariates must be at least as long as the target series.'
-        #     )
-
         # only GlobalForecastingModels support historical forecastings without retraining the model
         base_class_name = self.__class__.__base__.__name__
         raise_if(
@@ -601,7 +667,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ValueError("If not None, train_length needs to be positive."),
                 logger,
             )
-        elif (train_length is not None) and train_length < self.training_sample_length:
+        elif (
+            train_length is not None
+        ) and train_length < self.training_sample_time_index_length:
             raise_log(
                 ValueError(
                     "train_length is too small for the training requirements of this model"
@@ -633,8 +701,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         future_covariates = series2seq(future_covariates)
 
         # If the model has never been fitted before using historical_forecasts,
-        # we need to know if it uses past or future covariates, when we call
-        # self._historical_forecastable_time_index()
+        # we need to know if it uses past or future covariates. The only possible assumption is that
+        # the user is using the same covariates as he would in the fit method.
         if self._fit_called is False:
             if past_covariates is not None:
                 self._uses_past_covariates = True
@@ -649,7 +717,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             # Determines the time index the historical forecasts will be made on
             historical_forecasts_time_index = (
-                self._max_historical_forecastable_time_index(
+                self._get_historical_forecastable_time_index(
                     series_,
                     past_covariates_,
                     future_covariates_,
@@ -657,22 +725,26 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 )
             )
 
-            starting_point = historical_forecasts_time_index[0]
+            # We also need the first value timestamp to be used for prediction or training
+            min_timestamp = (
+                historical_forecasts_time_index[0]
+                - (
+                    self.training_sample_time_index_length
+                    if retrain
+                    else self.predict_sample_time_index_length
+                )
+                * series_.freq
+            )
 
             if historical_forecasts_time_index is None:
                 raise_log(
                     ValueError(
-                        "Given the provided model, series and covariates, there is no point "
+                        "Given the provided model, series and covariates, there is no timestamps "
                         " where we can make a prediction or train the model. "
                         "Please check the time indexes of the series and covariates."
                     ),
                     logger,
                 )
-
-            # We also need the first point to be used for prediction or training
-            min_point_historical_time_index = (
-                starting_point - self.training_sample_length * series_.freq
-            )
 
             # prepare the start parameter -> pd.Timestamp
             if start is not None:
@@ -689,7 +761,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         historical_forecasts_time_index = drop_before_index(
                             historical_forecasts_time_index,
                             historical_forecasts_time_index[0]
-                            + max((train_length - self.training_sample_length), 0)
+                            + max(
+                                (train_length - self.training_sample_time_index_length),
+                                0,
+                            )
                             * series_.freq,
                         )
                     # if not we start training right away, but with 2 minimum points, so we start
@@ -703,7 +778,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         )
 
                     # if retrain is False, fit hasn't been called yet and train_length None,
-                    # it means that the entire backtesting will be based on a one point training series
+                    # it means that the entire backtesting will be based on a set of two training samples
                     # at the first step, so we warn the user.
                     if (
                         (not self._fit_called)
@@ -742,9 +817,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             for _counter, pred_time in enumerate(iterator):
 
                 # build the training series
-                if min_point_historical_time_index > series_.time_index[0]:
+                if min_timestamp > series_.time_index[0]:
                     train_series = series_.drop_before(
-                        min_point_historical_time_index - 1 * series_.freq
+                        min_timestamp - 1 * series_.freq
                     ).drop_after(pred_time)
                 else:
                     train_series = series_.drop_after(pred_time)

@@ -1742,8 +1742,8 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             -self.input_chunk_length,
             self.output_chunk_length,
             None,
-            0 if self._expect_future_covariates else None,
-            self.output_chunk_length if self._expect_future_covariates else None,
+            0 if self.uses_future_covariates else None,
+            self.output_chunk_length if self.uses_future_covariates else None,
         )
 
 
@@ -1828,8 +1828,8 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
             -self.input_chunk_length,
             self.output_chunk_length,
             None,
-            -self.input_chunk_length if self._expect_future_covariates else None,
-            self.output_chunk_length if self._expect_future_covariates else None,
+            -self.input_chunk_length if self.uses_future_covariates else None,
+            self.output_chunk_length if self.uses_future_covariates else None,
         )
 
 
@@ -1995,6 +1995,6 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
             -self.input_chunk_length,
             self.output_chunk_length,
             -self.input_chunk_length if self.uses_past_covariates else None,
-            0 if self._expect_future_covariates else None,
+            0 if self.uses_future_covariates else None,
             self.output_chunk_length if self.uses_future_covariates else None,
         )

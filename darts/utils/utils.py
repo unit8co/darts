@@ -383,8 +383,8 @@ def slice_index(
     end: Union[int, pd.Timestamp],
 ) -> Union[pd.RangeIndex, pd.DatetimeIndex]:
     """
-    Returns a new Index with the same type as the input `index`, but with only the values between `start`
-    and `end` included.
+    Returns a new Index with the same type as the input `index`, containing the values between `start`
+    and `end` included. If start and end are not in the index, the closest values are used instead.
     The start and end values can be either integers (in which case they are interpreted as indices),
     or pd.Timestamps (in which case they are interpreted as actual timestamps).
 
@@ -392,7 +392,7 @@ def slice_index(
     Parameters
     ----------
     index
-        The index to slice
+        The index to slice.
     start
         The start of the returned index.
     end
@@ -400,7 +400,7 @@ def slice_index(
 
     Returns
     -------
-    Index
+    Union[pd.RangeIndex, pd.DatetimeIndex]
         A new index with the same type as the input `index`, but with only the values between `start` and `end`
         included.
     """
@@ -437,16 +437,45 @@ def slice_index(
 
 
 def drop_before_index(
-    time_index: Union[pd.RangeIndex, pd.DatetimeIndex],
+    index: Union[pd.RangeIndex, pd.DatetimeIndex],
     split_point: Union[int, pd.Timestamp],
 ) -> Union[pd.RangeIndex, pd.DatetimeIndex]:
+    """
+    Drops everything before the provided time `split_point` (excluded) from the index.
 
-    return slice_index(time_index, split_point, time_index[-1])
+    Parameters
+    ----------
+    index
+        The index to drop values from.
+    split_point
+        The timestamp that indicates cut-off time.
+
+    Returns
+    -------
+    Union[pd.RangeIndex, pd.DatetimeIndex]
+        A new index with values before `split_point` dropped.
+    """
+    return slice_index(index, split_point, index[-1])
 
 
 def drop_after_index(
-    time_index: Union[pd.RangeIndex, pd.DatetimeIndex],
+    index: Union[pd.RangeIndex, pd.DatetimeIndex],
     split_point: Union[int, pd.Timestamp],
 ) -> Union[pd.RangeIndex, pd.DatetimeIndex]:
+    """
+    Drops everything after the provided time `split_point` (excluded) from the index.
 
-    return slice_index(time_index, time_index[0], split_point)
+    Parameters
+    ----------
+    index
+        The index to drop values from.
+    split_point
+        The timestamp that indicates cut-off time.
+
+    Returns
+    -------
+    Union[pd.RangeIndex, pd.DatetimeIndex]
+        A new index with values after `split_point` dropped.
+    """
+
+    return slice_index(index, index[0], split_point)
