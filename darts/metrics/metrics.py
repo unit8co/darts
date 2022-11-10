@@ -1226,10 +1226,10 @@ def nd(
     n_jobs: int = 1,
     verbose: bool = False
 ) -> Union[float, np.ndarray]:
-    """Normalized deviation (ND), described in Annexes A of F. Yu et al. \
+    """Normalized Deviation (ND), described in Annexes A of F. Yu et al. \
     “Temporal Regularized Matrix Factorization for High-dimensional Time Series Prediction”
 
-    For one time serie :math:`y` and its forecast :math:`\\hat{y}`, it is computed as
+    Given a time series of actual values :math:`y` and a time series of predicted values :math:`\\hat{y}`
 
     .. math:: \\frac{
                 \\frac{1}{\\left| \\Omega_{test} \\right|}
@@ -1238,7 +1238,7 @@ def nd(
                 \\frac{1}{\\left| \\Omega_{test} \\right|}
                     \\sum_{(i,t) \\in \\Omega_{test}} {\\left| y_{i,t} \\right|}}.
 
-    where :math:`y_{i,t}` is the observation at the t-th time point of the i-th time series and
+    where :math:`y_{i,t}` is the observation at the :math:`t`-th time point of the :math:`i`-th time series and
     :math:`\\Omega_{test}` the set of observations.
 
     If any of the series is stochastic (containing several samples), the median sample value is considered.
@@ -1276,7 +1276,7 @@ def nd(
     Returns
     -------
     float
-        The Normalized devation
+        The Normalized Deviation
     """
 
     y_true, y_pred = _get_values_or_raise(
