@@ -2862,15 +2862,7 @@ class TimeSeries:
             tg.holidays_timeseries(self.time_index, country_code, prov, state)
         )
 
-    def resample(
-        self,
-        freq: str,
-        method: str = "pad",
-        closed: Optional[str] = None,
-        label: Optional[str] = None,
-        base: int = 0,
-        loffset: Optional[Union[str, pd.Timedelta]] = None,
-    ) -> "TimeSeries":
+    def resample(self, freq: str, method: str = "pad", **kwargs) -> "TimeSeries":
 
         """
         Build a reindexed ``TimeSeries`` with a given frequency.
@@ -2887,15 +2879,31 @@ class TimeSeries:
             'pad': propagate last valid observation forward to next valid
 
             'backfill': use NEXT valid observation to fill.
-        closed
-            Side of each interval to treat as closed, supported arguments are 'left' and 'right'
-        label
-            Side of each interval to use for labeling, supported arguments are 'left' and 'right'
-        base
-            For frequencies that evenly subdivide 1 day, the "origin" of the aggregated intervals.
-            For example, for “24H” frequency, base could range from 0 through 23.
-        loffset
-            Offset used to adjust the resampled time labels. Some pandas date offset strings are supported.
+        kwargs
+            some keyword arguments for the `xarray.resample` method, notably `loffset` or `base` to indicate where
+            to start the resampling and avoid nan at the first value of the resampled TimeSeries
+            (https://docs.xarray.dev/en/stable/generated/xarray.DataArray.resample.html)
+
+        Examples
+        --------
+        >>> times = pd.date_range(start=pd.Timestamp("20200101233000"), periods=3, freq="15T")
+        >>> pd_series = pd.Series(range(3), index=times)
+        >>> ts = TimeSeries.from_series(pd_series)
+        >>> print(ts.time_index)
+        DatetimeIndex(['2020-01-01 23:30:00', '2020-01-01 23:45:00', '2020-01-02 00:00:00'],
+              dtype='datetime64[ns]', name='time', freq='15T')
+        >>> resampled_nokwargs_ts = ts.resample(freq="1h")
+        >>> print(resampled_nokwargs_ts.time_index)
+        DatetimeIndex(['2020-01-01 23:00:00', '2020-01-02 00:00:00'], dtype='datetime64[ns]', name='time', freq='H')
+        >>> print(resampled_nokwargs_ts.values())
+        [[nan]
+        [ 2.]]
+        >>> resampled_ts = ts.resample(freq="1h", loffset="30T")
+        >>> print(resampled_ts.time_index)
+        DatetimeIndex(['2020-01-01 23:30:00', '2020-01-02 00:30:00'], dtype='datetime64[ns]', name='time', freq='H')
+        >>> print(resampled_ts.values())
+        [[0.]
+        [2.]]
 
         Returns
         -------
@@ -2905,10 +2913,7 @@ class TimeSeries:
 
         resample = self._xa.resample(
             indexer={self._time_dim: freq},
-            closed=closed,
-            label=label,
-            base=base,
-            loffset=loffset,
+            **kwargs,
         )
 
         # TODO: check
