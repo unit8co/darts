@@ -2896,13 +2896,15 @@ class TimeSeries:
                        dtype='datetime64[ns]', name='time', freq='15T')
         >>> resampled_nokwargs_ts = ts.resample(freq="1h")
         >>> print(resampled_nokwargs_ts.time_index)
-        DatetimeIndex(['2020-01-01 23:00:00', '2020-01-02 00:00:00'], dtype='datetime64[ns]', name='time', freq='H')
+        DatetimeIndex(['2020-01-01 23:00:00', '2020-01-02 00:00:00'],
+                      dtype='datetime64[ns]', name='time', freq='H')
         >>> print(resampled_nokwargs_ts.values())
         [[nan]
         [ 2.]]
         >>> resampled_ts = ts.resample(freq="1h", loffset="30T")
         >>> print(resampled_ts.time_index)
-        DatetimeIndex(['2020-01-01 23:30:00', '2020-01-02 00:30:00'], dtype='datetime64[ns]', name='time', freq='H')
+        DatetimeIndex(['2020-01-01 23:30:00', '2020-01-02 00:30:00'],
+                      dtype='datetime64[ns]', name='time', freq='H')
         >>> print(resampled_ts.values())
         [[0.]
         [4.]]
