@@ -1569,7 +1569,6 @@ class TimeSeries:
             coords={self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index(cnames)},
             attrs=self._xa.attrs,
         )
-
         return self.__class__(new_xa).pd_dataframe()
         
     def quantiles_df(self, quantiles: Tuple[float] = (0.1, 0.5, 0.9), fast_mode: [bool] = False) -> pd.DataFrame:
@@ -4542,3 +4541,4 @@ def concatenate(
         )
 
     return TimeSeries.from_xarray(da_concat, fill_missing_dates=False)
+    
