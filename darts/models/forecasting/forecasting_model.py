@@ -897,7 +897,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         retrain: Union[bool, int, Callable[..., bool]] = True,
         overlap_end: bool = False,
         last_points_only: bool = False,
-        metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
+        metric: Union[
+            Callable[[TimeSeries, TimeSeries], float],
+            List[Callable[[TimeSeries, TimeSeries], float]],
+        ] = metrics.mape,
         reduction: Union[Callable[[np.ndarray], float], None] = np.mean,
         verbose: bool = False,
     ) -> Union[float, List[float], Sequence[float], List[Sequence[float]]]:
@@ -982,9 +985,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         last_points_only
             Whether to use the whole historical forecasts or only the last point of each forecast to compute the error
         metric
-            A function that takes two ``TimeSeries`` instances as inputs and returns an error value.
+            A function or a list of function that takes two ``TimeSeries`` instances as inputs and returns an
+            error value.
         reduction
             A function used to combine the individual error scores obtained when `last_points_only` is set to False.
+            When providing several metric functions, the function will receive the argument `axis = 0` to obtain single
+            value for each metric function.
             If explicitly set to `None`, the method will return a list of the individual error scores instead.
             Set to ``np.mean`` by default.
         verbose
@@ -1014,16 +1020,26 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if len(series) == 1:
             forecasts = [forecasts]
 
+        if not isinstance(metric, list):
+            metric = [metric]
+
         backtest_list = []
         for idx, target_ts in enumerate(series):
             if last_points_only:
-                backtest_list.append(metric(target_ts, forecasts[idx]))
+                errors = [metric_f(target_ts, forecasts[idx]) for metric_f in metric]
+                if len(errors) == 1:
+                    errors = errors[0]
+                backtest_list.append(errors)
             else:
-                errors = [metric(series, forecast) for forecast in forecasts[idx]]
+
+                errors = [
+                    [metric_f(series, f) for metric_f in metric] for f in forecasts[idx]
+                ]
+
                 if reduction is None:
                     backtest_list.append(errors)
                 else:
-                    backtest_list.append(reduction(np.array(errors)))
+                    backtest_list.append(reduction(np.array(errors), axis=0))
 
         return backtest_list if len(backtest_list) > 1 else backtest_list[0]
 

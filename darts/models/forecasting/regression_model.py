@@ -50,6 +50,7 @@ class RegressionModel(GlobalForecastingModel):
         output_chunk_length: int = 1,
         add_encoders: Optional[dict] = None,
         model=None,
+        multi_models: Optional[bool] = True,
     ):
         """Regression Model
         Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.
@@ -97,6 +98,10 @@ class RegressionModel(GlobalForecastingModel):
             support multi-output regression for multivariate timeseries, in which case one regressor
             will be used per component in the multivariate series.
             If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.
+
+        multi_models
+            If True, a separate model will be trained for each future lag to predict. If False, a single model is
+            trained to predict at step 'output_chunk_length' in the future. Default: True.
         """
 
         super().__init__(add_encoders=add_encoders)
@@ -105,6 +110,7 @@ class RegressionModel(GlobalForecastingModel):
         self.lags = {}
         self.output_chunk_length = None
         self.input_dim = None
+        self.multi_models = multi_models
 
         # model checks
         if self.model is None:
@@ -220,6 +226,8 @@ class RegressionModel(GlobalForecastingModel):
             f"output_chunk_length must be an integer greater than 0. Given: {output_chunk_length}",
         )
         self.output_chunk_length = output_chunk_length
+
+        self.pred_dim = self.output_chunk_length if self.multi_models else 1
 
     @property
     def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
@@ -338,6 +346,7 @@ class RegressionModel(GlobalForecastingModel):
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,
             max_samples_per_ts=max_samples_per_ts,
+            multi_models=self.multi_models,
         )
 
         return training_samples, training_labels
@@ -436,7 +445,9 @@ class RegressionModel(GlobalForecastingModel):
         }
 
         # if multi-output regression
-        if not series[0].is_univariate or self.output_chunk_length > 1:
+        if not series[0].is_univariate or (
+            self.output_chunk_length > 1 and self.multi_models
+        ):
             # and model isn't wrapped already
             if not isinstance(self.model, MultiOutputRegressor):
                 # check whether model supports multi-output regression natively
@@ -566,6 +577,14 @@ class RegressionModel(GlobalForecastingModel):
             "future": (future_covariates, self.lags.get("future")),
         }
 
+        # prepare one_shot shift and step
+        if self.multi_models:
+            shift = 0
+            step = self.output_chunk_length
+        else:
+            shift = self.output_chunk_length - 1
+            step = 1
+
         # dictionary containing covariate data over time span required for prediction
         covariate_matrices = {}
         # dictionary containing covariate lags relative to minimum covariate lag
@@ -580,13 +599,19 @@ class RegressionModel(GlobalForecastingModel):
                     # calculating first and last prediction time steps
                     first_pred_ts = ts.end_time() + 1 * ts.freq
                     last_pred_ts = (
-                        first_pred_ts
-                        + ((n_pred_steps - 1) * self.output_chunk_length) * ts.freq
+                        (
+                            first_pred_ts
+                            + ((n_pred_steps - 1) * self.output_chunk_length) * ts.freq
+                        )
+                        if self.multi_models
+                        else (first_pred_ts + (n - 1) * ts.freq)
                     )
-                    # calculating first and last required time steps
-                    first_req_ts = first_pred_ts + lags[0] * ts.freq
-                    last_req_ts = last_pred_ts + lags[-1] * ts.freq
 
+                    # calculating first and last required time steps
+                    first_req_ts = (
+                        first_pred_ts + (lags[0] - shift) * ts.freq
+                    )  # shift lags if using one_shot
+                    last_req_ts = last_pred_ts + (lags[-1] - shift) * ts.freq
                     # check for sufficient covariate data
                     raise_if_not(
                         cov.start_time() <= first_req_ts
@@ -616,7 +641,10 @@ class RegressionModel(GlobalForecastingModel):
         series_matrix = None
         if "target" in self.lags:
             series_matrix = np.stack(
-                [ts[self.lags["target"][0] :].values(copy=False) for ts in series]
+                [
+                    ts.values(copy=False)[self.lags["target"][0] - shift :, :]
+                    for ts in series
+                ]
             )
 
         # repeat series_matrix to shape (num_samples * num_series, n_lags, n_components)
@@ -629,7 +657,7 @@ class RegressionModel(GlobalForecastingModel):
         # prediction
         predictions = []
         # t_pred indicates the number of time steps after the first prediction
-        for t_pred in range(0, n, self.output_chunk_length):
+        for t_pred in range(0, n, step):
             np_X = []
             # retrieve target lags
             if "target" in self.lags:
@@ -640,9 +668,9 @@ class RegressionModel(GlobalForecastingModel):
                     else series_matrix
                 )
                 np_X.append(
-                    target_matrix[:, self.lags["target"]].reshape(
-                        len(series) * num_samples, -1
-                    )
+                    target_matrix[
+                        :, [lag - shift for lag in self.lags["target"]]
+                    ].reshape(len(series) * num_samples, -1)
                 )
             # retrieve covariate lags, enforce order (dict only preserves insertion order for python 3.6+)
             for cov_type in ["past", "future"]:
@@ -681,7 +709,8 @@ class RegressionModel(GlobalForecastingModel):
     ) -> np.ndarray:
         prediction = self.model.predict(x, **kwargs)
         k = x.shape[0]
-        return prediction.reshape(k, self.output_chunk_length, -1)
+
+        return prediction.reshape(k, self.pred_dim, -1)
 
     def __str__(self):
         return self.model.__str__()
@@ -732,18 +761,17 @@ class _LikelihoodMixin:
         X is of shape (n_series * n_samples, n_regression_features)
         """
         k = x.shape[0]
+
         if num_samples == 1:
             # return median
             fitted = self._model_container[0.5]
-            return fitted.predict(x, **kwargs).reshape(k, self.output_chunk_length, -1)
+            return fitted.predict(x, **kwargs).reshape(k, self.pred_dim, -1)
 
         model_outputs = []
         for quantile, fitted in self._model_container.items():
             self.model = fitted
             # model output has shape (n_series * n_samples, output_chunk_length, n_components)
-            model_output = fitted.predict(x, **kwargs).reshape(
-                k, self.output_chunk_length, -1
-            )
+            model_output = fitted.predict(x, **kwargs).reshape(k, self.pred_dim, -1)
             model_outputs.append(model_output)
         model_outputs = np.stack(model_outputs, axis=-1)
         # model_outputs has shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
@@ -776,7 +804,7 @@ class _LikelihoodMixin:
             else:
                 output_slice = model_output[0, :, :]
 
-            return output_slice.reshape(k, self.output_chunk_length, -1)
+            return output_slice.reshape(k, self.pred_dim, -1)
 
         # probabilistic case
         # univariate & single-chunk output
@@ -797,7 +825,7 @@ class _LikelihoodMixin:
         where the last 2 dimensions are mu and sigma.
         """
         shape = model_output.shape
-        chunk_len = self.output_chunk_length
+        chunk_len = self.pred_dim
 
         # treating each component separately
         mu_sigma_list = [model_output[i, :, :] for i in range(shape[0])]
@@ -821,9 +849,7 @@ class _LikelihoodMixin:
         """
         k = x.shape[0]
 
-        model_output = self.model.predict(x, **kwargs).reshape(
-            k, self.output_chunk_length, -1
-        )
+        model_output = self.model.predict(x, **kwargs).reshape(k, self.pred_dim, -1)
         if num_samples == 1:
             return model_output
 
