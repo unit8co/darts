@@ -148,15 +148,14 @@ class NLinearModel(PastCovariatesTorchModel):
         output_chunk_length
             The length of the forecast of the model.
         shared_weights
-            Whether to use shared weights across components of multivariate series.
+            Whether to use shared weights for all components of multivariate series.
 
             .. warning::
                 When set to True, covariates will be ignored as a 1-to-1 mapping is
                 required between input dimensions and output dimensions.
             ..
 
-            Setting it to False corresponds to the "individual" weights version of the model
-            as described in the paper. Default: False.
+            Default: False.
 
         const_init
             Whether to initialize the weights to 1/in_len. If False, the default PyTorch
