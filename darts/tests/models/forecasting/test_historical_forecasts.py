@@ -496,6 +496,7 @@ if TORCH_AVAILABLE:
                     random_state=0,
                     **kwargs,
                 )
+
                 model.fit(self.ts_pass_train)
                 # check historical forecasts for several time series,
                 # retrain True and overlap_end True
