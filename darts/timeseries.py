@@ -2886,12 +2886,14 @@ class TimeSeries:
 
         Examples
         --------
-        >>> times = pd.date_range(start=pd.Timestamp("20200101233000"), periods=3, freq="15T")
-        >>> pd_series = pd.Series(range(3), index=times)
+        >>> times = pd.date_range(start=pd.Timestamp("20200101233000"), periods=6, freq="15T")
+        >>> pd_series = pd.Series(range(6), index=times)
         >>> ts = TimeSeries.from_series(pd_series)
         >>> print(ts.time_index)
-        DatetimeIndex(['2020-01-01 23:30:00', '2020-01-01 23:45:00', '2020-01-02 00:00:00'],
-              dtype='datetime64[ns]', name='time', freq='15T')
+        DatetimeIndex(['2020-01-01 23:30:00', '2020-01-01 23:45:00',
+                       '2020-01-02 00:00:00', '2020-01-02 00:15:00',
+                       '2020-01-02 00:30:00', '2020-01-02 00:45:00'],
+                       dtype='datetime64[ns]', name='time', freq='15T')
         >>> resampled_nokwargs_ts = ts.resample(freq="1h")
         >>> print(resampled_nokwargs_ts.time_index)
         DatetimeIndex(['2020-01-01 23:00:00', '2020-01-02 00:00:00'], dtype='datetime64[ns]', name='time', freq='H')
@@ -2903,7 +2905,7 @@ class TimeSeries:
         DatetimeIndex(['2020-01-01 23:30:00', '2020-01-02 00:30:00'], dtype='datetime64[ns]', name='time', freq='H')
         >>> print(resampled_ts.values())
         [[0.]
-        [2.]]
+        [4.]]
 
         Returns
         -------
