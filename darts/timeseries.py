@@ -34,8 +34,9 @@ Read our `user guide on covariates <https://unit8co.github.io/darts/userguide/co
 
 import pickle
 from collections import defaultdict
+from copy import deepcopy
 from inspect import signature
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -43,7 +44,6 @@ import pandas as pd
 import xarray as xr
 from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
-from numba import jit, njit
 
 from .logging import get_logger, raise_if, raise_if_not, raise_log
 
@@ -654,7 +654,20 @@ class TimeSeries:
                 "a DatetimeIndex, or with a RangeIndex.",
                 logger,
             )
-            time_index = df.index
+            # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
+            # pandas.DataFrame loses the tz information if it's not its index
+            if isinstance(df.index, pd.DatetimeIndex) and df.index.tz is not None:
+                logger.warning(
+                    "The provided DatetimeIndex was associated with a timezone, which is currently not supported "
+                    "by xarray. To avoid unexpected behaviour, the tz information was removed. Consider calling "
+                    f"`ts.time_index.tz_localize({df.index.tz})` when exporting the results."
+                    "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
+                    "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
+                    "original timezone."
+                )
+                time_index = df.index.tz_localize(None)
+            else:
+                time_index = df.index
 
         if not time_index.name:
             time_index.name = time_col if time_col else DIMS[0]
@@ -831,7 +844,6 @@ class TimeSeries:
         TimeSeries
             A univariate and deterministic TimeSeries constructed from the inputs.
         """
-
         df = pd.DataFrame(pd_series)
         return cls.from_dataframe(
             df,
@@ -923,6 +935,18 @@ class TimeSeries:
             "the `times` argument must be a RangeIndex, or a DateTimeIndex. Use "
             "TimeSeries.from_values() if you want to use an automatic RangeIndex.",
         )
+
+        # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
+        if isinstance(times, pd.DatetimeIndex) and times.tz is not None:
+            logger.warning(
+                "The `times` argument was associated with a timezone, which is currently not supported "
+                "by xarray. To avoid unexpected behaviour, the tz information was removed. Consider calling "
+                f"`ts.time_index.tz_localize({times.tz})` when exporting the results."
+                "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
+                "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
+                "original timezone."
+            )
+            times = times.tz_localize(None)
 
         times_name = DIMS[0] if not times.name else times.name
 
@@ -1420,6 +1444,7 @@ class TimeSeries:
                 index=self._time_index,
                 columns=self._xa.get_index(DIMS[1]),
             )
+
     def quantile_df(self, quantile=0.5) -> pd.DataFrame:
         """
         Return a Pandas DataFrame containing the single desired quantile of each component (over the samples).
@@ -1510,7 +1535,7 @@ class TimeSeries:
         )
 
         return self.__class__(new_xa)
-
+        
     def quantile_timeseries_to_df(self, quantile=0.5, **kwargs) -> pd.DataFrame:
         """
         Wrap of method quantile_timeseries, for speed up method quantiles_df
@@ -1546,8 +1571,8 @@ class TimeSeries:
         )
 
         return self.__class__(new_xa).pd_dataframe()
-    
-    def quantiles_df(self, quantiles: Tuple[float] = (0.1, 0.5, 0.9)) -> pd.DataFrame:
+        
+    def quantiles_df(self, quantiles: Tuple[float] = (0.1, 0.5, 0.9), fast_mode: [bool] = False) -> pd.DataFrame:
         """
         Return a Pandas DataFrame containing the desired quantiles of each component (over the samples).
 
@@ -1570,7 +1595,10 @@ class TimeSeries:
         pandas.DataFrame
             The Pandas DataFrame containing the quantiles for each component.
         """
-        return pd.concat([self.quantile_timeseries_to_df(quantile) for quantile in quantiles], axis=1)
+        if fast_mode == False:
+            return pd.concat([self.quantile_timeseries_to_df(quantile) for quantile in quantiles], axis=1)
+        else:
+            return pd.concat([self.quantile_df(quantile) for quantile in quantiles], axis=1)
 
     def astype(self, dtype: Union[str, np.dtype]) -> "TimeSeries":
         """
@@ -1892,15 +1920,21 @@ class TimeSeries:
     =============
     """
 
-    def gaps(self) -> pd.DataFrame:
+    def gaps(self, mode: Literal["all", "any"] = "all") -> pd.DataFrame:
         """
-        A function to compute and return gaps in the TimeSeries.
-        Works only on deterministic time series.
+        A function to compute and return gaps in the TimeSeries. Works only on deterministic time series (1 sample).
+
+        Parameters
+        ----------
+        mode
+            Only relevant for multivariate time series. The mode defines how gaps are defined. Set to
+            'any' if a NaN value in any columns should be considered as as gaps. 'all' will only
+            consider periods where all columns' values are NaN. Defaults to 'all'.
 
         Returns
         -------
         pd.DataFrame
-            A dataframe containing a row for every gap (rows with all-NaN values in underlying DataFrame)
+            A pandas.DataFrame containing a row for every gap (rows with all-NaN values in underlying DataFrame)
             in this time series. The DataFrame contains three columns that include the start and end time stamps
             of the gap and the integer length of the gap (in `self.freq` units if the series is indexed
             by a DatetimeIndex).
@@ -1908,7 +1942,17 @@ class TimeSeries:
 
         df = self.pd_dataframe()
 
-        is_nan_series = df.isna().all(axis=1).astype(int)
+        if mode == "all":
+            is_nan_series = df.isna().all(axis=1).astype(int)
+        elif mode == "any":
+            is_nan_series = df.isna().any(axis=1).astype(int)
+        else:
+            raise_log(
+                ValueError(
+                    f"Keyword mode accepts only 'any' or 'all'. Provided {mode}"
+                ),
+                logger,
+            )
         diff = pd.Series(np.diff(is_nan_series.values), index=is_nan_series.index[:-1])
         gap_starts = diff[diff == 1].index + self._freq
         gap_ends = diff[diff == -1].index
@@ -1918,21 +1962,25 @@ class TimeSeries:
         if is_nan_series.iloc[-1] == 1:
             gap_ends = gap_ends.insert(len(gap_ends), self.end_time())
 
-        gap_df = pd.DataFrame()
-        gap_df["gap_start"] = gap_starts
-        gap_df["gap_end"] = gap_ends
+        gap_df = pd.DataFrame(columns=["gap_start", "gap_end"])
 
-        def intvl(start, end):
-            if self._has_datetime_index:
-                return pd.date_range(start=start, end=end, freq=self._freq).size
-            else:
-                return int((end - start) / self._freq) + 1
+        if gap_starts.size == 0:
+            return gap_df
+        else:
 
-        gap_df["gap_size"] = gap_df.apply(
-            lambda row: intvl(start=row.gap_start, end=row.gap_end), axis=1
-        )
+            def intvl(start, end):
+                if self._has_datetime_index:
+                    return pd.date_range(start=start, end=end, freq=self._freq).size
+                else:
+                    return int((end - start) / self._freq) + 1
 
-        return gap_df
+            gap_df["gap_start"] = gap_starts
+            gap_df["gap_end"] = gap_ends
+            gap_df["gap_size"] = gap_df.apply(
+                lambda row: intvl(start=row.gap_start, end=row.gap_end), axis=1
+            )
+
+            return gap_df
 
     def copy(self) -> "TimeSeries":
         """
@@ -2313,22 +2361,37 @@ class TimeSeries:
             new_series, static_covariates=self.static_covariates
         )
 
-    def longest_contiguous_slice(self, max_gap_size: int = 0) -> "TimeSeries":
+    def longest_contiguous_slice(
+        self, max_gap_size: int = 0, mode: str = "all"
+    ) -> "TimeSeries":
         """
         Return the largest TimeSeries slice of this deterministic series that contains no gaps
         (contiguous all-NaN values) larger than `max_gap_size`.
 
         This method is only applicable to deterministic series (i.e., having 1 sample).
 
+        Parameters
+        ----------
+        max_gap_size
+            Indicate the maximum gap size that the TimeSerie can contain
+        mode
+            Only relevant for multivariate time series. The mode defines how gaps are defined. Set to
+            'any' if a NaN value in any columns should be considered as as gaps. 'all' will only
+            consider periods where all columns' values are NaN. Defaults to 'all'.
+
         Returns
         -------
         TimeSeries
             a new series constituting the largest slice of the original with no or bounded gaps
+
+        See Also
+        --------
+        TimeSeries.gaps : return the gaps in the TimeSeries
         """
         if not (np.isnan(self._xa)).any():
             return self.copy()
         stripped_series = self.strip()
-        gaps = stripped_series.gaps()
+        gaps = stripped_series.gaps(mode=mode)
         relevant_gaps = gaps[gaps["gap_size"] > max_gap_size]
 
         curr_slice_start = stripped_series.start_time()
@@ -2973,7 +3036,6 @@ class TimeSeries:
             new_xa.values = fn(self._xa.values)
 
         elif num_args == 2:  # map function uses timestamp f(timestamp, x)
-
             # go over shortest amount of iterations, either over time steps or components and samples
             if self.n_timesteps <= self.n_components * self.n_samples:
                 new_vals = np.vstack(
@@ -4034,8 +4096,8 @@ class TimeSeries:
     def __copy__(self, deep: bool = True):
         return self.copy()
 
-    def __deepcopy__(self):
-        return self.__class__(self._xa.copy())
+    def __deepcopy__(self, memo):
+        return self.__class__(deepcopy(self._xa, memo))
 
     def __getitem__(
         self,
