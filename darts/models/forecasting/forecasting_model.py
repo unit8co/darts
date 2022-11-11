@@ -1001,6 +1001,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             The (or a sequence of) error score, or the list (or a sequence of list) of individual error scores
             if `reduction` is `None`
         """
+
         forecasts = self.historical_forecasts(
             series=series,
             past_covariates=past_covariates,
@@ -1033,7 +1034,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             else:
 
                 errors = [
-                    [metric_f(series, f) for metric_f in metric] for f in forecasts[idx]
+                    [metric_f(series, f) for metric_f in metric]
+                    if len(metric) > 1
+                    else metric[0](series, f)
+                    for f in forecasts[idx]
                 ]
 
                 if reduction is None:
