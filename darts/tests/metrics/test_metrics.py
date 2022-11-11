@@ -60,10 +60,16 @@ class MetricsTestCase(DartsBaseTestClass):
             metrics.smape(self.series1, self.series1)
 
         with self.assertRaises(ValueError):
+            metrics.nd(self.series1, self.series1)
+
+        with self.assertRaises(ValueError):
             metrics.mape(self.series12, self.series12)
 
         with self.assertRaises(ValueError):
             metrics.smape(self.series12, self.series12)
+
+        with self.assertRaises(ValueError):
+            metrics.nd(self.series12, self.series12)
 
         with self.assertRaises(ValueError):
             metrics.ope(
