@@ -16,7 +16,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Optional, Sequence, Tuple, Union
 
 import numpy as np
-from scipy.stats import wasserstein_distance
+from scipy.stats import gamma, wasserstein_distance
 from sklearn.cluster import KMeans
 from sklearn.metrics import average_precision_score, roc_auc_score
 from sklearn.mixture import GaussianMixture
@@ -1457,9 +1457,7 @@ class Norm(NonFittableAnomalyScorer):
 
 
 class NLLScorer(NonFittableAnomalyScorer):
-    """Parent class for all LikelihoodScorer
-    (GaussianLikelihoodScorer, ExponentialLikelihoodScorer)
-    """
+    """Parent class for all LikelihoodScorer"""
 
     def __init__(self, window) -> None:
         super().__init__(window=window)
@@ -1469,7 +1467,23 @@ class NLLScorer(NonFittableAnomalyScorer):
         series_1: TimeSeries,
         series_2: TimeSeries,
     ) -> TimeSeries:
+        """For each timestamp of the inputs:
+            - the parameters of the considered distribution are fitted on the samples of the probabilistic time series
+            - the negative log-likelihood of the determinisitc time series values are computed
 
+        If the series are multivariate, the score will be computed on each width independently.
+
+        Parameters
+        ----------
+        series_1
+            A probabilistic time series (number of samples per timestamp must be higher than 1)
+        series_2:
+            A determinisict time series (number of samples per timestamp must be equal to 1)
+
+        Returns
+        -------
+        TimeSeries
+        """
         np_series_1 = series_1.all_values(copy=False)
         np_series_2 = series_2.all_values(copy=False)
 
@@ -1495,10 +1509,12 @@ class NLLScorer(NonFittableAnomalyScorer):
         the input time series by the mean of the values contained in the window (past self.window
         and itself points).
 
+        A series of length n will be transformed into a series of length n-self.window.
+
         Parameters
         ----------
-        series_1
-            time series
+        series
+            time series to adjust
 
         Returns
         -------
@@ -1520,7 +1536,7 @@ class NLLScorer(NonFittableAnomalyScorer):
         return True
 
     @abstractmethod
-    def _score_core_likelihood(self, input_1: Any, input_2: Any) -> Any:
+    def _score_core_NLlikelihood(self, input_1: Any, input_2: Any) -> Any:
         """For each timestamp, the corresponding distribution is fitted on the probabilistic time-series
         input_1, and returns the negative log-likelihood of the deterministic time-series input_2
         given the distribution.
@@ -1541,7 +1557,7 @@ class GaussianNLLScorer(NLLScorer):
     def __str__(self):
         return "GaussianNLLScorer"
 
-    def _score_core_likelihood(
+    def _score_core_NLlikelihood(
         self,
         probabilistic_estimations: np.ndarray,
         deterministic_values: np.ndarray,
@@ -1571,7 +1587,7 @@ class ExponentialNLLScorer(NLLScorer):
     def __str__(self):
         return "ExponentialNLLScorer"
 
-    def _score_core_likelihood(
+    def _score_core_NLlikelihood(
         self,
         probabilistic_estimations: np.ndarray,
         deterministic_values: np.ndarray,
@@ -1596,7 +1612,7 @@ class PoissonNLLScorer(NLLScorer):
     def __str__(self):
         return "PoissonNLLScorer"
 
-    def _score_core_likelihood(
+    def _score_core_NLlikelihood(
         self,
         probabilistic_estimations: np.ndarray,
         deterministic_values: np.ndarray,
@@ -1623,7 +1639,7 @@ class LaplaceNLLScorer(NLLScorer):
     def __str__(self):
         return "LaplaceNLLScorer"
 
-    def _score_core_likelihood(
+    def _score_core_NLlikelihood(
         self,
         probabilistic_estimations: np.ndarray,
         deterministic_values: np.ndarray,
@@ -1638,5 +1654,72 @@ class LaplaceNLLScorer(NLLScorer):
                     -(np.abs(x2 - np.median(x1)) / np.abs(x1 - np.median(x1)).mean())
                 )
             )
+            for (x1, x2) in zip(probabilistic_estimations, deterministic_values)
+        ]
+
+
+class CauchyNLLScorer(NLLScorer):
+    """Cauchy negative log-likelihood Scorer
+
+    For computational reasons, we opted for the simple method to estimate the parameters:
+        - location parameter (x_0): median of the samples
+        - scale parameter (gamma): half the sample interquartile range (Q3-Q1)/2
+
+    Source of PDF function and parameters estimation:
+    https://en.wikipedia.org/wiki/Cauchy_distribution
+    """
+
+    def __init__(self, window: Optional[int] = None) -> None:
+        super().__init__(window=window)
+
+    def __str__(self):
+        return "CauchyNLLScorer"
+
+    def _score_core_NLlikelihood(
+        self,
+        probabilistic_estimations: np.ndarray,
+        deterministic_values: np.ndarray,
+    ) -> np.ndarray:
+
+        # TODO: raise error when gamma is equal to 0 -> interquartile is equal to 0
+
+        return [
+            -np.log(
+                (2 / (np.pi * np.subtract(*np.percentile(x1, [75, 25]))))
+                * (
+                    (np.subtract(*np.percentile(x1, [75, 25])) / 2) ** 2
+                    / (
+                        ((x2 - np.median(x1)) ** 2)
+                        + ((np.subtract(*np.percentile(x1, [75, 25])) / 2) ** 2)
+                    )
+                )
+            )
+            for (x1, x2) in zip(probabilistic_estimations, deterministic_values)
+        ]
+
+
+class GammaNLLScorer(NLLScorer):
+    """Gamma negative log-likelihood Scorer
+
+    Wrapped around the gamma scipy.stats functon.
+    Source code: <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gamma.html>.
+    """
+
+    def __init__(self, window: Optional[int] = None) -> None:
+        super().__init__(window=window)
+
+    def __str__(self):
+        return "GammaNLLScorer"
+
+    def _score_core_NLlikelihood(
+        self,
+        probabilistic_estimations: np.ndarray,
+        deterministic_values: np.ndarray,
+    ) -> np.ndarray:
+
+        # TODO: takes a very long time to compute, understand why
+
+        return [
+            -gamma.logpdf(x2, *gamma.fit(x1))
             for (x1, x2) in zip(probabilistic_estimations, deterministic_values)
         ]
