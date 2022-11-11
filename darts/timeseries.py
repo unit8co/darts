@@ -1594,7 +1594,7 @@ class TimeSeries:
         pandas.DataFrame
             The Pandas DataFrame containing the quantiles for each component.
         """
-        if fast_mode == False:
+        if fast_mode == True:
             return pd.concat([self.quantile_timeseries_to_df(quantile) for quantile in quantiles], axis=1)
         else:
             return pd.concat([self.quantile_df(quantile) for quantile in quantiles], axis=1)
