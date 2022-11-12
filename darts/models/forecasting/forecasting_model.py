@@ -503,6 +503,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
                 num_samples=num_samples,
+                verbose=verbose,
             )
 
             if last_points_only:
@@ -1256,6 +1257,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         past_covariates: Optional[TimeSeries],
         future_covariates: Optional[TimeSeries],
         num_samples: int,
+        verbose: bool = None,
     ) -> TimeSeries:
         return self.predict(
             n,
@@ -1263,6 +1265,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             num_samples=num_samples,
+            verbose=verbose,
         )
 
     def _fit_wrapper(

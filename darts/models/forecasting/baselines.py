@@ -78,7 +78,7 @@ class NaiveSeasonal(LocalForecastingModel):
         self.last_k_vals = series.univariate_values()[-self.K :]
         return self
 
-    def predict(self, n: int, num_samples: int = 1):
+    def predict(self, n: int, num_samples: int = 1, verbose: bool = None):
         super().predict(n, num_samples)
         forecast = np.array([self.last_k_vals[i % self.K] for i in range(n)])
         return self._build_forecast_series(forecast)
