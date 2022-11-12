@@ -3,15 +3,17 @@ N-Linear
 ------
 """
 
+from typing import Optional, Tuple
+
 import torch
 import torch.nn as nn
 
 from darts.logging import raise_if
-from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
-from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
+from darts.models.forecasting.pl_forecasting_module import PLMixedCovariatesModule
+from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 
 
-class _NLinearModule(PLPastCovariatesModule):
+class _NLinearModule(PLMixedCovariatesModule):
     """
     NLinear module
     """
@@ -20,6 +22,8 @@ class _NLinearModule(PLPastCovariatesModule):
         self,
         input_dim,
         output_dim,
+        future_cov_dim,
+        static_cov_dim,
         nr_params,
         shared_weights,
         const_init,
@@ -34,6 +38,10 @@ class _NLinearModule(PLPastCovariatesModule):
             The number of input components (target + optional covariate)
         output_dim
             Number of output components in the target
+        future_cov_dim
+            Number of components in the future covariates
+        static_cov_dim
+            Dimensionality of the static covariates
         nr_params
             The number of parameters of the likelihood (or 1 if no likelihood is used).
         shared_weights
@@ -61,6 +69,8 @@ class _NLinearModule(PLPastCovariatesModule):
         super().__init__(**kwargs)
         self.input_dim = input_dim
         self.output_dim = output_dim
+        self.future_cov_dim = future_cov_dim
+        self.static_cov_dim = static_cov_dim
         self.nr_params = nr_params
         self.shared_weights = shared_weights
         self.const_init = const_init
@@ -81,10 +91,32 @@ class _NLinearModule(PLPastCovariatesModule):
             layer_in_dim = self.input_chunk_length * self.input_dim
             layer_out_dim = self.output_chunk_length * self.output_dim * self.nr_params
 
+            # future covariates input layer size:
+            layer_in_dim_fut_cov = self.output_chunk_length * self.future_cov_dim
+
+            # for static cov, we take the number of components of the target, times static cov dim
+            layer_in_dim_static_cov = self.output_dim * self.static_cov_dim
+
         self.layer = _create_linear_layer(layer_in_dim, layer_out_dim)
 
-    def forward(self, x_in: tuple):
-        x, _ = x_in  # x: (batch, in_len, in_dim)
+        if self.future_cov_dim != 0:
+            self.linear_fut_cov = _create_linear_layer(
+                layer_in_dim_fut_cov, layer_out_dim
+            )
+        if self.static_cov_dim != 0:
+            self.linear_static_cov = _create_linear_layer(
+                layer_in_dim_static_cov, layer_out_dim
+            )
+
+    def forward(
+        self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
+    ):
+        """
+        x_in
+            comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
+            is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
+        """
+        x, x_future, x_static = x_in  # x: (batch, in_len, in_dim)
         batch, _, _ = x.shape
 
         if self.shared_weights:
@@ -119,12 +151,24 @@ class _NLinearModule(PLPastCovariatesModule):
             if self.normalize:
                 x = x + seq_last  # Note: works only when nr_params == 1
 
+            if self.future_cov_dim != 0:
+                fut_cov_output = self.linear_fut_cov(x_future.view(batch, -1))
+                x = x + fut_cov_output.view(
+                    batch, self.output_chunk_length, self.output_dim * self.nr_params
+                )
+
+            if self.static_cov_dim != 0:
+                static_cov_output = self.linear_static_cov(x_static.reshape(batch, -1))
+                x = x + static_cov_output.view(
+                    batch, self.output_chunk_length, self.output_dim * self.nr_params
+                )
+
             x = x.view(batch, self.output_chunk_length, self.output_dim, self.nr_params)
 
         return x
 
 
-class NLinearModel(PastCovariatesTorchModel):
+class NLinearModel(MixedCovariatesTorchModel):
     def __init__(
         self,
         input_chunk_length: int,
@@ -136,10 +180,8 @@ class NLinearModel(PastCovariatesTorchModel):
     ):
         """An implementation of the NLinear model, as presented in [1]_.
 
-        This implementation is improved by allowing the optional use of past covariates.
-
         This implementation is improved by allowing the optional use of past covariates,
-        and by making the model optionally probabilistic.
+        future covariates and static covariates, and by making the model optionally probabilistic.
 
         Parameters
         ----------
@@ -316,16 +358,36 @@ class NLinearModel(PastCovariatesTorchModel):
         )
 
     def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
-        # samples are made of (past_target, past_covariates, future_target)
-        input_dim = train_sample[0].shape[1] + (
-            train_sample[1].shape[1] if train_sample[1] is not None else 0
+        # samples are made of
+        # (past_target, past_covariates, historic_future_covariates,
+        #  future_covariates, static_covariates, future_target)
+
+        raise_if(
+            self.shared_weights
+            and (train_sample[1] is not None or train_sample[2] is not None),
+            "Covariates have been provided, but the model has been built with shared_weights=True."
+            + "Please set shared_weights=False to use covariates.",
         )
+
+        input_dim = train_sample[0].shape[1] + sum(
+            # add past covariates dim and historic future covariates dim, if present
+            train_sample[i].shape[1] if train_sample[i] is not None else 0
+            for i in (1, 2)
+        )
+        future_cov_dim = train_sample[3].shape[1] if train_sample[3] is not None else 0
+
+        # dimension is (component, static_dim), we extract static_dim
+        static_cov_dim = train_sample[4].shape[1] if train_sample[4] is not None else 0
+
         output_dim = train_sample[-1].shape[1]
+
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
         return _NLinearModule(
             input_dim=input_dim,
             output_dim=output_dim,
+            future_cov_dim=future_cov_dim,
+            static_cov_dim=static_cov_dim,
             nr_params=nr_params,
             shared_weights=self.shared_weights,
             const_init=self.const_init,
@@ -335,4 +397,4 @@ class NLinearModel(PastCovariatesTorchModel):
 
     @staticmethod
     def _supports_static_covariates() -> bool:
-        return False
+        return True

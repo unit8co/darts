@@ -78,7 +78,7 @@ class _DLinearModule(PLMixedCovariatesModule):
         output_dim
             Number of output components in the target
         future_cov_dim
-            Number of output components in the future covariates
+            Number of components in the future covariates
         static_cov_dim
             Dimensionality of the static covariates
         nr_params
@@ -154,18 +154,10 @@ class _DLinearModule(PLMixedCovariatesModule):
     def forward(
         self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
     ):
-        """model forward pass.
-
-        Parameters
-        ----------
+        """
         x_in
             comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
             is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
-
-        Returns
-        -------
-        torch.Tensor
-            the output tensor
         """
 
         x, x_future, x_static = x_in  # x: (batch, in_len, in_dim)
@@ -236,7 +228,7 @@ class DLinearModel(MixedCovariatesTorchModel):
         """An implementation of the DLinear model, as presented in [1]_.
 
         This implementation is improved by allowing the optional use of past covariates,
-        and by making the model optionally probabilistic.
+        future covariates and static covariates, and by making the model optionally probabilistic.
 
         Parameters
         ----------
