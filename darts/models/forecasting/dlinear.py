@@ -212,7 +212,7 @@ class _DLinearModule(PLMixedCovariatesModule):
                 )
 
             if self.static_cov_dim != 0:
-                static_cov_output = self.linear_static_cov(x_static.view(batch, -1))
+                static_cov_output = self.linear_static_cov(x_static.reshape(batch, -1))
                 x = x + static_cov_output.view(
                     batch, self.output_chunk_length, self.output_dim * self.nr_params
                 )
@@ -442,4 +442,4 @@ class DLinearModel(MixedCovariatesTorchModel):
 
     @staticmethod
     def _supports_static_covariates() -> bool:
-        return False
+        return True
