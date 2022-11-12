@@ -230,8 +230,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         past_covariates: Optional[TimeSeries],
         future_covariates: Optional[TimeSeries],
         num_samples: int,
+        verbose: bool = None,
     ) -> TimeSeries:
-        return self.predict(n, num_samples=num_samples)
+        return self.predict(n, num_samples=num_samples, verbose=verbose)
 
     @property
     def min_train_series_length(self) -> int:
@@ -866,6 +867,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     metric=metric,
                     reduction=reduction,
                     last_points_only=last_points_only,
+                    verbose=verbose,
                 )
             else:  # split mode
                 model._fit_wrapper(series, past_covariates, future_covariates)
@@ -875,6 +877,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     past_covariates,
                     future_covariates,
                     num_samples=1,
+                    verbose=verbose,
                 )
                 error = metric(val_series, pred)
 
@@ -1570,9 +1573,13 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         past_covariates: Optional[TimeSeries],
         future_covariates: Optional[TimeSeries],
         num_samples: int,
+        verbose: bool = None,
     ) -> TimeSeries:
         return self.predict(
-            n, future_covariates=future_covariates, num_samples=num_samples
+            n,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            verbose=verbose,
         )
 
 
@@ -1703,12 +1710,14 @@ class TransferableFutureCovariatesLocalForecastingModel(
         past_covariates: Optional[TimeSeries],
         future_covariates: Optional[TimeSeries],
         num_samples: int,
+        verbose: bool = None,
     ) -> TimeSeries:
         return self.predict(
             n=n,
             series=series,
             future_covariates=future_covariates,
             num_samples=num_samples,
+            verbose=verbose,
         )
 
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
