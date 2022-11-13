@@ -22,13 +22,13 @@ try:
 
     from darts.models import (
         BlockRNNModel,
+        DLinearModel,
         NBEATSModel,
+        NLinearModel,
         RNNModel,
         TCNModel,
         TFTModel,
         TransformerModel,
-        NLinearModel,
-        DLinearModel,
     )
     from darts.models.forecasting.torch_forecasting_model import (
         DualCovariatesTorchModel,
