@@ -97,6 +97,37 @@ if TORCH_AVAILABLE:
                 model.fit(ts)
                 model.predict(n=2)
 
+        def test_shared_weights(self):
+            ts = tg.constant_timeseries(length=50, value=10).stack(
+                tg.gaussian_timeseries(length=50)
+            )
+
+            for model_cls in [DLinearModel, NLinearModel]:
+                # Test basic fit and predict
+                model_shared = model_cls(
+                    input_chunk_length=5,
+                    output_chunk_length=1,
+                    n_epochs=2,
+                    const_init=False,
+                    shared_weights=True,
+                    random_state=42,
+                )
+                model_not_shared = model_cls(
+                    input_chunk_length=5,
+                    output_chunk_length=1,
+                    n_epochs=2,
+                    const_init=False,
+                    shared_weights=False,
+                    random_state=42,
+                )
+                model_shared.fit(ts)
+                model_not_shared.fit(ts)
+                pred_shared = model_shared.predict(n=2)
+                pred_not_shared = model_not_shared.predict(n=2)
+                self.assertTrue(
+                    np.any(np.not_equal(pred_shared.values(), pred_not_shared.values()))
+                )
+
         def test_multivariate_and_covariates(self):
             # test on multiple multivariate series with future and static covariates
 
