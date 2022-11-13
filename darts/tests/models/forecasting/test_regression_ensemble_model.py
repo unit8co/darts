@@ -104,7 +104,6 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             regression_train_n_points=10,
         )
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_accepts_different_regression_models(self):
         regr1 = LinearRegression()
         regr2 = RandomForestRegressor()
@@ -120,7 +119,6 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             model.fit(series=self.combined)
             model.predict(10)
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_accepts_one_model(self):
         regr1 = LinearRegression()
         regr2 = RandomForest(lags_future_covariates=[0])
@@ -134,7 +132,6 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             model.fit(series=self.combined)
             model.predict(10)
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_train_n_points(self):
         regr = LinearRegressionModel(lags_future_covariates=[0])
 
@@ -249,7 +246,6 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         )
         self.assertTrue(isinstance(preds, list) and len(preds) == 1)
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def helper_test_models_accuracy(
         self, model_instance, n, series, past_covariates, min_rmse
     ):
@@ -268,7 +264,6 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             f"Model was not able to denoise data. A rmse score of {current_rmse} was recorded.",
         )
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def denoising_input(self):
         np.random.seed(self.RANDOM_SEED)
 
