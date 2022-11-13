@@ -106,6 +106,7 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         historic_future_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        verbose: bool = None,
     ) -> TimeSeries:
 
         if num_samples > 1 and self.trend:
