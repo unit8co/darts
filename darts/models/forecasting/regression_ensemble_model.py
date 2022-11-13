@@ -91,7 +91,8 @@ class RegressionEnsembleModel(EnsembleModel):
         )
 
         # spare train_n_points points to serve as regression target
-        if self.is_single_series:
+        is_single_series = isinstance(series, TimeSeries)
+        if is_single_series:
             train_n_points_too_big = len(self.training_series) <= self.train_n_points
         else:
             train_n_points_too_big = any(
@@ -105,7 +106,7 @@ class RegressionEnsembleModel(EnsembleModel):
             logger,
         )
 
-        if self.is_single_series:
+        if is_single_series:
             forecast_training = self.training_series[: -self.train_n_points]
             regression_target = self.training_series[-self.train_n_points :]
         else:
