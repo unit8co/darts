@@ -1773,6 +1773,55 @@ class TimeSeriesFromDataFrameTestCase(DartsBaseTestClass):
         self.assertEqual(ts.time_index.dtype, "datetime64[ns]")
         self.assertEqual(ts.time_index.name, "Time")
 
+    def test_time_col_with_tz(self):
+        # numpy and xarray don't support "timezone aware" pd.DatetimeIndex
+        # the BUGFIX removes timezone information without conversion
+
+        time_range_MS = pd.date_range(
+            start="20180501", end="20200301", freq="MS", tz="CET"
+        )
+        values = np.random.uniform(low=-10, high=10, size=len(time_range_MS))
+        # pd.DataFrame loses the tz information unless it is contained in its index
+        # (other columns are silently converted to UTC, with tz attribute set to None)
+        df = pd.DataFrame(data=values, index=time_range_MS)
+        ts = TimeSeries.from_dataframe(df=df)
+        self.assertEqual(list(ts.time_index), list(time_range_MS.tz_localize(None)))
+        self.assertEqual(list(ts.time_index.tz_localize("CET")), list(time_range_MS))
+        self.assertEqual(ts.time_index.tz, None)
+
+        serie = pd.Series(data=values, index=time_range_MS)
+        ts = TimeSeries.from_series(pd_series=serie)
+        self.assertEqual(list(ts.time_index), list(time_range_MS.tz_localize(None)))
+        self.assertEqual(list(ts.time_index.tz_localize("CET")), list(time_range_MS))
+        self.assertEqual(ts.time_index.tz, None)
+
+        ts = TimeSeries.from_times_and_values(times=time_range_MS, values=values)
+        self.assertEqual(list(ts.time_index), list(time_range_MS.tz_localize(None)))
+        self.assertEqual(list(ts.time_index.tz_localize("CET")), list(time_range_MS))
+        self.assertEqual(ts.time_index.tz, None)
+
+        time_range_H = pd.date_range(
+            start="20200518", end="20200521", freq="H", tz="CET"
+        )
+        values = np.random.uniform(low=-10, high=10, size=len(time_range_H))
+
+        df = pd.DataFrame(data=values, index=time_range_H)
+        ts = TimeSeries.from_dataframe(df=df)
+        self.assertEqual(list(ts.time_index), list(time_range_H.tz_localize(None)))
+        self.assertEqual(list(ts.time_index.tz_localize("CET")), list(time_range_H))
+        self.assertEqual(ts.time_index.tz, None)
+
+        serie = pd.Series(data=values, index=time_range_H)
+        ts = TimeSeries.from_series(pd_series=serie)
+        self.assertEqual(list(ts.time_index), list(time_range_H.tz_localize(None)))
+        self.assertEqual(list(ts.time_index.tz_localize("CET")), list(time_range_H))
+        self.assertEqual(ts.time_index.tz, None)
+
+        ts = TimeSeries.from_times_and_values(times=time_range_H, values=values)
+        self.assertEqual(list(ts.time_index), list(time_range_H.tz_localize(None)))
+        self.assertEqual(list(ts.time_index.tz_localize("CET")), list(time_range_H))
+        self.assertEqual(ts.time_index.tz, None)
+
     def test_time_col_convert_garbage(self):
         expected = [
             "2312312asdfdw",
