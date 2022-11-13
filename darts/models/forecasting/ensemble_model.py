@@ -165,11 +165,7 @@ class EnsembleModel(GlobalForecastingModel):
             future_covariates=future_covariates,
             num_samples=num_samples,
         )
-
-        if self.is_single_series:
-            return self.ensemble(predictions)
-        else:
-            return self.ensemble(predictions, series)
+        return self.ensemble(predictions, series=series)
 
     @abstractmethod
     def ensemble(
