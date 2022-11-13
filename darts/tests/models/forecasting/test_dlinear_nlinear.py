@@ -1,9 +1,13 @@
 import shutil
 import tempfile
+from itertools import product
 
 import numpy as np
+import pandas as pd
 
+from darts import concatenate
 from darts.logging import get_logger
+from darts.metrics import rmse
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 
@@ -12,9 +16,9 @@ logger = get_logger(__name__)
 try:
     from darts.models.forecasting.dlinear import DLinearModel
     from darts.models.forecasting.nlinear import NLinearModel
+    from darts.utils.likelihood_models import GaussianLikelihood
 
     TORCH_AVAILABLE = True
-    from darts.utils.likelihood_models import GaussianLikelihood
 
 except ImportError:
     logger.warning("Torch not available. Dlinear and NLinear tests will be skipped.")
@@ -23,6 +27,8 @@ except ImportError:
 if TORCH_AVAILABLE:
 
     class DlinearNlinearModelsTestCase(DartsBaseTestClass):
+        np.random.seed(42)
+
         def setUp(self):
             self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
 
@@ -56,6 +62,7 @@ if TORCH_AVAILABLE:
                     input_chunk_length=1,
                     output_chunk_length=1,
                     n_epochs=10,
+                    random_state=42,
                 )
                 model.fit(large_ts[:98])
                 pred = model.predict(n=2).values()[0]
@@ -65,6 +72,7 @@ if TORCH_AVAILABLE:
                     input_chunk_length=1,
                     output_chunk_length=1,
                     n_epochs=10,
+                    random_state=42,
                 )
                 model2.fit(small_ts[:98])
                 pred2 = model2.predict(n=2).values()[0]
@@ -89,47 +97,116 @@ if TORCH_AVAILABLE:
                 model.fit(ts)
                 model.predict(n=2)
 
-        def test_multivariate(self):
-            # TODO: this test will not pass, the accuracy is too low
-            # testing a 2-variate linear ts, first one from 0 to 1, second one from 0 to 0.5, length 100
-            series_multivariate = tg.linear_timeseries(length=100).stack(
-                tg.linear_timeseries(length=100, start_value=0, end_value=0.5)
-            )
+        def test_multivariate_and_covariates(self):
+            # test on multiple multivariate series with future and static covariates
 
-            for model_cls in [DLinearModel, NLinearModel]:
-                model = model_cls(
-                    input_chunk_length=3,
-                    output_chunk_length=1,
-                    n_epochs=20,
-                    random_state=42,
-                )
-
-                model.fit(series_multivariate)
-                res = model.predict(n=2).values()
-
-                # the theoretical result should be [[1.01, 1.02], [0.505, 0.51]].
-                # We just test if the given result is not too far on average.
-                self.assertTrue(
-                    abs(
-                        np.average(res - np.array([[1.01, 1.02], [0.505, 0.51]])) < 0.03
+            def _create_multiv_series(f1, f2, n1, n2, nf1, nf2):
+                bases = [
+                    tg.sine_timeseries(
+                        length=400, value_frequency=f, value_amplitude=1.0
                     )
+                    for f in (f1, f2)
+                ]
+                noises = [tg.gaussian_timeseries(length=400, std=n) for n in (n1, n2)]
+                noise_modulators = [
+                    tg.sine_timeseries(length=400, value_frequency=nf)
+                    + tg.constant_timeseries(length=400, value=1) / 2
+                    for nf in (nf1, nf2)
+                ]
+                noises = [noises[i] * noise_modulators[i] for i in range(len(noises))]
+
+                target = concatenate(
+                    [bases[i] + noises[i] for i in range(len(bases))], axis="component"
                 )
 
-                # Test Covariates
-                series_covariates = tg.linear_timeseries(length=100).stack(
-                    tg.linear_timeseries(length=100, start_value=0, end_value=0.1)
+                target = target.with_static_covariates(
+                    pd.DataFrame([[f1, n1, nf1], [f2, n2, nf2]])
                 )
-                model = model_cls(
-                    input_chunk_length=3,
-                    output_chunk_length=4,
-                    n_epochs=5,
+
+                return target, concatenate(noise_modulators, axis="component")
+
+            def _eval_model(
+                train1,
+                train2,
+                val1,
+                val2,
+                fut_cov1,
+                fut_cov2,
+                cls=DLinearModel,
+                lkl=None,
+            ):
+                model = cls(
+                    input_chunk_length=50,
+                    output_chunk_length=10,
+                    shared_weights=False,
+                    const_init=True,
+                    likelihood=lkl,
                     random_state=42,
                 )
-                model.fit(series_multivariate, past_covariates=series_covariates)
 
-                res = model.predict(
-                    n=3, series=series_multivariate, past_covariates=series_covariates
-                ).values()
+                model.fit(
+                    [train1, train2],
+                    future_covariates=[fut_cov1, fut_cov2]
+                    if fut_cov1 is not None
+                    else None,
+                    epochs=10,
+                )
 
-                self.assertEqual(len(res), 3)
-                self.assertTrue(abs(np.average(res)) < 5)
+                pred1, pred2 = model.predict(
+                    series=[train1, train2],
+                    future_covariates=[fut_cov1, fut_cov2]
+                    if fut_cov1 is not None
+                    else None,
+                    n=len(val1),
+                    num_samples=500 if lkl is not None else 1,
+                )
+
+                return rmse(val1, pred1), rmse(val2, pred2)
+
+            series1, fut_cov1 = _create_multiv_series(0.05, 0.07, 0.2, 0.4, 0.02, 0.03)
+            series2, fut_cov2 = _create_multiv_series(0.04, 0.03, 0.4, 0.1, 0.02, 0.04)
+
+            train1, val1 = series1.split_after(0.7)
+            train2, val2 = series2.split_after(0.7)
+
+            for model, lkl in product(
+                [DLinearModel, NLinearModel], [None, GaussianLikelihood()]
+            ):
+
+                e1, e2 = _eval_model(
+                    train1, train2, val1, val2, fut_cov1, fut_cov2, cls=model, lkl=lkl
+                )
+                self.assertLessEqual(e1, 0.30)
+                self.assertLessEqual(e2, 0.27)
+
+                e1, e2 = _eval_model(
+                    train1.with_static_covariates(None),
+                    train2.with_static_covariates(None),
+                    val1,
+                    val2,
+                    fut_cov1,
+                    fut_cov2,
+                    cls=model,
+                    lkl=lkl,
+                )
+                self.assertLessEqual(e1, 0.31)
+                self.assertLessEqual(e2, 0.28)
+
+                e1, e2 = _eval_model(
+                    train1, train2, val1, val2, None, None, cls=model, lkl=lkl
+                )
+                self.assertLessEqual(e1, 0.39)
+                self.assertLessEqual(e2, 0.33)
+
+                e1, e2 = _eval_model(
+                    train1.with_static_covariates(None),
+                    train2.with_static_covariates(None),
+                    val1,
+                    val2,
+                    None,
+                    None,
+                    cls=model,
+                    lkl=lkl,
+                )
+                self.assertLessEqual(e1, 0.39)
+                self.assertLessEqual(e2, 0.32)
