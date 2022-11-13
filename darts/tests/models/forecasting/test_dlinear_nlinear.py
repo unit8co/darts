@@ -207,7 +207,7 @@ if TORCH_AVAILABLE:
                 e1, e2 = _eval_model(
                     train1, train2, val1, val2, fut_cov1, fut_cov2, cls=model, lkl=lkl
                 )
-                self.assertLessEqual(e1, 0.30)
+                self.assertLessEqual(e1, 0.31)
                 self.assertLessEqual(e2, 0.27)
 
                 e1, e2 = _eval_model(
