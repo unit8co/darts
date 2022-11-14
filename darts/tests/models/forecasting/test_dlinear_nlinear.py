@@ -220,14 +220,14 @@ if TORCH_AVAILABLE:
                     cls=model,
                     lkl=lkl,
                 )
-                self.assertLessEqual(e1, 0.31)
+                self.assertLessEqual(e1, 0.32)
                 self.assertLessEqual(e2, 0.28)
 
                 e1, e2 = _eval_model(
                     train1, train2, val1, val2, None, None, cls=model, lkl=lkl
                 )
-                self.assertLessEqual(e1, 0.39)
-                self.assertLessEqual(e2, 0.33)
+                self.assertLessEqual(e1, 0.40)
+                self.assertLessEqual(e2, 0.34)
 
                 e1, e2 = _eval_model(
                     train1.with_static_covariates(None),
@@ -239,5 +239,5 @@ if TORCH_AVAILABLE:
                     cls=model,
                     lkl=lkl,
                 )
-                self.assertLessEqual(e1, 0.39)
-                self.assertLessEqual(e2, 0.32)
+                self.assertLessEqual(e1, 0.40)
+                self.assertLessEqual(e2, 0.34)
