@@ -86,7 +86,6 @@ class TimeSeries:
             "TimeSeries.from_times_and_values(), etc...).",
             logger,
         )
-        raise_if_not(xa.size > 0, "The time series array must not be empty.", logger)
         raise_if_not(
             len(xa.shape) == 3,
             f"TimeSeries require DataArray of dimensionality 3 ({DIMS}).",
