@@ -1517,7 +1517,7 @@ class TimeSeries:
         )
 
         # component names
-        cnames = [f"{comp}_quantiles" for comp in self.components]
+        cnames = [f"{comp}_{quantile}" for comp in self.components]
 
         new_data = np.quantile(
             self._xa.values,
@@ -1535,43 +1535,8 @@ class TimeSeries:
         )
 
         return self.__class__(new_xa)
-        
-    def quantile_timeseries_to_df(self, quantile=0.5, **kwargs) -> pd.DataFrame:
-        """
-        Wrap of method quantile_timeseries, for speed up method quantiles_df
-        
-        Returns
-        -------
-        pd.DataFrame
-            The pd.DataFrame containing the desired quantile for component.
-        """
-        self._assert_stochastic()
-        raise_if_not(
-            0 <= quantile <= 1,
-            "The quantile values must be expressed as fraction (between 0 and 1 inclusive).",
-            logger,
-        )
 
-        # component names
-        cnames = [f"{comp}_{quantile}" for comp in self.components]
-
-        new_data = np.quantile(
-            self._xa.values,
-            q=quantile,
-            axis=2,
-            overwrite_input=False,
-            keepdims=True,
-            **kwargs,
-        )
-        new_xa = xr.DataArray(
-            new_data,
-            dims=self._xa.dims,
-            coords={self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index(cnames)},
-            attrs=self._xa.attrs,
-        )
-        return self.__class__(new_xa).pd_dataframe()
-        
-    def quantiles_df(self, quantiles: Tuple[float] = (0.1, 0.5, 0.9), fast_mode: [bool] = False) -> pd.DataFrame:
+    def quantiles_df(self, quantiles: Tuple[float] = (0.1, 0.5, 0.9)) -> pd.DataFrame:
         """
         Return a Pandas DataFrame containing the desired quantiles of each component (over the samples).
 
@@ -1594,10 +1559,13 @@ class TimeSeries:
         pandas.DataFrame
             The Pandas DataFrame containing the quantiles for each component.
         """
-        if fast_mode == True:
-            return pd.concat([self.quantile_timeseries_to_df(quantile) for quantile in quantiles], axis=1)
-        else:
-            return pd.concat([self.quantile_df(quantile) for quantile in quantiles], axis=1)
+        return pd.concat(
+            [
+                self.quantile_timeseries(quantile).pd_dataframe()
+                for quantile in quantiles
+            ],
+            axis=1,
+        )
 
     def astype(self, dtype: Union[str, np.dtype]) -> "TimeSeries":
         """
@@ -4541,4 +4509,3 @@ def concatenate(
         )
 
     return TimeSeries.from_xarray(da_concat, fill_missing_dates=False)
-    
