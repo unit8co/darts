@@ -8,7 +8,6 @@ Common functions used by anomaly_model.py, scorers.py, aggregators.py and detect
 
 from typing import Sequence, Tuple, Union
 
-import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import (
     accuracy_score,
@@ -389,82 +388,3 @@ def _convert_to_list(
         )
 
     return series_1, series_2
-
-
-def show(
-    self,
-    series: TimeSeries,
-    model_output: TimeSeries = None,
-    anomaly_scorers: TimeSeries = None,
-    anomalies: TimeSeries = None,
-    save_png=None,
-    show_ROC_AUC=False,
-):
-
-    if anomalies is None:
-        nbr_plots = len(self.scorer_dict)
-    else:
-        nbr_plots = len(self.scorer_dict) + 1
-
-    fig, axs = plt.subplots(
-        nbr_plots + 1,
-        figsize=(8, 4 + 2 * nbr_plots),
-        sharex=True,
-        gridspec_kw={"height_ratios": [2] + [1] * nbr_plots},
-    )
-    fig.suptitle(f"Results for {self.model.__class__.__name__}", y=0.94)
-    fig.subplots_adjust(hspace=0.3)
-
-    series.pd_series().plot(
-        ax=axs[0], label="true values series", color="red", linewidth=0.5
-    )
-    if model_output is not None:
-        model_output.pd_series().plot(
-            ax=axs[0], label="model output", color="blue", linewidth=0.5
-        )
-    axs[0].set_title("")
-    axs[0].set_xlabel("")
-    axs[0].legend(loc="upper center", bbox_to_anchor=(0.5, 1.1), ncol=2)
-
-    for index_ax, key in enumerate(self.scorer_dict):
-        for index in self.scorer_dict[key]:
-            if show_ROC_AUC is True:
-                label = (
-                    self.label_scorer[index]
-                    + " ("
-                    + str(
-                        round(
-                            self.scorers[index].score(
-                                series=anomaly_scorers[index],
-                                actual_anomalies=self.scorers[
-                                    index
-                                ]._window_adjustment_anomalies(anomalies),
-                            ),
-                            2,
-                        )
-                    )
-                    + ")"
-                )
-            else:
-                label = self.label_scorer[index]
-            anomaly_scorers[index].pd_series().plot(
-                ax=axs[index_ax + 1], label=label, linewidth=0.5
-            )
-        axs[index_ax + 1].legend(loc="upper center", bbox_to_anchor=(0.5, 1.1), ncol=2)
-        axs[index_ax + 1].set_title(f"Window: {key}", loc="left")
-
-    if anomalies is not None:
-        anomalies.pd_series().plot(
-            ax=axs[len(self.scorer_dict) + 1],
-            label="true anomalies",
-            color="red",
-            linewidth=1,
-        )
-        axs[len(self.scorer_dict) + 1].legend(
-            loc="upper center", bbox_to_anchor=(0.5, 1.2), ncol=2
-        )
-
-    if save_png is not None:
-        plt.savefig(save_png)
-
-    plt.show()
