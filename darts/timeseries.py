@@ -654,7 +654,20 @@ class TimeSeries:
                 "a DatetimeIndex, or with a RangeIndex.",
                 logger,
             )
-            time_index = df.index
+            # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
+            # pandas.DataFrame loses the tz information if it's not its index
+            if isinstance(df.index, pd.DatetimeIndex) and df.index.tz is not None:
+                logger.warning(
+                    "The provided DatetimeIndex was associated with a timezone, which is currently not supported "
+                    "by xarray. To avoid unexpected behaviour, the tz information was removed. Consider calling "
+                    f"`ts.time_index.tz_localize({df.index.tz})` when exporting the results."
+                    "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
+                    "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
+                    "original timezone."
+                )
+                time_index = df.index.tz_localize(None)
+            else:
+                time_index = df.index
 
         if not time_index.name:
             time_index.name = time_col if time_col else DIMS[0]
@@ -831,7 +844,6 @@ class TimeSeries:
         TimeSeries
             A univariate and deterministic TimeSeries constructed from the inputs.
         """
-
         df = pd.DataFrame(pd_series)
         return cls.from_dataframe(
             df,
@@ -923,6 +935,18 @@ class TimeSeries:
             "the `times` argument must be a RangeIndex, or a DateTimeIndex. Use "
             "TimeSeries.from_values() if you want to use an automatic RangeIndex.",
         )
+
+        # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
+        if isinstance(times, pd.DatetimeIndex) and times.tz is not None:
+            logger.warning(
+                "The `times` argument was associated with a timezone, which is currently not supported "
+                "by xarray. To avoid unexpected behaviour, the tz information was removed. Consider calling "
+                f"`ts.time_index.tz_localize({times.tz})` when exporting the results."
+                "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
+                "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
+                "original timezone."
+            )
+            times = times.tz_localize(None)
 
         times_name = DIMS[0] if not times.name else times.name
 

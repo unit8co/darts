@@ -8,7 +8,14 @@ from sklearn.linear_model import LinearRegression
 from darts import TimeSeries
 from darts.logging import get_logger
 from darts.metrics import rmse
-from darts.models import NaiveDrift, NaiveSeasonal
+from darts.models import (
+    LinearRegressionModel,
+    NaiveDrift,
+    NaiveSeasonal,
+    RandomForest,
+    RegressionEnsembleModel,
+    RegressionModel,
+)
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.tests.models.forecasting.test_ensemble_models import _make_ts
 from darts.tests.models.forecasting.test_regression_models import train_test_split
@@ -19,14 +26,7 @@ logger = get_logger(__name__)
 try:
     import torch
 
-    from darts.models import (
-        BlockRNNModel,
-        LinearRegressionModel,
-        RandomForest,
-        RegressionEnsembleModel,
-        RegressionModel,
-        RNNModel,
-    )
+    from darts.models import BlockRNNModel, RNNModel
 
     TORCH_AVAILABLE = True
 except ImportError:
@@ -85,7 +85,25 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             ),
         ]
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    @staticmethod
+    def get_global_ensembe_model(output_chunk_length=5):
+        lags = [-1, -2, -5]
+        return RegressionEnsembleModel(
+            forecasting_models=[
+                LinearRegressionModel(
+                    lags=lags,
+                    lags_past_covariates=lags,
+                    output_chunk_length=output_chunk_length,
+                ),
+                LinearRegressionModel(
+                    lags=lags,
+                    lags_past_covariates=lags,
+                    output_chunk_length=output_chunk_length,
+                ),
+            ],
+            regression_train_n_points=10,
+        )
+
     def test_accepts_different_regression_models(self):
         regr1 = LinearRegression()
         regr2 = RandomForestRegressor()
@@ -101,7 +119,6 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             model.fit(series=self.combined)
             model.predict(10)
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_accepts_one_model(self):
         regr1 = LinearRegression()
         regr2 = RandomForest(lags_future_covariates=[0])
@@ -115,12 +132,11 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             model.fit(series=self.combined)
             model.predict(10)
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_train_n_points(self):
         regr = LinearRegressionModel(lags_future_covariates=[0])
 
         # same values
-        ensemble = RegressionEnsembleModel(self.get_local_models(), 5, regr)
+        _ = RegressionEnsembleModel(self.get_local_models(), 5, regr)
 
         # too big value to perform the split
         ensemble = RegressionEnsembleModel(self.get_local_models(), 100)
@@ -182,7 +198,54 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         ensemble.fit(self.seq1, self.cov1)
         ensemble.predict(10, self.seq2, self.cov2)
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    def test_predict_with_target(self):
+        series_long = self.combined
+        series_short = series_long[:25]
+
+        # train with a single series
+        ensemble_model = self.get_global_ensembe_model()
+        ensemble_model.fit(series_short, past_covariates=series_long)
+        # predict after end of train series
+        preds = ensemble_model.predict(n=5, past_covariates=series_long)
+        self.assertTrue(isinstance(preds, TimeSeries))
+        # predict a new target series
+        preds = ensemble_model.predict(
+            n=5, series=series_long, past_covariates=series_long
+        )
+        self.assertTrue(isinstance(preds, TimeSeries))
+        # predict multiple target series
+        preds = ensemble_model.predict(
+            n=5, series=[series_long] * 2, past_covariates=[series_long] * 2
+        )
+        self.assertTrue(isinstance(preds, list) and len(preds) == 2)
+        # predict single target series in list
+        preds = ensemble_model.predict(
+            n=5, series=[series_long], past_covariates=[series_long]
+        )
+        self.assertTrue(isinstance(preds, list) and len(preds) == 1)
+
+        # train with multiple series
+        ensemble_model = self.get_global_ensembe_model()
+        ensemble_model.fit([series_short] * 2, past_covariates=[series_long] * 2)
+        with self.assertRaises(ValueError):
+            # predict without passing series should raise an error
+            ensemble_model.predict(n=5, past_covariates=series_long)
+        # predict a new target series
+        preds = ensemble_model.predict(
+            n=5, series=series_long, past_covariates=series_long
+        )
+        self.assertTrue(isinstance(preds, TimeSeries))
+        # predict multiple target series
+        preds = ensemble_model.predict(
+            n=5, series=[series_long] * 2, past_covariates=[series_long] * 2
+        )
+        self.assertTrue(isinstance(preds, list) and len(preds) == 2)
+        # predict single target series in list
+        preds = ensemble_model.predict(
+            n=5, series=[series_long], past_covariates=[series_long]
+        )
+        self.assertTrue(isinstance(preds, list) and len(preds) == 1)
+
     def helper_test_models_accuracy(
         self, model_instance, n, series, past_covariates, min_rmse
     ):
@@ -201,7 +264,6 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             f"Model was not able to denoise data. A rmse score of {current_rmse} was recorded.",
         )
 
-    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def denoising_input(self):
         np.random.seed(self.RANDOM_SEED)
 
