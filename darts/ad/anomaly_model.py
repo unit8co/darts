@@ -24,6 +24,7 @@ from typing import Any, Dict, Optional, Sequence, Union
 import pandas as pd
 
 from darts.ad.scorers import AnomalyScorer
+from darts.ad.utils import _convert_to_list, eval_accuracy_from_scores
 from darts.logging import raise_if_not
 from darts.models.filtering.filtering_model import FilteringModel
 from darts.models.forecasting.forecasting_model import ForecastingModel
@@ -49,7 +50,7 @@ class AnomalyModel(ABC):
 
         self.model = model
 
-    def eval_accuracy_from_scores(
+    def _eval_accuracy_from_scores(
         self,
         anomaly_scores: Union[TimeSeries, Sequence[TimeSeries]],
         actual_anomalies: TimeSeries,
@@ -157,7 +158,7 @@ class ForecastingAnomalyModel(AnomalyModel):
     def fit(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
-        allow_train: bool = False,
+        allow_model_training: bool = False,
         model_fit_params: Optional[Dict[str, Any]] = None,
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
@@ -165,7 +166,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         start: Union[pd.Timestamp, float, int] = None,
         num_samples: int = None,
     ):
-        """Train the model (if not already fitted and allow_train is set to True) and the
+        """Train the model (if not already fitted and allow_model_training is set to True) and the
         scorer(s) (if fittable) on the given time series.
 
         Once the model is fitted, the series historical forecasts is computed,
@@ -177,7 +178,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         ----------
         series
             The series to be trained on (anomaly free).
-        allow_train
+        allow_model_training
             Boolean value that indicates if the forecasting model needs to be fitted on the given series.
             If set to False, the model needs to be already fitted.
             Default: False
@@ -232,7 +233,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         model_fit_params = {k: v for k, v in model_fit_params.items() if v is not None}
 
         # fit forecasting model
-        if allow_train:
+        if allow_model_training:
             # the model has not been trained yet
 
             fit_signature_series = (
@@ -253,7 +254,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         else:
             raise_if_not(
                 self.model._fit_called,
-                f"Model {self.model.__class__.__name__} needs to be trained, otherwise set parameter 'allow_train' to True \
+                f"Model {self.model.__class__.__name__} needs to be trained, otherwise set parameter 'allow_model_training' to True \
                 (default: False). The model will then be trained on the given input series.",
             )
 
@@ -575,19 +576,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             Score for the time series
         """
 
-        list_series = [series] if not isinstance(series, Sequence) else series
-
-        list_actual_anomalies = (
-            [actual_anomalies]
-            if not isinstance(actual_anomalies, Sequence)
-            else actual_anomalies
-        )
-
-        raise_if_not(
-            len(list_actual_anomalies) == len(list_series),
-            f"Number of actual_anomalies must match the number of given series, \
-            found length: {len(list_actual_anomalies)} and {len(list_series)}",
-        )
+        list_series, list_actual_anomalies = _convert_to_list(series, actual_anomalies)
 
         anomaly_scores = self.score(
             series=list_series,
@@ -607,9 +596,10 @@ class ForecastingAnomalyModel(AnomalyModel):
         acc_anomaly_scores = []
         for idx, scorer in enumerate(self.scorers):
             acc_anomaly_scores.append(
-                scorer.eval_accuracy_from_scores(
+                eval_accuracy_from_scores(
                     anomaly_score=list_anomaly_scores[idx],
                     actual_anomalies=list_actual_anomalies,
+                    window=scorer.window,
                     metric=metric,
                 )
             )
@@ -652,18 +642,20 @@ class FilteringAnomalyModel(AnomalyModel):
     def fit(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
-        allow_train: bool = False,
+        allow_model_training: bool = False,
         filter_fit_params: Optional[Dict[str, Any]] = None,
     ):
-        """Train the filter (if not already fitted and allow_train is set to True) and the scorer(s) on the given time series.
+        """Train the filter (if not already fitted and allow_model_training is set to True)
+        and the scorer(s) on the given time series.
 
-        The filter model will be applied to the given series, and the results will be used to train the scorer(s).
+        The filter model will be applied to the given series, and the results will be used
+        to train the scorer(s).
 
         Parameters
         ----------
         series
             The series to be trained on.
-        allow_train
+        allow_model_training
             Boolean value that indicates if the filtering model needs to be fitted on the given series.
             If set to False, the model needs to be already fitted.
             Default: False
@@ -686,7 +678,7 @@ class FilteringAnomalyModel(AnomalyModel):
             f"filter_fit_params must be of type dictionary, found {type(filter_fit_params)}",
         )
 
-        if allow_train:
+        if allow_model_training:
             # fit filtering model
             if hasattr(self.filter, "fit"):
                 # TODO: check if filter is already fitted (for now fit it regardless -> only Kallman)
@@ -699,7 +691,7 @@ class FilteringAnomalyModel(AnomalyModel):
                 self.filter.fit(list_series[0], **filter_fit_params)
         else:
             # TODO: check if Kallman is fitted or not
-            # if not raise error "fit filter before, or set 'allow_train' to TRUE"
+            # if not raise error "fit filter before, or set 'allow_model_training' to TRUE"
             pass
 
         if self.scorers_are_trainable:
@@ -791,31 +783,24 @@ class FilteringAnomalyModel(AnomalyModel):
             Score for the time series
         """
 
-        list_series = [series] if not isinstance(series, Sequence) else series
-
-        list_actual_anomalies = (
-            [actual_anomalies]
-            if not isinstance(actual_anomalies, Sequence)
-            else actual_anomalies
-        )
-
-        raise_if_not(
-            len(list_actual_anomalies) == len(list_series),
-            f"Number of actual_anomalies must match the number of given series, found length: \
-            {len(list_actual_anomalies)} and {len(list_series)}",
-        )
+        list_series, list_actual_anomalies = _convert_to_list(series, actual_anomalies)
 
         anomaly_scores = self.score(series=list_series, filter_params=filter_params)
 
-        if not isinstance(anomaly_scores, Sequence):
-            anomaly_scores = [anomaly_scores]
+        list_anomaly_scores = (
+            [anomaly_scores]
+            if not isinstance(anomaly_scores, Sequence)
+            else anomaly_scores
+        )
 
         acc_anomaly_scores = []
         for idx, scorer in enumerate(self.scorers):
+
             acc_anomaly_scores.append(
-                scorer.eval_accuracy_from_scores(
-                    anomaly_score=anomaly_scores[idx],
+                eval_accuracy_from_scores(
+                    anomaly_score=list_anomaly_scores[idx],
                     actual_anomalies=list_actual_anomalies,
+                    window=scorer.window,
                     metric=metric,
                 )
             )
