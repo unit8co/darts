@@ -14,6 +14,8 @@ from darts.utils import timeseries_generation as tg
 logger = get_logger(__name__)
 
 try:
+    import torch
+
     from darts.models.forecasting.dlinear import DLinearModel
     from darts.models.forecasting.nlinear import NLinearModel
     from darts.utils.likelihood_models import GaussianLikelihood
@@ -28,6 +30,7 @@ if TORCH_AVAILABLE:
 
     class DlinearNlinearModelsTestCase(DartsBaseTestClass):
         np.random.seed(42)
+        torch.manual_seed(42)
 
         def setUp(self):
             self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
