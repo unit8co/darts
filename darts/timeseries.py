@@ -292,6 +292,10 @@ class TimeSeries:
         # Store static covariates and hierarchy in attributes (potentially storing None)
         self._xa = _xarray_with_attrs(self._xa, static_covariates, hierarchy)
 
+        # at the end since other exceptions can prevent the creation of the time serie
+        if not xa.size > 0:
+            logger.warning("TimeSeries is empty.")
+
     """
     Factory Methods
     ===============
