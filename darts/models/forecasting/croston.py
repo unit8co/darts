@@ -96,7 +96,7 @@ class Croston(FutureCovariatesLocalForecastingModel):
         n: int,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
-        verbose: bool = None,
+        verbose: bool = False,
     ):
         super()._predict(n, future_covariates, num_samples)
         values = self.model.predict(

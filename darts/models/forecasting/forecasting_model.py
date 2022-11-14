@@ -230,7 +230,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         past_covariates: Optional[TimeSeries],
         future_covariates: Optional[TimeSeries],
         num_samples: int,
-        verbose: bool = None,
+        verbose: bool = False,
     ) -> TimeSeries:
         return self.predict(n, num_samples=num_samples, verbose=verbose)
 
@@ -1194,7 +1194,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
-        verbose: bool = None,
+        verbose: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Forecasts values for `n` time steps after the end of the series.
 
@@ -1261,7 +1261,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         past_covariates: Optional[TimeSeries],
         future_covariates: Optional[TimeSeries],
         num_samples: int,
-        verbose: bool = None,
+        verbose: bool = False,
     ) -> TimeSeries:
         return self.predict(
             n,
@@ -1553,7 +1553,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         n: int,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
-        verbose: bool = None,
+        verbose: bool = False,
         **kwargs,
     ) -> TimeSeries:
         """Forecasts values for a certain number of time steps after the end of the series.
@@ -1576,7 +1576,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         past_covariates: Optional[TimeSeries],
         future_covariates: Optional[TimeSeries],
         num_samples: int,
-        verbose: bool = None,
+        verbose: bool = False,
     ) -> TimeSeries:
         return self.predict(
             n,
@@ -1700,7 +1700,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
         historic_future_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
-        verbose: bool = None,
+        verbose: bool = False,
     ) -> TimeSeries:
         """Forecasts values for a certain number of time steps after the end of the series.
         TransferableFutureCovariatesLocalForecastingModel must implement the predict logic in this method.
@@ -1714,7 +1714,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
         past_covariates: Optional[TimeSeries],
         future_covariates: Optional[TimeSeries],
         num_samples: int,
-        verbose: bool = None,
+        verbose: bool = False,
     ) -> TimeSeries:
         return self.predict(
             n=n,

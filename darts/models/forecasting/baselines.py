@@ -38,7 +38,7 @@ class NaiveMean(LocalForecastingModel):
         self.mean_val = np.mean(series.univariate_values())
         return self
 
-    def predict(self, n: int, num_samples: int = 1, verbose: bool = None):
+    def predict(self, n: int, num_samples: int = 1, verbose: bool = False):
         super().predict(n, num_samples)
         forecast = np.array([self.mean_val for _ in range(n)])
         return self._build_forecast_series(forecast)
@@ -78,7 +78,7 @@ class NaiveSeasonal(LocalForecastingModel):
         self.last_k_vals = series.univariate_values()[-self.K :]
         return self
 
-    def predict(self, n: int, num_samples: int = 1, verbose: bool = None):
+    def predict(self, n: int, num_samples: int = 1, verbose: bool = False):
         super().predict(n, num_samples)
         forecast = np.array([self.last_k_vals[i % self.K] for i in range(n)])
         return self._build_forecast_series(forecast)
@@ -103,7 +103,7 @@ class NaiveDrift(LocalForecastingModel):
         series = self.training_series
         return self
 
-    def predict(self, n: int, num_samples: int = 1, verbose: bool = None):
+    def predict(self, n: int, num_samples: int = 1, verbose: bool = False):
         super().predict(n, num_samples)
         first, last = (
             self.training_series.first_value(),

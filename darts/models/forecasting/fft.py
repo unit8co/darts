@@ -332,7 +332,7 @@ class FFT(LocalForecastingModel):
 
         return self
 
-    def predict(self, n: int, num_samples: int = 1, verbose: bool = None):
+    def predict(self, n: int, num_samples: int = 1, verbose: bool = False):
         super().predict(n, num_samples)
         trend_forecast = np.array(
             [self.trend_function(i + len(self.training_series)) for i in range(n)]

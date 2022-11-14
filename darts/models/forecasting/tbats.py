@@ -215,7 +215,7 @@ class _BaseBatsTbatsModel(LocalForecastingModel, ABC):
 
         return self
 
-    def predict(self, n, num_samples=1, verbose: bool = None):
+    def predict(self, n, num_samples=1, verbose: bool = False):
         super().predict(n, num_samples)
 
         yhat = self.model.forecast(steps=n)
