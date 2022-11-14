@@ -198,6 +198,15 @@ class _DLinearModule(PLMixedCovariatesModule):
             x = seasonal_output + trend_output
 
             if self.future_cov_dim != 0:
+                # x_future might be shorter than output_chunk_length when n < output_chunk_length
+                # so we need to pad it with zeros to match the output_chunk_length
+                x_future = torch.nn.functional.pad(
+                    input=x_future,
+                    pad=(0, 0, 0, self.output_chunk_length - x_future.shape[1]),
+                    mode="constant",
+                    value=0,
+                )
+
                 fut_cov_output = self.linear_fut_cov(x_future.view(batch, -1))
                 x = x + fut_cov_output.view(
                     batch, self.output_chunk_length, self.output_dim * self.nr_params
