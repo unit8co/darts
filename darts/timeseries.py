@@ -3197,10 +3197,7 @@ class TimeSeries:
                     *args,
                     **kwargs,
                 )
-                # make the emptiness of the TimeSerie obvious
-                plt.xlim(-0.2, 5.2)
                 plt.xlabel(self.time_index.name)
-                # TODO: also change the limits of the y axis?
             else:
                 p = plt.plot(
                     [self.start_time()],
