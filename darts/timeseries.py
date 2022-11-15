@@ -22,7 +22,6 @@ or integer indices (:class:`pandas.RangeIndex`).
     - Contain numeric types only
     - Have distinct components/columns names
     - Have a well defined frequency (for ``DateTimeIndex``)
-    - Be non-empty
     - Have static covariates consistent with their components, or no static covariates
     - Have a hierarchy consistent with their components, or no hierarchy
 
@@ -291,10 +290,6 @@ class TimeSeries:
 
         # Store static covariates and hierarchy in attributes (potentially storing None)
         self._xa = _xarray_with_attrs(self._xa, static_covariates, hierarchy)
-
-        # at the end since other exceptions can prevent the creation of the time serie
-        if not xa.size > 0:
-            logger.warning("TimeSeries is empty.")
 
     """
     Factory Methods
@@ -3194,6 +3189,18 @@ class TimeSeries:
 
             if central_series.shape[0] > 1:
                 p = central_series.plot(*args, **kwargs)
+            # empty TimeSeries
+            elif central_series.shape[0] == 0:
+                p = plt.plot(
+                    [],
+                    [],
+                    *args,
+                    **kwargs,
+                )
+                # make the emptiness of the TimeSerie obvious
+                plt.xlim(-0.2, 5.2)
+                plt.xlabel(self.time_index.name)
+                # TODO: also change the limits of the y axis?
             else:
                 p = plt.plot(
                     [self.start_time()],
