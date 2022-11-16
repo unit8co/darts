@@ -100,12 +100,17 @@ if TORCH_AVAILABLE:
                 random_state=42,
             )
             model.fit(series_multivariate)
-            res = model.predict(n=2).values()
+            res = model.predict(n=3).values()
 
-            # the theoretical result should be [[1.01, 1.02], [0.505, 0.51]].
+            # the theoretical result should be [[1.01, 1.02, 1.03], [0.505, 0.51, 0.515]].
             # We just test if the given result is not too far on average.
             self.assertTrue(
-                abs(np.average(res - np.array([[1.01, 1.02], [0.505, 0.51]])) < 0.03)
+                abs(
+                    np.average(
+                        res - np.array([[1.01, 1.02, 1.03], [0.505, 0.51, 0.515]]).T
+                    )
+                    < 0.03
+                )
             )
 
             # Test Covariates
