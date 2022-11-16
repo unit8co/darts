@@ -12,6 +12,8 @@ anomaly score time series and a binary ground truth time series indicating the p
 
 TODO:
     - window must be modulo of the length of the series -> must change that
+    - rethink implementation _check_probabilistic_case separate case deterministic and probabilistic
+    and redo fit() function
 """
 
 import math
@@ -19,7 +21,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Optional, Sequence, Tuple, Union
 
 import numpy as np
-from scipy.stats import gamma, wasserstein_distance
+from scipy.stats import gamma, norm, wasserstein_distance
 from sklearn.cluster import KMeans
 from sklearn.mixture import GaussianMixture
 from sklearn.neighbors import LocalOutlierFactor
@@ -304,11 +306,14 @@ class FittableAnomalyScorer(AnomalyScorer):
         list_series_1, list_series_2 = _convert_to_list(series_1, series_2)
 
         if series_2 is None:
-            for series in list_series_1:
+            for idx, series in enumerate(list_series_1):
                 _sanity_check(series)
+                list_series_1[idx], _ = self._check_probabilistic_case(series)
         else:
-            for (s1, s2) in zip(list_series_1, list_series_2):
+            for idx, (s1, s2) in enumerate(zip(list_series_1, list_series_2)):
                 _sanity_check(s1, s2)
+                list_series_1[idx], _ = self._check_probabilistic_case(s1)
+                list_series_2[idx], _ = self._check_probabilistic_case(s2)
 
         self._fit_core(list_series_1, list_series_2)
 
@@ -1272,7 +1277,7 @@ class NLLScorer(NonFittableAnomalyScorer):
         np_anomaly_scores = []
         for width in range(series_1.width):
             np_anomaly_scores.append(
-                self._score_core_likelihood(
+                self._score_core_NLlikelihood(
                     np_series_1[:, width], np_series_2[:, width].flatten()
                 )
             )
@@ -1503,5 +1508,32 @@ class GammaNLLScorer(NLLScorer):
 
         return [
             -gamma.logpdf(x2, *gamma.fit(x1))
+            for (x1, x2) in zip(probabilistic_estimations, deterministic_values)
+        ]
+
+
+class CRPSScorer(NLLScorer):
+    """CRPS Scorer"""
+
+    def __init__(self, window: Optional[int] = None) -> None:
+        super().__init__(window=window)
+
+    def __str__(self):
+        return "CRPSScorer"
+
+    def _score_core_NLlikelihood(
+        self,
+        probabilistic_estimations: np.ndarray,
+        deterministic_values: np.ndarray,
+    ) -> np.ndarray:
+
+        return [
+            x1.std()
+            * (
+                ((x2 - x1.mean()) / x1.std())
+                * (2 * norm.cdf((x2 - x1.mean()) / x1.std()) - 1)
+                + 2 * norm.pdf((x2 - x1.mean()) / x1.std())
+                - 1 / np.sqrt(np.pi)
+            )
             for (x1, x2) in zip(probabilistic_estimations, deterministic_values)
         ]

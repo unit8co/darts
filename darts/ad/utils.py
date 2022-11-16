@@ -9,6 +9,7 @@ TODO:
     - migrate metrics function to darts.metric
     - check error message
     - clean function show_anomalies_from_scores
+    - allow plots for probabilistic timeseries (for now we take the mean when plotting)
 """
 
 from typing import Sequence, Tuple, Union
@@ -603,7 +604,7 @@ def show_anomalies_from_scores(
     if model_output is not None:
 
         for width in range(model_output.width):
-            model_output._xa[:, width].plot(
+            model_output._xa[:, width].mean(axis=1).plot(
                 ax=axs[index_ax], color="blue", linewidth=0.5, label="model output"
             )
 
