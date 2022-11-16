@@ -15,16 +15,24 @@ the input series.
 The function ``eval_accuracy()` is the same as ``score()``, but outputs the score of an agnostic
 threshold metric (AUC-ROC or AUC-PR), between the predicted anomaly score time series, and some known binary
 ground-truth time series indicating the presence of actual anomalies.
+
+TODO:
+    - check if warning is the right way to do: with import warnings
 """
 
 import inspect
+import warnings
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, Sequence, Union
 
 import pandas as pd
 
 from darts.ad.scorers import AnomalyScorer
-from darts.ad.utils import _convert_to_list, eval_accuracy_from_scores
+from darts.ad.utils import (
+    _convert_to_list,
+    eval_accuracy_from_scores,
+    show_anomalies_from_scores,
+)
 from darts.logging import raise_if_not
 from darts.models.filtering.filtering_model import FilteringModel
 from darts.models.forecasting.forecasting_model import ForecastingModel
@@ -50,60 +58,6 @@ class AnomalyModel(ABC):
 
         self.model = model
 
-    def _eval_accuracy_from_scores(
-        self,
-        anomaly_scores: Union[TimeSeries, Sequence[TimeSeries]],
-        actual_anomalies: TimeSeries,
-        metric: str = "AUC_ROC",
-    ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
-        """Scores the results against true anomalies.
-
-        Expects every element of anomaly_scores to have a non-empty time intersection with actual_anomalies.
-
-        Parameters
-        ----------
-        anomaly_score
-            Time series to detect anomalies from, corresponding to the anomaly score of each scorer defined
-            in the anomaly_model. Must be same length as the number of scorers.
-        actual_anomalies
-            The ground truth of the anomalies (1 if it is an anomaly and 0 if not). Must be same length and
-            width/dimension as the anomaly_score time series.
-        metric
-            Optionally, Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR".
-            Default: "AUC_ROC"
-
-        Returns
-        -------
-        Union[float, Sequence[float], Sequence[Sequence[float]]]
-            Score of the anomaly time series
-        """
-        list_anomaly_scores = (
-            [anomaly_scores]
-            if not isinstance(anomaly_scores, Sequence)
-            else anomaly_scores
-        )
-
-        raise_if_not(
-            len(list_anomaly_scores) == len(self.scorers),
-            f"The number of anomaly scores ({len(list_anomaly_scores)}) must match the number of scorers ({len(self.scorers)})\
-            of the anomaly_model",
-        )
-
-        acc_anomaly_scores = []
-        for idx, scorer in enumerate(self.scorers):
-            acc_anomaly_scores.append(
-                scorer.eval_accuracy_from_scores(
-                    anomaly_score=list_anomaly_scores[idx],
-                    actual_anomalies=actual_anomalies,
-                    metric=metric,
-                )
-            )
-
-        if len(acc_anomaly_scores) == 1 and not isinstance(anomaly_scores, Sequence):
-            return acc_anomaly_scores[0]
-        else:
-            return acc_anomaly_scores
-
     @abstractmethod
     def fit(
         self, series: Union[TimeSeries, Sequence[TimeSeries]]
@@ -121,6 +75,49 @@ class AnomalyModel(ABC):
         self, series: Union[TimeSeries, Sequence[TimeSeries]]
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         pass
+
+    @abstractmethod
+    def show_anomalies(self, series: TimeSeries):
+        pass
+
+    def _show_anomalies(
+        self,
+        series: TimeSeries,
+        model_output: TimeSeries = None,
+        anomaly_scores: Union[TimeSeries, Sequence[TimeSeries]] = None,
+        name_of_scorers: Union[str, Sequence[str]] = None,
+        actual_anomalies: TimeSeries = None,
+        title: str = None,
+        save_png: str = None,
+        metric: str = None,
+    ):
+        """Internal function that plots the results of the anomaly model.
+        Called by the function show_anomalies().
+        """
+
+        if title is None:
+            title = f"Anomaly results by model {self.model.__class__.__name__}"
+
+        if name_of_scorers is None:
+            name_of_scorers = []
+            for scorer in self.scorers:
+                name_of_scorers.append(scorer.__str__())
+
+        list_window = []
+        for scorer in self.scorers:
+            list_window.append(scorer.window)
+
+        return show_anomalies_from_scores(
+            series,
+            model_output=model_output,
+            anomaly_scores=anomaly_scores,
+            window=list_window,
+            name_of_scorers=name_of_scorers,
+            actual_anomalies=actual_anomalies,
+            title=title,
+            save_png=save_png,
+            metric=metric,
+        )
 
 
 class ForecastingAnomalyModel(AnomalyModel):
@@ -208,6 +205,14 @@ class ForecastingAnomalyModel(AnomalyModel):
         self
             Fitted Anomaly model (forecasting model and scorer(s))
         """
+
+        # checks if model does not need training and all scorer(s) are not fittable
+        if not allow_model_training and not self.scorers_are_trainable:
+            warnings.warn(
+                f"Warning: the forecasting model {self.model.__class__.__name__} is not required to be \
+            trained because the parameter allow_model_training is set to False, and all scorers are not fittable.\
+            No need to call the .fit() function"
+            )
 
         list_series = [series] if not isinstance(series, Sequence) else series
 
@@ -325,6 +330,105 @@ class ForecastingAnomalyModel(AnomalyModel):
 
         return covariates
 
+    def show_anomalies(
+        self,
+        series=TimeSeries,
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        forecast_horizon: int = None,
+        start: Union[pd.Timestamp, float, int] = None,
+        num_samples: int = None,
+        actual_anomalies=TimeSeries,
+        name_of_scorers: Union[str, Sequence[str]] = None,
+        title: str = None,
+        save_png: str = None,
+        metric: str = None,
+    ):
+        """Plot the results of the anomaly model.
+
+        Computes the score on the given series input. And shows the different anomaly scores with respect to time.
+
+        The plot will be composed of the following:
+            - the series itself with the output of the forecasting model.
+            - the anomaly score of each scorer. The scorer with different windows will be separated.
+            - the actual anomalies, if given.
+
+        Possible to:
+            - add a title to the figure with the parameter 'title'
+            - give personalized names for the scorers with 'name_of_scorers'
+            - save the plot as a png at the path 'save_png'
+            - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR), if the actual anomalies is given.
+
+        Parameters
+        ----------
+        series
+            The series to visualize anomalies from.
+        past_covariates
+            An optional past-observed covariate series. This applies only if the model supports past covariates.
+        future_covariates
+            An optional future-known covariate series. This applies only if the model supports future covariates.
+        forecast_horizon
+            The forecast horizon for the predictions.
+        start
+            The first point of time at which a prediction is computed for a future time.
+            This parameter supports 3 different data types: ``float``, ``int`` and ``pandas.Timestamp``.
+            In the case of ``float``, the parameter will be treated as the proportion of the time series
+            that should lie before the first prediction point.
+            In the case of ``int``, the parameter will be treated as an integer index to the time index of
+            `series` that will be used as first prediction time.
+            In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
+            directly.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
+            deterministic models.
+        actual_anomalies
+            The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
+        name_of_scorers
+            Name of the scores. Must be a list of length equal to the number of scorers in the anomaly_model.
+        title
+            Title of the figure
+        save_png
+            Path to where the plot in format png should be saved
+            Default: None (the plot will not be saved)
+        metric
+            Optionally, Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR".
+            Default: "AUC_ROC"
+        """
+
+        if isinstance(series, Sequence):
+            raise_if_not(
+                len(series) == 1,
+                f"'visualize_anomalies' expects one series, found a list of length {len(series)} as input.",
+            )
+
+            series = series[0]
+
+        raise_if_not(
+            isinstance(series, TimeSeries),
+            f"'visualize_anomalies' expects an input of type TimeSeries, found type: {type(series)}.",
+        )
+
+        anomaly_scores, model_output = self.score(
+            series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            forecast_horizon=forecast_horizon,
+            start=start,
+            num_samples=num_samples,
+            return_model_prediction=True,
+        )
+
+        return self._show_anomalies(
+            series,
+            model_output=model_output,
+            anomaly_scores=anomaly_scores,
+            name_of_scorers=name_of_scorers,
+            actual_anomalies=actual_anomalies,
+            title=title,
+            save_png=save_png,
+            metric=metric,
+        )
+
     def score(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -333,6 +437,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         forecast_horizon: int = None,
         start: Union[pd.Timestamp, float, int] = None,
         num_samples: int = None,
+        return_model_prediction: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Predicts the given input time series with the forecasting model, and applies the scorer(s)
         on the prediction and the given input time series. Outputs the anomaly score of the given
@@ -360,6 +465,9 @@ class ForecastingAnomalyModel(AnomalyModel):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
             deterministic models.
+        return_model_prediction
+            Boolean value indicating if the prediction of the model should be returned along the anomaly score
+            Default: False
 
         Returns
         -------
@@ -413,7 +521,13 @@ class ForecastingAnomalyModel(AnomalyModel):
             )
 
         if len(list_anomaly_scores) == 1 and not isinstance(series, Sequence):
-            return list_anomaly_scores[0]
+            list_anomaly_scores = list_anomaly_scores[0]
+
+        if len(list_pred) == 1:
+            list_pred = list_pred[0]
+
+        if return_model_prediction:
+            return list_anomaly_scores, list_pred
         else:
             return list_anomaly_scores
 
@@ -704,10 +818,79 @@ class FilteringAnomalyModel(AnomalyModel):
             if hasattr(scorer, "fit"):
                 scorer.fit(list_pred, list_series)
 
+    def show_anomalies(
+        self,
+        series=TimeSeries,
+        filter_params: Optional[Dict[str, Any]] = None,
+        actual_anomalies=TimeSeries,
+        name_of_scorers: Union[str, Sequence[str]] = None,
+        title: str = None,
+        save_png: str = None,
+        metric: str = None,
+    ):
+        """Plot the results of the anomaly model.
+
+        Computes the score on the given series input. And shows the different anomaly scores with respect to time.
+
+        The plot will be composed of the following:
+            - the series itself with the output of the filtering model
+            - the anomaly score of each scorer. The scorer with different windows will be separated.
+            - the actual anomalies, if given.
+
+        Possible to:
+            - add a title to the figure with the parameter 'title'
+            - give personalized names for the scorers with 'name_of_scorers'
+            - save the plot as a png at the path 'save_png'
+            - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR), if the actual anomalies is given
+
+        Parameters
+        ----------
+        series
+            The series to visualize anomalies from.
+        filter_params
+            parameters of the Darts `.filter()` filtering model
+        actual_anomalies
+            The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
+        name_of_scorers
+            Name of the scores. Must be a list of length equal to the number of scorers in the anomaly_model.
+        title
+            Title of the figure
+        save_png
+            Path to where the plot in format png should be saved
+            Default: None (the plot will not be saved)
+        metric
+            Optionally, Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR".
+            Default: "AUC_ROC"
+        """
+
+        if isinstance(series, Sequence):
+            raise_if_not(
+                len(series) == 1,
+                f"'visualize_anomalies' expects one series, found a list of length {len(series)} as input.",
+            )
+
+            series = series[0]
+
+        anomaly_scores, model_output = self.score(
+            series, filter_params=filter_params, return_model_prediction=True
+        )
+
+        return self._show_anomalies(
+            series,
+            model_output=model_output,
+            anomaly_scores=anomaly_scores,
+            name_of_scorers=name_of_scorers,
+            actual_anomalies=actual_anomalies,
+            title=title,
+            save_png=save_png,
+            metric=metric,
+        )
+
     def score(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
         filter_params: Optional[Dict[str, Any]] = None,
+        return_model_prediction: bool = False,
     ):
         """Filters the given input time series with the filtering model, and applies the scorer(s)
         on the filtered time series and the given input time series. Outputs the anomaly score of
@@ -719,6 +902,9 @@ class FilteringAnomalyModel(AnomalyModel):
             The series to score on.
         filter_params
             parameters of the Darts `.filter()` filtering model
+        return_model_prediction
+            Boolean value indicating if the prediction of the model should be returned along the anomaly score
+            Default: False
 
         Returns
         -------
@@ -740,19 +926,25 @@ class FilteringAnomalyModel(AnomalyModel):
         for s in list_series:
             list_pred.append(self.filter.filter(s, **filter_params))
 
-        anomaly_scores = []
+        list_anomaly_scores = []
         for scorer in self.scorers:
-            anomaly_scores.append(
+            list_anomaly_scores.append(
                 scorer.score(
                     list_pred if len(list_pred) > 1 else list_pred[0],
                     list_series if len(list_series) > 1 else list_series[0],
                 )
             )
 
-        if len(anomaly_scores) == 1 and not isinstance(series, Sequence):
-            return anomaly_scores[0]
+        if len(list_anomaly_scores) == 1 and not isinstance(series, Sequence):
+            list_anomaly_scores = list_anomaly_scores[0]
+
+        if len(list_pred) == 1:
+            list_pred = list_pred[0]
+
+        if return_model_prediction:
+            return list_anomaly_scores, list_pred
         else:
-            return anomaly_scores
+            return list_anomaly_scores
 
     def eval_accuracy(
         self,

@@ -9,6 +9,9 @@ The main functions are ``fit()`` (only for the trainable anomaly scorer), ``scor
 two time series, and applies the function ``f()`` to obtain an anomaly score time series.
 The function ``eval_accuracy()`` returns the score of an agnostic threshold metric (AUC-ROC or AUC-PR), between an
 anomaly score time series and a binary ground truth time series indicating the presence of anomalies.
+
+TODO:
+    - window must be modulo of the length of the series -> must change that
 """
 
 import math
@@ -471,8 +474,7 @@ class GaussianMixtureScorer(FittableAnomalyScorer):
         self.component_wise = component_wise
 
     def __str__(self):
-        return f"GaussianMixtureScorer (n_components={self.n_components}, window={self.window}, \
-        reduced_function={self.reduced_function})"
+        return "GaussianMixtureScorer"
 
     def _fit_core(
         self,
@@ -666,7 +668,7 @@ class KMeansScorer(FittableAnomalyScorer):
         self.k = k
 
     def __str__(self):
-        return f"KMeansScorer (k={self.k}, window={self.window}, reduced_function={self.reduced_function})"
+        return "KMeansScorer"
 
     def _fit_core(
         self,
@@ -866,8 +868,7 @@ class LocalOutlierFactorScorer(FittableAnomalyScorer):
         self.component_wise = component_wise
 
     def __str__(self):
-        return f"LocalOutlierFactor (n_neighbors= {self.n_neighbors}, window={self.window}, \
-            reduced_function={self.reduced_function})"
+        return "LocalOutlierFactor"
 
     def _fit_core(
         self,
@@ -1066,7 +1067,7 @@ class WassersteinScorer(FittableAnomalyScorer):
         self.component_wise = component_wise
 
     def __str__(self):
-        return f"WassersteinScorer (window={self.window}, reduced_function={self.reduced_function})"
+        return "WassersteinScorer"
 
     def _fit_core(
         self,
@@ -1216,7 +1217,7 @@ class Norm(NonFittableAnomalyScorer):
         super().__init__(window=None)
 
     def __str__(self):
-        return f"Norm (ord={self.ord}, component_wise={self.component_wise})"
+        return f"Norm (ord={self.ord})"
 
     def _score_core(
         self,

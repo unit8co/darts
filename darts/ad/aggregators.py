@@ -23,7 +23,7 @@ from darts.ad.utils import _return_intersect, eval_accuracy_from_prediction
 from darts.logging import raise_if, raise_if_not
 
 
-class _Aggregator(ABC):
+class Aggregator(ABC):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         pass
 
@@ -160,7 +160,7 @@ class _Aggregator(ABC):
         return eval_accuracy_from_prediction(series, actual_anomalies, window, metric)
 
 
-class OrAggregator(_Aggregator):
+class OrAggregator(Aggregator):
     """Aggregator that identifies a time point as anomalous as long as it is
     included in one of the input anomaly lists.
     """
@@ -176,7 +176,7 @@ class OrAggregator(_Aggregator):
         return [1 if timestamp.sum() >= 1 else 0 for timestamp in np_series]
 
 
-class AndAggregator(_Aggregator):
+class AndAggregator(Aggregator):
     """Aggregator that identifies a time point as anomalous only if it is
     included in all the input anomaly lists.
     """
