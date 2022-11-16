@@ -22,6 +22,7 @@ try:
 
     from darts.models import (
         BlockRNNModel,
+        DeepTimeModel,
         NBEATSModel,
         RNNModel,
         TCNModel,
@@ -101,6 +102,16 @@ if TORCH_AVAILABLE:
                 "n_epochs": 10,
             },
             100.0,
+        ),
+        (
+            DeepTimeModel,
+            {
+                "inr_num_layers": 2,
+                "inr_layers_width": 16,
+                "n_fourier_feats": 16,
+                "n_epochs": 10,
+            },
+            50.0,
         ),
     ]
 

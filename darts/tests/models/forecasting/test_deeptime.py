@@ -36,6 +36,15 @@ if TORCH_AVAILABLE:
                     inr_num_layers=3,
                     inr_layers_width=[1],
                 )
+            with self.assertRaises(ValueError):
+                # n_epochs should be greater than 0 for instantiation of the lr schedulers
+                DeepTimeModel(
+                    input_chunk_length=1,
+                    output_chunk_length=1,
+                    inr_num_layers=3,
+                    inr_layers_width=20,
+                    n_epochs=0,
+                )
 
         def test_fit(self):
             large_ts = tg.constant_timeseries(length=100, value=1000)
@@ -129,7 +138,7 @@ if TORCH_AVAILABLE:
                 DeepTimeModel(
                     input_chunk_length=1,
                     output_chunk_length=1,
-                    n_epochs=10,
+                    n_epochs=1,
                     inr_num_layers=2,
                     inr_layers_width=20,
                     n_fourier_feats=17,
@@ -144,7 +153,7 @@ if TORCH_AVAILABLE:
             model = DeepTimeModel(
                 input_chunk_length=1,
                 output_chunk_length=1,
-                n_epochs=10,
+                n_epochs=1,
                 inr_num_layers=2,
                 inr_layers_width=20,
                 n_fourier_feats=64,
@@ -162,7 +171,7 @@ if TORCH_AVAILABLE:
             model = DeepTimeModel(
                 input_chunk_length=1,
                 output_chunk_length=1,
-                n_epochs=10,
+                n_epochs=1,
                 inr_num_layers=2,
                 inr_layers_width=20,
                 n_fourier_feats=64,
@@ -176,7 +185,7 @@ if TORCH_AVAILABLE:
                 model = DeepTimeModel(
                     input_chunk_length=1,
                     output_chunk_length=1,
-                    n_epochs=10,
+                    n_epochs=1,
                     inr_num_layers=2,
                     inr_layers_width=20,
                     n_fourier_feats=64,

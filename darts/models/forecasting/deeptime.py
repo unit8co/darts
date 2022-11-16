@@ -302,8 +302,8 @@ class _DeepTimeModule(PLPastCovariatesModule):
     def get_coords(self, lookback_len: int, horizon_len: int) -> Tensor:
         """Return time axis encoded as float values between 0 and 1"""
         coords = torch.linspace(0, 1, lookback_len + horizon_len)
-        # would it be clearer with the unsqueeze operator?
-        return torch.reshape(coords, (1, lookback_len + horizon_len, 1))
+        # coords.shape = [1, lookback_len + horizon_len, 1]
+        return coords.unsqueeze(dim=0).unsqueeze(dim=-1)
 
     def configure_optimizers(self):
         """Override the configure_optimizers to define three groups of parameters, one for the
@@ -424,29 +424,17 @@ class DeepTimeModel(PastCovariatesTorchModel):
         inr_num_layers: int = 5,
         inr_layers_width: Union[int, List[int]] = 256,
         n_fourier_feats: int = 4096,
-        scales: List[float] = [0.01, 0.1, 1, 5, 10, 20, 50, 100],
+        scales: List[float] = None,
         dropout: float = 0.1,
         activation: str = "ReLU",
-        optimizer_kwargs: Optional[Dict] = {
-            "lr": 1e-3,
-            "lambda_lr": 1.0,
-            "weight_decay": 0.0,
-        },
-        lr_scheduler_kwargs: Optional[Dict] = {
-            "warmup_epochs": 5,
-            "eta_min": 0.0,
-            "scheduler_names": [
-                "cosine_annealing",
-                "cosine_annealing_with_linear_warmup",
-                "cosine_annealing_with_linear_warmup",
-            ],
-        },
+        optimizer_kwargs: Optional[Dict] = None,
+        lr_scheduler_kwargs: Optional[Dict] = None,
         **kwargs,
     ):
         """Deep time-index model with meta-learning (DeepTIMe).
 
         This is an implementation of the DeepTime architecture, as outlined in [1]_. The default arguments
-        correspond to the hyper-parameters described in the published article.
+        correspond to the hyper-parameters described in the article.
 
         This model supports past covariates (known for `input_chunk_length` points before prediction time).
 
@@ -566,6 +554,26 @@ class DeepTimeModel(PastCovariatesTorchModel):
         # extract pytorch lightning module kwargs
         self.pl_module_params = self._extract_pl_module_params(**self.model_params)
 
+        if scales is None:
+            scales = [0.01, 0.1, 1, 5, 10, 20, 50, 100]
+
+        if self.pl_module_params["optimizer_kwargs"] is None:
+            self.pl_module_params["optimizer_kwargs"] = {
+                "lr": 1e-3,
+                "lambda_lr": 1.0,
+                "weight_decay": 0.0,
+            }
+        if self.pl_module_params["lr_scheduler_kwargs"] is None:
+            self.pl_module_params["lr_scheduler_kwargs"] = {
+                "warmup_epochs": 5,
+                "eta_min": 0.0,
+                "scheduler_names": [
+                    "cosine_annealing",
+                    "cosine_annealing_with_linear_warmup",
+                    "cosine_annealing_with_linear_warmup",
+                ],
+            }
+
         raise_if_not(
             isinstance(inr_layers_width, int)
             or len(inr_layers_width) == inr_num_layers,
@@ -577,26 +585,6 @@ class DeepTimeModel(PastCovariatesTorchModel):
         raise_if_not(
             n_fourier_feats % (2 * len(scales)) == 0,
             f"n_fourier_feats: {n_fourier_feats} must be divisible by 2 * len(scales) = {2 * len(scales)}",
-            logger,
-        )
-
-        raise_if_not(
-            self.n_epochs > 0,
-            "`self.n_epochs` should be greater than 0, it is used to declare the learning rate schedulers.",
-            logger,
-        )
-
-        raise_if_not(
-            "optimizer_kwargs" in self.pl_module_params.keys(),
-            "`optimizer_kwargs` should contain the following arguments: `weight_decay`, "
-            "`lambda_lr` and `lr` in order to create the optimizer.",
-            logger,
-        )
-
-        raise_if_not(
-            "lr_scheduler_kwargs" in self.pl_module_params.keys(),
-            "`lr_scheduler_kwargs` should contain the following arguments: `eta_min`, "
-            "`warmup_epochs` and `scheduler_names` in order to create the optimizer.",
             logger,
         )
 
@@ -615,7 +603,7 @@ class DeepTimeModel(PastCovariatesTorchModel):
         raise_if_not(
             len(missing_params) == 0,
             f"Missing argument(s) for the optimiser: {missing_params}. `weight_decay`, "
-            "`lambda_lr` and `lr` must be defined in `optimizer_kwargs` whereas `Tmax`, "
+            "`lambda_lr` and `lr` must be defined in `optimizer_kwargs` whereas `eta_min`, "
             "`scheduler_names` and `warmup_epochs` must be defined in `lr_scheduler_kwargs`.",
             logger,
         )
@@ -645,7 +633,6 @@ class DeepTimeModel(PastCovariatesTorchModel):
         output_dim = train_sample[-1].shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
-        # TODO: support nr_params functionnality
         model = _DeepTimeModule(
             input_dim=input_dim,
             output_dim=output_dim,
