@@ -91,6 +91,7 @@ class INR(nn.Module):
         scales: List[float],
         dropout: float,
         activation: str,
+        nr_params: int,
     ):
         """Implicit Neural Representation, mapping values to their coordinates using a Multi-Layer Perceptron.
 
@@ -132,6 +133,7 @@ class INR(nn.Module):
         self.n_fourier_feats = n_fourier_feats
         self.scales = scales
         self.dropout = dropout
+        self.nr_params = nr_params
 
         raise_if_not(
             activation in ACTIVATIONS, f"'{activation}' is not in {ACTIVATIONS}"
@@ -156,7 +158,7 @@ class INR(nn.Module):
         # TODO : solve ambiguity between the num of layers and the number of hidden layers
         last_width = feats_size
         linear_layer_stack_list = []
-        for layer_width in self.hidden_layers_width:
+        for layer_width in self.hidden_layers_width[:-1]:
             linear_layer_stack_list.append(nn.Linear(last_width, layer_width))
             linear_layer_stack_list.append(self.activation)
 
@@ -166,6 +168,17 @@ class INR(nn.Module):
             linear_layer_stack_list.append(nn.LayerNorm(layer_width))
 
             last_width = layer_width
+
+        # output width multiplied self.nr_params to have one time encoding per param
+        linear_layer_stack_list.append(
+            nn.Linear(last_width, self.hidden_layers_width[-1] * self.nr_params)
+        )
+        linear_layer_stack_list.append(self.activation)
+        if self.dropout > 0:
+            linear_layer_stack_list.append(MonteCarloDropout(p=self.dropout))
+        linear_layer_stack_list.append(
+            nn.LayerNorm(self.hidden_layers_width[-1] * self.nr_params)
+        )
 
         self.layers = nn.Sequential(*linear_layer_stack_list)
 
@@ -273,30 +286,49 @@ class _DeepTimeModule(PLPastCovariatesModule):
             scales=self.scales,
             dropout=self.dropout,
             activation=self.activation,
+            nr_params=self.nr_params,
         )
 
         self.adaptive_weights = RidgeRegressor()
 
     def forward(self, x_in: Tensor) -> Tensor:
         x, _ = x_in  # x_in: (past_target|past_covariate, static_covariates)
-
         batch_size, _, _ = x.shape  # x: (batch_size, in_len, in_dim)
+        # repeat values for each nr_params
+        # x = x.repeat(1, 1, self.nr_params)
+
         coords = self.get_coords(self.input_chunk_length, self.output_chunk_length)
-
         time_reprs = self.inr(coords)
-        time_reprs = time_reprs.repeat(batch_size, 1, self.input_dim)
+        # time_reprs.shape = [b_size, input_chunk_len+output_chunk_len, self.hidden_layer_width[-1]*nr_params]
+        time_reprs = time_reprs.repeat(batch_size, 1, 1)
+        time_reprs = time_reprs.reshape(
+            batch_size,
+            self.input_chunk_length + self.output_chunk_length,
+            -1,
+            self.nr_params,
+        )
 
-        lookback_reprs = time_reprs[:, : -self.output_chunk_length]
-        horizon_reprs = time_reprs[:, -self.output_chunk_length :]
-        # learn weights from the lookback
-        w, b = self.adaptive_weights(lookback_reprs, x)
-        # apply weights to the horizon
-        y = torch.einsum("... d o, ... t d -> ... t o", [w, horizon_reprs]) + b
+        # must use a different time_reprs (A) for each nr_param so that the linear equation changes:
+        # AX = B where A is the diag of lookback_reprs.T*lookback_reprs and lookback_reprs.T*x
+        # the parameter lambda of the RidgeRegressor is shared across the nr_params
+        forecasts = []
+        for i in range(self.nr_params):
+            lookback_reprs = time_reprs[:, : -self.output_chunk_length, :, i]
+            horizon_reprs = time_reprs[:, -self.output_chunk_length :, :, i]
 
-        # taken from nbeats, could be simplified
-        y = y.view(
-            y.shape[0], self.output_chunk_length, self.input_dim, self.nr_params
-        )[:, :, : self.output_dim, :]
+            # learn weights from the lookback
+            w, b = self.adaptive_weights(lookback_reprs, x)
+            # apply weights to the horizon
+            forecast = torch.einsum("b d o, b t d -> b t o", [w, horizon_reprs]) + b
+            # forecast.shape = [batch, output_chunk_size, input_dim]
+            forecasts.append(forecast)
+
+        # y.shape = [batch, output_chunk_size, input_dim, nr_params]
+        y = torch.stack(forecasts, dim=-1)
+        # retain forecast of target (exclude past/static covariates)
+        y = y[:, :, : self.output_dim * self.nr_params, :]
+        # TODO: check that target predictions are the first self.output_dim*self.nr_params values, change slicing?
+        # TODO: verify that the model benefits from covariates (potentially in the INR?!)
         return y
 
     def get_coords(self, lookback_len: int, horizon_len: int) -> Tensor:
