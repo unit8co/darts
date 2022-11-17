@@ -294,12 +294,10 @@ class _DeepTimeModule(PLPastCovariatesModule):
     def forward(self, x_in: Tensor) -> Tensor:
         x, _ = x_in  # x_in: (past_target|past_covariate, static_covariates)
         batch_size, _, _ = x.shape  # x: (batch_size, in_len, in_dim)
-        # repeat values for each nr_params
-        # x = x.repeat(1, 1, self.nr_params)
 
         coords = self.get_coords(self.input_chunk_length, self.output_chunk_length)
         time_reprs = self.inr(coords)
-        # time_reprs.shape = [b_size, input_chunk_len+output_chunk_len, self.hidden_layer_width[-1]*nr_params]
+        # time_reprs.shape = [batch_size, input_chunk_len+output_chunk_len, inr_layers_width[-1]*nr_params]
         time_reprs = time_reprs.repeat(batch_size, 1, 1)
         time_reprs = time_reprs.reshape(
             batch_size,
@@ -309,7 +307,7 @@ class _DeepTimeModule(PLPastCovariatesModule):
         )
 
         # must use a different time_reprs (A) for each nr_param so that the linear equation changes:
-        # AX = B where A is the diag of lookback_reprs.T*lookback_reprs and lookback_reprs.T*x
+        # AX = B where A is the diag of lookback_reprs.T*lookback_reprs and B is lookback_reprs.T*x
         # the parameter lambda of the RidgeRegressor is shared across the nr_params
         forecasts = []
         for i in range(self.nr_params):
@@ -328,7 +326,7 @@ class _DeepTimeModule(PLPastCovariatesModule):
         # retain forecast of target (exclude past/static covariates)
         y = y[:, :, : self.output_dim * self.nr_params, :]
         # TODO: check that target predictions are the first self.output_dim*self.nr_params values, change slicing?
-        # TODO: verify that the model benefits from covariates (potentially in the INR?!)
+        # TODO: run experiments to check if the model benefits from covariates (potentially in the INR?!)
         return y
 
     def get_coords(self, lookback_len: int, horizon_len: int) -> Tensor:

@@ -137,13 +137,14 @@ if TORCH_AVAILABLE:
             {
                 "input_chunk_length": 10,
                 "output_chunk_length": 5,
-                "inr_num_layers": 2,
-                "inr_layers_width": 16,
-                "n_fourier_feats": 16,
-                "n_epochs": 10,
+                "inr_num_layers": 5,
+                "inr_layers_width": 256,
+                "n_fourier_feats": 1024,
+                "n_epochs": 20,
+                "random_state": 0,
                 "likelihood": GaussianLikelihood(),
             },
-            1,
+            1.9,
         ),
     ]
 
