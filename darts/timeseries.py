@@ -1515,7 +1515,7 @@ class TimeSeries:
         )
 
         # component names
-        cnames = [f"{comp}_quantiles" for comp in self.components]
+        cnames = [f"{comp}_{quantile}" for comp in self.components]
 
         new_data = np.quantile(
             self._xa.values,
@@ -1557,8 +1557,13 @@ class TimeSeries:
         pandas.DataFrame
             The Pandas DataFrame containing the quantiles for each component.
         """
-        # TODO: there might be a slightly more efficient way to do it for several quantiles at once with xarray...
-        return pd.concat([self.quantile_df(quantile) for quantile in quantiles], axis=1)
+        return pd.concat(
+            [
+                self.quantile_timeseries(quantile).pd_dataframe()
+                for quantile in quantiles
+            ],
+            axis=1,
+        )
 
     def astype(self, dtype: Union[str, np.dtype]) -> "TimeSeries":
         """
@@ -3031,7 +3036,6 @@ class TimeSeries:
             new_xa.values = fn(self._xa.values)
 
         elif num_args == 2:  # map function uses timestamp f(timestamp, x)
-
             # go over shortest amount of iterations, either over time steps or components and samples
             if self.n_timesteps <= self.n_components * self.n_samples:
                 new_vals = np.vstack(
