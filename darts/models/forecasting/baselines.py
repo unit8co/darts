@@ -14,13 +14,14 @@ from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
     LocalForecastingModel,
+    FutureCovariatesLocalForecastingModel
 )
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
-class NaiveMean(LocalForecastingModel):
+class NaiveMean(FutureCovariatesLocalForecastingModel):
     def __init__(self):
         """Naive Mean Model
 
@@ -35,12 +36,16 @@ class NaiveMean(LocalForecastingModel):
 
     def fit(self, series: TimeSeries):
         super().fit(series)
-        self.mean_val = np.mean(series.univariate_values())
         return self
+    
+    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+        self.mean_val = np.mean(series.values(), axis=0)
 
     def predict(self, n: int, num_samples: int = 1):
-        super().predict(n, num_samples)
-        forecast = np.array([self.mean_val for _ in range(n)])
+        return super().predict(n, future_covariates=None, num_samples=num_samples)
+
+    def _predict(self, n: int, future_covariates: Optional[TimeSeries] = None, num_samples: int = 1) -> TimeSeries:
+        forecast = np.array( [[ *self.mean_val ] for _ in range(n)])
         return self._build_forecast_series(forecast)
 
 
