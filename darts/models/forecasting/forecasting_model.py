@@ -1085,6 +1085,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         return model
 
+    def __getstate__(self):
+        return self.__dict__
+
+    def __setstate__(self, d):
+        self.__dict__ = d
+
 
 class LocalForecastingModel(ForecastingModel, ABC):
     """The base class for "local" forecasting models, handling only single univariate time series.
