@@ -1086,9 +1086,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return model
 
     def __getstate__(self):
+        # controls what gets dumped by pickle
         return self.__dict__
 
     def __setstate__(self, d):
+        # controls what gets loaded by pickle
         self.__dict__ = d
 
 
