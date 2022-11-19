@@ -330,7 +330,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             self.trainer_params = dict(self.trainer_params, **pl_trainer_kwargs_copy)
 
         # pytorch lightning trainer will be created at training time
-        self.trainer: Optional[pl.Trainer] = None
         self.load_ckpt_path: Optional[str] = None
 
         # pl_module_params must be set in __init__ method of TorchForecastingModel subclass
@@ -392,7 +391,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self._create_save_dirs()
 
         self.model = None
-        self.trainer = None
         self.train_sample = None
 
     def _init_model(self, trainer: Optional[pl.Trainer] = None) -> None:
@@ -444,8 +442,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         trainer: Optional[pl.Trainer],
         verbose: Optional[bool] = None,
         epochs: int = 0,
-    ) -> None:
-        """Sets up the PyTorch-Lightning trainer for training or prediction."""
+    ) -> pl.Trainer:
+        """Sets up a PyTorch-Lightning trainer (if not already provided) for training or prediction."""
+        if trainer is not None:
+            return trainer
+
         trainer_params = {key: val for key, val in self.trainer_params.items()}
         if verbose is not None:
             trainer_params["enable_model_summary"] = (
@@ -453,17 +454,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
             trainer_params["enable_progress_bar"] = verbose
 
-        self.trainer = (
-            self._init_trainer(trainer_params=trainer_params, max_epochs=epochs)
-            if trainer is None
-            else trainer
-        )
+        return self._init_trainer(trainer_params=trainer_params, max_epochs=epochs)
 
     @staticmethod
     def _init_trainer(
         trainer_params: dict, max_epochs: Optional[int] = None
     ) -> pl.Trainer:
-        """Initializes the PyTorch-Lightning trainer for training or prediction from `trainer_params`."""
+        """Initializes a PyTorch-Lightning trainer for training or prediction from `trainer_params`."""
         trainer_params_copy = {param: val for param, val in trainer_params.items()}
         if max_epochs is not None:
             trainer_params_copy["max_epochs"] = max_epochs
@@ -877,7 +874,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         train_num_epochs = epochs if epochs > 0 else self.n_epochs
 
         # setup trainer
-        self._setup_trainer(trainer, verbose, train_num_epochs)
+        trainer = self._setup_trainer(trainer, verbose, train_num_epochs)
 
         # TODO: multiple training without loading from checkpoint is not trivial (I believe PyTorch-Lightning is still
         #  working on that, see https://github.com/PyTorchLightning/pytorch-lightning/issues/9636)
@@ -891,11 +888,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
 
         # Train model
-        self._train(train_loader, val_loader)
+        self._train(trainer, train_loader, val_loader)
         return self
 
     def _train(
-        self, train_loader: DataLoader, val_loader: Optional[DataLoader]
+        self,
+        trainer: pl.Trainer,
+        train_loader: DataLoader,
+        val_loader: Optional[DataLoader],
     ) -> None:
         """
         Performs the actual training
@@ -913,7 +913,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ckpt_path = self.load_ckpt_path
         self.load_ckpt_path = None
 
-        self.trainer.fit(
+        trainer.fit(
             self.model,
             train_dataloaders=train_loader,
             val_dataloaders=val_loader,
@@ -1173,12 +1173,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # Set mc_dropout rate
         self.model.set_mc_dropout(mc_dropout)
 
-        # setup trainer. will only be re-instantiated if both `trainer` and `self.trainer` are `None`
-        trainer = trainer if trainer is not None else self.trainer
-        self._setup_trainer(trainer=trainer, verbose=verbose, epochs=self.n_epochs)
+        trainer = self._setup_trainer(
+            trainer=trainer, verbose=verbose, epochs=self.n_epochs
+        )
 
         # prediction output comes as nested list: list of predicted `TimeSeries` for each batch.
-        predictions = self.trainer.predict(self.model, pred_loader)
+        predictions = trainer.predict(self.model, pred_loader)
         # flatten and return
         return [ts for batch in predictions for ts in batch]
 
@@ -1250,6 +1250,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # We save the whole object to keep track of everything
         with open(path, "wb") as f_out:
+            print(self)
             torch.save(self, f_out)
 
         # In addition, we need to use PTL save_checkpoint() to properly save the trainer and model
@@ -1298,7 +1299,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         path_ptl_ckpt = path + ".ckpt"
         if os.path.exists(path_ptl_ckpt):
             model.model = model.model.__class__.load_from_checkpoint(path_ptl_ckpt)
-            model.trainer = None
 
         return model
 
@@ -1401,6 +1401,22 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return model
 
     @property
+    def trainer(self) -> Optional[pl.Trainer]:
+        """Get the PyTorch Lightning Trainer object attached to the underlying :class:`PLForecastingModule`
+
+        Returns
+        -------
+        Optional[pl.Trainer]
+            The PyTorch Lightning Trainer attached to the underlying :class:`PLForecastingModule`.
+            If no trainer has been attached yet, returns ``None``.
+        """
+        # PyTorch Lightning raises a RuntimeError when model has not yet been attached to a trainer
+        try:
+            return self.model.trainer
+        except RuntimeError:
+            return None
+
+    @property
     def model_created(self) -> bool:
         return self.model is not None
 
@@ -1497,7 +1513,7 @@ def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
     """
     For models relying on MixedCovariates.
 
-    Parameters:
+    Parameters
     ----------
     train_sample
         (past_target, past_covariates, historic_future_covariates, future_covariates, future_target)
