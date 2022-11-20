@@ -10,7 +10,7 @@ import numpy as np
 import statsmodels.tsa.holtwinters as hw
 
 from darts.logging import get_logger, raise_if_not, raise_log
-from darts.models.forecasting.forecasting_model import ForecastingModel
+from darts.models.forecasting.forecasting_model import LocalForecastingModel
 from darts.timeseries import TimeSeries
 from darts.utils.statistics import (
     check_seasonality,
@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 ALPHA_START = 0.2
 
 
-class Theta(ForecastingModel):
+class Theta(LocalForecastingModel):
     # .. todo: Implement OTM: Optimized Theta Method (https://arxiv.org/pdf/1503.03529.pdf)
     # .. todo: Try with something different than SES? They do that in the paper.
     def __init__(
@@ -180,7 +180,7 @@ class Theta(ForecastingModel):
             return 3
 
 
-class FourTheta(ForecastingModel):
+class FourTheta(LocalForecastingModel):
     def __init__(
         self,
         theta: int = 2,
@@ -408,7 +408,7 @@ class FourTheta(ForecastingModel):
         using the fitted values on the training series `ts`.
 
 
-        Uses 'ForecastingModel.gridsearch' with 'use_fitted_values=True' and 'metric=metrics.mae`.
+        Uses 'LocalForecastingModel.gridsearch' with 'use_fitted_values=True' and 'metric=metrics.mae`.
 
         Parameters
         ----------

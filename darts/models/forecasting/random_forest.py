@@ -3,7 +3,7 @@ Random Forest
 -------------
 
 A forecasting model using a random forest regression. It uses some of the target series' lags, as well as optionally
-some covariate series' lags in order to obtain a forecast.
+some covariate series lags in order to obtain a forecast.
 
 See [1]_ for a reference around random forests.
 
@@ -34,6 +34,7 @@ class RandomForest(RegressionModel):
         add_encoders: Optional[dict] = None,
         n_estimators: Optional[int] = 100,
         max_depth: Optional[int] = None,
+        multi_models: Optional[bool] = True,
         **kwargs,
     ):
         """Random Forest Model
@@ -62,7 +63,7 @@ class RandomForest(RegressionModel):
             will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
             transform the generated covariates. This happens all under one hood and only needs to be specified at
             model creation.
-            Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
             ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
 
             .. highlight:: python
@@ -81,6 +82,9 @@ class RandomForest(RegressionModel):
         max_depth : int
             The maximum depth of the tree. If None, then nodes are expanded until all leaves are pure or until all
             leaves contain less than min_samples_split samples.
+        multi_models
+            If True, a separate model will be trained for each future lag to predict. If False, a single model is
+            trained to predict at step 'output_chunk_length' in the future. Default: True.
         **kwargs
             Additional keyword arguments passed to `sklearn.ensemble.RandomForest`.
         """
@@ -96,6 +100,7 @@ class RandomForest(RegressionModel):
             lags_future_covariates=lags_future_covariates,
             output_chunk_length=output_chunk_length,
             add_encoders=add_encoders,
+            multi_models=multi_models,
             model=RandomForestRegressor(**kwargs),
         )
 

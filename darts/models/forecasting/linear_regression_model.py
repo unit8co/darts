@@ -3,7 +3,7 @@ Linear Regression model
 -----------------------
 
 A forecasting model using a linear regression of some of the target series' lags, as well as optionally some
-covariate series' lags in order to obtain a forecast.
+covariate series lags in order to obtain a forecast.
 """
 from typing import List, Optional, Sequence, Tuple, Union
 
@@ -29,6 +29,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         likelihood: str = None,
         quantiles: List[float] = None,
         random_state: Optional[int] = None,
+        multi_models: Optional[bool] = True,
         **kwargs,
     ):
         """Linear regression model.
@@ -57,7 +58,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
             transform the generated covariates. This happens all under one hood and only needs to be specified at
             model creation.
-            Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
             ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
 
             .. highlight:: python
@@ -83,6 +84,9 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             <https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator>`_. Ignored when
             no `likelihood` is set.
             Default: ``None``.
+        multi_models
+            If True, a separate model will be trained for each future lag to predict. If False, a single model is
+            trained to predict at step 'output_chunk_length' in the future. Default: True.
         **kwargs
             Additional keyword arguments passed to `sklearn.linear_model.LinearRegression` (by default), to
             `sklearn.linear_model.PoissonRegressor` (if `likelihood="poisson"`), or to
@@ -117,6 +121,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             output_chunk_length=output_chunk_length,
             add_encoders=add_encoders,
             model=model,
+            multi_models=multi_models,
         )
 
     def __str__(self):
