@@ -3132,6 +3132,7 @@ class TimeSeries:
         low_quantile: Optional[float] = 0.05,
         high_quantile: Optional[float] = 0.95,
         default_formatting: bool = True,
+        label: Optional[Union[str, List[str]]] = "",
         *args,
         **kwargs,
     ):
@@ -3158,6 +3159,9 @@ class TimeSeries:
             interval is shown if `high_quantile` is None (default 0.95).
         default_formatting
             Whether or not to use the darts default scheme.
+        label
+            A prefix that will appear in front of each component of the TimeSeries or a list of string of
+            length the number of components in the plotted TimeSeries (default "").
         args
             some positional arguments for the `plot()` method
         kwargs
@@ -3185,7 +3189,6 @@ class TimeSeries:
             else (kwargs["figure"] if "figure" in kwargs else plt.gcf())
         )
         kwargs["figure"] = fig
-        label = kwargs["label"] if "label" in kwargs else ""
 
         if not any(lw in kwargs for lw in ["lw", "linewidth"]):
             kwargs["lw"] = 2
@@ -3196,6 +3199,18 @@ class TimeSeries:
                     self.n_components
                 )
             )
+
+        if isinstance(label, list):
+            raise_if_not(
+                len(label) == self.n_components
+                or (self.n_components > 10 and len(label) >= 10),
+                "The label argument should have the same length as the number of plotted components "
+                f"({min(self.n_components, 10)}), only {len(label)} labels were provided",
+                logger,
+            )
+            custom_labels = True
+        else:
+            custom_labels = False
 
         for i, c in enumerate(self._xa.component[:10]):
             comp_name = str(c.values)
@@ -3217,11 +3232,14 @@ class TimeSeries:
             alpha = kwargs["alpha"] if "alpha" in kwargs else None
             kwargs["alpha"] = 1
 
-            label_to_use = (
-                (label + ("_" + str(i) if len(self.components) > 1 else ""))
-                if label != ""
-                else "" + str(comp_name)
-            )
+            if custom_labels:
+                label_to_use = label[i]
+            else:
+                label_to_use = (
+                    (label + ("_" + str(i) if len(self.components) > 1 else ""))
+                    if label != ""
+                    else "" + str(comp_name)
+                )
             kwargs["label"] = label_to_use
 
             if central_series.shape[0] > 1:
