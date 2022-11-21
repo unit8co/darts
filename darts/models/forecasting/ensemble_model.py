@@ -8,8 +8,8 @@ from typing import List, Optional, Sequence, Union
 
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.forecasting_model import (
-    ForecastingModel,
     GlobalForecastingModel,
+    LocalForecastingModel,
 )
 from darts.timeseries import TimeSeries
 
@@ -29,7 +29,7 @@ class EnsembleModel(GlobalForecastingModel):
     """
 
     def __init__(
-        self, models: Union[List[ForecastingModel], List[GlobalForecastingModel]]
+        self, models: Union[List[LocalForecastingModel], List[GlobalForecastingModel]]
     ):
         raise_if_not(
             isinstance(models, list) and models,
@@ -38,9 +38,7 @@ class EnsembleModel(GlobalForecastingModel):
         )
 
         is_local_ensemble = all(
-            isinstance(model, ForecastingModel)
-            and not isinstance(model, GlobalForecastingModel)
-            for model in models
+            isinstance(model, LocalForecastingModel) for model in models
         )
         self.is_global_ensemble = all(
             isinstance(model, GlobalForecastingModel) for model in models
@@ -48,7 +46,7 @@ class EnsembleModel(GlobalForecastingModel):
 
         raise_if_not(
             is_local_ensemble or self.is_global_ensemble,
-            "All models must either be GlobalForecastingModel instances, or none of them should be.",
+            "All models must be of the same type: either GlobalForecastingModel, or LocalForecastingModel.",
             logger,
         )
 
@@ -61,7 +59,6 @@ class EnsembleModel(GlobalForecastingModel):
 
         super().__init__()
         self.models = models
-        self.is_single_series = None
 
     def fit(
         self,
@@ -76,25 +73,25 @@ class EnsembleModel(GlobalForecastingModel):
         """
         raise_if(
             not self.is_global_ensemble and not isinstance(series, TimeSeries),
-            "The models are not GlobalForecastingModel's and do not support training on multiple series.",
+            "The models are of type LocalForecastingModel, which does not support training on multiple series.",
             logger,
         )
         raise_if(
             not self.is_global_ensemble and past_covariates is not None,
-            "The models are not GlobalForecastingModel's and do not support past covariates.",
+            "The models are of type LocalForecastingModel, which does not support past covariates.",
             logger,
         )
 
-        self.is_single_series = isinstance(series, TimeSeries)
+        is_single_series = isinstance(series, TimeSeries)
 
         # check that if timeseries is single series, than covariates are as well and vice versa
         error = False
 
         if past_covariates is not None:
-            error = self.is_single_series != isinstance(past_covariates, TimeSeries)
+            error = is_single_series != isinstance(past_covariates, TimeSeries)
 
         if future_covariates is not None:
-            error = self.is_single_series != isinstance(future_covariates, TimeSeries)
+            error = is_single_series != isinstance(future_covariates, TimeSeries)
 
         raise_if(
             error,
@@ -127,6 +124,7 @@ class EnsembleModel(GlobalForecastingModel):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
     ):
+        is_single_series = isinstance(series, TimeSeries) or series is None
         predictions = [
             model._predict_wrapper(
                 n=n,
@@ -137,11 +135,11 @@ class EnsembleModel(GlobalForecastingModel):
             )
             for model in self.models
         ]
-
-        if self.is_single_series:
-            return self._stack_ts_seq(predictions)
-        else:
-            return self._stack_ts_multiseq(predictions)
+        return (
+            self._stack_ts_seq(predictions)
+            if is_single_series
+            else self._stack_ts_multiseq(predictions)
+        )
 
     def predict(
         self,
@@ -167,11 +165,7 @@ class EnsembleModel(GlobalForecastingModel):
             future_covariates=future_covariates,
             num_samples=num_samples,
         )
-
-        if self.is_single_series:
-            return self.ensemble(predictions)
-        else:
-            return self.ensemble(predictions, series)
+        return self.ensemble(predictions, series=series)
 
     @abstractmethod
     def ensemble(

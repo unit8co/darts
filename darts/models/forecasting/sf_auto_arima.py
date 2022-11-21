@@ -9,10 +9,12 @@ import numpy as np
 from statsforecast.models import AutoARIMA as SFAutoARIMA
 
 from darts import TimeSeries
-from darts.models.forecasting.forecasting_model import DualCovariatesForecastingModel
+from darts.models.forecasting.forecasting_model import (
+    FutureCovariatesLocalForecastingModel,
+)
 
 
-class StatsForecastAutoARIMA(DualCovariatesForecastingModel):
+class StatsForecastAutoARIMA(FutureCovariatesLocalForecastingModel):
     def __init__(self, *autoarima_args, **autoarima_kwargs):
         """Auto-ARIMA based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.

@@ -790,7 +790,7 @@ class TFTModel(MixedCovariatesTorchModel):
             will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
             transform the generated covariates. This happens all under one hood and only needs to be specified at
             model creation.
-            Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
             ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
 
             .. highlight:: python
@@ -900,6 +900,7 @@ class TFTModel(MixedCovariatesTorchModel):
             each tensor has shape (n_timesteps, n_variables)
             - past/historic tensors have shape (input_chunk_length, n_variables)
             - future tensors have shape (output_chunk_length, n_variables)
+            - static covariates have shape (component, static variable)
 
         Darts Interpretation of pytorch-forecasting's TimeSeriesDataSet:
             time_varying_knowns : future_covariates (including historic_future_covariates)

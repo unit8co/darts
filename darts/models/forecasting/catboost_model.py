@@ -27,6 +27,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         likelihood: str = None,
         quantiles: List = None,
         random_state: Optional[int] = None,
+        multi_models: Optional[bool] = True,
         **kwargs,
     ):
         """CatBoost Model
@@ -55,7 +56,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
             transform the generated covariates. This happens all under one hood and only needs to be specified at
             model creation.
-            Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
             ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
 
             .. highlight:: python
@@ -79,6 +80,9 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         random_state
             Control the randomness in the fitting procedure and for sampling.
             Default: ``None``.
+        multi_models
+            If True, a separate model will be trained for each future lag to predict. If False, a single model is
+            trained to predict at step 'output_chunk_length' in the future. Default: True.
         **kwargs
             Additional keyword arguments passed to `catboost.CatBoostRegressor`.
         """
@@ -122,6 +126,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             lags_future_covariates=lags_future_covariates,
             output_chunk_length=output_chunk_length,
             add_encoders=add_encoders,
+            multi_models=multi_models,
             model=CatBoostRegressor(**kwargs),
         )
 

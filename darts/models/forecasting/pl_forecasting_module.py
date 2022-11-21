@@ -262,11 +262,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
             return
 
         if self.likelihood:
-            _metric = metrics(target, self.likelihood.sample(output))
+            _metric = metrics(self.likelihood.sample(output), target)
         else:
             # If there's no likelihood, nr_params=1, and we need to squeeze out the
             # last dimension of model output, for properly computing the metric.
-            _metric = metrics(target, output.squeeze(dim=-1))
+            _metric = metrics(output.squeeze(dim=-1), target)
 
         self.log_dict(
             _metric,
@@ -476,7 +476,7 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
                 batch_prediction[-1] = batch_prediction[-1][:, :roll_size, :]
 
             # ==========> PAST INPUT <==========
-            # roll over input series to contain the latest target and covariate
+            # roll over input series to contain the latest target and covariates
             input_past = torch.roll(input_past, -roll_size, 1)
 
             # update target input to include next `roll_size` predictions
@@ -658,7 +658,7 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
                 batch_prediction[-1] = batch_prediction[-1][:, :roll_size, :]
 
             # ==========> PAST INPUT <==========
-            # roll over input series to contain the latest target and covariate
+            # roll over input series to contain the latest target and covariates
             input_past = torch.roll(input_past, -roll_size, 1)
 
             # update target input to include next `roll_size` predictions

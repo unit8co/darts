@@ -25,12 +25,14 @@ from darts.models import (
     NaiveSeasonal,
     Prophet,
     RandomForest,
+    RegressionModel,
     StatsForecastAutoARIMA,
     StatsForecastETS,
     Theta,
 )
 from darts.models.forecasting.forecasting_model import (
-    TransferableDualCovariatesForecastingModel,
+    LocalForecastingModel,
+    TransferableFutureCovariatesLocalForecastingModel,
 )
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.timeseries import TimeSeries
@@ -169,6 +171,8 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
 
     def test_models_runnability(self):
         for model, _ in models:
+            if not isinstance(model, RegressionModel):
+                self.assertTrue(isinstance(model, LocalForecastingModel))
             prediction = model.fit(self.ts_gaussian).predict(self.forecasting_horizon)
             self.assertTrue(len(prediction) == self.forecasting_horizon)
 
@@ -293,7 +297,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
         self.assertEqual(pred.start_time(), pd.Timestamp("20130121"))
         self.assertEqual(pred.end_time(), pd.Timestamp("20130125"))
 
-    def test_statsmodels_dual_models(self):
+    def test_statsmodels_future_models(self):
 
         # same tests, but VARIMA requires to work on a multivariate target series
         UNIVARIATE = "univariate"
@@ -399,7 +403,9 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             self.assertTrue(np.array_equal(pred1.values(), pred3.values()))
 
             # check backtesting with retrain=False
-            model: TransferableDualCovariatesForecastingModel = model_cls(**kwargs)
+            model: TransferableFutureCovariatesLocalForecastingModel = model_cls(
+                **kwargs
+            )
             model.backtest(series1, future_covariates=exog1, retrain=False)
 
     @patch("typing.Callable")
@@ -420,16 +426,16 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             "lags_past_covariates": [-1, -2, -3],
         }
         params = [  # tuple of (model, retrain-able, multivariate, retrain parameter, model type)
-            (ExponentialSmoothing(), False, False, "hello", "ForecastingModel"),
-            (ExponentialSmoothing(), False, False, True, "ForecastingModel"),
-            (ExponentialSmoothing(), False, False, -2, "ForecastingModel"),
-            (ExponentialSmoothing(), False, False, 2, "ForecastingModel"),
+            (ExponentialSmoothing(), False, False, "hello", "LocalForecastingModel"),
+            (ExponentialSmoothing(), False, False, True, "LocalForecastingModel"),
+            (ExponentialSmoothing(), False, False, -2, "LocalForecastingModel"),
+            (ExponentialSmoothing(), False, False, 2, "LocalForecastingModel"),
             (
                 ExponentialSmoothing(),
                 False,
                 False,
                 patch_retrain_func,
-                "ForecastingModel",
+                "LocalForecastingModel",
             ),
             (
                 LinearRegressionModel(**lr_univ_args),
