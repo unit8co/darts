@@ -14,7 +14,7 @@ from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
     LocalForecastingModel,
-    LocalMultivariateForecastingModel
+    LocalMultivariateForecastingModel,
 )
 from darts.timeseries import TimeSeries
 
@@ -40,7 +40,7 @@ class NaiveMean(LocalMultivariateForecastingModel):
         return self
 
     def predict(self, n: int, num_samples: int = 1):
-        forecast = np.array( [[ *self.mean_val ] for _ in range(n)])
+        forecast = np.array([[*self.mean_val] for _ in range(n)])
         return self._build_forecast_series(forecast)
 
 

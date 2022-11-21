@@ -1094,14 +1094,17 @@ class LocalForecastingModel(ForecastingModel):
 
     All implementations must implement the `fit()` and `predict()` methods.
     """
+
     @abstractmethod
     def fit(self, series: TimeSeries) -> "LocalForecastingModel":
         super().fit(series)
         if not isinstance(self, LocalMultivariateForecastingModel):
             series._assert_univariate()
 
+
 class LocalMultivariateForecastingModel(LocalForecastingModel):
     """Class for "local" forecasting models, that allow both uni- and multivariate time series."""
+
 
 class GlobalForecastingModel(ForecastingModel, ABC):
     """The base class for "global" forecasting models, handling several time series and optional covariates.
