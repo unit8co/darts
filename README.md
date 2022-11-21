@@ -157,6 +157,8 @@ Model | Univariate | Multivariate | Probabilistic | Multiple-series training | P
 `TCNModel` | ✅ | ✅ | ✅ | ✅ | ✅ | | | [TCN paper](https://arxiv.org/abs/1803.01271), [DeepTCN paper](https://arxiv.org/abs/1906.04397), [blog post](https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4)
 `TransformerModel` | ✅ | ✅ | ✅ | ✅ | ✅ | | |
 `TFTModel` (Temporal Fusion Transformer) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [TFT paper](https://arxiv.org/pdf/1912.09363.pdf), [PyTorch Forecasting](https://pytorch-forecasting.readthedocs.io/en/latest/models.html)
+`DLinearModel` (coming in v0.23.0)| ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [DLinear paper](https://arxiv.org/pdf/2205.13504.pdf), [Cure Lab](https://github.com/cure-lab/LTSF-Linear)
+`NLinearModel` (coming in v0.23.0)| ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [NLinear paper](https://arxiv.org/pdf/2205.13504.pdf), [Cure Lab](https://github.com/cure-lab/LTSF-Linear)
 Naive Baselines | ✅ | | | | | | |
 
 

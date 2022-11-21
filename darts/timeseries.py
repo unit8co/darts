@@ -22,7 +22,6 @@ or integer indices (:class:`pandas.RangeIndex`).
     - Contain numeric types only
     - Have distinct components/columns names
     - Have a well defined frequency (for ``DateTimeIndex``)
-    - Be non-empty
     - Have static covariates consistent with their components, or no static covariates
     - Have a hierarchy consistent with their components, or no hierarchy
 
@@ -86,7 +85,6 @@ class TimeSeries:
             "TimeSeries.from_times_and_values(), etc...).",
             logger,
         )
-        raise_if_not(xa.size > 0, "The time series array must not be empty.", logger)
         raise_if_not(
             len(xa.shape) == 3,
             f"TimeSeries require DataArray of dimensionality 3 ({DIMS}).",
@@ -1517,7 +1515,7 @@ class TimeSeries:
         )
 
         # component names
-        cnames = [f"{comp}_quantiles" for comp in self.components]
+        cnames = [f"{comp}_{quantile}" for comp in self.components]
 
         new_data = np.quantile(
             self._xa.values,
@@ -1559,8 +1557,13 @@ class TimeSeries:
         pandas.DataFrame
             The Pandas DataFrame containing the quantiles for each component.
         """
-        # TODO: there might be a slightly more efficient way to do it for several quantiles at once with xarray...
-        return pd.concat([self.quantile_df(quantile) for quantile in quantiles], axis=1)
+        return pd.concat(
+            [
+                self.quantile_timeseries(quantile).pd_dataframe()
+                for quantile in quantiles
+            ],
+            axis=1,
+        )
 
     def astype(self, dtype: Union[str, np.dtype]) -> "TimeSeries":
         """
@@ -2886,7 +2889,8 @@ class TimeSeries:
             tg.holidays_timeseries(self.time_index, country_code, prov, state)
         )
 
-    def resample(self, freq: str, method: str = "pad") -> "TimeSeries":
+    def resample(self, freq: str, method: str = "pad", **kwargs) -> "TimeSeries":
+
         """
         Build a reindexed ``TimeSeries`` with a given frequency.
         Provided method is used to fill holes in reindexed TimeSeries, by default 'pad'.
@@ -2902,13 +2906,47 @@ class TimeSeries:
             'pad': propagate last valid observation forward to next valid
 
             'backfill': use NEXT valid observation to fill.
+        kwargs
+            some keyword arguments for the `xarray.resample` method, notably `loffset` or `base` to indicate where
+            to start the resampling and avoid nan at the first value of the resampled TimeSeries
+            For more informations, see the `xarray resample() documentation
+            <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.resample.html>`_.
+
+        Examples
+        --------
+        >>> times = pd.date_range(start=pd.Timestamp("20200101233000"), periods=6, freq="15T")
+        >>> pd_series = pd.Series(range(6), index=times)
+        >>> ts = TimeSeries.from_series(pd_series)
+        >>> print(ts.time_index)
+        DatetimeIndex(['2020-01-01 23:30:00', '2020-01-01 23:45:00',
+                       '2020-01-02 00:00:00', '2020-01-02 00:15:00',
+                       '2020-01-02 00:30:00', '2020-01-02 00:45:00'],
+                       dtype='datetime64[ns]', name='time', freq='15T')
+        >>> resampled_nokwargs_ts = ts.resample(freq="1h")
+        >>> print(resampled_nokwargs_ts.time_index)
+        DatetimeIndex(['2020-01-01 23:00:00', '2020-01-02 00:00:00'],
+                      dtype='datetime64[ns]', name='time', freq='H')
+        >>> print(resampled_nokwargs_ts.values())
+        [[nan]
+        [ 2.]]
+        >>> resampled_ts = ts.resample(freq="1h", loffset="30T")
+        >>> print(resampled_ts.time_index)
+        DatetimeIndex(['2020-01-01 23:30:00', '2020-01-02 00:30:00'],
+                      dtype='datetime64[ns]', name='time', freq='H')
+        >>> print(resampled_ts.values())
+        [[0.]
+        [4.]]
+
         Returns
         -------
         TimeSeries
             A reindexed TimeSeries with given frequency.
         """
 
-        resample = self._xa.resample({self._time_dim: freq})
+        resample = self._xa.resample(
+            indexer={self._time_dim: freq},
+            **kwargs,
+        )
 
         # TODO: check
         if method == "pad":
@@ -2998,7 +3036,6 @@ class TimeSeries:
             new_xa.values = fn(self._xa.values)
 
         elif num_args == 2:  # map function uses timestamp f(timestamp, x)
-
             # go over shortest amount of iterations, either over time steps or components and samples
             if self.n_timesteps <= self.n_components * self.n_samples:
                 new_vals = np.vstack(
@@ -3191,6 +3228,15 @@ class TimeSeries:
 
             if central_series.shape[0] > 1:
                 p = central_series.plot(*args, **kwargs)
+            # empty TimeSeries
+            elif central_series.shape[0] == 0:
+                p = plt.plot(
+                    [],
+                    [],
+                    *args,
+                    **kwargs,
+                )
+                plt.xlabel(self.time_index.name)
             else:
                 p = plt.plot(
                     [self.start_time()],
