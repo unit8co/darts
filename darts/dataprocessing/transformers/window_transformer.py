@@ -1,4 +1,4 @@
-from typing import Iterator, List, Sequence, Tuple, Union, Optional
+from typing import Iterator, List, Optional, Sequence, Tuple, Union
 
 from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.logging import get_logger
