@@ -133,8 +133,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         self
             Fitted model.
         """
-        if not isinstance(self, FutureCovariatesLocalForecastingModel):
-            series._assert_univariate()
         raise_if_not(
             len(series) >= self.min_train_series_length,
             "Train series only contains {} elements but {} model requires at least {} entries".format(
@@ -1086,7 +1084,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return model
 
 
-class LocalForecastingModel(ForecastingModel, ABC):
+class LocalForecastingModel(ForecastingModel):
     """The base class for "local" forecasting models, handling only single univariate time series.
 
     Local Forecasting Models (LFM) are models that can be trained on a single univariate target series only. In Darts,
@@ -1094,10 +1092,26 @@ class LocalForecastingModel(ForecastingModel, ABC):
     the entire target series supplied when calling :func:`fit()` at once. They can also predict in one go with
     :func:`predict()` for any number of predictions `n` after the end of the training series.
 
-    All implementations must implement the `_fit()` and `_predict()` methods.
+    All implementations must implement the `fit()` and `predict()` methods.
     """
+    @abstractmethod
+    def fit(self, series: TimeSeries) -> "LocalForecastingModel":
+        super().fit(series)
+        series._assert_univariate()
 
     pass
+
+class LocalMultivariateForecastingModel(ForecastingModel):
+    """The base class for "local" forecasting models, that allows multivariate time series.
+
+    Local Forecasting Models (LFM) are models that can be trained on a single target series only that can be univariate. 
+    In Darts, most models in this category tend to be simpler statistical models (such as ETS or FFT). LFMs usually train 
+    on the entire target series supplied when calling :func:`fit()` at once. They can also predict in one go with
+    :func:`predict()` for any number of predictions `n` after the end of the training series.
+
+    All implementations must implement the `fit()` and `predict()` methods.
+    """
+
 
 
 class GlobalForecastingModel(ForecastingModel, ABC):

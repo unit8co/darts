@@ -14,14 +14,14 @@ from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
     LocalForecastingModel,
-    FutureCovariatesLocalForecastingModel
+    LocalMultivariateForecastingModel
 )
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
-class NaiveMean(FutureCovariatesLocalForecastingModel):
+class NaiveMean(LocalMultivariateForecastingModel):
     def __init__(self):
         """Naive Mean Model
 
@@ -36,20 +36,15 @@ class NaiveMean(FutureCovariatesLocalForecastingModel):
 
     def fit(self, series: TimeSeries):
         super().fit(series)
-        return self
-    
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         self.mean_val = np.mean(series.values(), axis=0)
+        return self
 
     def predict(self, n: int, num_samples: int = 1):
-        return super().predict(n, future_covariates=None, num_samples=num_samples)
-
-    def _predict(self, n: int, future_covariates: Optional[TimeSeries] = None, num_samples: int = 1) -> TimeSeries:
         forecast = np.array( [[ *self.mean_val ] for _ in range(n)])
         return self._build_forecast_series(forecast)
 
 
-class NaiveSeasonal(LocalForecastingModel):
+class NaiveSeasonal(LocalMultivariateForecastingModel):
     def __init__(self, K: int = 1):
         """Naive Seasonal Model
 
@@ -80,16 +75,16 @@ class NaiveSeasonal(LocalForecastingModel):
             f"The time series requires at least K={self.K} points",
             logger,
         )
-        self.last_k_vals = series.univariate_values()[-self.K :]
+        self.last_k_vals = series.values()[-self.K :, :]
         return self
 
     def predict(self, n: int, num_samples: int = 1):
         super().predict(n, num_samples)
-        forecast = np.array([self.last_k_vals[i % self.K] for i in range(n)])
+        forecast = np.array([self.last_k_vals[i % self.K, :] for i in range(n)])
         return self._build_forecast_series(forecast)
 
 
-class NaiveDrift(LocalForecastingModel):
+class NaiveDrift(LocalMultivariateForecastingModel):
     def __init__(self):
         """Naive Drift Model
 
@@ -111,8 +106,8 @@ class NaiveDrift(LocalForecastingModel):
     def predict(self, n: int, num_samples: int = 1):
         super().predict(n, num_samples)
         first, last = (
-            self.training_series.first_value(),
-            self.training_series.last_value(),
+            self.training_series.first_values(),
+            self.training_series.last_values(),
         )
         slope = (last - first) / (len(self.training_series) - 1)
         last_value = last + slope * n
