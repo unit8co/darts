@@ -366,7 +366,7 @@ class NLinearModel(MixedCovariatesTorchModel):
             "normalize = True cannot be used with probabilistic NLinearModel",
         )
 
-    def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
+    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of
         # (past_target, past_covariates, historic_future_covariates,
         #  future_covariates, static_covariates, future_target)
