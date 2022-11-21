@@ -3146,7 +3146,7 @@ class TimeSeries:
                 window (when ``forecasting_safe`` is `True`, Darts enforces ``"center"`` to ``False``).
             * :``"closed"``: ``"right"``/``"left"``/``"both"``/``"neither"`` to specify whether the right,
                 left or both ends of the window are included in the window, or neither of them.
-                Darts defaults to ``"both"``.
+                Darts defaults to pandas default of ``"right"``.
 
             More information on the available functions and their parameters can be found in the
             `Pandas documentation <https://pandas.pydata.org/docs/reference/window.html>`_.

@@ -30,7 +30,7 @@ class ForecastingWindowTransformer(BaseDataTransformer):
             A dictionary or a list of dictionaries.
             Each dictionary specifies a different window transform.
 
-            The dictionaries should contain the following keys:
+            The dictionaries can contain the following keys:
 
             :``"function"``: Mandatory. The name of one of the pandas builtin transformation functions,
                             or a callable function that can be applied to the input series.
