@@ -200,6 +200,26 @@ class TimeSeriesTestCase(DartsBaseTestClass):
                 (abs(q_ts.values() - np.quantile(values, q=q, axis=2)) < 1e-3).all()
             )
 
+    def test_quantiles_df(self):
+        q = (0.01, 0.1, 0.5, 0.95)
+        values = np.random.rand(10, 1, 1000)
+        ar = xr.DataArray(
+            values,
+            dims=("time", "component", "sample"),
+            coords={"time": self.times, "component": ["a"]},
+        )
+        ts = TimeSeries(ar)
+        q_ts = ts.quantiles_df(q)
+        for col in q_ts:
+            q = float(str(col).replace("a_", ""))
+            self.assertTrue(
+                abs(
+                    q_ts[col].to_numpy().reshape(10, 1)
+                    - np.quantile(values, q=q, axis=2)
+                    < 1e-3
+                ).all()
+            )
+
     def test_alt_creation(self):
         with self.assertRaises(ValueError):
             # Series cannot be lower than three without passing frequency as argument to constructor,
