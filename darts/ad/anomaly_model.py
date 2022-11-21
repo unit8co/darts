@@ -2,17 +2,20 @@
 Anomaly Model
 ------------
 
-An anomaly model expect a model and a scorer. It offers a ``score()``function, which takes
-as input a time series and returns its anomaly score as a ``TimeSeries``.
+An anomaly model expects a model and one or multiple scorers.
+It offers a :func:`score()` function, which takes
+as input one or multiple series, and returns their anomaly score(s) as ``TimeSeries``.
 
 The model can be a forecasting method (:class:`ForecastingAnomalyModel`) or a filtering method
 (:class:`FilteringAnomalyModel`).
-The main functions are ``fit()`` (only for the trainable model/scorer), ``score()`` and
-``eval_accuracy()``. ``fit()`` trains the model and/or the scorer over the history of one or multiple series.
-``score()`` applies the model on the time series input and and calls the scorer to return an anomaly score of
-the input series.
+The main functions are :func:`fit()` (only for the trainable model and/or scorer), :func:`score()` and
+:func:`eval_accuracy()`. :func:`fit()` trains the model and/or the scorer(s) over the history of one or multiple series.
+:func:`score()` applies the model on the time series input and and calls the scorer(s) to return an anomaly score of
+the input series. The main role of the scorer objects is to compare the output of the model (e.g., the forecast(s))
+and emit a score describing how anomalous they are. If several scorer objects are provided, several scores
+are computed.
 
-The function ``eval_accuracy()` is the same as ``score()``, but outputs the score of an agnostic
+The function :func:`eval_accuracy()` is the same as :func:`score()`, but outputs the score of an agnostic
 threshold metric (AUC-ROC or AUC-PR), between the predicted anomaly score time series, and some known binary
 ground-truth time series indicating the presence of actual anomalies.
 
@@ -126,27 +129,35 @@ class ForecastingAnomalyModel(AnomalyModel):
         model: ForecastingModel,
         scorer: Union[AnomalyScorer, Sequence[AnomalyScorer]],
     ):
-        """Forecasting-based Anomaly Model
+        """Forecasting-based Anomaly Detection Model
 
-        Wraps around a fitted Darts forecasting model and an anomaly scorer to compute anomaly scores
+        Wraps around a Darts forecasting model and one or several anomaly scorer(s) to compute anomaly scores
         by comparing how actuals deviate from the model's predictions.
 
-        By assumption, the Darts forecasting model should be able to forecast accuratly the considered
-        scenario when there are no anomalies.
+        The forecasting model may or may not be already fitted. The underlying assumption is that this model
+        should be able to acurately forecast the series in the absence of anomalies. For this reason,
+        it is recommend to either provide a model that has already been fitted and evaluated to work
+        appropriately on a series without anomalies, or to ensure that a simple call to the :func:`fit()`
+        method of the model will be sufficient to train it to satisfactory performance on a series without anomalies.
+
+        Calling :func:`fit()` on the anomaly model will fit the underlying forecasting model only
+        if ``allow_model_training`` is set to ``True`` upon calling ``fit()``.
+        In addition, calling :func:`fit()` will also fit the fittable scorers, if any.
 
         Parameters
         ----------
         model
-            A fitted Darts forecasting model.
+            An instance of a Darts forecasting model.
         scorer
-            A scorer that will be used to convert the actual and predicted time series to
-            an anomaly score ``TimeSeries``. If a list of `N` scorer is given, the anomaly model will call each
+            One or multiple scorer(s) that will be used to compare the actual and predicted time series in order
+            to obtain an anomaly score ``TimeSeries``.
+            If a list of `N` scorer is given, the anomaly model will call each
             one of the scorers and output a list of `N` anomaly scores ``TimeSeries``.
         """
 
         raise_if_not(
             isinstance(model, ForecastingModel),
-            f"Model must be a darts.models.forecasting not a {type(model)}",
+            f"Model must be a darts ForecastingModel not a {type(model)}",
         )
         self.model = model
 
@@ -163,18 +174,20 @@ class ForecastingAnomalyModel(AnomalyModel):
         start: Union[pd.Timestamp, float, int] = None,
         num_samples: int = None,
     ):
-        """Train the model (if not already fitted and allow_model_training is set to True) and the
+        """Fit the underlying forecasting model (if applicable) and the fittable scorers, if any.
+
+        Train the model (if not already fitted and ``allow_model_training`` is set to True) and the
         scorer(s) (if fittable) on the given time series.
 
-        Once the model is fitted, the series historical forecasts is computed,
-        representing what would have been obtained by this model on the series.
+        Once the model is fitted, the series historical forecasts are computed,
+        representing what would have been forecasted by this model on the series.
 
         The prediction and the series will then be used to train the scorer(s).
 
         Parameters
         ----------
         series
-            The series to be trained on (anomaly free).
+            One or multiple target series to be trained on (anomaly free).
         allow_model_training
             Boolean value that indicates if the forecasting model needs to be fitted on the given series.
             If set to False, the model needs to be already fitted.
@@ -182,9 +195,9 @@ class ForecastingAnomalyModel(AnomalyModel):
         model_fit_params
             Parameters to be passed on to the forecast model ``fit()`` method.
         past_covariates
-            An optional past-observed covariate series. This applies only if the model supports past covariates.
+            Optional past-observed covariate series. This applies only if the model supports past covariates.
         future_covariates
-            An optional future-known covariate series. This applies only if the model supports future covariates.
+            Optional future-known covariate series. This applies only if the model supports future covariates.
         forecast_horizon
             The forecast horizon for the predictions.
         start
@@ -252,15 +265,15 @@ class ForecastingAnomalyModel(AnomalyModel):
             else:
                 raise_if_not(
                     len(list_series) == 1,
-                    f"Forecasting model {self.model.__class__.__name__} only accepts a time series for the training \
-                    phase and not a list of time series.",
+                    f"Forecasting model {self.model.__class__.__name__} only accepts a single time series for the training \
+                    phase and not a sequence of multiple of time series.",
                 )
                 self.model.fit(series=list_series[0], **model_fit_params)
         else:
             raise_if_not(
                 self.model._fit_called,
                 f"Model {self.model.__class__.__name__} needs to be trained, otherwise set parameter 'allow_model_training' to True \
-                (default: False). The model will then be trained on the given input series.",
+                (default: False). The model will then be trained on the provided series.",
             )
 
         # generate the historical_forecast() prediction of the model on the train set
@@ -300,7 +313,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         series: Sequence[TimeSeries],
         name: str,
     ) -> Sequence[TimeSeries]:
-        """Converts 'covariates' into Sequence, if not already, and checks if its length is equal to the one of 'series'.
+        """Convert 'covariates' into Sequence, if not already, and checks if its length is equal to the one of 'series'.
 
         Parameters
         ----------
@@ -350,14 +363,15 @@ class ForecastingAnomalyModel(AnomalyModel):
 
         The plot will be composed of the following:
             - the series itself with the output of the forecasting model.
-            - the anomaly score of each scorer. The scorer with different windows will be separated.
+            - the anomaly score for each scorer. The scorers with different windows will be separated.
             - the actual anomalies, if given.
 
-        Possible to:
+        It is possible to:
             - add a title to the figure with the parameter 'title'
             - give personalized names for the scorers with 'name_of_scorers'
             - save the plot as a png at the path 'save_png'
-            - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR), if the actual anomalies is given.
+            - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR),
+              if the actual anomalies are provided.
 
         Parameters
         ----------
@@ -439,8 +453,10 @@ class ForecastingAnomalyModel(AnomalyModel):
         num_samples: int = None,
         return_model_prediction: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        """Predicts the given input time series with the forecasting model, and applies the scorer(s)
-        on the prediction and the given input time series. Outputs the anomaly score of the given
+        """Compute anomaly score(s) for the given series.
+
+        Predicts the given target time series with the forecasting model, and applies the scorer(s)
+        on the prediction and the target input time series. Outputs the anomaly score of the given
         input time series.
 
         Parameters
@@ -652,8 +668,10 @@ class ForecastingAnomalyModel(AnomalyModel):
         num_samples=None,
         metric: str = "AUC_ROC",
     ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
-        """Predicts the 'series' with the forecasting model, and applies the
-        scorer(s) on the filtered time series and the given input time series. Returns the
+        """Compute the accuracy of the anomaly scores computed by the model.
+
+        Predicts the 'series' with the forecasting model, and applies the
+        scorer(s) on the predicted time series and the given target time series. Returns the
         score(s) of an agnostic threshold metric, based on the anomaly score given by the scorer(s).
 
         Parameters
@@ -730,18 +748,29 @@ class FilteringAnomalyModel(AnomalyModel):
         filter: FilteringModel,
         scorer: Union[AnomalyScorer, Sequence[AnomalyScorer]],
     ):
-        """Filtering-based Anomaly Model
+        """Filtering-based Anomaly Detection Model
 
-        Wraps around a fitted Darts filtering model and an anomaly scorer to compute anomaly scores
-        by comparing how actuals deviate from the model's output.
+        Wraps around a Darts filtering model and one or several anomaly scorer(s) to compute anomaly scores
+        by comparing how actuals deviate from the model's predictions.
+
+        The filtering model may or may not be already fitted. The underlying assumption is that this model
+        should be able to acurately predict the series in the absence of anomalies. For this reason,
+        it is recommend to either provide a model that has already been fitted and evaluated to work
+        appropriately on a series without anomalies, or to ensure that a simple call to the :func:`fit()`
+        method of the model will be sufficient to train it to satisfactory performance on a series without anomalies.
+
+        Calling :func:`fit()` on the anomaly model will fit the underlying filtering model only
+        if ``allow_model_training`` is set to ``True`` upon calling ``fit()``.
+        In addition, calling :func:`fit()` will also fit the fittable scorers, if any.
 
         Parameters
         ----------
         filter
             A filtering model from Darts that will be used to filter the actual time series
         scorer
-            A scorer that will be used to convert the actual and filtered time series to
-            an anomaly score ``TimeSeries``. If a list of `N` scorer is given, the anomaly model will call each
+            One or multiple scorer(s) that will be used to compare the actual and predicted time series in order
+            to obtain an anomaly score ``TimeSeries``.
+            If a list of `N` scorer is given, the anomaly model will call each
             one of the scorers and output a list of `N` anomaly scores ``TimeSeries``.
         """
 
@@ -759,7 +788,9 @@ class FilteringAnomalyModel(AnomalyModel):
         allow_model_training: bool = False,
         filter_fit_params: Optional[Dict[str, Any]] = None,
     ):
-        """Train the filter (if not already fitted and allow_model_training is set to True)
+        """Fit the underlying filtering model (if applicable) and the fittable scorers, if any.
+
+        Train the filter (if not already fitted and ``allow_model_training`` is set to True)
         and the scorer(s) on the given time series.
 
         The filter model will be applied to the given series, and the results will be used
@@ -837,7 +868,7 @@ class FilteringAnomalyModel(AnomalyModel):
             - the anomaly score of each scorer. The scorer with different windows will be separated.
             - the actual anomalies, if given.
 
-        Possible to:
+        It is possible to:
             - add a title to the figure with the parameter 'title'
             - give personalized names for the scorers with 'name_of_scorers'
             - save the plot as a png at the path 'save_png'
@@ -892,9 +923,11 @@ class FilteringAnomalyModel(AnomalyModel):
         filter_params: Optional[Dict[str, Any]] = None,
         return_model_prediction: bool = False,
     ):
-        """Filters the given input time series with the filtering model, and applies the scorer(s)
-        on the filtered time series and the given input time series. Outputs the anomaly score of
-        the given input time series.
+        """Compute anomaly score(s) for the given series.
+
+        Predicts the given target time series with the filtering model, and applies the scorer(s)
+        on the prediction and the target input time series. Outputs the anomaly score of the given
+        input time series.
 
         Parameters
         ----------
@@ -953,9 +986,11 @@ class FilteringAnomalyModel(AnomalyModel):
         filter_params: Optional[Dict[str, Any]] = None,
         metric: str = "AUC_ROC",
     ):
-        """Filters the given input time series with the filtering model, and applies the scorer(s)
-        on the filtered time series and the given input time series. Returns the score(s)
-        of an agnostic threshold metric, based on the anomaly score given by the scorer(s).
+        """Compute the accuracy of the anomaly scores computed by the model.
+
+        Predicts the 'series' with the filtering model, and applies the
+        scorer(s) on the filtered time series and the given target time series. Returns the
+        score(s) of an agnostic threshold metric, based on the anomaly score given by the scorer(s).
 
         Parameters
         ----------
