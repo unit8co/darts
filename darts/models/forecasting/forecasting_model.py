@@ -1097,22 +1097,11 @@ class LocalForecastingModel(ForecastingModel):
     @abstractmethod
     def fit(self, series: TimeSeries) -> "LocalForecastingModel":
         super().fit(series)
-        series._assert_univariate()
+        if not isinstance(self, LocalMultivariateForecastingModel):
+            series._assert_univariate()
 
-    pass
-
-class LocalMultivariateForecastingModel(ForecastingModel):
-    """The base class for "local" forecasting models, that allows multivariate time series.
-
-    Local Forecasting Models (LFM) are models that can be trained on a single target series only that can be univariate. 
-    In Darts, most models in this category tend to be simpler statistical models (such as ETS or FFT). LFMs usually train 
-    on the entire target series supplied when calling :func:`fit()` at once. They can also predict in one go with
-    :func:`predict()` for any number of predictions `n` after the end of the training series.
-
-    All implementations must implement the `fit()` and `predict()` methods.
-    """
-
-
+class LocalMultivariateForecastingModel(LocalForecastingModel):
+    """Class for "local" forecasting models, that allow both uni- and multivariate time series."""
 
 class GlobalForecastingModel(ForecastingModel, ABC):
     """The base class for "global" forecasting models, handling several time series and optional covariates.
@@ -1417,7 +1406,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         return n
 
 
-class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
+class FutureCovariatesLocalForecastingModel(LocalMultivariateForecastingModel, ABC):
     """The base class for future covariates "local" forecasting models, handling single uni- or multivariate target
     and optional future covariates time series.
 
