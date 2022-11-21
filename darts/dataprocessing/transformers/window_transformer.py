@@ -1,7 +1,7 @@
 from typing import Iterator, List, Sequence, Tuple, Union, Optional
 
 from darts.dataprocessing.transformers import BaseDataTransformer
-from darts.logging import get_logger, raise_if_not, raise_log
+from darts.logging import get_logger
 from darts.timeseries import TimeSeries
 from darts.utils.utils import series2seq
 
@@ -61,7 +61,8 @@ class ForecastingWindowTransformer(BaseDataTransformer):
             * :``"min_periods"``: The minimum number of observations in the window required to have a value (otherwise
                 NaN). Darts reuses pandas defautls of 1 for "rolling" and "expanding" modes and of 0 for "ewm" mode.
             * :``"win_type"``: The type of weigthing to apply to the window elements.
-                If provided, it should be one of `scipy.signal.windows <https://docs.scipy.org/doc/scipy/reference/signal.windows.html#module-scipy.signal.windows>`_.
+                If provided, it should be one of `scipy.signal.windows
+                <https://docs.scipy.org/doc/scipy/reference/signal.windows.html#module-scipy.signal.windows>`_.
             * :``"center"``: ``True``/``False`` to set the observation at the current timestep at the center of the
                 window (when ``forecasting_safe`` is `True`, Darts enforces ``"center"`` to ``False``).
             * :``"closed"``: ``"right"``/``"left"``/``"both"``/``"neither"`` to specify whether the right,
@@ -77,8 +78,10 @@ class ForecastingWindowTransformer(BaseDataTransformer):
             This can be modified by adding item ``"raw": False`` in the transformation dictionary.
             It is expected that the function returns a single
             value for each window. Other possible configurations can be found in the
-            `pandas.DataFrame.rolling().apply() documentation <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.rolling.html>`_
-            and `pandas.DataFrame.expanding().apply() documentation <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.expanding.html>`_.
+            `pandas.DataFrame.rolling().apply() documentation
+            <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.rolling.html>`_
+            and `pandas.DataFrame.expanding().apply() documentation
+            <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.expanding.html>`_.
 
         treat_na
             Specifies how to treat missing values that were added by the window transformations
@@ -113,7 +116,7 @@ class ForecastingWindowTransformer(BaseDataTransformer):
 
         n_jobs
             The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
-            passed as input to a method, parallelising operations regarding different ``TimeSeries`. Defaults to `1`.
+            passed as input to a method, parallelising operations regarding different ``TimeSeries``. Defaults to `1`.
 
         verbose
             Whether to print operations progress.

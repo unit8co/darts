@@ -3141,7 +3141,8 @@ class TimeSeries:
             * :``"min_periods"``: The minimum number of observations in the window required to have a value (otherwise
                 NaN). Darts reuses pandas defautls of 1 for "rolling" and "expanding" modes and of 0 for "ewm" mode.
             * :``"win_type"``: The type of weigthing to apply to the window elements.
-                If provided, it should be one of `scipy.signal.windows <https://docs.scipy.org/doc/scipy/reference/signal.windows.html#module-scipy.signal.windows>`_.
+                If provided, it should be one of `scipy.signal.windows
+                <https://docs.scipy.org/doc/scipy/reference/signal.windows.html#module-scipy.signal.windows>`_.
             * :``"center"``: ``True``/``False`` to set the observation at the current timestep at the center of the
                 window (when ``forecasting_safe`` is `True`, Darts enforces ``"center"`` to ``False``).
             * :``"closed"``: ``"right"``/``"left"``/``"both"``/``"neither"`` to specify whether the right,
@@ -3157,8 +3158,10 @@ class TimeSeries:
             This can be modified by adding item ``"raw": False`` in the transformation dictionary.
             It is expected that the function returns a single
             value for each window. Other possible configurations can be found in the
-            `pandas.DataFrame.rolling().apply() documentation <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.rolling.html>`_
-            and `pandas.DataFrame.expanding().apply() documentation <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.expanding.html>`_.
+            `pandas.DataFrame.rolling().apply()
+            documentation <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.rolling.html>`_
+            and `pandas.DataFrame.expanding().apply()
+            documentation <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.expanding.html>`_.
 
         treat_na
             Specifies how to treat missing values that were added by the window transformations
@@ -3192,7 +3195,7 @@ class TimeSeries:
         -------
         TimeSeries
             Returns a new TimeSeries instance with the transformed components. If ``keep_non_transformed`` is ``True``,
-            the resulting TimeSeries will contain the original non-transformed components as well as the transformed ones.
+            the resulting TimeSeries will contain the original non-transformed components along the transformed ones.
             If the input series is stochastic, all samples are identically transformed.
             The naming convention for the transformed components is as follows:
             [window_mode]_[function_name]_[window_size if provided]_[min_periods if not default]_[original_comp_name],
@@ -3202,8 +3205,9 @@ class TimeSeries:
             expanding_sum_3_comp_2 (i.e., window_mode= expanding, function_name = sum, window_size=3,
             original_comp_name=comp_2). For user-defined functions, function_name = udf.
         """
+        VALID_BFILL_NA = {"bfill", "backfill"}
+        VALID_TREAT_NA = VALID_BFILL_NA.union({"dropna"})
 
-        VALID_TREAT_NA = ["dropna", "bfill", "backfill"]
         PD_WINDOW_OPERATIONS = {
             "rolling": pd.DataFrame.rolling,
             "expanding": pd.DataFrame.expanding,
@@ -3261,10 +3265,10 @@ class TimeSeries:
             else:
                 raise_log(
                     ValueError(
-                        f"Transformation function must be a string or a callable. "
-                        f"String can be the name of any function available for pandas window. "
-                        f"A list of those function can be found in the `documentation "
-                        f"<https://pandas.pydata.org/pandas-docs/stable/reference/window.html>`."
+                        "Transformation function must be a string or a callable. "
+                        "String can be the name of any function available for pandas window. "
+                        "A list of those function can be found in the `documentation "
+                        "<https://pandas.pydata.org/pandas-docs/stable/reference/window.html>`."
                     ),
                     logger,
                 )
@@ -3407,7 +3411,7 @@ class TimeSeries:
             added_na.extend(
                 [
                     min_periods - 1 if min_periods > 0 else min_periods
-                    for col in filter_df_columns
+                    for _ in filter_df_columns
                 ]
             )
 
@@ -3428,15 +3432,13 @@ class TimeSeries:
             )
 
             raise_if_not(
-                not (treat_na in ["bfill", "backfill"] and forecasting_safe),
-                "when `forecasting_safe` is True, backfilling NaNs is not allowed as "
+                not (treat_na in VALID_BFILL_NA and forecasting_safe),
+                "when `forecasting_safe` is True, back filling NaNs is not allowed as "
                 "it risks contaminating past time steps with future values.",
                 logger,
             )
 
-        if isinstance(treat_na, (int, float)) or (
-            treat_na == "bfill" or treat_na == "backfill"
-        ):
+        if isinstance(treat_na, (int, float)) or (treat_na in VALID_BFILL_NA):
             for i in range(0, len(added_na), n_samples):
                 s_idx = added_na[i : (i + n_samples)][0]
                 value = (
