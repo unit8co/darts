@@ -199,7 +199,7 @@ class BacktestingTestCase(DartsBaseTestClass):
 
         # univariate model + multivariate series
         with self.assertRaises(AssertionError):
-            NaiveDrift().backtest(
+            FFT().backtest(
                 linear_series_multi, start=pd.Timestamp("20000201"), forecast_horizon=3
             )
 
