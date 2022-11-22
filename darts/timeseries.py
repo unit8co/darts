@@ -22,7 +22,6 @@ or integer indices (:class:`pandas.RangeIndex`).
     - Contain numeric types only
     - Have distinct components/columns names
     - Have a well defined frequency (for ``DateTimeIndex``)
-    - Be non-empty
     - Have static covariates consistent with their components, or no static covariates
     - Have a hierarchy consistent with their components, or no hierarchy
 
@@ -86,7 +85,6 @@ class TimeSeries:
             "TimeSeries.from_times_and_values(), etc...).",
             logger,
         )
-        raise_if_not(xa.size > 0, "The time series array must not be empty.", logger)
         raise_if_not(
             len(xa.shape) == 3,
             f"TimeSeries require DataArray of dimensionality 3 ({DIMS}).",
@@ -1517,7 +1515,7 @@ class TimeSeries:
         )
 
         # component names
-        cnames = [f"{comp}_quantiles" for comp in self.components]
+        cnames = [f"{comp}_{quantile}" for comp in self.components]
 
         new_data = np.quantile(
             self._xa.values,
@@ -1559,8 +1557,13 @@ class TimeSeries:
         pandas.DataFrame
             The Pandas DataFrame containing the quantiles for each component.
         """
-        # TODO: there might be a slightly more efficient way to do it for several quantiles at once with xarray...
-        return pd.concat([self.quantile_df(quantile) for quantile in quantiles], axis=1)
+        return pd.concat(
+            [
+                self.quantile_timeseries(quantile).pd_dataframe()
+                for quantile in quantiles
+            ],
+            axis=1,
+        )
 
     def astype(self, dtype: Union[str, np.dtype]) -> "TimeSeries":
         """
@@ -3059,7 +3062,6 @@ class TimeSeries:
             new_xa.values = fn(self._xa.values)
 
         elif num_args == 2:  # map function uses timestamp f(timestamp, x)
-
             # go over shortest amount of iterations, either over time steps or components and samples
             if self.n_timesteps <= self.n_components * self.n_samples:
                 new_vals = np.vstack(
@@ -3270,6 +3272,15 @@ class TimeSeries:
 
             if central_series.shape[0] > 1:
                 p = central_series.plot(*args, **kwargs)
+            # empty TimeSeries
+            elif central_series.shape[0] == 0:
+                p = plt.plot(
+                    [],
+                    [],
+                    *args,
+                    **kwargs,
+                )
+                plt.xlabel(self.time_index.name)
             else:
                 p = plt.plot(
                     [self.start_time()],

@@ -144,6 +144,8 @@ Model | Past Covariates | Future Covariates | Static Covariates
 `TCNModel` | ✅ | |
 `TransformerModel` | ✅ | |
 `TFTModel` | ✅ | ✅ | ✅ 
+`DLinearModel` | ✅ | ✅ | ✅ 
+`NLinearModel` | ✅ | ✅ | ✅ 
 
 **Table 1: Darts' forecasting models and their covariate support**
 
