@@ -192,7 +192,6 @@ class ForecastingAnomalyModel(AnomalyModel):
         Parameters
         ----------
         series
-<<<<<<< HEAD
             One or multiple target series to be trained on (anomaly free).
         allow_model_training
             Boolean value that indicates if the forecasting model needs to be fitted on the given series.
@@ -200,21 +199,10 @@ class ForecastingAnomalyModel(AnomalyModel):
             Default: False
         model_fit_params
             Parameters to be passed on to the forecast model ``fit()`` method.
-=======
-            The series to be trained on (anomaly free).
->>>>>>> 8a779882 (corrected Kmeans, LFO and Gaussian Scorer + added input from PR)
         past_covariates
             Optional past-observed covariate series. This applies only if the model supports past covariates.
         future_covariates
-<<<<<<< HEAD
             Optional future-known covariate series. This applies only if the model supports future covariates.
-=======
-            An optional future-known covariate series. This applies only if the model supports future covariates.
-        allow_model_training
-            Boolean value that indicates if the forecasting model needs to be fitted on the given series.
-            If set to False, the model needs to be already fitted.
-            Default: False
->>>>>>> 8a779882 (corrected Kmeans, LFO and Gaussian Scorer + added input from PR)
         forecast_horizon
             The forecast horizon for the predictions.
         start
