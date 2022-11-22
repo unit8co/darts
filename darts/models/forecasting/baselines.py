@@ -40,7 +40,7 @@ class NaiveMean(LocalMultivariateForecastingModel):
         return self
 
     def predict(self, n: int, num_samples: int = 1):
-        forecast = np.array([[*self.mean_val] for _ in range(n)])
+        forecast = np.tile(self.mean_val, (1, n))
         return self._build_forecast_series(forecast)
 
 
@@ -75,7 +75,7 @@ class NaiveSeasonal(LocalMultivariateForecastingModel):
             f"The time series requires at least K={self.K} points",
             logger,
         )
-        self.last_k_vals = series.values()[-self.K :, :]
+        self.last_k_vals = series.values(copy=False)[-self.K :, :]
         return self
 
     def predict(self, n: int, num_samples: int = 1):

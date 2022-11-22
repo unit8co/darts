@@ -1084,7 +1084,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return model
 
 
-class LocalForecastingModel(ForecastingModel):
+class LocalForecastingModel(ForecastingModel, ABC):
     """The base class for "local" forecasting models, handling only single univariate time series.
 
     Local Forecasting Models (LFM) are models that can be trained on a single univariate target series only. In Darts,
@@ -1102,7 +1102,7 @@ class LocalForecastingModel(ForecastingModel):
             series._assert_univariate()
 
 
-class LocalMultivariateForecastingModel(LocalForecastingModel):
+class LocalMultivariateForecastingModel(LocalForecastingModel, ABC):
     """Class for "local" forecasting models, that allow both uni- and multivariate time series."""
 
 
