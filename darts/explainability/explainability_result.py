@@ -58,9 +58,7 @@ class ExplainabilityResult(ABC):
 
         raise_if(
             component is None and len(self.available_components) > 1,
-            ValueError(
-                "The component parameter is required when the model has more than one component."
-            ),
+            "The component parameter is required when the model has more than one component.",
             logger,
         )
 

@@ -3073,6 +3073,7 @@ class TimeSeries:
         low_quantile: Optional[float] = 0.05,
         high_quantile: Optional[float] = 0.95,
         default_formatting: bool = True,
+        plot_all_components: Optional[bool] = False,
         *args,
         **kwargs,
     ):
@@ -3099,6 +3100,8 @@ class TimeSeries:
             interval is shown if `high_quantile` is None (default 0.95).
         default_formatting
             Whether or not to use the darts default scheme.
+        plot_all_components
+            Whether to plot all components of the series, or only the first 10.
         args
             some positional arguments for the `plot()` method
         kwargs
@@ -3131,14 +3134,18 @@ class TimeSeries:
         if not any(lw in kwargs for lw in ["lw", "linewidth"]):
             kwargs["lw"] = 2
 
-        if self.n_components > 10:
+        n_components_to_plot = 10
+        if self.n_components > n_components_to_plot and not plot_all_components:
             logger.warning(
-                "Number of components is larger than 10 ({}). Plotting only the first 10 components.".format(
-                    self.n_components
-                )
+                f"Number of components is larger than {n_components_to_plot} ({self.n_components}). "
+                f"Plotting only the first {n_components_to_plot} components."
+                f"You can overwrite this in the using the `plot_all_components` argument in plot()"
+                f"Beware that plotting all components may take a long time."
             )
+        if plot_all_components:
+            n_components_to_plot = self.n_components
 
-        for i, c in enumerate(self._xa.component[:10]):
+        for i, c in enumerate(self._xa.component[:n_components_to_plot]):
             comp_name = str(c.values)
 
             if i > 0:
