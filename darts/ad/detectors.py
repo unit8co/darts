@@ -23,7 +23,7 @@ from typing import Any, Sequence, Union
 import numpy as np
 
 from darts import TimeSeries
-from darts.ad.utils import _sanity_check, eval_accuracy_from_prediction
+from darts.ad.utils import _check_if_TimeSeries, eval_accuracy_from_prediction
 from darts.logging import raise_if, raise_if_not
 
 
@@ -103,7 +103,7 @@ class NonFittableDetector(Detector):
 
         detected_series = []
         for series in list_series:
-            _sanity_check(series)
+            _check_if_TimeSeries(series)
 
             detected_series.append(self._detect_core(series))
 
@@ -148,7 +148,7 @@ class FittableDetector(Detector):
 
         detected_series = []
         for series in list_series:
-            _sanity_check(series)
+            _check_if_TimeSeries(series)
 
             if self.trainable:
                 raise_if_not(
@@ -187,7 +187,7 @@ class FittableDetector(Detector):
         self.width_trained_on = series
 
         for idx, series in enumerate(list_series):
-            _sanity_check(series)
+            _check_if_TimeSeries(series)
 
             if idx == 0:
                 self.width_trained_on = series.width

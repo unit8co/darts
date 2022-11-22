@@ -28,9 +28,10 @@ from sklearn.neighbors import LocalOutlierFactor
 
 from darts import TimeSeries
 from darts.ad.utils import (
+    _check_if_TimeSeries,
     _convert_to_list,
     _return_intersect,
-    _sanity_check,
+    _sanity_check_2series,
     eval_accuracy_from_scores,
 )
 from darts.logging import raise_if_not
@@ -187,7 +188,8 @@ class NonFittableAnomalyScorer(AnomalyScorer):
 
         for s1, s2 in zip(list_series_1, list_series_2):
 
-            _sanity_check(s1, s2)
+            _sanity_check_2series(s1, s2)
+
             s1, s2 = _return_intersect(s1, s2)
             s1, s2 = self._check_probabilistic_case(s1, s2)
 
@@ -254,12 +256,12 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         if series_2 is None:
             for series in list_series_1:
-                _sanity_check(series)
+                _check_if_TimeSeries(series)
                 series, _ = self._check_probabilistic_case(series)
                 anomaly_scores.append(self._score_core(series, None))
         else:
             for (s1, s2) in zip(list_series_1, list_series_2):
-                _sanity_check(s1, s2)
+                _sanity_check_2series(s1, s2)
                 s1, s2 = self._check_probabilistic_case(s1, s2)
                 anomaly_scores.append(self._score_core(s1, s2))
 
@@ -307,11 +309,11 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         if series_2 is None:
             for idx, series in enumerate(list_series_1):
-                _sanity_check(series)
+                _check_if_TimeSeries(series)
                 list_series_1[idx], _ = self._check_probabilistic_case(series)
         else:
             for idx, (s1, s2) in enumerate(zip(list_series_1, list_series_2)):
-                _sanity_check(s1, s2)
+                _sanity_check_2series(s1, s2)
                 list_series_1[idx], _ = self._check_probabilistic_case(s1)
                 list_series_2[idx], _ = self._check_probabilistic_case(s2)
 
@@ -495,13 +497,20 @@ class GaussianMixtureScorer(FittableAnomalyScorer):
         self._fit_called = True
         self.width_trained_on = list_series[0].width
 
+        list_np_series = [series.all_values(copy=False) for series in list_series]
+
         if not self.component_wise:
             self.model = GaussianMixture(n_components=self.n_components)
             self.model.fit(
                 np.concatenate(
                     [
-                        s.all_values(copy=False).reshape(-1, self.window * s.width)
-                        for s in list_series
+                        np.array(
+                            [
+                                np.array(np_series[i : i + self.window])
+                                for i in range(len(np_series) - self.window + 1)
+                            ]
+                        ).reshape(-1, self.window * len(np_series[0]))
+                        for np_series in list_np_series
                     ]
                 )
             )
@@ -512,8 +521,13 @@ class GaussianMixtureScorer(FittableAnomalyScorer):
                 model.fit(
                     np.concatenate(
                         [
-                            s.all_values(copy=False)[:, width].reshape(-1, self.window)
-                            for s in list_series
+                            np.array(
+                                [
+                                    np.array(np_series[i : i + self.window, width])
+                                    for i in range(len(np_series) - self.window + 1)
+                                ]
+                            ).reshape(-1, self.window)
+                            for np_series in list_np_series
                         ]
                     )
                 )
@@ -689,13 +703,20 @@ class KMeansScorer(FittableAnomalyScorer):
         self._fit_called = True
         self.width_trained_on = list_series[0].width
 
+        list_np_series = [series.all_values(copy=False) for series in list_series]
+
         if not self.component_wise:
             self.model = KMeans(n_clusters=self.k)
             self.model.fit(
                 np.concatenate(
                     [
-                        s.all_values(copy=False).reshape(-1, self.window * s.width)
-                        for s in list_series
+                        np.array(
+                            [
+                                np.array(np_series[i : i + self.window])
+                                for i in range(len(np_series) - self.window + 1)
+                            ]
+                        ).reshape(-1, self.window * len(np_series[0]))
+                        for np_series in list_np_series
                     ]
                 )
             )
@@ -706,8 +727,13 @@ class KMeansScorer(FittableAnomalyScorer):
                 model.fit(
                     np.concatenate(
                         [
-                            s.all_values(copy=False)[:, width].reshape(-1, self.window)
-                            for s in list_series
+                            np.array(
+                                [
+                                    np.array(np_series[i : i + self.window, width])
+                                    for i in range(len(np_series) - self.window + 1)
+                                ]
+                            ).reshape(-1, self.window)
+                            for np_series in list_np_series
                         ]
                     )
                 )
@@ -889,13 +915,20 @@ class LocalOutlierFactorScorer(FittableAnomalyScorer):
         self._fit_called = True
         self.width_trained_on = list_series[0].width
 
+        list_np_series = [series.all_values(copy=False) for series in list_series]
+
         if not self.component_wise:
             self.model = LocalOutlierFactor(n_neighbors=self.n_neighbors, novelty=True)
             self.model.fit(
                 np.concatenate(
                     [
-                        s.all_values(copy=False).reshape(-1, self.window * s.width)
-                        for s in list_series
+                        np.array(
+                            [
+                                np.array(np_series[i : i + self.window])
+                                for i in range(len(np_series) - self.window + 1)
+                            ]
+                        ).reshape(-1, self.window * len(np_series[0]))
+                        for np_series in list_np_series
                     ]
                 )
             )
@@ -906,8 +939,13 @@ class LocalOutlierFactorScorer(FittableAnomalyScorer):
                 model.fit(
                     np.concatenate(
                         [
-                            s.all_values(copy=False)[:, width].reshape(-1, self.window)
-                            for s in list_series
+                            np.array(
+                                [
+                                    np.array(np_series[i : i + self.window, width])
+                                    for i in range(len(np_series) - self.window + 1)
+                                ]
+                            ).reshape(-1, self.window)
+                            for np_series in list_np_series
                         ]
                     )
                 )
@@ -1356,6 +1394,11 @@ class GaussianNLLScorer(NLLScorer):
             -np.log(
                 (1 / np.sqrt(2 * np.pi * x1.std() ** 2))
                 * np.exp(-((x2 - x1.mean()) ** 2) / (2 * x1.std() ** 2))
+            )
+            if x1.std() > 0.01
+            else -np.log(
+                (1 / np.sqrt(2 * np.pi * 0.06**2))
+                * np.exp(-((x2 - x1.mean()) ** 2) / (2 * 0.06**2))
             )
             for (x1, x2) in zip(probabilistic_estimations, deterministic_values)
         ]

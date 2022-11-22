@@ -10,6 +10,7 @@ TODO:
     - check error message
     - clean function show_anomalies_from_scores
     - allow plots for probabilistic timeseries (for now we take the mean when plotting)
+    - create a zoom option on anomalies for a show function
 """
 
 from typing import Sequence, Tuple, Union
@@ -248,10 +249,14 @@ def _eval_accuracy_from_data(
         Score of the anomalies prediction
     """
 
+    _check_if_TimeSeries(s_data, "Prediction series input")
+    _check_if_TimeSeries(s_anomalies, "actual_anomalies input")
+
     # if window > 1, the anomalies will be adjusted so that it can be compared timewise with s_data
     s_anomalies = _window_adjustment_anomalies(s_anomalies, window)
 
-    _sanity_check(s_data, s_anomalies)
+    _sanity_check_2series(s_data, s_anomalies)
+
     s_data, s_anomalies = _return_intersect(s_data, s_anomalies)
 
     if metric_name == "AUC_ROC" or metric_name == "AUC_PR":
@@ -307,50 +312,50 @@ def _return_intersect(
     return series_1.slice_intersect(series_2), series_2.slice_intersect(series_1)
 
 
-def _sanity_check(
+def _check_if_TimeSeries(series: TimeSeries, message: str = None):
+    """Checks if given input is of type Darts TimeSeries"""
+
+    raise_if_not(
+        isinstance(series, TimeSeries),
+        "{} must be type darts.timeseries.TimeSeries and not {}".format(
+            message if message is not None else "Series input", type(series)
+        ),
+    )
+
+
+def _sanity_check_2series(
     series_1: TimeSeries,
-    series_2: TimeSeries = None,
+    series_2: TimeSeries,
 ):
-    """Performs sanity check on the given inputs
+    """Performs sanity check on the two given inputs
 
     Checks if the two inputs:
-    - are 'Darts TimeSeries'
-    - have the same width/dimension
-    - if their intersection in time is not null
+        - type is Darts Timeseries
+        - have the same width/dimension
+        - if their intersection in time is not null
 
     Parameters
     ----------
     series_1
         1st time series
     series_2:
-        Optionally, 2nd time series
+        2nd time series
     """
 
-    # check if type input is a Darts TimeSeries
+    _check_if_TimeSeries(series_1)
+    _check_if_TimeSeries(series_2)
+
+    # check if the two inputs time series have the same width
     raise_if_not(
-        isinstance(series_1, TimeSeries),
-        f"Series input must be type darts.timeseries.TimeSeries and not {type(series_1)}",
+        series_1.width == series_2.width,
+        f"Series must have the same width, found {series_1.width} and {series_2.width}",
     )
 
-    if series_2 is not None:
-
-        # check if type input is a Darts TimeSeries
-        raise_if_not(
-            isinstance(series_2, TimeSeries),
-            f"Series input must be type darts.timeseries.TimeSeries and not {type(series_2)}",
-        )
-
-        # check if the two inputs time series have the same width
-        raise_if_not(
-            series_1.width == series_2.width,
-            f"Series must have the same width, found {series_1.width} and {series_2.width}",
-        )
-
-        # check if the time intersection between the two inputs time series is not empty
-        raise_if_not(
-            len(series_1._time_index.intersection(series_2._time_index)) > 0,
-            "Series must have a non-empty intersection timestamps",
-        )
+    # check if the time intersection between the two inputs time series is not empty
+    raise_if_not(
+        len(series_1._time_index.intersection(series_2._time_index)) > 0,
+        "Series must have a non-empty intersection timestamps",
+    )
 
 
 def _window_adjustment_anomalies(series: TimeSeries, window: int) -> TimeSeries:
@@ -386,9 +391,6 @@ def _window_adjustment_anomalies(series: TimeSeries, window: int) -> TimeSeries:
         # the process results in replacing every value by itself -> return directly the series
         return series
     else:
-
-        _sanity_check(series)
-
         np_series = series.all_values(copy=False)
 
         values = [
@@ -440,7 +442,7 @@ def show_anomalies_from_scores(
     model_output: TimeSeries = None,
     anomaly_scores: Union[TimeSeries, Sequence[TimeSeries]] = None,
     window: Union[int, Sequence[int]] = 1,
-    name_of_scorers: Union[str, Sequence[str]] = None,
+    names_of_scorers: Union[str, Sequence[str]] = None,
     actual_anomalies: TimeSeries = None,
     title: str = None,
     save_png: str = None,
@@ -455,7 +457,7 @@ def show_anomalies_from_scores(
 
     Possible to:
         - add a title to the figure with the parameter 'title'
-        - give personalized names for the scorers with 'name_of_scorers'
+        - give personalized names for the scorers with 'names_of_scorers'
         - save the plot as a png at the path 'save_png'
         - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR), if the actual anomalies is given
 
@@ -470,7 +472,7 @@ def show_anomalies_from_scores(
     window
         Window parameter for each anomaly scores.
         Default: 1. If a list of anomaly scores is given, the same default window will be used for every score.
-    name_of_scorers
+    names_of_scorers
         Name of the scores. Must be a list of length equal to the number of scorers in the anomaly_model.
     actual_anomalies
         The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
@@ -539,25 +541,25 @@ def show_anomalies_from_scores(
             )
             anomaly_scores = [anomaly_scores]
 
-        if name_of_scorers is not None:
-            if isinstance(name_of_scorers, Sequence):
-                for idx, name in enumerate(name_of_scorers):
+        if names_of_scorers is not None:
+            if isinstance(names_of_scorers, Sequence):
+                for idx, name in enumerate(names_of_scorers):
                     raise_if_not(
                         isinstance(name, str),
                         f"Elements of name_of_scorers must be of type str, found {type(s)} at index {idx}.",
                     )
             else:
                 raise_if_not(
-                    isinstance(name_of_scorers, str),
-                    f"Input `name_of_scorers` must be of type str or Sequence, found {type(name_of_scorers)}.",
+                    isinstance(names_of_scorers, str),
+                    f"Input `names_of_scorers` must be of type str or Sequence, found {type(names_of_scorers)}.",
                 )
 
-                name_of_scorers = [name_of_scorers]
+                names_of_scorers = [names_of_scorers]
 
             raise_if_not(
-                len(name_of_scorers) == len(anomaly_scores),
-                f"The number of names in `name_of_scorers` must match the number of anomaly score given as input, \
-                found {len(name_of_scorers)} and expected {len(anomaly_scores)}.",
+                len(names_of_scorers) == len(anomaly_scores),
+                f"The number of names in `names_of_scorers` must match the number of anomaly score given as input, \
+                found {len(names_of_scorers)} and expected {len(anomaly_scores)}.",
             )
 
         if isinstance(window, Sequence):
@@ -648,8 +650,8 @@ def show_anomalies_from_scores(
             else:
                 value = None
 
-            if name_of_scorers is not None:
-                label = name_of_scorers[idx] + [f" ({value})", ""][value is None]
+            if names_of_scorers is not None:
+                label = names_of_scorers[idx] + [f" ({value})", ""][value is None]
             else:
                 label = f"score_{str(idx)}" + [f" ({value})", ""][value is None]
 
