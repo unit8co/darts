@@ -522,12 +522,31 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         with test_case.assertRaises(ValueError):
             seriesA.append(seriesC)
 
-        # Changing frequence is not allowed
+        # Changing frequency is not allowed
         seriesM = TimeSeries.from_times_and_values(
             pd.date_range("20130107", "20130507", freq="30D"), range(5)
         )
         with test_case.assertRaises(ValueError):
             seriesA.append(seriesM)
+
+    @staticmethod
+    def helper_test_prepend(test_case, test_series: TimeSeries):
+        # reconstruct series
+        seriesA, seriesB = test_series.split_after(pd.Timestamp("20130106"))
+        test_case.assertEqual(seriesB.prepend(seriesA), test_series)
+        test_case.assertEqual(seriesB.prepend(seriesA).freq, test_series.freq)
+
+        # Creating a gap is not allowed
+        seriesC = test_series.drop_before(pd.Timestamp("20130108"))
+        with test_case.assertRaises(ValueError):
+            seriesC.prepend(seriesA)
+
+        # Changing frequency is not allowed
+        seriesM = TimeSeries.from_times_and_values(
+            pd.date_range("20130107", "20130507", freq="30D"), range(5)
+        )
+        with test_case.assertRaises(ValueError):
+            seriesM.prepend(seriesA)
 
     def test_slice(self):
         TimeSeriesTestCase.helper_test_slice(self, self.series1)
@@ -546,6 +565,9 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
     def test_append(self):
         TimeSeriesTestCase.helper_test_append(self, self.series1)
+
+    def test_prepend(self):
+        TimeSeriesTestCase.helper_test_prepend(self, self.series1)
 
     def test_with_values(self):
         vals = np.random.rand(5, 10, 3)

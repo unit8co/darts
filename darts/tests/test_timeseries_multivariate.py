@@ -105,6 +105,9 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
     def test_append(self):
         TimeSeriesTestCase.helper_test_append(self, self.series1)
 
+    def test_prepend(self):
+        TimeSeriesTestCase.helper_test_prepend(self, self.series1)
+
     def test_strip(self):
         dataframe1 = pd.DataFrame(
             {
