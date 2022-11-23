@@ -2600,7 +2600,6 @@ class TimeSeries:
             A new TimeSeries with the new values appended
         """
 
-        # TODO test
         if self._has_datetime_index:
             idx = pd.DatetimeIndex(
                 [self.end_time() + i * self._freq for i in range(1, len(values) + 1)],
@@ -2660,7 +2659,6 @@ class TimeSeries:
             A new TimeSeries with the new values prepended.
         """
 
-        # TODO test
         if self._has_datetime_index:
             idx = pd.DatetimeIndex(
                 [
