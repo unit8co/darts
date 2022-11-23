@@ -1098,6 +1098,8 @@ class LocalForecastingModel(ForecastingModel, ABC):
     @abstractmethod
     def fit(self, series: TimeSeries) -> "LocalForecastingModel":
         super().fit(series)
+
+        series._assert_deterministic()
         if not isinstance(self, LocalMultivariateForecastingModel):
             series._assert_univariate()
 

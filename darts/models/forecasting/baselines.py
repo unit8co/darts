@@ -36,7 +36,8 @@ class NaiveMean(LocalMultivariateForecastingModel):
 
     def fit(self, series: TimeSeries):
         super().fit(series)
-        self.mean_val = np.mean(series.values(), axis=0)
+
+        self.mean_val = np.mean(series.values(copy=False), axis=0)
         return self
 
     def predict(self, n: int, num_samples: int = 1):
@@ -70,6 +71,7 @@ class NaiveSeasonal(LocalMultivariateForecastingModel):
 
     def fit(self, series: TimeSeries):
         super().fit(series)
+
         raise_if_not(
             len(series) >= self.K,
             f"The time series requires at least K={self.K} points",
@@ -100,6 +102,8 @@ class NaiveDrift(LocalMultivariateForecastingModel):
 
     def fit(self, series: TimeSeries):
         super().fit(series)
+        assert series.n_samples == 1, "This model expects deterministic time series"
+
         series = self.training_series
         return self
 
