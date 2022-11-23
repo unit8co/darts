@@ -70,6 +70,8 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         super()._fit(series, future_covariates)
 
+        self._assert_univariate(series)
+
         # storing to restore the statsmodels model results object
         self.training_historic_future_covariates = future_covariates
 

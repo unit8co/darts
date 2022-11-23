@@ -14,14 +14,13 @@ from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
     LocalForecastingModel,
-    LocalMultivariateForecastingModel,
 )
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
-class NaiveMean(LocalMultivariateForecastingModel):
+class NaiveMean(LocalForecastingModel):
     def __init__(self):
         """Naive Mean Model
 
@@ -45,7 +44,7 @@ class NaiveMean(LocalMultivariateForecastingModel):
         return self._build_forecast_series(forecast)
 
 
-class NaiveSeasonal(LocalMultivariateForecastingModel):
+class NaiveSeasonal(LocalForecastingModel):
     def __init__(self, K: int = 1):
         """Naive Seasonal Model
 
@@ -86,7 +85,7 @@ class NaiveSeasonal(LocalMultivariateForecastingModel):
         return self._build_forecast_series(forecast)
 
 
-class NaiveDrift(LocalMultivariateForecastingModel):
+class NaiveDrift(LocalForecastingModel):
     def __init__(self):
         """Naive Drift Model
 

@@ -1083,6 +1083,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         return model
 
+    def _assert_univariate(self, series: TimeSeries):
+        if not series.is_univariate:
+            raise_log(
+                ValueError("This model only supports univariate TimeSeries instances")
+            )
+
 
 class LocalForecastingModel(ForecastingModel, ABC):
     """The base class for "local" forecasting models, handling only single univariate time series.
@@ -1098,14 +1104,7 @@ class LocalForecastingModel(ForecastingModel, ABC):
     @abstractmethod
     def fit(self, series: TimeSeries) -> "LocalForecastingModel":
         super().fit(series)
-
         series._assert_deterministic()
-        if not isinstance(self, LocalMultivariateForecastingModel):
-            series._assert_univariate()
-
-
-class LocalMultivariateForecastingModel(LocalForecastingModel, ABC):
-    """Class for "local" forecasting models, that allow both uni- and multivariate time series."""
 
 
 class GlobalForecastingModel(ForecastingModel, ABC):
@@ -1411,7 +1410,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         return n
 
 
-class FutureCovariatesLocalForecastingModel(LocalMultivariateForecastingModel, ABC):
+class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
     """The base class for future covariates "local" forecasting models, handling single uni- or multivariate target
     and optional future covariates time series.
 

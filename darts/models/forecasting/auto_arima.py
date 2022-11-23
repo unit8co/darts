@@ -50,6 +50,7 @@ class AutoARIMA(FutureCovariatesLocalForecastingModel):
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         super()._fit(series, future_covariates)
+        self._assert_univariate(series)
         series = self.training_series
         self.model.fit(
             series.values(), X=future_covariates.values() if future_covariates else None
