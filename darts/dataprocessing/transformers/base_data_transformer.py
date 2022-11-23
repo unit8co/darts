@@ -190,12 +190,15 @@ class BaseDataTransformer(ABC):
 
     @staticmethod
     def _reshape_in(
-        series: TimeSeries, component_mask: Optional[np.ndarray] = None
+        series: TimeSeries,
+        component_mask: Optional[np.ndarray] = None,
+        flatten: Optional[bool] = True,
     ) -> np.ndarray:
-        """Reshapes the series' values to be fed in input to a transformer.
-
-        The output is a 2-D matrix where each column corresponds to a component (dimension)
-        of the series, and the columns' values are the flattened values over all samples
+        """Extracts specified components from series and reshapes these values into an appropriate input shape
+        for a transformer. If `flatten=True`, the output is a 2-D matrix where each row corresponds to a timestep,
+        each column corresponds to a component (dimension) of the series, and the columns' values are the flattened
+        values over all samples. Conversely, if `flatten=False`, the output is a 3-D matrix (i.e. timesteps along
+        the zeroth axis, components along the first axis, and samples along the second axis).
 
         Parameters
         ----------
@@ -204,6 +207,10 @@ class BaseDataTransformer(ABC):
         component_mask
             Optionally, np.ndarray boolean mask of shape (n_components, 1) specifying which components to
             extract from `series`.
+        flatten
+            Optionally, bool specifying whether the samples for each component extracted by `component_mask`
+            should be should be flattened into a single column.
+
         """
 
         if component_mask is None:
@@ -222,20 +229,26 @@ class BaseDataTransformer(ABC):
 
         vals = series.all_values(copy=False)[:, component_mask, :]
 
-        return np.stack(
-            [vals[:, i, :].reshape(-1) for i in range(component_mask.sum())], axis=1
-        )
+        if flatten:
+            vals = np.stack(
+                [vals[:, i, :].reshape(-1) for i in range(component_mask.sum())], axis=1
+            )
+
+        return vals
 
     @staticmethod
     def _reshape_out(
         series: TimeSeries,
         vals: np.ndarray,
         component_mask: Optional[np.ndarray] = None,
+        flatten: Optional[bool] = True,
     ) -> np.ndarray:
-        """Reshapes the 2-D matrix coming out of a transformer into a 3-D matrix suitable to build a TimeSeries.
+        """Reshapes the 2-D or 3-D matrix coming out of a transformer into a 3-D matrix suitable to build a TimeSeries,
+        and adds back components previously removed by `component_mask` in `_reshape_in` method.
 
-        The output is a 3-D matrix, built by taking each column of the 2-D matrix (the flattened components)
-        and reshaping them to (len(series), n_samples), then stacking them on 2nd axis.
+        If `flatten=True`, the output is built by taking each column of the 2-D input matrix (the flattened components)
+        and reshaping them to (len(series), n_samples), then stacking them on 2nd axis. Conversely, if `flatten=False`,
+        the shape of the 3-D input matrix is left unchanged.
 
         Parameters
         ----------
@@ -246,6 +259,9 @@ class BaseDataTransformer(ABC):
         component_mask
             Optionally, np.ndarray boolean mask of shape (n_components, 1) specifying which components were extracted
             from `series`. If given, insert `vals` back into the columns of the original array.
+        flatten
+            Optionally, bool specifying whether `series` is a 2-D matrix. Should match value of `flatten` argument
+            provided to `_reshape_in` method.
         """
 
         raise_if_not(
@@ -257,10 +273,13 @@ class BaseDataTransformer(ABC):
         )
 
         series_width = series.width if component_mask is None else component_mask.sum()
-        reshaped = np.stack(
-            [vals[:, i].reshape(-1, series.n_samples) for i in range(series_width)],
-            axis=1,
-        )
+        if flatten:
+            reshaped = np.stack(
+                [vals[:, i].reshape(-1, series.n_samples) for i in range(series_width)],
+                axis=1,
+            )
+        else:
+            reshaped = vals
 
         if component_mask is None:
             return reshaped
