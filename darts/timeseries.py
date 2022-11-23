@@ -3885,7 +3885,7 @@ class TimeSeries:
         return len(self._xa)
 
     def __add__(self, other):
-        if isinstance(other, (int, float, np.integer)):
+        if isinstance(other, (int, float, np.integer, np.float32, np.float64)):
             xa_ = _xarray_with_attrs(
                 self._xa + other, self.static_covariates, self.hierarchy
             )
@@ -3906,7 +3906,7 @@ class TimeSeries:
         return self + other
 
     def __sub__(self, other):
-        if isinstance(other, (int, float, np.integer)):
+        if isinstance(other, (int, float, np.integer, np.float32, np.float64)):
             xa_ = _xarray_with_attrs(
                 self._xa - other, self.static_covariates, self.hierarchy
             )
@@ -3927,7 +3927,7 @@ class TimeSeries:
         return other + (-self)
 
     def __mul__(self, other):
-        if isinstance(other, (int, float, np.integer)):
+        if isinstance(other, (int, float, np.integer, np.float32, np.float64)):
             xa_ = _xarray_with_attrs(
                 self._xa * other, self.static_covariates, self.hierarchy
             )
@@ -3948,7 +3948,7 @@ class TimeSeries:
         return self * other
 
     def __pow__(self, n):
-        if isinstance(n, (int, float, np.integer)):
+        if isinstance(n, (int, float, np.integer, np.float32, np.float64)):
             raise_if(n < 0, "Attempted to raise a series to a negative power.", logger)
             xa_ = _xarray_with_attrs(
                 self._xa ** float(n), self.static_covariates, self.hierarchy
@@ -3967,7 +3967,7 @@ class TimeSeries:
             )
 
     def __truediv__(self, other):
-        if isinstance(other, (int, float, np.integer)):
+        if isinstance(other, (int, float, np.integer, np.float32, np.float64)):
             if other == 0:
                 raise_log(ZeroDivisionError("Cannot divide by 0."), logger)
             xa_ = _xarray_with_attrs(
