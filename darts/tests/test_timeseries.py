@@ -200,6 +200,26 @@ class TimeSeriesTestCase(DartsBaseTestClass):
                 (abs(q_ts.values() - np.quantile(values, q=q, axis=2)) < 1e-3).all()
             )
 
+    def test_quantiles_df(self):
+        q = (0.01, 0.1, 0.5, 0.95)
+        values = np.random.rand(10, 1, 1000)
+        ar = xr.DataArray(
+            values,
+            dims=("time", "component", "sample"),
+            coords={"time": self.times, "component": ["a"]},
+        )
+        ts = TimeSeries(ar)
+        q_ts = ts.quantiles_df(q)
+        for col in q_ts:
+            q = float(str(col).replace("a_", ""))
+            self.assertTrue(
+                abs(
+                    q_ts[col].to_numpy().reshape(10, 1)
+                    - np.quantile(values, q=q, axis=2)
+                    < 1e-3
+                ).all()
+            )
+
     def test_alt_creation(self):
         with self.assertRaises(ValueError):
             # Series cannot be lower than three without passing frequency as argument to constructor,
@@ -837,6 +857,17 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         self.assertEqual(
             resampled_timeseries.pd_series().at[pd.Timestamp("20130109")], 8
+        )
+
+        # using loffset to avoid nan in the first value
+        times = pd.date_range(
+            start=pd.Timestamp("20200101233000"), periods=10, freq="15T"
+        )
+        pd_series = pd.Series(range(10), index=times)
+        timeseries = TimeSeries.from_series(pd_series)
+        resampled_timeseries = timeseries.resample(freq="1h", loffset="30T")
+        self.assertEqual(
+            resampled_timeseries.pd_series().at[pd.Timestamp("20200101233000")], 0
         )
 
     def test_short_series_creation(self):

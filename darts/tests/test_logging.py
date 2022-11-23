@@ -63,7 +63,7 @@ class LoggingTestCase(unittest.TestCase):
             (
                 "darts.timeseries",
                 "ERROR",
-                "ValueError: The time series array must not be empty.",
+                "ValueError: TimeSeries require DataArray of dimensionality 3 (('time', 'component', 'sample')).",
             )
         )
 
