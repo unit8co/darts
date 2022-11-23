@@ -396,7 +396,7 @@ class GaussianMixtureScorer(FittableAnomalyScorer):
 
         """
         A Gaussian mixture model is trained on the training data when the ``fit()`` method is called.
-        The ``score()`` method will compute the log-likelihood of each sample.
+        The ``score()`` method will compute the negative log-likelihood of each sample.
 
         TODO: stride in training is equal to w, and in score stride is equal to 1. Give the option to change
         these parameters.
@@ -440,18 +440,19 @@ class GaussianMixtureScorer(FittableAnomalyScorer):
         - If the series is univariate, it will return a univariate series regardless of the parameter
         component_wise.
 
-        A window of size w is rolled on the series with
-        a stride equal to 1. It is the same window used during the training phase. At each timestamp, the previous w
-        values will be used to form a vector of size w * width of the series. The ``score_samples()`` of the Gaussian
-        mixture model will be called, with the vector as parameter. It will return the log-likelihood of the vector,
-        and the exponential function is applied. The output will be a series of width 1 and length n-w+1, with n being
-        the length of the input series. Each value will represent how anomalous the sample of the w previous values is.
+        A window of size w is rolled on the series with a stride equal to 1. It is the same window used during the
+        training phase. At each timestamp, the previous w values will be used to form a vector of size w * width of
+        the series. The ``score_samples()`` of the Gaussian mixture model will be called, with the vector as parameter.
+        It will return the negative log-likelihood of the vector, and the exponential function is applied. The output
+        will be a series of width 1 and length n-w+1, with n being the length of the input series. Each value will
+        represent how anomalous the sample of the w previous values is.
 
         If a list is given, a for loop will iterate through the list, and the function ``_score_core()`` will be
         applied independently on each series.
 
-        If component_wise is set to True, the algorithm will be applied to each width independently. The log-likelihood
-        of the window in width w will be computed by the model trained on the corresponding width w during the training.
+        If component_wise is set to True, the algorithm will be applied to each width independently. The negative
+        log-likelihood of the window in width w will be computed by the model trained on the corresponding width
+        w during the training.
 
         Parameters
         ----------
@@ -580,7 +581,7 @@ class GaussianMixtureScorer(FittableAnomalyScorer):
 
                 np_anomaly_score.append(np.exp(np_anomaly_score_width))
 
-        return TimeSeries.from_times_and_values(
+        return -TimeSeries.from_times_and_values(
             series._time_index[self.window - 1 :], list(zip(*np_anomaly_score))
         )
 
@@ -810,11 +811,12 @@ class LocalOutlierFactorScorer(FittableAnomalyScorer):
     ) -> None:
         """
         A Local outlier factor model is trained on the training data when the ``fit()`` method is called.
-        The ``score()`` method will return the local deviation of the density of a given sample with respect to its
-        neighbors. It is local in that the deviation depends on how isolated the object is with respect to the
-        surrounding neighborhood. More precisely, locality is given by k-nearest neighbors, whose distance is used to
-        estimate the local density. By comparing the local density of a sample to the local densities of its neighbors,
-        one can identify samples that have a substantially lower density than their neighbors.
+        The ``score()`` method will return the negative local deviation of the density of a given sample with
+        respect to its neighbors. It is local in that the deviation depends on how isolated the object is with
+        respect to the surrounding neighborhood. More precisely, locality is given by k-nearest neighbors, whose
+        distance is used to estimate the local density. By comparing the local density of a sample to the local
+        densities of its neighbors, one can identify samples that have a substantially lower density than their
+        neighbors.
 
         TODO: stride in training is equal to w, and in score stride is equal to 1. Give the option
         to change these parameters.
@@ -859,10 +861,10 @@ class LocalOutlierFactorScorer(FittableAnomalyScorer):
 
         A window of size w is rolled on the series with a stride equal to 1. It is the same window used during
         the training phase. At each timestamp, the previous w values will be used to form a vector of size w * width
-        of the series. The Local outlier factor model will then return the local deviation of the density of the given
-        vector with respect to its neighbors (constituted in the training phase). The output will be a series of width
-        1 and length n-w+1, with n being the length of the input series. Each value will represent how anomalous the
-        sample of the w previous values is.
+        of the series. The Local outlier factor model will then return the negative local deviation of the density
+        of the given vector with respect to its neighbors (constituted in the training phase). The output will be a
+        series of width 1 and length n-w+1, with n being the length of the input series. Each value will represent how
+        anomalous the sample of the w previous values is.
 
         If a list is given, a for loop will iterate through the list, and the function ``_score_core()`` will be
         applied independently on each series.
@@ -971,7 +973,6 @@ class LocalOutlierFactorScorer(FittableAnomalyScorer):
         np_anomaly_score = []
 
         if not self.component_wise:
-
             np_anomaly_score.append(
                 self.model.score_samples(
                     np.array(
@@ -983,7 +984,6 @@ class LocalOutlierFactorScorer(FittableAnomalyScorer):
                 )
             )
         else:
-
             for width in range(self.width_trained_on):
                 np_anomaly_score_width = self.model[width].score_samples(
                     np.array(
@@ -996,7 +996,7 @@ class LocalOutlierFactorScorer(FittableAnomalyScorer):
 
                 np_anomaly_score.append(np_anomaly_score_width)
 
-        return TimeSeries.from_times_and_values(
+        return -TimeSeries.from_times_and_values(
             series._time_index[self.window - 1 :], list(zip(*np_anomaly_score))
         )
 

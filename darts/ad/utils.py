@@ -546,7 +546,7 @@ def show_anomalies_from_scores(
                 for idx, name in enumerate(names_of_scorers):
                     raise_if_not(
                         isinstance(name, str),
-                        f"Elements of name_of_scorers must be of type str, found {type(s)} at index {idx}.",
+                        f"Elements of names_of_scorers must be of type str, found {type(s)} at index {idx}.",
                     )
             else:
                 raise_if_not(

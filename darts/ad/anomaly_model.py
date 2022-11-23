@@ -93,7 +93,7 @@ class AnomalyModel(ABC):
         series: TimeSeries,
         model_output: TimeSeries = None,
         anomaly_scores: Union[TimeSeries, Sequence[TimeSeries]] = None,
-        name_of_scorers: Union[str, Sequence[str]] = None,
+        names_of_scorers: Union[str, Sequence[str]] = None,
         actual_anomalies: TimeSeries = None,
         title: str = None,
         save_png: str = None,
@@ -106,10 +106,10 @@ class AnomalyModel(ABC):
         if title is None:
             title = f"Anomaly results by model {self.model.__class__.__name__}"
 
-        if name_of_scorers is None:
-            name_of_scorers = []
+        if names_of_scorers is None:
+            names_of_scorers = []
             for scorer in self.scorers:
-                name_of_scorers.append(scorer.__str__())
+                names_of_scorers.append(scorer.__str__())
 
         list_window = []
         for scorer in self.scorers:
@@ -120,7 +120,7 @@ class AnomalyModel(ABC):
             model_output=model_output,
             anomaly_scores=anomaly_scores,
             window=list_window,
-            name_of_scorers=name_of_scorers,
+            names_of_scorers=names_of_scorers,
             actual_anomalies=actual_anomalies,
             title=title,
             save_png=save_png,
@@ -449,7 +449,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             series,
             model_output=model_output,
             anomaly_scores=anomaly_scores,
-            name_of_scorers=names_of_scorers,
+            names_of_scorers=names_of_scorers,
             actual_anomalies=actual_anomalies,
             title=title,
             save_png=save_png,
@@ -710,9 +710,10 @@ class ForecastingAnomalyModel(AnomalyModel):
         -------
         Union[float, Sequence[float], Sequence[Sequence[float]]]
             Score for the time series.
-            float -> if one series is given and the anomaly model contains one scorer
-            Sequence[float] -> if one series is given and the anomaly model contains more than one scorer
-            Sequence[Sequence[float]]] -> if multiple series are given
+            - float -> if one series is given and the anomaly model contains one scorer
+            - Sequence[float] -> if one series is given and the anomaly model contains more than one scorer
+            - Sequence[Sequence[float]]] -> if multiple series are given: outer Sequence is over the series,
+            and the inner Sequence is over the scorers.
 
         """
 
@@ -870,7 +871,7 @@ class FilteringAnomalyModel(AnomalyModel):
         series=TimeSeries,
         filter_params: Optional[Dict[str, Any]] = None,
         actual_anomalies=TimeSeries,
-        name_of_scorers: Union[str, Sequence[str]] = None,
+        names_of_scorers: Union[str, Sequence[str]] = None,
         title: str = None,
         save_png: str = None,
         metric: str = None,
@@ -886,7 +887,7 @@ class FilteringAnomalyModel(AnomalyModel):
 
         It is possible to:
             - add a title to the figure with the parameter 'title'
-            - give personalized names for the scorers with 'name_of_scorers'
+            - give personalized names for the scorers with 'names_of_scorers'
             - save the plot as a png at the path 'save_png'
             - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR), if the actual anomalies is given
 
@@ -898,7 +899,7 @@ class FilteringAnomalyModel(AnomalyModel):
             parameters of the Darts `.filter()` filtering model
         actual_anomalies
             The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
-        name_of_scorers
+        names_of_scorers
             Name of the scores. Must be a list of length equal to the number of scorers in the anomaly_model.
         title
             Title of the figure
@@ -926,7 +927,7 @@ class FilteringAnomalyModel(AnomalyModel):
             series,
             model_output=model_output,
             anomaly_scores=anomaly_scores,
-            name_of_scorers=name_of_scorers,
+            names_of_scorers=names_of_scorers,
             actual_anomalies=actual_anomalies,
             title=title,
             save_png=save_png,
