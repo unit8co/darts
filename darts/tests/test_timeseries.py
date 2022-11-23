@@ -516,6 +516,9 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         seriesA, seriesB = test_series.split_after(pd.Timestamp("20130106"))
         test_case.assertEqual(seriesA.append(seriesB), test_series)
         test_case.assertEqual(seriesA.append(seriesB).freq, test_series.freq)
+        test_case.assertTrue(
+            test_series.time_index.equals(seriesA.append(seriesB).time_index)
+        )
 
         # Creating a gap is not allowed
         seriesC = test_series.drop_before(pd.Timestamp("20130108"))
@@ -554,6 +557,9 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         seriesA, seriesB = test_series.split_after(pd.Timestamp("20130106"))
         test_case.assertEqual(seriesB.prepend(seriesA), test_series)
         test_case.assertEqual(seriesB.prepend(seriesA).freq, test_series.freq)
+        test_case.assertTrue(
+            test_series.time_index.equals(seriesB.prepend(seriesA).time_index)
+        )
 
         # Creating a gap is not allowed
         seriesC = test_series.drop_before(pd.Timestamp("20130108"))
