@@ -742,7 +742,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             The ForecastingModel subclass to be tuned for 'series'.
         parameters
             A dictionary containing as keys hyperparameter names, and as values lists of values for the
-            respective hyperparameter.
+            respective hyperparameter. This dictionary should at a minimum contain the mandatory arguments
+            to instantiate the model class.
         series
             The TimeSeries instance used as input and target for training.
         past_covariates
