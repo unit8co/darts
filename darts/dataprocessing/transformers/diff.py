@@ -1,7 +1,6 @@
 from typing import Any, Iterator, Sequence, Tuple, Union
 
 import numpy as np
-from more_itertools import always_iterable
 
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.timeseries import TimeSeries
@@ -102,7 +101,9 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
 
         """
         super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
-        self._lags = tuple(always_iterable(lags))
+        if not isinstance(lags, Sequence):
+            lags = [lags]
+        self._lags = lags
         self._dropna = dropna
 
     def _fit_iterator(
