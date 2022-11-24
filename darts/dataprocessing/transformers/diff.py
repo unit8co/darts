@@ -21,6 +21,86 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
         n_jobs: int = 1,
         verbose: bool = False,
     ):
+        r"""Differencing data transformer.
+
+        Differencing is typically applied to a time series to make it stationary; see [1]_ for further details.
+        The transformation is applied independently over each dimension (component) and sample of the time series.
+
+        Notes
+        -----
+        `Diff` sequentially applies a series of :math:`m`-lagged differencing operations (i.e.
+        :math:`y\prime_t = y_t = y_{t-m}`) to a time series; please refer to [2]_ for further details about lagged
+        differencing. The :math:`m` value to use for each differencing operation is specfied by the `lags` parameter;
+        for example, setting `lags = [1, 12]` first applies 1-lagged differencing to the time series, and then
+        12-lagged differencing to the 1-lagged differenced series.
+
+        Each element in `lags` represents a single first-order differencing operation, so the 'total order' of the
+        differencing equals `len(lags)`. To specify second-order differencing then (i.e. the equivalent of
+        `series.diff(n=2)`), one should specify `lags = [1,1]` (i.e. two sequential 1-lagged, first-order
+        differences); see [3]_ for further details on second-order differencing.
+
+        Upon computing each :math:`m`-lagged difference, the first :math:`m` values of the time series are 'lost',
+        since differences cannot be computed for these values. The length of a `series` transformed by
+        `Diff(lags=lags)` will be, therefore, be `series.n_timesteps - sum(lags)`.
+
+        Parameters
+        ----------
+        name
+            A specific name for the transformer
+        lags
+            Specifies the lag values to be used for each first-order differencing operation (i.e. the :math:`m`
+            value in :math:`y\prime_t = y_t = y_{t-m}`). If a single int is provided, only one differencing
+            operation is performed with this specified lag value. If a sequence of ints is provided, multiple
+            differencing operations are sequentially performed using each value in `lags`, one after the other.
+            For example, specifying `lags = [2, 3]` will effectively compute
+            `series.diff(n=1, periods=2).diff(n=1, periods=3)`.
+        dropna
+            Optionally, specifies if values which can't be differenced (i.e. at the start of the series) should be
+            dropped. Note that if `dropna = True`, then a `component_mask` cannot be specified, since the undifferenced
+            components will be of a different length to the differenced ones.
+        n_jobs
+            The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+            passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+            (sequential). Setting the parameter to `-1` means using all the available processors.
+            Note: for a small amount of data, the parallelisation overhead could end up increasing the total
+            required amount of time.
+        verbose
+            Whether to print operations progress
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.dataprocessing.transformers import Diff
+        >>> series = AirPassengersDataset().load()
+        >>> first_order_diff = Diff(lags=1, dropna=True).fit_transform(series)
+        >>> print(first_order_diff.head())
+        <TimeSeries (DataArray) (Month: 5, component: 1, sample: 1)>
+        array([[[ 6.]],
+            [[14.]],
+            [[-3.]],
+            [[-8.]],
+            [[14.]]])
+        Coordinates:
+        * Month      (Month) datetime64[ns] 1949-02-01 1949-03-01 ... 1949-06-01
+        * component  (component) object '#Passengers'
+        >>> second_order_diff = Diff(lags=[1, 2], dropna=False).fit_transform(series)
+        >>> print(second_order_diff.head())
+        <TimeSeries (DataArray) (Month: 5, component: 1, sample: 1)>
+        array([[[ nan]],
+            [[ nan]],
+            [[ nan]],
+            [[ -9.]],
+            [[-22.]]])
+        Coordinates:
+        * Month      (Month) datetime64[ns] 1949-01-01 1949-02-01 ... 1949-05-01
+        * component  (component) object '#Passengers'
+        References
+        ----------
+        .. [1] https://otexts.com/fpp2/stationarity.html
+        .. [2] https://otexts.com/fpp2/stationarity.html#seasonal-differencing
+        .. [3] https://otexts.com/fpp2/stationarity.html#second-order-differencing
+
+        """
         super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
         self._lags = tuple(always_iterable(lags))
         self._dropna = dropna
@@ -43,10 +123,13 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
         )
         component_mask = Diff._get_component_mask(kwargs, dropna)
         vals = Diff._reshape_in(series, component_mask, flatten=False)
+        # First `lags_sum` values of time series will be 'lost' due to differencing;
+        # need to remember these values to 'undifference':
         start_vals = vals[:lags_sum, :, :]
         diffed = start_vals
         cutoff = 0
         for lag in lags:
+            # Store first `lag` values of current differencing step:
             start_vals[cutoff:, :, :] = diffed
             diffed = diffed[lag:, :, :] - diffed[:-lag, :, :]
             cutoff += lag
@@ -68,6 +151,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
         for lag in lags:
             diffed = diffed.diff(n=1, periods=lag, dropna=dropna)
         if component_mask is not None:
+            # Add back masked (i.e. undifferenced) components:
             diffed = Diff._reshape_out(
                 series, diffed.all_values(), component_mask, flatten=False
             )
@@ -97,6 +181,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                 f"transform was fitted to data of frequency {freq}."
             ),
         )
+        # Start dates 'missing' from differenced series if dropna = True, so need to shift forward:
         expected_start = start_time + sum(lags) * series.freq if dropna else start_time
         raise_if_not(
             series.start_time() == expected_start,
