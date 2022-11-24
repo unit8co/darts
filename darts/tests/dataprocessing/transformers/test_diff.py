@@ -1,10 +1,9 @@
 import unittest
 from copy import deepcopy
-from typing import Optional
+from typing import Optional, Sequence
 
 import numpy as np
 import pandas as pd
-from more_itertools import always_iterable
 
 from darts.dataprocessing.transformers import Diff
 from darts.timeseries import TimeSeries
@@ -103,7 +102,9 @@ class DiffTestCase(unittest.TestCase):
             diff.fit(short_sine)
             # Difference entire time series:
             to_undiff = self.sine_series.copy()
-            for lag in always_iterable(lags):
+            if not isinstance(lags, Sequence):
+                lags = (lags,)
+            for lag in lags:
                 to_undiff = to_undiff.diff(n=1, periods=lag, dropna=dropna)
             # Should be able to undifference entire series even though only fitted
             # to truncated series:
@@ -194,7 +195,7 @@ class DiffTestCase(unittest.TestCase):
         Tests that `Diff` throws error is length of series is less than `sum(lags)` (i.e.
         there's not enough data to fit the differencer)
         """
-        lags = tuple(always_iterable(1000))
+        lags = (1000,)
         diff = Diff(lags=lags)
         with self.assertRaises(ValueError) as e:
             diff.fit(self.sine_series)

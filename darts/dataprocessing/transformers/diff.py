@@ -102,7 +102,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
         """
         super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
         if not isinstance(lags, Sequence):
-            lags = [lags]
+            lags = (lags,)
         self._lags = lags
         self._dropna = dropna
 
