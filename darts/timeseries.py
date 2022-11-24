@@ -46,7 +46,7 @@ import xarray as xr
 from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
 
-from .logging import get_logger, raise_if, raise_if_not, raise_log, raise_user_warning
+from .logging import get_logger, raise_if, raise_if_not, raise_log
 
 logger = get_logger(__name__)
 
