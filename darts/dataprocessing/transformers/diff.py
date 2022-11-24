@@ -28,8 +28,8 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
         Notes
         -----
         `Diff` sequentially applies a series of :math:`m`-lagged differencing operations (i.e.
-        :math:`y\prime_t = y_t = y_{t-m}`) to a time series; please refer to [2]_ for further details about lagged
-        differencing. The :math:`m` value to use for each differencing operation is specfied by the `lags` parameter;
+        :math:`y\prime_t = y_t - y_{t-m}`) to a time series; please refer to [2]_ for further details about lagged
+        differencing. The :math:`m` value to use for each differencing operation is specified by the `lags` parameter;
         for example, setting `lags = [1, 12]` first applies 1-lagged differencing to the time series, and then
         12-lagged differencing to the 1-lagged differenced series.
 
@@ -40,7 +40,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
 
         Upon computing each :math:`m`-lagged difference, the first :math:`m` values of the time series are 'lost',
         since differences cannot be computed for these values. The length of a `series` transformed by
-        `Diff(lags=lags)` will be, therefore, be `series.n_timesteps - sum(lags)`.
+        `Diff(lags=lags)` will therefore be `series.n_timesteps - sum(lags)`.
 
         Parameters
         ----------
@@ -48,7 +48,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
             A specific name for the transformer
         lags
             Specifies the lag values to be used for each first-order differencing operation (i.e. the :math:`m`
-            value in :math:`y'_t = y_t = y_{t-m}`). If a single int is provided, only one differencing
+            value in :math:`y'_t = y_t - y_{t-m}`). If a single int is provided, only one differencing
             operation is performed with this specified lag value. If a sequence of ints is provided, multiple
             differencing operations are sequentially performed using each value in `lags`, one after the other.
             For example, specifying `lags = [2, 3]` will effectively compute

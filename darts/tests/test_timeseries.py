@@ -536,7 +536,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
     def helper_test_append_values(test_case, test_series: TimeSeries):
         # reconstruct series
         seriesA, seriesB = test_series.split_after(pd.Timestamp("20130106"))
-        arrayB = seriesB.data_array().values
+        arrayB = seriesB.all_values()
         test_case.assertEqual(seriesA.append_values(arrayB), test_series)
         test_case.assertTrue(
             test_series.time_index.equals(seriesA.append_values(arrayB).time_index)

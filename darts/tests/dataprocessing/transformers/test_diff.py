@@ -83,7 +83,7 @@ class DiffTestCase(unittest.TestCase):
         """
         Tests that `Diff` class can 'undifference' data that extends beyond
          what was used to fit it (e.g. like when undifferencing a forecast of
-         a differenced timeseries, so as to a yield a forecast of the undifferenced
+         a differenced timeseries, so as to yield a forecast of the undifferenced
          time series)
         """
 

@@ -209,7 +209,7 @@ class BaseDataTransformer(ABC):
             extract from `series`.
         flatten
             Optionally, bool specifying whether the samples for each component extracted by `component_mask`
-            should be should be flattened into a single column.
+            should be flattened into a single column.
 
         """
 
