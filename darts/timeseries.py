@@ -1429,13 +1429,11 @@ class TimeSeries:
         """
         if not self.is_deterministic:
             if not suppress_warnings:
-                raise_user_warning(
-                    True,
+                logger.warning(
                     "You are transforming a stochastic TimeSeries (i.e., contains several samples). "
                     "The resulting DataFrame is a 2D object with all samples on the columns. "
                     "If this is not the expected behavior consider calling a function "
-                    "adapted to stochastic TimeSeries like quantile_df().",
-                    logger,
+                    "adapted to stochastic TimeSeries like quantile_df()."
                 )
 
             comp_name = list(self.components)

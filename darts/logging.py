@@ -222,19 +222,3 @@ def suppress_lightning_warnings(suppress_all: bool = False):
             "ignore",
             ".*Trying to infer the `batch_size` from an ambiguous collection.*",
         )
-
-
-def raise_user_warning(condition, message, logger):
-    """
-    Checks provided boolean condition and raises a warning if it evaluates to True.
-    Useful to notify the user of a potential problem without stopping the execution.
-    condition:
-        The boolean condition to be checked.
-    message:
-        The message of the warning.
-    logger:
-        The logger instance to log the warning message if 'condition' is True.
-
-    """
-    if condition:
-        logger.warning("UserWarning:" + message)
