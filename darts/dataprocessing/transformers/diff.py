@@ -49,7 +49,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
             A specific name for the transformer
         lags
             Specifies the lag values to be used for each first-order differencing operation (i.e. the :math:`m`
-            value in :math:`y\prime_t = y_t = y_{t-m}`). If a single int is provided, only one differencing
+            value in :math:`y'_t = y_t = y_{t-m}`). If a single int is provided, only one differencing
             operation is performed with this specified lag value. If a sequence of ints is provided, multiple
             differencing operations are sequentially performed using each value in `lags`, one after the other.
             For example, specifying `lags = [2, 3]` will effectively compute
