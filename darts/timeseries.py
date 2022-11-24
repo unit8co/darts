@@ -3202,7 +3202,7 @@ class TimeSeries:
                 )
             )
 
-        if isinstance(label, Sequence):
+        if not isinstance(label, str) and isinstance(label, Sequence):
             raise_if_not(
                 len(label) == self.n_components
                 or (self.n_components > 10 and len(label) >= 10),
