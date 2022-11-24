@@ -2796,32 +2796,6 @@ class TimeSeries:
         new_xa = self._xa.drop_sel({"component": col_names})
         return self.__class__(new_xa)
 
-    def keep_columns(self, col_names: Union[List[str], str]) -> "TimeSeries":
-        """
-        Return a new ``TimeSeries`` instance containing only a subset of the columns/components.
-
-        Parameters
-        -------
-        col_names
-            String or list of strings corresponding to the columns to be kept.
-
-        Returns
-        -------
-        TimeSeries
-            A new TimeSeries instance with only the specified columns.
-        """
-        if isinstance(col_names, str):
-            col_names = [col_names]
-
-        raise_if_not(
-            all([(x in self.columns.to_list()) for x in col_names]),
-            "Some column names in col_names don't exist in the time series.",
-            logger,
-        )
-
-        new_xa = self._xa.sel({"component": col_names})
-        return self.__class__(new_xa)
-
     def univariate_component(self, index: Union[str, int]) -> "TimeSeries":
         """
         Retrieve one of the components of the series
@@ -3160,7 +3134,7 @@ class TimeSeries:
         low_quantile: Optional[float] = 0.05,
         high_quantile: Optional[float] = 0.95,
         default_formatting: bool = True,
-        label: Optional[Union[str, List[str]]] = "",
+        label: Optional[Union[str, Sequence[str]]] = "",
         *args,
         **kwargs,
     ):
@@ -3228,7 +3202,7 @@ class TimeSeries:
                 )
             )
 
-        if isinstance(label, list):
+        if isinstance(label, Sequence):
             raise_if_not(
                 len(label) == self.n_components
                 or (self.n_components > 10 and len(label) >= 10),
