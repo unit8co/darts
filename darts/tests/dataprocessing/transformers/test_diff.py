@@ -195,6 +195,33 @@ class DiffTestCase(unittest.TestCase):
             str(e.exception),
         )
 
+    def test_diff_incompatible_inverse_transform_shape(self):
+        vals = np.random.rand(10, 5, 5)
+        dates = pd.date_range(start="1/1/2018", freq="W", periods=10)
+        series = TimeSeries.from_times_and_values(values=vals, times=dates)
+        diff = Diff(lags=1, dropna=True)
+        diff.fit(series)
+        series_rm_comp = TimeSeries.from_times_and_values(
+            values=vals[:, 1:, :], times=dates
+        )
+        with self.assertRaises(ValueError) as e:
+            diff.inverse_transform(series_rm_comp.diff(n=1, periods=1, dropna=True))
+        self.assertEqual(
+            f"Expected series to have {series.n_components} components; "
+            f"instead, it has {series.n_components-1}.",
+            str(e.exception),
+        )
+        series_rm_samp = TimeSeries.from_times_and_values(
+            values=vals[:, :, 1:], times=dates
+        )
+        with self.assertRaises(ValueError) as e:
+            diff.inverse_transform(series_rm_samp.diff(n=1, periods=1, dropna=True))
+        self.assertEqual(
+            f"Expected series to have {series.n_samples} samples; "
+            f"instead, it has {series.n_samples-1}.",
+            str(e.exception),
+        )
+
     def test_diff_multiple_calls_to_fit(self):
         """
         This test checks whether calling the scaler twice is calculating new lambdas instead of

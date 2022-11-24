@@ -203,6 +203,20 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
             nan_vals = np.full(nan_shape, fill_value=np.nan)
             series = series.prepend_values(nan_vals)
         vals = Diff._reshape_in(series, component_mask, flatten=False)
+        raise_if_not(
+            vals.shape[1] == start_vals.shape[1],
+            (
+                f"Expected series to have {start_vals.shape[1]} components; "
+                f"instead, it has {vals.shape[1]}."
+            ),
+        )
+        raise_if_not(
+            vals.shape[2] == start_vals.shape[2],
+            (
+                f"Expected series to have {start_vals.shape[2]} samples; "
+                f"instead, it has {vals.shape[2]}."
+            ),
+        )
         cutoff = sum(lags)
         for lag in reversed(lags):
             cutoff -= lag
