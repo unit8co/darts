@@ -28,7 +28,6 @@ from collections import OrderedDict
 from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
-from catboost import CatBoostRegressor
 from sklearn.linear_model import LinearRegression
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
@@ -39,6 +38,16 @@ from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import _check_quantiles, seq2series, series2seq
 
 logger = get_logger(__name__)
+
+try:
+    from catboost import CatBoostRegressor
+except ModuleNotFoundError:
+    logger.warning(
+        "The catboost module could not be imported. "
+        "To enable support for CatBoostRegressor, "
+        "follow the instruction in the README: "
+        "https://github.com/unit8co/darts/blob/master/INSTALL.md"
+    )
 
 
 class RegressionModel(GlobalForecastingModel):

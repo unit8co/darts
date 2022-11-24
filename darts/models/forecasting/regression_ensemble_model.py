@@ -15,6 +15,7 @@ from darts.models.forecasting.forecasting_model import (
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
 from darts.models.forecasting.regression_model import RegressionModel
 from darts.timeseries import TimeSeries
+from darts.utils.utils import seq2series, series2seq
 
 logger = get_logger(__name__)
 
@@ -90,7 +91,8 @@ class RegressionEnsembleModel(EnsembleModel):
         )
 
         # spare train_n_points points to serve as regression target
-        if self.is_single_series:
+        is_single_series = isinstance(series, TimeSeries)
+        if is_single_series:
             train_n_points_too_big = len(self.training_series) <= self.train_n_points
         else:
             train_n_points_too_big = any(
@@ -104,7 +106,7 @@ class RegressionEnsembleModel(EnsembleModel):
             logger,
         )
 
-        if self.is_single_series:
+        if is_single_series:
             forecast_training = self.training_series[: -self.train_n_points]
             regression_target = self.training_series[-self.train_n_points :]
         else:
@@ -156,9 +158,10 @@ class RegressionEnsembleModel(EnsembleModel):
         predictions: Union[TimeSeries, Sequence[TimeSeries]],
         series: Optional[Sequence[TimeSeries]] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        if self.is_single_series:
-            predictions = [predictions]
-            series = [series]
+
+        is_single_series = isinstance(series, TimeSeries) or series is None
+        predictions = series2seq(predictions)
+        series = series2seq(series) if series is not None else [None]
 
         ensembled = [
             self.regression_model.predict(
@@ -166,5 +169,4 @@ class RegressionEnsembleModel(EnsembleModel):
             )
             for serie, prediction in zip(series, predictions)
         ]
-
-        return ensembled[0] if self.is_single_series else ensembled
+        return seq2series(ensembled) if is_single_series else ensembled
