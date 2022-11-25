@@ -13,14 +13,14 @@ from darts.utils.utils import series2seq
 logger = get_logger(__name__)
 
 
-class ForecastingWindowTransformer(BaseDataTransformer):
+class WindowTransformer(BaseDataTransformer):
     def __init__(
         self,
         transforms: Union[dict, List[dict]],
         treat_na: Optional[Union[str, Union[int, float]]] = None,
         forecasting_safe: Optional[bool] = True,
         keep_non_transformed: Optional[bool] = False,
-        name: str = "ForecastingWindowTransformer",
+        name: str = "WindowTransformer",
         n_jobs: int = 1,
         verbose: bool = False,
     ):
@@ -64,7 +64,7 @@ class ForecastingWindowTransformer(BaseDataTransformer):
                             If an integer, the fixed number of observations used for each window.
                             If an offset, the time period of each window.
             * :``"min_periods"``: The minimum number of observations in the window required to have a value (otherwise
-                NaN). Darts reuses pandas defautls of 1 for "rolling" and "expanding" modes and of 0 for "ewm" mode.
+                NaN). Darts reuses pandas defaults of 1 for "rolling" and "expanding" modes and of 0 for "ewm" mode.
             * :``"win_type"``: The type of weigthing to apply to the window elements.
                 If provided, it should be one of `scipy.signal.windows
                 <https://docs.scipy.org/doc/scipy/reference/signal.windows.html#module-scipy.signal.windows>`_.
@@ -93,7 +93,7 @@ class ForecastingWindowTransformer(BaseDataTransformer):
             at the beginning of the resulting TimeSeries. By default, Darts will leave NaNs in the resulting TimeSeries.
             This parameter can be one of the following:
 
-            * :``"dropna"``: to truncate the TimeSeries and drop rows containing missing values.
+            * :``"dropna"``: to truncate the TimeSeries and drop time steps containing missing values.
                 If multiple columns contain different numbers of missing values, only the minimum number
                 of rows is dropped. This operation might reduce the length of the resulting TimeSeries.
 

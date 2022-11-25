@@ -6,7 +6,7 @@ import pandas as pd
 
 from darts import TimeSeries
 from darts.dataprocessing.pipeline import Pipeline
-from darts.dataprocessing.transformers import ForecastingWindowTransformer, Mapper
+from darts.dataprocessing.transformers import WindowTransformer, Mapper
 
 
 class TimeSeriesWindowTransformTestCase(unittest.TestCase):
@@ -130,100 +130,113 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
 
     def test_ts_windowtransf_output_series(self):
         # univariate deterministic input
-        window_transformations = {"function": "sum", "mode": "rolling", "window": 1}
-        transformed_ts = self.series_univ_det.window_transform(
-            transforms=window_transformations
-        )
+        transforms = {"function": "sum", "mode": "rolling", "window": 1}
+        transformed_ts = self.series_univ_det.window_transform(transforms=transforms)
 
         self.assertEqual(
             list(itertools.chain(*transformed_ts.values().tolist())),
             list(itertools.chain(*self.series_univ_det.values().tolist())),
         )
-        self.assertEqual(len(transformed_ts.components), 1)
+        self.assertEqual(
+            transformed_ts.components.to_list(),
+            [
+                f"{transforms['mode']}_{transforms['function']}_{str(transforms['window'])}_{comp}"
+                for comp in self.series_univ_det.components
+            ],
+        )
 
         # multivariate deterministic input
         # transform one component
-        window_transformations = {
-            "function": "sum",
-            "mode": "rolling",
-            "window": 1,
-            "components": "0",
-        }
+        transforms.update({"components": "0"})
+
+        transformed_ts = self.series_multi_det.window_transform(transforms=transforms)
+        self.assertEqual(
+            transformed_ts.components.to_list(),
+            [
+                f"{transforms['mode']}_{transforms['function']}_{str(transforms['window'])}_{comp}"
+                for comp in transforms["components"]
+            ],
+        )
 
         transformed_ts = self.series_multi_det.window_transform(
-            transforms=window_transformations
+            transforms=transforms, keep_non_transformed=True
         )
-        self.assertEqual(len(transformed_ts.components), 1)
 
-        transformed_ts = self.series_multi_det.window_transform(
-            transforms=window_transformations, keep_non_transformed=True
+        self.assertEqual(
+            transformed_ts.components.to_list(),
+            [
+                f"{transforms['mode']}_{transforms['function']}_{str(transforms['window'])}_{comp}"
+                for comp in transforms["components"]
+            ]
+            + self.series_multi_det.components.to_list(),
         )
-        self.assertEqual(len(transformed_ts.components), 5)
 
         # transform multiple components
-        window_transformations = {
+        transforms = {
             "function": "sum",
             "mode": "rolling",
             "window": 1,
             "components": ["0", "0_1"],
         }
 
-        transformed_ts = self.series_multi_det.window_transform(
-            transforms=window_transformations
+        transformed_ts = self.series_multi_det.window_transform(transforms=transforms)
+        self.assertEqual(
+            transformed_ts.components.to_list(),
+            [
+                f"{transforms['mode']}_{transforms['function']}_{str(transforms['window'])}_{comp}"
+                for comp in transforms["components"]
+            ],
         )
-        self.assertEqual(len(transformed_ts.components), 2)
 
         transformed_ts = self.series_multi_det.window_transform(
-            transforms=window_transformations, keep_non_transformed=True
+            transforms=transforms, keep_non_transformed=True
         )
-        self.assertEqual(len(transformed_ts.components), 6)
+
+        self.assertEqual(
+            transformed_ts.components.to_list(),
+            [
+                f"{transforms['mode']}_{transforms['function']}_{str(transforms['window'])}_{comp}"
+                for comp in transforms["components"]
+            ]
+            + self.series_multi_det.components.to_list(),
+        )
 
         # multiple transformations
-        window_transformations = [
-            {
-                "function": "sum",
-                "mode": "rolling",
-                "window": 1,
-                "components": ["0", "0_1"],
-            },
+
+        transforms = [transforms] + [
             {
                 "function": "mean",
                 "mode": "rolling",
                 "window": 1,
                 "components": ["0", "0_1"],
-            },
+            }
         ]
 
-        transformed_ts = self.series_multi_det.window_transform(
-            transforms=window_transformations
+        transformed_ts = self.series_multi_det.window_transform(transforms=transforms)
+        self.assertEqual(
+            transformed_ts.components.to_list(),
+            [
+                f"{transformation['mode']}_{transformation['function']}_{str(transformation['window'])}_{comp}"
+                for transformation in transforms
+                for comp in transformation["components"]
+            ],
         )
-        self.assertEqual(len(transformed_ts.components), 4)
 
         transformed_ts = self.series_multi_det.window_transform(
-            transforms=window_transformations, keep_non_transformed=True
+            transforms=transforms, keep_non_transformed=True
         )
-        self.assertEqual(len(transformed_ts.components), 8)
+        self.assertEqual(
+            transformed_ts.components.to_list(),
+            [
+                f"{transformation['mode']}_{transformation['function']}_{str(transformation['window'])}_{comp}"
+                for transformation in transforms
+                for comp in transformation["components"]
+            ]
+            + self.series_multi_det.components.to_list(),
+        )
 
         # multivariate probabilistic input
-        window_transformations = [
-            {
-                "function": "sum",
-                "mode": "rolling",
-                "window": 1,
-                "components": ["0", "0_1"],
-            },
-            {
-                "function": "mean",
-                "mode": "rolling",
-                "window": 1,
-                "components": ["0", "0_1"],
-            },
-        ]
-
-        transformed_ts = self.series_multi_prob.window_transform(
-            transforms=window_transformations
-        )
-        self.assertEqual(len(transformed_ts.components), 4)
+        transformed_ts = self.series_multi_prob.window_transform(transforms=transforms)
         self.assertEqual(transformed_ts.n_samples, 2)
 
     def test_ts_windowtransf_output_nabehavior(self):
@@ -327,7 +340,7 @@ class WindowTransformerTestCase(unittest.TestCase):
     def test_window_transformer_iterator(self):
         # no series_id, no components : all series and all there components should receive the same transformation
         window_transformations = {"function": "mean"}
-        transformer = ForecastingWindowTransformer(transforms=window_transformations)
+        transformer = WindowTransformer(transforms=window_transformations)
         expected_kwargs_dict = {
             "transforms": window_transformations,
             "keep_non_transformed": False,
@@ -343,7 +356,7 @@ class WindowTransformerTestCase(unittest.TestCase):
 
         # no series_id and components : all series will receive the same transformation on those components
         window_transformations = {"function": "mean", "components": ["0"]}
-        transformer = ForecastingWindowTransformer(transforms=window_transformations)
+        transformer = WindowTransformer(transforms=window_transformations)
         expected_kwargs_dict = {
             "transforms": window_transformations,
             "keep_non_transformed": False,
@@ -362,7 +375,7 @@ class WindowTransformerTestCase(unittest.TestCase):
             "function": "sum",
             "components": ["0"],
         }
-        transformer = ForecastingWindowTransformer(
+        transformer = WindowTransformer(
             transforms=window_transformations,
             treat_na=100,
             keep_non_transformed=True,
@@ -405,7 +418,7 @@ class WindowTransformerTestCase(unittest.TestCase):
 
         mapper = Mapper(fn=times_five)
 
-        window_transformer = ForecastingWindowTransformer(
+        window_transformer = WindowTransformer(
             transforms=window_transformations, treat_na=100
         )
 

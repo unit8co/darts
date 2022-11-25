@@ -2792,7 +2792,7 @@ class TimeSeries:
         Return
         ------
         TimeSeries
-            A new multivariate and/or multi_sample TimeSeries instance.
+            A new multivariate TimeSeries instance.
         """
         return concatenate([self, other], axis=1)
 
@@ -3137,7 +3137,7 @@ class TimeSeries:
                             If an integer, the fixed number of observations used for each window.
                             If an offset, the time period of each window.
             * :``"min_periods"``: The minimum number of observations in the window required to have a value (otherwise
-                NaN). Darts reuses pandas defautls of 1 for "rolling" and "expanding" modes and of 0 for "ewm" mode.
+                NaN). Darts reuses pandas defaults of 1 for "rolling" and "expanding" modes and of 0 for "ewm" mode.
             * :``"win_type"``: The type of weigthing to apply to the window elements.
                 If provided, it should be one of `scipy.signal.windows
                 <https://docs.scipy.org/doc/scipy/reference/signal.windows.html#module-scipy.signal.windows>`_.
@@ -3222,7 +3222,7 @@ class TimeSeries:
             transformation
                 The transformation dictionary.
             builtins
-                The built-in transformations read from the ForecastingWindowTransformer class.
+                The built-in transformations read from the WindowTransformer class.
 
             Returns
             -------
@@ -3353,15 +3353,15 @@ class TimeSeries:
         added_na = []
 
         # run through all transformations in transforms
-        for idx, transformation in enumerate(transforms):
+        for transformation in transforms:
 
             if "components" in transformation:
                 if isinstance(transformation["components"], str):
                     transformation["components"] = [transformation["components"]]
-                comps_to_transform = set(transformation["components"])
+                comps_to_transform = transformation["components"]
 
             else:
-                comps_to_transform = set(original_components)
+                comps_to_transform = original_components
 
             df_cols = ts_df.columns
 

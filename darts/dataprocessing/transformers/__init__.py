@@ -16,4 +16,4 @@ from .reconciliation import (
 )
 from .scaler import Scaler
 from .static_covariates_transformer import StaticCovariatesTransformer
-from .window_transformer import ForecastingWindowTransformer
+from .window_transformer import WindowTransformer
