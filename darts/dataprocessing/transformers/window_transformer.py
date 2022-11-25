@@ -1,3 +1,8 @@
+"""
+Window Transformer
+------------------
+"""
+
 from typing import Iterator, List, Optional, Sequence, Tuple, Union
 
 from darts.dataprocessing.transformers import BaseDataTransformer
