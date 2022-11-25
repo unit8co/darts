@@ -191,7 +191,7 @@ class RidgeRegressor(nn.Module):
     def __init__(self, lambda_init: float = 0.0):
         """Implementation of the closed form Ridge Regression with a regularization coefficient."""
         super().__init__()
-        self._lambda = nn.Parameter(torch.as_tensor(lambda_init, dtype=torch.float))
+        self._lambda = nn.Parameter(torch.as_tensor(lambda_init))
 
     def forward(self, reprs: Tensor, x: Tensor, reg_coeff: float = None) -> Tensor:
         if reg_coeff is None:
@@ -268,7 +268,6 @@ class _DeepTimeModule(PLPastCovariatesModule):
         super().__init__(**kwargs)
         self.input_dim = input_dim
         self.output_dim = output_dim
-        # TODO: develop support for nr_params functionality
         self.nr_params = nr_params
         self.inr_num_layers = inr_num_layers
         self.inr_layers_width = inr_layers_width
@@ -435,15 +434,6 @@ class _DeepTimeModule(PLPastCovariatesModule):
             "scheduler": lr_scheduler,
             "monitor": "val_loss",
         }
-
-    # TODO: must be implemented since inheriting from PLPastCovariatesModule
-    """
-    def _produce_train_output():
-        raise NotImplementedError()
-
-    def _get_batch_prediction():
-        raise NotImplementedError()
-    """
 
 
 class DeepTimeModel(PastCovariatesTorchModel):
@@ -618,6 +608,7 @@ class DeepTimeModel(PastCovariatesTorchModel):
             logger,
         )
 
+        # user can either use default arguments or must redefine all of them
         expected_params = {
             "weight_decay",
             "lambda_lr",
@@ -639,6 +630,15 @@ class DeepTimeModel(PastCovariatesTorchModel):
         )
 
         self.pl_module_params["lr_scheduler_kwargs"]["total_epochs"] = self.n_epochs
+
+        raise_if_not(
+            self.n_epochs
+            > self.pl_module_params["lr_scheduler_kwargs"]["warmup_epochs"],
+            f"n_epochs ({self.n_epochs}) must be greater than the number of warmup epochs for the "
+            f"learning rate scheduler ({self.pl_module_params['lr_scheduler_kwargs']['warmup_epochs']}). "
+            f" This value is controlled by the `lr_scheduler_kwargs['warmup_epochs']` argument.",
+            logger,
+        )
 
         self.inr_num_layers = inr_num_layers
         self.inr_layers_width = inr_layers_width
