@@ -12,16 +12,20 @@ from darts.datasets import (
     ETTh2Dataset,
     ETTm1Dataset,
     ETTm2Dataset,
+    ExchangeRateDataset,
     GasRateCO2Dataset,
     HeartRateDataset,
     IceCreamHeaterDataset,
+    ILINetDataset,
     MonthlyMilkDataset,
     MonthlyMilkIncompleteDataset,
     SunspotsDataset,
     TaylorDataset,
     TemperatureDataset,
+    TrafficDataset,
     UberTLCDataset,
     USGasolineDataset,
+    WeatherDataset,
     WineDataset,
     WoolyDataset,
 )
@@ -55,6 +59,10 @@ datasets = [
     ETTm2Dataset,
     ElectricityDataset,
     UberTLCDataset,
+    ILINetDataset,
+    ExchangeRateDataset,
+    TrafficDataset,
+    WeatherDataset,
 ]
 
 _DEFAULT_PATH_TEST = _DEFAULT_PATH + "/tests"
@@ -145,10 +153,19 @@ class DatasetLoaderTestCase(DartsBaseTestClass):
     def test_multi_series_dataset(self):
         # processing _to_multi_series takes a long time. Test function with 5 cols.
         ts = ele_multi_series_dataset.load().pd_dataframe()
-        ms = UberTLCDataset()._to_multi_series(ts)
-        self.assertEqual(len(ms), 5)
-        self.assertEqual(len(ms[0]), 140256)
 
         ms = ElectricityDataset()._to_multi_series(ts)
         self.assertEqual(len(ms), 5)
         self.assertEqual(len(ms[0]), 105216)
+
+        multi_series_datasets = [
+            UberTLCDataset,
+            ILINetDataset,
+            ExchangeRateDataset,
+            TrafficDataset,
+            WeatherDataset,
+        ]
+        for dataset in multi_series_datasets:
+            ms = dataset()._to_multi_series(ts)
+            self.assertEqual(len(ms), 5)
+            self.assertEqual(len(ms[0]), len(ts.index))
