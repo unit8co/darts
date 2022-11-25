@@ -136,7 +136,7 @@ jobs:
   collect-examples:
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.filelist.outputs.file_names }}
+      matrix: ${{ steps.examplelist.outputs.file_names }}
     steps:
       - name: "1. Clone repository"
         uses: actions/checkout@v2
