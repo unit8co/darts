@@ -6,7 +6,7 @@ import pandas as pd
 
 from darts import TimeSeries
 from darts.dataprocessing.pipeline import Pipeline
-from darts.dataprocessing.transformers import WindowTransformer, Mapper
+from darts.dataprocessing.transformers import Mapper, WindowTransformer
 
 
 class TimeSeriesWindowTransformTestCase(unittest.TestCase):
