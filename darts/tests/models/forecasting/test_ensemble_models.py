@@ -7,6 +7,7 @@ from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models import (
     ExponentialSmoothing,
+    LinearRegressionModel,
     NaiveDrift,
     NaiveEnsembleModel,
     NaiveSeasonal,
@@ -147,6 +148,72 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         )
         with self.assertRaises(ValueError):
             naive.fit(self.series1, self.series2)
+
+    def test_predict_with_target(self):
+        series_long = self.series1
+        series_short = series_long[:25]
+
+        # train with a single series
+        ensemble_model = self.get_global_ensembe_model()
+        ensemble_model.fit(series_short, past_covariates=series_long)
+        # predict after end of train series
+        preds = ensemble_model.predict(n=5, past_covariates=series_long)
+        self.assertTrue(isinstance(preds, TimeSeries))
+        # predict a new target series
+        preds = ensemble_model.predict(
+            n=5, series=series_long, past_covariates=series_long
+        )
+        self.assertTrue(isinstance(preds, TimeSeries))
+        # predict multiple target series
+        preds = ensemble_model.predict(
+            n=5, series=[series_long] * 2, past_covariates=[series_long] * 2
+        )
+        self.assertTrue(isinstance(preds, list) and len(preds) == 2)
+        # predict single target series in list
+        preds = ensemble_model.predict(
+            n=5, series=[series_long], past_covariates=[series_long]
+        )
+        self.assertTrue(isinstance(preds, list) and len(preds) == 1)
+
+        # train with multiple series
+        ensemble_model = self.get_global_ensembe_model()
+        ensemble_model.fit([series_short] * 2, past_covariates=[series_long] * 2)
+        with self.assertRaises(ValueError):
+            # predict without passing series should raise an error
+            ensemble_model.predict(n=5, past_covariates=series_long)
+        # predict a new target series
+        preds = ensemble_model.predict(
+            n=5, series=series_long, past_covariates=series_long
+        )
+        self.assertTrue(isinstance(preds, TimeSeries))
+        # predict multiple target series
+        preds = ensemble_model.predict(
+            n=5, series=[series_long] * 2, past_covariates=[series_long] * 2
+        )
+        self.assertTrue(isinstance(preds, list) and len(preds) == 2)
+        # predict single target series in list
+        preds = ensemble_model.predict(
+            n=5, series=[series_long], past_covariates=[series_long]
+        )
+        self.assertTrue(isinstance(preds, list) and len(preds) == 1)
+
+    @staticmethod
+    def get_global_ensembe_model(output_chunk_length=5):
+        lags = [-1, -2, -5]
+        return NaiveEnsembleModel(
+            models=[
+                LinearRegressionModel(
+                    lags=lags,
+                    lags_past_covariates=lags,
+                    output_chunk_length=output_chunk_length,
+                ),
+                LinearRegressionModel(
+                    lags=lags,
+                    lags_past_covariates=lags,
+                    output_chunk_length=output_chunk_length,
+                ),
+            ],
+        )
 
 
 if __name__ == "__main__":

@@ -17,6 +17,7 @@ def _create_lagged_data(
     lags_future_covariates: Optional[Sequence[int]] = None,
     max_samples_per_ts: Optional[int] = None,
     is_training: Optional[bool] = True,  # other option: 'inference
+    multi_models: Optional[bool] = True,
 ):
     """
     Helper function that creates training/validation matrices (X and y as required in sklearn), given series and
@@ -86,10 +87,17 @@ def _create_lagged_data(
         df_target = target_ts.pd_dataframe(copy=False)
 
         # y: output chunk length lags of target
-        for future_target_lag in range(output_chunk_length):
+        if multi_models:
+            for future_target_lag in range(output_chunk_length):
+                df_y.append(
+                    df_target.shift(-future_target_lag).rename(
+                        columns=lambda x: f"{x}_horizon_lag{future_target_lag}"
+                    )
+                )
+        else:
             df_y.append(
-                df_target.shift(-future_target_lag).rename(
-                    columns=lambda x: f"{x}_horizon_lag{future_target_lag}"
+                df_target.shift(-output_chunk_length + 1).rename(
+                    columns=lambda x: f"{x}_horizon_lag{output_chunk_length-1}"
                 )
             )
 

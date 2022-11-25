@@ -15,7 +15,7 @@ try:
 
     TORCH_AVAILABLE = True
 except ImportError:
-    logger.warning("Torch not available. TCN tests will be skipped.")
+    logger.warning("Torch not available. Nbeats and NHiTs tests will be skipped.")
     TORCH_AVAILABLE = False
 
 
