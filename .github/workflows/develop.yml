@@ -133,11 +133,26 @@ jobs:
         run: |
           ./gradlew buildDocs
 
+  collect-examples:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.filelist.outputs.file_names }}
+    steps:
+      - name: "1. Clone repository"
+        uses: actions/checkout@v2
+
+      - name: "2. Collect the examples notebooks"
+        id: examplelist
+        uses: the-coding-turtle/ga-file-list@v0.2
+        with:
+          directory: "examples"
+          file_extension: "ipynb"
+
   check-examples:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        example-name: [03-FFT-examples.ipynb, 04-RNN-examples.ipynb, 00-quickstart.ipynb, 02-data-processing.ipynb, 01-multi-time-series-and-covariates.ipynb]
+        example-name: ${{fromJson(needs.collect-examples.outputs.matrix)}}
     steps:
       - name: "1. Clone repository"
         uses: actions/checkout@v2
