@@ -2562,6 +2562,7 @@ class TimeSeries:
         See Also
         --------
         TimeSeries.concatenate : concatenate another series along a given axis.
+        TimeSeries.prepend : prepend (i.e. add to the beginning) another series along the time axis.
         """
         raise_if_not(
             other.has_datetime_index == self.has_datetime_index,
@@ -2625,7 +2626,6 @@ class TimeSeries:
             A new TimeSeries with the new values appended
         """
 
-        # TODO test
         if self._has_datetime_index:
             idx = pd.DatetimeIndex(
                 [self.end_time() + i * self._freq for i in range(1, len(values) + 1)],
@@ -2637,6 +2637,70 @@ class TimeSeries:
             )
 
         return self.append(
+            self.__class__.from_times_and_values(
+                values=values,
+                times=idx,
+                fill_missing_dates=False,
+                static_covariates=self.static_covariates,
+            )
+        )
+
+    def prepend(self, other: "TimeSeries") -> "TimeSeries":
+        """
+        Prepends (i.e. adds to the beginning) another series to this series along the time axis.
+
+        Parameters
+        ----------
+        other
+            A second TimeSeries.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries, obtained by appending the second TimeSeries to the first.
+
+        See Also
+        --------
+        Timeseries.append : append (i.e. add to the end) another series along the time axis.
+        TimeSeries.concatenate : concatenate another series along a given axis.
+        """
+        raise_if_not(
+            isinstance(other, self.__class__),
+            f"`other` to prepend must be a {self.__class__.__name__} object.",
+        )
+        return other.append(self)
+
+    def prepend_values(self, values: np.ndarray) -> "TimeSeries":
+        """
+        Prepends (i.e. adds to the beginning) new values to current TimeSeries, extending its time index into the past.
+
+        Parameters
+        ----------
+        values
+            An array with the values to prepend to the start.
+
+        Return
+        ------
+        TimeSeries
+            A new TimeSeries with the new values prepended.
+        """
+
+        if self._has_datetime_index:
+            idx = pd.DatetimeIndex(
+                [
+                    self.start_time() - i * self._freq
+                    for i in reversed(range(1, len(values) + 1))
+                ],
+                freq=self._freq,
+            )
+        else:
+            idx = pd.RangeIndex(
+                self.start_time() - self.freq * len(values),
+                self.start_time(),
+                step=self.freq,
+            )
+
+        return self.prepend(
             self.__class__.from_times_and_values(
                 values=values,
                 times=idx,

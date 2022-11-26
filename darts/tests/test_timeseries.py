@@ -516,18 +516,81 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         seriesA, seriesB = test_series.split_after(pd.Timestamp("20130106"))
         test_case.assertEqual(seriesA.append(seriesB), test_series)
         test_case.assertEqual(seriesA.append(seriesB).freq, test_series.freq)
+        test_case.assertTrue(
+            test_series.time_index.equals(seriesA.append(seriesB).time_index)
+        )
 
         # Creating a gap is not allowed
         seriesC = test_series.drop_before(pd.Timestamp("20130108"))
         with test_case.assertRaises(ValueError):
             seriesA.append(seriesC)
 
-        # Changing frequence is not allowed
+        # Changing frequency is not allowed
         seriesM = TimeSeries.from_times_and_values(
             pd.date_range("20130107", "20130507", freq="30D"), range(5)
         )
         with test_case.assertRaises(ValueError):
             seriesA.append(seriesM)
+
+    @staticmethod
+    def helper_test_append_values(test_case, test_series: TimeSeries):
+        # reconstruct series
+        seriesA, seriesB = test_series.split_after(pd.Timestamp("20130106"))
+        arrayB = seriesB.all_values()
+        test_case.assertEqual(seriesA.append_values(arrayB), test_series)
+        test_case.assertTrue(
+            test_series.time_index.equals(seriesA.append_values(arrayB).time_index)
+        )
+
+        # arrayB shape shouldn't affect append_values output:
+        squeezed_arrayB = arrayB.squeeze()
+        test_case.assertEqual(seriesA.append_values(squeezed_arrayB), test_series)
+        test_case.assertTrue(
+            test_series.time_index.equals(
+                seriesA.append_values(squeezed_arrayB).time_index
+            )
+        )
+
+    @staticmethod
+    def helper_test_prepend(test_case, test_series: TimeSeries):
+        # reconstruct series
+        seriesA, seriesB = test_series.split_after(pd.Timestamp("20130106"))
+        test_case.assertEqual(seriesB.prepend(seriesA), test_series)
+        test_case.assertEqual(seriesB.prepend(seriesA).freq, test_series.freq)
+        test_case.assertTrue(
+            test_series.time_index.equals(seriesB.prepend(seriesA).time_index)
+        )
+
+        # Creating a gap is not allowed
+        seriesC = test_series.drop_before(pd.Timestamp("20130108"))
+        with test_case.assertRaises(ValueError):
+            seriesC.prepend(seriesA)
+
+        # Changing frequency is not allowed
+        seriesM = TimeSeries.from_times_and_values(
+            pd.date_range("20130107", "20130507", freq="30D"), range(5)
+        )
+        with test_case.assertRaises(ValueError):
+            seriesM.prepend(seriesA)
+
+    @staticmethod
+    def helper_test_prepend_values(test_case, test_series: TimeSeries):
+        # reconstruct series
+        seriesA, seriesB = test_series.split_after(pd.Timestamp("20130106"))
+        arrayA = seriesA.data_array().values
+        test_case.assertEqual(seriesB.prepend_values(arrayA), test_series)
+        test_case.assertTrue(
+            test_series.time_index.equals(seriesB.prepend_values(arrayA).time_index)
+        )
+
+        # arrayB shape shouldn't affect append_values output:
+        squeezed_arrayA = arrayA.squeeze()
+        test_case.assertEqual(seriesB.prepend_values(squeezed_arrayA), test_series)
+        test_case.assertTrue(
+            test_series.time_index.equals(
+                seriesB.prepend_values(squeezed_arrayA).time_index
+            )
+        )
 
     def test_slice(self):
         TimeSeriesTestCase.helper_test_slice(self, self.series1)
@@ -546,6 +609,15 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
     def test_append(self):
         TimeSeriesTestCase.helper_test_append(self, self.series1)
+
+    def test_append_values(self):
+        TimeSeriesTestCase.helper_test_append_values(self, self.series1)
+
+    def test_prepend(self):
+        TimeSeriesTestCase.helper_test_prepend(self, self.series1)
+
+    def test_prepend_values(self):
+        TimeSeriesTestCase.helper_test_prepend_values(self, self.series1)
 
     def test_with_values(self):
         vals = np.random.rand(5, 10, 3)
