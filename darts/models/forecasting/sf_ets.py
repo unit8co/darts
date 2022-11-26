@@ -71,6 +71,7 @@ class StatsForecastETS(FutureCovariatesLocalForecastingModel):
         n: int,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        verbose: bool = False,
     ):
         super()._predict(n, future_covariates, num_samples)
         forecast_df = self.model.predict(

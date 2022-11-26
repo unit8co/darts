@@ -117,7 +117,7 @@ class ExponentialSmoothing(LocalForecastingModel):
 
         return self
 
-    def predict(self, n, num_samples=1):
+    def predict(self, n, num_samples=1, verbose: bool = False):
         super().predict(n, num_samples)
 
         if num_samples == 1:
