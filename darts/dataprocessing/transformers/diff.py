@@ -171,7 +171,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
         series: TimeSeries,
         lags: Sequence[int],
         dropna: bool,
-        fitted_params: tuple[np.ndarray, np.ndarray, int, int],
+        fitted_params: Tuple[np.ndarray, np.ndarray, int, int],
         **kwargs,
     ) -> TimeSeries:
         start_vals, fit_component_mask, start_time, freq = fitted_params
