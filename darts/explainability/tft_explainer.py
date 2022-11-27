@@ -86,12 +86,30 @@ class TFTExplainer(ForecastingModelExplainer):
             "decoder_importance": decoder_importance,
         }
 
-    def explain(self) -> ExplainabilityResult:
-        """Returns the explainability result of the TFT model."""
+    def explain(self, **kwargs) -> ExplainabilityResult:
+        """Returns the explainability result of the TFT model.
+
+        The explainability result contains the attention heads of the TFT model.
+        The attention heads determine the contribution of time-varying inputs.
+
+        Parameters
+        ----------
+        kwargs
+            Arguments passed to the `predict` method of the TFT model.
+
+        Returns
+        -------
+        ExplainabilityResult
+            The explainability result containing the attention heads.
+
+        """
         super().explain()
         # without the predict call, the weights will still bet set to the last iteration of the forward() method
         # of the _TFTModule class
-        _ = self._model.predict(n=self._model.model.output_chunk_length)
+        if "n" not in kwargs:
+            kwargs["n"] = self._model.model.output_chunk_length
+
+        _ = self._model.predict(**kwargs)
 
         # get the weights and the attention head from the trained model for the prediction
         attention_heads = (
