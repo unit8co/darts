@@ -907,6 +907,7 @@ class TFTModel(MixedCovariatesTorchModel):
             each tensor has shape (n_timesteps, n_variables)
             - past/historic tensors have shape (input_chunk_length, n_variables)
             - future tensors have shape (output_chunk_length, n_variables)
+            - static covariates have shape (component, static variable)
 
         Darts Interpretation of pytorch-forecasting's TimeSeriesDataSet:
             time_varying_knowns : future_covariates (including historic_future_covariates)

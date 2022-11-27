@@ -117,6 +117,16 @@ class BacktestingTestCase(DartsBaseTestClass):
         )
         self.assertEqual(score, 1.0)
 
+        # using several metric function should not affect the backtest
+        score = NaiveDrift().backtest(
+            linear_series,
+            train_length=10000,
+            start=pd.Timestamp("20000201"),
+            forecast_horizon=3,
+            metric=[r2_score, mape],
+        )
+        np.testing.assert_almost_equal(score, np.array([1.0, 0.0]))
+
         # window of size 2 is too small for naive drift
         with self.assertRaises(ValueError):
             NaiveDrift().backtest(

@@ -22,7 +22,6 @@ or integer indices (:class:`pandas.RangeIndex`).
     - Contain numeric types only
     - Have distinct components/columns names
     - Have a well defined frequency (for ``DateTimeIndex``)
-    - Be non-empty
     - Have static covariates consistent with their components, or no static covariates
     - Have a hierarchy consistent with their components, or no hierarchy
 
@@ -32,7 +31,9 @@ Read our `user guide on covariates <https://unit8co.github.io/darts/userguide/co
 ``TimeSeries`` documentation for more information on covariates.
 """
 
+import itertools
 import pickle
+import re
 from collections import defaultdict
 from copy import deepcopy
 from inspect import signature
@@ -86,7 +87,6 @@ class TimeSeries:
             "TimeSeries.from_times_and_values(), etc...).",
             logger,
         )
-        raise_if_not(xa.size > 0, "The time series array must not be empty.", logger)
         raise_if_not(
             len(xa.shape) == 3,
             f"TimeSeries require DataArray of dimensionality 3 ({DIMS}).",
@@ -654,7 +654,20 @@ class TimeSeries:
                 "a DatetimeIndex, or with a RangeIndex.",
                 logger,
             )
-            time_index = df.index
+            # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
+            # pandas.DataFrame loses the tz information if it's not its index
+            if isinstance(df.index, pd.DatetimeIndex) and df.index.tz is not None:
+                logger.warning(
+                    "The provided DatetimeIndex was associated with a timezone, which is currently not supported "
+                    "by xarray. To avoid unexpected behaviour, the tz information was removed. Consider calling "
+                    f"`ts.time_index.tz_localize({df.index.tz})` when exporting the results."
+                    "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
+                    "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
+                    "original timezone."
+                )
+                time_index = df.index.tz_localize(None)
+            else:
+                time_index = df.index
 
         if not time_index.name:
             time_index.name = time_col if time_col else DIMS[0]
@@ -831,7 +844,6 @@ class TimeSeries:
         TimeSeries
             A univariate and deterministic TimeSeries constructed from the inputs.
         """
-
         df = pd.DataFrame(pd_series)
         return cls.from_dataframe(
             df,
@@ -923,6 +935,18 @@ class TimeSeries:
             "the `times` argument must be a RangeIndex, or a DateTimeIndex. Use "
             "TimeSeries.from_values() if you want to use an automatic RangeIndex.",
         )
+
+        # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
+        if isinstance(times, pd.DatetimeIndex) and times.tz is not None:
+            logger.warning(
+                "The `times` argument was associated with a timezone, which is currently not supported "
+                "by xarray. To avoid unexpected behaviour, the tz information was removed. Consider calling "
+                f"`ts.time_index.tz_localize({times.tz})` when exporting the results."
+                "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
+                "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
+                "original timezone."
+            )
+            times = times.tz_localize(None)
 
         times_name = DIMS[0] if not times.name else times.name
 
@@ -1278,6 +1302,7 @@ class TimeSeries:
     Some asserts
     =============
     """
+
     # TODO: put at the bottom
 
     def _assert_univariate(self):
@@ -1383,12 +1408,14 @@ class TimeSeries:
         else:
             return pd.Series(self._xa[:, 0, 0].values, index=self._time_index)
 
-    def pd_dataframe(self, copy=True) -> pd.DataFrame:
+    def pd_dataframe(self, copy=True, suppress_warnings=False) -> pd.DataFrame:
         """
-        Return a Pandas DataFrame representation of this deterministic time series.
+        Return a Pandas DataFrame representation of this time series.
 
         Each of the series components will appear as a column in the DataFrame.
-        Works only for deterministic series (i.e., made of 1 sample).
+        If the series is stochastic, the samples are returned as columns of the dataframe with column names
+        as 'component_s#' (e.g. with two components and two samples:
+        'comp0_s0', 'comp0_s1' 'comp1_s0' 'comp1_s1').
 
         Parameters
         ----------
@@ -1401,25 +1428,46 @@ class TimeSeries:
             The Pandas DataFrame representation of this time series
         """
         if not self.is_deterministic:
-            raise_log(
-                AssertionError(
-                    "The pd_dataframe() method can only return DataFrames of deterministic "
-                    "time series, and this series is not deterministic (it contains several samples). "
-                    "Consider calling quantile_df() instead."
+            if not suppress_warnings:
+                logger.warning(
+                    "You are transforming a stochastic TimeSeries (i.e., contains several samples). "
+                    "The resulting DataFrame is a 2D object with all samples on the columns. "
+                    "If this is not the expected behavior consider calling a function "
+                    "adapted to stochastic TimeSeries like quantile_df()."
                 )
-            )
-        if copy:
-            return pd.DataFrame(
-                self._xa[:, :, 0].values.copy(),
-                index=self._time_index.copy(),
-                columns=self._xa.get_index(DIMS[1]).copy(),
-            )
+
+            comp_name = list(self.components)
+            samples = range(self.n_samples)
+            df_col_names = [
+                "_s".join((comp_name, str(sample_id)))
+                for comp_name, sample_id in itertools.product(comp_name, samples)
+            ]
+
+            if copy:
+                return pd.DataFrame(
+                    self._xa.stack(data=(DIMS[1], DIMS[2])).values.copy(),
+                    index=self._time_index.copy(),
+                    columns=df_col_names.copy(),
+                )
+            else:
+                return pd.DataFrame(
+                    self._xa.stack(data=(DIMS[1], DIMS[2])).values,
+                    index=self._time_index,
+                    columns=df_col_names,
+                )
         else:
-            return pd.DataFrame(
-                self._xa[:, :, 0].values,
-                index=self._time_index,
-                columns=self._xa.get_index(DIMS[1]),
-            )
+            if copy:
+                return pd.DataFrame(
+                    self._xa[:, :, 0].values.copy(),
+                    index=self._time_index.copy(),
+                    columns=self._xa.get_index(DIMS[1]).copy(),
+                )
+            else:
+                return pd.DataFrame(
+                    self._xa[:, :, 0].values,
+                    index=self._time_index,
+                    columns=self._xa.get_index(DIMS[1]),
+                )
 
     def quantile_df(self, quantile=0.5) -> pd.DataFrame:
         """
@@ -1493,7 +1541,7 @@ class TimeSeries:
         )
 
         # component names
-        cnames = [f"{comp}_quantiles" for comp in self.components]
+        cnames = [f"{comp}_{quantile}" for comp in self.components]
 
         new_data = np.quantile(
             self._xa.values,
@@ -1535,8 +1583,13 @@ class TimeSeries:
         pandas.DataFrame
             The Pandas DataFrame containing the quantiles for each component.
         """
-        # TODO: there might be a slightly more efficient way to do it for several quantiles at once with xarray...
-        return pd.concat([self.quantile_df(quantile) for quantile in quantiles], axis=1)
+        return pd.concat(
+            [
+                self.quantile_timeseries(quantile).pd_dataframe()
+                for quantile in quantiles
+            ],
+            axis=1,
+        )
 
     def astype(self, dtype: Union[str, np.dtype]) -> "TimeSeries":
         """
@@ -2509,6 +2562,7 @@ class TimeSeries:
         See Also
         --------
         TimeSeries.concatenate : concatenate another series along a given axis.
+        TimeSeries.prepend : prepend (i.e. add to the beginning) another series along the time axis.
         """
         raise_if_not(
             other.has_datetime_index == self.has_datetime_index,
@@ -2572,7 +2626,6 @@ class TimeSeries:
             A new TimeSeries with the new values appended
         """
 
-        # TODO test
         if self._has_datetime_index:
             idx = pd.DatetimeIndex(
                 [self.end_time() + i * self._freq for i in range(1, len(values) + 1)],
@@ -2584,6 +2637,70 @@ class TimeSeries:
             )
 
         return self.append(
+            self.__class__.from_times_and_values(
+                values=values,
+                times=idx,
+                fill_missing_dates=False,
+                static_covariates=self.static_covariates,
+            )
+        )
+
+    def prepend(self, other: "TimeSeries") -> "TimeSeries":
+        """
+        Prepends (i.e. adds to the beginning) another series to this series along the time axis.
+
+        Parameters
+        ----------
+        other
+            A second TimeSeries.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries, obtained by appending the second TimeSeries to the first.
+
+        See Also
+        --------
+        Timeseries.append : append (i.e. add to the end) another series along the time axis.
+        TimeSeries.concatenate : concatenate another series along a given axis.
+        """
+        raise_if_not(
+            isinstance(other, self.__class__),
+            f"`other` to prepend must be a {self.__class__.__name__} object.",
+        )
+        return other.append(self)
+
+    def prepend_values(self, values: np.ndarray) -> "TimeSeries":
+        """
+        Prepends (i.e. adds to the beginning) new values to current TimeSeries, extending its time index into the past.
+
+        Parameters
+        ----------
+        values
+            An array with the values to prepend to the start.
+
+        Return
+        ------
+        TimeSeries
+            A new TimeSeries with the new values prepended.
+        """
+
+        if self._has_datetime_index:
+            idx = pd.DatetimeIndex(
+                [
+                    self.start_time() - i * self._freq
+                    for i in reversed(range(1, len(values) + 1))
+                ],
+                freq=self._freq,
+            )
+        else:
+            idx = pd.RangeIndex(
+                self.start_time() - self.freq * len(values),
+                self.start_time(),
+                step=self.freq,
+            )
+
+        return self.prepend(
             self.__class__.from_times_and_values(
                 values=values,
                 times=idx,
@@ -2862,7 +2979,8 @@ class TimeSeries:
             tg.holidays_timeseries(self.time_index, country_code, prov, state)
         )
 
-    def resample(self, freq: str, method: str = "pad") -> "TimeSeries":
+    def resample(self, freq: str, method: str = "pad", **kwargs) -> "TimeSeries":
+
         """
         Build a reindexed ``TimeSeries`` with a given frequency.
         Provided method is used to fill holes in reindexed TimeSeries, by default 'pad'.
@@ -2878,13 +2996,47 @@ class TimeSeries:
             'pad': propagate last valid observation forward to next valid
 
             'backfill': use NEXT valid observation to fill.
+        kwargs
+            some keyword arguments for the `xarray.resample` method, notably `loffset` or `base` to indicate where
+            to start the resampling and avoid nan at the first value of the resampled TimeSeries
+            For more informations, see the `xarray resample() documentation
+            <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.resample.html>`_.
+
+        Examples
+        --------
+        >>> times = pd.date_range(start=pd.Timestamp("20200101233000"), periods=6, freq="15T")
+        >>> pd_series = pd.Series(range(6), index=times)
+        >>> ts = TimeSeries.from_series(pd_series)
+        >>> print(ts.time_index)
+        DatetimeIndex(['2020-01-01 23:30:00', '2020-01-01 23:45:00',
+                       '2020-01-02 00:00:00', '2020-01-02 00:15:00',
+                       '2020-01-02 00:30:00', '2020-01-02 00:45:00'],
+                       dtype='datetime64[ns]', name='time', freq='15T')
+        >>> resampled_nokwargs_ts = ts.resample(freq="1h")
+        >>> print(resampled_nokwargs_ts.time_index)
+        DatetimeIndex(['2020-01-01 23:00:00', '2020-01-02 00:00:00'],
+                      dtype='datetime64[ns]', name='time', freq='H')
+        >>> print(resampled_nokwargs_ts.values())
+        [[nan]
+        [ 2.]]
+        >>> resampled_ts = ts.resample(freq="1h", loffset="30T")
+        >>> print(resampled_ts.time_index)
+        DatetimeIndex(['2020-01-01 23:30:00', '2020-01-02 00:30:00'],
+                      dtype='datetime64[ns]', name='time', freq='H')
+        >>> print(resampled_ts.values())
+        [[0.]
+        [4.]]
+
         Returns
         -------
         TimeSeries
             A reindexed TimeSeries with given frequency.
         """
 
-        resample = self._xa.resample({self._time_dim: freq})
+        resample = self._xa.resample(
+            indexer={self._time_dim: freq},
+            **kwargs,
+        )
 
         # TODO: check
         if method == "pad":
@@ -2974,7 +3126,6 @@ class TimeSeries:
             new_xa.values = fn(self._xa.values)
 
         elif num_args == 2:  # map function uses timestamp f(timestamp, x)
-
             # go over shortest amount of iterations, either over time steps or components and samples
             if self.n_timesteps <= self.n_components * self.n_samples:
                 new_vals = np.vstack(
@@ -3004,6 +3155,379 @@ class TimeSeries:
             raise_log(ValueError("fn must have either one or two arguments"), logger)
 
         return self.__class__(new_xa)
+
+    def window_transform(
+        self,
+        transforms: Union[Dict, Sequence[Dict]],
+        treat_na: Optional[Union[str, Union[int, float]]] = None,
+        forecasting_safe: Optional[bool] = True,
+        keep_non_transformed: Optional[bool] = False,
+    ) -> "TimeSeries":
+        """
+        Applies a moving/rolling, expanding or exponentially weighted window transformation over this ``TimeSeries``.
+
+        Parameters
+        ----------
+        transforms
+            A dictionary or a list of dictionaries.
+            Each dictionary specifies a different window transform.
+
+            The dictionaries can contain the following keys:
+
+            :``"function"``: Mandatory. The name of one of the pandas builtin transformation functions,
+                            or a callable function that can be applied to the input series.
+                            Pandas' functions can be found in the
+                            `documentation <https://pandas.pydata.org/docs/reference/window.html>`_.
+
+            :``"mode"``: Optional. The name of the pandas windowing mode on which the ``"function"`` is going to be
+                        applied. The options are "rolling", "expanding" and "ewm".
+                        If not provided, Darts defaults to "expanding".
+                        User defined functions can use either "rolling" or "expanding" modes.
+                        More information on pandas windowing operations can be found in the `documentation
+                        <https://pandas.pydata.org/pandas-docs/stable/user_guide/window.html>`_.
+
+            :``"components"``: Optional. A string or list of strings specifying the TimeSeries components on which the
+                               transformation should be applied. If not specified, the transformation will be
+                               applied on all components.
+
+            All other dictionary items provided will be treated as keyword arguments for the windowing mode
+            (i.e., ``rolling/ewm/expanding``) or for the specific function
+            in that mode (i.e., ``pandas.DataFrame.rolling.mean/std/max/min...`` or
+            ``pandas.DataFrame.ewm.mean/std/sum``).
+            This allows for more flexibility in configuring the transformation, by providing for
+            example:
+
+            * :``"window"``: Size of the moving window for the "rolling" mode.
+                            If an integer, the fixed number of observations used for each window.
+                            If an offset, the time period of each window.
+            * :``"min_periods"``: The minimum number of observations in the window required to have a value (otherwise
+                NaN). Darts reuses pandas defaults of 1 for "rolling" and "expanding" modes and of 0 for "ewm" mode.
+            * :``"win_type"``: The type of weigthing to apply to the window elements.
+                If provided, it should be one of `scipy.signal.windows
+                <https://docs.scipy.org/doc/scipy/reference/signal.windows.html#module-scipy.signal.windows>`_.
+            * :``"center"``: ``True``/``False`` to set the observation at the current timestep at the center of the
+                window (when ``forecasting_safe`` is `True`, Darts enforces ``"center"`` to ``False``).
+            * :``"closed"``: ``"right"``/``"left"``/``"both"``/``"neither"`` to specify whether the right,
+                left or both ends of the window are included in the window, or neither of them.
+                Darts defaults to pandas default of ``"right"``.
+
+            More information on the available functions and their parameters can be found in the
+            `Pandas documentation <https://pandas.pydata.org/docs/reference/window.html>`_.
+
+            For user-provided functions, extra keyword arguments in the transformation dictionary are passed to the
+            user-defined function.
+            By default, Darts expects user-defined functions to receive numpy arrays as input.
+            This can be modified by adding item ``"raw": False`` in the transformation dictionary.
+            It is expected that the function returns a single
+            value for each window. Other possible configurations can be found in the
+            `pandas.DataFrame.rolling().apply()
+            documentation <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.rolling.html>`_
+            and `pandas.DataFrame.expanding().apply()
+            documentation <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.expanding.html>`_.
+
+        treat_na
+            Specifies how to treat missing values that were added by the window transformations
+            at the beginning of the resulting TimeSeries. By default, Darts will leave NaNs in the resulting TimeSeries.
+            This parameter can be one of the following:
+
+            * :``"dropna"``: to truncate the TimeSeries and drop rows containing missing values.
+                If multiple columns contain different numbers of missing values, only the minimum number
+                of rows is dropped. This operation might reduce the length of the resulting TimeSeries.
+
+            * :``"bfill"`` or ``"backfill"``: to specify that NaNs should be filled with the last transformed
+                and valid observation. If the original TimeSeries starts with NaNs, those are kept.
+                When ``forecasting_safe`` is ``True``, this option returns an exception to avoid future observation
+                contaminating the past.
+
+            * :an integer or float: in which case NaNs will be filled with this value.
+                All columns will be filled with the same provided value.
+
+        forecasting_safe
+            If True, Darts enforces that the resulting TimeSeries is safe to be used in forecasting models as target
+            or as feature. The window transformation will not allow future values to be included in the computations
+            at their corresponding current timestep. Default is ``True``.
+            "ewm" and "expanding" modes are forecasting safe by default.
+            "rolling" mode is forecasting safe if ``"center": False`` is guaranteed.
+
+        keep_non_transformed
+            ``False`` to return the transformed components only, ``True`` to return all original components along
+            the transformed ones. Default is ``False``.
+
+        Returns
+        -------
+        TimeSeries
+            Returns a new TimeSeries instance with the transformed components. If ``keep_non_transformed`` is ``True``,
+            the resulting TimeSeries will contain the original non-transformed components along the transformed ones.
+            If the input series is stochastic, all samples are identically transformed.
+            The naming convention for the transformed components is as follows:
+            [window_mode]_[function_name]_[window_size if provided]_[min_periods if not default]_[original_comp_name],
+            e.g., rolling_sum_3_comp_0 (i.e., window_mode= rolling, function_name = sum, window_size=3,
+            original_comp_name=comp_0) ;
+            ewm_mean_comp_1 (i.e., window_mode= ewm, function_name = mean, original_comp_name=comp_1);
+            expanding_sum_3_comp_2 (i.e., window_mode= expanding, function_name = sum, window_size=3,
+            original_comp_name=comp_2). For user-defined functions, function_name = udf.
+        """
+        VALID_BFILL_NA = {"bfill", "backfill"}
+        VALID_TREAT_NA = VALID_BFILL_NA.union({"dropna"})
+
+        PD_WINDOW_OPERATIONS = {
+            "rolling": pd.DataFrame.rolling,
+            "expanding": pd.DataFrame.expanding,
+            "ewm": pd.DataFrame.ewm,
+        }
+
+        # helper function to read and format kwargs
+        def _get_kwargs(transformation, forecasting_safe):
+            """
+            Builds the kwargs dictionary for the transformation function.
+
+            Parameters
+            ----------
+            transformation
+                The transformation dictionary.
+            builtins
+                The built-in transformations read from the WindowTransformer class.
+
+            Returns
+            -------
+            dict, dict
+                The kwargs dictionaries for both the function group and the specific function.
+            """
+
+            # take expanding as the default window operation if not specified, safer than rolling
+            mode = transformation.get("mode", "expanding")
+            raise_if_not(
+                mode in PD_WINDOW_OPERATIONS.keys(),
+                f"Invalid window operation: '{mode}'. Must be one of {PD_WINDOW_OPERATIONS.keys()}.",
+                logger,
+            )
+            window_mode = PD_WINDOW_OPERATIONS[mode]
+
+            # minimum number of observations in window required to have a value (otherwise result in NaN)
+            if "min_periods" not in transformation:
+                transformation["min_periods"] = 0 if mode == "ewm" else 1
+
+            if mode == "rolling":
+                # pandas default for 'center' is False, no need to set it explicitly
+                if "center" in transformation:
+                    raise_if_not(
+                        not (transformation["center"] and forecasting_safe),
+                        "When `forecasting_safe` is True, `center` must be False.",
+                        logger,
+                    )
+
+            if isinstance(transformation["function"], Callable):
+                fn = "apply"
+                udf = transformation["function"]
+                # make sure that we provide a numpy array to the user function, "raw": True
+                if "raw" not in transformation:
+                    transformation["raw"] = True
+            elif isinstance(transformation["function"], str):
+                fn = transformation["function"]
+            else:
+                raise_log(
+                    ValueError(
+                        "Transformation function must be a string or a callable. "
+                        "String can be the name of any function available for pandas window. "
+                        "A list of those function can be found in the `documentation "
+                        "<https://pandas.pydata.org/pandas-docs/stable/reference/window.html>`."
+                    ),
+                    logger,
+                )
+
+            available_keys = set(transformation.keys()) - {
+                "function",
+                "group",
+                "components",
+            }
+
+            window_mode_expected_args = set(window_mode.__code__.co_varnames)
+            window_mode_available_keys = window_mode_expected_args.intersection(
+                available_keys
+            )
+
+            window_mode_available_kwargs = {
+                k: v
+                for k, v in transformation.items()
+                if k in window_mode_available_keys
+            }
+
+            available_keys -= window_mode_available_keys
+
+            function_expected_args = set(
+                getattr(
+                    getattr(pd.DataFrame(), window_mode.__name__)(
+                        **window_mode_available_kwargs
+                    ),
+                    fn,
+                ).__code__.co_varnames
+            )
+
+            function_available_keys = function_expected_args.intersection(
+                set(available_keys)
+            )
+
+            function_available_kwargs = {
+                k: v for k, v in transformation.items() if k in function_available_keys
+            }
+
+            available_keys -= function_available_keys
+
+            udf_expected_args = set(udf.__code__.co_varnames) if fn == "apply" else None
+            udf_available_keys = (
+                udf_expected_args.intersection(set(available_keys))
+                if fn == "apply"
+                else None
+            )
+
+            udf_kwargs = (
+                {k: v for k, v in transformation.items() if k in udf_available_keys}
+                if fn == "apply"
+                else None
+            )
+
+            function_available_kwargs.update(
+                {"func": udf, "kwargs": udf_kwargs} if fn == "apply" else {}
+            )
+
+            return (window_mode.__name__, window_mode_available_kwargs), (
+                fn,
+                function_available_kwargs,
+            )
+
+        # make sure we have a list in transforms
+        if isinstance(transforms, dict):
+            transforms = [transforms]
+
+        raise_if_not(
+            all([isinstance(tr, dict) for tr in transforms]),
+            "`transforms` must be a non-empty dictionary or a non-empty list of dictionaries.",
+        )
+
+        # read series dataframe
+        ts_df = self.pd_dataframe(copy=False, suppress_warnings=True)
+
+        # store some original attributes of the series
+        original_components = self.components
+        n_samples = self.n_samples
+        original_index = self._time_index
+
+        resulting_transformations = pd.DataFrame()
+        new_columns = []
+        added_na = []
+
+        # run through all transformations in transforms
+        for transformation in transforms:
+
+            if "components" in transformation:
+                if isinstance(transformation["components"], str):
+                    transformation["components"] = [transformation["components"]]
+                comps_to_transform = transformation["components"]
+
+            else:
+                comps_to_transform = original_components
+
+            df_cols = ts_df.columns
+
+            if not self.is_deterministic:
+                filter_df_columns = [
+                    df_col
+                    for df_col in df_cols
+                    if re.sub("_s.*$", "", df_col) in comps_to_transform
+                ]
+
+            else:
+                filter_df_columns = [df_col for df_col in comps_to_transform]
+
+            (window_mode, window_mode_kwargs), (fn, function_kwargs) = _get_kwargs(
+                transformation, forecasting_safe
+            )
+
+            resulting_transformations = pd.concat(
+                [
+                    resulting_transformations,
+                    getattr(
+                        getattr(ts_df[filter_df_columns], window_mode)(
+                            **window_mode_kwargs
+                        ),
+                        fn,
+                    )(**function_kwargs),
+                ],
+                axis=1,
+            )
+            min_periods = transformation["min_periods"]
+            # set new columns names
+            name_prefix = (
+                f"{window_mode}_{fn if fn != 'apply' else 'udf'}"
+                f"{'_'+str(transformation['window']) if 'window' in transformation else ''}"
+                f"{'_'+str(min_periods) if min_periods>1 else ''}"
+            )
+
+            new_columns.extend(
+                [f"{name_prefix}_{comp_name}" for comp_name in comps_to_transform]
+            )
+
+            # track how many NaN rows are added by each transformation on each transformed column
+            # NaNs would appear only if user changes "min_periods" to else than 1, if not,
+            # by default there should be no NaNs unless the original series starts with NaNs (those would be maintained)
+            added_na.extend(
+                [
+                    min_periods - 1 if min_periods > 0 else min_periods
+                    for _ in filter_df_columns
+                ]
+            )
+
+        # keep all original components
+        if keep_non_transformed:
+            resulting_transformations = pd.concat(
+                [resulting_transformations, ts_df], axis=1
+            )
+            new_columns.extend(original_components)
+
+        # Treat NaNs that were introduced by the transformations only
+        # Default to leave NaNs
+        if isinstance(treat_na, str):
+            raise_if_not(
+                treat_na in VALID_TREAT_NA,
+                f"`treat_na` must be one of {VALID_TREAT_NA} or a scalar, but found {treat_na}",
+                logger,
+            )
+
+            raise_if_not(
+                not (treat_na in VALID_BFILL_NA and forecasting_safe),
+                "when `forecasting_safe` is True, back filling NaNs is not allowed as "
+                "it risks contaminating past time steps with future values.",
+                logger,
+            )
+
+        if isinstance(treat_na, (int, float)) or (treat_na in VALID_BFILL_NA):
+            for i in range(0, len(added_na), n_samples):
+                s_idx = added_na[i : (i + n_samples)][0]
+                value = (
+                    treat_na
+                    if isinstance(treat_na, (int, float))
+                    else resulting_transformations.values[s_idx, i : (i + n_samples)]
+                )
+                resulting_transformations.values[:s_idx, i : (i + n_samples)] = value
+        elif treat_na == "dropna":
+            # can only drop the NaN rows that are common among the columns
+            drop_before_index = original_index[np.min(added_na)]
+            resulting_transformations = resulting_transformations.loc[
+                drop_before_index:
+            ]
+
+        # revert dataframe to TimeSeries
+        new_index = original_index.__class__(resulting_transformations.index)
+
+        transformed_time_series = TimeSeries.from_times_and_values(
+            times=new_index,
+            values=resulting_transformations.values.reshape(
+                len(new_index), -1, n_samples
+            ),
+            columns=new_columns,
+        )
+
+        return transformed_time_series
 
     def to_json(self) -> str:
         """
@@ -3174,6 +3698,15 @@ class TimeSeries:
 
             if central_series.shape[0] > 1:
                 p = central_series.plot(*args, **kwargs)
+            # empty TimeSeries
+            elif central_series.shape[0] == 0:
+                p = plt.plot(
+                    [],
+                    [],
+                    *args,
+                    **kwargs,
+                )
+                plt.xlabel(self.time_index.name)
             else:
                 p = plt.plot(
                     [self.start_time()],

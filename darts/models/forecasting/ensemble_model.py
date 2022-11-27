@@ -59,7 +59,6 @@ class EnsembleModel(GlobalForecastingModel):
 
         super().__init__()
         self.models = models
-        self.is_single_series = None
 
     def fit(
         self,
@@ -83,16 +82,16 @@ class EnsembleModel(GlobalForecastingModel):
             logger,
         )
 
-        self.is_single_series = isinstance(series, TimeSeries)
+        is_single_series = isinstance(series, TimeSeries)
 
         # check that if timeseries is single series, than covariates are as well and vice versa
         error = False
 
         if past_covariates is not None:
-            error = self.is_single_series != isinstance(past_covariates, TimeSeries)
+            error = is_single_series != isinstance(past_covariates, TimeSeries)
 
         if future_covariates is not None:
-            error = self.is_single_series != isinstance(future_covariates, TimeSeries)
+            error = is_single_series != isinstance(future_covariates, TimeSeries)
 
         raise_if(
             error,
@@ -125,6 +124,7 @@ class EnsembleModel(GlobalForecastingModel):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
     ):
+        is_single_series = isinstance(series, TimeSeries) or series is None
         predictions = [
             model._predict_wrapper(
                 n=n,
@@ -135,11 +135,11 @@ class EnsembleModel(GlobalForecastingModel):
             )
             for model in self.models
         ]
-
-        if self.is_single_series:
-            return self._stack_ts_seq(predictions)
-        else:
-            return self._stack_ts_multiseq(predictions)
+        return (
+            self._stack_ts_seq(predictions)
+            if is_single_series
+            else self._stack_ts_multiseq(predictions)
+        )
 
     def predict(
         self,
@@ -148,6 +148,7 @@ class EnsembleModel(GlobalForecastingModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
+        verbose: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
 
         super().predict(
@@ -156,6 +157,7 @@ class EnsembleModel(GlobalForecastingModel):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             num_samples=num_samples,
+            verbose=verbose,
         )
 
         predictions = self._make_multiple_predictions(
@@ -165,11 +167,7 @@ class EnsembleModel(GlobalForecastingModel):
             future_covariates=future_covariates,
             num_samples=num_samples,
         )
-
-        if self.is_single_series:
-            return self.ensemble(predictions)
-        else:
-            return self.ensemble(predictions, series)
+        return self.ensemble(predictions, series=series)
 
     @abstractmethod
     def ensemble(
