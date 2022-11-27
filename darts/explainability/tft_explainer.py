@@ -119,13 +119,18 @@ class TFTExplainer(ForecastingModelExplainer):
     ):
         """Plots the attention heads of the TFT model."""
         attention_heads = expl_result.get_explanation(
-            component="attention_heads", horizon=0
+            component="attention_heads",
+            horizon=0,
         )
         if plot_type == "all":
             fig = plt.figure()
             attention_heads.plot(
-                label="Attention Head", plot_all_components=True, figure=fig
+                label="Attention Head",
+                plot_all_components=True,
+                figure=fig,
             )
+            # move legend to the right side of the figure
+            plt.legend(bbox_to_anchor=(0.95, 1), loc="upper left")
             plt.xlabel("Time steps in past")
             plt.ylabel("Attention")
         elif plot_type == "time":

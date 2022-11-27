@@ -333,7 +333,8 @@ class TFTExplainerTestCase(DartsBaseTestClass):
         # assert
         self.assertTrue(isinstance(res, ExplainabilityResult))
         res_attention_heads = res.get_explanation(
-            component="attention_heads", horizon=0
+            component="attention_heads",
+            horizon=0,
         )
         self.assertTrue(len(res_attention_heads) == 48)
         self.assertTrue(
