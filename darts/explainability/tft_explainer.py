@@ -1,7 +1,8 @@
-from typing import Dict, Literal, Optional
+from typing import Dict, List, Literal, Optional
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from torch import Tensor
 
 from darts import TimeSeries
 from darts.explainability.explainability import (
@@ -31,6 +32,20 @@ class TFTExplainer(ForecastingModelExplainer):
 
         self._model = model
 
+    @property
+    def encoder_importance(self):
+        return self._get_importance(
+            weight=self._model.model._encoder_sparse_weights,
+            names=self._model.model.encoder_variables,
+        )
+
+    @property
+    def decoder_importance(self):
+        return self._get_importance(
+            weight=self._model.model._decoder_sparse_weights,
+            names=self._model.model.decoder_variables,
+        )
+
     def get_variable_selection_weight(self, plot=False) -> Dict[str, pd.DataFrame]:
         """Returns the variable selection weight of the TFT model.
 
@@ -45,45 +60,15 @@ class TFTExplainer(ForecastingModelExplainer):
             The variable selection weight.
 
         """
-        encoder_weights = self._model.model._encoder_sparse_weights.mean(axis=1)
-        decoder_weights = self._model.model._decoder_sparse_weights.mean(axis=1)
-
-        # format the weights as the feature importance scaled 0-100%
-        encoder_weights_percentage = (
-            encoder_weights.detach().numpy().mean(axis=0).round(3) * 100
-        )
-        decoder_weights_percentage = (
-            decoder_weights.detach().numpy().mean(axis=0).round(3) * 100
-        )
-
-        # get the feature names
-        # TODO: These are not the correct feature names
-        encoder_names = self._model.model.encoder_variables
-        decoder_names = self._model.model.decoder_variables
-
-        encoder_importance = pd.DataFrame(
-            encoder_weights_percentage, columns=encoder_names
-        )
-        decoder_importance = pd.DataFrame(
-            decoder_weights_percentage, columns=decoder_names
-        )
-
-        # sort importance from high to low
-        encoder_importance = (
-            encoder_importance.transpose().sort_values(0, ascending=False).transpose()
-        )
-        decoder_importance = (
-            decoder_importance.transpose().sort_values(0, ascending=False).transpose()
-        )
 
         if plot:
             # plot the encoder and decoder weights sorted descending
-            encoder_importance.plot(kind="bar", title="Encoder weights")
-            decoder_importance.plot(kind="bar", title="Decoder weights")
+            self.encoder_importance.plot(kind="bar", title="Encoder weights")
+            self.decoder_importance.plot(kind="bar", title="Decoder weights")
 
         return {
-            "encoder_importance": encoder_importance,
-            "decoder_importance": decoder_importance,
+            "encoder_importance": self.encoder_importance,
+            "decoder_importance": self.decoder_importance,
         }
 
     def explain(self, **kwargs) -> ExplainabilityResult:
@@ -156,3 +141,77 @@ class TFTExplainer(ForecastingModelExplainer):
             plt.ylabel("Horizon")
         else:
             raise ValueError("`plot_type` must be either 'all', 'time' or 'heatmap'")
+
+    def _get_importance(
+        self,
+        weight: Tensor,
+        names: List[str],
+        n_decimals=3,
+    ) -> pd.DataFrame:
+        """Returns the encoder or decoder variable of the TFT model.
+
+        Parameters
+        ----------
+        weights
+            The weights of the encoder or decoder of the trained TFT model.
+        names
+            The encoder or decoder names saved in the TFT model class.
+        n_decimals
+            The number of decimals to round the importance to.
+
+        Returns
+        -------
+        pd.DataFrame
+            The importance of the variables.
+        """
+        # transform the encoder/decoder weights to percentages, rounded to n_decimals
+        weights_percentage = (
+            weight.mean(axis=1).detach().numpy().mean(axis=0).round(n_decimals) * 100
+        )
+
+        # create a dataframe with the variable names and the weights
+        name_mapping = self._name_mapping
+        importance = pd.DataFrame(
+            weights_percentage,
+            columns=[name_mapping[name] for name in names],
+        )
+
+        # return the importance sorted descending
+        return importance.transpose().sort_values(0, ascending=False).transpose()
+
+    @property
+    def _name_mapping(self) -> Dict[str, str]:
+        """Returns the feature name mapping of the TFT model.
+
+        Returns
+        -------
+        Dict[str, str]
+            The feature name mapping. For example
+            {
+                'past_covariate_0': 'heater',
+                'past_covariate_1': 'year',
+                'past_covariate_2': 'month',
+                'future_covariate_0': 'darts_enc_fc_cyc_month_sin',
+                'future_covariate_1': 'darts_enc_fc_cyc_month_cos',
+                'target_0': 'ice cream',
+             }
+
+        """
+        past_covariates_name_mapping = {
+            f"past_covariate_{i}": colname
+            for i, colname in enumerate(self._model.past_covariate_series.components)
+        }
+        future_covariates_name_mapping = {
+            f"future_covariate_{i}": colname
+            for i, colname in enumerate(self._model.future_covariate_series.components)
+        }
+        target_name_mapping = {
+            f"target_{i}": colname
+            for i, colname in enumerate(self._model.training_series.components)
+        }
+
+        return {
+            **past_covariates_name_mapping,
+            **future_covariates_name_mapping,
+            **target_name_mapping,
+        }

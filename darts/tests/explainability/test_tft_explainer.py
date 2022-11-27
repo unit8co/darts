@@ -131,69 +131,18 @@ class TFTExplainerTestCase(DartsBaseTestClass):
         expected_encoder_importance = pd.DataFrame(
             [
                 {
-                    "future_covariate_1": 68.4,
-                    "past_covariate_0": 16.5,
-                    "target_0": 10.6,
-                    "future_covariate_0": 4.5,
+                    "darts_enc_fc_cyc_month_cos": 68.4,
+                    "heater": 16.5,
+                    "ice cream": 10.6,
+                    "darts_enc_fc_cyc_month_sin": 4.5,
                 },
             ],
         )
         expected_decoder_importance = pd.DataFrame(
             [
                 {
-                    "future_covariate_1": 87.8,
-                    "future_covariate_0": 12.2,
-                },
-            ]
-        )
-
-        # act
-        res = explainer.get_variable_selection_weight(plot=False)
-
-        # assert
-        self.assertTrue(isinstance(res, dict))
-        self.assertTrue(res.keys() == {"encoder_importance", "decoder_importance"})
-        pd.testing.assert_frame_equal(
-            res["encoder_importance"], expected_encoder_importance
-        )
-        pd.testing.assert_frame_equal(
-            res["decoder_importance"], expected_decoder_importance
-        )
-
-    def test_get_variable_selection_weight_multiple_covariates(self):
-        """The get_variable_selection_weight method returns the feature importance for multiple covariates as input."""
-        # arrange
-        model = deepcopy(self.models[0])
-
-        # fit the model with past covariates
-        np.random.seed(342)
-        _ = model.fit(
-            self.train_ice_transformed,
-            past_covariates=self.multiple_covariates_transformed,
-            verbose=False,
-        )
-
-        # call methods for debugging / development
-        explainer = TFTExplainer(model)
-
-        # expected results
-        expected_encoder_importance = pd.DataFrame(
-            [
-                {
-                    "past_covariate_2": 49.1,
-                    "past_covariate_1": 18.9,
-                    "future_covariate_1": 14.7,
-                    "future_covariate_0": 9.5,
-                    "target_0": 5.4,
-                    "past_covariate_0": 2.4,
-                }
-            ],
-        )
-        expected_decoder_importance = pd.DataFrame(
-            [
-                {
-                    "future_covariate_1": 80.2,
-                    "future_covariate_0": 19.8,
+                    "darts_enc_fc_cyc_month_cos": 87.8,
+                    "darts_enc_fc_cyc_month_sin": 12.2,
                 },
             ]
         )
@@ -231,18 +180,18 @@ class TFTExplainerTestCase(DartsBaseTestClass):
         expected_encoder_importance = pd.DataFrame(
             [
                 {
-                    "future_covariate_1": 68.4,
-                    "past_covariate_0": 16.5,
-                    "target_0": 10.6,
-                    "future_covariate_0": 4.5,
+                    "darts_enc_fc_cyc_month_cos": 68.4,
+                    "heater": 16.5,
+                    "ice cream": 10.6,
+                    "darts_enc_fc_cyc_month_sin": 4.5,
                 },
             ],
         )
         expected_decoder_importance = pd.DataFrame(
             [
                 {
-                    "future_covariate_1": 87.8,
-                    "future_covariate_0": 12.2,
+                    "darts_enc_fc_cyc_month_cos": 87.8,
+                    "darts_enc_fc_cyc_month_sin": 12.2,
                 },
             ]
         )
@@ -250,6 +199,57 @@ class TFTExplainerTestCase(DartsBaseTestClass):
         # act
         with patch("matplotlib.pyplot.show") as _:
             res = explainer.get_variable_selection_weight(plot=True)
+
+        # assert
+        self.assertTrue(isinstance(res, dict))
+        self.assertTrue(res.keys() == {"encoder_importance", "decoder_importance"})
+        pd.testing.assert_frame_equal(
+            res["encoder_importance"], expected_encoder_importance
+        )
+        pd.testing.assert_frame_equal(
+            res["decoder_importance"], expected_decoder_importance
+        )
+
+    def test_get_variable_selection_weight_multiple_covariates(self):
+        """The get_variable_selection_weight method returns the feature importance for multiple covariates as input."""
+        # arrange
+        model = deepcopy(self.models[0])
+
+        # fit the model with past covariates
+        np.random.seed(342)
+        _ = model.fit(
+            self.train_ice_transformed,
+            past_covariates=self.multiple_covariates_transformed,
+            verbose=False,
+        )
+
+        # call methods for debugging / development
+        explainer = TFTExplainer(model)
+
+        # expected results
+        expected_encoder_importance = pd.DataFrame(
+            [
+                {
+                    "month": 49.1,
+                    "year": 18.9,
+                    "darts_enc_fc_cyc_month_cos": 14.7,
+                    "darts_enc_fc_cyc_month_sin": 9.5,
+                    "ice cream": 5.4,
+                    "heater": 2.4,
+                }
+            ],
+        )
+        expected_decoder_importance = pd.DataFrame(
+            [
+                {
+                    "darts_enc_fc_cyc_month_cos": 80.2,
+                    "darts_enc_fc_cyc_month_sin": 19.8,
+                },
+            ]
+        )
+
+        # act
+        res = explainer.get_variable_selection_weight(plot=False)
 
         # assert
         self.assertTrue(isinstance(res, dict))
