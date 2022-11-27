@@ -11,6 +11,7 @@ from darts.explainability import TFTExplainer
 from darts.explainability.explainability import ExplainabilityResult
 from darts.models import TFTModel
 from darts.tests.base_test_class import DartsBaseTestClass
+from darts.utils.timeseries_generation import datetime_attribute_timeseries
 
 
 class TFTExplainerTestCase(DartsBaseTestClass):
@@ -47,6 +48,21 @@ class TFTExplainerTestCase(DartsBaseTestClass):
     transformer_heat = Scaler()
     transformer_heat.fit(cov_heat_train)
     covariates_heat_transformed = transformer_heat.transform(covariates_heat)
+
+    # create input with multiple past covariates
+    multiple_covariates = covariates_heat.stack(
+        datetime_attribute_timeseries(covariates_heat, attribute="year", one_hot=False)
+    ).stack(
+        datetime_attribute_timeseries(covariates_heat, attribute="month", one_hot=False)
+    )
+    multi_cov_train, multi_cov_val = multiple_covariates.split_before(
+        training_cutoff_ice
+    )
+    transformer_multi_cov = Scaler()
+    transformer_multi_cov.fit(multi_cov_train)
+    multiple_covariates_transformed = transformer_multi_cov.transform(
+        multiple_covariates
+    )
 
     # use the last 3 years as past input data
     input_chunk_length_ice = 36
@@ -127,6 +143,57 @@ class TFTExplainerTestCase(DartsBaseTestClass):
                 {
                     "future_covariate_1": 87.8,
                     "future_covariate_0": 12.2,
+                },
+            ]
+        )
+
+        # act
+        res = explainer.get_variable_selection_weight(plot=False)
+
+        # assert
+        self.assertTrue(isinstance(res, dict))
+        self.assertTrue(res.keys() == {"encoder_importance", "decoder_importance"})
+        pd.testing.assert_frame_equal(
+            res["encoder_importance"], expected_encoder_importance
+        )
+        pd.testing.assert_frame_equal(
+            res["decoder_importance"], expected_decoder_importance
+        )
+
+    def test_get_variable_selection_weight_multiple_covariates(self):
+        """The get_variable_selection_weight method returns the feature importance for multiple covariates as input."""
+        # arrange
+        model = deepcopy(self.models[0])
+
+        # fit the model with past covariates
+        np.random.seed(342)
+        _ = model.fit(
+            self.train_ice_transformed,
+            past_covariates=self.multiple_covariates_transformed,
+            verbose=False,
+        )
+
+        # call methods for debugging / development
+        explainer = TFTExplainer(model)
+
+        # expected results
+        expected_encoder_importance = pd.DataFrame(
+            [
+                {
+                    "past_covariate_2": 49.1,
+                    "past_covariate_1": 18.9,
+                    "future_covariate_1": 14.7,
+                    "future_covariate_0": 9.5,
+                    "target_0": 5.4,
+                    "past_covariate_0": 2.4,
+                }
+            ],
+        )
+        expected_decoder_importance = pd.DataFrame(
+            [
+                {
+                    "future_covariate_1": 80.2,
+                    "future_covariate_0": 19.8,
                 },
             ]
         )
@@ -307,11 +374,34 @@ class TFTExplainerTestCase(DartsBaseTestClass):
     def test_plot_attention_heads(self):
         """The get_variable_selection_weight method returns the feature importance."""
         # arrange
-        model = self.models[0]
+        model = deepcopy(self.models[0])
         # fit the model with past covariates
         model.fit(
             self.train_ice_transformed,
             past_covariates=self.covariates_heat_transformed,
+            verbose=True,
+        )
+
+        # call methods for debugging / development
+        explainer = TFTExplainer(model)
+
+        expl_result = explainer.explain()
+
+        # act / assert
+        #
+        with patch("matplotlib.pyplot.show") as _:
+            _ = explainer.plot_attention_heads(expl_result, plot_type="all")
+            _ = explainer.plot_attention_heads(expl_result, plot_type="time")
+            _ = explainer.plot_attention_heads(expl_result, plot_type="heatmap")
+
+    def test_plot_attention_heads_multiple_covariates(self):
+        """The get_variable_selection_weight method returns the feature importance."""
+        # arrange
+        model = deepcopy(self.models[0])
+        # fit the model with past covariates
+        model.fit(
+            self.train_ice_transformed,
+            past_covariates=self.multiple_covariates_transformed,
             verbose=True,
         )
 
