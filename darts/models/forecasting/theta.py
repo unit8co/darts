@@ -84,6 +84,7 @@ class Theta(LocalForecastingModel):
 
     def fit(self, series: TimeSeries):
         super().fit(series)
+        self._assert_univariate(series)
         ts = self.training_series
 
         self.length = len(ts)
