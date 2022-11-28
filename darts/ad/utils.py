@@ -5,17 +5,16 @@ Utils
 Common functions used by anomaly_model.py, scorers.py, aggregators.py and detectors.py
 
 TODO:
-    - change structure of eval_accuracy_from_scores and eval_accuracy_from_prediction (a lot of repeated code)
+    - change structure of eval_accuracy_from_scores and eval_accuracy_from_binary_prediction (a lot of repeated code)
     - migrate metrics function to darts.metric
     - check error message
     - clean function show_anomalies_from_scores
     - allow plots for probabilistic timeseries (for now we take the mean when plotting)
     - create a zoom option on anomalies for a show function
     - add an option visualize: "by window", "unique", "together"
-    - clean _convert_to_list, should only accept one input
 """
 
-from typing import Sequence, Tuple, Union
+from typing import Sequence, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -94,11 +93,12 @@ def eval_accuracy_from_scores(
     else:
         raise ValueError("Argument `metric` must be one of 'AUC_ROC', 'AUC_PR'")
 
-    list_anomaly_scores, list_actual_anomalies = _convert_to_list(
-        anomaly_score, actual_anomalies
+    list_anomaly_scores, list_actual_anomalies, list_window = (
+        _to_list(anomaly_score),
+        _to_list(actual_anomalies),
+        _to_list(window),
     )
-
-    list_window, _ = _convert_to_list(window)
+    _same_length(list_anomaly_scores, list_actual_anomalies)
 
     if len(list_window) == 1:
         list_window = list_window * len(actual_anomalies)
@@ -128,7 +128,7 @@ def eval_accuracy_from_scores(
         return sol
 
 
-def eval_accuracy_from_prediction(
+def eval_accuracy_from_binary_prediction(
     pred_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
     actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
     window: Union[int, Sequence[int]] = 1,
@@ -180,11 +180,12 @@ def eval_accuracy_from_prediction(
             "'f1' and 'accuracy'."
         )
 
-    list_pred_anomalies, list_actual_anomalies = _convert_to_list(
-        pred_anomalies, actual_anomalies
+    list_pred_anomalies, list_actual_anomalies, list_window = (
+        _to_list(pred_anomalies),
+        _to_list(actual_anomalies),
+        _to_list(window),
     )
-
-    list_window, _ = _convert_to_list(window)
+    _same_length(list_pred_anomalies, list_actual_anomalies)
 
     if len(list_window) == 1:
         list_window = list_window * len(actual_anomalies)
@@ -223,7 +224,7 @@ def _eval_accuracy_from_data(
     metric_name: str,
 ) -> Union[float, Sequence[float]]:
     """Internal function for:
-    - eval_accuracy_from_prediction()
+    - eval_accuracy_from_binary_prediction()
     - eval_accuracy_from_scores()
 
     Score the results against true anomalies.
@@ -251,15 +252,15 @@ def _eval_accuracy_from_data(
         Score of the anomalies prediction
     """
 
-    _check_if_TimeSeries(s_data, "Prediction series input")
-    _check_if_TimeSeries(s_anomalies, "actual_anomalies input")
+    _check_timeseries_type(s_data, "Prediction series input")
+    _check_timeseries_type(s_anomalies, "actual_anomalies input")
 
     # if window > 1, the anomalies will be adjusted so that it can be compared timewise with s_data
     s_anomalies = _window_adjustment_anomalies(s_anomalies, window)
 
     _sanity_check_2series(s_data, s_anomalies)
 
-    s_data, s_anomalies = _return_intersect(s_data, s_anomalies)
+    s_data, s_anomalies = _intersect(s_data, s_anomalies)
 
     if metric_name == "AUC_ROC" or metric_name == "AUC_PR":
 
@@ -292,11 +293,11 @@ def _eval_accuracy_from_data(
         return metrics
 
 
-def _return_intersect(
+def _intersect(
     series_1: TimeSeries,
     series_2: TimeSeries,
 ) -> tuple[TimeSeries, TimeSeries]:
-    """Returns the values of series_1 and the values of series_2 that share the same time index.
+    """Returns the sub-series of series_1 and of series_2 that share the same time index.
     (Intersection in time of the two time series)
 
     Parameters
@@ -314,7 +315,7 @@ def _return_intersect(
     return series_1.slice_intersect(series_2), series_2.slice_intersect(series_1)
 
 
-def _check_if_TimeSeries(series: TimeSeries, message: str = None):
+def _check_timeseries_type(series: TimeSeries, message: str = None):
     """Checks if given input is of type Darts TimeSeries"""
 
     raise_if_not(
@@ -344,8 +345,8 @@ def _sanity_check_2series(
         2nd time series
     """
 
-    _check_if_TimeSeries(series_1)
-    _check_if_TimeSeries(series_2)
+    _check_timeseries_type(series_1)
+    _check_timeseries_type(series_2)
 
     # check if the two inputs time series have the same width
     raise_if_not(
@@ -405,38 +406,33 @@ def _window_adjustment_anomalies(series: TimeSeries, window: int) -> TimeSeries:
         )
 
 
-def _convert_to_list(
-    series_1: Union[TimeSeries, Sequence[TimeSeries]],
-    series_2: Union[TimeSeries, Sequence[TimeSeries]] = None,
-) -> Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
-    """If not already, it converts the inputs into a Sequence. Additionaly, it checks if the two sequences
-    contain the same number TimeSeries.
+def _to_list(series: Union[TimeSeries, Sequence[TimeSeries]]) -> Sequence[TimeSeries]:
+    """If not already, it converts the input into a Sequence
 
     Parameters
     ----------
-    series_1
-        1st time series
-    series_2
-        Optionally, 2nd time series
+    series
+        single TimeSeries, or a sequence of TimeSeries
 
     Returns
     -------
-    Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]
+    Sequence[TimeSeries]
     """
 
-    series_1 = [series_1] if not isinstance(series_1, Sequence) else series_1
+    return [series] if not isinstance(series, Sequence) else series
 
-    if series_2 is not None:
 
-        series_2 = [series_2] if not isinstance(series_2, Sequence) else series_2
+def _same_length(
+    list_series_1: Sequence[TimeSeries],
+    list_series_2: Sequence[TimeSeries],
+):
+    """Checks if the two sequences contain the same number of TimeSeries."""
 
-        raise_if_not(
-            len(series_1) == len(series_2),
-            f"Sequences of series must be of the same length, found length: \
-            {len(series_1)} and {len(series_2)}",
-        )
-
-    return series_1, series_2
+    raise_if_not(
+        len(list_series_1) == len(list_series_2),
+        f"Sequences of series must be of the same length, found length: \
+        {len(list_series_1)} and {len(list_series_2)}",
+    )
 
 
 def show_anomalies_from_scores(

@@ -15,6 +15,7 @@ TODO:
     - rethink the positionning of fun _check_param()
     - add possibility to input a list of param rather than only one number
     - add more complex detectors
+        - create an ensemble fittable detector
 """
 
 from abc import ABC, abstractmethod
@@ -23,7 +24,7 @@ from typing import Any, Sequence, Union
 import numpy as np
 
 from darts import TimeSeries
-from darts.ad.utils import _check_if_TimeSeries, eval_accuracy_from_prediction
+from darts.ad.utils import _check_timeseries_type, eval_accuracy_from_binary_prediction
 from darts.logging import raise_if, raise_if_not
 
 
@@ -70,7 +71,7 @@ class Detector(ABC):
             Metric results for each anomaly score
         """
 
-        return eval_accuracy_from_prediction(
+        return eval_accuracy_from_binary_prediction(
             self.detect(anomaly_score), actual_anomalies, window, metric
         )
 
@@ -103,7 +104,7 @@ class NonFittableDetector(Detector):
 
         detected_series = []
         for series in list_series:
-            _check_if_TimeSeries(series)
+            _check_timeseries_type(series)
 
             detected_series.append(self._detect_core(series))
 
@@ -148,7 +149,7 @@ class FittableDetector(Detector):
 
         detected_series = []
         for series in list_series:
-            _check_if_TimeSeries(series)
+            _check_timeseries_type(series)
 
             if self.trainable:
                 raise_if_not(
@@ -187,7 +188,7 @@ class FittableDetector(Detector):
         self.width_trained_on = series
 
         for idx, series in enumerate(list_series):
-            _check_if_TimeSeries(series)
+            _check_timeseries_type(series)
 
             if idx == 0:
                 self.width_trained_on = series.width

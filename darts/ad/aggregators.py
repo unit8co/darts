@@ -19,7 +19,7 @@ from typing import Any, Sequence, Union
 import numpy as np
 
 from darts import TimeSeries
-from darts.ad.utils import _return_intersect, eval_accuracy_from_prediction
+from darts.ad.utils import _intersect, eval_accuracy_from_binary_prediction
 from darts.logging import raise_if, raise_if_not
 
 
@@ -37,27 +37,16 @@ class Aggregator(ABC):
         "returns the aggregated results"
         pass
 
-    def predict(self, list_series: Sequence[TimeSeries]) -> TimeSeries:
-        """Aggregates the list of series given as input into one series.
-
-        Checks:
-        - input is a Sequence
-        - input contains at least two elements
-        - each element is
-            - a Timeseries
-            - binary (only values equal to 0 or 1)
-            - 1 value per timestamp per dimension (num_samples equal to 1)
-        - all elements needs to have the same width/dimension
-
-        Parameters
-        ----------
-        list_series
-            The list of binary series to aggregate
-
-        Returns
-        -------
-        TimeSeries
-            Aggregated results
+    def _check_input(self, list_series: Sequence[TimeSeries]) -> TimeSeries:
+        """
+        Checks for input if:
+            - it is a Sequence
+            - it contains at least two elements
+            - each element of input is
+                - a Timeseries
+                - binary (only values equal to 0 or 1)
+                - 1 value per timestamp per dimension (num_samples equal to 1)
+            - all elements needs to have the same width/dimension
         """
 
         raise_if_not(
@@ -86,9 +75,9 @@ class Aggregator(ABC):
             )
 
             raise_if_not(
-                series.n_samples == 1,
-                f"Series in list needs to have one value per timestamp per dimension, \
-                found {series.n_samples} for series at index {idx}.",
+                series.is_deterministic,
+                f"Series in list must be deterministic (one value per timestamp per dimension), \
+                found {series.n_samples} values for series at index {idx}.",
             )
 
             if idx == 0:
@@ -101,7 +90,7 @@ class Aggregator(ABC):
                 found width {series.width} and {series_width}.",
             )
 
-            series_0, list_series[idx] = _return_intersect(series_0, series)
+            series_0, list_series[idx] = _intersect(series_0, series)
 
         for idx, series in enumerate(list_series):
             if idx > 0:
@@ -109,8 +98,14 @@ class Aggregator(ABC):
 
         list_series[0] = series_0
 
+        return list_series
+
+    def _predict(self, list_series: Sequence[TimeSeries]) -> TimeSeries:
+
+        list_series = self._check_input(list_series)
+
         list_pred = []
-        for width in range(series_width):
+        for width in range(list_series[0].width):
             list_pred.append(
                 self._predict_core(
                     np.concatenate(
@@ -120,7 +115,7 @@ class Aggregator(ABC):
             )
 
         return TimeSeries.from_times_and_values(
-            series_0._time_index, list(zip(*list_pred))
+            list_series[0]._time_index, list(zip(*list_pred))
         )
 
     def eval_accuracy(
@@ -157,10 +152,139 @@ class Aggregator(ABC):
 
         series = self.predict(list_series)
 
-        return eval_accuracy_from_prediction(series, actual_anomalies, window, metric)
+        return eval_accuracy_from_binary_prediction(
+            series, actual_anomalies, window, metric
+        )
 
 
-class OrAggregator(Aggregator):
+class NonFittableAggregator(Aggregator):
+    "Base class of Aggregators that do not need training."
+
+    def __init__(self) -> None:
+        super().__init__()
+
+        # indicates if the Aggregator is trainable or not
+        self.trainable = False
+
+    def predict(self, list_series: Sequence[TimeSeries]) -> TimeSeries:
+        """Aggregates the list of series given as input into one series.
+
+        Parameters
+        ----------
+        list_series
+            The list of binary series to aggregate
+
+        Returns
+        -------
+        TimeSeries
+            Aggregated results
+        """
+        return self._predict(list_series)
+
+
+class FittableAggregator(Aggregator):
+    "Base class of Aggregators that do need training."
+
+    def __init__(self) -> None:
+        super().__init__()
+
+        # indicates if the Aggregator is trainable or not
+        self.trainable = True
+
+        # indicates if the Aggregator has been trained yet
+        self._fit_called = False
+
+    def check_if_fit_called(self):
+        """Checks if the Aggregator has been fitted before calling its `score()` function."""
+
+        raise_if_not(
+            self._fit_called,
+            f"The Aggregator {self.__str__()} has not been fitted yet. Call `fit()` first.",
+        )
+
+    def predict(self, list_series: Sequence[TimeSeries]) -> TimeSeries:
+        """Aggregates the list of series given as input into one series.
+
+        Parameters
+        ----------
+        list_series
+            The list of binary series to aggregate
+
+        Returns
+        -------
+        TimeSeries
+            Aggregated results
+        """
+        self.check_if_fit_called()
+
+        raise_if_not(
+            len(list_series) == self.len_training_set,
+            "The model was trained on a list of length {}, found for prediciton a list of different \
+            length {}.".format(
+                self.len_training_set, len(list_series)
+            ),
+        )
+
+        return self._predict(list_series)
+
+    def fit(self, list_series: Sequence[TimeSeries], actual_anomalies: TimeSeries):
+        """Fit the aggregators on the given list of series.
+
+        Parameters
+        ----------
+        list_series
+            The list of binary series to aggregate
+        actual_anomalies
+            The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
+
+        Returns
+        -------
+        TimeSeries
+            Aggregated results
+        """
+        self.len_training_set = len(list_series)
+
+        list_series = self._check_input(list_series)
+
+        actual_anomalies = actual_anomalies.slice_intersect(list_series[0])
+
+        for idx, s in enumerate(list_series):
+            list_series[idx] = s.slice_intersect(actual_anomalies)
+
+        # TODO: for every width -> train different models for each
+        width = 0
+
+        training_data = np.concatenate(
+            [s.all_values()[:, width] for s in list_series], axis=1
+        )
+        np_actual_anomalies = actual_anomalies.all_values(copy=False).flatten()
+
+        self._fit_core(training_data, np_actual_anomalies)
+        self._fit_called = True
+
+
+class EnsembleSklearnAggregator(FittableAggregator):
+    """Wrapper around Ensemble model of sklearn"""
+
+    def __init__(self, model) -> None:
+        self.model = model
+        super().__init__()
+
+    def __str__(self):
+        return "EnsembleSklearnAggregator: {}".format(
+            self.model.__str__().split("(")[0]
+        )
+
+    def _fit_core(
+        self, np_series: np.ndarray, np_actual_anomalies: np.ndarray
+    ) -> np.ndarray:
+        self.model.fit(np_series, np_actual_anomalies)
+
+    def _predict_core(self, np_series: np.ndarray) -> np.ndarray:
+        return self.model.predict(np_series)
+
+
+class OrAggregator(NonFittableAggregator):
     """Aggregator that identifies a time point as anomalous as long as it is
     included in one of the input anomaly lists.
     """
@@ -176,7 +300,7 @@ class OrAggregator(Aggregator):
         return [1 if timestamp.sum() >= 1 else 0 for timestamp in np_series]
 
 
-class AndAggregator(Aggregator):
+class AndAggregator(NonFittableAggregator):
     """Aggregator that identifies a time point as anomalous only if it is
     included in all the input anomaly lists.
     """
