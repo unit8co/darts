@@ -58,7 +58,7 @@ class StatsForecastETS(FutureCovariatesLocalForecastingModel):
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         super()._fit(series, future_covariates)
-        series._assert_univariate()
+        self._assert_univariate(series)
         series = self.training_series
         self.model.fit(
             series.values(copy=False).flatten(),
