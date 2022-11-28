@@ -114,6 +114,8 @@ if TORCH_AVAILABLE:
                 "n_epochs": 10,
             },
             50.0,
+        ),
+        (
             NLinearModel,
             {
                 "n_epochs": 10,
