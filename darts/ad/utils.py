@@ -11,6 +11,8 @@ TODO:
     - clean function show_anomalies_from_scores
     - allow plots for probabilistic timeseries (for now we take the mean when plotting)
     - create a zoom option on anomalies for a show function
+    - add an option visualize: "by window", "unique", "together"
+    - clean _convert_to_list, should only accept one input
 """
 
 from typing import Sequence, Tuple, Union
@@ -546,7 +548,7 @@ def show_anomalies_from_scores(
                 for idx, name in enumerate(names_of_scorers):
                     raise_if_not(
                         isinstance(name, str),
-                        f"Elements of names_of_scorers must be of type str, found {type(s)} at index {idx}.",
+                        f"Elements of names_of_scorers must be of type str, found {type(name)} at index {idx}.",
                     )
             else:
                 raise_if_not(

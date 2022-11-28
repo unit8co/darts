@@ -11,7 +11,6 @@ The function ``eval_accuracy()`` returns the score of an agnostic threshold metr
 anomaly score time series and a binary ground truth time series indicating the presence of anomalies.
 
 TODO:
-    - window must be modulo of the length of the series -> must change that
     - rethink implementation _check_probabilistic_case separate case deterministic and probabilistic
     and redo fit() function
 """
@@ -21,6 +20,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Optional, Sequence, Tuple, Union
 
 import numpy as np
+from pyod.models.base import BaseDetector
 from scipy.stats import gamma, norm, wasserstein_distance
 from sklearn.cluster import KMeans
 from sklearn.mixture import GaussianMixture
@@ -377,6 +377,134 @@ class FittableAnomalyScorer(AnomalyScorer):
 
 
 # FittableAnomalyScorer
+
+
+class PyODScorer(FittableAnomalyScorer):
+    "Wrapped around models of PyOD"
+
+    def __init__(
+        self,
+        model,
+        window: Optional[int] = None,
+        component_wise: bool = False,
+        reduced_function=None,
+    ) -> None:
+
+        raise_if_not(
+            isinstance(model, BaseDetector),
+            f"model must be BaseDetector of the library PyOD, found type: {type(component_wise)}",
+        )
+        self.model = model
+
+        super().__init__(window=window, reduced_function=reduced_function)
+
+        raise_if_not(
+            isinstance(component_wise, bool),
+            f"component_wise must be Boolean, found type: {type(component_wise)}",
+        )
+        self.component_wise = component_wise
+
+    def __str__(self):
+        return "PyODScorer model: {}".format(self.model.__str__().split("(")[0])
+
+    def _fit_core(
+        self,
+        list_series_1: Sequence[TimeSeries],
+        list_series_2: Sequence[TimeSeries] = None,
+    ):
+        if list_series_2 is None:
+            list_series = list_series_1
+        else:
+            list_series = self._diff_sequence(list_series_1, list_series_2)
+
+        self._fit_called = True
+        self.width_trained_on = list_series[0].width
+
+        list_np_series = [series.all_values(copy=False) for series in list_series]
+
+        if not self.component_wise:
+            self.model.fit(
+                np.concatenate(
+                    [
+                        np.array(
+                            [
+                                np.array(np_series[i : i + self.window])
+                                for i in range(len(np_series) - self.window + 1)
+                            ]
+                        ).reshape(-1, self.window * len(np_series[0]))
+                        for np_series in list_np_series
+                    ]
+                )
+            )
+        else:
+            models = []
+            for width in range(self.width_trained_on):
+
+                model_width = self.model
+                model_width.fit(
+                    np.concatenate(
+                        [
+                            np.array(
+                                [
+                                    np.array(np_series[i : i + self.window, width])
+                                    for i in range(len(np_series) - self.window + 1)
+                                ]
+                            ).reshape(-1, self.window)
+                            for np_series in list_np_series
+                        ]
+                    )
+                )
+                models.append(model_width)
+            self.model = models
+
+    def _score_core(
+        self, series_1: TimeSeries, series_2: TimeSeries = None
+    ) -> TimeSeries:
+        if series_2 is None:
+            series = series_1
+        else:
+            series = self._diff(series_1, series_2)
+
+        raise_if_not(
+            self.width_trained_on == series.width,
+            f"Input must have the same width of the data used for training the GaussianMixture model, \
+            found width: {self.width_trained_on} and {series.width}",
+        )
+
+        np_series = series.all_values(copy=False)
+        np_anomaly_score = []
+
+        if not self.component_wise:
+
+            np_anomaly_score.append(
+                np.exp(
+                    self.model.decision_function(
+                        np.array(
+                            [
+                                np.array(np_series[i : i + self.window])
+                                for i in range(len(series) - self.window + 1)
+                            ]
+                        ).reshape(-1, self.window * series.width)
+                    )
+                )
+            )
+        else:
+
+            for width in range(self.width_trained_on):
+                np_anomaly_score_width = self.model[width].decision_function(
+                    np.array(
+                        [
+                            np.array(np_series[i : i + self.window, width])
+                            for i in range(len(series) - self.window + 1)
+                        ]
+                    ).reshape(-1, self.window)
+                )
+
+                np_anomaly_score.append(np.exp(np_anomaly_score_width))
+
+        return TimeSeries.from_times_and_values(
+            series._time_index[self.window - 1 :], list(zip(*np_anomaly_score))
+        )
 
 
 class GaussianMixtureScorer(FittableAnomalyScorer):
