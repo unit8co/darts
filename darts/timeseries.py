@@ -3885,7 +3885,7 @@ class TimeSeries:
         return len(self._xa)
 
     def __add__(self, other):
-        if isinstance(other, (int, float, np.integer, np.float32, np.float64)):
+        if isinstance(other, (int, float, np.number)):
             xa_ = _xarray_with_attrs(
                 self._xa + other, self.static_covariates, self.hierarchy
             )
