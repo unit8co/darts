@@ -148,6 +148,7 @@ class EnsembleModel(GlobalForecastingModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
+        verbose: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
 
         super().predict(
@@ -156,6 +157,7 @@ class EnsembleModel(GlobalForecastingModel):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             num_samples=num_samples,
+            verbose=verbose,
         )
 
         predictions = self._make_multiple_predictions(
