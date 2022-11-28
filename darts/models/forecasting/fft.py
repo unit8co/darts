@@ -272,6 +272,7 @@ class FFT(LocalForecastingModel):
     def fit(self, series: TimeSeries):
         series = fill_missing_values(series)
         super().fit(series)
+        self._assert_univariate(series)
         series = self.training_series
 
         # determine trend
