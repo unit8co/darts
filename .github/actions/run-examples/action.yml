@@ -7,3 +7,5 @@ inputs:
   file_extension:
     description: "Example notebook extension"
     required: true
+runs:
+  main: 'run-example.py'
