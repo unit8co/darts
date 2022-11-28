@@ -8,4 +8,7 @@ inputs:
     description: "Example notebook extension"
     required: true
 runs:
-  main: 'run-example.py'
+  using: "composite"
+  steps:
+    - run: python run-example.py
+      shell: bash
