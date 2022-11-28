@@ -202,6 +202,7 @@ class _BaseBatsTbatsModel(LocalForecastingModel, ABC):
 
     def fit(self, series: TimeSeries):
         super().fit(series)
+        self._assert_univariate(series)
         series = self.training_series
 
         if self.infer_seasonal_periods:
