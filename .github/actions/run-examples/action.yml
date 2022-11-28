@@ -10,7 +10,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - run: cd ..
+    - run: pwd
       shell: bash
-    - run: python .github/actions/run-examples/run-example.py
+    - run: python /home/runner/work/darts/.github/actions/run-examples/run-example.py
       shell: bash
