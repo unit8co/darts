@@ -1,0 +1,9 @@
+name: "Collect and run examples"
+description: "Lists files present in given folder and run them using gradlew"
+inputs:
+  directory:
+    description: "Directory of examples notebooks"
+    required: true
+  file_extension:
+    description: "Example notebook extension"
+    required: true
