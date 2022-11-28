@@ -62,9 +62,15 @@ class TFTExplainer(ForecastingModelExplainer):
         """
 
         if plot:
-            # plot the encoder and decoder weights sorted descending
-            self.encoder_importance.plot(kind="bar", title="Encoder weights")
-            self.decoder_importance.plot(kind="bar", title="Decoder weights")
+            # plot the encoder and decoder weights
+            self._plot_cov_selection(
+                self.encoder_importance,
+                title="Encoder variable importance",
+            )
+            self._plot_cov_selection(
+                self.decoder_importance,
+                title="Decoder variable importance",
+            )
 
         return {
             "encoder_importance": self.encoder_importance,
@@ -220,3 +226,24 @@ class TFTExplainer(ForecastingModelExplainer):
             **future_covariates_name_mapping,
             **target_name_mapping,
         }
+
+    @staticmethod
+    def _plot_cov_selection(
+        importance: pd.DataFrame, title: str = "Variable importance"
+    ):
+        """Plots the variable importance of the TFT model.
+
+        Parameters
+        ----------
+        importance
+            The encoder / decoder importance.
+        title
+            The title of the plot.
+
+        """
+        fig = plt.figure()
+        plt.bar(importance.columns.tolist(), importance.values[0].tolist(), figure=fig)
+        plt.title(title)
+        plt.xlabel("Variable", fontsize=12)
+        plt.ylabel("Variable importance in %")
+        plt.show()
