@@ -10,5 +10,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - run: python ../.github/actions/run-examples/run-example.py
+    - run: cd ..
+      shell: bash
+    - run: python .github/actions/run-examples/run-example.py
       shell: bash
