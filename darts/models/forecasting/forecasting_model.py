@@ -578,7 +578,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Parameters
         ----------
         series
-            The (or a sequence of) target time series to use to successively train and evaluate
+            One or multiple target time series to use to successively train and evaluate
             the historical forecasts.
         past_covariates
             Optionally, one (or a sequence of) past-observed covariate series.
