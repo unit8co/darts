@@ -341,7 +341,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     @property
     def predict_sample_time_index_length(self) -> int:
         """
-        Class property defining the required time_index length for one predict sample, for any model.
+       Required time_index length for one predict sample, for any model.
         A predict sample is the minimum required set of series and covariates chunks to be able to predict
         a single point.
         """
