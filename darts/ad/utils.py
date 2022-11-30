@@ -8,10 +8,9 @@ TODO:
     - change structure of eval_accuracy_from_scores and eval_accuracy_from_binary_prediction (a lot of repeated code)
     - migrate metrics function to darts.metric
     - check error message
-    - clean function show_anomalies_from_scores
-    - allow plots for probabilistic timeseries (for now we take the mean when plotting)
     - create a zoom option on anomalies for a show function
     - add an option visualize: "by window", "unique", "together"
+    - create a normalize option in plot function (norm every anomaly score btw 1 and 0) -> to be seen on the same plot
 """
 
 from typing import Sequence, Union
@@ -52,23 +51,23 @@ def check_if_binary(series: TimeSeries, name_series: str):
 
 
 def eval_accuracy_from_scores(
-    anomaly_score: Union[TimeSeries, Sequence[TimeSeries]],
     actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
+    anomaly_score: Union[TimeSeries, Sequence[TimeSeries]],
     window: Union[int, Sequence[int]] = 1,
     metric: str = "AUC_ROC",
 ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
     """Scores the results against true anomalies.
 
     checks:
-    - anomaly_score and actual_anomalies are the same type, length, width/dimension
-    - actual_anomalies is binary and has values belonging to the two classes (1 and 0)
+        - `actual_anomalies` and `anomaly_score` are the same type, length, width/dimension
+        - `actual_anomalies` is binary and has values belonging to the two classes (1 and 0)
 
     Parameters
     ----------
-    anomaly_score
-        Time series to detect anomalies from.
     actual_anomalies
-        The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
+        The ground truth of the anomalies (1 if it is an anomaly and 0 if not).
+    anomaly_score
+        Series indicating how anomoulous each window of size w is.
     window
         Integer value indicating the number of past samples each point represents
         in the anomaly_score. The parameter will be used by the function
@@ -129,25 +128,25 @@ def eval_accuracy_from_scores(
 
 
 def eval_accuracy_from_binary_prediction(
-    pred_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
     actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
+    binary_pred_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
     window: Union[int, Sequence[int]] = 1,
     metric: str = "recall",
 ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
     """Score the results against true anomalies.
 
-    checks that pred_anomalies and actual_anomalies are the same:
-    - type,
-    - length,
-    -width/dimension
-    - binary and has values belonging to the two classes (1 and 0)
+    checks that `pred_anomalies` and `actual_anomalies` are the same:
+        - type,
+        - length,
+        - width/dimension
+        - binary and has values belonging to the two classes (1 and 0)
 
     Parameters
     ----------
-    pred_anomalies
-        Anomalies prediction.
     actual_anomalies
-        True anomalies.
+        The (sequence of) ground truth of the anomalies (1 if it is an anomaly and 0 if not)
+    binary_pred_anomalies
+        Anomalies prediction.
     window
         Integer value indicating the number of past samples each point represents
         in the pred_anomalies. The parameter will be used by the function
@@ -180,12 +179,12 @@ def eval_accuracy_from_binary_prediction(
             "'f1' and 'accuracy'."
         )
 
-    list_pred_anomalies, list_actual_anomalies, list_window = (
-        _to_list(pred_anomalies),
+    list_binary_pred_anomalies, list_actual_anomalies, list_window = (
+        _to_list(binary_pred_anomalies),
         _to_list(actual_anomalies),
         _to_list(window),
     )
-    _same_length(list_pred_anomalies, list_actual_anomalies)
+    _same_length(list_binary_pred_anomalies, list_actual_anomalies)
 
     if len(list_window) == 1:
         list_window = list_window * len(actual_anomalies)
@@ -198,7 +197,7 @@ def eval_accuracy_from_binary_prediction(
 
     sol = []
     for idx, (s_pred, s_anomalies) in enumerate(
-        zip(list_pred_anomalies, list_actual_anomalies)
+        zip(list_binary_pred_anomalies, list_actual_anomalies)
     ):
 
         check_if_binary(s_pred, "pred_anomalies")
@@ -206,35 +205,35 @@ def eval_accuracy_from_binary_prediction(
 
         sol.append(
             _eval_accuracy_from_data(
-                s_pred, s_anomalies, list_window[idx], metric_fn, metric
+                s_anomalies, s_pred, list_window[idx], metric_fn, metric
             )
         )
 
-    if len(sol) == 1 and not isinstance(pred_anomalies, Sequence):
+    if len(sol) == 1 and not isinstance(binary_pred_anomalies, Sequence):
         return sol[0]
     else:
         return sol
 
 
 def _eval_accuracy_from_data(
-    s_data: TimeSeries,
     s_anomalies: TimeSeries,
+    s_data: TimeSeries,
     window: int,
     metric_fn,
     metric_name: str,
 ) -> Union[float, Sequence[float]]:
     """Internal function for:
-    - eval_accuracy_from_binary_prediction()
-    - eval_accuracy_from_scores()
+        - ``eval_accuracy_from_binary_prediction()``
+        - ``eval_accuracy_from_scores()``
 
     Score the results against true anomalies.
 
     Parameters
     ----------
+    actual_anomalies
+        The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
     s_data
         series prediction
-    actual_anomalies
-        True anomalies.
     window
         Integer value indicating the number of past samples each point represents
         in the anomaly_score. The parameter will be used by the function
@@ -407,7 +406,7 @@ def _window_adjustment_anomalies(series: TimeSeries, window: int) -> TimeSeries:
 
 
 def _to_list(series: Union[TimeSeries, Sequence[TimeSeries]]) -> Sequence[TimeSeries]:
-    """If not already, it converts the input into a Sequence
+    """If not already, it converts the input into a sequence
 
     Parameters
     ----------
@@ -443,7 +442,6 @@ def show_anomalies_from_scores(
     names_of_scorers: Union[str, Sequence[str]] = None,
     actual_anomalies: TimeSeries = None,
     title: str = None,
-    save_png: str = None,
     metric: str = None,
 ):
     """Plot the results generated by an anomaly model.
@@ -453,10 +451,14 @@ def show_anomalies_from_scores(
         - the anomaly score of each scorer. The scorer with different windows will be separated.
         - the actual anomalies, if given.
 
+    If model_output is stochastic (i.e., if it has multiple samples), the function will plot:
+        - the mean per timestamp
+        - the quantile 0.95 for an upper bound
+        - the quantile 0.05 for a lower bound
+
     Possible to:
         - add a title to the figure with the parameter 'title'
         - give personalized names for the scorers with 'names_of_scorers'
-        - save the plot as a png at the path 'save_png'
         - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR), if the actual anomalies is given
 
     Parameters
@@ -464,7 +466,7 @@ def show_anomalies_from_scores(
     series
         The series to visualize anomalies from.
     model_output
-        Output of the model given as input the series.
+        Output of the model given as input the series (can be stochastic).
     anomaly_scores
         Output of the scorers given the output of the model and the series.
     window
@@ -476,9 +478,6 @@ def show_anomalies_from_scores(
         The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
     title
         Title of the figure
-    save_png
-        Path to where the plot in format png should be saved
-        Default: None (the plot will not be saved)
     metric
         Optionally, Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR".
         Default: "AUC_ROC"
@@ -495,12 +494,6 @@ def show_anomalies_from_scores(
         raise_if_not(
             isinstance(title, str),
             f"Input `title` must be of type str, found {type(title)}.",
-        )
-
-    if save_png is not None:
-        raise_if_not(
-            isinstance(save_png, str),
-            f"Input `save_png` must be of type str, found {type(save_png)}.",
         )
 
     nbr_plots = 1
@@ -575,7 +568,7 @@ def show_anomalies_from_scores(
             list_window = [window]
 
         if len(list_window) == 1:
-            list_window = list_window * len(actual_anomalies)
+            list_window = list_window * len(anomaly_scores)
         else:
             raise_if_not(
                 len(list_window) == len(anomaly_scores),
@@ -590,30 +583,35 @@ def show_anomalies_from_scores(
         figsize=(8, 4 + 2 * (nbr_plots - 1)),
         sharex=True,
         gridspec_kw={"height_ratios": [2] + [1] * (nbr_plots - 1)},
+        squeeze=False,
     )
-    fig.suptitle(title, y=0.93)
-    fig.subplots_adjust(hspace=0.3)
 
     index_ax = 0
 
-    for width in range(series.width):
-        series._xa[:, width].plot(
-            ax=axs[index_ax], color="red", linewidth=0.5, label="true values series"
-        )
+    _plot_series(
+        series=series,
+        ax_id=axs[index_ax][0],
+        linewidth=0.5,
+        label_name="series",
+        color="red",
+    )
 
     if model_output is not None:
 
-        for width in range(model_output.width):
-            model_output._xa[:, width].mean(axis=1).plot(
-                ax=axs[index_ax], color="blue", linewidth=0.5, label="model output"
-            )
+        _plot_series(
+            series=model_output,
+            ax_id=axs[index_ax][0],
+            linewidth=0.5,
+            label_name="model output",
+            color="blue",
+        )
 
-    axs[index_ax].set_title("")
+    axs[index_ax][0].set_title("")
 
-    if actual_anomalies is not None and anomaly_scores is not None:
-        axs[index_ax].set_xlabel("")
+    if actual_anomalies is not None or anomaly_scores is not None:
+        axs[index_ax][0].set_xlabel("")
 
-    axs[index_ax].legend(loc="upper center", bbox_to_anchor=(0.5, 1.1), ncol=2)
+    axs[index_ax][0].legend(loc="upper center", bbox_to_anchor=(0.5, 1.1), ncol=2)
 
     if anomaly_scores is not None:
 
@@ -653,27 +651,75 @@ def show_anomalies_from_scores(
             else:
                 label = f"score_{str(idx)}" + [f" ({value})", ""][value is None]
 
-            for width in range(elem[1]["series_score"].width):
-                elem[1]["series_score"]._xa[:, width].plot(
-                    ax=axs[index_ax], linewidth=0.5, label=label
-                )
+            _plot_series(
+                series=elem[1]["series_score"],
+                ax_id=axs[index_ax][0],
+                linewidth=0.5,
+                label_name=label,
+            )
 
-            axs[index_ax].legend(loc="upper center", bbox_to_anchor=(0.5, 1.19), ncol=2)
-            axs[index_ax].set_title(f"Window: {str(window)}", loc="left")
-            axs[index_ax].set_title("")
-            axs[index_ax].set_xlabel("")
+            axs[index_ax][0].legend(
+                loc="upper center", bbox_to_anchor=(0.5, 1.19), ncol=2
+            )
+            axs[index_ax][0].set_title(f"Window: {str(window)}", loc="left")
+            axs[index_ax][0].set_title("")
+            axs[index_ax][0].set_xlabel("")
 
     if actual_anomalies is not None:
 
-        for width in range(actual_anomalies.width):
-            actual_anomalies._xa[:, width].plot(
-                ax=axs[index_ax + 1], color="red", linewidth=1, label="true anomalies"
+        _plot_series(
+            series=actual_anomalies,
+            ax_id=axs[index_ax + 1][0],
+            linewidth=1,
+            label_name="anomalies",
+            color="red",
+        )
+
+        axs[index_ax + 1][0].set_title("")
+        axs[index_ax + 1][0].set_ylim([-0.1, 1.1])
+        axs[index_ax + 1][0].set_yticks([0, 1])
+        axs[index_ax + 1][0].set_yticklabels(["no", "yes"])
+        axs[index_ax + 1][0].legend(
+            loc="upper center", bbox_to_anchor=(0.5, 1.2), ncol=2
+        )
+    else:
+        axs[index_ax][0].set_xlabel("timestamp")
+
+    fig.suptitle(title)
+
+
+def _plot_series(series, ax_id, linewidth, label_name, **kwargs):
+    """Internal function called by ``show_anomalies_from_scores()``
+
+    Plot the series on the given axes ax_id.
+
+    Parameters
+    ----------
+    series
+        The series to plot.
+    ax_id
+        The axis the series will be ploted on.
+    linewidth
+        Thickness of the line.
+    label_name
+        Name that will appear in the legend.
+    """
+
+    for i, c in enumerate(series._xa.component[:10]):
+        comp = series._xa.sel(component=c)
+
+        if comp.sample.size > 1:
+            central_series = comp.mean(dim="sample")
+            low_series = comp.quantile(q=0.05, dim="sample")
+            high_series = comp.quantile(q=0.95, dim="sample")
+        else:
+            central_series = comp
+
+        label_to_use = label_name + ("_" + str(i) if len(series.components) > 1 else "")
+
+        central_series.plot(ax=ax_id, linewidth=linewidth, label=label_to_use, **kwargs)
+
+        if comp.sample.size > 1:
+            ax_id.fill_between(
+                series.time_index, low_series, high_series, alpha=0.25, **kwargs
             )
-
-        axs[index_ax + 1].set_title("")
-        axs[index_ax + 1].legend(loc="upper center", bbox_to_anchor=(0.5, 1.2), ncol=2)
-
-    if save_png is not None:
-        plt.savefig(save_png)
-
-    plt.show()

@@ -44,8 +44,8 @@ class Detector(ABC):
 
     def eval_accuracy(
         self,
-        anomaly_score: Union[TimeSeries, Sequence[TimeSeries]],
         actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
+        anomaly_score: Union[TimeSeries, Sequence[TimeSeries]],
         window: int = 1,
         metric: str = "recall",
     ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
@@ -53,10 +53,10 @@ class Detector(ABC):
 
         Parameters
         ----------
-        anomaly_score
-            series indicating how anomoulous each timestamp is
         actual_anomalies
-            The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
+            The ground truth of the anomalies (1 if it is an anomaly and 0 if not).
+        anomaly_score
+            Series indicating how anomoulous each window of size w is.
         window
             Integer value indicating the number of past samples each point represents
             in the anomaly_score.
@@ -72,7 +72,7 @@ class Detector(ABC):
         """
 
         return eval_accuracy_from_binary_prediction(
-            self.detect(anomaly_score), actual_anomalies, window, metric
+            actual_anomalies, self.detect(anomaly_score), window, metric
         )
 
 

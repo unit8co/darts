@@ -120,8 +120,8 @@ class Aggregator(ABC):
 
     def eval_accuracy(
         self,
-        list_series: Sequence[TimeSeries],
         actual_anomalies: TimeSeries,
+        list_series: Sequence[TimeSeries],
         window: int = 1,
         metric: str = "recall",
     ) -> Union[float, Sequence[float]]:
@@ -130,10 +130,10 @@ class Aggregator(ABC):
 
         Parameters
         ----------
-        list_series
-            The list of binary series to aggregate
         actual_anomalies
             The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
+        list_series
+            The list of binary series to aggregate
         window
             Integer value indicating the number of past samples each point represents
             in the list_series. The parameter will be used by the function
@@ -153,7 +153,7 @@ class Aggregator(ABC):
         series = self.predict(list_series)
 
         return eval_accuracy_from_binary_prediction(
-            series, actual_anomalies, window, metric
+            actual_anomalies, series, window, metric
         )
 
 
@@ -227,15 +227,15 @@ class FittableAggregator(Aggregator):
 
         return self._predict(list_series)
 
-    def fit(self, list_series: Sequence[TimeSeries], actual_anomalies: TimeSeries):
+    def fit(self, actual_anomalies: TimeSeries, list_series: Sequence[TimeSeries]):
         """Fit the aggregators on the given list of series.
 
         Parameters
         ----------
-        list_series
-            The list of binary series to aggregate
         actual_anomalies
             The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
+        list_series
+            The list of binary series to aggregate
 
         Returns
         -------

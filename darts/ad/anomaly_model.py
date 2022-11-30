@@ -96,7 +96,6 @@ class AnomalyModel(ABC):
         names_of_scorers: Union[str, Sequence[str]] = None,
         actual_anomalies: TimeSeries = None,
         title: str = None,
-        save_png: str = None,
         metric: str = None,
     ):
         """Internal function that plots the results of the anomaly model.
@@ -123,7 +122,6 @@ class AnomalyModel(ABC):
             names_of_scorers=names_of_scorers,
             actual_anomalies=actual_anomalies,
             title=title,
-            save_png=save_png,
             metric=metric,
         )
 
@@ -200,9 +198,11 @@ class ForecastingAnomalyModel(AnomalyModel):
         model_fit_params
             Parameters to be passed on to the forecast model ``fit()`` method.
         past_covariates
-            Optional past-observed covariate series. This applies only if the model supports past covariates.
+            Optional past-observed covariate series or sequence of series. This applies only if the model
+            supports past covariates.
         future_covariates
-            Optional future-known covariate series. This applies only if the model supports future covariates.
+            Optional future-known covariate series or sequence of series. This applies only if the model
+            supports future covariates.
         forecast_horizon
             The forecast horizon for the predictions.
         start
@@ -365,7 +365,6 @@ class ForecastingAnomalyModel(AnomalyModel):
         actual_anomalies=TimeSeries,
         names_of_scorers: Union[str, Sequence[str]] = None,
         title: str = None,
-        save_png: str = None,
         metric: str = None,
     ):
         """Plot the results of the anomaly model.
@@ -380,7 +379,6 @@ class ForecastingAnomalyModel(AnomalyModel):
         It is possible to:
             - add a title to the figure with the parameter 'title'
             - give personalized names for the scorers with 'names_of_scorers'
-            - save the plot as a png at the path 'save_png'
             - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR),
               if the actual anomalies are provided.
 
@@ -389,9 +387,11 @@ class ForecastingAnomalyModel(AnomalyModel):
         series
             The series to visualize anomalies from.
         past_covariates
-            An optional past-observed covariate series. This applies only if the model supports past covariates.
+            An optional past-observed covariate series or sequence of series. This applies only if the model
+            supports past covariates.
         future_covariates
-            An optional future-known covariate series. This applies only if the model supports future covariates.
+            An optional future-known covariate series or sequence of series. This applies only if the model
+            supports future covariates.
         forecast_horizon
             The forecast horizon for the predictions.
         start
@@ -412,9 +412,6 @@ class ForecastingAnomalyModel(AnomalyModel):
             Name of the scores. Must be a list of length equal to the number of scorers in the anomaly_model.
         title
             Title of the figure
-        save_png
-            Path to where the plot in format png should be saved
-            Default: None (the plot will not be saved)
         metric
             Optionally, Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR".
             Default: "AUC_ROC"
@@ -450,7 +447,6 @@ class ForecastingAnomalyModel(AnomalyModel):
             names_of_scorers=names_of_scorers,
             actual_anomalies=actual_anomalies,
             title=title,
-            save_png=save_png,
             metric=metric,
         )
 
@@ -475,9 +471,11 @@ class ForecastingAnomalyModel(AnomalyModel):
         series
             The series to score on.
         past_covariates
-            An optional past-observed covariate series. This applies only if the model supports past covariates.
+            An optional past-observed covariate series or sequence of series. This applies only if the model
+            supports past covariates.
         future_covariates
-            An optional future-known covariate series. This applies only if the model supports future covariates.
+            An optional future-known covariate series or sequence of series. This applies only if the model
+            supports future covariates.
         forecast_horizon
             The forecast horizon for the predictions.
         start
@@ -608,9 +606,11 @@ class ForecastingAnomalyModel(AnomalyModel):
         series
             The target time series to use to successively train and evaluate the historical forecasts.
         past_covariates
-            An optional past-observed covariate series. This applies only if the model supports past covariates.
+            An optional past-observed covariate series or sequence of series. This applies only if the model
+            supports past covariates.
         future_covariates
-            An optional future-known covariate series. This applies only if the model supports future covariates.
+            An optional future-known covariate series or sequence of series. This applies only if the model
+            supports future covariates.
         forecast_horizon
             The forecast horizon for the predictions
         start
@@ -683,9 +683,11 @@ class ForecastingAnomalyModel(AnomalyModel):
         actual_anomalies
             The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
         past_covariates
-            An optional past-observed covariate series. This applies only if the model supports past covariates.
+            An optional past-observed covariate series or sequence of series. This applies only
+            if the model supports past covariates.
         future_covariates
-            An optional future-known covariate series. This applies only if the model supports future covariates.
+            An optional future-known covariate series or sequence of series. This applies only
+            if the model supports future covariates.
         forecast_horizon
             The forecast horizon for the predictions.
         start
@@ -870,7 +872,6 @@ class FilteringAnomalyModel(AnomalyModel):
         actual_anomalies=TimeSeries,
         names_of_scorers: Union[str, Sequence[str]] = None,
         title: str = None,
-        save_png: str = None,
         metric: str = None,
     ):
         """Plot the results of the anomaly model.
@@ -885,7 +886,6 @@ class FilteringAnomalyModel(AnomalyModel):
         It is possible to:
             - add a title to the figure with the parameter 'title'
             - give personalized names for the scorers with 'names_of_scorers'
-            - save the plot as a png at the path 'save_png'
             - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR), if the actual anomalies is given
 
         Parameters
@@ -900,9 +900,6 @@ class FilteringAnomalyModel(AnomalyModel):
             Name of the scores. Must be a list of length equal to the number of scorers in the anomaly_model.
         title
             Title of the figure
-        save_png
-            Path to where the plot in format png should be saved
-            Default: None (the plot will not be saved)
         metric
             Optionally, Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR".
             Default: "AUC_ROC"
@@ -927,7 +924,6 @@ class FilteringAnomalyModel(AnomalyModel):
             names_of_scorers=names_of_scorers,
             actual_anomalies=actual_anomalies,
             title=title,
-            save_png=save_png,
             metric=metric,
         )
 
