@@ -380,7 +380,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             - If ``is_training=False``, it returns the time_index subset of predictable timestamps.
 
             - If ``is_training=True``, it returns the time_index subset of trainable timestamps. A trainable
-            timestamp is a timestamp that have at least a training sample of length ``self.training_sample_length``
+            timestamp is a timestamp that has a training sample of length at least ``self.training_sample_length``
              preceding it.
 
 
