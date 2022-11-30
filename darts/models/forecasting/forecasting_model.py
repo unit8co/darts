@@ -319,7 +319,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     @property
     def training_sample_time_index_length(self) -> int:
         """
-        Class property defining the required time_index length for one training sample, for any model.
+        Required time_index length for one training sample, for any model.
         """
         (
             min_target_lag,
