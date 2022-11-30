@@ -17,7 +17,6 @@ The scorers have the following main functions:
         of anomalies. The returned value is between 0 and 1. 1 indicates that the scorer could perfectly
         separate the anomalous point from the normal ones.
 
-
 The trainable scorers have the following additional functions:
     - ``fit_from_prediction()``
         Takes two (sequence of) series as input and fits its function. This task is dependent on the scorer,
@@ -42,7 +41,6 @@ As an example, the KMeansScorer, which is a FittableAnomalyScorer, can be applie
     - ``fit_from_prediction`` and ``score_from_prediction``: on the residuals between a prediction from a
     forecasting model and the series itself. The scorer will then flag residuals that are distant from the
     clusters found during the training phase.
-
 
 Most of the scorers have the following main parameters:
     - window:

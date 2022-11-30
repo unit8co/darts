@@ -92,12 +92,12 @@ def eval_accuracy_from_scores(
     else:
         raise ValueError("Argument `metric` must be one of 'AUC_ROC', 'AUC_PR'")
 
-    list_anomaly_scores, list_actual_anomalies, list_window = (
-        _to_list(anomaly_score),
+    list_actual_anomalies, list_anomaly_scores, list_window = (
         _to_list(actual_anomalies),
+        _to_list(anomaly_score),
         _to_list(window),
     )
-    _same_length(list_anomaly_scores, list_actual_anomalies)
+    _same_length(list_actual_anomalies, list_anomaly_scores)
 
     if len(list_window) == 1:
         list_window = list_window * len(actual_anomalies)
@@ -109,15 +109,15 @@ def eval_accuracy_from_scores(
         )
 
     sol = []
-    for idx, (s_score, s_anomalies) in enumerate(
-        zip(list_anomaly_scores, list_actual_anomalies)
+    for idx, (s_anomalies, s_score) in enumerate(
+        zip(list_actual_anomalies, list_anomaly_scores)
     ):
 
         check_if_binary(s_anomalies, "actual_anomalies")
 
         sol.append(
             _eval_accuracy_from_data(
-                s_score, s_anomalies, list_window[idx], metric_fn, metric
+                s_anomalies, s_score, list_window[idx], metric_fn, metric
             )
         )
 
@@ -179,12 +179,12 @@ def eval_accuracy_from_binary_prediction(
             "'f1' and 'accuracy'."
         )
 
-    list_binary_pred_anomalies, list_actual_anomalies, list_window = (
-        _to_list(binary_pred_anomalies),
+    list_actual_anomalies, list_binary_pred_anomalies, list_window = (
         _to_list(actual_anomalies),
+        _to_list(binary_pred_anomalies),
         _to_list(window),
     )
-    _same_length(list_binary_pred_anomalies, list_actual_anomalies)
+    _same_length(list_actual_anomalies, list_binary_pred_anomalies)
 
     if len(list_window) == 1:
         list_window = list_window * len(actual_anomalies)
@@ -196,8 +196,8 @@ def eval_accuracy_from_binary_prediction(
         )
 
     sol = []
-    for idx, (s_pred, s_anomalies) in enumerate(
-        zip(list_binary_pred_anomalies, list_actual_anomalies)
+    for idx, (s_anomalies, s_pred) in enumerate(
+        zip(list_actual_anomalies, list_binary_pred_anomalies)
     ):
 
         check_if_binary(s_pred, "pred_anomalies")
