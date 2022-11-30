@@ -271,7 +271,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Union[int, None],
     ]:
         """
-        Returns a 5-tuple containing in order:
+        A 5-tuple containing in order:
         (minimum target lag, maximum target lag, min past covariate lag, min future covariate lag, max future covariate
         lag). If 0 is the index of the first prediction, then all lags are relative to this index, except for the
         maximum target lag, which is relative to the last element of the time series before the first prediction.
