@@ -27,7 +27,7 @@ try:
     TORCH_AVAILABLE = True
 except ImportError:
     logger = get_logger(__name__)
-    logger.warning("Torch not installed - will be skipping Torch models tests")
+    logger.warning("Torch not installed - will be skipping historical forecasts tests")
     TORCH_AVAILABLE = False
 
 if TORCH_AVAILABLE:
