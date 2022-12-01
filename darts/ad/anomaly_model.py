@@ -79,8 +79,8 @@ class AnomalyModel(ABC):
     @abstractmethod
     def eval_accuracy(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
         actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         pass
 
@@ -190,7 +190,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         Parameters
         ----------
         series
-            One or multiple target series to be trained on (anomaly free).
+            One or multiple target series to be trained on (anomaly-free).
         allow_model_training
             Boolean value that indicates if the forecasting model needs to be fitted on the given series.
             If set to False, the model needs to be already fitted.
@@ -321,7 +321,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         self,
         covariates: Union[TimeSeries, Sequence[TimeSeries]],
         series: Sequence[TimeSeries],
-        name: str,
+        name_covariates: str,
     ) -> Sequence[TimeSeries]:
         """Convert 'covariates' into Sequence, if not already, and checks if its length is equal to the one of 'series'.
 
@@ -331,7 +331,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             Covariate ("future" or "past") of 'series'.
         series
             The series to be trained on.
-        name
+        name_covariates
             Internal parameter for error message, a string indicating if it is a "future" or "past" covariates.
 
         Returns
@@ -344,11 +344,13 @@ class ForecastingAnomalyModel(AnomalyModel):
             list_covariates = _to_list(covariates)
 
             for covariates in list_covariates:
-                _check_timeseries_type(covariates, name + "_covariates input series")
+                _check_timeseries_type(
+                    covariates, name_covariates + "_covariates input series"
+                )
 
             raise_if_not(
                 len(list_covariates) == len(series),
-                f"Number of {name}_covariates must match the number of given series, \
+                f"Number of {name_covariates}_covariates must match the number of given series, \
                 found length: {len(list_covariates)} and {len(series)}",
             )
 
@@ -469,7 +471,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         Parameters
         ----------
         series
-            The series to score on.
+            The (sequence of) series to score on.
         past_covariates
             An optional past-observed covariate series or sequence of series. This applies only if the model
             supports past covariates.
@@ -661,15 +663,20 @@ class ForecastingAnomalyModel(AnomalyModel):
 
     def eval_accuracy(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
         actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         forecast_horizon: int = 1,
         start: Union[pd.Timestamp, float, int] = None,
         num_samples: int = 1,
         metric: str = "AUC_ROC",
-    ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
+    ) -> Union[
+        float,
+        Sequence[float],
+        Sequence[Sequence[float]],
+        Sequence[Sequence[Sequence[float]]],
+    ]:
         """Compute the accuracy of the anomaly scores computed by the model.
 
         Predicts the 'series' with the forecasting model, and applies the
@@ -678,10 +685,10 @@ class ForecastingAnomalyModel(AnomalyModel):
 
         Parameters
         ----------
-        series
-            The series to predict anomalies on.
         actual_anomalies
-            The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
+            The (sequence of) ground truth of the anomalies (1 if it is an anomaly and 0 if not)
+        series
+            The (sequence of) series to predict anomalies on.
         past_covariates
             An optional past-observed covariate series or sequence of series. This applies only
             if the model supports past covariates.
@@ -708,19 +715,36 @@ class ForecastingAnomalyModel(AnomalyModel):
 
         Returns
         -------
-        Union[float, Sequence[float], Sequence[Sequence[float]]]
+        Union[float, Sequence[float], Sequence[Sequence[float]], Sequence[Sequence[Sequence[float]]]]
             Score for the time series.
-            - float -> if one series is given and the anomaly model contains one scorer
-            - Sequence[float] -> if one series is given and the anomaly model contains more than one scorer
-            - Sequence[Sequence[float]]] -> if multiple series are given: outer Sequence is over the series,
-            and the inner Sequence is over the scorers.
-
+            - float -> if `series` is a univariate series, and the anomaly model contains one scorer
+            - Sequence[float]
+                -> if `series` is a multivariate series and the anomaly model contains one scorer.
+                    Returns one value per dimension.
+                -> if `series` is a univariate series and the anomaly model contains multiple scorers.
+                    Returns one value per scorer.
+                -> if `series` is a sequence of univariate series and the anomaly model contains one
+                    scorer. Returns one value per series in the sequence.
+            - Sequence[Sequence[float]]
+                -> if `series` is a multivariate series and the anomaly model contains multiple scorers.
+                    Outer Sequence is over the scorers, and inner Sequence is over the dimensions of
+                    the series.
+                -> if `series` is a sequence of univariate series and the anomaly model contains multiple
+                    scorers. Outer Sequence is over the scorers, and inner Sequence is over the sequence
+                    elements.
+                -> if `series` is a sequence of multivariate series and the anomaly model contains one
+                    scorer. Outer Sequence is over the scorers, and inner Sequence is over the dimensions
+                    of the series.
+            - Sequence[Sequence[Sequence[float]]]
+                -> if `series` is a sequence of multivariate series and the anomaly model contains multiple
+                    scorers. 1st dimension is over the scorers, 2nd dimension is over the sequence elements,
+                    and the 3rd dimension is over the dimensions of the series.
         """
 
-        list_series, list_actual_anomalies = _to_list(series), _to_list(
-            actual_anomalies
+        list_actual_anomalies, list_series = _to_list(actual_anomalies), _to_list(
+            series
         )
-        _same_length(list_series, list_actual_anomalies)
+        _same_length(list_actual_anomalies, list_series)
 
         anomaly_scores = self.score(
             series=list_series,
@@ -737,8 +761,8 @@ class ForecastingAnomalyModel(AnomalyModel):
         for idx, scorer in enumerate(self.scorers):
             acc_anomaly_scores.append(
                 eval_accuracy_from_scores(
-                    anomaly_score=list_anomaly_scores[idx],
                     actual_anomalies=list_actual_anomalies,
+                    anomaly_score=list_anomaly_scores[idx],
                     window=scorer.window,
                     metric=metric,
                 )
@@ -807,7 +831,7 @@ class FilteringAnomalyModel(AnomalyModel):
         Parameters
         ----------
         series
-            The series to be trained on.
+            The (sequence of) series to be trained on.
         allow_model_training
             Boolean value that indicates if the filtering model needs to be fitted on the given series.
             If set to False, the model needs to be already fitted.
@@ -942,7 +966,7 @@ class FilteringAnomalyModel(AnomalyModel):
         Parameters
         ----------
         series
-            The series to score on.
+            The (sequence of) series to score on.
         return_model_prediction
             Boolean value indicating if the prediction of the model should be returned along the anomaly score
             Default: False
@@ -991,11 +1015,16 @@ class FilteringAnomalyModel(AnomalyModel):
 
     def eval_accuracy(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
         actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         metric: str = "AUC_ROC",
         filter_kwargs: Optional[Dict[str, Any]] = None,
-    ):
+    ) -> Union[
+        float,
+        Sequence[float],
+        Sequence[Sequence[float]],
+        Sequence[Sequence[Sequence[float]]],
+    ]:
         """Compute the accuracy of the anomaly scores computed by the model.
 
         Predicts the 'series' with the filtering model, and applies the
@@ -1004,10 +1033,10 @@ class FilteringAnomalyModel(AnomalyModel):
 
         Parameters
         ----------
-        series
-            The series to predict anomalies on.
         actual_anomalies
-            The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
+            The (sequence of) ground truth of the anomalies (1 if it is an anomaly and 0 if not)
+        series
+            The (sequence of) series to predict anomalies on.
         metric
             Optionally, Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR".
             Default: "AUC_ROC"
@@ -1016,8 +1045,30 @@ class FilteringAnomalyModel(AnomalyModel):
 
         Returns
         -------
-        Union[float, Sequence[float], Sequence[Sequence[float]]]
-            Score for the time series
+        Union[float, Sequence[float], Sequence[Sequence[float]], Sequence[Sequence[Sequence[float]]]]
+            Score for the time series.
+            - float -> if `series` is a univariate series, and the anomaly model contains one scorer
+            - Sequence[float]
+                -> if `series` is a multivariate series and the anomaly model contains one scorer.
+                    Returns one value per dimension.
+                -> if `series` is a univariate series and the anomaly model contains multiple scorers.
+                    Returns one value per scorer.
+                -> if `series` is a sequence of univariate series and the anomaly model contains one
+                    scorer. Returns one value per series in the sequence.
+            - Sequence[Sequence[float]]
+                -> if `series` is a multivariate series and the anomaly model contains multiple scorers.
+                    Outer Sequence is over the scorers, and inner Sequence is over the dimensions of
+                    the series.
+                -> if `series` is a sequence of univariate series and the anomaly model contains multiple
+                    scorers. Outer Sequence is over the scorers, and inner Sequence is over the sequence
+                    elements.
+                -> if `series` is a sequence of multivariate series and the anomaly model contains one
+                    scorer. Outer Sequence is over the scorers, and inner Sequence is over the dimensions
+                    of the series.
+            - Sequence[Sequence[Sequence[float]]]
+                -> if `series` is a sequence of multivariate series and the anomaly model contains multiple
+                    scorers. 1st dimension is over the scorers, 2nd dimension is over the sequence elements,
+                    and the 3rd dimension is over the dimensions of the series.
         """
         list_series, list_actual_anomalies = _to_list(series), _to_list(
             actual_anomalies
@@ -1033,8 +1084,8 @@ class FilteringAnomalyModel(AnomalyModel):
 
             acc_anomaly_scores.append(
                 eval_accuracy_from_scores(
-                    anomaly_score=list_anomaly_scores[idx],
                     actual_anomalies=list_actual_anomalies,
+                    anomaly_score=list_anomaly_scores[idx],
                     window=scorer.window,
                     metric=metric,
                 )

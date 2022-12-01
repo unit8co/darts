@@ -82,7 +82,17 @@ def eval_accuracy_from_scores(
     Returns
     -------
     Union[float, Sequence[float], Sequence[Sequence[float]]]
-        Score of the anomaly time series
+        Score of the anomalies score prediction
+            - float -> if `anomaly_score` is a univariate series (dimension=1).
+            - Sequence[float]
+                -> if `anomaly_score` is a multivariate series (dimension>1),
+            returns one value per dimension.
+                OR
+                -> if `anomaly_score` is a sequence of univariate series, returns one
+                value per series
+            - Sequence[Sequence[float]]] -> if `anomaly_score` is a sequence of multivariate
+            series. Outer Sequence is over the sequence input, and the inner Sequence is over
+            the dimensions of each element in the sequence input.
     """
 
     if metric == "AUC_ROC":
@@ -163,6 +173,16 @@ def eval_accuracy_from_binary_prediction(
     -------
     Union[float, Sequence[float], Sequence[Sequence[float]]]
         Score of the anomalies prediction
+            - float -> if `binary_pred_anomalies` is a univariate series (dimension=1).
+            - Sequence[float]
+                -> if `binary_pred_anomalies` is a multivariate series (dimension>1),
+            returns one value per dimension.
+                OR
+                -> if `binary_pred_anomalies` is a sequence of univariate series, returns one
+                value per series
+            - Sequence[Sequence[float]]] -> if `binary_pred_anomalies` is a sequence of
+            multivariate series. Outer Sequence is over the sequence input, and the inner
+            Sequence is over the dimensions of each element in the sequence input.
     """
 
     if metric == "recall":
@@ -242,13 +262,16 @@ def _eval_accuracy_from_data(
         Function to use. Can be "average_precision_score", "roc_auc_score", "accuracy_score",
         "f1_score", "precision_score" and "recall_score".
     metric_name
-        Function to use. Can be "AUC_PR", "AUC_ROC", "accuracy",
+        Name str of the function to use. Can be "AUC_PR", "AUC_ROC", "accuracy",
         "f1", "precision" and "recall".
 
     Returns
     -------
     Union[float, Sequence[float]]
         Score of the anomalies prediction
+            - float -> if `s_data` is a univariate series (dimension=1).
+            - Sequence[float] -> if `s_data` is a multivariate series (dimension>1),
+            returns one value per dimension.
     """
 
     _check_timeseries_type(s_data, "Prediction series input")

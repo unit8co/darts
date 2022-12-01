@@ -8,7 +8,7 @@ The scorers have the following main functions:
     - ``score_from_prediction()``
         Takes as input two (sequence of) series and returns the anomaly score of each pairwise element.
         An anomaly score is a series that represents how anomalous the considered point (if window = 1)
-        or past w points are (if window is equal to w). The higher the value, the more anomalous the sample.
+        or past W points are (if window is equal to w). The higher the value, the more anomalous the sample.
         The interpretability of the score is dependent on the scorer.
 
     - ``eval_accuracy_from_prediction()``
@@ -44,13 +44,13 @@ As an example, the KMeansScorer, which is a FittableAnomalyScorer, can be applie
 
 Most of the scorers have the following main parameters:
     - window:
-        Integer value indicating the size of the window w used by the scorer to transform the series into
-        an anomaly score. A scorer will discretize the given series into subsequences of size w and returns
-        a value indicating how anomalous these subset of w values are.
+        Integer value indicating the size of the window W used by the scorer to transform the series into
+        an anomaly score. A scorer will discretize the given series into subsequences of size W and returns
+        a value indicating how anomalous these subset of W values are.
     - component_wise
         boolean parameter indicating how the scorer should behave with multivariate inputs series. If set to
         True, the model will treat each series dimension independently. If set to False, the model will
-        concatenate the dimension in the considered `window` w and compute the score.
+        concatenate the dimension in the considered `window` W and compute the score.
 
 More details can be found in the docstrings of each scorer.
 
@@ -96,36 +96,39 @@ class AnomalyScorer(ABC):
 
     @property
     def _expects_probabilistic(self) -> bool:
-        """Checks if the scorer expects a probabilistic predictions.
+        """Checks if the scorer expects a probabilistic prediction for its first input.
         By default, returns False. Needs to be overwritten by scorers that do expects
-        probabilistic predictions.
+        probabilistic prediction.
         """
         return False
 
-    def _check_probabilistic(self, series: TimeSeries):
+    def _check_stochastic(self, series: TimeSeries, name_series: str):
+        "Checks if the series is stochastic (number of samples is higher than one)."
 
         raise_if_not(
             series.is_stochastic,
-            f"Scorer {self.__str__()} is expecting a probabilitic timeseries as its first input \
-            (number of samples must be higher than 1).",
+            f"Scorer {self.__str__()} is expecting '{name_series}' to be a stochastic timeseries \
+            (number of samples must be higher than 1, found number: {series.n_samples}).",
         )
 
-        #        if self._expects_probabilistic:
-        # else:
+        # if self._expects_probabilistic:
+        #   else:
         #    if series.is_stochastic:
         # TODO: output a warning "The scorer expects a non probabilitic input
         # (num of samples needs to be equal to 1)"
         # median along each time stamp is computed to reduce the number of samples to 1
         #        series = series.quantile_timeseries(quantile=0.5)
 
-        return series
+        # return series
 
-    def _check_deterministic(self, series: TimeSeries):
+    def _check_deterministic(self, series: TimeSeries, name_series: str):
+        "Checks if the series is deterministic (number of samples is equal to one)."
+
         # TODO: create a warning rather than an error, and avg on axis 2
         raise_if_not(
             series.is_deterministic,
-            f"Scorer {self.__str__()} is expecting a deterministic timeseries as its second input \
-        (number of samples must be equal to 1, found number: {series.n_samples}).",
+            f"Scorer {self.__str__()} is expecting '{name_series}' to be a deterministic timeseries \
+            (number of samples must be equal to 1, found number: {series.n_samples}).",
         )
 
     @abstractmethod
@@ -158,11 +161,17 @@ class AnomalyScorer(ABC):
         Returns
         -------
         Union[float, Sequence[float], Sequence[Sequence[float]]]
-            Score for the time series
-            - float -> if one series is given and the anomaly model contains one scorer
-            - Sequence[float] -> if one series is given and the anomaly model contains more than one scorer
-            - Sequence[Sequence[float]]] -> if multiple series are given: outer Sequence is over the series,
-            and the inner Sequence is over the scorers.
+            Score of an agnostic threshold metric for the computed anomaly score
+                - float -> if `actual_series` and `actual_series` are univariate series (dimension=1).
+                - Sequence[float]
+                    -> if `actual_series` and `actual_series` are multivariate series (dimension>1),
+                    returns one value per dimension.
+                    OR
+                    -> if `actual_series` and `actual_series` are sequences of univariate series,
+                    returns one value per series
+                - Sequence[Sequence[float]]] -> if `actual_series` and `actual_series` are sequences
+                of multivariate series. Outer Sequence is over the sequence input and the inner
+                Sequence is over the dimensions of each element in the sequence input.
         """
         anomaly_score = self.score_from_prediction(actual_series, pred_series)
 
@@ -214,7 +223,7 @@ class NonFittableAnomalyScorer(AnomalyScorer):
         Returns
         -------
         Union[TimeSeries, Sequence[TimeSeries]]
-            Anomaly score time series
+            (Sequence of) anomaly score time series
         """
         list_actual_series, list_pred_series = _to_list(actual_series), _to_list(
             pred_series
@@ -286,7 +295,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         actual_anomalies
             The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
         series
-            Series to detect anomalies from.
+            The (sequence of) series to detect anomalies from.
         metric
             Optionally, metric function to use. Must be one of "AUC_ROC" and "AUC_PR".
             Default: "AUC_ROC"
@@ -294,7 +303,17 @@ class FittableAnomalyScorer(AnomalyScorer):
         Returns
         -------
         Union[float, Sequence[float], Sequence[Sequence[float]]]
-            Score for the time series
+            Score of an agnostic threshold metric for the computed anomaly score
+                - float -> if `series` is a univariate series (dimension=1).
+                - Sequence[float]
+                    -> if `series` is a multivariate series (dimension>1), returns one
+                    value per dimension.
+                    OR
+                    -> if `series` is a sequence of univariate series, returns one value
+                    per series
+                - Sequence[Sequence[float]]] -> if `series` is a sequence of multivariate
+                series. Outer Sequence is over the sequence input and the inner Sequence
+                is over the dimensions of each element in the sequence input.
         """
         anomaly_score = self.score(series)
 
@@ -321,7 +340,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         Returns
         -------
         Union[TimeSeries, Sequence[TimeSeries]]
-            Anomaly score time series
+            (Sequence of) anomaly score time series
         """
 
         self.check_if_fit_called()
@@ -331,7 +350,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         anomaly_scores = []
         for s in list_series:
             _check_timeseries_type(s)
-            self._check_deterministic(s)
+            self._check_deterministic(s, "series")
             anomaly_scores.append(self._score_core(s))
 
         if len(anomaly_scores) == 1 and not isinstance(series, Sequence):
@@ -364,7 +383,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         Returns
         -------
         Union[TimeSeries, Sequence[TimeSeries]]
-            Anomaly score time series
+            (Sequence of) anomaly score time series
         """
 
         self.check_if_fit_called()
@@ -377,8 +396,8 @@ class FittableAnomalyScorer(AnomalyScorer):
         anomaly_scores = []
         for (s1, s2) in zip(list_actual_series, list_pred_series):
             _sanity_check_2series(s1, s2)
-            self._check_deterministic(s1)
-            self._check_deterministic(s2)
+            self._check_deterministic(s1, "actual_series")
+            self._check_deterministic(s2, "pred_series")
             anomaly_scores.append(self.score(self._diff_series(s1, s2)))
 
         if (
@@ -414,7 +433,7 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         for idx, s in enumerate(list_series):
             _check_timeseries_type(s)
-            self._check_deterministic(s)
+            self._check_deterministic(s, "series")
 
         self._fit_core(list_series)
         self._fit_called = True
@@ -456,8 +475,8 @@ class FittableAnomalyScorer(AnomalyScorer):
         list_fit_series = []
         for idx, (s1, s2) in enumerate(zip(list_actual_series, list_pred_series)):
             _sanity_check_2series(s1, s2)
-            self._check_deterministic(s1)
-            self._check_deterministic(s2)
+            self._check_deterministic(s1, "actual_series")
+            self._check_deterministic(s2, "pred_series")
             list_fit_series.append(self._diff_series(s1, s2))
 
         self._fit_core(list_fit_series)
@@ -645,7 +664,7 @@ class KMeansScorer(FittableAnomalyScorer):
     """KMeans anomaly score
 
     Wrapped around the KMeans scikit-learn function.
-    Source code: <https://github.com/scikit-learn/scikit-learn/blob/f3f51f9b6/sklearn/cluster/_kmeans.py#L1126>.
+    `sklearn.cluster.KMeans <https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html>`_
     """
 
     def __init__(
@@ -656,8 +675,10 @@ class KMeansScorer(FittableAnomalyScorer):
         diff_fn=None,
     ) -> None:
         """
-        A KMeans model is trained on the training data when the ``fit()`` function is called.
-        The ``score()`` function will return the minimal distance between the centroid and the sample.
+        When calling ``fit(series)``, a moving window is applied, which results in a set of vectors of size W,
+        where W is the window size. The KMeans model is trained on these vectors. The ``score(series)`` function
+        will apply the same moving window and return the minimal distance between the K centroid and for each
+        vector of size W.
 
         Alternatively, the scorer has the functions ``fit_from_prediction()`` and ``score_from_prediction()``.
         Both require two inputs and transform them into one series by applying the function ``diff_fn``
@@ -665,24 +686,24 @@ class KMeansScorer(FittableAnomalyScorer):
         ``fit()`` and ``score()``.
 
         `component_wise` is a boolean parameter indicating how the model should behave with multivariate inputs
-        series. If set to True, the model will treat each series dimension independently by fitting a different KMeans
-        model for each dimension. If the input series has a dimension of d, the model will train d KMeans models. If set
-        to False, the model will concatenate the dimension in the considered `window` w and compute the score using only
-        one trained KMeans model.
+        series. If set to True, the model will treat each series dimension independently by fitting a different
+        KMeans model for each dimension. If the input series has a dimension of D, the model will train D KMeans
+        models. If set to False, the model will concatenate the dimension in the considered `window` W and compute
+        the score using only one trained KMeans model.
 
         Training with ``fit()``:
 
         The input can be a series (univariate or multivariate) or a sequence of series. The series will be partitioned
-        into equal size subsequences. The subsequence will be of size w * d, with:
-            - w being the size of the window given as a parameter `window` (w>0)
-            - d being the dimension of the series (d=1 if deterministic)
+        into equal size subsequences. The subsequence will be of size W * D, with:
+            - W being the size of the window given as a parameter `window` (w>0)
+            - D being the dimension of the series (D=1 if deterministic)
 
-        For a series of length n, (n-w+1)/w subsequences will be generated. If a list of series is given of length l,
+        For a series of length N, (N-W+1)/W subsequences will be generated. If a list of series is given of length L,
         each series will be partitioned into subsequences, and the results will be concatenated into an array of
-        length l * number of subsequences.
+        length L * number of subsequences.
 
         The model KMeans will be fitted on the generated subsequences. The model will find `k` cluster of dimensions
-        equal to the length of the subsequences (d*w).
+        equal to the length of the subsequences (D*W).
 
         If `component_wise` is set to True, the algorithm will be applied to each dimension independently. For each
         dimension, a KMeans model will be trained.
@@ -690,23 +711,23 @@ class KMeansScorer(FittableAnomalyScorer):
         Compute score with ``score()``:
 
         The input can be a series (univariate or multivariate) or a sequence of series. The given series must have the
-        same dimension d as the data used to train the KMeans model.
+        same dimension D as the data used to train the KMeans model.
 
-        - If the series is multivariate of dimension d:
+        - If the series is multivariate of dimension D:
             - if `component_wise` is set to False: it will return a univariate series (dimension=1). It represents
             the anomaly score of the entire series in the considered window at each timestamp.
-            - if `component_wise` is set to True: it will return a multivariate series of dimension d. Each dimension
+            - if `component_wise` is set to True: it will return a multivariate series of dimension D. Each dimension
             represents the anomaly score of the corresponding dimension of the input.
 
         - If the series is univariate, it will return a univariate series regardless of the parameter
         `component_wise`.
 
-        A window of size w is rolled on the series with a stride equal to 1. It is the same size window w used during
-        the training phase. At each timestamp, the previous w values will form a vector of size w * d
-        of the series (with d being the number of dimensions of the series). The KMeans model will then retrieve
-        the closest centroid to this vector and compute the euclidean distance between the centroid and the vector.
-        The output will be a series of dimension one and length n-w+1, with n being the length of the input series.
-        Each value will represent how anomalous the sample of the w previous values is.
+        A window of size W is rolled on the series with a stride equal to 1. It is the same size window W used during
+        the training phase. At each timestamp, the previous W values will form a vector of size W * D
+        of the series (with D being the series dimensions). The KMeans model will then retrieve the closest centroid
+        to this vector and compute the euclidean distance between the centroid and the vector. The output will be a
+        series of dimension one and length N-W+1, with N being the length of the input series. Each value will represent
+        how anomalous the sample of the W previous values is.
 
         If a list is given, a for loop will iterate through the list, and the function ``_score_core()`` will be
         applied independently on each series. The function will return an anomaly score for each series in the list.
@@ -841,7 +862,8 @@ class WassersteinScorer(FittableAnomalyScorer):
     """WassersteinScorer anomaly score
 
     Wrapped around the Wasserstein scipy.stats functon.
-    Source code: <https://github.com/scipy/scipy/blob/v1.9.3/scipy/stats/_stats_py.py#L8675-L8749>.
+    `scipy.stats.wasserstein_distance
+    <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wasserstein_distance.html>`_
     """
 
     def __init__(
@@ -853,9 +875,10 @@ class WassersteinScorer(FittableAnomalyScorer):
             only one sample
             - check if there is an equivalent Wasserstein distance for d-D distributions (currently only accepts 1D)
 
-        A Wasserstein model is trained on the training data when the ``fit()`` method is called.
-        The ``score()`` method will return the Wasserstein distance between the training distribution
-        and the window sample distribution. Both distributions are 1D.
+        When calling ``fit(series)``, the series will be kept in memory and is considered as a subset of samples
+        representing the training 1D distribution. When calling ``score(series)``, a moving window is applied on
+        the series, which results in a set of vectors of size W, where W is the window size. The Wasserstein distance
+        will be computed between the training distribution and each vector, resulting in an anomaly score.
 
         Alternatively, the scorer has the functions ``fit_from_prediction()`` and ``score_from_prediction()``.
         Both require two inputs and transform them into one series by applying the function ``diff_fn``
@@ -864,20 +887,20 @@ class WassersteinScorer(FittableAnomalyScorer):
 
         `component_wise` is a boolean parameter indicating how the model should behave with multivariate inputs series.
         If set to True, the model will treat each series dimension independently. If set to False, the model will
-        concatenate the dimension in the considered `window` w and compute the score.
+        concatenate the dimension in the considered `window` W and compute the score.
 
         Training with ``fit()``:
 
         The input can be a series (univariate or multivariate) or a list of series. The element of a list will be
         concatenated to form one continuous array (by definition, each element have the same dimensions).
 
-        If the series is of length n and dimension d, the array will be of length n*d. If `component_wise` is True,
-        each dimension d is treated independently, and the data is stored in a list of size d. Each element is an array
-        of length n.
+        If the series is of length N and dimension D, the array will be of length N*D. If `component_wise` is True,
+        each dimension D is treated independently, and the data is stored in a list of size d. Each element is an array
+        of length N.
 
-        If a sequence of series is given of length l, each series of the sequence will be reduced to an array, and the
-        l arrays will then be concatenated to form a continuous array of length l*d*n. If `component_wise` is True,
-        the data is stored in a list of size d. Each element is an array of length l*n.
+        If a sequence of series is given of length L, each series of the sequence will be reduced to an array, and the
+        L arrays will then be concatenated to form a continuous array of length L*D*N. If `component_wise` is True,
+        the data is stored in a list of size D. Each element is an array of length L*N.
 
         The array will be kept in memory, representing the training data distribution. In practice, the series or list
         of series would represent residuals than can be considered independent and identically distributed (iid).
@@ -886,22 +909,22 @@ class WassersteinScorer(FittableAnomalyScorer):
 
         The input is a series (univariate or multivariate) or a list of series.
 
-        - If the series is multivariate of dimension d:
+        - If the series is multivariate of dimension D:
             - if `component_wise` is set to False: it will return a univariate series (dimension=1). It represents
             the anomaly score of the entire series in the considered window at each timestamp.
-            - if `component_wise` is set to True: it will return a multivariate series of dimension d. Each dimension
+            - if `component_wise` is set to True: it will return a multivariate series of dimension D. Each dimension
             represents the anomaly score of the corresponding dimension of the input.
 
         - If the series is univariate, it will return a univariate series regardless of the parameter
         `component_wise`.
 
-        A window of size w (given as a parameter named `window`) is rolled on the series with a stride equal to 1.
-        At each timestamp, the previous w values will be used to form a subset of w * d elements, with d being the
+        A window of size W (given as a parameter named `window`) is rolled on the series with a stride equal to 1.
+        At each timestamp, the previous W values will be used to form a subset of W * D elements, with D being the
         dimension of the series. The subset values are considered to be observed from the same (empirical)
         distribution. The Wasserstein distance will be computed between this subset and the train distribution. The
         function will return a float number indicating how different these two distributions are. The output will be
-        a series of dimension one and length n-w+1, with n being the length of the input series. Each value will
-        represent how anomalous the sample of the w previous values is.
+        a series of dimension one and length N-W+1, with N being the length of the input series. Each value will
+        represent how anomalous the sample of the D previous values is.
 
         If a list is given, a for loop will iterate through the list, and the function ``_score_core()`` will be
         applied independently on each series. The function will return an anomaly score for each series in the list.
@@ -1033,8 +1056,8 @@ class Difference(NonFittableAnomalyScorer):
         actual_series: TimeSeries,
         pred_series: TimeSeries,
     ) -> TimeSeries:
-        self._check_deterministic(actual_series)
-        self._check_deterministic(pred_series)
+        self._check_deterministic(actual_series, "actual_series")
+        self._check_deterministic(pred_series, "pred_series")
         return actual_series - pred_series
 
 
@@ -1042,7 +1065,7 @@ class Norm(NonFittableAnomalyScorer):
     """Norm anomaly score
 
     Wrapped around the linalg.norm numpy function.
-    Source code: <https://numpy.org/doc/stable/reference/generated/numpy.linalg.norm.html>.
+    `numpy.linalg.norm <https://numpy.org/doc/stable/reference/generated/numpy.linalg.norm.html>`_
     """
 
     def __init__(self, ord=None, component_wise: bool = False) -> None:
@@ -1089,8 +1112,8 @@ class Norm(NonFittableAnomalyScorer):
         pred_series: TimeSeries,
     ) -> TimeSeries:
 
-        self._check_deterministic(actual_series)
-        self._check_deterministic(pred_series)
+        self._check_deterministic(actual_series, "actual_series")
+        self._check_deterministic(pred_series, "pred_series")
 
         diff = actual_series - pred_series
 
@@ -1133,8 +1156,8 @@ class NLLScorer(NonFittableAnomalyScorer):
         -------
         TimeSeries
         """
-        self._check_deterministic(actual_series)
-        self._check_probabilistic(pred_series)
+        self._check_deterministic(actual_series, "actual_series")
+        self._check_stochastic(pred_series, "pred_series")
 
         np_actual_series = actual_series.all_values(copy=False)
         np_pred_series = pred_series.all_values(copy=False)
@@ -1161,7 +1184,7 @@ class NLLScorer(NonFittableAnomalyScorer):
         the input time series by the mean of the values contained in the window (past self.window
         and itself points).
 
-        A series of length n will be transformed into a series of length n-self.window.
+        A series of length N will be transformed into a series of length N-self.window.
 
         Parameters
         ----------
@@ -1170,7 +1193,7 @@ class NLLScorer(NonFittableAnomalyScorer):
 
         Returns
         -------
-        TimeSeries
+            TimeSeries
         """
 
         if self.window == 1:
@@ -1200,7 +1223,7 @@ class GaussianNLLScorer(NLLScorer):
     """Gaussian negative log-likelihood Scorer
 
     Source of PDF function and parameters estimation (MLE):
-    https://programmathically.com/maximum-likelihood-estimation-for-gaussian-distributions/
+    `Gaussian distribution <https://programmathically.com/maximum-likelihood-estimation-for-gaussian-distributions/>`_
     """
 
     def __init__(self, window: Optional[int] = None) -> None:
@@ -1235,7 +1258,8 @@ class ExponentialNLLScorer(NLLScorer):
     """Exponential negative log-likelihood Scorer
 
     Source of PDF function and parameters estimation (MLE):
-    https://www.statlect.com/fundamentals-of-statistics/exponential-distribution-maximum-likelihood
+    `Exponential distribution
+    <https://www.statlect.com/fundamentals-of-statistics/exponential-distribution-maximum-likelihood>`_
     """
 
     def __init__(self, window: Optional[int] = None) -> None:
@@ -1260,7 +1284,8 @@ class PoissonNLLScorer(NLLScorer):
     """Poisson negative log-likelihood Scorer
 
     Source of PDF function and parameters estimation (MLE):
-    https://www.statlect.com/fundamentals-of-statistics/Poisson-distribution-maximum-likelihood
+    `Poisson distribution
+    <https://www.statlect.com/fundamentals-of-statistics/Poisson-distribution-maximum-likelihood>`_
     """
 
     def __init__(self, window: Optional[int] = None) -> None:
@@ -1287,7 +1312,7 @@ class LaplaceNLLScorer(NLLScorer):
     """Laplace negative log-likelihood Scorer
 
     Source of PDF function and parameters estimation (MLE):
-    https://en.wikipedia.org/wiki/Laplace_distribution
+    `Laplace distribution <https://en.wikipedia.org/wiki/Laplace_distribution>`_
     """
 
     def __init__(self, window: Optional[int] = None) -> None:
@@ -1323,7 +1348,7 @@ class CauchyNLLScorer(NLLScorer):
         - scale parameter (gamma): half the sample interquartile range (Q3-Q1)/2
 
     Source of PDF function and parameters estimation:
-    https://en.wikipedia.org/wiki/Cauchy_distribution
+    `Cauchy distribution <https://en.wikipedia.org/wiki/Cauchy_distribution>`_
     """
 
     def __init__(self, window: Optional[int] = None) -> None:
@@ -1359,7 +1384,7 @@ class GammaNLLScorer(NLLScorer):
     """Gamma negative log-likelihood Scorer
 
     Wrapped around the gamma scipy.stats functon.
-    Source code: <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gamma.html>.
+    `scipy.stats.gamma <https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gamma.html>`_
     """
 
     def __init__(self, window: Optional[int] = None) -> None:
