@@ -286,14 +286,15 @@ def _eval_accuracy_from_data(
 
     if metric_name == "AUC_ROC" or metric_name == "AUC_PR":
 
+        nbr_anomalies_per_width = s_anomalies.sum(axis=0).values(copy=False).flatten()
+
         raise_if(
-            s_anomalies.sum(axis=0).values(copy=False).flatten().min() == 0,
+            nbr_anomalies_per_width.min() == 0,
             f"'actual_anomalies' does not contain anomalies. {metric_name} cannot be computed.",
         )
 
         raise_if(
-            s_anomalies.sum(axis=0).values(copy=False).flatten().max()
-            == len(s_anomalies),
+            nbr_anomalies_per_width.max() == len(s_anomalies),
             f"'actual_anomalies' contains only anomalies. {metric_name} cannot be computed."
             + ["", f" Think about decreasing the window size (window={window})"][
                 window > 1

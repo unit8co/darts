@@ -317,8 +317,6 @@ class FittableAnomalyScorer(AnomalyScorer):
         """
         anomaly_score = self.score(series)
 
-        print(metric)
-
         return eval_accuracy_from_scores(
             actual_anomalies, anomaly_score, self.window, metric
         )
