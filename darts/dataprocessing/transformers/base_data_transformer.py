@@ -17,9 +17,10 @@ from typing import (
 )
 
 import numpy as np
+import xarray as xr
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if_not, raise_log
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 
 logger = get_logger(__name__)
@@ -32,6 +33,7 @@ class BaseDataTransformer(ABC):
         n_jobs: int = 1,
         verbose: bool = False,
         parallel_params: Union[bool, Sequence[str]] = False,
+        mask_components: bool = True,
     ):
         """Abstract class for data transformers.
 
@@ -70,6 +72,15 @@ class BaseDataTransformer(ABC):
             parallel job. If `parallel_params=False`, every fixed parameter will take on the same value for
             each parallel job. If `parallel_params` is a `Sequence` of fixed attribute names, only those
             attribute names specified will take on different values between different parallel jobs.
+        mask_components
+            Optionally, whether or not to automatically apply any provided `component_mask`s to the
+            `TimeSeries` inputs passed to `transform`, `fit`, `inverse_transform`, or `fit_transform`.
+            If `True`, any specified `component_mask` will be applied to each input timeseries
+            before passing them to the called method; the masked components will also be automatically
+            'unmasked' in the returned `TimeSeries`. If `False`, then `component_mask` (if provided) will
+            be passed as a keyword argument, but won't automatically be applied to the input timeseries.
+            See `apply_component_mask` for further details.
+
         """
         # Assume `super().__init__` called at *very end* of
         # child-most class's `__init__`, so `vars(self)` contains
@@ -82,6 +93,7 @@ class BaseDataTransformer(ABC):
         elif not parallel_params:
             parallel_params = tuple()
         self._parallel_params = parallel_params
+        self._mask_components = mask_components
         self._name = name
         self._verbose = verbose
         self._n_jobs = n_jobs
@@ -195,6 +207,10 @@ class BaseDataTransformer(ABC):
         kwargs
             Additional keyword arguments for each :func:`ts_transform()` method call
 
+            component_mask : Optional[np.ndarray] = None
+                Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies which
+                components of the underlying `series` the transform should consider.
+
         Returns
         -------
         Union[TimeSeries, List[TimeSeries]]
@@ -203,10 +219,17 @@ class BaseDataTransformer(ABC):
 
         desc = f"Transform ({self._name})"
 
+        # Take note of original input for unmasking purposes:
         if isinstance(series, TimeSeries):
+            input_series = [series]
             data = [series]
         else:
+            input_series = series
             data = series
+
+        if self._mask_components:
+            mask = kwargs.pop("component_mask", None)
+            data = [self.apply_component_mask(ts, mask, return_ts=True) for ts in data]
 
         input_iterator = _build_tqdm_iterator(
             self._transform_iterator(data),
@@ -218,6 +241,12 @@ class BaseDataTransformer(ABC):
         transformed_data = _parallel_apply(
             input_iterator, self.__class__.ts_transform, self._n_jobs, args, kwargs
         )
+
+        if self._mask_components:
+            unmasked = []
+            for ts, transformed_ts in zip(input_series, transformed_data):
+                unmasked.append(self.unapply_component_mask(ts, transformed_ts, mask))
+            transformed_data = unmasked
 
         return (
             transformed_data[0] if isinstance(series, TimeSeries) else transformed_data
@@ -267,16 +296,11 @@ class BaseDataTransformer(ABC):
         return None
 
     @staticmethod
-    def _reshape_in(
-        series: TimeSeries,
-        component_mask: Optional[np.ndarray] = None,
-        flatten: Optional[bool] = True,
+    def apply_component_mask(
+        series: TimeSeries, component_mask: Optional[np.ndarray] = None, return_ts=False
     ) -> np.ndarray:
-        """Extracts specified components from series and reshapes these values into an appropriate input shape
-        for a transformer. If `flatten=True`, the output is a 2-D matrix where each row corresponds to a timestep,
-        each column corresponds to a component (dimension) of the series, and the columns' values are the flattened
-        values over all samples. Conversely, if `flatten=False`, the output is a 3-D matrix (i.e. timesteps along
-        the zeroth axis, components along the first axis, and samples along the second axis).
+        """
+        Extracts components specified by `component_mask` from `series`
 
         Parameters
         ----------
@@ -284,93 +308,174 @@ class BaseDataTransformer(ABC):
             input TimeSeries to be fed into transformer.
         component_mask
             Optionally, np.ndarray boolean mask of shape (n_components, 1) specifying which components to
-            extract from `series`.
-        flatten
-            Optionally, bool specifying whether the samples for each component extracted by `component_mask`
-            should be flattened into a single column.
+            extract from `series`. The `i`th component of `series` is kept only if `component_mask[i] = True`.
+            If not specified, no masking is performed.
+        return_ts
+            Optionally, specifies that a `TimeSeries` should be returned, rather than an `np.ndarray`.
+
+        Returns
+        -------
+        masked
+            `TimeSeries` (if `return_ts = True`) or `np.ndarray` (if `return_ts = True`) with only those components
+            specified by `component_mask` remaining.
 
         """
-
         if component_mask is None:
-            component_mask = np.ones(series.n_components, dtype=bool)
-
-        raise_if_not(
-            isinstance(component_mask, np.ndarray) and component_mask.dtype == bool,
-            "`component_mask` must be a boolean np.ndarray`",
-            logger,
-        )
-        raise_if_not(
-            series.width == len(component_mask),
-            "mismatch between number of components in `series` and length of `component_mask`",
-            logger,
-        )
-
-        vals = series.all_values(copy=False)[:, component_mask, :]
-
-        if flatten:
-            vals = np.stack(
-                [vals[:, i, :].reshape(-1) for i in range(component_mask.sum())], axis=1
+            masked = series.copy() if return_ts else series.all_values()
+        else:
+            raise_if_not(
+                isinstance(component_mask, np.ndarray) and component_mask.dtype == bool,
+                f"`component_mask` must be a boolean `np.ndarray`, not a {type(component_mask)}.",
+                logger,
             )
-
-        return vals
+            raise_if_not(
+                series.width == len(component_mask),
+                "mismatch between number of components in `series` and length of `component_mask`",
+                logger,
+            )
+            masked = series.all_values()[:, component_mask, :]
+            if return_ts:
+                # Remove masked components from coords:
+                coords = dict(series._xa.coords)
+                coords["component"] = coords["component"][component_mask]
+                new_xa = xr.DataArray(
+                    masked, dims=series._xa.dims, coords=coords, attrs=series._xa.attrs
+                )
+                masked = TimeSeries(new_xa)
+        return masked
 
     @staticmethod
-    def _reshape_out(
+    def unapply_component_mask(
         series: TimeSeries,
-        vals: np.ndarray,
+        vals: Union[np.ndarray, TimeSeries],
         component_mask: Optional[np.ndarray] = None,
-        flatten: Optional[bool] = True,
-    ) -> np.ndarray:
-        """Reshapes the 2-D or 3-D matrix coming out of a transformer into a 3-D matrix suitable to build a TimeSeries,
-        and adds back components previously removed by `component_mask` in `_reshape_in` method.
-
-        If `flatten=True`, the output is built by taking each column of the 2-D input matrix (the flattened components)
-        and reshaping them to (len(series), n_samples), then stacking them on 2nd axis. Conversely, if `flatten=False`,
-        the shape of the 3-D input matrix is left unchanged.
+    ) -> Union[np.ndarray, TimeSeries]:
+        """
+        Adds back components previously removed by `component_mask` in `apply_component_mask` method.
 
         Parameters
         ----------
         series
             input TimeSeries that was fed into transformer.
         vals:
-            transformer output
+            `np.ndarray` or `TimeSeries` to 'unmask'
         component_mask
             Optionally, np.ndarray boolean mask of shape (n_components, 1) specifying which components were extracted
-            from `series`. If given, insert `vals` back into the columns of the original array.
-        flatten
-            Optionally, bool specifying whether `series` is a 2-D matrix. Should match value of `flatten` argument
-            provided to `_reshape_in` method.
+            from `series`. If given, insert `vals` back into the columns of the original array. If not specified,
+            nothing is 'unmasked'.
+
+        Returns
+        -------
+        unmasked
+            `TimeSeries` (if `vals` is a `TimeSeries`) or `np.ndarray` (if `vals` is an `np.ndarray`) with those
+            components previously removed by `component_mask` now 'added back'.
         """
 
-        raise_if_not(
-            component_mask is None
-            or isinstance(component_mask, np.ndarray)
-            and component_mask.dtype == bool,
-            "If `component_mask` is given, must be a boolean np.ndarray`",
-            logger,
-        )
-
-        series_width = series.width if component_mask is None else component_mask.sum()
-        if flatten:
-            reshaped = np.stack(
-                [vals[:, i].reshape(-1, series.n_samples) for i in range(series_width)],
-                axis=1,
-            )
-        else:
-            reshaped = vals
-
         if component_mask is None:
-            return reshaped
+            unmasked = vals
+        else:
+            raise_if_not(
+                isinstance(component_mask, np.ndarray) and component_mask.dtype == bool,
+                "If `component_mask` is given, must be a boolean np.ndarray`",
+                logger,
+            )
+            raise_if_not(
+                series.width == len(component_mask),
+                "mismatch between number of components in `series` and length of `component_mask`",
+                logger,
+            )
+            unmasked = series.all_values()
+            if isinstance(vals, TimeSeries):
+                unmasked[:, component_mask, :] = vals.all_values()
+                # Remove timepoints not present in transformed data:
+                unmasked = series.slice_intersect(vals).with_values(unmasked)
+            else:
+                unmasked[:, component_mask, :] = vals
+        return unmasked
 
-        raise_if_not(
-            series.width == len(component_mask),
-            "mismatch between number of components in `series` and length of `component_mask`",
-            logger,
-        )
+    @staticmethod
+    def stack_samples(vals: Union[np.ndarray, TimeSeries]) -> np.ndarray:
+        """
+        Creates an array of shape `(n_timesteps * n_samples, n_components)` from
+        either a `TimeSeries` or the `array_values` of a `TimeSeries`.
 
-        series_vals = series.all_values(copy=True)
-        series_vals[:, component_mask, :] = reshaped
-        return series_vals
+        Each column of the returned array corresponds to a component (dimension)
+        of the series and is formed by concatenating all of the samples associated
+        with that component together. More specifically, the `i`th column is formed
+        by concatenating
+        `[component_i_sample_1, component_i_sample_2, ..., component_i_sample_n]`.
+
+        Stacking is useful when implementing a transformation that applies the exact same
+        change to every timestep in the timeseries. In such cases, the samples of each
+        component can be stacked together into a single column, and the transformation can then be
+        applied to each column, thereby 'vectorising' the transformation over all samples of that component;
+        the `unstack_samples` method can then be used to reshape the output. For transformations that depend
+        on the `time_index` or the temporal ordering of the observations, stacking should *not* be employed.
+
+        Parameters
+        ----------
+        vals
+            `Timeseries` or `np.ndarray` of shape `(n_timesteps, n_components, n_samples)` to be 'stacked'.
+
+        Returns
+        -------
+        stacked
+            `np.ndarray` of shape `(n_timesteps * n_samples, n_components)`, where the `i`th column is formed
+            by concatenating all of the samples of the `i`th component in `vals`.
+        """
+        if isinstance(vals, TimeSeries):
+            vals = vals.all_values()
+        shape = vals.shape
+        new_shape = (shape[0] * shape[2], shape[1])
+        stacked = np.swapaxes(vals, 1, 2).reshape(new_shape)
+        return stacked
+
+    @staticmethod
+    def unstack_samples(
+        vals: np.ndarray,
+        n_timesteps: Optional[int] = None,
+        n_samples: Optional[int] = None,
+        series: Optional[TimeSeries] = None,
+    ) -> np.ndarray:
+        """
+        Reshapes the 2D array returned by `stack_samples` back into an array of shape
+        `(n_timesteps, n_components, n_samples)`; this 'undoes' the reshaping of
+        `stack_samples`. Either `n_components`, `n_samples`, or `series` must be specified.
+
+        Parameters
+        ----------
+        vals
+            `np.ndarray` of shape `(n_timesteps * n_samples, n_components)` to be 'unstacked'.
+        n_timesteps
+            Optionally, the number of timesteps in the array originally passed to `stack_samples`.
+            Does *not* need to be provided if `series` is specified.
+        n_samples
+            Optionally, the number of samples in the array originally passed to `stack_samples`.
+            Does *not* need to be provided if `series` is specified.
+        series
+            Optionally, the `TimeSeries` object used to create `vals`; `n_samples` is inferred
+            from this.
+
+        Returns
+        -------
+        unstacked
+            `np.ndarray` of shape `(n_timesteps, n_components, n_samples)`.
+
+        """
+        if series is not None:
+            n_samples = series.n_samples
+        else:
+            raise_if(
+                all(x is None for x in [n_timesteps, n_samples]),
+                "Must specify either `n_timesteps`, `n_samples`, or `series`.",
+            )
+        n_components = vals.shape[-1]
+        if n_timesteps is not None:
+            reshaped_vals = vals.reshape(n_timesteps, -1, n_components)
+        else:
+            reshaped_vals = vals.reshape(-1, n_samples, n_components)
+        unstacked = np.swapaxes(reshaped_vals, 1, 2)
+        return unstacked
 
     @property
     def name(self):

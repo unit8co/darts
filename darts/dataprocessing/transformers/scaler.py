@@ -100,15 +100,10 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
     ) -> TimeSeries:
 
         transformer = params["fitted"]
-        component_mask = kwargs.get("component_mask", None)
 
-        tr_out = transformer.transform(
-            Scaler._reshape_in(series, component_mask=component_mask)
-        )
+        tr_out = transformer.transform(Scaler.stack_samples(series))
 
-        transformed_vals = Scaler._reshape_out(
-            series, tr_out, component_mask=component_mask
-        )
+        transformed_vals = Scaler.unstack_samples(tr_out, series=series)
 
         return series.with_values(transformed_vals)
 
@@ -117,14 +112,9 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
         series: TimeSeries, params: Mapping[str, Any], *args, **kwargs
     ) -> TimeSeries:
         transformer = params["fitted"]
-        component_mask = kwargs.get("component_mask", None)
 
-        tr_out = transformer.inverse_transform(
-            Scaler._reshape_in(series, component_mask=component_mask)
-        )
-        inv_transformed_vals = Scaler._reshape_out(
-            series, tr_out, component_mask=component_mask
-        )
+        tr_out = transformer.inverse_transform(Scaler.stack_samples(series))
+        inv_transformed_vals = Scaler.unstack_samples(tr_out, series=series)
 
         return series.with_values(inv_transformed_vals)
 
@@ -132,9 +122,6 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
     def ts_fit(series: TimeSeries, params: Mapping[str, Any], *args, **kwargs) -> Any:
         transformer = deepcopy(params["fixed"]["transformer"])
         # fit_parameter will receive the transformer object instance
-        component_mask = kwargs.get("component_mask", None)
 
-        scaler = transformer.fit(
-            Scaler._reshape_in(series, component_mask=component_mask)
-        )
+        scaler = transformer.fit(Scaler.stack_samples(series))
         return scaler

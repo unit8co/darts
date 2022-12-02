@@ -22,6 +22,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
         n_jobs: int = 1,
         verbose: bool = False,
         parallel_params: Union[bool, Sequence[str]] = False,
+        mask_components: bool = True,
     ):
 
         """Abstract class for invertible transformers.
@@ -51,6 +52,14 @@ class InvertibleDataTransformer(BaseDataTransformer):
             parallel job. If `parallel_params=False`, every fixed parameter will take on the same value for
             each parallel job. If `parallel_params` is a `Sequence` of fixed attribute names, only those
             attribute names specified will take on different values between different parallel jobs.
+        mask_components
+            Optionally, whether or not to automatically apply any provided `component_mask`s to the
+            `TimeSeries` inputs passed to `transform`, `fit`, `inverse_transform`, or `fit_transform`.
+            If `True`, any specified `component_mask` will be applied to each input timeseries
+            before passing them to the called method; the masked components will also be automatically
+            'unmasked' in the returned `TimeSeries`. If `False`, then `component_mask` (if provided) will
+            be passed as a keyword argument, but won't automatically be applied to the input timeseries.
+            See `apply_component_mask` method of `BaseDataTransformer` for further details.
 
         Notes
         -----
@@ -61,7 +70,11 @@ class InvertibleDataTransformer(BaseDataTransformer):
         and nullify parallelisation benefits.
         """
         super().__init__(
-            name=name, n_jobs=n_jobs, verbose=verbose, parallel_params=parallel_params
+            name=name,
+            n_jobs=n_jobs,
+            verbose=verbose,
+            parallel_params=parallel_params,
+            mask_components=mask_components,
         )
 
     @staticmethod
@@ -157,7 +170,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
 
             component_mask : Optional[np.ndarray] = None
                 Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies
-                which components of the underlying `series` the Scaler should consider.
+                which components of the underlying `series` the inverse transform should consider.
 
         Returns
         -------
@@ -173,10 +186,17 @@ class InvertibleDataTransformer(BaseDataTransformer):
 
         desc = f"Inverse ({self._name})"
 
+        # Take note of original input for unmasking purposes:
         if isinstance(series, TimeSeries):
+            input_series = [series]
             data = [series]
         else:
+            input_series = series
             data = series
+
+        if self._mask_components:
+            mask = kwargs.pop("component_mask", None)
+            data = [self.apply_component_mask(ts, mask, return_ts=True) for ts in data]
 
         input_iterator = _build_tqdm_iterator(
             self._inverse_transform_iterator(data),
@@ -192,6 +212,12 @@ class InvertibleDataTransformer(BaseDataTransformer):
             args,
             kwargs,
         )
+
+        if self._mask_components:
+            unmasked = []
+            for ts, transformed_ts in zip(input_series, transformed_data):
+                unmasked.append(self.unapply_component_mask(ts, transformed_ts, mask))
+            transformed_data = unmasked
 
         return (
             transformed_data[0] if isinstance(series, TimeSeries) else transformed_data
