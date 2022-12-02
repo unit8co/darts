@@ -3,12 +3,11 @@ Window Transformer
 ------------------
 """
 
-from typing import Iterator, List, Optional, Sequence, Tuple, Union
+from typing import Any, List, Mapping, Optional, Union
 
 from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.logging import get_logger
 from darts.timeseries import TimeSeries
-from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
 
@@ -126,7 +125,6 @@ class WindowTransformer(BaseDataTransformer):
         verbose
             Whether to print operations progress.
         """
-        super().__init__(name, n_jobs, verbose)
 
         # dictionary checks are implemented in TimeSeries.window_transform()
 
@@ -134,22 +132,8 @@ class WindowTransformer(BaseDataTransformer):
         self.keep_non_transformed = keep_non_transformed
         self.treat_na = treat_na
         self.forecasting_safe = forecasting_safe
-
-    def _transform_iterator(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]]
-    ) -> Iterator[Tuple]:
-
-        series = series2seq(series)
-
-        kwargs_dict = {
-            "transforms": self.transforms,
-            "keep_non_transformed": self.keep_non_transformed,
-            "treat_na": self.treat_na,
-            "forecasting_safe": self.forecasting_safe,
-        }
-        for s in series:
-            yield (s, kwargs_dict)
+        super().__init__(name, n_jobs, verbose)
 
     @staticmethod
-    def ts_transform(series: TimeSeries, kwargs_dict) -> TimeSeries:
-        return series.window_transform(**kwargs_dict)
+    def ts_transform(series: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
+        return series.window_transform(**params["fixed"])

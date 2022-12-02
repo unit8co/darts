@@ -1,4 +1,4 @@
-from typing import Any, Iterator, Sequence, Tuple, Union
+from typing import Any, Mapping, Sequence, Union
 
 import numpy as np
 
@@ -100,19 +100,16 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
         .. [3] https://otexts.com/fpp2/stationarity.html#second-order-differencing
 
         """
-        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
+
         if not isinstance(lags, Sequence):
             lags = (lags,)
         self._lags = lags
         self._dropna = dropna
-
-    def _fit_iterator(
-        self, series: Sequence[TimeSeries]
-    ) -> Iterator[Tuple[TimeSeries, Sequence[int], int]]:
-        return ((ts, self._lags, self._dropna) for ts in series)
+        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
 
     @staticmethod
-    def ts_fit(series: TimeSeries, lags: Sequence[int], dropna, **kwargs) -> Any:
+    def ts_fit(series: TimeSeries, params: Mapping[str, Any], **kwargs) -> Any:
+        lags, dropna = params["fixed"]["_lags"], params["fixed"]["_dropna"]
         lags_sum = sum(lags)
         raise_if(
             series.n_timesteps <= lags_sum,
@@ -136,15 +133,11 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
             cutoff += lag
         return start_vals, component_mask, series.start_time(), series.freq
 
-    def _transform_iterator(
-        self, series: Sequence[TimeSeries]
-    ) -> Iterator[Tuple[TimeSeries, Sequence[int], bool]]:
-        return ((subseries, self._lags, self._dropna) for subseries in series)
-
     @staticmethod
     def ts_transform(
-        series: TimeSeries, lags: Sequence[int], dropna: bool, **kwargs
+        series: TimeSeries, params: Mapping[str, Any], **kwargs
     ) -> TimeSeries:
+        lags, dropna = params["fixed"]["_lags"], params["fixed"]["_dropna"]
         component_mask = Diff._get_component_mask(kwargs, dropna)
         diffed = series.copy()
         if component_mask is not None:
@@ -159,22 +152,14 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
             diffed = series.with_values(diffed)
         return diffed
 
-    def _inverse_transform_iterator(
-        self, series: Sequence[TimeSeries]
-    ) -> Iterator[Tuple[TimeSeries, float]]:
-        lags = (self._lags for _ in range(len(series)))
-        dropna = (self._dropna for _ in range(len(series)))
-        return zip(series, lags, dropna, self._fitted_params)
-
     @staticmethod
     def ts_inverse_transform(
         series: TimeSeries,
-        lags: Sequence[int],
-        dropna: bool,
-        fitted_params: Tuple[np.ndarray, np.ndarray, int, int],
+        params: Mapping[str, Any],
         **kwargs,
     ) -> TimeSeries:
-        start_vals, fit_component_mask, start_time, freq = fitted_params
+        lags, dropna = params["fixed"]["_lags"], params["fixed"]["_dropna"]
+        start_vals, fit_component_mask, start_time, freq = params["fitted"]
         raise_if_not(
             series.freq == freq,
             (

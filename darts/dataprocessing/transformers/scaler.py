@@ -4,7 +4,7 @@ Scaler
 """
 
 from copy import deepcopy
-from typing import Any, Iterator, Sequence, Tuple
+from typing import Any, Mapping
 
 from sklearn.preprocessing import MinMaxScaler
 
@@ -76,8 +76,6 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
         [2.]
         """
 
-        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
-
         if scaler is None:
             scaler = MinMaxScaler(feature_range=(0, 1))
 
@@ -94,10 +92,14 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
             )
 
         self.transformer = scaler
-        self.transformer_instances = None
+        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
 
     @staticmethod
-    def ts_transform(series: TimeSeries, transformer, **kwargs) -> TimeSeries:
+    def ts_transform(
+        series: TimeSeries, params: Mapping[str, Any], **kwargs
+    ) -> TimeSeries:
+
+        transformer = params["fitted"]
         component_mask = kwargs.get("component_mask", None)
 
         tr_out = transformer.transform(
@@ -112,8 +114,9 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
 
     @staticmethod
     def ts_inverse_transform(
-        series: TimeSeries, transformer, *args, **kwargs
+        series: TimeSeries, params: Mapping[str, Any], *args, **kwargs
     ) -> TimeSeries:
+        transformer = params["fitted"]
         component_mask = kwargs.get("component_mask", None)
 
         tr_out = transformer.inverse_transform(
@@ -126,7 +129,8 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
         return series.with_values(inv_transformed_vals)
 
     @staticmethod
-    def ts_fit(series: TimeSeries, transformer, *args, **kwargs) -> Any:
+    def ts_fit(series: TimeSeries, params: Mapping[str, Any], *args, **kwargs) -> Any:
+        transformer = deepcopy(params["fixed"]["transformer"])
         # fit_parameter will receive the transformer object instance
         component_mask = kwargs.get("component_mask", None)
 
@@ -134,23 +138,3 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
             Scaler._reshape_in(series, component_mask=component_mask)
         )
         return scaler
-
-    def _fit_iterator(
-        self, series: Sequence[TimeSeries]
-    ) -> Iterator[Tuple[TimeSeries, Any]]:
-        # generator which returns deep copies of the 'scaler' argument
-        new_scaler_gen = (deepcopy(self.transformer) for _ in range(len(series)))
-        return zip(series, new_scaler_gen)
-
-    def _transform_iterator(
-        self, series: Sequence[TimeSeries]
-    ) -> Iterator[Tuple[TimeSeries, Any]]:
-        # since '_ts_fit()' returns the scaler objects, the 'fit()' call will save transformers instance into
-        # self._fitted_params
-        return zip(series, self._fitted_params)
-
-    def _inverse_transform_iterator(
-        self, series: Sequence[TimeSeries]
-    ) -> Iterator[Tuple[TimeSeries, Any]]:
-        # the same self._fitted_params will be used also for the 'ts_inverse_transform()'
-        return zip(series, self._fitted_params)
