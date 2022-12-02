@@ -45,7 +45,7 @@ class PipelineTestCase(unittest.TestCase):
             self.fit_called = False
 
         @staticmethod
-        def ts_fit(series: TimeSeries):
+        def ts_fit(series: TimeSeries, params: Mapping[str, Any]):
             pass
 
         @staticmethod
