@@ -192,11 +192,6 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     PoissonLightGBMModel = partialclass(
         LightGBMModel, likelihood="poisson", random_state=42
     )
-    PoissonXGBModel = partialclass(
-        XGBModel,
-        likelihood="poisson",
-        random_state=42,
-    )
     QuantileLinearRegressionModel = partialclass(
         LinearRegressionModel,
         likelihood="quantile",
@@ -205,6 +200,16 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     )
     PoissonLinearRegressionModel = partialclass(
         LinearRegressionModel, likelihood="poisson", random_state=42
+    )
+    PoissonXGBModel = partialclass(
+        XGBModel,
+        likelihood="poisson",
+        random_state=42,
+    )
+    QuantileXGBModel = partialclass(
+        XGBModel,
+        likelihood="quantile",
+        random_state=42,
     )
     # targets for poisson regression must be positive, so we exclude them for some tests
     models.extend(
@@ -217,6 +222,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             PoissonCatBoostModel,
             NormalCatBoostModel,
             PoissonXGBModel,
+            QuantileXGBModel,
         ]
     )
 
@@ -234,6 +240,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         1e-01,  # PoissonCatBoostModel
         1e-05,  # NormalCatBoostModel
         1e-01,  # PoissonXGBModel
+        0.5,  # QuantileXGBModel
     ]
     multivariate_accuracies = [
         0.3,
@@ -249,6 +256,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         0.15,
         1e-05,
         0.15,
+        0.4,
     ]
     multivariate_multiseries_accuracies = [
         0.05,  # RandomForest
@@ -264,6 +272,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         1e-01,  # PoissonCatBoostModel
         1e-03,  # NormalCatBoostModel
         1e-01,  # PoissonXGBModel
+        0.4,  # QuantileXGBModel
     ]
 
     # dummy feature and target TimeSeries instances
@@ -1635,6 +1644,17 @@ class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):
                 "multi_models": True,
             },
             0.6,
+        ),
+        (
+            XGBModel,
+            {
+                "lags": 2,
+                "likelihood": "quantile",
+                "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
+                "random_state": 42,
+                "multi_models": True,
+            },
+            0.4,
         ),
     ]
 

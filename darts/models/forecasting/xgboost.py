@@ -7,6 +7,7 @@ Regression model based on XGBoost.
 This implementation comes with the ability to produce probabilistic forecasts.
 """
 
+from functools import partial
 from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
@@ -15,8 +16,26 @@ import xgboost as xgb
 from darts.logging import get_logger
 from darts.models.forecasting.regression_model import RegressionModel, _LikelihoodMixin
 from darts.timeseries import TimeSeries
+from darts.utils.utils import raise_if_not
 
 logger = get_logger(__name__)
+
+
+def xgb_quantile_loss(labels: np.ndarray, preds: np.ndarray, quantile: float):
+    """Custom loss function for XGBoost to compute quantile loss.
+
+    Inspired from: https://gist.github.com/Nikolay-Lysenko/06769d701c1d9c9acb9a66f2f9d7a6c7
+    """
+    raise_if_not(0 <= quantile <= 1, "Quantile must be between 0 and 1.", logger)
+
+    errors = preds - labels
+    left_mask = errors < 0
+    right_mask = errors > 0
+
+    grad = -quantile * left_mask + (1 - quantile) * right_mask
+    hess = np.ones_like(preds)
+
+    return grad, hess
 
 
 class XGBModel(RegressionModel, _LikelihoodMixin):
@@ -74,8 +93,10 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
                 }
             ..
         likelihood
-            Can be set to `poisson`. If set, the model will be probabilistic, allowing sampling at
+            Can be set to `poisson` or `quantile`. If set, the model will be probabilistic, allowing sampling at
             prediction time. This will overwrite any `objective` parameter.
+        quantiles
+            Fit the model to these quantiles if the `likelihood` is set to `quantile`.
         random_state
             Control the randomness in the fitting procedure and for sampling.
             Default: ``None``.
@@ -94,11 +115,14 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         self._rng = None
 
         # parse likelihood
-        available_likelihoods = ["poisson"]  # to be extended
+        available_likelihoods = ["poisson", "quantile"]  # to be extended
         if likelihood is not None:
             self._check_likelihood(likelihood, available_likelihoods)
             if likelihood in {"poisson"}:
                 self.kwargs["objective"] = "count:poisson"
+            elif likelihood == "quantile":
+                self.quantiles, self._median_idx = self._prepare_quantiles(quantiles)
+                self._model_container = self._get_model_container()
             self._rng = np.random.default_rng(seed=random_state)  # seed for sampling
 
         super().__init__(
@@ -166,6 +190,26 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
                     max_samples_per_ts=max_samples_per_ts,
                 )
             ]
+
+        if self.likelihood == "quantile":
+            # empty model container in case of multiple calls to fit, e.g. when backtesting
+            self._model_container.clear()
+            for quantile in self.quantiles:
+                obj_func = partial(xgb_quantile_loss, quantile=quantile)
+                self.kwargs["objective"] = obj_func
+                self.model = xgb.XGBRegressor(**self.kwargs)
+
+                super().fit(
+                    series=series,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
+                    max_samples_per_ts=max_samples_per_ts,
+                    **kwargs,
+                )
+
+                self._model_container[quantile] = self.model
+
+            return self
 
         super().fit(
             series=series,
