@@ -4,10 +4,10 @@ Fittable Data Transformer Base Class
 """
 
 from abc import abstractmethod
-from typing import Iterator, List, Sequence, Tuple, Union
+from typing import Any, Generator, Iterator, List, Mapping, Sequence, Tuple, Union
 
 from darts import TimeSeries
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_if_not, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 
 from .base_data_transformer import BaseDataTransformer
@@ -21,6 +21,7 @@ class FittableDataTransformer(BaseDataTransformer):
         name: str = "FittableDataTransformer",
         n_jobs: int = 1,
         verbose: bool = False,
+        parallel_params: Union[bool, Sequence[str]] = False,
     ):
 
         """Base class for fittable transformers.
@@ -42,6 +43,15 @@ class FittableDataTransformer(BaseDataTransformer):
             required amount of time.
         verbose
             Optionally, whether to print operations progress
+        parallel_params
+            Optionally, specifies which fixed parameters (i.e. the attributes initialized in the child-most
+            class's `__init__`) take on different values for different parallel jobs. Fixed parameters specified
+            by `parallel_params` are assumed to be a `Sequence` of values that should be used for that parameter
+            in each parallel job; the length of this `Sequence` should equal the number of parallel jobs. If
+            `parallel_params=True`, every fixed parameter will take on a different value for each
+            parallel job. If `parallel_params=False`, every fixed parameter will take on the same value for
+            each parallel job. If `parallel_params` is a `Sequence` of fixed attribute names, only those
+            attribute names specified will take on different values between different parallel jobs.
 
         Notes
         -----
@@ -50,14 +60,16 @@ class FittableDataTransformer(BaseDataTransformer):
         amount of data. Using instance methods would imply copying the instance's data through multiple processes, which
         can easily introduce a bottleneck and nullify parallelisation benefits.
         """
-        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
+        super().__init__(
+            name=name, n_jobs=n_jobs, verbose=verbose, parallel_params=parallel_params
+        )
 
         self._fit_called = False
         self.fitted_params = None  # stores the fitted parameters/objects
 
     @staticmethod
     @abstractmethod
-    def ts_fit(series: TimeSeries):
+    def ts_fit(series: TimeSeries, params: Mapping[str, Any]):
         """The function that will be applied to each series when :func:`fit` is called.
 
         The function must take as first argument a ``TimeSeries`` object, and return an object containing information
@@ -130,7 +142,9 @@ class FittableDataTransformer(BaseDataTransformer):
                 return zip(series, (0 for i in range(len(series))))
 
         """
-        return zip(series)
+
+        params = self._get_params(n_timeseries=len(series), include_fitted_params=False)
+        return zip(series, params)
 
     def fit(
         self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
@@ -205,3 +219,63 @@ class FittableDataTransformer(BaseDataTransformer):
         return self.fit(series, component_mask=component_mask).transform(
             series, *args, **kwargs
         )
+
+    def _get_params(
+        self, n_timeseries: int, include_fitted_params: bool = True
+    ) -> Generator[Mapping[str, Any], None, None]:
+        """
+        Overrides `_get_params` of `BaseDataTransformer`. Creates generator of dictionaries containing
+        both the fixed parameter values (i.e. attributes defined in the child-most class), as well as
+        the fitted parameter values (only if `include_fitted_params=True`). Those fixed parameters
+        specified by `parallel_params` are given different values over each of the parallel jobs;
+        every fitted parameter is given a different value for each parallel job (since `self.fit`
+        returns a `Sequence` containing one fitted parameter value of each parallel job). Called by
+        `_transform_iterator` and `_inverse_transform_iterator`.
+        """
+        self._check_fixed_params(n_timeseries)
+        fitted_params = self._get_fitted_params(n_timeseries, include_fitted_params)
+
+        def params_generator(
+            n_timeseries, fixed_params, fitted_params, parallel_params
+        ):
+            fixed_params_copy = fixed_params.copy()
+            for i in range(n_timeseries):
+                for key in parallel_params:
+                    fixed_params_copy[key] = fixed_params[key][i]
+                params = {}
+                if fixed_params_copy:
+                    params["fixed"] = fixed_params_copy
+                if fitted_params:
+                    params["fitted"] = fitted_params[i]
+                if not params:
+                    params = None
+                yield params
+
+        return params_generator(
+            n_timeseries, self._fixed_params, fitted_params, self._parallel_params
+        )
+
+    def _get_fitted_params(
+        self, n_timeseries: int, include_fitted_params: bool
+    ) -> Sequence[Any]:
+        """
+        Returns `self._fitted_params` if `include_fitted_params=True`, otherwise returns an empty
+        tuple. If `include_fitted_params=True`, also checks that `self._fitted_params`, which is a
+        sequence of values, contains exactly `n_timeseries` values; if not, a `ValueError` is thrown.
+        """
+        if include_fitted_params:
+            raise_if_not(
+                self._fit_called,
+                ("Must call `fit` before calling `transform`/`inverse_transform`."),
+            )
+            fitted_params = self._fitted_params
+        else:
+            fitted_params = tuple()
+        if fitted_params and (len(fitted_params) != n_timeseries):
+            msg = (
+                f"{self.name} was fitted to {len(fitted_params)} "
+                f"timeseries, but {n_timeseries} timeseries were "
+                "provided to `transform`/`inverse_transform`."
+            )
+            raise_log(ValueError(msg))
+        return fitted_params

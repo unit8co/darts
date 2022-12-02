@@ -4,12 +4,22 @@ Data Transformer Base Class
 """
 
 from abc import ABC, abstractmethod
-from typing import Iterator, List, Optional, Sequence, Tuple, Union
+from typing import (
+    Any,
+    Generator,
+    Iterator,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import numpy as np
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if_not
+from darts.logging import get_logger, raise_if_not, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 
 logger = get_logger(__name__)
@@ -17,7 +27,11 @@ logger = get_logger(__name__)
 
 class BaseDataTransformer(ABC):
     def __init__(
-        self, name: str = "BaseDataTransformer", n_jobs: int = 1, verbose: bool = False
+        self,
+        name: str = "BaseDataTransformer",
+        n_jobs: int = 1,
+        verbose: bool = False,
+        parallel_params: Union[bool, Sequence[str]] = False,
     ):
         """Abstract class for data transformers.
 
@@ -47,7 +61,27 @@ class BaseDataTransformer(ABC):
             required amount of time.
         verbose
             Optionally, whether to print operations progress
+        parallel_params
+            Optionally, specifies which fixed parameters (i.e. the attributes initialized in the child-most
+            class's `__init__`) take on different values for different parallel jobs. Fixed parameters specified
+            by `parallel_params` are assumed to be a `Sequence` of values that should be used for that parameter
+            in each parallel job; the length of this `Sequence` should equal the number of parallel jobs. If
+            `parallel_params=True`, every fixed parameter will take on a different value for each
+            parallel job. If `parallel_params=False`, every fixed parameter will take on the same value for
+            each parallel job. If `parallel_params` is a `Sequence` of fixed attribute names, only those
+            attribute names specified will take on different values between different parallel jobs.
         """
+        # Assume `super().__init__` called at *very end* of
+        # child-most class's `__init__`, so `vars(self)` contains
+        # only attributes of this child-most class:
+        self._fixed_params = vars(self).copy()
+        # If `parallel_params = True`, but not a list of key values:
+        if parallel_params and not isinstance(parallel_params, Sequence):
+            parallel_params = self._fixed_params.keys()
+        # If `parallel_params = False`:
+        elif not parallel_params:
+            parallel_params = tuple()
+        self._parallel_params = parallel_params
         self._name = name
         self._verbose = verbose
         self._n_jobs = n_jobs
@@ -81,7 +115,7 @@ class BaseDataTransformer(ABC):
 
     @staticmethod
     @abstractmethod
-    def ts_transform(series: TimeSeries) -> TimeSeries:
+    def ts_transform(series: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
         """The function that will be applied to each series when :func:`transform()` is called.
 
         The function must take as first argument a ``TimeSeries`` object, and return the transformed ``TimeSeries``
@@ -141,7 +175,8 @@ class BaseDataTransformer(ABC):
                 return zip(series, (i for i in range(len(series))))
 
         """
-        return zip(series)
+        params = self._get_params(n_timeseries=len(series))
+        return zip(series, params)
 
     def transform(
         self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
@@ -187,6 +222,49 @@ class BaseDataTransformer(ABC):
         return (
             transformed_data[0] if isinstance(series, TimeSeries) else transformed_data
         )
+
+    def _get_params(
+        self, n_timeseries: int
+    ) -> Generator[Mapping[str, Any], None, None]:
+        """
+        Creates generator of dictionaries containing fixed parameter values
+        (i.e. attributes defined in the child-most class). Those fixed parameters
+        specified by `parallel_params` are given different values over each of the
+        parallel jobs. Called by `_transform_iterator` and `_inverse_transform_iterator`,
+        if `Transformer` does *not* inherit from `FittableTransformer`.
+        """
+        self._check_fixed_params(n_timeseries)
+
+        def params_generator(n_timeseries, fixed_params, parallel_params):
+            fixed_params_copy = fixed_params.copy()
+            for i in range(n_timeseries):
+                for key in parallel_params:
+                    fixed_params_copy[key] = fixed_params[key][i]
+                if fixed_params_copy:
+                    params = {"fixed": fixed_params_copy}
+                else:
+                    params = None
+                yield params
+            return None
+
+        return params_generator(n_timeseries, self._fixed_params, self._parallel_params)
+
+    def _check_fixed_params(self, n_timeseries: int) -> None:
+        """
+        Raises `ValueError` if `self._parallel_params` specifies a `key` in
+        `self._fixed_params` that should be distributed, but
+        `len(self._fixed_params[key])` does not equal `n_timeseries`.
+        """
+        for key in self._parallel_params:
+            if len(self._fixed_params[key]) != n_timeseries:
+                key = key[1:] if key[0] == "_" else key
+                msg = (
+                    f"{n_timeseries} TimeSeries were provided "
+                    f"but only {len(self._fixed_params[key])} {key} values "
+                    f"were specified upon initialising {self.name}."
+                )
+                raise_log(ValueError(msg))
+        return None
 
     @staticmethod
     def _reshape_in(

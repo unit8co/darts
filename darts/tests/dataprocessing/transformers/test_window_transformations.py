@@ -393,7 +393,7 @@ class WindowTransformerTestCase(unittest.TestCase):
             transformed_ts_list[1].n_timesteps, self.series_multi_det.n_timesteps
         )
 
-    def test_transformers_pipline(self):
+    def test_transformers_pipeline(self):
         """
         Test that the forecasting window transformer can be used in a pipeline
 

@@ -4,7 +4,7 @@ Invertible Data Transformer Base Class
 """
 
 from abc import abstractmethod
-from typing import Iterator, List, Sequence, Tuple, Union
+from typing import Any, Iterator, List, Mapping, Sequence, Tuple, Union
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if_not
@@ -21,6 +21,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
         name: str = "InvertibleDataTransformer",
         n_jobs: int = 1,
         verbose: bool = False,
+        parallel_params: Union[bool, Sequence[str]] = False,
     ):
 
         """Abstract class for invertible transformers.
@@ -41,6 +42,15 @@ class InvertibleDataTransformer(BaseDataTransformer):
             required amount of time.
         verbose
             Optionally, whether to print operations progress
+        parallel_params
+            Optionally, specifies which fixed parameters (i.e. the attributes initialized in the child-most
+            class's `__init__`) take on different values for different parallel jobs. Fixed parameters specified
+            by `parallel_params` are assumed to be a `Sequence` of values that should be used for that parameter
+            in each parallel job; the length of this `Sequence` should equal the number of parallel jobs. If
+            `parallel_params=True`, every fixed parameter will take on a different value for each
+            parallel job. If `parallel_params=False`, every fixed parameter will take on the same value for
+            each parallel job. If `parallel_params` is a `Sequence` of fixed attribute names, only those
+            attribute names specified will take on different values between different parallel jobs.
 
         Notes
         -----
@@ -50,11 +60,15 @@ class InvertibleDataTransformer(BaseDataTransformer):
         copying the instance's data through multiple processes, which can easily introduce a bottleneck
         and nullify parallelisation benefits.
         """
-        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
+        super().__init__(
+            name=name, n_jobs=n_jobs, verbose=verbose, parallel_params=parallel_params
+        )
 
     @staticmethod
     @abstractmethod
-    def ts_inverse_transform(series: TimeSeries) -> TimeSeries:
+    def ts_inverse_transform(
+        series: TimeSeries, params: Mapping[str, Any]
+    ) -> TimeSeries:
         """The function that will be applied to each series when :func:`inverse_transform` is called.
 
         The function must take as first argument a ``TimeSeries`` object, and return the transformed
@@ -121,7 +135,8 @@ class InvertibleDataTransformer(BaseDataTransformer):
             def _inverse_transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, int]]:
                 return zip(series, (i for i in range(len(series))))
         """
-        return zip(series)
+        params = self._get_params(n_timeseries=len(series))
+        return zip(series, params)
 
     def inverse_transform(
         self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
