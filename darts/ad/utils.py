@@ -335,7 +335,13 @@ def _intersect(
     Tuple[TimeSeries, TimeSeries]
     """
 
-    return series_1.slice_intersect(series_2), series_2.slice_intersect(series_1)
+    new_series_1 = series_1.slice_intersect(series_2)
+    raise_if(
+        len(new_series_1) == 0,
+        "Time intersection between the two series must be non empty",
+    )
+
+    return new_series_1, series_2.slice_intersect(series_1)
 
 
 def _check_timeseries_type(series: TimeSeries, message: str = None):

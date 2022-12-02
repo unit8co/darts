@@ -3,13 +3,13 @@ Aggregators
 ---------------
 Module for aggregators. An aggregator combines multiple lists of anomalies into one.
 
-
 TODO:
 - add customize aggregators
-- add trainable aggregators
+- add in trainable aggregators
     - log regression
     - decision tree
-- show all combined
+- show all combined (info about correlation, and from what path did
+the anomaly alarm comes from)
 
 """
 
@@ -17,6 +17,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Sequence, Union
 
 import numpy as np
+from sklearn.ensemble import BaseEnsemble
 
 from darts import TimeSeries
 from darts.ad.utils import _intersect, eval_accuracy_from_binary_prediction
@@ -96,23 +97,25 @@ class Aggregator(ABC):
             if idx > 0:
                 list_series[idx] = series.slice_intersect(series_0)
 
+            raise_if(
+                len(list_series[idx]) == 0,
+                f"Element {idx} of 'list_series' must have a non empty intersection \
+                with the other series of the sequence.",
+            )
+
         list_series[0] = series_0
 
         return list_series
 
     def _predict(self, list_series: Sequence[TimeSeries]) -> TimeSeries:
 
-        list_series = self._check_input(list_series)
+        np_series = np.concatenate(
+            [s.all_values(copy=False) for s in list_series], axis=2
+        )
 
         list_pred = []
-        for width in range(list_series[0].width):
-            list_pred.append(
-                self._predict_core(
-                    np.concatenate(
-                        [s.all_values()[:, width] for s in list_series], axis=1
-                    )
-                )
-            )
+        for idx, width in enumerate(range(list_series[0].width)):
+            list_pred.append(self._predict_core(np_series[:, :, width], idx))
 
         return TimeSeries.from_times_and_values(
             list_series[0]._time_index, list(zip(*list_pred))
@@ -150,7 +153,18 @@ class Aggregator(ABC):
             Score for the time series
         """
 
+        raise_if_not(
+            isinstance(actual_anomalies, TimeSeries),
+            f"'actual_anomalies' must be of type TimeSeries, found type {type(actual_anomalies)}",
+        )
+
         series = self.predict(list_series)
+
+        raise_if_not(
+            actual_anomalies.width == series.width,
+            f"'actual_anomalies' must have the same width as the series in the sequence 'list_series', \
+            found width {actual_anomalies.width} and width {series.width}",
+        )
 
         return eval_accuracy_from_binary_prediction(
             actual_anomalies, series, window, metric
@@ -179,6 +193,7 @@ class NonFittableAggregator(Aggregator):
         TimeSeries
             Aggregated results
         """
+        list_series = self._check_input(list_series)
         return self._predict(list_series)
 
 
@@ -202,31 +217,6 @@ class FittableAggregator(Aggregator):
             f"The Aggregator {self.__str__()} has not been fitted yet. Call `fit()` first.",
         )
 
-    def predict(self, list_series: Sequence[TimeSeries]) -> TimeSeries:
-        """Aggregates the list of series given as input into one series.
-
-        Parameters
-        ----------
-        list_series
-            The list of binary series to aggregate
-
-        Returns
-        -------
-        TimeSeries
-            Aggregated results
-        """
-        self.check_if_fit_called()
-
-        raise_if_not(
-            len(list_series) == self.len_training_set,
-            "The model was trained on a list of length {}, found for prediciton a list of different \
-            length {}.".format(
-                self.len_training_set, len(list_series)
-            ),
-        )
-
-        return self._predict(list_series)
-
     def fit(self, actual_anomalies: TimeSeries, list_series: Sequence[TimeSeries]):
         """Fit the aggregators on the given list of series.
 
@@ -243,30 +233,91 @@ class FittableAggregator(Aggregator):
             Aggregated results
         """
         self.len_training_set = len(list_series)
-
         list_series = self._check_input(list_series)
-
+        self.width_trained_on = list_series[0].width
         actual_anomalies = actual_anomalies.slice_intersect(list_series[0])
+
+        raise_if_not(
+            isinstance(actual_anomalies, TimeSeries),
+            f"'actual_anomalies' must be of type TimeSeries, found type {type(actual_anomalies)}",
+        )
+
+        raise_if_not(
+            actual_anomalies.width == self.width_trained_on,
+            f"'actual_anomalies' must have the same width as the series in the sequence 'list_series', \
+            found width {actual_anomalies.width} and width {self.width_trained_on}",
+        )
 
         for idx, s in enumerate(list_series):
             list_series[idx] = s.slice_intersect(actual_anomalies)
 
-        # TODO: for every width -> train different models for each
-        width = 0
-
-        training_data = np.concatenate(
-            [s.all_values()[:, width] for s in list_series], axis=1
+        raise_if(
+            len(list_series[0]) == 0,
+            "'actual_anomalies' must have a non-empty time intersection with the series in the \
+            sequence 'list_series'",
         )
-        np_actual_anomalies = actual_anomalies.all_values(copy=False).flatten()
 
-        self._fit_core(training_data, np_actual_anomalies)
+        np_training_data = np.concatenate(
+            [s.all_values(copy=False) for s in list_series], axis=2
+        )
+        np_actual_anomalies = actual_anomalies.all_values(copy=False)
+
+        models = []
+        for width in range(self.width_trained_on):
+            self._fit_core(
+                np_training_data[:, :, width], np_actual_anomalies[:, width].flatten()
+            )
+            models.append(self.model)
+
+        self.models = models
         self._fit_called = True
+
+    def predict(self, list_series: Sequence[TimeSeries]) -> TimeSeries:
+        """Aggregates the list of series given as input into one series.
+
+        Parameters
+        ----------
+        list_series
+            The list of binary series to aggregate
+
+        Returns
+        -------
+        TimeSeries
+            Aggregated results
+        """
+        self.check_if_fit_called()
+
+        list_series = self._check_input(list_series)
+
+        raise_if_not(
+            len(list_series) == self.len_training_set,
+            "The model was trained on a list of length {}, found for prediciton a list of different \
+            length {}.".format(
+                self.len_training_set, len(list_series)
+            ),
+        )
+
+        for series in list_series:
+            raise_if_not(
+                self.width_trained_on == series.width,
+                f"Input must have the same width of the data used for training the Aggregator model. \
+                Found training width: {self.width_trained_on} and input width: {series.width}",
+            )
+
+        return self._predict(list_series)
 
 
 class EnsembleSklearnAggregator(FittableAggregator):
     """Wrapper around Ensemble model of sklearn"""
 
     def __init__(self, model) -> None:
+
+        raise_if_not(
+            isinstance(model, BaseEnsemble),
+            f"Scorer is expecting a model of type  BaseEnsemble (from sklearn ensemble), \
+            found type {type(model)}",
+        )
+
         self.model = model
         super().__init__()
 
@@ -280,8 +331,8 @@ class EnsembleSklearnAggregator(FittableAggregator):
     ) -> np.ndarray:
         self.model.fit(np_series, np_actual_anomalies)
 
-    def _predict_core(self, np_series: np.ndarray) -> np.ndarray:
-        return self.model.predict(np_series)
+    def _predict_core(self, np_series: np.ndarray, width: int) -> np.ndarray:
+        return self.models[width].predict(np_series)
 
 
 class OrAggregator(NonFittableAggregator):
@@ -295,7 +346,7 @@ class OrAggregator(NonFittableAggregator):
     def __str__(self):
         return "OrAggregator"
 
-    def _predict_core(self, np_series: np.ndarray) -> np.ndarray:
+    def _predict_core(self, np_series: np.ndarray, width: int) -> np.ndarray:
 
         return [1 if timestamp.sum() >= 1 else 0 for timestamp in np_series]
 
@@ -311,6 +362,6 @@ class AndAggregator(NonFittableAggregator):
     def __str__(self):
         return "AndAggregator"
 
-    def _predict_core(self, np_series: np.ndarray) -> np.ndarray:
+    def _predict_core(self, np_series: np.ndarray, width: int) -> np.ndarray:
 
         return [0 if 0 in timestamp else 1 for timestamp in np_series]

@@ -88,11 +88,26 @@ class AnomalyScorer(ABC):
             window = 1
 
         raise_if_not(
+            type(window) is int,
+            f"window must be an integer, found type {type(window)}",
+        )
+
+        raise_if_not(
             window > 0,
             f"window must be stricly greater than 0, found size {window}",
         )
 
         self.window = window
+
+    def _check_window_size(self, series: TimeSeries):
+        """Checks if the parameter window is less or equal to the length of the given series"""
+
+        raise_if_not(
+            self.window <= len(series),
+            f"Window size {self.window} is greater than the targeted series length {len(series)}, \
+            must be lower or equal. Decrease the window size or increase the length series input \
+            to score on.",
+        )
 
     @property
     def _expects_probabilistic(self) -> bool:
@@ -212,7 +227,6 @@ class NonFittableAnomalyScorer(AnomalyScorer):
         The scorer will then transform this series into an anomaly score. If a sequence of series is given,
         the scorer will score each series independently and return an anomaly score for each series in the sequence.
 
-
         Parameters
         ----------
         actual_series:
@@ -235,6 +249,8 @@ class NonFittableAnomalyScorer(AnomalyScorer):
         for s1, s2 in zip(list_actual_series, list_pred_series):
             _sanity_check_2series(s1, s2)
             s1, s2 = _intersect(s1, s2)
+            self._check_window_size(s1)
+            self._check_window_size(s2)
             anomaly_scores.append(self._score_core_from_prediction(s1, s2))
 
         if (
@@ -262,7 +278,11 @@ class FittableAnomalyScorer(AnomalyScorer):
         # function used in ._diff_series() to convert 2 time series into 1
         if diff_fn is None:
             diff_fn = "abs_diff"
-        self.diff_fn = diff_fn
+
+        if diff_fn == "abs_diff" or diff_fn == "diff":
+            self.diff_fn = diff_fn
+        else:
+            raise ValueError(f"Metric should be 'diff' or 'abs_diff', found {diff_fn}")
 
     def check_if_fit_called(self):
         """Checks if the scorer has been fitted before calling its `score()` function."""
@@ -270,15 +290,6 @@ class FittableAnomalyScorer(AnomalyScorer):
         raise_if_not(
             self._fit_called,
             f"The Scorer {self.__str__()} has not been fitted yet. Call `fit()` first",
-        )
-
-    def _check_window_size(self, series: TimeSeries):
-        """Checks if the parameter window is less or equal to the length of the given series"""
-
-        raise_if_not(
-            self.window <= len(series),
-            f"Window size {self.window} is greater than the targeted series length {len(series)}, \
-            must be lower or equal.",
         )
 
     def eval_accuracy(
@@ -348,6 +359,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         anomaly_scores = []
         for s in list_series:
             _check_timeseries_type(s)
+            self._check_window_size(s)
             self._check_deterministic(s, "series")
             anomaly_scores.append(self._score_core(s))
 
@@ -396,7 +408,9 @@ class FittableAnomalyScorer(AnomalyScorer):
             _sanity_check_2series(s1, s2)
             self._check_deterministic(s1, "actual_series")
             self._check_deterministic(s2, "pred_series")
-            anomaly_scores.append(self.score(self._diff_series(s1, s2)))
+            diff = self._diff_series(s1, s2)
+            self._check_window_size(diff)
+            anomaly_scores.append(self.score(diff))
 
         if (
             len(anomaly_scores) == 1
@@ -431,6 +445,17 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         for idx, s in enumerate(list_series):
             _check_timeseries_type(s)
+
+            if idx == 0:
+                self.width_trained_on = s.width
+            else:
+                raise_if_not(
+                    s.width == self.width_trained_on,
+                    f"Series must have same width, found width {self.width_trained_on} \
+                    and {s.width} for index 0 and {idx}",
+                )
+            self._check_window_size(s)
+
             self._check_deterministic(s, "series")
 
         self._fit_core(list_series)
@@ -477,7 +502,7 @@ class FittableAnomalyScorer(AnomalyScorer):
             self._check_deterministic(s2, "pred_series")
             list_fit_series.append(self._diff_series(s1, s2))
 
-        self._fit_core(list_fit_series)
+        self.fit(list_fit_series)
         self._fit_called = True
 
     @abstractmethod
@@ -563,7 +588,7 @@ class PyODScorer(FittableAnomalyScorer):
         super().__init__(window=window, diff_fn=diff_fn)
 
         raise_if_not(
-            isinstance(component_wise, bool),
+            type(component_wise) is bool,
             f"component_wise must be Boolean, found type: {type(component_wise)}",
         )
         self.component_wise = component_wise
@@ -572,8 +597,6 @@ class PyODScorer(FittableAnomalyScorer):
         return "PyODScorer model: {}".format(self.model.__str__().split("(")[0])
 
     def _fit_core(self, list_series: Sequence[TimeSeries]):
-
-        self.width_trained_on = list_series[0].width
 
         list_np_series = [series.all_values(copy=False) for series in list_series]
 
@@ -610,7 +633,7 @@ class PyODScorer(FittableAnomalyScorer):
                     )
                 )
                 models.append(model_width)
-            self.model = models
+            self.models = models
 
     def _score_core(self, series: TimeSeries) -> TimeSeries:
 
@@ -642,7 +665,7 @@ class PyODScorer(FittableAnomalyScorer):
         else:
 
             for width in range(self.width_trained_on):
-                np_anomaly_score_width = self.model[width].decision_function(
+                np_anomaly_score_width = self.models[width].decision_function(
                     np.array(
                         [
                             np.array(np_series[i : i + self.window, width])
@@ -668,7 +691,7 @@ class KMeansScorer(FittableAnomalyScorer):
     def __init__(
         self,
         window: Optional[int] = None,
-        k: Union[int, list[int]] = 2,
+        k: int = 2,
         component_wise: bool = False,
         diff_fn=None,
     ) -> None:
@@ -755,7 +778,7 @@ class KMeansScorer(FittableAnomalyScorer):
         super().__init__(window=window, diff_fn=diff_fn)
 
         raise_if_not(
-            isinstance(component_wise, bool),
+            type(component_wise) is bool,
             f"component_wise must be Boolean, found type: {type(component_wise)}",
         )
         self.component_wise = component_wise
@@ -769,8 +792,6 @@ class KMeansScorer(FittableAnomalyScorer):
         self,
         list_series: Sequence[TimeSeries],
     ):
-
-        self.width_trained_on = list_series[0].width
 
         list_np_series = [series.all_values(copy=False) for series in list_series]
 
@@ -807,7 +828,7 @@ class KMeansScorer(FittableAnomalyScorer):
                     )
                 )
                 models.append(model)
-            self.model = models
+            self.models = models
 
     def _score_core(self, series: TimeSeries) -> TimeSeries:
 
@@ -837,7 +858,7 @@ class KMeansScorer(FittableAnomalyScorer):
 
             for width in range(self.width_trained_on):
                 np_anomaly_score_width = (
-                    self.model[width]
+                    self.models[width]
                     .transform(
                         np.array(
                             [
@@ -958,7 +979,7 @@ class WassersteinScorer(FittableAnomalyScorer):
         )
 
         raise_if_not(
-            isinstance(component_wise, bool),
+            type(component_wise) is bool,
             f"component_wise must be Boolean, found type: {type(component_wise)}",
         )
         self.component_wise = component_wise
@@ -970,8 +991,6 @@ class WassersteinScorer(FittableAnomalyScorer):
         self,
         list_series: Sequence[TimeSeries],
     ):
-
-        self.width_trained_on = list_series[0].width
 
         if self.component_wise and self.width_trained_on > 1:
 
@@ -1098,6 +1117,12 @@ class Norm(NonFittableAnomalyScorer):
         """
 
         self.ord = ord
+
+        raise_if_not(
+            type(component_wise) is bool,
+            f"component_wise must be Boolean, found type: {type(component_wise)}",
+        )
+
         self.component_wise = component_wise
         super().__init__(window=None)
 

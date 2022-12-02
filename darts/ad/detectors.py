@@ -103,10 +103,10 @@ class NonFittableDetector(Detector):
         list_series = [series] if not isinstance(series, Sequence) else series
 
         detected_series = []
-        for series in list_series:
-            _check_timeseries_type(series)
+        for s in list_series:
+            _check_timeseries_type(s)
 
-            detected_series.append(self._detect_core(series))
+            detected_series.append(self._detect_core(s))
 
         if len(detected_series) == 1 and not isinstance(series, Sequence):
             return detected_series[0]
@@ -141,24 +141,22 @@ class FittableDetector(Detector):
 
         list_series = [series] if not isinstance(series, Sequence) else series
 
-        if self.trainable:
-            raise_if_not(
-                self._fit_called,
-                "The Detector has not been fitted yet. Call `fit()` first",
-            )
+        raise_if_not(
+            self._fit_called,
+            "The Detector has not been fitted yet. Call `fit()` first",
+        )
 
         detected_series = []
-        for series in list_series:
-            _check_timeseries_type(series)
+        for s in list_series:
+            _check_timeseries_type(s)
 
-            if self.trainable:
-                raise_if_not(
-                    self.width_trained_on == series.width,
-                    f"Input must have the same width of the data used for training the detector model, \
-                    found width: {self.width_trained_on} and {series.width}",
-                )
+            raise_if_not(
+                self.width_trained_on == s.width,
+                f"Input must have the same width of the data used for training the detector model, \
+                found training width {self.width_trained_on} and input width {s.width}",
+            )
 
-            detected_series.append(self._detect_core(series))
+            detected_series.append(self._detect_core(s))
 
         if len(detected_series) == 1 and not isinstance(series, Sequence):
             return detected_series[0]
@@ -184,8 +182,6 @@ class FittableDetector(Detector):
         """
 
         list_series = [series] if not isinstance(series, Sequence) else series
-
-        self.width_trained_on = series
 
         for idx, series in enumerate(list_series):
             _check_timeseries_type(series)
@@ -347,15 +343,21 @@ class QuantileAD(FittableDetector):
 
         detected = []
         for width in range(series.width):
+            np_series_temp = np_series[:, width]
+
             detected.append(
                 (
-                    (
-                        np_series[:, width] > self.abs_high_[width]
+                    np_series_temp
+                    > (
+                        self.abs_high_[width][0]
                         if (self.high is not None)
                         else float("inf")
                     )
-                    | (
-                        np_series[:, width] < self.abs_low_[width]
+                )
+                | (
+                    np_series_temp
+                    < (
+                        self.abs_low_[width][0]
                         if (self.low is not None)
                         else -float("inf")
                     )
