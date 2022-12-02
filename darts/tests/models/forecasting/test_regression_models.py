@@ -164,7 +164,6 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         RegressionModel,
         LightGBMModel,
         CatBoostModel,
-        LightGBMModel,
     ]
 
     # register likelihood regression models
@@ -242,8 +241,8 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         1e-13,
         0.4,
         0.75,  # CatBoostModel
-        0.4,
-        0.8,
+        0.4,  # QuantileLightGBMModel
+        0.8,  # QuantileLinearRegressionModel
         1e-03,
         0.4,
         0.4,
@@ -252,19 +251,19 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         0.15,
     ]
     multivariate_multiseries_accuracies = [
-        0.05,
-        1e-13,
-        1e-13,
-        0.05,
+        0.05,  # RandomForest
+        1e-13,  # LinearRegressionModel
+        1e-13,  # RegressionModel
+        0.05,  # LightGBMModel
         0.75,  # CatBoostModel
-        0.4,
-        0.8,
-        1e-03,
-        0.4,
-        0.4,
-        1e-01,
-        1e-03,
-        1e-01,
+        0.4,  # QuantileLightGBMModel
+        0.8,  # QuantileLinearRegressionModel
+        1e-03,  # QuantileCatBoostModel
+        0.4,  # PoissonLightGBMModel
+        0.4,  # PoissonLinearRegressionModel
+        1e-01,  # PoissonCatBoostModel
+        1e-03,  # NormalCatBoostModel
+        1e-01,  # PoissonXGBModel
     ]
 
     # dummy feature and target TimeSeries instances
@@ -1201,7 +1200,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     @patch.object(darts.models.forecasting.lgbm.lgb.LGBMRegressor, "fit")
     def test_gradient_boosted_model_with_eval_set(self, lgb_fit_patch):
         """Test whether these evaluation set parameters are passed to LGBRegressor"""
-        model = (LightGBMModel(lags=4, lags_past_covariates=2),)
+        model = LightGBMModel(lags=4, lags_past_covariates=2)
         model.fit(
             series=self.sine_univariate1,
             past_covariates=self.sine_multivariate1,
@@ -1216,7 +1215,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
     @patch.object(darts.models.forecasting.xgboost.xgb.XGBRegressor, "fit")
     def test_xgboost_with_eval_set(self, xgb_fit_patch):
-        model = (XGBModel(lags=4, lags_past_covariates=2),)
+        model = XGBModel(lags=4, lags_past_covariates=2)
         model.fit(
             series=self.sine_univariate1,
             past_covariates=self.sine_multivariate1,

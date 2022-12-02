@@ -116,7 +116,7 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
             output_chunk_length=output_chunk_length,
             add_encoders=add_encoders,
             multi_models=multi_models,
-            model=lgb.LGBMRegressor(**kwargs),
+            model=lgb.LGBMRegressor(**self.kwargs),
         )
 
     def __str__(self):

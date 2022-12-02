@@ -94,12 +94,11 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         self._rng = None
 
         # parse likelihood
-        available_likelihoods = ["poisson", "gamma", "tweedie"]  # to be extended
+        available_likelihoods = ["poisson"]  # to be extended
         if likelihood is not None:
             self._check_likelihood(likelihood, available_likelihoods)
-            self.kwargs["objective"] = (
-                "count:" if likelihood in {"poisson"} else "reg:"
-            ) + likelihood
+            if likelihood in {"poisson"}:
+                self.kwargs["objective"] = "count:poisson"
             self._rng = np.random.default_rng(seed=random_state)  # seed for sampling
 
         super().__init__(
@@ -109,7 +108,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             output_chunk_length=output_chunk_length,
             add_encoders=add_encoders,
             multi_models=multi_models,
-            model=xgb.XGBRegressor(**kwargs),
+            model=xgb.XGBRegressor(**self.kwargs),
         )
 
     def __str__(self):
@@ -157,12 +156,16 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         """
 
         if val_series is not None:
-            kwargs["eval_set"] = self._create_lagged_data(
-                target_series=val_series,
-                past_covariates=val_past_covariates,
-                future_covariates=val_future_covariates,
-                max_samples_per_ts=max_samples_per_ts,
-            )
+            # Note: we create a list here as it's what's expected by XGBRegressor.fit()
+            # This is handled as a separate case in multioutput.py
+            kwargs["eval_set"] = [
+                self._create_lagged_data(
+                    target_series=val_series,
+                    past_covariates=val_past_covariates,
+                    future_covariates=val_future_covariates,
+                    max_samples_per_ts=max_samples_per_ts,
+                )
+            ]
 
         super().fit(
             series=series,
