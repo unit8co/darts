@@ -105,7 +105,11 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
             lags = (lags,)
         self._lags = lags
         self._dropna = dropna
-        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
+        # Don't automatically apply `component_mask` - need to throw error when `dropna = True`
+        # and `component_mask` is specified:
+        super().__init__(
+            name=name, n_jobs=n_jobs, verbose=verbose, mask_components=False
+        )
 
     @staticmethod
     def ts_fit(series: TimeSeries, params: Mapping[str, Any], **kwargs) -> Any:
@@ -120,7 +124,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
             ),
         )
         component_mask = Diff._get_component_mask(kwargs, dropna)
-        vals = Diff._reshape_in(series, component_mask, flatten=False)
+        vals = Diff.apply_component_mask(series, component_mask, return_ts=False)
         # First `lags_sum` values of time series will be 'lost' due to differencing;
         # need to remember these values to 'undifference':
         start_vals = vals[:lags_sum, :, :]
@@ -139,18 +143,13 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
     ) -> TimeSeries:
         lags, dropna = params["fixed"]["_lags"], params["fixed"]["_dropna"]
         component_mask = Diff._get_component_mask(kwargs, dropna)
-        diffed = series.copy()
-        if component_mask is not None:
-            diffed = diffed.drop_columns(series.columns[~component_mask])
+        diffed = Diff.apply_component_mask(series, component_mask, return_ts=True)
         for lag in lags:
             diffed = diffed.diff(n=1, periods=lag, dropna=dropna)
-        if component_mask is not None:
-            # Add back masked (i.e. undifferenced) components:
-            diffed = Diff._reshape_out(
-                series, diffed.all_values(), component_mask, flatten=False
-            )
-            diffed = series.with_values(diffed)
-        return diffed
+        # `series` needs same `n_timesteps` as `diffed` for `unapply_component_mask`
+        if dropna:
+            series = series.drop_before(sum(lags) - 1)
+        return Diff.unapply_component_mask(series, diffed, component_mask)
 
     @staticmethod
     def ts_inverse_transform(
@@ -188,7 +187,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
             nan_shape = (sum(lags), series.n_components, series.n_samples)
             nan_vals = np.full(nan_shape, fill_value=np.nan)
             series = series.prepend_values(nan_vals)
-        vals = Diff._reshape_in(series, component_mask, flatten=False)
+        vals = Diff.apply_component_mask(series, component_mask, return_ts=False)
         raise_if_not(
             vals.shape[1] == start_vals.shape[1],
             (
@@ -211,7 +210,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
             for i in range(lag):
                 to_undiff[i::lag, :, :] = np.cumsum(to_undiff[i::lag, :, :], axis=0)
             vals[cutoff:, :, :] = to_undiff
-        vals = Diff._reshape_out(series, vals, component_mask, flatten=False)
+        vals = Diff.unapply_component_mask(series, vals, component_mask)
         return series.with_values(vals)
 
     @staticmethod
@@ -219,6 +218,10 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
         component_mask = kwargs.get("component_mask", None)
         raise_if(
             dropna and (component_mask is not None),
-            "Cannot specify `component_mask` with `dropna = True`.",
+            (
+                "Cannot specify `component_mask` with `dropna = True`, "
+                "since differenced and undifferenced components will be "
+                "of different lengths."
+            ),
         )
         return component_mask

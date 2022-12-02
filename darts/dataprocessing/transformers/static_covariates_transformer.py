@@ -102,7 +102,11 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
         comp2               1.0  2.0
         comp3               0.5  1.0
         """
-        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
+        # Don't automatically apply `component_mask` since special masking behaviour
+        # is implemented here:
+        super().__init__(
+            name=name, n_jobs=n_jobs, verbose=verbose, mask_components=False
+        )
         self.transformer_num = (
             MinMaxScaler() if transformer_num is None else transformer_num
         )

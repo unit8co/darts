@@ -22,6 +22,7 @@ class FittableDataTransformer(BaseDataTransformer):
         n_jobs: int = 1,
         verbose: bool = False,
         parallel_params: Union[bool, Sequence[str]] = False,
+        mask_components: bool = True,
     ):
 
         """Base class for fittable transformers.
@@ -52,6 +53,14 @@ class FittableDataTransformer(BaseDataTransformer):
             parallel job. If `parallel_params=False`, every fixed parameter will take on the same value for
             each parallel job. If `parallel_params` is a `Sequence` of fixed attribute names, only those
             attribute names specified will take on different values between different parallel jobs.
+        mask_components
+            Optionally, whether or not to automatically apply any provided `component_mask`s to the
+            `TimeSeries` inputs passed to `transform`, `fit`, `inverse_transform`, or `fit_transform`.
+            If `True`, any specified `component_mask` will be applied to each input timeseries
+            before passing them to the called method; the masked components will also be automatically
+            'unmasked' in the returned `TimeSeries`. If `False`, then `component_mask` (if provided) will
+            be passed as a keyword argument, but won't automatically be applied to the input timeseries.
+            See `apply_component_mask` method of `BaseDataTransformer` for further details.
 
         Notes
         -----
@@ -61,7 +70,11 @@ class FittableDataTransformer(BaseDataTransformer):
         can easily introduce a bottleneck and nullify parallelisation benefits.
         """
         super().__init__(
-            name=name, n_jobs=n_jobs, verbose=verbose, parallel_params=parallel_params
+            name=name,
+            n_jobs=n_jobs,
+            verbose=verbose,
+            parallel_params=parallel_params,
+            mask_components=mask_components,
         )
 
         self._fit_called = False
@@ -166,7 +179,7 @@ class FittableDataTransformer(BaseDataTransformer):
 
             component_mask : Optional[np.ndarray] = None
                 Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies which
-                components of the underlying `series` the Scaler should consider.
+                components of the underlying `series` the transform should be fitted to.
 
         Returns
         -------
@@ -181,6 +194,10 @@ class FittableDataTransformer(BaseDataTransformer):
             data = [series]
         else:
             data = series
+
+        if self._mask_components:
+            mask = kwargs.pop("component_mask", None)
+            data = [self.apply_component_mask(ts, mask, return_ts=True) for ts in data]
 
         input_iterator = _build_tqdm_iterator(
             self._fit_iterator(data), verbose=self._verbose, desc=desc, total=len(data)
@@ -208,16 +225,17 @@ class FittableDataTransformer(BaseDataTransformer):
 
             component_mask : Optional[np.ndarray] = None
                 Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies which
-                components of the underlying `series` the Scaler should consider.
+                components of the underlying `series` the transform should be fitted and applied to.
 
         Returns
         -------
         Union[TimeSeries, Sequence[TimeSeries]]
             Transformed data.
         """
-        component_mask = kwargs.get("component_mask", None)
+
+        component_mask = kwargs.pop("component_mask", None)
         return self.fit(series, component_mask=component_mask).transform(
-            series, *args, **kwargs
+            series, *args, component_mask=component_mask, **kwargs
         )
 
     def _get_params(

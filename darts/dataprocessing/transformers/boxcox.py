@@ -112,19 +112,22 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
             parallel_params = False
 
         super().__init__(
-            name=name, n_jobs=n_jobs, verbose=verbose, parallel_params=parallel_params
+            name=name,
+            n_jobs=n_jobs,
+            verbose=verbose,
+            parallel_params=parallel_params,
+            mask_components=True,
         )
 
     @staticmethod
     def ts_fit(
         series: TimeSeries, params: Mapping[str, Any], *args, **kwargs
     ) -> Union[Sequence[float], pd.core.series.Series]:
-        component_mask = kwargs.get("component_mask", None)
         lmbda, method = params["fixed"]["_lmbda"], params["fixed"]["_optim_method"]
         if lmbda is None:
             # Compute optimal lmbda for each dimension of the time series. In this case, the return type is
             # an ndarray and not a Sequence
-            vals = BoxCox._reshape_in(series, component_mask=component_mask)
+            vals = BoxCox.stack_samples(series)
             lmbda = np.apply_along_axis(boxcox_normmax, axis=0, arr=vals, method=method)
 
         elif isinstance(lmbda, Sequence):
@@ -145,16 +148,13 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
     ) -> TimeSeries:
 
         lmbda = params["fitted"]
-        component_mask = kwargs.get("component_mask", None)
 
-        vals = BoxCox._reshape_in(series, component_mask=component_mask)
-        series_width = series.width if component_mask is None else sum(component_mask)
+        vals = BoxCox.stack_samples(series)
         transformed_vals = np.stack(
-            [boxcox(vals[:, i], lmbda=lmbda[i]) for i in range(series_width)], axis=1
+            [boxcox(vals[:, i], lmbda=lmbda[i]) for i in range(series.width)], axis=1
         )
-        return series.with_values(
-            BoxCox._reshape_out(series, transformed_vals, component_mask=component_mask)
-        )
+        transformed_vals = BoxCox.unstack_samples(transformed_vals, series=series)
+        return series.with_values(transformed_vals)
 
     @staticmethod
     def ts_inverse_transform(
@@ -162,14 +162,12 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
     ) -> TimeSeries:
 
         lmbda = params["fitted"]
-        component_mask = kwargs.get("component_mask", None)
 
-        vals = BoxCox._reshape_in(series, component_mask=component_mask)
+        vals = BoxCox.stack_samples(series)
         inv_transformed_vals = np.stack(
             [inv_boxcox(vals[:, i], lmbda[i]) for i in range(series.width)], axis=1
         )
-        return series.with_values(
-            BoxCox._reshape_out(
-                series, inv_transformed_vals, component_mask=component_mask
-            )
+        inv_transformed_vals = BoxCox.unstack_samples(
+            inv_transformed_vals, series=series
         )
+        return series.with_values(inv_transformed_vals)
