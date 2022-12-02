@@ -1,5 +1,6 @@
 import logging
 import unittest
+from typing import Any, Mapping
 
 from darts import TimeSeries
 from darts.dataprocessing import Pipeline
@@ -28,7 +29,7 @@ class PipelineTestCase(unittest.TestCase):
             self.fit_called = False
 
         @staticmethod
-        def ts_transform(data: TimeSeries) -> TimeSeries:
+        def ts_transform(data: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
             return data.append_values(constant_timeseries(value=1, length=3).values())
 
         def transform(self, data, *args, **kwargs) -> TimeSeries:
@@ -48,11 +49,13 @@ class PipelineTestCase(unittest.TestCase):
             pass
 
         @staticmethod
-        def ts_transform(series: TimeSeries) -> TimeSeries:
+        def ts_transform(series: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
             return series.append_values(constant_timeseries(value=2, length=3).values())
 
         @staticmethod
-        def ts_inverse_transform(series: TimeSeries) -> TimeSeries:
+        def ts_inverse_transform(
+            series: TimeSeries, params: Mapping[str, Any]
+        ) -> TimeSeries:
             return series
 
         def fit(self, data):
@@ -77,11 +80,13 @@ class PipelineTestCase(unittest.TestCase):
             super().__init__(name=name)
 
         @staticmethod
-        def ts_transform(series: TimeSeries) -> TimeSeries:
+        def ts_transform(series: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
             return series.map(lambda x: x + 10)
 
         @staticmethod
-        def ts_inverse_transform(series: TimeSeries) -> TimeSeries:
+        def ts_inverse_transform(
+            series: TimeSeries, params: Mapping[str, Any]
+        ) -> TimeSeries:
             return series.map(lambda x: x - 10)
 
     class TimesTwoTransformer(InvertibleDataTransformer):
@@ -89,11 +94,13 @@ class PipelineTestCase(unittest.TestCase):
             super().__init__(name="*2 transformer")
 
         @staticmethod
-        def ts_transform(data: TimeSeries) -> TimeSeries:
+        def ts_transform(data: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
             return data.map(lambda x: x * 2)
 
         @staticmethod
-        def ts_inverse_transform(data: TimeSeries) -> TimeSeries:
+        def ts_inverse_transform(
+            data: TimeSeries, params: Mapping[str, Any]
+        ) -> TimeSeries:
             return data.map(lambda x: x / 2)
 
     def test_transform(self):
