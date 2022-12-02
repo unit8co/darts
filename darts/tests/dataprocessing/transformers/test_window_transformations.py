@@ -350,9 +350,10 @@ class WindowTransformerTestCase(unittest.TestCase):
         associations_list = list(transformer._transform_iterator(self.sequence_det))
         self.assertEqual(len(associations_list), 2)
         self.assertEqual(associations_list[0][0], self.series_univ_det)
-        self.assertEqual(associations_list[0][1], expected_kwargs_dict)
+        # Need to access `'fixed'`` values in `params`:
+        self.assertEqual(associations_list[0][1]["fixed"], expected_kwargs_dict)
         self.assertEqual(associations_list[1][0], self.series_multi_det)
-        self.assertEqual(associations_list[1][1], expected_kwargs_dict)
+        self.assertEqual(associations_list[1][1]["fixed"], expected_kwargs_dict)
 
         # no series_id and components : all series will receive the same transformation on those components
         window_transformations = {"function": "mean", "components": ["0"]}
@@ -363,12 +364,13 @@ class WindowTransformerTestCase(unittest.TestCase):
             "treat_na": None,
             "forecasting_safe": True,
         }
+        # Need to access 'fixed' parameters inside of `params`:
         associations_list = list(transformer._transform_iterator(self.sequence_det))
         self.assertEqual(len(associations_list), 2)
         self.assertEqual(associations_list[0][0], self.series_univ_det)
-        self.assertEqual(associations_list[0][1], expected_kwargs_dict)
+        self.assertEqual(associations_list[0][1]["fixed"], expected_kwargs_dict)
         self.assertEqual(associations_list[1][0], self.series_multi_det)
-        self.assertEqual(associations_list[1][1], expected_kwargs_dict)
+        self.assertEqual(associations_list[1][1]["fixed"], expected_kwargs_dict)
 
     def test_window_transformer_output(self):
         window_transformations = {

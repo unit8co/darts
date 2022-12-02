@@ -1,5 +1,6 @@
 import logging
 import unittest
+from typing import Any, Mapping
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import BaseDataTransformer
@@ -19,7 +20,7 @@ class BaseDataTransformerTestCase(unittest.TestCase):
             self.transform_called = False
 
         @staticmethod
-        def ts_transform(series: TimeSeries) -> TimeSeries:
+        def ts_transform(series: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
             return series + 10
 
     def test_input_transformed(self):
