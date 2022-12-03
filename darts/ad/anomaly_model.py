@@ -350,7 +350,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         # fit the scorers
         for scorer in self.scorers:
             if hasattr(scorer, "fit"):
-                scorer.fit_from_prediction(list_pred, list_series)
+                scorer.fit_from_prediction(list_series, list_pred)
 
     def _prepare_covariates(
         self,
@@ -601,12 +601,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         for pred, s in zip(list_pred, list_series):
             list_temp = []
             for scorer in self.scorers:
-                list_temp.append(
-                    scorer.score_from_prediction(
-                        pred,
-                        s,
-                    )
-                )
+                list_temp.append(scorer.score_from_prediction(s, pred))
             list_anomaly_scores.append(list_temp)
 
         if len(list_anomaly_scores) == 1 and not isinstance(series, Sequence):
@@ -968,7 +963,7 @@ class FilteringAnomalyModel(AnomalyModel):
         # fit the scorers
         for scorer in self.scorers:
             if hasattr(scorer, "fit"):
-                scorer.fit_from_prediction(list_pred, list_series)
+                scorer.fit_from_prediction(list_series, list_pred)
 
     def show_anomalies(
         self,
@@ -1098,12 +1093,7 @@ class FilteringAnomalyModel(AnomalyModel):
         for pred, s in zip(list_pred, list_series):
             list_temp = []
             for scorer in self.scorers:
-                list_temp.append(
-                    scorer.score_from_prediction(
-                        pred,
-                        s,
-                    )
-                )
+                list_temp.append(scorer.score_from_prediction(s, pred))
             list_anomaly_scores.append(list_temp)
 
         if len(list_anomaly_scores) == 1 and not isinstance(series, Sequence):
