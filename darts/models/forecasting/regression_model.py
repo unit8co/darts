@@ -28,6 +28,7 @@ from collections import OrderedDict
 from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
+import pandas as pd
 from sklearn.linear_model import LinearRegression
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
@@ -325,7 +326,58 @@ class RegressionModel(GlobalForecastingModel):
             multi_models=self.multi_models,
         )
 
+        training_samples = self._add_static_covariates(target_series, training_samples)
+
         return training_samples, training_labels
+
+    def _add_static_covariates(self, series, features):
+        """Add static covariates to the features. Accounts for series with different static covariates by padding
+        with 0 to accomodate for the maximum number of available static_covariates in any of the given series in the
+        sequence. If no static covariates are provided for a given series, its corresponding features are padded with 0.
+        """
+        reps = features.shape[0] // len(series)
+        # collect static covariates info
+        map = {"covs_width": [], "values": []}
+        for ts in series:
+            if ts.static_covariates is not None:
+                scovs = ts.static_covariates_values().reshape(1, -1)
+                map["covs_width"].append(scovs.shape[1])
+                map["values"].append(scovs)
+            else:
+                map["covs_width"].append(0)
+                map["values"].append(np.array([]))
+
+        max_width = max(map["covs_width"])
+
+        if max_width == 0 and self.model.n_features_in_ == features.shape[1]:
+            # model was not trained with static covariates
+            # and no static covariates in any of the series in the sequence
+            return features
+        elif max_width == 0 and self.model.n_features_in_ != features.shape[1]:
+            # model was trained with static covariates but is predicting on series without static covariates
+            pad_zeros = np.zeros((1, self.model.n_features_in_ - features.shape[1]))
+            features = np.concatenate(
+                [features, np.tile(pad_zeros, reps=(reps, 1))], axis=1
+            )
+            return features
+        else:
+            # at least one series in the sequence has static covariates
+            static_covs = []
+
+            # build static covariates array
+            for i in range(len(series)):
+                pad_zeros = np.zeros((1, max_width - map["covs_width"][i]))
+                scovs = (
+                    np.concatenate((map["values"][i], pad_zeros), axis=1)
+                    if map["covs_width"][i] > 0
+                    else pad_zeros
+                )
+                static_covs.append(np.tile(scovs, reps=(reps, 1)))
+            static_covs = np.concatenate(static_covs, axis=0)
+
+            # concatenate static covariates to features
+            features = np.concatenate([features, static_covs], axis=1)
+            return features
 
     def _fit_model(
         self,
@@ -655,6 +707,8 @@ class RegressionModel(GlobalForecastingModel):
 
             # concatenate retrieved lags
             X = np.concatenate(np_X, axis=1)
+            X = self._add_static_covariates(series, X)
+
             # X has shape (n_series * n_samples, n_regression_features)
             prediction = self._predict_and_sample(X, num_samples, **kwargs)
             # prediction shape (n_series * n_samples, output_chunk_length, n_components)
@@ -686,6 +740,10 @@ class RegressionModel(GlobalForecastingModel):
 
     def __str__(self):
         return self.model.__str__()
+
+    @staticmethod
+    def _supports_static_covariates() -> bool:
+        return True
 
 
 class _LikelihoodMixin:
