@@ -35,9 +35,6 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
     np_anomalies3 = np.random.choice(a=[0, 1], size=100, p=[0.9, 0.1])
     anomalies3 = TimeSeries.from_times_and_values(train._time_index, np_anomalies2)
 
-    np_anomalies4 = np.random.choice(a=[0, 1], size=100, p=[0.9, 0.1])
-    anomalies4 = TimeSeries.from_times_and_values(train._time_index, np_anomalies2)
-
     np_real_anomalies = np.random.choice(a=[0, 1], size=100, p=[0.9, 0.1])
     real_anomalies = TimeSeries.from_times_and_values(
         train._time_index, np_real_anomalies

@@ -49,6 +49,16 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
     np_anomalies = np.random.choice(a=[0, 1], size=100, p=[0.9, 0.1])
     anomalies = TimeSeries.from_times_and_values(train._time_index, np_anomalies)
 
+    np_only_1_anomalies = np.random.choice(a=[0, 1], size=100, p=[0, 1])
+    only_1_anomalies = TimeSeries.from_times_and_values(
+        train._time_index, np_only_1_anomalies
+    )
+
+    np_only_0_anomalies = np.random.choice(a=[0, 1], size=100, p=[1, 0])
+    only_0_anomalies = TimeSeries.from_times_and_values(
+        train._time_index, np_only_0_anomalies
+    )
+
     modified_train = MovingAverage(window=10).filter(train)
     modified_test = MovingAverage(window=10).filter(test)
 
@@ -251,6 +261,149 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
                 Sequence,
             )
         )
+
+        Non_fittable_scorer = S.Norm(component_wise=False)
+        Fittable_scorer = S.KMeansScorer(component_wise=False)
+        Fittable_scorer.fit(self.train)
+
+        # if component_wise set to False, 'actual_anomalies' must have widths of 1
+        with self.assertRaises(ValueError):
+            Fittable_scorer.eval_accuracy(
+                actual_anomalies=self.MTS_anomalies, series=self.test
+            )
+        with self.assertRaises(ValueError):
+            Fittable_scorer.eval_accuracy(
+                actual_anomalies=[self.anomalies, self.MTS_anomalies],
+                series=[self.test, self.test],
+            )
+
+        # 'metric' must be str and "AUC_ROC" or "AUC_PR"
+        with self.assertRaises(ValueError):
+            Fittable_scorer.eval_accuracy(
+                actual_anomalies=self.anomalies, series=self.test, metric=1
+            )
+        with self.assertRaises(ValueError):
+            Fittable_scorer.eval_accuracy(
+                actual_anomalies=self.anomalies, series=self.test, metric="auc_roc"
+            )
+        with self.assertRaises(ValueError):
+            Fittable_scorer.eval_accuracy(
+                actual_anomalies=self.anomalies, series=self.test, metric=["AUC_ROC"]
+            )
+
+        # 'actual_anomalies' must be binary
+        with self.assertRaises(ValueError):
+            Fittable_scorer.eval_accuracy(actual_anomalies=self.test, series=self.test)
+
+        # 'actual_anomalies' must contain anomalies (at least one)
+        with self.assertRaises(ValueError):
+            Fittable_scorer.eval_accuracy(
+                actual_anomalies=self.only_0_anomalies, series=self.test
+            )
+
+        # 'actual_anomalies' cannot contain only anomalies
+        with self.assertRaises(ValueError):
+            Fittable_scorer.eval_accuracy(
+                actual_anomalies=self.only_1_anomalies, series=self.test
+            )
+
+        # 'actual_anomalies' must match the number of series
+        with self.assertRaises(ValueError):
+            Fittable_scorer.eval_accuracy(
+                actual_anomalies=self.anomalies, series=[self.test, self.test]
+            )
+        with self.assertRaises(ValueError):
+            Fittable_scorer.eval_accuracy(
+                actual_anomalies=[self.anomalies, self.anomalies], series=self.test
+            )
+
+        # 'actual_anomalies' must have non empty intersection with 'series'
+        with self.assertRaises(ValueError):
+            Fittable_scorer.eval_accuracy(
+                actual_anomalies=self.anomalies[:20], series=self.test[30:]
+            )
+        with self.assertRaises(ValueError):
+            Fittable_scorer.eval_accuracy(
+                actual_anomalies=[self.anomalies, self.anomalies[:20]],
+                series=[self.test, self.test[40:]],
+            )
+
+        for scorer in [Non_fittable_scorer, Fittable_scorer]:
+
+            # 'metric' must be str and "AUC_ROC" or "AUC_PR"
+            with self.assertRaises(ValueError):
+                Fittable_scorer.eval_accuracy_from_prediction(
+                    actual_anomalies=self.anomalies,
+                    actual_series=self.test,
+                    pred_series=self.modified_test,
+                    metric=1,
+                )
+            with self.assertRaises(ValueError):
+                Fittable_scorer.eval_accuracy_from_prediction(
+                    actual_anomalies=self.anomalies,
+                    actual_series=self.test,
+                    pred_series=self.modified_test,
+                    metric="auc_roc",
+                )
+            with self.assertRaises(ValueError):
+                Fittable_scorer.eval_accuracy_from_prediction(
+                    actual_anomalies=self.anomalies,
+                    actual_series=self.test,
+                    pred_series=self.modified_test,
+                    metric=["AUC_ROC"],
+                )
+
+            # 'actual_anomalies' must be binary
+            with self.assertRaises(ValueError):
+                scorer.eval_accuracy_from_prediction(
+                    actual_anomalies=self.test,
+                    actual_series=self.test,
+                    pred_series=self.modified_test,
+                )
+
+            # 'actual_anomalies' must contain anomalies (at least one)
+            with self.assertRaises(ValueError):
+                scorer.eval_accuracy_from_prediction(
+                    actual_anomalies=self.only_0_anomalies,
+                    actual_series=self.test,
+                    pred_series=self.modified_test,
+                )
+
+            # 'actual_anomalies' cannot contain only anomalies
+            with self.assertRaises(ValueError):
+                scorer.eval_accuracy_from_prediction(
+                    actual_anomalies=self.only_1_anomalies,
+                    actual_series=self.test,
+                    pred_series=self.modified_test,
+                )
+
+            # 'actual_anomalies' must match the number of series
+            with self.assertRaises(ValueError):
+                scorer.eval_accuracy_from_prediction(
+                    actual_anomalies=self.anomalies,
+                    actual_series=[self.test, self.test],
+                    pred_series=[self.modified_test, self.modified_test],
+                )
+            with self.assertRaises(ValueError):
+                scorer.eval_accuracy_from_prediction(
+                    actual_anomalies=[self.anomalies, self.anomalies],
+                    actual_series=self.test,
+                    pred_series=self.modified_test,
+                )
+
+            # 'actual_anomalies' must have non empty intersection with 'actual_series' and 'pred_series'
+            with self.assertRaises(ValueError):
+                scorer.eval_accuracy_from_prediction(
+                    actual_anomalies=self.anomalies[:20],
+                    actual_series=self.test[30:],
+                    pred_series=self.modified_test[30:],
+                )
+            with self.assertRaises(ValueError):
+                scorer.eval_accuracy_from_prediction(
+                    actual_anomalies=[self.anomalies, self.anomalies[:20]],
+                    actual_series=[self.test, self.test[40:]],
+                    pred_series=[self.modified_test, self.modified_test[40:]],
+                )
 
     def test_NonFittableAnomalyScorer(self):
 

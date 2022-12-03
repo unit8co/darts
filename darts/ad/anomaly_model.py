@@ -53,14 +53,41 @@ class AnomalyModel(ABC):
 
         self.scorers = _to_list(scorer)
 
-        self.scorers_are_trainable = any(s.trainable for s in self.scorers)
-
         raise_if_not(
             all([isinstance(s, AnomalyScorer) for s in self.scorers]),
             "all scorers must be of instance darts.ad.scorers.AnomalyScorer",
         )
 
+        self.scorers_are_trainable = any(s.trainable for s in self.scorers)
+        self.scorers_are_returns_UTS = any(s.returns_UTS for s in self.scorers)
+
         self.model = model
+
+    def check_returns_UTS(self, actual_anomalies):
+        """Checks if 'actual_anomalies' contains only univariate series when the
+        parameter 'scorers_are_returns_UTS' is set to True.
+
+        'scorers_are_returns_UTS', an anomaly model parameter, is:
+            True -> at least one of the scorer has its parameter set to True
+            False -> all scorers have their parameter set to False
+
+        'returns_UTS', a scorer parameter, is:
+            True -> when the function of the scorer ``score(series)`` (or, if applicable,
+                ``score_from_prediction(actual_series, pred_series)``) returns a univariate
+                anomaly score regardless of the input 'series' (or, if applicable, 'actual_series'
+                and 'pred_series').
+            False -> when the scorer will return a series that has the
+                same width as the input (can be univariate or multivariate).
+        """
+
+        if self.scorers_are_returns_UTS:
+            raise_if_not(
+                all([s.width == 1 for s in actual_anomalies]),
+                "Anomaly model contains scorer {} that will return a univariate anomaly score series (width=1). \
+                Found a multivariate 'actual_anomalies'. The evaluation of the accuracy cannot be computed.".format(
+                    [s.__str__() for s in self.scorers if s.returns_UTS]
+                ),
+            )
 
     @abstractmethod
     def fit(
@@ -224,6 +251,11 @@ class ForecastingAnomalyModel(AnomalyModel):
             Fitted Anomaly model (forecasting model and scorer(s))
         """
 
+        raise_if_not(
+            type(allow_model_training) is bool,
+            f"'allow_model_training' must be Boolean, found type: {type(allow_model_training)}",
+        )
+
         # checks if model does not need training and all scorer(s) are not fittable
         if not allow_model_training and not self.scorers_are_trainable:
             return warnings.warn(
@@ -236,6 +268,11 @@ class ForecastingAnomalyModel(AnomalyModel):
             start = 0.5
 
         list_series = _to_list(series)
+
+        raise_if_not(
+            all([isinstance(s, TimeSeries) for s in list_series]),
+            "all input 'series' must be of type Timeseries",
+        )
 
         list_past_covariates = self._prepare_covariates(
             past_covariates, list_series, "past"
@@ -356,13 +393,13 @@ class ForecastingAnomalyModel(AnomalyModel):
 
     def show_anomalies(
         self,
-        series=TimeSeries,
+        series: TimeSeries,
         past_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         forecast_horizon: int = 1,
         start: Union[pd.Timestamp, float, int] = None,
         num_samples: int = 1,
-        actual_anomalies=TimeSeries,
+        actual_anomalies: TimeSeries = None,
         names_of_scorers: Union[str, Sequence[str]] = None,
         title: str = None,
         metric: str = None,
@@ -510,6 +547,10 @@ class ForecastingAnomalyModel(AnomalyModel):
                 -> if `series` is a sequence, and the anomaly model contains multiple scorers.
                    Outer Sequence is over the sequence elements, and inner Sequence is over the scorers.
         """
+        raise_if_not(
+            type(return_model_prediction) is bool,
+            f"'return_model_prediction' must be Boolean, found type: {type(return_model_prediction)}",
+        )
 
         if start is None:
             start = 0.5
@@ -521,6 +562,11 @@ class ForecastingAnomalyModel(AnomalyModel):
 
         list_series = _to_list(series)
 
+        raise_if_not(
+            all([isinstance(s, TimeSeries) for s in list_series]),
+            "all input 'series' must be of type Timeseries",
+        )
+
         list_past_covariates = self._prepare_covariates(
             past_covariates, list_series, "past"
         )
@@ -528,6 +574,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             future_covariates, list_series, "future"
         )
 
+        # check if the window size of the scorers are lower than the max size allowed
         self._check_window_size(list_series, start)
 
         list_pred = []
@@ -588,17 +635,18 @@ class ForecastingAnomalyModel(AnomalyModel):
             Parameter of the .historical_forecast(): first point of time at which a prediction is computed
             for a future time.
         """
+        # biggest window of the anomaly_model scorers
+        max_window = max(scorer.window for scorer in self.scorers)
 
-        for scorer in self.scorers:
-            for s in series:
-                max_possible_window = (
-                    len(s.drop_before(s.get_timestamp_at_point(start))) + 1
-                )
-                raise_if_not(
-                    scorer.window <= max_possible_window,
-                    f"Window size {scorer.window} is greater than the targeted series length {max_possible_window}, \
-                    must be lower or equal. Reduce window size, or reduce start value (start value: 0.5).",
-                )
+        for s in series:
+            max_possible_window = (
+                len(s.drop_before(s.get_timestamp_at_point(start))) + 1
+            )
+            raise_if_not(
+                max_window <= max_possible_window,
+                f"Window size {max_window} is greater than the targeted series length {max_possible_window}, \
+                must be lower or equal. Reduce window size, or reduce start value (start value: 0.5).",
+            )
 
     def _predict_with_forecasting(
         self,
@@ -739,7 +787,19 @@ class ForecastingAnomalyModel(AnomalyModel):
         list_actual_anomalies, list_series = _to_list(actual_anomalies), _to_list(
             series
         )
+
+        raise_if_not(
+            all([isinstance(s, TimeSeries) for s in list_series]),
+            "all input 'series' must be of type Timeseries",
+        )
+
+        raise_if_not(
+            all([isinstance(s, TimeSeries) for s in list_actual_anomalies]),
+            "all input 'actual_anomalies' must be of type Timeseries",
+        )
+
         _same_length(list_actual_anomalies, list_series)
+        self.check_returns_UTS(list_actual_anomalies)
 
         list_anomaly_scores = self.score(
             series=list_series,
@@ -822,12 +882,12 @@ class FilteringAnomalyModel(AnomalyModel):
     def fit(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
-        allow_model_training: bool = False,
+        allow_filter_training: bool = False,
         filter_fit_kwargs: Optional[Dict[str, Any]] = None,
     ):
         """Fit the underlying filtering model (if applicable) and the fittable scorers, if any.
 
-        Train the filter (if not already fitted and ``allow_model_training`` is set to True)
+        Train the filter (if not already fitted and ``allow_filter_training`` is set to True)
         and the scorer(s) on the given time series.
 
         The filter model will be applied to the given series, and the results will be used
@@ -837,7 +897,7 @@ class FilteringAnomalyModel(AnomalyModel):
         ----------
         series
             The (sequence of) series to be trained on.
-        allow_model_training
+        allow_filter_training
             Boolean value that indicates if the filtering model needs to be fitted on the given series.
             If set to False, the model needs to be already fitted.
             Default: False
@@ -850,15 +910,25 @@ class FilteringAnomalyModel(AnomalyModel):
             Fitted Anomaly model (filtering model and scorer(s))
         """
 
+        raise_if_not(
+            type(allow_filter_training) is bool,
+            f"'allow_filter_training' must be Boolean, found type: {type(allow_filter_training)}",
+        )
+
         # checks if model does not need training and all scorer(s) are not fittable
-        if not allow_model_training and not self.scorers_are_trainable:
+        if not allow_filter_training and not self.scorers_are_trainable:
             return warnings.warn(
                 f"Warning: the filtering model {self.model.__class__.__name__} is not required to be \
-                trained because the parameter allow_model_training is set to False, and all scorers are \
+                trained because the parameter allow_filter_training is set to False, and all scorers are \
                 not fittable. No need to call the .fit() function"
             )
 
         list_series = _to_list(series)
+
+        raise_if_not(
+            all([isinstance(s, TimeSeries) for s in list_series]),
+            "all input 'series' must be of type Timeseries",
+        )
 
         if filter_fit_kwargs is None:
             filter_fit_kwargs = {}
@@ -868,7 +938,7 @@ class FilteringAnomalyModel(AnomalyModel):
             f"filter_fit_kwargs must be of type dictionary, found {type(filter_fit_kwargs)}",
         )
 
-        if allow_model_training:
+        if allow_filter_training:
             # fit filtering model
             if hasattr(self.filter, "fit"):
                 # TODO: check if filter is already fitted (for now fit it regardless -> only Kallman)
@@ -879,10 +949,15 @@ class FilteringAnomalyModel(AnomalyModel):
                 )
 
                 self.filter.fit(list_series[0], **filter_fit_kwargs)
+            else:
+                raise ValueError(
+                    f"'allow_filter_training' was set to True, but the filter \
+                {self.model.__class__.__name__} is not fittable."
+                )
         else:
 
             # TODO: check if Kallman is fitted or not
-            # if not raise error "fit filter before, or set 'allow_model_training' to TRUE"
+            # if not raise error "fit filter before, or set 'allow_filter_training' to TRUE"
             pass
 
         if self.scorers_are_trainable:
@@ -897,9 +972,9 @@ class FilteringAnomalyModel(AnomalyModel):
 
     def show_anomalies(
         self,
-        series=TimeSeries,
+        series: TimeSeries,
         filter_params: Optional[Dict[str, Any]] = None,
-        actual_anomalies=TimeSeries,
+        actual_anomalies: TimeSeries = None,
         names_of_scorers: Union[str, Sequence[str]] = None,
         title: str = None,
         metric: str = None,
@@ -944,7 +1019,7 @@ class FilteringAnomalyModel(AnomalyModel):
             series = series[0]
 
         anomaly_scores, model_output = self.score(
-            series, filter_params=filter_params, return_model_prediction=True
+            series, return_model_prediction=True, filter_kwargs=filter_params
         )
 
         return self._show_anomalies(
@@ -995,8 +1070,17 @@ class FilteringAnomalyModel(AnomalyModel):
                 -> if `series` is a sequence, and the anomaly model contains multiple scorers.
                    Outer Sequence is over the sequence elements, and inner Sequence is over the scorers.
         """
+        raise_if_not(
+            type(return_model_prediction) is bool,
+            f"'return_model_prediction' must be Boolean, found type: {type(return_model_prediction)}",
+        )
 
         list_series = _to_list(series)
+
+        raise_if_not(
+            all([isinstance(s, TimeSeries) for s in list_series]),
+            "all input 'series' must be of type Timeseries",
+        )
 
         if filter_kwargs is None:
             filter_kwargs = {}
@@ -1076,7 +1160,19 @@ class FilteringAnomalyModel(AnomalyModel):
         list_series, list_actual_anomalies = _to_list(series), _to_list(
             actual_anomalies
         )
+
+        raise_if_not(
+            all([isinstance(s, TimeSeries) for s in list_series]),
+            "all input 'series' must be of type Timeseries",
+        )
+
+        raise_if_not(
+            all([isinstance(s, TimeSeries) for s in list_actual_anomalies]),
+            "all input 'actual_anomalies' must be of type Timeseries",
+        )
+
         _same_length(list_series, list_actual_anomalies)
+        self.check_returns_UTS(list_actual_anomalies)
 
         list_anomaly_scores = self.score(
             series=list_series, filter_kwargs=filter_kwargs

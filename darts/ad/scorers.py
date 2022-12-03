@@ -82,7 +82,7 @@ from darts.logging import raise_if_not
 class AnomalyScorer(ABC):
     "Base class for all anomaly scorers"
 
-    def __init__(self, window: Optional[int] = None) -> None:
+    def __init__(self, returns_UTS: bool, window: Optional[int] = None) -> None:
 
         if window is None:
             window = 1
@@ -98,6 +98,34 @@ class AnomalyScorer(ABC):
         )
 
         self.window = window
+
+        self.returns_UTS = returns_UTS
+
+    def check_returns_UTS(self, actual_anomalies):
+        """Checks if 'actual_anomalies' contains only univariate series when the scorer has the
+        parameter 'returns_UTS' is set to True.
+
+        'returns_UTS' is:
+            True -> when the function of the scorer ``score(series)`` (or, if applicable,
+                ``score_from_prediction(actual_series, pred_series)``) returns a univariate
+                anomaly score regardless of the input 'series' (or, if applicable, 'actual_series'
+                and 'pred_series').
+            False -> when the scorer will return a series that has the
+                same width as the input (can be univariate or multivariate).
+        """
+
+        if self.returns_UTS:
+            actual_anomalies = _to_list(actual_anomalies)
+            raise_if_not(
+                all([isinstance(s, TimeSeries) for s in actual_anomalies]),
+                "all series in 'actual_anomalies' must be of type TimeSeries",
+            )
+
+            raise_if_not(
+                all([s.width == 1 for s in actual_anomalies]),
+                f"Scorer {self.__str__()} will return a univariate anomaly score series (width=1). \
+                Found a multivariate 'actual_anomalies'. The evaluation of the accuracy cannot be computed.",
+            )
 
     def _check_window_size(self, series: TimeSeries):
         """Checks if the parameter window is less or equal to the length of the given series"""
@@ -188,6 +216,9 @@ class AnomalyScorer(ABC):
                 of multivariate series. Outer Sequence is over the sequence input and the inner
                 Sequence is over the dimensions of each element in the sequence input.
         """
+
+        self.check_returns_UTS(actual_anomalies)
+
         anomaly_score = self.score_from_prediction(actual_series, pred_series)
 
         return eval_accuracy_from_scores(
@@ -202,8 +233,8 @@ class AnomalyScorer(ABC):
 class NonFittableAnomalyScorer(AnomalyScorer):
     "Base class of anomaly scorers that do not need training."
 
-    def __init__(self, window) -> None:
-        super().__init__(window=window)
+    def __init__(self, returns_UTS, window) -> None:
+        super().__init__(returns_UTS=returns_UTS, window=window)
 
         # indicates if the scorer is trainable or not
         self.trainable = False
@@ -266,8 +297,8 @@ class NonFittableAnomalyScorer(AnomalyScorer):
 class FittableAnomalyScorer(AnomalyScorer):
     "Base class of scorers that do need training."
 
-    def __init__(self, window, diff_fn) -> None:
-        super().__init__(window=window)
+    def __init__(self, returns_UTS, window, diff_fn) -> None:
+        super().__init__(returns_UTS=returns_UTS, window=window)
 
         # indicates if the scorer is trainable or not
         self.trainable = True
@@ -326,6 +357,7 @@ class FittableAnomalyScorer(AnomalyScorer):
                 series. Outer Sequence is over the sequence input and the inner Sequence
                 is over the dimensions of each element in the sequence input.
         """
+        self.check_returns_UTS(actual_anomalies)
         anomaly_score = self.score(series)
 
         return eval_accuracy_from_scores(
@@ -585,13 +617,18 @@ class PyODScorer(FittableAnomalyScorer):
         )
         self.model = model
 
-        super().__init__(window=window, diff_fn=diff_fn)
-
         raise_if_not(
             type(component_wise) is bool,
-            f"component_wise must be Boolean, found type: {type(component_wise)}",
+            f"'component_wise' must be Boolean, found type: {type(component_wise)}",
         )
         self.component_wise = component_wise
+
+        if component_wise:
+            returns_UTS = False
+        else:
+            returns_UTS = True
+
+        super().__init__(returns_UTS=returns_UTS, window=window, diff_fn=diff_fn)
 
     def __str__(self):
         return "PyODScorer model: {}".format(self.model.__str__().split("(")[0])
@@ -775,15 +812,20 @@ class KMeansScorer(FittableAnomalyScorer):
             Default: False
         """
 
-        super().__init__(window=window, diff_fn=diff_fn)
-
         raise_if_not(
             type(component_wise) is bool,
-            f"component_wise must be Boolean, found type: {type(component_wise)}",
+            f"'component_wise' must be Boolean, found type: {type(component_wise)}",
         )
         self.component_wise = component_wise
 
         self.k = k
+
+        if component_wise:
+            returns_UTS = False
+        else:
+            returns_UTS = True
+
+        super().__init__(returns_UTS=returns_UTS, window=window, diff_fn=diff_fn)
 
     def __str__(self):
         return "KMeansScorer"
@@ -970,19 +1012,19 @@ class WassersteinScorer(FittableAnomalyScorer):
 
         if window is None:
             window = 10
-        super().__init__(window=window, diff_fn=diff_fn)
-
-        raise_if_not(
-            self.window > 0,
-            "window must be stricly higher than 0,"
-            "(preferably higher than 10 as it is the number of samples of the test distribution)",
-        )
 
         raise_if_not(
             type(component_wise) is bool,
-            f"component_wise must be Boolean, found type: {type(component_wise)}",
+            f"'component_wise' must be Boolean, found type: {type(component_wise)}",
         )
         self.component_wise = component_wise
+
+        if component_wise:
+            returns_UTS = False
+        else:
+            returns_UTS = True
+
+        super().__init__(returns_UTS=returns_UTS, window=window, diff_fn=diff_fn)
 
     def __str__(self):
         return "WassersteinScorer"
@@ -1063,7 +1105,7 @@ class Difference(NonFittableAnomalyScorer):
     """
 
     def __init__(self) -> None:
-        super().__init__(window=None)
+        super().__init__(returns_UTS=True, window=None)
 
     def __str__(self):
         return "Difference"
@@ -1120,11 +1162,17 @@ class Norm(NonFittableAnomalyScorer):
 
         raise_if_not(
             type(component_wise) is bool,
-            f"component_wise must be Boolean, found type: {type(component_wise)}",
+            f"'component_wise' must be Boolean, found type: {type(component_wise)}",
         )
 
         self.component_wise = component_wise
-        super().__init__(window=None)
+
+        if component_wise:
+            returns_UTS = False
+        else:
+            returns_UTS = True
+
+        super().__init__(returns_UTS=returns_UTS, window=None)
 
     def __str__(self):
         return f"Norm (ord={self.ord})"
@@ -1155,7 +1203,7 @@ class NLLScorer(NonFittableAnomalyScorer):
     """Parent class for all LikelihoodScorer"""
 
     def __init__(self, window) -> None:
-        super().__init__(window=window)
+        super().__init__(returns_UTS=False, window=window)
 
     def _score_core_from_prediction(
         self,
