@@ -3525,6 +3525,8 @@ class TimeSeries:
                 len(new_index), -1, n_samples
             ),
             columns=new_columns,
+            static_covariates=self.static_covariates,
+            hierarchy=self.hierarchy,
         )
 
         return transformed_time_series
