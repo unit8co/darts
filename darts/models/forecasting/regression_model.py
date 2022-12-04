@@ -30,6 +30,8 @@ from typing import List, Optional, Sequence, Tuple, Union
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
+from sklearn.utils.validation import check_is_fitted
+from sklearn.exceptions import NotFittedError
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
@@ -349,17 +351,21 @@ class RegressionModel(GlobalForecastingModel):
 
         max_width = max(map["covs_width"])
 
-        if max_width == 0 and self.model.n_features_in_ == features.shape[1]:
-            # model was not trained with static covariates
-            # and no static covariates in any of the series in the sequence
-            return features
-        elif max_width == 0 and self.model.n_features_in_ != features.shape[1]:
-            # model was trained with static covariates but is predicting on series without static covariates
-            pad_zeros = np.zeros((1, self.model.n_features_in_ - features.shape[1]))
-            features = np.concatenate(
-                [features, np.tile(pad_zeros, reps=(reps, 1))], axis=1
-            )
-            return features
+        if max_width == 0:
+            if (
+                hasattr(self.model, "n_features_in_")
+                and self.model.n_features_in_ is not None
+                and self.model.n_features_in_ > features.shape[1]
+            ):
+                # for when series in prediction do not have static covariates but some of the training series did
+                pad_zeros = np.zeros((1, self.model.n_features_in_ - features.shape[1]))
+                features = np.concatenate(
+                    [features, np.tile(pad_zeros, reps=(reps, 1))], axis=1
+                )
+                return features
+            else:
+                return features
+
         else:
             # at least one series in the sequence has static covariates
             static_covs = []
