@@ -5,7 +5,9 @@ from typing import Any, Mapping, Sequence, Union
 import numpy as np
 
 from darts import TimeSeries
-from darts.dataprocessing.transformers import BaseDataTransformer
+from darts.dataprocessing.transformers.invertible_data_transformer import (
+    InvertibleDataTransformer,
+)
 from darts.utils.timeseries_generation import constant_timeseries
 
 
@@ -16,7 +18,7 @@ class BaseDataTransformerTestCase(unittest.TestCase):
     def setUpClass(cls):
         logging.disable(logging.CRITICAL)
 
-    class DataTransformerMock(BaseDataTransformer):
+    class DataTransformerMock(InvertibleDataTransformer):
         def __init__(
             self,
             scale: float,
@@ -26,7 +28,7 @@ class BaseDataTransformerTestCase(unittest.TestCase):
             parallel_params: Union[bool, Sequence[str]] = False,
         ):
             """
-            Applies the transform `transformed_series = scale * series + translation`.
+            Applies the (invertible) transform `transformed_series = scale * series + translation`.
 
             Parameters
             ----------
@@ -103,9 +105,57 @@ class BaseDataTransformerTestCase(unittest.TestCase):
 
             return series.with_values(vals)
 
+        @staticmethod
+        def ts_inverse_transform(
+            series: TimeSeries, params: Mapping[str, Any], **kwargs
+        ) -> TimeSeries:
+            """
+            Implements the inverse transform `(series - translation) / scale`.
+
+            If `component_mask` is in `kwargs`, this is manually applied and unapplied. If
+            `_stack_samples = True` in `params['fixed']`, then `stack_samples` and `unstack_samples`
+            all used when computing this transformation.
+
+            """
+            fixed_params = params["fixed"]
+            stack_samples = fixed_params["_stack_samples"]
+            mask_components = fixed_params["_mask_components"]
+            scale, translation = fixed_params["_scale"], fixed_params["_translation"]
+
+            # Ensure `component_mask` not passed via `kwargs` if specified `mask_components=True`
+            # when transform created
+            if mask_components:
+                assert "component_mask" not in kwargs
+
+            # Ensure manual masking only performed when `mask_components = False`
+            # when transform constructed:
+            if not mask_components and ("component_mask" in kwargs):
+                vals = BaseDataTransformerTestCase.DataTransformerMock.apply_component_mask(
+                    series, kwargs["component_mask"], return_ts=False
+                )
+            else:
+                vals = series.all_values()
+
+            if stack_samples:
+                vals = BaseDataTransformerTestCase.DataTransformerMock.stack_samples(
+                    vals
+                )
+            vals = (vals - translation) / scale
+            if stack_samples:
+                vals = BaseDataTransformerTestCase.DataTransformerMock.unstack_samples(
+                    vals, series=series
+                )
+
+            if not mask_components and ("component_mask" in kwargs):
+                vals = BaseDataTransformerTestCase.DataTransformerMock.unapply_component_mask(
+                    series, vals, kwargs["component_mask"]
+                )
+
+            return series.with_values(vals)
+
     def test_input_transformed_single_series(self):
         """
-        Tests for correct transformation of single series.
+        Tests for correct (inverse) transformation of single series.
         """
         test_input = constant_timeseries(value=1, length=10)
 
@@ -116,6 +166,9 @@ class BaseDataTransformerTestCase(unittest.TestCase):
         # 2 * 1 + 10 = 12
         expected = constant_timeseries(value=12, length=10)
         self.assertEqual(transformed, expected)
+
+        # Should get input back:
+        self.assertEqual(mock.inverse_transform(transformed), test_input)
 
     def test_input_transformed_multiple_series(self):
         """
@@ -134,6 +187,10 @@ class BaseDataTransformerTestCase(unittest.TestCase):
         self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
         # 2 * 2 + 10 = 14
         self.assertEqual(transformed_2, constant_timeseries(value=14, length=11))
+        # Should get input back:
+        inv_1, inv_2 = mock.inverse_transform((transformed_1, transformed_2))
+        self.assertEqual(inv_1, test_input_1)
+        self.assertEqual(inv_2, test_input_2)
 
         # Have different `scale` param for different jobs:
         mock = self.DataTransformerMock(
@@ -144,6 +201,10 @@ class BaseDataTransformerTestCase(unittest.TestCase):
         self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
         # 3 * 2 + 10 = 16
         self.assertEqual(transformed_2, constant_timeseries(value=16, length=11))
+        # Should get input back:
+        inv_1, inv_2 = mock.inverse_transform((transformed_1, transformed_2))
+        self.assertEqual(inv_1, test_input_1)
+        self.assertEqual(inv_2, test_input_2)
 
         # Have different `scale`, `translation`, and `stack_samples` params for different jobs:
         mock = self.DataTransformerMock(
@@ -158,6 +219,10 @@ class BaseDataTransformerTestCase(unittest.TestCase):
         self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
         # 3 * 2 + 11 = 17
         self.assertEqual(transformed_2, constant_timeseries(value=17, length=11))
+        # Should get input back:
+        inv_1, inv_2 = mock.inverse_transform((transformed_1, transformed_2))
+        self.assertEqual(inv_1, test_input_1)
+        self.assertEqual(inv_2, test_input_2)
 
     def test_input_transformed_multiple_samples(self):
         """
@@ -179,6 +244,9 @@ class BaseDataTransformerTestCase(unittest.TestCase):
             constant_timeseries(value=14, length=10), axis="sample"
         )
         self.assertEqual(transformed, expected)
+        # Should get input back:
+        inv = mock.inverse_transform(transformed)
+        self.assertEqual(inv, test_input)
 
     def test_input_transformed_masking(self):
         """
@@ -203,8 +271,14 @@ class BaseDataTransformerTestCase(unittest.TestCase):
         )
         transformed = mock.transform(test_input, component_mask=mask)
         self.assertEqual(transformed, expected)
+        # Should get input back:
+        inv = mock.inverse_transform(transformed, component_mask=mask)
+        self.assertEqual(inv, test_input)
 
         # Manually apply component mask:
         mock = self.DataTransformerMock(scale=2, translation=10, mask_components=False)
         transformed = mock.transform(test_input, component_mask=mask)
         self.assertEqual(transformed, expected)
+        # Should get input back:
+        inv = mock.inverse_transform(transformed, component_mask=mask)
+        self.assertEqual(inv, test_input)
