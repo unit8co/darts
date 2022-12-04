@@ -133,9 +133,6 @@ class _DLinearModule(PLMixedCovariatesModule):
             layer_in_dim = self.input_chunk_length * self.input_dim
             layer_out_dim = self.output_chunk_length * self.output_dim * self.nr_params
 
-            # future covariates input layer size:
-            layer_in_dim_fut_cov = self.output_chunk_length * self.future_cov_dim
-
             # for static cov, we take the number of components of the target, times static cov dim
             layer_in_dim_static_cov = self.output_dim * self.static_cov_dim
 
@@ -143,8 +140,9 @@ class _DLinearModule(PLMixedCovariatesModule):
         self.linear_trend = _create_linear_layer(layer_in_dim, layer_out_dim)
 
         if self.future_cov_dim != 0:
+            # future covariates layer acts on time steps independently
             self.linear_fut_cov = _create_linear_layer(
-                layer_in_dim_fut_cov, layer_out_dim
+                self.future_cov_dim, self.output_dim * self.nr_params
             )
         if self.static_cov_dim != 0:
             self.linear_static_cov = _create_linear_layer(
@@ -199,7 +197,7 @@ class _DLinearModule(PLMixedCovariatesModule):
 
             if self.future_cov_dim != 0:
                 # x_future might be shorter than output_chunk_length when n < output_chunk_length
-                # so we need to pad it with zeros to match the output_chunk_length
+                # so we need to pad it with zeros at the end to match the output_chunk_length
                 x_future = torch.nn.functional.pad(
                     input=x_future,
                     pad=(0, 0, 0, self.output_chunk_length - x_future.shape[1]),
@@ -207,7 +205,7 @@ class _DLinearModule(PLMixedCovariatesModule):
                     value=0,
                 )
 
-                fut_cov_output = self.linear_fut_cov(x_future.view(batch, -1))
+                fut_cov_output = self.linear_fut_cov(x_future)
                 x = x + fut_cov_output.view(
                     batch, self.output_chunk_length, self.output_dim * self.nr_params
                 )
