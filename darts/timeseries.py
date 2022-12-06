@@ -3162,6 +3162,7 @@ class TimeSeries:
         treat_na: Optional[Union[str, Union[int, float]]] = None,
         forecasting_safe: Optional[bool] = True,
         keep_non_transformed: Optional[bool] = False,
+        include_current: Optional[bool] = True,
     ) -> "TimeSeries":
         """
         Applies a moving/rolling, expanding or exponentially weighted window transformation over this ``TimeSeries``.
@@ -3253,6 +3254,9 @@ class TimeSeries:
             ``False`` to return the transformed components only, ``True`` to return all original components along
             the transformed ones. Default is ``False``.
 
+        include_current
+            ``True`` to include the current time step in the window, ``False`` to exclude it. Default is ``True``.
+
         Returns
         -------
         TimeSeries
@@ -3296,6 +3300,7 @@ class TimeSeries:
 
             # take expanding as the default window operation if not specified, safer than rolling
             mode = transformation.get("mode", "expanding")
+
             raise_if_not(
                 mode in PD_WINDOW_OPERATIONS.keys(),
                 f"Invalid window operation: '{mode}'. Must be one of {PD_WINDOW_OPERATIONS.keys()}.",
@@ -3443,6 +3448,15 @@ class TimeSeries:
                 transformation, forecasting_safe
             )
 
+            if not include_current:
+                if window_mode == "rolling":
+                    closed = transformation.get("closed", None)
+                    shifts = 0 if closed == "left" else 1  # avoid shifting twice
+                else:
+                    shifts = 1
+            else:
+                shifts = 0
+
             resulting_transformations = pd.concat(
                 [
                     resulting_transformations,
@@ -3451,7 +3465,7 @@ class TimeSeries:
                             **window_mode_kwargs
                         ),
                         fn,
-                    )(**function_kwargs),
+                    )(**function_kwargs).shift(periods=shifts),
                 ],
                 axis=1,
             )
