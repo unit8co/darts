@@ -78,6 +78,9 @@ DEFAULT_DARTS_FOLDER = "darts_logs"
 CHECKPOINTS_FOLDER = "checkpoints"
 RUNS_FOLDER = "runs"
 INIT_MODEL_NAME = "_model.pth.tar"
+
+# pickling a TorchForecastingModel will not save below attributes: the keys specify the
+# attributes to be ignored, and the values are the default values getting assigned upon loading
 TFM_ATTRS_NO_PICKLE = {"model": None, "trainer": None}
 
 logger = get_logger(__name__)
