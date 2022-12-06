@@ -32,7 +32,7 @@ from typing import Any, Dict, Optional, Sequence, Union
 
 import pandas as pd
 
-from darts.ad.scorers import AnomalyScorer
+from darts.ad.scorers.scorers import AnomalyScorer
 from darts.ad.utils import (
     _check_timeseries_type,
     _same_length,
@@ -457,14 +457,14 @@ class ForecastingAnomalyModel(AnomalyModel):
         if isinstance(series, Sequence):
             raise_if_not(
                 len(series) == 1,
-                f"'visualize_anomalies' expects one series, found a list of length {len(series)} as input.",
+                f"'show_anomalies' expects one series, found a list of length {len(series)} as input.",
             )
 
             series = series[0]
 
         raise_if_not(
             isinstance(series, TimeSeries),
-            f"'visualize_anomalies' expects an input of type TimeSeries, found type: {type(series)}.",
+            f"'show_anomalies' expects an input of type TimeSeries, found type: {type(series)}.",
         )
 
         anomaly_scores, model_output = self.score(
@@ -1008,7 +1008,7 @@ class FilteringAnomalyModel(AnomalyModel):
         if isinstance(series, Sequence):
             raise_if_not(
                 len(series) == 1,
-                f"'visualize_anomalies' expects one series, found a list of length {len(series)} as input.",
+                f"'show_anomalies' expects one series, found a list of length {len(series)} as input.",
             )
 
             series = series[0]

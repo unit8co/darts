@@ -4,17 +4,19 @@ import numpy as np
 from sklearn.ensemble import GradientBoostingClassifier
 
 from darts import TimeSeries
-from darts.ad import aggregators as Agg
+from darts.ad.aggregators.and_aggregator import AndAggregator
+from darts.ad.aggregators.ensemble_sklearn_aggregator import EnsembleSklearnAggregator
+from darts.ad.aggregators.or_aggregator import OrAggregator
 from darts.models import MovingAverage
 from darts.tests.base_test_class import DartsBaseTestClass
 
 list_NonFittableAggregator = [
-    Agg.OrAggregator(),
-    Agg.AndAggregator(),
+    OrAggregator(),
+    AndAggregator(),
 ]
 
 list_FittableAggregator = [
-    Agg.EnsembleSklearnAggregator(model=GradientBoostingClassifier())
+    EnsembleSklearnAggregator(model=GradientBoostingClassifier())
 ]
 
 
@@ -66,7 +68,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
 
     def test_DetectNonFittableAggregator(self):
 
-        aggregator = Agg.OrAggregator()
+        aggregator = OrAggregator()
 
         # Check return types
         # Check if return type is TimeSeries when input is Sequence of univariate series
@@ -84,7 +86,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
         )
 
     def test_DetectFittableAggregator(self):
-        aggregator = Agg.EnsembleSklearnAggregator(model=GradientBoostingClassifier())
+        aggregator = EnsembleSklearnAggregator(model=GradientBoostingClassifier())
 
         # Check return types
         aggregator.fit(self.real_anomalies, [self.anomalies1, self.anomalies2])
@@ -108,7 +110,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
 
     def test_eval_accuracy(self):
 
-        aggregator = Agg.AndAggregator()
+        aggregator = AndAggregator()
 
         # Check return types
         # Check if return type is float when input is a Sequence of series
@@ -386,4 +388,4 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
 
         # Need to inout a EnsembleSklearn model
         with self.assertRaises(ValueError):
-            Agg.EnsembleSklearnAggregator(model=MovingAverage(window=10))
+            EnsembleSklearnAggregator(model=MovingAverage(window=10))

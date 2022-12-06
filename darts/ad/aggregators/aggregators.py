@@ -17,7 +17,6 @@ from abc import ABC, abstractmethod
 from typing import Any, Sequence, Union
 
 import numpy as np
-from sklearn.ensemble import BaseEnsemble
 
 from darts import TimeSeries
 from darts.ad.utils import _intersect, eval_accuracy_from_binary_prediction
@@ -305,63 +304,3 @@ class FittableAggregator(Aggregator):
             )
 
         return self._predict(list_series)
-
-
-class EnsembleSklearnAggregator(FittableAggregator):
-    """Wrapper around Ensemble model of sklearn"""
-
-    def __init__(self, model) -> None:
-
-        raise_if_not(
-            isinstance(model, BaseEnsemble),
-            f"Scorer is expecting a model of type  BaseEnsemble (from sklearn ensemble), \
-            found type {type(model)}",
-        )
-
-        self.model = model
-        super().__init__()
-
-    def __str__(self):
-        return "EnsembleSklearnAggregator: {}".format(
-            self.model.__str__().split("(")[0]
-        )
-
-    def _fit_core(
-        self, np_series: np.ndarray, np_actual_anomalies: np.ndarray
-    ) -> np.ndarray:
-        self.model.fit(np_series, np_actual_anomalies)
-
-    def _predict_core(self, np_series: np.ndarray, width: int) -> np.ndarray:
-        return self.models[width].predict(np_series)
-
-
-class OrAggregator(NonFittableAggregator):
-    """Aggregator that identifies a time point as anomalous as long as it is
-    included in one of the input anomaly lists.
-    """
-
-    def __init__(self) -> None:
-        super().__init__()
-
-    def __str__(self):
-        return "OrAggregator"
-
-    def _predict_core(self, np_series: np.ndarray, width: int) -> np.ndarray:
-
-        return [1 if timestamp.sum() >= 1 else 0 for timestamp in np_series]
-
-
-class AndAggregator(NonFittableAggregator):
-    """Aggregator that identifies a time point as anomalous only if it is
-    included in all the input anomaly lists.
-    """
-
-    def __init__(self) -> None:
-        super().__init__()
-
-    def __str__(self):
-        return "AndAggregator"
-
-    def _predict_core(self, np_series: np.ndarray, width: int) -> np.ndarray:
-
-        return [0 if 0 in timestamp else 1 for timestamp in np_series]

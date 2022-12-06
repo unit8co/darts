@@ -3,12 +3,13 @@ from typing import Sequence
 import numpy as np
 
 from darts import TimeSeries
-from darts.ad import detectors as D
+from darts.ad.detectors.quantile_detector import QuantileDetector
+from darts.ad.detectors.threshold_detector import ThresholdDetector
 from darts.tests.base_test_class import DartsBaseTestClass
 
-list_NonFittableDetector = [D.ThresholdAD(low=0.2)]
+list_NonFittableDetector = [ThresholdDetector(low=0.2)]
 
-list_FittableDetector = [D.QuantileAD(low=0.2)]
+list_FittableDetector = [QuantileDetector(low=0.2)]
 
 
 class ADDetectorsTestCase(DartsBaseTestClass):
@@ -39,7 +40,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
 
     def test_DetectNonFittableDetector(self):
 
-        detector = D.ThresholdAD(low=0.2)
+        detector = ThresholdDetector(low=0.2)
 
         # Check return types
         # Check if return TimeSeries is float when input is a series
@@ -55,7 +56,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         self.assertTrue(isinstance(detector.detect([self.MTS_test]), Sequence))
 
     def test_DetectFittableDetector(self):
-        detector = D.QuantileAD(low=0.2)
+        detector = QuantileDetector(low=0.2)
 
         # Check return types
 
@@ -75,7 +76,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
 
     def test_eval_accuracy(self):
 
-        detector = D.ThresholdAD(low=0.2)
+        detector = ThresholdDetector(low=0.2)
 
         # Check return types
         # Check if return type is float when input is a series
@@ -148,37 +149,37 @@ class ADDetectorsTestCase(DartsBaseTestClass):
                 # series must be same width as series used for training
                 detector2.detect(self.train)
 
-    def test_QuantileAD(self):
+    def test_QuantileDetector(self):
 
         # Need to have at least one parameter (low, high) not None
         with self.assertRaises(ValueError):
-            D.QuantileAD()
+            QuantileDetector()
         with self.assertRaises(ValueError):
-            D.QuantileAD(low=None, high=None)
+            QuantileDetector(low=None, high=None)
 
         # Parameter low must be int or float
         with self.assertRaises(ValueError):
-            D.QuantileAD(low="0.5")
+            QuantileDetector(low="0.5")
         with self.assertRaises(ValueError):
-            D.QuantileAD(low=[0.5])
+            QuantileDetector(low=[0.5])
 
         # Parameter high must be int or float
         with self.assertRaises(ValueError):
-            D.QuantileAD(high="0.5")
+            QuantileDetector(high="0.5")
         with self.assertRaises(ValueError):
-            D.QuantileAD(high=[0.5])
+            QuantileDetector(high=[0.5])
 
         # Parameter must be bewteen 0 and 1
         with self.assertRaises(ValueError):
-            D.QuantileAD(high=1.1)
+            QuantileDetector(high=1.1)
         with self.assertRaises(ValueError):
-            D.QuantileAD(high=-0.2)
+            QuantileDetector(high=-0.2)
         with self.assertRaises(ValueError):
-            D.QuantileAD(low=1.1)
+            QuantileDetector(low=1.1)
         with self.assertRaises(ValueError):
-            D.QuantileAD(low=-0.2)
+            QuantileDetector(low=-0.2)
 
-        detector = D.QuantileAD(low=0.2)
+        detector = QuantileDetector(low=0.2)
         detector.fit(self.train)
 
         binary_detection = detector.detect(self.test)
@@ -194,28 +195,28 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         # Return of .detect() must be same len as input
         self.assertTrue(len(binary_detection) == len(self.test))
 
-    def test_ThresholdAD(self):
+    def test_ThresholdDetector(self):
 
         # Parameters
         # Need to have at least one parameter (low, high) not None
         with self.assertRaises(ValueError):
-            D.ThresholdAD()
+            ThresholdDetector()
         with self.assertRaises(ValueError):
-            D.ThresholdAD(low=None, high=None)
+            ThresholdDetector(low=None, high=None)
 
         # Parameter low must be int or float
         with self.assertRaises(ValueError):
-            D.ThresholdAD(low="1")
+            ThresholdDetector(low="1")
         with self.assertRaises(ValueError):
-            D.ThresholdAD(low=[1])
+            ThresholdDetector(low=[1])
 
         # Parameter high must be int or float
         with self.assertRaises(ValueError):
-            D.ThresholdAD(high="1")
+            ThresholdDetector(high="1")
         with self.assertRaises(ValueError):
-            D.ThresholdAD(high=[1])
+            ThresholdDetector(high=[1])
 
-        detector = D.ThresholdAD(low=0.2)
+        detector = ThresholdDetector(low=0.2)
         binary_detection = detector.detect(self.test)
 
         # Return of .detect() must be binary

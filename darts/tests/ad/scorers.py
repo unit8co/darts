@@ -4,34 +4,44 @@ import numpy as np
 from pyod.models.knn import KNN
 
 from darts import TimeSeries
-from darts.ad import scorers as S
+from darts.ad.scorers.cauchy_nll_scorer import CauchyNLLScorer
+from darts.ad.scorers.difference import Difference
+from darts.ad.scorers.exponential_nll_scorer import ExponentialNLLScorer
+from darts.ad.scorers.gamma_nll_scorer import GammaNLLScorer
+from darts.ad.scorers.gaussian_nll_scorer import GaussianNLLScorer
+from darts.ad.scorers.kmeans_scorer import KMeansScorer
+from darts.ad.scorers.laplace_nll_scorer import LaplaceNLLScorer
+from darts.ad.scorers.norm import Norm
+from darts.ad.scorers.poisson_nll_scorer import PoissonNLLScorer
+from darts.ad.scorers.pyod_scorer import PyODScorer
+from darts.ad.scorers.wasserstein_scorer import WassersteinScorer
 from darts.models import MovingAverage
 from darts.tests.base_test_class import DartsBaseTestClass
 
 list_NonFittableAnomalyScorer = [
-    S.Norm(),
-    S.Difference(),
-    S.GaussianNLLScorer(),
-    S.ExponentialNLLScorer(),
-    S.PoissonNLLScorer(),
-    S.LaplaceNLLScorer(),
-    S.CauchyNLLScorer(),
-    S.GammaNLLScorer(),
+    Norm(),
+    Difference(),
+    GaussianNLLScorer(),
+    ExponentialNLLScorer(),
+    PoissonNLLScorer(),
+    LaplaceNLLScorer(),
+    CauchyNLLScorer(),
+    GammaNLLScorer(),
 ]
 
 list_FittableAnomalyScorer = [
-    S.PyODScorer(model=KNN()),
-    S.KMeansScorer(),
-    S.WassersteinScorer(),
+    PyODScorer(model=KNN()),
+    KMeansScorer(),
+    WassersteinScorer(),
 ]
 
 list_NLLScorer = [
-    S.GaussianNLLScorer(),
-    S.ExponentialNLLScorer(),
-    S.PoissonNLLScorer(),
-    S.LaplaceNLLScorer(),
-    S.CauchyNLLScorer(),
-    S.GammaNLLScorer(),
+    GaussianNLLScorer(),
+    ExponentialNLLScorer(),
+    PoissonNLLScorer(),
+    LaplaceNLLScorer(),
+    CauchyNLLScorer(),
+    GammaNLLScorer(),
 ]
 
 
@@ -90,7 +100,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
     )
 
     def test_ScoreNonFittableAnomalyScorer(self):
-        scorer = S.Norm()
+        scorer = Norm()
 
         # Check return types for score_from_prediction()
         # Check if return type is float when input is a series
@@ -125,7 +135,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
     def test_ScoreFittableAnomalyScorer(self):
-        scorer = S.KMeansScorer()
+        scorer = KMeansScorer()
 
         # Check return types for score()
         scorer.fit(self.train)
@@ -178,7 +188,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
     def test_eval_accuracy_from_prediction(self):
 
-        scorer = S.Norm(component_wise=False)
+        scorer = Norm(component_wise=False)
         # Check return types
         # Check if return type is float when input is a series
         self.assertTrue(
@@ -220,7 +230,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             )
         )
 
-        scorer = S.Norm(component_wise=True)
+        scorer = Norm(component_wise=True)
         # Check return types
         # Check if return type is float when input is a series
         self.assertTrue(
@@ -262,8 +272,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             )
         )
 
-        Non_fittable_scorer = S.Norm(component_wise=False)
-        Fittable_scorer = S.KMeansScorer(component_wise=False)
+        Non_fittable_scorer = Norm(component_wise=False)
+        Fittable_scorer = KMeansScorer(component_wise=False)
         Fittable_scorer.fit(self.train)
 
         # if component_wise set to False, 'actual_anomalies' must have widths of 1
@@ -582,11 +592,11 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # component_wise must be bool
         with self.assertRaises(ValueError):
-            S.Norm(component_wise=1)
+            Norm(component_wise=1)
         with self.assertRaises(ValueError):
-            S.Norm(component_wise="string")
+            Norm(component_wise="string")
         # if component_wise=False must always return a univariate anomaly score
-        scorer = S.Norm(component_wise=False)
+        scorer = Norm(component_wise=False)
         self.assertTrue(
             scorer.score_from_prediction(self.test, self.modified_test).width == 1
         )
@@ -595,7 +605,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             == 1
         )
         # if component_wise=True must always return the same width as the input
-        scorer = S.Norm(component_wise=True)
+        scorer = Norm(component_wise=True)
         self.assertTrue(
             scorer.score_from_prediction(self.test, self.modified_test).width == 1
         )
@@ -604,7 +614,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             == self.MTS_test.width
         )
 
-        scorer = S.Norm()
+        scorer = Norm()
 
         # always expects a deterministic input
         with self.assertRaises(ValueError):
@@ -614,7 +624,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
     def test_Difference(self):
 
-        scorer = S.Difference()
+        scorer = Difference()
 
         # always expects a deterministic input
         with self.assertRaises(ValueError):
@@ -627,17 +637,17 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # component_wise parameter
         # component_wise must be bool
         with self.assertRaises(ValueError):
-            S.WassersteinScorer(component_wise=1)
+            WassersteinScorer(component_wise=1)
         with self.assertRaises(ValueError):
-            S.WassersteinScorer(component_wise="string")
+            WassersteinScorer(component_wise="string")
         # if component_wise=False must always return a univariate anomaly score
-        scorer = S.WassersteinScorer(component_wise=False)
+        scorer = WassersteinScorer(component_wise=False)
         scorer.fit(self.train)
         self.assertTrue(scorer.score(self.test).width == 1)
         scorer.fit(self.MTS_train)
         self.assertTrue(scorer.score(self.MTS_test).width == 1)
         # if component_wise=True must always return the same width as the input
-        scorer = S.WassersteinScorer(component_wise=True)
+        scorer = WassersteinScorer(component_wise=True)
         scorer.fit(self.train)
         self.assertTrue(scorer.score(self.test).width == 1)
         scorer.fit(self.MTS_train)
@@ -646,24 +656,24 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # window parameter
         # window must be int
         with self.assertRaises(ValueError):
-            S.WassersteinScorer(window=True)
+            WassersteinScorer(window=True)
         with self.assertRaises(ValueError):
-            S.WassersteinScorer(window="string")
+            WassersteinScorer(window="string")
         # window must be non negative
         with self.assertRaises(ValueError):
-            S.WassersteinScorer(window=-1)
+            WassersteinScorer(window=-1)
         # window must be different from 0
         with self.assertRaises(ValueError):
-            S.WassersteinScorer(window=0)
+            WassersteinScorer(window=0)
 
         # diff_fn paramter
         # must be None, 'diff' or 'abs_diff'
         with self.assertRaises(ValueError):
-            S.WassersteinScorer(diff_fn="random")
+            WassersteinScorer(diff_fn="random")
         with self.assertRaises(ValueError):
-            S.WassersteinScorer(diff_fn=1)
+            WassersteinScorer(diff_fn=1)
 
-        scorer = S.WassersteinScorer()
+        scorer = WassersteinScorer()
 
         # always expects a deterministic input
         with self.assertRaises(ValueError):
@@ -674,11 +684,11 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             scorer.score(self.probabilistic)
 
         # window must be smaller than the input of score()
-        scorer = S.WassersteinScorer(window=101)
+        scorer = WassersteinScorer(window=101)
         with self.assertRaises(ValueError):
             scorer.fit(self.train)  # len(self.train)=100
 
-        scorer = S.WassersteinScorer(window=80)
+        scorer = WassersteinScorer(window=80)
         scorer.fit(self.train)
         with self.assertRaises(ValueError):
             scorer.score(self.test[:50])  # len(self.test)=100
@@ -688,17 +698,17 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # component_wise parameter
         # component_wise must be bool
         with self.assertRaises(ValueError):
-            S.KMeansScorer(component_wise=1)
+            KMeansScorer(component_wise=1)
         with self.assertRaises(ValueError):
-            S.KMeansScorer(component_wise="string")
+            KMeansScorer(component_wise="string")
         # if component_wise=False must always return a univariate anomaly score
-        scorer = S.KMeansScorer(component_wise=False)
+        scorer = KMeansScorer(component_wise=False)
         scorer.fit(self.train)
         self.assertTrue(scorer.score(self.test).width == 1)
         scorer.fit(self.MTS_train)
         self.assertTrue(scorer.score(self.MTS_test).width == 1)
         # if component_wise=True must always return the same width as the input
-        scorer = S.KMeansScorer(component_wise=True)
+        scorer = KMeansScorer(component_wise=True)
         scorer.fit(self.train)
         self.assertTrue(scorer.score(self.test).width == 1)
         scorer.fit(self.MTS_train)
@@ -707,24 +717,24 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # window parameter
         # window must be int
         with self.assertRaises(ValueError):
-            S.KMeansScorer(window=True)
+            KMeansScorer(window=True)
         with self.assertRaises(ValueError):
-            S.KMeansScorer(window="string")
+            KMeansScorer(window="string")
         # window must be non negative
         with self.assertRaises(ValueError):
-            S.KMeansScorer(window=-1)
+            KMeansScorer(window=-1)
         # window must be different from 0
         with self.assertRaises(ValueError):
-            S.KMeansScorer(window=0)
+            KMeansScorer(window=0)
 
         # diff_fn paramter
         # must be None, 'diff' or 'abs_diff'
         with self.assertRaises(ValueError):
-            S.KMeansScorer(diff_fn="random")
+            KMeansScorer(diff_fn="random")
         with self.assertRaises(ValueError):
-            S.KMeansScorer(diff_fn=1)
+            KMeansScorer(diff_fn=1)
 
-        scorer = S.KMeansScorer()
+        scorer = KMeansScorer()
 
         # always expects a deterministic input
         with self.assertRaises(ValueError):
@@ -735,11 +745,11 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             scorer.score(self.probabilistic)
 
         # window must be smaller than the input of score()
-        scorer = S.KMeansScorer(window=101)
+        scorer = KMeansScorer(window=101)
         with self.assertRaises(ValueError):
             scorer.fit(self.train)  # len(self.train)=100
 
-        scorer = S.KMeansScorer(window=80)
+        scorer = KMeansScorer(window=80)
         scorer.fit(self.train)
         with self.assertRaises(ValueError):
             scorer.score(self.test[:50])  # len(self.test)=100
@@ -748,22 +758,22 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # model parameter must be pyod.models typy BaseDetector
         with self.assertRaises(ValueError):
-            S.PyODScorer(model=MovingAverage(window=10))
+            PyODScorer(model=MovingAverage(window=10))
 
         # component_wise parameter
         # component_wise must be bool
         with self.assertRaises(ValueError):
-            S.PyODScorer(model=KNN(), component_wise=1)
+            PyODScorer(model=KNN(), component_wise=1)
         with self.assertRaises(ValueError):
-            S.PyODScorer(model=KNN(), component_wise="string")
+            PyODScorer(model=KNN(), component_wise="string")
         # if component_wise=False must always return a univariate anomaly score
-        scorer = S.PyODScorer(model=KNN(), component_wise=False)
+        scorer = PyODScorer(model=KNN(), component_wise=False)
         scorer.fit(self.train)
         self.assertTrue(scorer.score(self.test).width == 1)
         scorer.fit(self.MTS_train)
         self.assertTrue(scorer.score(self.MTS_test).width == 1)
         # if component_wise=True must always return the same width as the input
-        scorer = S.PyODScorer(model=KNN(), component_wise=True)
+        scorer = PyODScorer(model=KNN(), component_wise=True)
         scorer.fit(self.train)
         self.assertTrue(scorer.score(self.test).width == 1)
         scorer.fit(self.MTS_train)
@@ -772,24 +782,24 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # window parameter
         # window must be int
         with self.assertRaises(ValueError):
-            S.PyODScorer(model=KNN(), window=True)
+            PyODScorer(model=KNN(), window=True)
         with self.assertRaises(ValueError):
-            S.PyODScorer(model=KNN(), window="string")
+            PyODScorer(model=KNN(), window="string")
         # window must be non negative
         with self.assertRaises(ValueError):
-            S.PyODScorer(model=KNN(), window=-1)
+            PyODScorer(model=KNN(), window=-1)
         # window must be different from 0
         with self.assertRaises(ValueError):
-            S.PyODScorer(model=KNN(), window=0)
+            PyODScorer(model=KNN(), window=0)
 
         # diff_fn paramter
         # must be None, 'diff' or 'abs_diff'
         with self.assertRaises(ValueError):
-            S.PyODScorer(model=KNN(), diff_fn="random")
+            PyODScorer(model=KNN(), diff_fn="random")
         with self.assertRaises(ValueError):
-            S.PyODScorer(model=KNN(), diff_fn=1)
+            PyODScorer(model=KNN(), diff_fn=1)
 
-        scorer = S.PyODScorer(model=KNN())
+        scorer = PyODScorer(model=KNN())
 
         # always expects a deterministic input
         with self.assertRaises(ValueError):
@@ -800,11 +810,11 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             scorer.score(self.probabilistic)
 
         # window must be smaller than the input of score()
-        scorer = S.PyODScorer(model=KNN(), window=101)
+        scorer = PyODScorer(model=KNN(), window=101)
         with self.assertRaises(ValueError):
             scorer.fit(self.train)  # len(self.train)=100
 
-        scorer = S.PyODScorer(model=KNN(), window=80)
+        scorer = PyODScorer(model=KNN(), window=80)
         scorer.fit(self.train)
         with self.assertRaises(ValueError):
             scorer.score(self.test[:50])  # len(self.test)=100
@@ -829,17 +839,17 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # window parameter
         # window must be int
         with self.assertRaises(ValueError):
-            S.GaussianNLLScorer(window=True)
+            GaussianNLLScorer(window=True)
         with self.assertRaises(ValueError):
-            S.GaussianNLLScorer(window="string")
+            GaussianNLLScorer(window="string")
         # window must be non negative
         with self.assertRaises(ValueError):
-            S.GaussianNLLScorer(window=-1)
+            GaussianNLLScorer(window=-1)
         # window must be different from 0
         with self.assertRaises(ValueError):
-            S.GaussianNLLScorer(window=0)
+            GaussianNLLScorer(window=0)
 
-        scorer = S.GaussianNLLScorer(window=101)
+        scorer = GaussianNLLScorer(window=101)
         # window must be smaller than the input of score()
         with self.assertRaises(ValueError):
             scorer.score_from_prediction(

@@ -519,7 +519,8 @@ def show_anomalies_from_scores(
     )
 
     if title is None:
-        title = "Anomaly results"
+        if anomaly_scores is not None:
+            title = "Anomaly results"
     else:
         raise_if_not(
             isinstance(title, str),
@@ -563,19 +564,19 @@ def show_anomalies_from_scores(
             anomaly_scores = [anomaly_scores]
 
         if names_of_scorers is not None:
-            if isinstance(names_of_scorers, Sequence):
+
+            if isinstance(names_of_scorers, str):
+                names_of_scorers = [names_of_scorers]
+            elif isinstance(names_of_scorers, Sequence):
                 for idx, name in enumerate(names_of_scorers):
                     raise_if_not(
                         isinstance(name, str),
                         f"Elements of names_of_scorers must be of type str, found {type(name)} at index {idx}.",
                     )
             else:
-                raise_if_not(
-                    isinstance(names_of_scorers, str),
-                    f"Input `names_of_scorers` must be of type str or Sequence, found {type(names_of_scorers)}.",
+                raise ValueError(
+                    f"Input `names_of_scorers` must be of type str or Sequence, found {type(names_of_scorers)}."
                 )
-
-                names_of_scorers = [names_of_scorers]
 
             raise_if_not(
                 len(names_of_scorers) == len(anomaly_scores),
@@ -583,30 +584,29 @@ def show_anomalies_from_scores(
                 found {len(names_of_scorers)} and expected {len(anomaly_scores)}.",
             )
 
-        if isinstance(window, Sequence):
+        if isinstance(window, int):
+            window = [window]
+        elif isinstance(window, Sequence):
             for idx, w in enumerate(window):
                 raise_if_not(
                     isinstance(w, int),
                     f"Every window must be of type int, found {type(w)} at index {idx}.",
                 )
-            list_window = window
         else:
-            raise_if_not(
-                isinstance(window, int),
-                f"Input `window` must be of type int or Sequence, found {type(window)}.",
+            raise ValueError(
+                f"Input `window` must be of type int or Sequence, found {type(window)}."
             )
-            list_window = [window]
 
-        if len(list_window) == 1:
-            list_window = list_window * len(anomaly_scores)
+        if len(window) == 1:
+            window = window * len(anomaly_scores)
         else:
             raise_if_not(
-                len(list_window) == len(anomaly_scores),
+                len(window) == len(anomaly_scores),
                 f"The number of window in `window` must match the number of anomaly score given as input. One window \
-                value for each series. Found length {len(list_window)}, and expected {len(anomaly_scores)}.",
+                value for each series. Found length {len(window)}, and expected {len(anomaly_scores)}.",
             )
 
-        nbr_plots = nbr_plots + len(set(list_window))
+        nbr_plots = nbr_plots + len(set(window))
 
     fig, axs = plt.subplots(
         nbr_plots,
@@ -618,13 +618,7 @@ def show_anomalies_from_scores(
 
     index_ax = 0
 
-    _plot_series(
-        series=series,
-        ax_id=axs[index_ax][0],
-        linewidth=0.5,
-        label_name="series",
-        color="red",
-    )
+    _plot_series(series=series, ax_id=axs[index_ax][0], linewidth=0.5, label_name="")
 
     if model_output is not None:
 
@@ -633,7 +627,6 @@ def show_anomalies_from_scores(
             ax_id=axs[index_ax][0],
             linewidth=0.5,
             label_name="model output",
-            color="blue",
         )
 
     axs[index_ax][0].set_title("")
@@ -647,20 +640,20 @@ def show_anomalies_from_scores(
 
         dict_input = {}
 
-        for idx, (score, w) in enumerate(zip(anomaly_scores, list_window)):
+        for idx, (score, w) in enumerate(zip(anomaly_scores, window)):
 
             dict_input[idx] = {"series_score": score, "window": w, "name_id": idx}
 
-        current_window = list_window[0]
+        current_window = window[0]
         index_ax = index_ax + 1
 
         for elem in sorted(dict_input.items(), key=lambda x: x[1]["window"]):
 
             idx = elem[1]["name_id"]
-            window = elem[1]["window"]
+            w = elem[1]["window"]
 
-            if window != current_window:
-                current_window = window
+            if w != current_window:
+                current_window = w
                 index_ax = index_ax + 1
 
             if metric is not None:
@@ -668,10 +661,10 @@ def show_anomalies_from_scores(
                     eval_accuracy_from_scores(
                         anomaly_score=anomaly_scores[idx],
                         actual_anomalies=actual_anomalies,
-                        window=window,
+                        window=w,
                         metric=metric,
                     ),
-                    2,
+                    3,
                 )
             else:
                 value = None
@@ -691,7 +684,7 @@ def show_anomalies_from_scores(
             axs[index_ax][0].legend(
                 loc="upper center", bbox_to_anchor=(0.5, 1.19), ncol=2
             )
-            axs[index_ax][0].set_title(f"Window: {str(window)}", loc="left")
+            axs[index_ax][0].set_title(f"Window: {str(w)}", loc="left")
             axs[index_ax][0].set_title("")
             axs[index_ax][0].set_xlabel("")
 
@@ -745,7 +738,11 @@ def _plot_series(series, ax_id, linewidth, label_name, **kwargs):
         else:
             central_series = comp
 
-        label_to_use = label_name + ("_" + str(i) if len(series.components) > 1 else "")
+        label_to_use = (
+            (label_name + ("_" + str(i) if len(series.components) > 1 else ""))
+            if label_name != ""
+            else "" + str(str(c.values))
+        )
 
         central_series.plot(ax=ax_id, linewidth=linewidth, label=label_to_use, **kwargs)
 

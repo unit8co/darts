@@ -4,8 +4,18 @@ import numpy as np
 from pyod.models.knn import KNN
 
 from darts import TimeSeries
-from darts.ad import anomaly_model as AM
-from darts.ad import scorers as S
+from darts.ad.anomaly_model import anomaly_model as AM
+from darts.ad.scorers.cauchy_nll_scorer import CauchyNLLScorer
+from darts.ad.scorers.difference import Difference
+from darts.ad.scorers.exponential_nll_scorer import ExponentialNLLScorer
+from darts.ad.scorers.gamma_nll_scorer import GammaNLLScorer
+from darts.ad.scorers.gaussian_nll_scorer import GaussianNLLScorer
+from darts.ad.scorers.kmeans_scorer import KMeansScorer
+from darts.ad.scorers.laplace_nll_scorer import LaplaceNLLScorer
+from darts.ad.scorers.norm import Norm
+from darts.ad.scorers.poisson_nll_scorer import PoissonNLLScorer
+from darts.ad.scorers.pyod_scorer import PyODScorer
+from darts.ad.scorers.wasserstein_scorer import WassersteinScorer
 from darts.models import KalmanFilter, MovingAverage, NaiveSeasonal, RegressionModel
 from darts.tests.base_test_class import DartsBaseTestClass
 
@@ -60,14 +70,14 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
     def test_Scorer(self):
 
         list_NonFittableAnomalyScorer = [
-            S.Norm(),
-            S.Difference(),
-            S.GaussianNLLScorer(),
-            S.ExponentialNLLScorer(),
-            S.PoissonNLLScorer(),
-            S.LaplaceNLLScorer(),
-            S.CauchyNLLScorer(),
-            S.GammaNLLScorer(),
+            Norm(),
+            Difference(),
+            GaussianNLLScorer(),
+            ExponentialNLLScorer(),
+            PoissonNLLScorer(),
+            LaplaceNLLScorer(),
+            CauchyNLLScorer(),
+            GammaNLLScorer(),
         ]
 
         for scorers in list_NonFittableAnomalyScorer:
@@ -84,9 +94,9 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
                 self.assertTrue(anomaly_model.scorers_are_trainable is False)
 
         list_FittableAnomalyScorer = [
-            S.PyODScorer(model=KNN()),
-            S.KMeansScorer(),
-            S.WassersteinScorer(),
+            PyODScorer(model=KNN()),
+            KMeansScorer(),
+            WassersteinScorer(),
         ]
 
         for scorers in list_FittableAnomalyScorer:
@@ -104,12 +114,10 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
     def test_Score(self):
 
-        am1 = AM.ForecastingAnomalyModel(
-            model=RegressionModel(lags=10), scorer=S.Norm()
-        )
+        am1 = AM.ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer=Norm())
         am1.fit(self.train, allow_model_training=True)
 
-        am2 = AM.FilteringAnomalyModel(filter=MovingAverage(window=20), scorer=S.Norm())
+        am2 = AM.FilteringAnomalyModel(filter=MovingAverage(window=20), scorer=Norm())
 
         for am in [am1, am2]:
             # Parameter return_model_prediction
@@ -135,12 +143,12 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
     def test_FitFilteringAnomalyModelInput(self):
 
         for anomaly_model in [
-            AM.FilteringAnomalyModel(filter=MovingAverage(window=20), scorer=S.Norm()),
+            AM.FilteringAnomalyModel(filter=MovingAverage(window=20), scorer=Norm()),
             AM.FilteringAnomalyModel(
-                filter=MovingAverage(window=20), scorer=[S.Norm(), S.KMeansScorer()]
+                filter=MovingAverage(window=20), scorer=[Norm(), KMeansScorer()]
             ),
             AM.FilteringAnomalyModel(
-                filter=MovingAverage(window=20), scorer=S.KMeansScorer()
+                filter=MovingAverage(window=20), scorer=KMeansScorer()
             ),
         ]:
 
@@ -167,11 +175,11 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
                 anomaly_model.fit(self.train, allow_filter_training="True")
 
         for anomaly_model in [
-            AM.FilteringAnomalyModel(filter=KalmanFilter(), scorer=S.Norm()),
+            AM.FilteringAnomalyModel(filter=KalmanFilter(), scorer=Norm()),
             AM.FilteringAnomalyModel(
-                filter=KalmanFilter(), scorer=[S.Norm(), S.KMeansScorer()]
+                filter=KalmanFilter(), scorer=[Norm(), KMeansScorer()]
             ),
-            AM.FilteringAnomalyModel(filter=KalmanFilter(), scorer=S.KMeansScorer()),
+            AM.FilteringAnomalyModel(filter=KalmanFilter(), scorer=KMeansScorer()),
         ]:
 
             # filter_fit_kwargs must be a dictionnary
@@ -195,12 +203,12 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
     def test_FitForecastingAnomalyModelInput(self):
 
         for anomaly_model in [
-            AM.ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer=S.Norm()),
+            AM.ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer=Norm()),
             AM.ForecastingAnomalyModel(
-                model=RegressionModel(lags=10), scorer=[S.Norm(), S.KMeansScorer()]
+                model=RegressionModel(lags=10), scorer=[Norm(), KMeansScorer()]
             ),
             AM.ForecastingAnomalyModel(
-                model=RegressionModel(lags=10), scorer=S.KMeansScorer()
+                model=RegressionModel(lags=10), scorer=KMeansScorer()
             ),
         ]:
 
@@ -279,44 +287,44 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         fitted_model = RegressionModel(lags=10).fit(self.train)
         # Fittable scorer must be fitted before calling .score(), even if forecasting model is fitted
         with self.assertRaises(ValueError):
-            AM.ForecastingAnomalyModel(
-                model=fitted_model, scorer=S.KMeansScorer()
-            ).score(series=self.test)
+            AM.ForecastingAnomalyModel(model=fitted_model, scorer=KMeansScorer()).score(
+                series=self.test
+            )
         with self.assertRaises(ValueError):
             AM.ForecastingAnomalyModel(
-                model=fitted_model, scorer=[S.Norm(), S.KMeansScorer()]
+                model=fitted_model, scorer=[Norm(), KMeansScorer()]
             ).score(series=self.test)
 
         # forecasting model that do not accept past/future covariates
         # with self.assertRaises(ValueError):
         #    AM.ForecastingAnomalyModel(model=ExponentialSmoothing(),
-        #       scorer=S.Norm()).fit(series=self.train, past_covariates=self.covariates, allow_model_training=True)
+        #       scorer=Norm()).fit(series=self.train, past_covariates=self.covariates, allow_model_training=True)
         # with self.assertRaises(ValueError):
         #    AM.ForecastingAnomalyModel(model=ExponentialSmoothing(),
-        #       scorer=S.Norm()).fit(series=self.train, future_covariates=self.covariates, allow_model_training=True)
+        #       scorer=Norm()).fit(series=self.train, future_covariates=self.covariates, allow_model_training=True)
 
         # check window size
         # max window size is len(series.drop_before(series.get_timestamp_at_point(start))) + 1
         with self.assertRaises(ValueError):
             AM.ForecastingAnomalyModel(
-                model=RegressionModel(lags=10), scorer=S.KMeansScorer(window=50)
+                model=RegressionModel(lags=10), scorer=KMeansScorer(window=50)
             ).fit(series=self.train, start=0.9)
 
         # forecasting model that cannot be trained on a list of series
         with self.assertRaises(ValueError):
-            AM.ForecastingAnomalyModel(model=NaiveSeasonal(), scorer=S.Norm()).fit(
+            AM.ForecastingAnomalyModel(model=NaiveSeasonal(), scorer=Norm()).fit(
                 series=[self.train, self.train], allow_model_training=True
             )
 
     def test_ScoreForecastingAnomalyModelInput(self):
 
         for anomaly_model in [
-            AM.ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer=S.Norm()),
+            AM.ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer=Norm()),
             AM.ForecastingAnomalyModel(
-                model=RegressionModel(lags=10), scorer=[S.Norm(), S.KMeansScorer()]
+                model=RegressionModel(lags=10), scorer=[Norm(), KMeansScorer()]
             ),
             AM.ForecastingAnomalyModel(
-                model=RegressionModel(lags=10), scorer=S.KMeansScorer()
+                model=RegressionModel(lags=10), scorer=KMeansScorer()
             ),
         ]:
 
@@ -351,7 +359,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         # check window size
         # max window size is len(series.drop_before(series.get_timestamp_at_point(start))) + 1 for score()
         anomaly_model = AM.ForecastingAnomalyModel(
-            model=RegressionModel(lags=10), scorer=S.KMeansScorer(window=30)
+            model=RegressionModel(lags=10), scorer=KMeansScorer(window=30)
         )
         anomaly_model.fit(self.train, allow_model_training=True)
         with self.assertRaises(ValueError):
@@ -360,12 +368,12 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
     def test_ScoreFilteringAnomalyModelInput(self):
 
         for anomaly_model in [
-            AM.FilteringAnomalyModel(filter=MovingAverage(window=10), scorer=S.Norm()),
+            AM.FilteringAnomalyModel(filter=MovingAverage(window=10), scorer=Norm()),
             AM.FilteringAnomalyModel(
-                filter=MovingAverage(window=10), scorer=[S.Norm(), S.KMeansScorer()]
+                filter=MovingAverage(window=10), scorer=[Norm(), KMeansScorer()]
             ),
             AM.FilteringAnomalyModel(
-                filter=MovingAverage(window=10), scorer=S.KMeansScorer()
+                filter=MovingAverage(window=10), scorer=KMeansScorer()
             ),
         ]:
 
@@ -382,12 +390,10 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
     def test_show_anomalies(self):
 
-        am1 = AM.ForecastingAnomalyModel(
-            model=RegressionModel(lags=10), scorer=S.Norm()
-        )
+        am1 = AM.ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer=Norm())
         am1.fit(self.train, allow_model_training=True)
 
-        am2 = AM.FilteringAnomalyModel(filter=MovingAverage(window=20), scorer=S.Norm())
+        am2 = AM.FilteringAnomalyModel(filter=MovingAverage(window=20), scorer=Norm())
 
         for am in [am1, am2]:
             # input 'series' must be a series and not a Sequence of series
@@ -400,20 +406,18 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
     def test_eval_accuracy(self):
 
-        am1 = AM.ForecastingAnomalyModel(
-            model=RegressionModel(lags=10), scorer=S.Norm()
-        )
+        am1 = AM.ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer=Norm())
         am1.fit(self.train, allow_model_training=True)
 
-        am2 = AM.FilteringAnomalyModel(filter=MovingAverage(window=20), scorer=S.Norm())
+        am2 = AM.FilteringAnomalyModel(filter=MovingAverage(window=20), scorer=Norm())
 
         am3 = AM.ForecastingAnomalyModel(
-            model=RegressionModel(lags=10), scorer=[S.Norm(), S.WassersteinScorer()]
+            model=RegressionModel(lags=10), scorer=[Norm(), WassersteinScorer()]
         )
         am3.fit(self.train, allow_model_training=True)
 
         am4 = AM.FilteringAnomalyModel(
-            filter=MovingAverage(window=20), scorer=[S.Norm(), S.WassersteinScorer()]
+            filter=MovingAverage(window=20), scorer=[Norm(), WassersteinScorer()]
         )
         am4.fit(self.train)
 
@@ -546,15 +550,15 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         # model input
         # model input must be of type ForecastingModel
         with self.assertRaises(ValueError):
-            AM.ForecastingAnomalyModel(model="str", scorer=S.Norm())
+            AM.ForecastingAnomalyModel(model="str", scorer=Norm())
         with self.assertRaises(ValueError):
-            AM.ForecastingAnomalyModel(model=1, scorer=S.Norm())
+            AM.ForecastingAnomalyModel(model=1, scorer=Norm())
         with self.assertRaises(ValueError):
-            AM.ForecastingAnomalyModel(model=MovingAverage(window=10), scorer=S.Norm())
+            AM.ForecastingAnomalyModel(model=MovingAverage(window=10), scorer=Norm())
         with self.assertRaises(ValueError):
             AM.ForecastingAnomalyModel(
                 model=[RegressionModel(lags=10), RegressionModel(lags=5)],
-                scorer=S.Norm(),
+                scorer=Norm(),
             )
 
         # scorer input
@@ -569,7 +573,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             )
         with self.assertRaises(ValueError):
             AM.ForecastingAnomalyModel(
-                model=RegressionModel(lags=10), scorer=[S.Norm(), "str"]
+                model=RegressionModel(lags=10), scorer=[Norm(), "str"]
             )
 
     def test_FilteringAnomalyModelInput(self):
@@ -577,15 +581,15 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         # model input
         # model input must be of type FilteringModel
         with self.assertRaises(ValueError):
-            AM.FilteringAnomalyModel(filter="str", scorer=S.Norm())
+            AM.FilteringAnomalyModel(filter="str", scorer=Norm())
         with self.assertRaises(ValueError):
-            AM.FilteringAnomalyModel(filter=1, scorer=S.Norm())
+            AM.FilteringAnomalyModel(filter=1, scorer=Norm())
         with self.assertRaises(ValueError):
-            AM.FilteringAnomalyModel(filter=RegressionModel(lags=10), scorer=S.Norm())
+            AM.FilteringAnomalyModel(filter=RegressionModel(lags=10), scorer=Norm())
         with self.assertRaises(ValueError):
             AM.FilteringAnomalyModel(
                 filter=[MovingAverage(window=10), MovingAverage(window=10)],
-                scorer=S.Norm(),
+                scorer=Norm(),
             )
 
         # scorer input
@@ -600,5 +604,5 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             )
         with self.assertRaises(ValueError):
             AM.FilteringAnomalyModel(
-                filter=MovingAverage(window=10), scorer=[S.Norm(), "str"]
+                filter=MovingAverage(window=10), scorer=[Norm(), "str"]
             )
