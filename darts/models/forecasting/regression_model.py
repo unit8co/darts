@@ -28,10 +28,7 @@ from collections import OrderedDict
 from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
-import pandas as pd
 from sklearn.linear_model import LinearRegression
-from sklearn.utils.validation import check_is_fitted
-from sklearn.exceptions import NotFittedError
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
