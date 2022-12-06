@@ -22,7 +22,9 @@ try:
 
     from darts.models import (
         BlockRNNModel,
+        DLinearModel,
         NBEATSModel,
+        NLinearModel,
         RNNModel,
         TCNModel,
         TFTModel,
@@ -101,6 +103,20 @@ if TORCH_AVAILABLE:
                 "n_epochs": 10,
             },
             100.0,
+        ),
+        (
+            NLinearModel,
+            {
+                "n_epochs": 10,
+            },
+            100,
+        ),
+        (
+            DLinearModel,
+            {
+                "n_epochs": 10,
+            },
+            100,
         ),
     ]
 

@@ -85,6 +85,7 @@ class ExponentialSmoothing(LocalForecastingModel):
 
     def fit(self, series: TimeSeries):
         super().fit(series)
+        self._assert_univariate(series)
         series = self.training_series
 
         # if the model was initially created with `self.seasonal_periods=None`, make sure that
@@ -116,7 +117,7 @@ class ExponentialSmoothing(LocalForecastingModel):
 
         return self
 
-    def predict(self, n, num_samples=1):
+    def predict(self, n, num_samples=1, verbose: bool = False):
         super().predict(n, num_samples)
 
         if num_samples == 1:
