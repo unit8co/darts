@@ -1473,7 +1473,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def __setstate__(self, d):
         # upon loading the pickled object, add back the PyTorch LightningModule, and Trainer attribute with
         # default values
-        super().__setstate__(d)
         for attr, default_val in TFM_ATTRS_NO_PICKLE.items():
             setattr(self, attr, default_val)
 
