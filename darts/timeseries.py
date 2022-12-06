@@ -3484,7 +3484,7 @@ class TimeSeries:
             # track how many NaN rows are added by each transformation on each transformed column
             # NaNs would appear only if user changes "min_periods" to else than 1, if not,
             # by default there should be no NaNs unless the original series starts with NaNs (those would be maintained)
-            total_na = min_periods + shifts + (closed=="left")
+            total_na = min_periods + shifts + (closed == "left")
             added_na.extend(
                 [
                     total_na - 1 if min_periods > 0 else total_na
