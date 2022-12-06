@@ -211,7 +211,7 @@ if TORCH_AVAILABLE:
                     train1, train2, val1, val2, fut_cov1, fut_cov2, cls=model, lkl=lkl
                 )
                 self.assertLessEqual(e1, 0.31)
-                self.assertLessEqual(e2, 0.27)
+                self.assertLessEqual(e2, 0.28)
 
                 e1, e2 = _eval_model(
                     train1.with_static_covariates(None),
