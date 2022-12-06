@@ -3448,9 +3448,9 @@ class TimeSeries:
                 transformation, forecasting_safe
             )
 
+            closed = transformation.get("closed", None)
             if not include_current:
                 if window_mode == "rolling":
-                    closed = transformation.get("closed", None)
                     shifts = 0 if closed == "left" else 1  # avoid shifting twice
                 else:
                     shifts = 1
@@ -3484,9 +3484,10 @@ class TimeSeries:
             # track how many NaN rows are added by each transformation on each transformed column
             # NaNs would appear only if user changes "min_periods" to else than 1, if not,
             # by default there should be no NaNs unless the original series starts with NaNs (those would be maintained)
+            total_na = min_periods + shifts + (closed=="left")
             added_na.extend(
                 [
-                    min_periods - 1 if min_periods > 0 else min_periods
+                    total_na - 1 if min_periods > 0 else total_na
                     for _ in filter_df_columns
                 ]
             )
