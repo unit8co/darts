@@ -74,7 +74,9 @@ from darts.ad.utils import (
     eval_accuracy_from_scores,
     show_anomalies_from_scores,
 )
-from darts.logging import raise_if_not
+from darts.logging import get_logger, raise_if_not
+
+logger = get_logger(__name__)
 
 
 class AnomalyScorer(ABC):
@@ -152,25 +154,17 @@ class AnomalyScorer(ABC):
             (number of samples must be higher than 1, found number: {series.n_samples}).",
         )
 
-        # if self._expects_probabilistic:
-        #   else:
-        #    if series.is_stochastic:
-        # TODO: output a warning "The scorer expects a non probabilitic input
-        # (num of samples needs to be equal to 1)"
-        # median along each time stamp is computed to reduce the number of samples to 1
-        #        series = series.quantile_timeseries(quantile=0.5)
-
-        # return series
-
     def _check_deterministic(self, series: TimeSeries, name_series: str):
         "Checks if the series is deterministic (number of samples is equal to one)."
 
-        # TODO: create a warning rather than an error, and avg on axis 2
-        raise_if_not(
-            series.is_deterministic,
-            f"Scorer {self.__str__()} is expecting '{name_series}' to be a deterministic timeseries \
-            (number of samples must be equal to 1, found number: {series.n_samples}).",
-        )
+        if not series.is_deterministic:
+            logger.warning(
+                f"Scorer {self.__str__()} is expecting '{name_series}' to be a (sequence of) deterministic \
+                timeseries (number of samples must be equal to 1, found number: {series.n_samples}).",
+            )
+            series = series.quantile_timeseries(quantile=0.5)
+
+        return series
 
     @abstractmethod
     def __str__(self):
@@ -479,8 +473,9 @@ class FittableAnomalyScorer(AnomalyScorer):
         for s in list_series:
             _check_timeseries_type(s)
             self._check_window_size(s)
-            self._check_deterministic(s, "series")
-            anomaly_scores.append(self._score_core(s))
+            anomaly_scores.append(
+                self._score_core(self._check_deterministic(s, "series"))
+            )
 
         if len(anomaly_scores) == 1 and not isinstance(series, Sequence):
             return anomaly_scores[0]
@@ -596,8 +591,8 @@ class FittableAnomalyScorer(AnomalyScorer):
         anomaly_scores = []
         for (s1, s2) in zip(list_actual_series, list_pred_series):
             _sanity_check_2series(s1, s2)
-            self._check_deterministic(s1, "actual_series")
-            self._check_deterministic(s2, "pred_series")
+            s1 = self._check_deterministic(s1, "actual_series")
+            s2 = self._check_deterministic(s2, "pred_series")
             diff = self._diff_series(s1, s2)
             self._check_window_size(diff)
             anomaly_scores.append(self.score(diff))
@@ -688,8 +683,8 @@ class FittableAnomalyScorer(AnomalyScorer):
         list_fit_series = []
         for idx, (s1, s2) in enumerate(zip(list_actual_series, list_pred_series)):
             _sanity_check_2series(s1, s2)
-            self._check_deterministic(s1, "actual_series")
-            self._check_deterministic(s2, "pred_series")
+            s1 = self._check_deterministic(s1, "actual_series")
+            s2 = self._check_deterministic(s2, "pred_series")
             list_fit_series.append(self._diff_series(s1, s2))
 
         self.fit(list_fit_series)
@@ -786,7 +781,7 @@ class NLLScorer(NonFittableAnomalyScorer):
         -------
         TimeSeries
         """
-        self._check_deterministic(actual_series, "actual_series")
+        actual_series = self._check_deterministic(actual_series, "actual_series")
         self._check_stochastic(pred_series, "pred_series")
 
         np_actual_series = actual_series.all_values(copy=False)

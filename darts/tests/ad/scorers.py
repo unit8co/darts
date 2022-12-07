@@ -827,10 +827,6 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
                 s.score_from_prediction(actual_series=self.test, pred_series=self.test)
             with self.assertRaises(ValueError):
                 s.score_from_prediction(
-                    actual_series=self.probabilistic, pred_series=self.probabilistic
-                )
-            with self.assertRaises(ValueError):
-                s.score_from_prediction(
                     actual_series=self.probabilistic, pred_series=self.train
                 )
 

@@ -17,8 +17,10 @@ import numpy as np
 from scipy.stats import wasserstein_distance
 
 from darts.ad.scorers.scorers import FittableAnomalyScorer
-from darts.logging import raise_if_not
+from darts.logging import get_logger, raise_if_not
 from darts.timeseries import TimeSeries
+
+logger = get_logger(__name__)
 
 
 class WassersteinScorer(FittableAnomalyScorer):
@@ -107,6 +109,17 @@ class WassersteinScorer(FittableAnomalyScorer):
 
         if window is None:
             window = 10
+
+        if type(window) is int:
+            if window > 0 and window > 10:
+                logger.warning(
+                    f"The window parameter WassersteinScorer is smaller than 10 (w={window}). \
+                The value represents the window length rolled on the series given as input in \
+                the ``score`` function. At each position, the w values will constitute a subset, \
+                and the Wasserstein distance between the subset and the train distribution \
+                will be computed. To better represent the constituted test distribution, \
+                the window parameter should be larger than 10."
+                )
 
         raise_if_not(
             type(component_wise) is bool,
