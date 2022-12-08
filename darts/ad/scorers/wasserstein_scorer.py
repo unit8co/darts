@@ -111,7 +111,7 @@ class WassersteinScorer(FittableAnomalyScorer):
             window = 10
 
         if type(window) is int:
-            if window > 0 and window > 10:
+            if window > 0 and window < 10:
                 logger.warning(
                     f"The window parameter WassersteinScorer is smaller than 10 (w={window}). \
                 The value represents the window length rolled on the series given as input in \
