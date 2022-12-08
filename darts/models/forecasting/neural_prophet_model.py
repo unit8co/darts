@@ -7,10 +7,11 @@ from typing import Optional, Sequence, Tuple, Union
 
 import neuralprophet
 import pandas as pd
+from neuralprophet.utils import fcst_df_to_latest_forecast
 
 from darts.logging import raise_if_not
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
-from darts.timeseries import TimeSeries
+from darts.timeseries import TimeSeries, concatenate
 
 
 class NeuralProphet(GlobalForecastingModel):
@@ -28,14 +29,13 @@ class NeuralProphet(GlobalForecastingModel):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    ) -> "GlobalForecastingModel":
+    ) -> "NeuralProphet":
         super().fit(series, past_covariates, future_covariates)
+        self.training_series = series
 
-        # TODO change to accept multivariate
-        fit_df = pd.DataFrame(
-            data={"ds": series.time_index, "y": series.univariate_values()}
-        )
+        fit_df = self._convert_ts_to_df(series)
         self.model.fit(fit_df, freq=series.freq_str)
+
         return self
 
     def predict(
@@ -50,19 +50,50 @@ class NeuralProphet(GlobalForecastingModel):
         super().predict(
             n, series, past_covariates, future_covariates, num_samples, verbose
         )
-        print(series.columns)
-        predict_df = pd.DataFrame(
-            data={"ds": series.time_index, "y": series.univariate_values()}
-        )
-        predict_df = self.model.make_future_dataframe(df=predict_df, periods=n)
-        future_df = self.model.predict(predict_df)
 
-        future_df = future_df[["ds", "yhat1"]].rename(
-            columns={"yhat1": series.columns[0]}
-        )
-        future_ts = TimeSeries.from_dataframe(df=future_df[-n:], time_col="ds")
+        if series is None:
+            series = self.training_series
+        df = self._convert_ts_to_df(series)
 
-        return future_ts
+        future_df = self.model.make_future_dataframe(df=df, periods=n)
+        forecast_df = self.model.predict(future_df)
+
+        return self._convert_df_to_ts(forecast_df, series.end_time(), series.components)
+
+    def _convert_ts_to_df(self, series: TimeSeries):
+        dfs = []
+
+        for component in series.components:
+            new_df = (
+                series[component].pd_dataframe(copy=False).reset_index(names=["ds"])
+            )
+            component_df = (
+                new_df[["ds", component]]
+                .copy(deep=True)
+                .rename(columns={component: "y"})
+            )
+            component_df["ID"] = component
+            dfs.append(component_df)
+
+        return pd.concat(dfs)
+
+    def _convert_df_to_ts(self, forecast, last_train_date, components):
+        groups = []
+        for component in components:
+            simple_df = fcst_df_to_latest_forecast(
+                forecast[forecast["ID"] == component].copy(deep=True),
+                quantiles=[0.5],
+                n_last=1,
+            )
+            simple_df = simple_df[["ds", "origin-0"]].rename(
+                columns={"origin-0": component}
+            )
+            groups.append(simple_df[simple_df["ds"] > last_train_date])
+
+        return concatenate(
+            [TimeSeries.from_dataframe(group, time_col="ds") for group in groups],
+            axis=1,
+        )
 
     def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
         raise NotImplementedError()
