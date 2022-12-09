@@ -1,6 +1,6 @@
 """
 Anomaly Model
-------------
+-------------
 
 An anomaly model expects a model and one or multiple scorers.
 It offers a :func:`score()` function, which takes
@@ -8,22 +8,23 @@ as input one or multiple series, and returns their anomaly score(s) as ``TimeSer
 
 The model can be a forecasting method (:class:`ForecastingAnomalyModel`) or a filtering method
 (:class:`FilteringAnomalyModel`).
-The main functions are :func:`fit()` (only for the trainable model and/or scorer), :func:`score()` and
+The main functions are :func:`fit()` (only for the trainable models and/or scorers), :func:`score()` and
 :func:`eval_accuracy()`. :func:`fit()` trains the model and/or the scorer(s) over the history of one or multiple series.
 :func:`score()` applies the model on the time series input and and calls the scorer(s) to return an anomaly score of
 the input series. The main role of the scorer objects is to compare the output of the model (e.g., the forecast(s))
-and emit a score describing how anomalous they are. If several scorer objects are provided, several scores
-are computed.
+with the observation series and emit a score describing how anomalous the observations are.
+If several scorer objects are provided, several scores are computed.
 
 The function :func:`eval_accuracy()` is the same as :func:`score()`, but outputs the score of an agnostic
 threshold metric (AUC-ROC or AUC-PR), between the predicted anomaly score time series, and some known binary
 ground-truth time series indicating the presence of actual anomalies.
-
-TODO:
-    - check if warning is the right way to do: with import warnings
-    - put start default value to its minimal value
-    - check problem with component wise is False/True fit with a uni/multi and score on a uni/multi
 """
+
+# TODO:
+#     - check if warning is the right way to do: with import warnings
+#     - put start default value to its minimal value
+#     - check problem with component wise is False/True fit with a uni/multi and score on a uni/multi
+
 
 from abc import ABC, abstractmethod
 from typing import Sequence, Union
@@ -35,7 +36,7 @@ from darts.timeseries import TimeSeries
 
 
 class AnomalyModel(ABC):
-    "Base class for all anomaly models"
+    """Base class for all anomaly models."""
 
     def __init__(self, model, scorer):
 
