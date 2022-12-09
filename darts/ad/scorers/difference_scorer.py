@@ -11,7 +11,7 @@ from darts.ad.scorers.scorers import NonFittableAnomalyScorer
 from darts.timeseries import TimeSeries
 
 
-class Difference(NonFittableAnomalyScorer):
+class DifferenceScorer(NonFittableAnomalyScorer):
     def __init__(self) -> None:
         super().__init__(returns_UTS=True, window=None)
 

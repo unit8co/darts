@@ -18,7 +18,7 @@ from darts.logging import raise_if_not
 from darts.timeseries import TimeSeries
 
 
-class Norm(NonFittableAnomalyScorer):
+class NormScorer(NonFittableAnomalyScorer):
     def __init__(self, ord=None, component_wise: bool = False) -> None:
         """
         Returns the norm of a given order for each timestamp of the two input series’ differences.
