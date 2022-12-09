@@ -1,8 +1,9 @@
 """
 Filtering Anomaly Model
-------------
+-----------------------
 
-Wraps around a Darts filtering model and one or several anomaly scorer(s) to compute anomaly scores
+A ``FilteringAnomalyModel`` wraps around a Darts filtering model and one or
+several anomaly scorer(s) to compute anomaly scores
 by comparing how actuals deviate from the model's predictions.
 """
 
@@ -116,7 +117,7 @@ class FilteringAnomalyModel(AnomalyModel):
         if allow_filter_training:
             # fit filtering model
             if hasattr(self.filter, "fit"):
-                # TODO: check if filter is already fitted (for now fit it regardless -> only Kallman)
+                # TODO: check if filter is already fitted (for now fit it regardless -> only Kalman)
                 raise_if_not(
                     len(list_series) == 1,
                     f"Filter model {self.model.__class__.__name__} can only be fitted on a \
@@ -130,8 +131,7 @@ class FilteringAnomalyModel(AnomalyModel):
                 {self.model.__class__.__name__} is not fittable."
                 )
         else:
-
-            # TODO: check if Kallman is fitted or not
+            # TODO: check if Kalman is fitted or not
             # if not raise error "fit filter before, or set 'allow_filter_training' to TRUE"
             pass
 
