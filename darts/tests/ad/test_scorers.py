@@ -4,17 +4,17 @@ import numpy as np
 from pyod.models.knn import KNN
 
 from darts import TimeSeries
-from darts.ad.scorers.cauchy_nll_scorer import CauchyNLLScorer
-from darts.ad.scorers.difference import Difference
-from darts.ad.scorers.exponential_nll_scorer import ExponentialNLLScorer
-from darts.ad.scorers.gamma_nll_scorer import GammaNLLScorer
-from darts.ad.scorers.gaussian_nll_scorer import GaussianNLLScorer
-from darts.ad.scorers.kmeans_scorer import KMeansScorer
-from darts.ad.scorers.laplace_nll_scorer import LaplaceNLLScorer
-from darts.ad.scorers.norm import Norm
-from darts.ad.scorers.poisson_nll_scorer import PoissonNLLScorer
-from darts.ad.scorers.pyod_scorer import PyODScorer
-from darts.ad.scorers.wasserstein_scorer import WassersteinScorer
+from darts.ad.scorers import CauchyNLLScorer
+from darts.ad.scorers import DifferenceScorer as Difference
+from darts.ad.scorers import (
+    ExponentialNLLScorer,
+    GammaNLLScorer,
+    GaussianNLLScorer,
+    KMeansScorer,
+    LaplaceNLLScorer,
+)
+from darts.ad.scorers import NormScorer as Norm
+from darts.ad.scorers import PoissonNLLScorer, PyODScorer, WassersteinScorer
 from darts.models import MovingAverage
 from darts.tests.base_test_class import DartsBaseTestClass
 
