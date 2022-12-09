@@ -299,8 +299,12 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
     def set_capacity(
         self,
-        cap: Union[float, Callable[[Sequence[pd.Timestamp]], Sequence[float]]],
-        floor: Union[float, Callable[[Sequence[pd.Timestamp]], Sequence[float]]] = 0,
+        cap: Union[
+            float, Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]]
+        ],
+        floor: Union[
+            float, Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]]
+        ] = 0,
     ) -> None:
         """Set carrying capacities for predicting with logistic growth.
         These capacities are only used when `Prophet` was instantiated with `growth = 'logistic'`
@@ -309,8 +313,8 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         The `cap` and `floor` parameters may be:
         - a number, for constant carrying capacities
-        - a function taking a Sequence of Timestamps and returning a corresponding a Sequence of numbers,
-          where each number indicates the carrying capacity at this timepoint.
+        - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
+          where each number indicates the carrying capacity at this index.
 
         Parameters
         ----------
