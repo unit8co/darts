@@ -66,7 +66,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             `lags_past_covariates` past lags are used (inclusive, starting from lag -1). Otherwise a list of integers
             with lags < 0 is required.
         lags_future_covariates
-            Number of lagged future_covariates values used to predict the next time step. If an tuple (past, future) is
+            Number of lagged future_covariates values used to predict the next time step. If a tuple (past, future) is
             given the last `past` lags in the past are used (inclusive, starting from lag -1) along with the first
             `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list
             of integers with lags is required.
@@ -168,7 +168,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             TimeSeries or Sequence[TimeSeries] object containing the target values for evaluation dataset
         val_past_covariates
             Optionally, a series or sequence of series specifying past-observed covariates for evaluation dataset
-        val_future_covariates : Union[TimeSeries, Sequence[TimeSeries]]
+        val_future_covariates :
             Optionally, a series or sequence of series specifying future-known covariates for evaluation dataset
         max_samples_per_ts
             This is an integer upper bound on the number of tuples that can be produced
@@ -238,7 +238,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
 
     @property
     def min_train_series_length(self) -> int:
-        # LightGBM requires a minimum of 2 train samples, therefore the min_train_series_length should be one more than
+        #  XGBModel  requires a minimum of 2 training samples, therefore the min_train_series_length should be one more than
         # for other regression models
         return max(
             3,
