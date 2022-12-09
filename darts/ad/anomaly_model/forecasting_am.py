@@ -7,7 +7,7 @@ by comparing how actuals deviate from the model's predictions.
 """
 
 import inspect
-from typing import Any, Dict, Optional, Sequence, Union
+from typing import Dict, Optional, Sequence, Union
 
 import pandas as pd
 
@@ -72,7 +72,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         forecast_horizon: int = 1,
         start: Union[pd.Timestamp, float, int] = None,
         num_samples: int = 1,
-        model_fit_kwargs: Optional[Dict[str, Any]] = None,
+        **model_fit_kwargs,
     ):
         """Fit the underlying forecasting model (if applicable) and the fittable scorers, if any.
 
@@ -152,14 +152,6 @@ class ForecastingAnomalyModel(AnomalyModel):
         )
         list_future_covariates = self._prepare_covariates(
             future_covariates, list_series, "future"
-        )
-
-        if model_fit_kwargs is None:
-            model_fit_kwargs = {}
-
-        raise_if_not(
-            isinstance(model_fit_kwargs, dict),
-            f"model_fit_params must be of type dictionary, found {type(model_fit_kwargs)}",
         )
 
         model_fit_kwargs["past_covariates"] = list_past_covariates

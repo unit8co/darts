@@ -8,7 +8,7 @@ by comparing how actuals deviate from the model's predictions.
 """
 
 import warnings
-from typing import Any, Dict, Optional, Sequence, Union
+from typing import Dict, Sequence, Union
 
 from darts.ad.anomaly_model.anomaly_model import AnomalyModel
 from darts.ad.scorers.scorers import AnomalyScorer
@@ -21,7 +21,7 @@ from darts.timeseries import TimeSeries
 class FilteringAnomalyModel(AnomalyModel):
     def __init__(
         self,
-        filter: FilteringModel,
+        model: FilteringModel,
         scorer: Union[AnomalyScorer, Sequence[AnomalyScorer]],
     ):
         """Filtering-based Anomaly Detection Model
@@ -48,18 +48,18 @@ class FilteringAnomalyModel(AnomalyModel):
         """
 
         raise_if_not(
-            isinstance(filter, FilteringModel),
-            f"Filter must be a darts.models.filtering not a {type(filter)}",
+            isinstance(model, FilteringModel),
+            f"`model` must be a darts.models.filtering not a {type(model)}",
         )
-        self.filter = filter
+        self.filter = model
 
-        super().__init__(model=filter, scorer=scorer)
+        super().__init__(model=model, scorer=scorer)
 
     def fit(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
         allow_filter_training: bool = False,
-        filter_fit_kwargs: Optional[Dict[str, Any]] = None,
+        **filter_fit_kwargs,
     ):
         """Fit the underlying filtering model (if applicable) and the fittable scorers, if any.
 
@@ -106,14 +106,6 @@ class FilteringAnomalyModel(AnomalyModel):
             "all input 'series' must be of type Timeseries",
         )
 
-        if filter_fit_kwargs is None:
-            filter_fit_kwargs = {}
-
-        raise_if_not(
-            isinstance(filter_fit_kwargs, dict),
-            f"filter_fit_kwargs must be of type dictionary, found {type(filter_fit_kwargs)}",
-        )
-
         if allow_filter_training:
             # fit filtering model
             if hasattr(self.filter, "fit"):
@@ -148,11 +140,11 @@ class FilteringAnomalyModel(AnomalyModel):
     def show_anomalies(
         self,
         series: TimeSeries,
-        filter_params: Optional[Dict[str, Any]] = None,
         actual_anomalies: TimeSeries = None,
         names_of_scorers: Union[str, Sequence[str]] = None,
         title: str = None,
         metric: str = None,
+        **score_kwargs,
     ):
         """Plot the results of the anomaly model.
 
@@ -172,8 +164,6 @@ class FilteringAnomalyModel(AnomalyModel):
         ----------
         series
             The series to visualize anomalies from.
-        filter_params
-            parameters of the Darts `.filter()` filtering model
         actual_anomalies
             The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
         names_of_scorers
@@ -183,6 +173,8 @@ class FilteringAnomalyModel(AnomalyModel):
         metric
             Optionally, Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR".
             Default: "AUC_ROC"
+        score_kwargs
+            parameters for the `.score()` function
         """
 
         if isinstance(series, Sequence):
@@ -194,7 +186,7 @@ class FilteringAnomalyModel(AnomalyModel):
             series = series[0]
 
         anomaly_scores, model_output = self.score(
-            series, return_model_prediction=True, filter_kwargs=filter_params
+            series, return_model_prediction=True, **score_kwargs
         )
 
         return self._show_anomalies(
@@ -211,7 +203,7 @@ class FilteringAnomalyModel(AnomalyModel):
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
         return_model_prediction: bool = False,
-        filter_kwargs: Optional[Dict[str, Any]] = None,
+        **filter_kwargs,
     ):
         """Compute anomaly score(s) for the given series.
 
@@ -257,14 +249,6 @@ class FilteringAnomalyModel(AnomalyModel):
             "all input 'series' must be of type Timeseries",
         )
 
-        if filter_kwargs is None:
-            filter_kwargs = {}
-
-        raise_if_not(
-            isinstance(filter_kwargs, dict),
-            f"filter_fit_params must be of type dictionary, found {type(filter_kwargs)}",
-        )
-
         list_pred = []
         for s in list_series:
             list_pred.append(self.filter.filter(s, **filter_kwargs))
@@ -292,7 +276,7 @@ class FilteringAnomalyModel(AnomalyModel):
         actual_anomalies: Union[TimeSeries, Sequence[TimeSeries]],
         series: Union[TimeSeries, Sequence[TimeSeries]],
         metric: str = "AUC_ROC",
-        filter_kwargs: Optional[Dict[str, Any]] = None,
+        **filter_kwargs,
     ) -> Union[
         Dict[str, float],
         Dict[str, Sequence[float]],
@@ -314,7 +298,7 @@ class FilteringAnomalyModel(AnomalyModel):
         metric
             Optionally, Scoring function to use. Must be one of "AUC_ROC" and "AUC_PR".
             Default: "AUC_ROC"
-        filter_kwargs: dict, optional
+        filter_kwargs
             parameters of the Darts `.filter()` filtering model
 
         Returns
@@ -344,9 +328,7 @@ class FilteringAnomalyModel(AnomalyModel):
         _same_length(list_series, list_actual_anomalies)
         self.check_returns_UTS(list_actual_anomalies)
 
-        list_anomaly_scores = self.score(
-            series=list_series, filter_kwargs=filter_kwargs
-        )
+        list_anomaly_scores = self.score(series=list_series, **filter_kwargs)
 
         acc_anomaly_scores = []
         for anomalies, scores in zip(list_actual_anomalies, list_anomaly_scores):
