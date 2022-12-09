@@ -5,7 +5,7 @@ Facebook Prophet
 
 import logging
 import re
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Callable, Sequence
 
 import numpy as np
 import pandas as pd
@@ -98,6 +98,12 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         self._execute_and_suppress_output = execute_and_suppress_output
         self._model_builder = prophet.Prophet
 
+        self.is_logistic = False
+        if "growth" in prophet_kwargs and prophet_kwargs["growth"] == "logistic":
+            self.is_logistic = True
+        self._cap = None
+        self._floor = None
+
     def __str__(self):
         return "Prophet"
 
@@ -110,6 +116,14 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         fit_df = pd.DataFrame(
             data={"ds": series.time_index, "y": series.univariate_values()}
         )
+        if self.is_logistic:
+            raise_if(
+                self._cap is None or self._floor is None,
+                "Cap and floor have to be set by calling `Prophet.set_capacity` "
+                "before fitting, when parameter `growth` is set to 'logistic'.",
+                logger,
+            )
+            fit_df = self._add_capacities_to_df(fit_df)
 
         self.model = self._model_builder(**self.prophet_kwargs)
 
@@ -167,6 +181,22 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         return self._build_forecast_series(forecast)
 
+    def _add_capacities_to_df(self, df: pd.DataFrame) -> pd.DataFrame:
+        dates = df["ds"]
+        try:
+            df["cap"] = self._cap(dates) if callable(self._cap) else self._cap
+            df["floor"] = self._floor(dates) if callable(self._floor) else self._floor
+        except ValueError as e:
+            raise_if(
+                "does not match length of index" in str(e),
+                "Callables supplied to `Prophet.set_capacity` as `cap` or `floor` "
+                "arguments have to return Sequences of identical length as their "
+                " input argument Sequence!",
+                logger,
+            )
+            raise
+        return df
+
     def _generate_predict_df(
         self, n: int, future_covariates: Optional[TimeSeries] = None
     ) -> pd.DataFrame:
@@ -174,6 +204,8 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         the fitted TimeSeries"""
 
         predict_df = pd.DataFrame(data={"ds": self._generate_new_dates(n)})
+        if self.is_logistic:
+            predict_df = self._add_capacities_to_df(predict_df)
         if future_covariates is not None:
             predict_df = predict_df.merge(
                 future_covariates.pd_dataframe(),
@@ -264,6 +296,36 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             "mode": mode,
         }
         self._store_add_seasonality_call(seasonality_call=function_call)
+
+    def set_capacity(
+        self,
+        cap: Union[float, Callable[[Sequence[pd.Timestamp]], Sequence[float]]],
+        floor: Union[float, Callable[[Sequence[pd.Timestamp]], Sequence[float]]] = 0,
+    ) -> None:
+        """Set carrying capacities for predicting with logistic growth.
+        These capacities are only used when `Prophet` was instantiated with `growth = 'logistic'`
+        See <https://facebook.github.io/prophet/docs/saturating_forecasts.html> for more information
+        on logistic forecasts.
+
+        The `cap` and `floor` parameters may be:
+        - a number, for constant carrying capacities
+        - a function taking a Sequence of Timestamps and returning a corresponding a Sequence of numbers,
+          where each number indicates the carrying capacity at this timepoint.
+
+        Parameters
+        ----------
+        cap
+            The maximum carrying capacity
+        floor
+            The minimum carrying capacity, by default 0
+        """
+        if not self.is_logistic:
+            logger.warning(
+                "Capacities were set although `growth` is not logistic. "
+                "The set capacities will be ignored."
+            )
+        self._cap = cap
+        self._floor = floor
 
     def _store_add_seasonality_call(
         self, seasonality_call: Optional[dict] = None
