@@ -22,9 +22,11 @@ logger = get_logger(__name__)
 
 
 def xgb_quantile_loss(labels: np.ndarray, preds: np.ndarray, quantile: float):
-    """Custom loss function for XGBoost to compute quantile loss.
+    """Custom loss function for XGBoost to compute quantile loss gradient.
 
     Inspired from: https://gist.github.com/Nikolay-Lysenko/06769d701c1d9c9acb9a66f2f9d7a6c7
+
+    This computes the gradient of the pinball loss between predictions and target labels.
     """
     raise_if_not(0 <= quantile <= 1, "Quantile must be between 0 and 1.", logger)
 
@@ -119,7 +121,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         if likelihood is not None:
             self._check_likelihood(likelihood, available_likelihoods)
             if likelihood in {"poisson"}:
-                self.kwargs["objective"] = "count:poisson"
+                self.kwargs["objective"] = f"count:{likelihood}"
             elif likelihood == "quantile":
                 self.quantiles, self._median_idx = self._prepare_quantiles(quantiles)
                 self._model_container = self._get_model_container()
