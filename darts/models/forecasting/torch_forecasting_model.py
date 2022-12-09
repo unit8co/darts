@@ -250,6 +250,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         super().__init__(add_encoders=add_encoders)
         suppress_lightning_warnings(suppress_all=not show_warnings)
 
+        raise_if_not(
+            n_epochs > 0,
+            "`n_epochs` should be greater than 0.",
+            logger,
+        )
+
         # We will fill these dynamically, upon first call of fit_from_dataset():
         self.model: Optional[PLForecastingModule] = None
         self.train_sample: Optional[Tuple] = None

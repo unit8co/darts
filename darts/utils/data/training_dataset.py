@@ -202,7 +202,7 @@ class TrainingDataset(ABC, Dataset):
 class PastCovariatesTrainingDataset(TrainingDataset, ABC):
     def __init__(self):
         """
-        Abstract class for a PastCovariatesTorchModel training dataset. It contains 3-tuples of
+        Abstract class for a PastCovariatesTorchModel training dataset. It contains 4-tuples of
         `(past_target, past_covariate, static_covariates, future_target)` `np.ndarray`.
         The covariates are optional and can be `None`.
         """
@@ -218,7 +218,7 @@ class PastCovariatesTrainingDataset(TrainingDataset, ABC):
 class FutureCovariatesTrainingDataset(TrainingDataset, ABC):
     def __init__(self):
         """
-        Abstract class for a FutureCovariatesTorchModel training dataset. It contains 3-tuples of
+        Abstract class for a FutureCovariatesTorchModel training dataset. It contains 4-tuples of
         `(past_target, future_covariate, static_covariates, future_target)` `np.ndarray`.
         The covariates are optional and can be `None`.
         """
@@ -234,7 +234,7 @@ class FutureCovariatesTrainingDataset(TrainingDataset, ABC):
 class DualCovariatesTrainingDataset(TrainingDataset, ABC):
     def __init__(self):
         """
-        Abstract class for a DualCovariatesTorchModel training dataset. It contains 4-tuples of
+        Abstract class for a DualCovariatesTorchModel training dataset. It contains 5-tuples of
         `(past_target, historic_future_covariates, future_covariates, static_covariates, future_target)` `np.ndarray`.
         The covariates are optional and can be `None`.
         """
@@ -256,7 +256,7 @@ class DualCovariatesTrainingDataset(TrainingDataset, ABC):
 class MixedCovariatesTrainingDataset(TrainingDataset, ABC):
     def __init__(self):
         """
-        Abstract class for a MixedCovariatesTorchModel training dataset. It contains 5-tuples of
+        Abstract class for a MixedCovariatesTorchModel training dataset. It contains 6-tuples of
         `(past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates,
         future_target)` `np.ndarray`.
         The covariates are optional and can be `None`.
@@ -280,7 +280,7 @@ class MixedCovariatesTrainingDataset(TrainingDataset, ABC):
 class SplitCovariatesTrainingDataset(TrainingDataset, ABC):
     def __init__(self):
         """
-        Abstract class for a SplitCovariatesTorchModel training dataset. It contains 4-tuples of
+        Abstract class for a SplitCovariatesTorchModel training dataset. It contains 5-tuples of
         `(past_target, past_covariates, future_covariates, static_covariates, future_target)` `np.ndarray`.
         The covariates are optional and can be `None`.
         """

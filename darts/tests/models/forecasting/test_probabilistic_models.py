@@ -3,7 +3,7 @@ import numpy as np
 from darts import TimeSeries
 from darts.logging import get_logger
 from darts.metrics import mae
-from darts.models import ARIMA, BATS, TBATS, ExponentialSmoothing
+from darts.models import ARIMA, BATS, TBATS, DeepTimeModel, ExponentialSmoothing
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
@@ -131,6 +131,20 @@ if TORCH_AVAILABLE:
                 "likelihood": GaussianLikelihood(),
             },
             1,
+        ),
+        (
+            DeepTimeModel,
+            {
+                "input_chunk_length": 10,
+                "output_chunk_length": 5,
+                "inr_num_layers": 5,
+                "inr_layers_width": 256,
+                "n_fourier_feats": 1024,
+                "n_epochs": 20,
+                "random_state": 0,
+                "likelihood": GaussianLikelihood(),
+            },
+            1.9,
         ),
     ]
 

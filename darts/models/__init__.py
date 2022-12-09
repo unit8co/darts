@@ -24,6 +24,7 @@ from darts.models.forecasting.varima import VARIMA
 
 try:
     from darts.models.forecasting.block_rnn_model import BlockRNNModel
+    from darts.models.forecasting.deeptime import DeepTimeModel
     from darts.models.forecasting.dlinear import DLinearModel
     from darts.models.forecasting.nbeats import NBEATSModel
     from darts.models.forecasting.nhits import NHiTSModel
@@ -32,8 +33,6 @@ try:
     from darts.models.forecasting.tcn_model import TCNModel
     from darts.models.forecasting.tft_model import TFTModel
     from darts.models.forecasting.transformer_model import TransformerModel
-
-
 except ModuleNotFoundError:
     logger.warning(
         "Support for Torch based models not available. "
