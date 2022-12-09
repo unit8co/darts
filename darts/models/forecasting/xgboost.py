@@ -64,7 +64,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             `lags_past_covariates` past lags are used (inclusive, starting from lag -1). Otherwise a list of integers
             with lags < 0 is required.
         lags_future_covariates
-            Number of lagged future_covariates values used to predict the next time step. If an tuple (past, future) is
+            Number of lagged future_covariates values used to predict the next time step. If a tuple (past, future) is
             given the last `past` lags in the past are used (inclusive, starting from lag -1) along with the first
             `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list
             of integers with lags is required.
