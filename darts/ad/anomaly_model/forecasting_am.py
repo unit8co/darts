@@ -1,9 +1,9 @@
 """
 Forecasting Anomaly Model
-------------
+-------------------------
 
 Wraps around a Darts forecasting model and one or several anomaly scorer(s) to compute anomaly scores
-by comparing how actuals deviate from the model's predictions.
+by comparing how actuals deviate from the model's forecasts.
 """
 
 import inspect
@@ -34,8 +34,8 @@ class ForecastingAnomalyModel(AnomalyModel):
     ):
         """Forecasting-based Anomaly Detection Model
 
-        The forecasting model may or may not be already fitted. The underlying assumption is that this model
-        should be able to acurately forecast the series in the absence of anomalies. For this reason,
+        The forecasting model may or may not be already fitted. The underlying assumption is that `model`
+        should be able to accurately forecast the series in the absence of anomalies. For this reason,
         it is recommend to either provide a model that has already been fitted and evaluated to work
         appropriately on a series without anomalies, or to ensure that a simple call to the :func:`fit()`
         method of the model will be sufficient to train it to satisfactory performance on a series without anomalies.
@@ -70,7 +70,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         allow_model_training: bool = False,
         forecast_horizon: int = 1,
-        start: Union[pd.Timestamp, float, int] = None,
+        start: Union[pd.Timestamp, float, int] = 0.5,
         num_samples: int = 1,
         **model_fit_kwargs,
     ):
@@ -87,7 +87,8 @@ class ForecastingAnomalyModel(AnomalyModel):
         Parameters
         ----------
         series
-            One or multiple target series to be trained on (anomaly-free).
+            One or multiple (if the model supports it) target series to be
+            trained on (generally assumed to be anomaly-free).
         allow_model_training
             Boolean value that indicates if the forecasting model needs to be fitted on the given series.
             If set to False, the model needs to be already fitted.
@@ -111,6 +112,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             `series` that will be used as first prediction time.
             In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
             directly.
+            Default: 0.5
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
             deterministic models.
@@ -136,9 +138,6 @@ class ForecastingAnomalyModel(AnomalyModel):
                 trained because the parameter allow_model_training is set to False, and all scorers are not fittable.\
                 No need to call the .fit() function"
             )
-
-        if start is None:
-            start = 0.5
 
         list_series = _to_list(series)
 
