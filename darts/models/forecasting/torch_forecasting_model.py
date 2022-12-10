@@ -1306,7 +1306,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # load the base TorchForecastingModel (does not contain the actual PyTorch LightningModule)
         with open(path, "rb") as fin:
-            model: TorchForecastingModel = torch.load(fin)
+            model: TorchForecastingModel = torch.load(
+                fin, map_location=kwargs.get("map_location", None)
+            )
 
         # if a checkpoint was saved, we also load the PyTorch LightningModule from checkpoint
         path_ptl_ckpt = path + ".ckpt"
@@ -1393,7 +1395,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             f"Could not find base model save file `{INIT_MODEL_NAME}` in {model_dir}.",
             logger,
         )
-        model = TorchForecastingModel.load(base_model_path)
+        model = TorchForecastingModel.load(base_model_path, **kwargs)
 
         # load PyTorch LightningModule from checkpoint
         # if file_name is None, find most recent file in savepath that is a checkpoint
@@ -1413,8 +1415,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         the model twice. Instead, we recover the module class with the module path and class name stored
         in the TFM object. With the recovered module class, we can load the checkpoint.
         """
-        model_cls = getattr(sys.modules[self._module_path], self._module_name)
-        return model_cls.load_from_checkpoint(file_path, **kwargs)
+        pl_module_cls = getattr(sys.modules[self._module_path], self._module_name)
+        return pl_module_cls.load_from_checkpoint(file_path, **kwargs)
 
     def to_cpu(self):
         """Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time :fun:`fit()` or
