@@ -450,6 +450,7 @@ class _TFTModule(PLMixedCovariatesModule):
         """
         x_cont_past, x_cont_future, x_static = x_in
         dim_samples, dim_time, dim_variable = 0, 1, 2
+        device = x_in[0].device
 
         batch_size = x_cont_past.shape[dim_samples]
         encoder_length = self.input_chunk_length
@@ -463,21 +464,21 @@ class _TFTModule(PLMixedCovariatesModule):
                     time_steps=time_steps,
                     batch_size=batch_size,
                     dtype=x_cont_past.dtype,
-                    device=self.device,
+                    device=device,
                 )
             else:
                 self.attention_mask = self.get_attention_mask_future(
                     encoder_length=encoder_length,
                     decoder_length=decoder_length,
                     batch_size=batch_size,
-                    device=self.device,
+                    device=device,
                 )
             if self.add_relative_index:
                 self.relative_index = self.get_relative_index(
                     encoder_length=encoder_length,
                     decoder_length=decoder_length,
                     batch_size=batch_size,
-                    device=self.device,
+                    device=device,
                     dtype=x_cont_past.dtype,
                 )
 
@@ -541,7 +542,7 @@ class _TFTModule(PLMixedCovariatesModule):
             static_embedding = torch.zeros(
                 (x_cont_past.shape[0], self.hidden_size),
                 dtype=x_cont_past.dtype,
-                device=self.device,
+                device=device,
             )
 
         static_context_expanded = self.expand_static_context(

@@ -145,16 +145,20 @@ if TORCH_AVAILABLE:
             self.assertTrue(os.path.exists(model_path_manual_ckpt))
 
             # load manual save model and compare with automatic model results
-            model_manual_save = RNNModel.load(model_path_manual)
+            model_manual_save = RNNModel.load(model_path_manual, map_location="cpu")
+            model_manual_save.to_cpu()
             self.assertEqual(
                 model_manual_save.predict(n=4), model_auto_save.predict(n=4)
             )
 
             # load automatically saved model with manual load() and load_from_checkpoint()
             model_auto_save1 = RNNModel.load_from_checkpoint(
-                model_name=auto_name, work_dir=self.temp_work_dir, best=False
+                model_name=auto_name,
+                work_dir=self.temp_work_dir,
+                best=False,
+                map_location="cpu",
             )
-
+            model_auto_save1.to_cpu()
             # compare loaded checkpoint with manual save
             self.assertEqual(
                 model_manual_save.predict(n=4), model_auto_save1.predict(n=4)
