@@ -340,10 +340,6 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             # input 'series' must be a series and not a Sequence of series
             with self.assertRaises(ValueError):
                 am.show_anomalies([self.train, self.train])
-            with self.assertRaises(ValueError):
-                am.show_anomalies(["str"])
-            with self.assertRaises(ValueError):
-                am.show_anomalies([1])
 
     def test_eval_accuracy(self):
 
