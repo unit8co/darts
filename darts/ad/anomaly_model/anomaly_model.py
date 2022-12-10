@@ -48,28 +48,16 @@ class AnomalyModel(ABC):
         )
 
         self.scorers_are_trainable = any(s.trainable for s in self.scorers)
-        self.scorers_are_returns_UTS = any(s.returns_UTS for s in self.scorers)
+        self.univariate_scoring = any(s.returns_UTS for s in self.scorers)
 
         self.model = model
 
     def check_returns_UTS(self, actual_anomalies):
-        """Checks if 'actual_anomalies' contains only univariate series when the
-        parameter 'scorers_are_returns_UTS' is set to True.
-
-        'scorers_are_returns_UTS', an anomaly model parameter, is:
-            True -> at least one of the scorer has its parameter set to True
-            False -> all scorers have their parameter set to False
-
-        'returns_UTS', a scorer parameter, is:
-            True -> when the function of the scorer ``score(series)`` (or, if applicable,
-                ``score_from_prediction(actual_series, pred_series)``) returns a univariate
-                anomaly score regardless of the input 'series' (or, if applicable, 'actual_series'
-                and 'pred_series').
-            False -> when the scorer will return a series that has the
-                same width as the input (can be univariate or multivariate).
+        """Checks if 'actual_anomalies' contains only univariate series, which
+        is required if any of the scorers is univariate.
         """
 
-        if self.scorers_are_returns_UTS:
+        if self.univariate_scoring:
             raise_if_not(
                 all([s.width == 1 for s in actual_anomalies]),
                 "Anomaly model contains scorer {} that will return a univariate anomaly score series (width=1). \
