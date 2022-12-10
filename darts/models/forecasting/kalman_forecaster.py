@@ -112,6 +112,7 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         historic_future_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        verbose: bool = False,
     ) -> TimeSeries:
 
         super()._predict(

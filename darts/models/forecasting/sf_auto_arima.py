@@ -75,7 +75,7 @@ class StatsForecastAutoARIMA(FutureCovariatesLocalForecastingModel):
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         super()._fit(series, future_covariates)
-        series._assert_univariate()
+        self._assert_univariate(series)
         series = self.training_series
         self.model.fit(
             series.values(copy=False).flatten(),
@@ -88,6 +88,7 @@ class StatsForecastAutoARIMA(FutureCovariatesLocalForecastingModel):
         n: int,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        verbose: bool = False,
     ):
         super()._predict(n, future_covariates, num_samples)
         forecast_df = self.model.predict(

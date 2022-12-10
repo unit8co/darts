@@ -300,11 +300,14 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
         ----------
         target_series
             One or a sequence of target `TimeSeries`.
-        covariates
-            Optionally, one or a sequence of `TimeSeries` containing future-known covariates. If this parameter is set,
+        past_covariates
+            Optionally, one or a sequence of `TimeSeries` containing past-observed covariates. If this parameter is set,
             the provided sequence must have the same length as that of `target_series`. Moreover, all
             covariates in the sequence must have a time span large enough to contain all the required slices.
             The joint slicing of the target and covariates is relying on the time axes of both series.
+        future_covariates
+            Optionally, one or a sequence of `TimeSeries` containing future-known covariates. This has to follow
+            the same constraints as `past_covariates`.
         input_chunk_length
             The length of the emitted past series.
         output_chunk_length

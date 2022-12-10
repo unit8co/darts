@@ -4,6 +4,8 @@ LightGBM Model
 
 This is a LightGBM implementation of Gradient Boosted Trees algorithm.
 
+This implementation comes with the ability to produce probabilistic forecasts.
+
 To enable LightGBM support in Darts, follow the detailed install instructions for LightGBM in the INSTALL:
 https://github.com/unit8co/darts/blob/master/INSTALL.md
 """
@@ -31,9 +33,10 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
         likelihood: str = None,
         quantiles: List[float] = None,
         random_state: Optional[int] = None,
+        multi_models: Optional[bool] = True,
         **kwargs,
     ):
-        """Light Gradient Boosted Model
+        """LGBM Model
 
         Parameters
         ----------
@@ -75,12 +78,15 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
             ..
         likelihood
             Can be set to `quantile` or `poisson`. If set, the model will be probabilistic, allowing sampling at
-            prediction time.
+            prediction time. This will overwrite any `objective` parameter.
         quantiles
             Fit the model to these quantiles if the `likelihood` is set to `quantile`.
         random_state
             Control the randomness in the fitting procedure and for sampling.
             Default: ``None``.
+        multi_models
+            If True, a separate model will be trained for each future lag to predict. If False, a single model is
+            trained to predict at step 'output_chunk_length' in the future. Default: True.
         **kwargs
             Additional keyword arguments passed to `lightgbm.LGBRegressor`.
         """
@@ -109,7 +115,8 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
             lags_future_covariates=lags_future_covariates,
             output_chunk_length=output_chunk_length,
             add_encoders=add_encoders,
-            model=lgb.LGBMRegressor(**kwargs),
+            multi_models=multi_models,
+            model=lgb.LGBMRegressor(**self.kwargs),
         )
 
     def __str__(self):
@@ -152,6 +159,8 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+         **kwargs
+            Additional kwargs passed to `lightgbm.LGBRegressor.fit()`
         """
 
         if val_series is not None:

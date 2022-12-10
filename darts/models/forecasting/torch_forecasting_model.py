@@ -1173,8 +1173,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # Set mc_dropout rate
         self.model.set_mc_dropout(mc_dropout)
 
-        # setup trainer. will only be re-instantiated if both `trainer` and `self.trainer` are `None`
-        trainer = trainer if trainer is not None else self.trainer
+        # trainer is systematically re-instantiated to overwrite the fit parameters
         self._setup_trainer(trainer=trainer, verbose=verbose, epochs=self.n_epochs)
 
         # prediction output comes as nested list: list of predicted `TimeSeries` for each batch.

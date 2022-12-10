@@ -125,6 +125,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
 
         super()._fit(series, future_covariates)
+        self._assert_univariate(series)
         series = self.training_series
 
         fit_df = pd.DataFrame(
@@ -171,6 +172,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         n: int,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        verbose: bool = False,
     ) -> TimeSeries:
 
         super()._predict(n, future_covariates, num_samples)

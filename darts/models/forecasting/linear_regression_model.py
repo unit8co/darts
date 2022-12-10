@@ -29,6 +29,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         likelihood: str = None,
         quantiles: List[float] = None,
         random_state: Optional[int] = None,
+        multi_models: Optional[bool] = True,
         **kwargs,
     ):
         """Linear regression model.
@@ -83,6 +84,9 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             <https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator>`_. Ignored when
             no `likelihood` is set.
             Default: ``None``.
+        multi_models
+            If True, a separate model will be trained for each future lag to predict. If False, a single model is
+            trained to predict at step 'output_chunk_length' in the future. Default: True.
         **kwargs
             Additional keyword arguments passed to `sklearn.linear_model.LinearRegression` (by default), to
             `sklearn.linear_model.PoissonRegressor` (if `likelihood="poisson"`), or to
@@ -117,6 +121,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             output_chunk_length=output_chunk_length,
             add_encoders=add_encoders,
             model=model,
+            multi_models=multi_models,
         )
 
     def __str__(self):

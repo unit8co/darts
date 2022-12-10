@@ -202,6 +202,7 @@ class _BaseBatsTbatsModel(LocalForecastingModel, ABC):
 
     def fit(self, series: TimeSeries):
         super().fit(series)
+        self._assert_univariate(series)
         series = self.training_series
 
         if self.infer_seasonal_periods:
@@ -215,7 +216,7 @@ class _BaseBatsTbatsModel(LocalForecastingModel, ABC):
 
         return self
 
-    def predict(self, n, num_samples=1):
+    def predict(self, n, num_samples=1, verbose: bool = False):
         super().predict(n, num_samples)
 
         yhat = self.model.forecast(steps=n)
