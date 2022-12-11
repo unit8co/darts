@@ -487,6 +487,3 @@ class FourTheta(LocalForecastingModel):
             return 2 * self.seasonality_period
         else:
             return 3
-
-    def _is_probabilistic(self) -> bool:
-        return False

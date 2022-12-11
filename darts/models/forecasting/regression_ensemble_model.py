@@ -170,6 +170,3 @@ class RegressionEnsembleModel(EnsembleModel):
             for serie, prediction in zip(series, predictions)
         ]
         return seq2series(ensembled) if is_single_series else ensembled
-
-    def _is_probabilistic(self) -> bool:
-        return all([model._is_probabilistic() for model in self.models])

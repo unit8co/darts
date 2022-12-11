@@ -44,9 +44,6 @@ class NaiveMean(LocalForecastingModel):
         forecast = np.tile(self.mean_val, (1, n))
         return self._build_forecast_series(forecast)
 
-    def _is_probabilistic(self) -> bool:
-        return False
-
 
 class NaiveSeasonal(LocalForecastingModel):
     def __init__(self, K: int = 1):
@@ -88,9 +85,6 @@ class NaiveSeasonal(LocalForecastingModel):
         forecast = np.array([self.last_k_vals[i % self.K, :] for i in range(n)])
         return self._build_forecast_series(forecast)
 
-    def _is_probabilistic(self) -> bool:
-        return False
-
 
 class NaiveDrift(LocalForecastingModel):
     def __init__(self):
@@ -123,9 +117,6 @@ class NaiveDrift(LocalForecastingModel):
         last_value = last + slope * n
         forecast = np.linspace(last, last_value, num=n + 1)[1:]
         return self._build_forecast_series(forecast)
-
-    def _is_probabilistic(self) -> bool:
-        return False
 
 
 class NaiveEnsembleModel(EnsembleModel):
@@ -182,6 +173,3 @@ class NaiveEnsembleModel(EnsembleModel):
                 predictions.pd_dataframe(copy=False).sum(axis=1) / len(self.models),
                 static_covariates=predictions.static_covariates,
             )
-
-    def _is_probabilistic(self) -> bool:
-        return all([model._is_probabilistic() for model in self.models])
