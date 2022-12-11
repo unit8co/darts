@@ -182,9 +182,6 @@ class Theta(LocalForecastingModel):
         else:
             return 3
 
-    def _is_probabilistic(self) -> bool:
-        return False
-
 
 class FourTheta(LocalForecastingModel):
     def __init__(
