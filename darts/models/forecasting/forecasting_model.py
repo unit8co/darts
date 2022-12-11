@@ -1543,8 +1543,8 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
 
         super().predict(n, num_samples)
 
-        # ignore TransferableFutureCovariatesLocalForecastingModel, as already applied
-        if not isinstance(self, TransferableFutureCovariatesLocalForecastingModel):
+        # avoid generating encodings again if subclass has already generated them
+        if not self._supress_generate_predict_encoding:
             self._verify_passed_predict_covariates(future_covariates)
             if self.encoders is not None and self.encoders.encoding_available:
                 _, future_covariates = self.generate_predict_encodings(
@@ -1654,6 +1654,11 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
                     "`future_covariates` parameter provided to `predict()` is not None.",
                 )
             )
+
+    @property
+    def _supress_generate_predict_encoding(self) -> bool:
+        """Controls wether encodings should be generated in :func:`FutureCovariatesLocalForecastingModel.predict()``"""
+        return False
 
 
 class TransferableFutureCovariatesLocalForecastingModel(
@@ -1827,4 +1832,8 @@ class TransferableFutureCovariatesLocalForecastingModel(
         )
 
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
+        return True
+
+    @property
+    def _supress_generate_predict_encoding(self) -> bool:
         return True
