@@ -175,7 +175,7 @@ class CovariatesIndexGenerator(ABC):
             )
 
     def _verify_lags(self, min_covariates_lag, max_covariates_lag):
-        """Check the bas requirements for `min_covariates_lag` and `max_covariates_lag`:
+        """Check the base requirements for `min_covariates_lag` and `max_covariates_lag`:
         - both must either be None or an integer
         - min_covariates_lag < max_covariates_lag
 

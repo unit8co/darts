@@ -412,7 +412,6 @@ class MetricsTestCase(DartsBaseTestClass):
         ]
 
         for metric in test_metric:
-            print(metric)
             self.assertEqual(
                 metric(self.series1 + 1, self.series2), metric(series11, series22)
             )

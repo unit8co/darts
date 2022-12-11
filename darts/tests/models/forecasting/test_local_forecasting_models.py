@@ -280,7 +280,6 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             )
             # test once with user supplied covariates, and once without
             for fc in [future_covariates, None]:
-                print(model_object)
                 model_params = {
                     k: vals
                     for k, vals in copy.deepcopy(model_object.model_params).items()

@@ -1501,11 +1501,6 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
                 past_covariates=None,
                 future_covariates=future_covariates,
             )
-            raise_if_not(
-                series.has_same_time_as(future_covariates),
-                "Encoders did not generate valid covariates index.",
-                logger=logger,
-            )
 
         super().fit(series)
 
