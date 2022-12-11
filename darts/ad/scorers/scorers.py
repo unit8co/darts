@@ -380,9 +380,9 @@ class NonFittableAnomalyScorer(AnomalyScorer):
 
 
 class FittableAnomalyScorer(AnomalyScorer):
-    "Base class of scorers that do need training."
+    """Base class of scorers that do need training."""
 
-    def __init__(self, returns_UTS, window, diff_fn) -> None:
+    def __init__(self, returns_UTS, window, diff_fn="abs_diff") -> None:
         super().__init__(returns_UTS=returns_UTS, window=window)
 
         # indicates if the scorer is trainable or not
@@ -392,10 +392,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         self._fit_called = False
 
         # function used in ._diff_series() to convert 2 time series into 1
-        if diff_fn is None:
-            diff_fn = "abs_diff"
-
-        if diff_fn == "abs_diff" or diff_fn == "diff":
+        if diff_fn in {"abs_diff", "diff"}:
             self.diff_fn = diff_fn
         else:
             raise ValueError(f"Metric should be 'diff' or 'abs_diff', found {diff_fn}")
@@ -431,14 +428,14 @@ class FittableAnomalyScorer(AnomalyScorer):
         -------
         Union[float, Sequence[float], Sequence[Sequence[float]]]
             Score of an agnostic threshold metric for the computed anomaly score
-                - float -> if `series` is a univariate series (dimension=1).
-                - Sequence[float]
-                    -> if `series` is a multivariate series (dimension>1), returns one
-                    value per dimension.
-                    OR
-                    -> if `series` is a sequence of univariate series, returns one value
+                - ``float`` if `series` is a univariate series (dimension=1).
+                - ``Sequence[float]``
+
+                    * if `series` is a multivariate series (dimension>1), returns one
+                    value per dimension, or
+                    * if `series` is a sequence of univariate series, returns one value
                     per series
-                - Sequence[Sequence[float]]] -> if `series` is a sequence of multivariate
+                - ``Sequence[Sequence[float]]]`` if `series` is a sequence of multivariate
                 series. Outer Sequence is over the sequence input and the inner Sequence
                 is over the dimensions of each element in the sequence input.
         """
@@ -565,7 +562,8 @@ class FittableAnomalyScorer(AnomalyScorer):
         """Computes the anomaly score on the two (sequence of) series.
 
         The function ``diff_fn`` passed as a parameter to the scorer, will transform `pred_series` and `actual_series`
-        into one series. By default, ``diff_fn`` will compute the absolute difference (Default: "abs_diff").
+        into one "difference" series. By default, ``diff_fn`` will compute the absolute difference
+        (Default: "abs_diff").
         If actual_series and pred_seriesare sequences, ``diff_fn`` will be applied to all pairwise elements
         of the sequences.
 
@@ -618,7 +616,7 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         If sequence of series is given, the scorer will be fitted on the concatenation of the sequence.
 
-        The scorer assumes that the (sequence of) series used for its training is anomaly-free.
+        The assumptions is that the series `series` used for training are generally anomaly-free.
 
         Parameters
         ----------
@@ -685,7 +683,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         _same_length(list_actual_series, list_pred_series)
 
         list_fit_series = []
-        for idx, (s1, s2) in enumerate(zip(list_actual_series, list_pred_series)):
+        for s1, s2 in zip(list_actual_series, list_pred_series):
             _sanity_check_2series(s1, s2)
             s1 = self._check_deterministic(s1, "actual_series")
             s2 = self._check_deterministic(s2, "pred_series")
@@ -795,12 +793,15 @@ class NLLScorer(NonFittableAnomalyScorer):
         for width in range(pred_series.width):
             np_anomaly_scores.append(
                 self._score_core_NLlikelihood(
-                    np_actual_series[:, width].flatten(), np_pred_series[:, width]
+                    # shape actual: (time_steps, )
+                    # shape pred: (time_steps, samples)
+                    np_actual_series[:, width].flatten(),
+                    np_pred_series[:, width],
                 )
             )
 
         anomaly_scores = TimeSeries.from_times_and_values(
-            pred_series._time_index, list(zip(*np_anomaly_scores))
+            pred_series.time_index, list(zip(*np_anomaly_scores))
         )
 
         return self.window_adjustment_series(anomaly_scores)

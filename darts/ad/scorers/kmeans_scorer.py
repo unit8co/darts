@@ -1,8 +1,8 @@
 """
-KMeansScorer
------
+k-means Scorer
+--------------
 
-KMeans Scorer (k-means clustering) [1]_.
+`k`-means Scorer (k-means clustering) [1]_.
 The implementations is wrapped around `scikit-learn
 <https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html>`_.
 
@@ -43,7 +43,7 @@ class KMeansScorer(FittableAnomalyScorer):
         `component_wise` is a boolean parameter indicating how the model should behave with multivariate inputs
         series. If set to True, the model will treat each series dimension independently by fitting a different
         KMeans model for each dimension. If the input series has a dimension of D, the model will train D KMeans
-        models. If set to False, the model will concatenate the dimension in the considered `window` W and compute
+        models. If set to False, the model will concatenate the dimensions in the considered `window` W and compute
         the score using only one trained KMeans model.
 
         Training with ``fit()``:
@@ -57,8 +57,8 @@ class KMeansScorer(FittableAnomalyScorer):
         each series will be partitioned into subsequences, and the results will be concatenated into an array of
         length L * number of subsequences.
 
-        The model KMeans will be fitted on the generated subsequences. The model will find `k` cluster of dimensions
-        equal to the length of the subsequences (D*W).
+        The model KMeans will be fitted on the generated subsequences. The model will find `k` clusters
+        in the vector space of dimension equal to the length of the subsequences (D*W).
 
         If `component_wise` is set to True, the algorithm will be applied to each dimension independently. For each
         dimension, a KMeans model will be trained.
@@ -72,7 +72,7 @@ class KMeansScorer(FittableAnomalyScorer):
             - if `component_wise` is set to False: it will return a univariate series (dimension=1). It represents
             the anomaly score of the entire series in the considered window at each timestamp.
             - if `component_wise` is set to True: it will return a multivariate series of dimension D. Each dimension
-            represents the anomaly score of the corresponding dimension of the input.
+            represents the anomaly score of the corresponding component of the input.
 
         - If the series is univariate, it will return a univariate series regardless of the parameter
         `component_wise`.
@@ -81,7 +81,7 @@ class KMeansScorer(FittableAnomalyScorer):
         the training phase. At each timestamp, the previous W values will form a vector of size W * D
         of the series (with D being the series dimensions). The KMeans model will then retrieve the closest centroid
         to this vector and compute the euclidean distance between the centroid and the vector. The output will be a
-        series of dimension one and length N-W+1, with N being the length of the input series. Each value will represent
+        series of dimension one and length N-W+1, with N being the length of the input series. Each value represents
         how anomalous the sample of the W previous values is.
 
         If a list is given, a for loop will iterate through the list, and the function ``_score_core()`` will be
