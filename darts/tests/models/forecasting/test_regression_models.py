@@ -22,6 +22,7 @@ from darts.models import (
     LinearRegressionModel,
     RandomForest,
     RegressionModel,
+    XGBModel,
 )
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.tests.base_test_class import DartsBaseTestClass
@@ -200,6 +201,16 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     PoissonLinearRegressionModel = partialclass(
         LinearRegressionModel, likelihood="poisson", random_state=42
     )
+    PoissonXGBModel = partialclass(
+        XGBModel,
+        likelihood="poisson",
+        random_state=42,
+    )
+    QuantileXGBModel = partialclass(
+        XGBModel,
+        likelihood="quantile",
+        random_state=42,
+    )
     # targets for poisson regression must be positive, so we exclude them for some tests
     models.extend(
         [
@@ -210,6 +221,8 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             PoissonLinearRegressionModel,
             PoissonCatBoostModel,
             NormalCatBoostModel,
+            PoissonXGBModel,
+            QuantileXGBModel,
         ]
     )
 
@@ -226,6 +239,8 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         0.4,  # PoissonLinearRegressionModel
         1e-01,  # PoissonCatBoostModel
         1e-05,  # NormalCatBoostModel
+        1e-01,  # PoissonXGBModel
+        0.5,  # QuantileXGBModel
     ]
     multivariate_accuracies = [
         0.3,
@@ -233,27 +248,31 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         1e-13,
         0.4,
         0.75,  # CatBoostModel
-        0.4,
-        0.8,
+        0.4,  # QuantileLightGBMModel
+        0.8,  # QuantileLinearRegressionModel
         1e-03,
         0.4,
         0.4,
         0.15,
         1e-05,
+        0.15,
+        0.4,
     ]
     multivariate_multiseries_accuracies = [
-        0.05,
-        1e-13,
-        1e-13,
-        0.05,
+        0.05,  # RandomForest
+        1e-13,  # LinearRegressionModel
+        1e-13,  # RegressionModel
+        0.05,  # LightGBMModel
         0.75,  # CatBoostModel
-        0.4,
-        0.8,
-        1e-03,
-        0.4,
-        0.4,
-        1e-01,
-        1e-03,
+        0.4,  # QuantileLightGBMModel
+        0.8,  # QuantileLinearRegressionModel
+        1e-03,  # QuantileCatBoostModel
+        0.4,  # PoissonLightGBMModel
+        0.4,  # PoissonLinearRegressionModel
+        1e-01,  # PoissonCatBoostModel
+        1e-03,  # NormalCatBoostModel
+        1e-01,  # PoissonXGBModel
+        0.4,  # QuantileXGBModel
     ]
 
     # dummy feature and target TimeSeries instances
@@ -820,6 +839,13 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             self.assertEqual(
                 min_train_series_length_expected, model.min_train_series_length
             )
+            model = XGBModel(lags=[-4, -3, -2], multi_models=mode)
+            min_train_series_length_expected = (
+                -model.lags["target"][0] + model.output_chunk_length + 1
+            )
+            self.assertEqual(
+                min_train_series_length_expected, model.min_train_series_length
+            )
 
     def test_historical_forecast(self):
         mutli_models_modes = [True, False]
@@ -900,6 +926,10 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             CatBoostModel(lags=lags, output_chunk_length=1, multi_models=False),
             CatBoostModel(lags=lags, output_chunk_length=2, multi_models=True),
             CatBoostModel(lags=lags, output_chunk_length=2, multi_models=False),
+            XGBModel(lags=lags, output_chunk_length=1, multi_models=True),
+            XGBModel(lags=lags, output_chunk_length=1, multi_models=False),
+            XGBModel(lags=lags, output_chunk_length=2, multi_models=True),
+            XGBModel(lags=lags, output_chunk_length=2, multi_models=False),
         ]
 
         train, val = self.sine_univariate1.split_after(0.6)
@@ -1176,9 +1206,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                         future_covariates=future_covariates[: -26 + req_future_offset],
                     )
 
-    @patch.object(
-        darts.models.forecasting.gradient_boosted_model.lgb.LGBMRegressor, "fit"
-    )
+    @patch.object(darts.models.forecasting.lgbm.lgb.LGBMRegressor, "fit")
     def test_gradient_boosted_model_with_eval_set(self, lgb_fit_patch):
         """Test whether these evaluation set parameters are passed to LGBRegressor"""
         model = LightGBMModel(lags=4, lags_past_covariates=2)
@@ -1191,9 +1219,23 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         )
 
         lgb_fit_patch.assert_called_once()
-
         assert lgb_fit_patch.call_args[1]["eval_set"] is not None
         assert lgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
+
+    @patch.object(darts.models.forecasting.xgboost.xgb.XGBRegressor, "fit")
+    def test_xgboost_with_eval_set(self, xgb_fit_patch):
+        model = XGBModel(lags=4, lags_past_covariates=2)
+        model.fit(
+            series=self.sine_univariate1,
+            past_covariates=self.sine_multivariate1,
+            val_series=self.sine_univariate1,
+            val_past_covariates=self.sine_multivariate1,
+            early_stopping_rounds=2,
+        )
+
+        xgb_fit_patch.assert_called_once()
+        assert xgb_fit_patch.call_args[1]["eval_set"] is not None
+        assert xgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
 
     def test_integer_indexed_series(self):
         values_target = np.random.rand(30)
@@ -1264,7 +1306,12 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
         multi_models_mode = [True, False]
         for mode in multi_models_mode:
-            for model_cls in [RegressionModel, LinearRegressionModel, LightGBMModel]:
+            for model_cls in [
+                RegressionModel,
+                LinearRegressionModel,
+                LightGBMModel,
+                XGBModel,
+            ]:
                 model_pc_valid0 = model_cls(
                     lags=2, add_encoders=encoder_examples["past"], multi_models=mode
                 )
@@ -1587,6 +1634,27 @@ class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):
                 "multi_models": True,
             },
             0.6,
+        ),
+        (
+            XGBModel,
+            {
+                "lags": 2,
+                "likelihood": "poisson",
+                "random_state": 42,
+                "multi_models": True,
+            },
+            0.6,
+        ),
+        (
+            XGBModel,
+            {
+                "lags": 2,
+                "likelihood": "quantile",
+                "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
+                "random_state": 42,
+                "multi_models": True,
+            },
+            0.4,
         ),
     ]
 
