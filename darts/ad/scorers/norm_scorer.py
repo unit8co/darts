@@ -26,17 +26,17 @@ class NormScorer(NonFittableAnomalyScorer):
         If component_wise is set to False, each timestamp of the difference will be considered as a vector
         and its norm will be computed.
 
-        If component_wise is set to True, it will return the absolute value for each element of the difference,
-        regardless of the norm's order.
+        If component_wise is set to True, for any `ord` this effectively amounts to computing the absolute
+        value for each element of the difference.
 
-        The ``compute()`` method accepts as input two series:
+        The scoring function expects two series.
 
-        - If the two series are multivariate of width w:
-            - if component_wise is set to False: it will return a univariate series (width=1).
-            - if component_wise is set to True: it will return a multivariate series of width w
+        If the two series are multivariate of width w:
+            - if `component_wise` is set to False: it will return a univariate series (width=1).
+            - if `component_wise` is set to True: it will return a multivariate series of width w
 
-        - If the two series are univariate, it will return a univariate series regardless of the parameter
-        component_wise.
+        If the two series are univariate, it will return a univariate series regardless of the parameter
+        `component_wise`.
 
         Parameters
         ----------
@@ -50,21 +50,14 @@ class NormScorer(NonFittableAnomalyScorer):
             Default: False
         """
 
-        self.ord = ord
-
         raise_if_not(
             type(component_wise) is bool,
             f"'component_wise' must be Boolean, found type: {type(component_wise)}",
         )
 
+        self.ord = ord
         self.component_wise = component_wise
-
-        if component_wise:
-            returns_UTS = False
-        else:
-            returns_UTS = True
-
-        super().__init__(returns_UTS=returns_UTS, window=None)
+        super().__init__(returns_UTS=(not component_wise), window=None)
 
     def __str__(self):
         return f"Norm (ord={self.ord})"

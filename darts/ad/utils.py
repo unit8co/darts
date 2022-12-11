@@ -385,7 +385,7 @@ def _sanity_check_2series(
 
     # check if the time intersection between the two inputs time series is not empty
     raise_if_not(
-        len(series_1._time_index.intersection(series_2._time_index)) > 0,
+        len(series_1.time_index.intersection(series_2.time_index)) > 0,
         "Series must have a non-empty intersection timestamps",
     )
 

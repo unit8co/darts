@@ -1,6 +1,6 @@
 """
-Anomaly Scorers
----------------
+Scorers Base Classes
+--------------------
 
 Anomaly scorers can be trainable (FittableAnomalyScorer) or not trainable (NonFittableAnomalyScorer).
 
@@ -8,7 +8,7 @@ The scorers have the following main functions:
     - ``score_from_prediction()``
         Takes as input two (sequence of) series and returns the anomaly score of each pairwise element.
         An anomaly score is a series that represents how anomalous the considered point (if window = 1)
-        or past W points are (if window is equal to w). The higher the value, the more anomalous the sample.
+        or past W points are (if window is equal to W). The higher the value, the more anomalous the sample.
         The interpretability of the score is dependent on the scorer.
 
     - ``eval_accuracy_from_prediction()``
@@ -19,14 +19,15 @@ The scorers have the following main functions:
 
 The trainable scorers have the following additional functions:
     - ``fit_from_prediction()``
-        Takes two (sequence of) series as input and fits its function. This task is dependent on the scorer,
-        but as a general case the scorer will calibrate its function based on the training series that is
-        considered to be anomaly-free. This training phase will allow the scorer to flag an anomaly during
-        the scoring phase.
+        Takes two (sequence of) series as input and fits the scorer. This task is dependent on the scorer,
+        but as a general case the scorer will calibrate its scoring function based on the training series that is
+        considered to be anomaly-free. This training phase will allow the scorer to detect anomalies during
+        the scoring phase, by comparing the series to score with the anomaly-free series seen during training.
 
 For the trainable scorers, the previous three functions expect a tuple of (sequence of) series as input. A
-function is used to transform the two inputs into one (sequence of) series, and the trainable scorer is then
-applied on the results. The function is by default the absolute difference, but it can be changed thanks to
+function is used to compute a "difference" between the prediction series and the observation series,
+in order to obtain a single "difference" series. The trainable scorer is then
+applied on this series. The function is by default the absolute difference, but it can be changed thanks to
 the parameter named ``diff_fn``.
 
 It is possible to apply the trainable scorer directly on a series. This is allowed by the three following
@@ -35,29 +36,31 @@ functions. They are equivalent to the ones described previously but take as inpu
     - ``eval_accuracy()``
     - ``fit()``
 
-As an example, the KMeansScorer, which is a FittableAnomalyScorer, can be applied thanks to the functions:
+As an example, the ``KMeansScorer``, which is a ``FittableAnomalyScorer``, can be applied thanks to the functions:
     - ``fit()`` and ``score()``: directly on a series to uncover the relationship between the different
-    dimensions of a multivariate series.
-    - ``fit_from_prediction`` and ``score_from_prediction``: on the residuals between a prediction from a
-    forecasting model and the series itself. The scorer will then flag residuals that are distant from the
-    clusters found during the training phase.
+    dimensions (over timesteps within windows and/or over dimensions of multivariate series).
+    - ``fit_from_prediction`` and ``score_from_prediction``: which will compute a difference (residuals)
+    between some prediction (coming e.g., from a forecasting model) and the series itself.
+    The scorer will then flag residuals that are distant from the clusters found during the training phase.
 
 Most of the scorers have the following main parameters:
-    - window:
+    - `window`:
         Integer value indicating the size of the window W used by the scorer to transform the series into
-        an anomaly score. A scorer will discretize the given series into subsequences of size W and returns
-        a value indicating how anomalous these subset of W values are.
-    - component_wise
+        an anomaly score. A scorer will slice the given series into subsequences of size W and returns
+        a value indicating how anomalous these subset of W values are. The window size must be commensurate
+        to the expected durations of the anomalies one is looking for.
+    - `component_wise`
         boolean parameter indicating how the scorer should behave with multivariate inputs series. If set to
         True, the model will treat each series dimension independently. If set to False, the model will
-        concatenate the dimension in the considered `window` W and compute the score.
+        consider the dimensions jointly in the considered `window` W to compute the score.
 
-More details can be found in the docstrings of each scorer.
-
-TODO:
-    - add stride for Scorers like Kmeans and Wasserstein
-    - add option to normalize the windows for kmeans? capture only the form and not the values.
+More details can be found in the API documentation of each scorer.
 """
+
+# TODO:
+#     - add stride for Scorers like Kmeans and Wasserstein
+#     - add option to normalize the windows for kmeans? capture only the form and not the values.
+
 
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Sequence, Union
@@ -80,7 +83,7 @@ logger = get_logger(__name__)
 
 
 class AnomalyScorer(ABC):
-    "Base class for all anomaly scorers"
+    """Base class for all anomaly scorers"""
 
     def __init__(self, returns_UTS: bool, window: Optional[int] = None) -> None:
 
@@ -103,7 +106,7 @@ class AnomalyScorer(ABC):
 
     def check_returns_UTS(self, actual_anomalies):
         """Checks if 'actual_anomalies' contains only univariate series when the scorer has the
-        parameter 'returns_UTS' is set to True.
+        parameter 'returns_UTS' set to True.
 
         'returns_UTS' is:
             True -> when the function of the scorer ``score(series)`` (or, if applicable,
@@ -128,7 +131,7 @@ class AnomalyScorer(ABC):
             )
 
     def _check_window_size(self, series: TimeSeries):
-        """Checks if the parameter window is less or equal to the length of the given series"""
+        """Checks if the parameter window is less or equal than the length of the given series"""
 
         raise_if_not(
             self.window <= len(series),
@@ -151,7 +154,7 @@ class AnomalyScorer(ABC):
         raise_if_not(
             series.is_stochastic,
             f"Scorer {self.__str__()} is expecting '{name_series}' to be a stochastic timeseries \
-            (number of samples must be higher than 1, found number: {series.n_samples}).",
+            (number of samples must be higher than 1, found: {series.n_samples}).",
         )
 
     def _check_deterministic(self, series: TimeSeries, name_series: str):
@@ -160,7 +163,8 @@ class AnomalyScorer(ABC):
         if not series.is_deterministic:
             logger.warning(
                 f"Scorer {self.__str__()} is expecting '{name_series}' to be a (sequence of) deterministic \
-                timeseries (number of samples must be equal to 1, found number: {series.n_samples}).",
+                timeseries (number of samples must be equal to 1, found: {series.n_samples}). \
+                The series will be converted to a deterministic series by taking the median of the samples.",
             )
             series = series.quantile_timeseries(quantile=0.5)
 
@@ -178,7 +182,7 @@ class AnomalyScorer(ABC):
         pred_series: Union[TimeSeries, Sequence[TimeSeries]],
         metric: str = "AUC_ROC",
     ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
-        """Computes the anomaly score between the two given time series, and returns the score
+        """Computes the anomaly score between `actual_series` and `pred_series`, and returns the score
         of an agnostic threshold metric.
 
         Parameters
@@ -197,14 +201,14 @@ class AnomalyScorer(ABC):
         -------
         Union[float, Sequence[float], Sequence[Sequence[float]]]
             Score of an agnostic threshold metric for the computed anomaly score
-                - float -> if `actual_series` and `actual_series` are univariate series (dimension=1).
-                - Sequence[float]
-                    -> if `actual_series` and `actual_series` are multivariate series (dimension>1),
-                    returns one value per dimension.
-                    OR
-                    -> if `actual_series` and `actual_series` are sequences of univariate series,
+                - ``float`` if `actual_series` and `actual_series` are univariate series (dimension=1).
+                - ``Sequence[float]``
+
+                    * if `actual_series` and `actual_series` are multivariate series (dimension>1),
+                    returns one value per dimension, or
+                    * if `actual_series` and `actual_series` are sequences of univariate series,
                     returns one value per series
-                - Sequence[Sequence[float]]] -> if `actual_series` and `actual_series` are sequences
+                - ``Sequence[Sequence[float]]]`` if `actual_series` and `actual_series` are sequences
                 of multivariate series. Outer Sequence is over the sequence input and the inner
                 Sequence is over the dimensions of each element in the sequence input.
         """
@@ -312,7 +316,7 @@ class AnomalyScorer(ABC):
 
 
 class NonFittableAnomalyScorer(AnomalyScorer):
-    "Base class of anomaly scorers that do not need training."
+    """Base class of anomaly scorers that do not need training."""
 
     def __init__(self, returns_UTS, window) -> None:
         super().__init__(returns_UTS=returns_UTS, window=window)

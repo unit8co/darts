@@ -362,7 +362,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
             # if the anomaly_model have scorers that have the parameter returns_UTS set to True,
             # 'actual_anomalies' must have widths of 1
-            if am.scorers_are_returns_UTS:
+            if am.univariate_scoring:
                 with self.assertRaises(ValueError):
                     am.eval_accuracy(
                         actual_anomalies=self.MTS_anomalies, series=self.test
