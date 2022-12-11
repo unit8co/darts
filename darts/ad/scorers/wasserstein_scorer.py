@@ -25,7 +25,10 @@ logger = get_logger(__name__)
 
 class WassersteinScorer(FittableAnomalyScorer):
     def __init__(
-        self, window: Optional[int] = None, component_wise: bool = False, diff_fn=None
+        self,
+        window: Optional[int] = None,
+        component_wise: bool = False,
+        diff_fn="abs_diff",
     ) -> None:
         """
         TODO:

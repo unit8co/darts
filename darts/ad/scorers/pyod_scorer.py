@@ -24,7 +24,7 @@ class PyODScorer(FittableAnomalyScorer):
         model,
         window: Optional[int] = None,
         component_wise: bool = False,
-        diff_fn=None,
+        diff_fn="abs_diff",
     ) -> None:
 
         raise_if_not(

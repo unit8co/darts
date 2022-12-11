@@ -27,7 +27,7 @@ class KMeansScorer(FittableAnomalyScorer):
         window: Optional[int] = None,
         k: int = 2,
         component_wise: bool = False,
-        diff_fn=None,
+        diff_fn="abs_diff",
     ) -> None:
         """
         When calling ``fit(series)``, a moving window is applied, which results in a set of vectors of size W,
