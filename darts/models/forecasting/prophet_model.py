@@ -5,7 +5,7 @@ Facebook Prophet
 
 import logging
 import re
-from typing import List, Optional, Union, Callable, Sequence
+from typing import Callable, List, Optional, Sequence, Union
 
 import numpy as np
 import pandas as pd
