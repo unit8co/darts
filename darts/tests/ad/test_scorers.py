@@ -801,6 +801,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             scorer.score(self.test[:50])  # len(self.test)=100
 
+        np.random.seed(42)
         # example univariate WassersteinScorer
         np_train_wasserstein = np.abs(np.random.normal(loc=0, scale=0.1, size=100))
         train_wasserstein = TimeSeries.from_times_and_values(
@@ -848,10 +849,10 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             anomalies_wasserstein, test_wasserstein, metric="AUC_PR"
         )
 
-        self.assertAlmostEqual(AUC_ROC_w10, 0.79607, delta=1e-05)
-        self.assertAlmostEqual(AUC_PR_w10, 0.87233, delta=1e-05)
-        self.assertAlmostEqual(AUC_ROC_w20, 0.86877, delta=1e-05)
-        self.assertAlmostEqual(AUC_PR_w20, 0.97326, delta=1e-05)
+        self.assertAlmostEqual(AUC_ROC_w10, 0.80637, delta=1e-05)
+        self.assertAlmostEqual(AUC_PR_w10, 0.83390, delta=1e-05)
+        self.assertAlmostEqual(AUC_ROC_w20, 0.77828, delta=1e-05)
+        self.assertAlmostEqual(AUC_PR_w20, 0.93934, delta=1e-05)
 
         # example multivariate WassersteinScorer
 
@@ -918,9 +919,9 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             anomalies_wasserstein_per_width, MTS_test_wasserstein, metric="AUC_ROC"
         )
 
-        self.assertAlmostEqual(AUC_ROC_cwfalse, 0.98957, delta=1e-05)
-        self.assertAlmostEqual(AUC_ROC_cwtrue[0], 0.99845, delta=1e-05)
-        self.assertAlmostEqual(AUC_ROC_cwtrue[1], 0.96772, delta=1e-05)
+        self.assertAlmostEqual(AUC_ROC_cwfalse, 0.93892, delta=1e-05)
+        self.assertAlmostEqual(AUC_ROC_cwtrue[0], 0.95046, delta=1e-05)
+        self.assertAlmostEqual(AUC_ROC_cwtrue[1], 0.98162, delta=1e-05)
 
     def test_KMeansScorer(self):
 
@@ -1013,8 +1014,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         np_width2[60:64] = np_width2[65:69] - 1
 
         # type 3: switch one state to another for only one width (1 to 0 for one width)
-        np_width1[75:82] = (np_width1[75:82] is False).astype(int)
-        np_width2[90:96] = (np_width2[90:96] is False).astype(int)
+        np_width1[75:82] = (np_width1[75:82] != 1).astype(int)
+        np_width2[90:96] = (np_width2[90:96] != 1).astype(int)
 
         KMeans_MTS_test = TimeSeries.from_values(
             np.dstack((np_width1, np_width2))[0], columns=["width 1", "width 2"]
