@@ -1,6 +1,6 @@
 """
-Norm
------
+Norm Scorer
+-----------
 
 Norm anomaly score (of given order) [1]_.
 The implementations is wrapped around `linalg.norm numpy
@@ -21,7 +21,7 @@ from darts.timeseries import TimeSeries
 class NormScorer(NonFittableAnomalyScorer):
     def __init__(self, ord=None, component_wise: bool = False) -> None:
         """
-        Returns the norm of a given order for each timestamp of the two input series’ differences.
+        Returns the norm of a given order for each timestamp of the two input series' differences.
 
         If component_wise is set to False, each timestamp of the difference will be considered as a vector
         and its norm will be computed.
