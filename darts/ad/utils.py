@@ -166,7 +166,7 @@ def eval_accuracy_from_binary_prediction(
         series in pred_anomalies and actual_anomalies.
     metric
         Optionally, Scoring function to use. Must be one of "recall", "precision",
-        "f1", and "iou".
+        "f1", and "accuracy".
         Default: "recall"
 
     Returns

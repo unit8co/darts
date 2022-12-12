@@ -114,7 +114,7 @@ class Aggregator(ABC):
 
         list_pred = []
         for idx, width in enumerate(range(list_series[0].width)):
-            list_pred.append(self._predict_core(np_series[:, :, width], idx))
+            list_pred.append(self._predict_core(np_series[:, width, :], idx))
 
         return TimeSeries.from_times_and_values(
             list_series[0]._time_index, list(zip(*list_pred))
@@ -143,7 +143,7 @@ class Aggregator(ABC):
             actual_anomalies.
         metric
             Metric function to use. Must be one of "recall", "precision",
-            "f1", and "iou".
+            "f1", and "accuracy".
             Default: "recall"
 
         Returns
@@ -264,7 +264,7 @@ class FittableAggregator(Aggregator):
         models = []
         for width in range(self.width_trained_on):
             self._fit_core(
-                np_training_data[:, :, width], np_actual_anomalies[:, width].flatten()
+                np_training_data[:, width, :], np_actual_anomalies[:, width].flatten()
             )
             models.append(self.model)
 
@@ -296,11 +296,10 @@ class FittableAggregator(Aggregator):
             ),
         )
 
-        for series in list_series:
-            raise_if_not(
-                self.width_trained_on == series.width,
-                f"Input must have the same width of the data used for training the Aggregator model. \
-                Found training width: {self.width_trained_on} and input width: {series.width}",
-            )
+        raise_if_not(
+            all([s.width == self.width_trained_on for s in list_series]),
+            f"all series in 'series' must have the same width as the data used for training the \
+            detector model, training width {self.width_trained_on}.",
+        )
 
         return self._predict(list_series)

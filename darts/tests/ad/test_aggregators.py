@@ -28,16 +28,16 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
     np_train = np.random.normal(loc=10, scale=0.5, size=100)
     train = TimeSeries.from_values(np_train)
 
-    np_anomalies1 = np.random.choice(a=[0, 1], size=100, p=[0.9, 0.1])
+    np_anomalies1 = np.random.choice(a=[0, 1], size=100, p=[0.6, 0.4])
     anomalies1 = TimeSeries.from_times_and_values(train._time_index, np_anomalies1)
 
-    np_anomalies2 = np.random.choice(a=[0, 1], size=100, p=[0.9, 0.1])
+    np_anomalies2 = np.random.choice(a=[0, 1], size=100, p=[0.6, 0.4])
     anomalies2 = TimeSeries.from_times_and_values(train._time_index, np_anomalies2)
 
-    np_anomalies3 = np.random.choice(a=[0, 1], size=100, p=[0.9, 0.1])
+    np_anomalies3 = np.random.choice(a=[0, 1], size=100, p=[0.6, 0.4])
     anomalies3 = TimeSeries.from_times_and_values(train._time_index, np_anomalies2)
 
-    np_real_anomalies = np.random.choice(a=[0, 1], size=100, p=[0.9, 0.1])
+    np_real_anomalies = np.random.choice(a=[0, 1], size=100, p=[0.6, 0.4])
     real_anomalies = TimeSeries.from_times_and_values(
         train._time_index, np_real_anomalies
     )
@@ -384,8 +384,238 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
                 self.MTS_real_anomalies.width,
             )
 
+    def test_OrAggregator(self):
+
+        aggregator = OrAggregator()
+
+        # univariate case
+        # aggregator must found 71 anomalies in the input [anomalies1, anomalies2]
+        self.assertEqual(
+            aggregator.predict([self.anomalies1, self.anomalies2])
+            .sum(axis=0)
+            .all_values()
+            .flatten()[0],
+            71,
+        )
+
+        # aggregator must have an accuracy of 0.49 for the input [anomalies1, anomalies2]
+        self.assertAlmostEqual(
+            aggregator.eval_accuracy(
+                self.real_anomalies,
+                [self.anomalies1, self.anomalies2],
+                metric="accuracy",
+            ),
+            0.49,
+            delta=1e-05,
+        )
+        # aggregator must have an recall of 0.717391 for the input [anomalies1, anomalies2]
+        self.assertAlmostEqual(
+            aggregator.eval_accuracy(
+                self.real_anomalies, [self.anomalies1, self.anomalies2], metric="recall"
+            ),
+            0.717391,
+            delta=1e-05,
+        )
+        # aggregator must have an f1 of 0.56410 for the input [anomalies1, anomalies2]
+        self.assertAlmostEqual(
+            aggregator.eval_accuracy(
+                self.real_anomalies, [self.anomalies1, self.anomalies2], metric="f1"
+            ),
+            0.56410,
+            delta=1e-05,
+        )
+        # aggregator must have an precision of 0.46478 for the input [anomalies1, anomalies2]
+        self.assertAlmostEqual(
+            aggregator.eval_accuracy(
+                self.real_anomalies,
+                [self.anomalies1, self.anomalies2],
+                metric="precision",
+            ),
+            0.46478,
+            delta=1e-05,
+        )
+
+        # multivariate case
+        binary_detection = aggregator.predict(
+            [self.MTS_anomalies1, self.MTS_anomalies2]
+        )
+
+        # aggregator must found 76 anomalies on the first width of the results on
+        # [MTS_anomalies1, MTS_anomalies2]
+        self.assertEqual(
+            binary_detection["0"].sum(axis=0).all_values().flatten()[0], 76
+        )
+        # aggregator must found 81 anomalies on the second width of the results on
+        # [MTS_anomalies1, MTS_anomalies2]
+        self.assertEqual(
+            binary_detection["1"].sum(axis=0).all_values().flatten()[0], 81
+        )
+
+        acc = aggregator.eval_accuracy(
+            self.MTS_real_anomalies,
+            [self.MTS_anomalies1, self.MTS_anomalies2],
+            metric="accuracy",
+        )
+        # aggregator must have an accuracy of 0.25 on the first width of the results on
+        # [MTS_anomalies1, MTS_anomalies2]
+        self.assertAlmostEqual(acc[0], 0.25, delta=1e-05)
+        # aggregator must have an accuracy of 0.26 on the second width of the results on
+        # [MTS_anomalies1, MTS_anomalies2]
+        self.assertAlmostEqual(acc[1], 0.26, delta=1e-05)
+
+        precision = aggregator.eval_accuracy(
+            self.MTS_real_anomalies,
+            [self.MTS_anomalies1, self.MTS_anomalies2],
+            metric="precision",
+        )
+        # aggregator must have an precision of 0.06578 on the first width of the results on
+        # [MTS_anomalies1, MTS_anomalies2]
+        self.assertAlmostEqual(precision[0], 0.06578, delta=1e-05)
+        # aggregator must have an precision of 0.08641 on the second width of the results on
+        # [MTS_anomalies1, MTS_anomalies2]
+        self.assertAlmostEqual(precision[1], 0.08641, delta=1e-05)
+
+        recall = aggregator.eval_accuracy(
+            self.MTS_real_anomalies,
+            [self.MTS_anomalies1, self.MTS_anomalies2],
+            metric="recall",
+        )
+        # aggregator must have an recall of 0.55555 on the first width of the results on
+        # [MTS_anomalies1, MTS_anomalies2]
+        self.assertAlmostEqual(recall[0], 0.55555, delta=1e-05)
+        # aggregator must have an recall of 1.0 on the second width of the results on
+        # [MTS_anomalies1, MTS_anomalies2]
+        self.assertAlmostEqual(recall[1], 1.0, delta=1e-05)
+
+        f1 = aggregator.eval_accuracy(
+            self.MTS_real_anomalies,
+            [self.MTS_anomalies1, self.MTS_anomalies2],
+            metric="f1",
+        )
+        # aggregator must have an f1 of 0.11764 on the first width of the results on
+        # [MTS_anomalies1, MTS_anomalies2]
+        self.assertAlmostEqual(f1[0], 0.11764, delta=1e-05)
+        # aggregator must have an recall of 0.15909 on the second width of the results on
+        # [MTS_anomalies1, MTS_anomalies2]
+        self.assertAlmostEqual(f1[1], 0.15909, delta=1e-05)
+
+    def test_AndAggregator(self):
+
+        aggregator = AndAggregator()
+
+        # univariate case
+        # aggregator must found 14 anomalies in the input [anomalies1, anomalies2]
+        self.assertEqual(
+            aggregator.predict([self.anomalies1, self.anomalies2])
+            .sum(axis=0)
+            .all_values()
+            .flatten()[0],
+            14,
+        )
+
+        # aggregator must have an accuracy of 0.5 for the input [anomalies1, anomalies2]
+        self.assertAlmostEqual(
+            aggregator.eval_accuracy(
+                self.real_anomalies,
+                [self.anomalies1, self.anomalies2],
+                metric="accuracy",
+            ),
+            0.5,
+            delta=1e-05,
+        )
+        # aggregator must have an recall of 0.108695 for the input [anomalies1, anomalies2]
+        self.assertAlmostEqual(
+            aggregator.eval_accuracy(
+                self.real_anomalies, [self.anomalies1, self.anomalies2], metric="recall"
+            ),
+            0.108695,
+            delta=1e-05,
+        )
+        # aggregator must have an f1 of 0.166666 for the input [anomalies1, anomalies2]
+        self.assertAlmostEqual(
+            aggregator.eval_accuracy(
+                self.real_anomalies, [self.anomalies1, self.anomalies2], metric="f1"
+            ),
+            0.166666,
+            delta=1e-05,
+        )
+        # aggregator must have an precision of 0.35714 for the input [anomalies1, anomalies2]
+        self.assertAlmostEqual(
+            aggregator.eval_accuracy(
+                self.real_anomalies,
+                [self.anomalies1, self.anomalies2],
+                metric="precision",
+            ),
+            0.35714,
+            delta=1e-05,
+        )
+
+        # multivariate case
+        binary_detection = aggregator.predict(
+            [self.MTS_anomalies1, self.MTS_anomalies2]
+        )
+
+        # aggregator must found 23 anomalies on the first width of the results on
+        # [MTS_anomalies1, MTS_anomalies2]
+        self.assertEqual(
+            binary_detection["0"].sum(axis=0).all_values().flatten()[0], 23
+        )
+        # aggregator must found 28 anomalies on the second width of the results on
+        # [MTS_anomalies1, MTS_anomalies2]
+        self.assertEqual(
+            binary_detection["1"].sum(axis=0).all_values().flatten()[0], 28
+        )
+
+        acc = aggregator.eval_accuracy(
+            self.MTS_real_anomalies,
+            [self.MTS_anomalies1, self.MTS_anomalies2],
+            metric="accuracy",
+        )
+        # aggregator must have an accuracy of 0.72 on the first width of the results on
+        # [MTS_anomalies1, MTS_anomalies2]
+        self.assertAlmostEqual(acc[0], 0.72, delta=1e-05)
+        # aggregator must have an accuracy of 0.69 on the second width of the results on
+        # [MTS_anomalies1, MTS_anomalies2]
+        self.assertAlmostEqual(acc[1], 0.69, delta=1e-05)
+
+        precision = aggregator.eval_accuracy(
+            self.MTS_real_anomalies,
+            [self.MTS_anomalies1, self.MTS_anomalies2],
+            metric="recall",
+        )
+        # aggregator must have an recall of 0.22222 on the first width of the results on
+        # [MTS_anomalies1, MTS_anomalies2]
+        self.assertAlmostEqual(precision[0], 0.22222, delta=1e-05)
+        # aggregator must have an recall of 0.28571 on the second width of the results on
+        # [MTS_anomalies1, MTS_anomalies2]
+        self.assertAlmostEqual(precision[1], 0.28571, delta=1e-05)
+
+        recall = aggregator.eval_accuracy(
+            self.MTS_real_anomalies,
+            [self.MTS_anomalies1, self.MTS_anomalies2],
+            metric="precision",
+        )
+        # aggregator must have an recall of 0.08695 on the first width of the results on
+        # [MTS_anomalies1, MTS_anomalies2]
+        self.assertAlmostEqual(recall[0], 0.08695, delta=1e-05)
+        # aggregator must have an recall of 0.07142 on the second width of the results on
+        # [MTS_anomalies1, MTS_anomalies2]
+        self.assertAlmostEqual(recall[1], 0.07142, delta=1e-05)
+
+        f1 = aggregator.eval_accuracy(
+            self.MTS_real_anomalies,
+            [self.MTS_anomalies1, self.MTS_anomalies2],
+            metric="f1",
+        )
+        # aggregator must have an f1 of 0.125 on the first width of the results on
+        # [MTS_anomalies1, MTS_anomalies2]
+        self.assertAlmostEqual(f1[0], 0.125, delta=1e-05)
+        # aggregator must have an recall of 0.11428 on the second width of the results on
+        # [MTS_anomalies1, MTS_anomalies2]
+        self.assertAlmostEqual(f1[1], 0.11428, delta=1e-05)
+
     def test_EnsembleSklearn(self):
 
-        # Need to inout a EnsembleSklearn model
+        # Need to input an EnsembleSklearn model
         with self.assertRaises(ValueError):
             EnsembleSklearnAggregator(model=MovingAverage(window=10))
