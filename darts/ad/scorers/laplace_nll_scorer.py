@@ -29,6 +29,8 @@ class LaplaceNLLScorer(NLLScorer):
 
         # TODO: raise error when all values are equal to the median -> divide by 0
 
+        # TODO: vectorize
+
         return [
             -np.log(
                 (1 / (2 * np.abs(x1 - np.median(x1)).mean()))

@@ -35,6 +35,8 @@ class CauchyNLLScorer(NLLScorer):
 
         # TODO: raise error when gamma is equal to 0 -> interquartile is equal to 0
 
+        # TODO: vectorize
+
         return [
             -np.log(
                 (2 / (np.pi * np.subtract(*np.percentile(x1, [75, 25]))))

@@ -134,6 +134,8 @@ class KMeansScorer(FittableAnomalyScorer):
 
         list_np_series = [series.all_values(copy=False) for series in list_series]
 
+        # TODO: vectorize
+
         if not self.component_wise:
             self.model = KMeans(n_clusters=self.k)
             self.model.fit(
@@ -176,6 +178,8 @@ class KMeansScorer(FittableAnomalyScorer):
             f"Input must have the same width of the data used for training the KMeans model, \
             found width: {self.width_trained_on} and {series.width}",
         )
+
+        # TODO: vectorize
 
         np_series = series.all_values(copy=False)
         np_anomaly_score = []

@@ -29,6 +29,8 @@ class GaussianNLLScorer(NLLScorer):
 
         # TODO: raise error if std of deterministic_values is 0 (dividing by 0 otherwise)
 
+        # TODO: vectorize
+
         return [
             -np.log(
                 (1 / np.sqrt(2 * np.pi * x1.std() ** 2))

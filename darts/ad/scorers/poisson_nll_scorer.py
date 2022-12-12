@@ -30,6 +30,8 @@ class PoissonNLLScorer(NLLScorer):
 
         # TODO: raise error if values of deterministic_values are not (int and >=0). Required by the factorial function
 
+        # TODO: vectorize
+
         return [
             -np.log(np.exp(x1.mean()) * (x1.mean() ** x2) / math.factorial(x2))
             for (x1, x2) in zip(probabilistic_estimations, deterministic_values)

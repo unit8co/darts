@@ -53,6 +53,8 @@ class PyODScorer(FittableAnomalyScorer):
 
         list_np_series = [series.all_values(copy=False) for series in list_series]
 
+        # TODO: vectorize
+
         if not self.component_wise:
             self.model.fit(
                 np.concatenate(

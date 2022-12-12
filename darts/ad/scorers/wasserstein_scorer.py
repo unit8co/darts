@@ -151,6 +151,8 @@ class WassersteinScorer(FittableAnomalyScorer):
                 [s.all_values(copy=False) for s in list_series]
             )
 
+            # TODO: vectorize
+
             training_data = []
             for width in range(self.width_trained_on):
                 training_data.append(concatenated_data[:, width].flatten())
@@ -175,6 +177,8 @@ class WassersteinScorer(FittableAnomalyScorer):
         distance = []
 
         np_series = series.all_values(copy=False)
+
+        # TODO: vectorize
 
         for i in range(len(series) - self.window + 1):
 

@@ -30,6 +30,8 @@ class GammaNLLScorer(NLLScorer):
 
         # TODO: takes a very long time to compute, understand why
 
+        # TODO: vectorize
+
         return [
             -gamma.logpdf(x2, *gamma.fit(x1))
             for (x1, x2) in zip(probabilistic_estimations, deterministic_values)

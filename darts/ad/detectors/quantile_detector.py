@@ -1,8 +1,8 @@
 """
-QuantileDetector
------
+Quantile Detector
+-----------------
 
-Detector that detects anomaly based on quantiles of historical data.
+Detector that detects anomalies based on quantiles of historical data.
 This detector compares time series values with user-specified quantiles
 of historical data, and identifies time points as anomalous when values
 are beyond the thresholds.
@@ -89,6 +89,8 @@ class QuantileDetector(FittableDetector):
     def _detect_core(self, series: TimeSeries) -> TimeSeries:
 
         np_series = series.all_values(copy=False)
+
+        # TODO: vectorize
 
         detected = []
         for width in range(series.width):
