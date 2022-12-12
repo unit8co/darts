@@ -1,22 +1,22 @@
 """
-Detector
--------
+Detector Base Classes
+---------------------
 
 Detectors can be trainable (FittableDetector) or not trainable (NonFittableDetector). The main functions are
-`fit()` (only for the trainable scorer), `detect()` and `score()`.
+``fit()`` (only for the trainable scorer), ``detect()`` and ``eval_accuracy()``.
 
-`fit()` learns the function `f()`, over the history of one anomaly score time series. The function `detect()`
+``fit()`` learns a function `f()`, over the history of one anomaly score time series. The function ``detect()``
 takes an anomaly score time series as input, and applies the function `f()` to obtain a binary prediction.
-The function `score()` returns the metric score (accuracy/precision/recall/f1), between a binary prediction
+The function ``eval_accuracy()`` returns the metric score (accuracy/precision/recall/f1), between a binary prediction
 time series and a binary ground truth time series indicating the presence of anomalies.
-
-TODO:
-    - check error message and add name of variable in the message error
-    - rethink the positionning of fun _check_param()
-    - add possibility to input a list of param rather than only one number
-    - add more complex detectors
-        - create an ensemble fittable detector
 """
+
+# TODO:
+#     - check error message and add name of variable in the message error
+#     - rethink the positionning of fun _check_param()
+#     - add possibility to input a list of param rather than only one number
+#     - add more complex detectors
+#         - create an ensemble fittable detector
 
 from abc import ABC, abstractmethod
 from typing import Any, Sequence, Union
@@ -27,7 +27,7 @@ from darts.logging import raise_if_not
 
 
 class Detector(ABC):
-    "Base class for all detectors"
+    """Base class for all detectors"""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         pass
@@ -75,7 +75,7 @@ class Detector(ABC):
 
 
 class NonFittableDetector(Detector):
-    "Base class of Detectors that do not need training."
+    """Base class of Detectors that do not need training."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -113,7 +113,7 @@ class NonFittableDetector(Detector):
 
 
 class FittableDetector(Detector):
-    "Base class of Detectors that need training."
+    """Base class of Detectors that need training."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)

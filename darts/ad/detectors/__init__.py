@@ -1,4 +1,4 @@
 """
-Detectors
+Anomaly Detectors
 -----------------
 """
