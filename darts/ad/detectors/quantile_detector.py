@@ -49,6 +49,12 @@ class QuantileDetector(FittableDetector):
         self._check_param(low, "low")
         self._check_param(high, "high")
 
+        if low is not None and high is not None:
+            raise_if_not(
+                low < high,
+                f"Parameter `low` must be lower than parameter `high`, found `low`: {low} and `high`: {high}.",
+            )
+
         self.low = low
         self.high = high
 

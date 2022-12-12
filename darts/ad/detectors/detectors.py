@@ -22,7 +22,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Sequence, Union
 
 from darts import TimeSeries
-from darts.ad.utils import _check_timeseries_type, eval_accuracy_from_binary_prediction
+from darts.ad.utils import eval_accuracy_from_binary_prediction
 from darts.logging import raise_if_not
 
 
@@ -60,7 +60,7 @@ class Detector(ABC):
             in the anomaly_score.
         metric
             Metric function to use. Must be one of "recall", "precision",
-            "f1", and "iou".
+            "f1", and "accuracy".
             Default: "recall"
 
         Returns
@@ -68,6 +68,27 @@ class Detector(ABC):
         Union[float, Sequence[float], Sequence[Sequence[float]]]
             Metric results for each anomaly score
         """
+
+        if isinstance(anomaly_score, Sequence):
+            raise_if_not(
+                all([isinstance(s, TimeSeries) for s in anomaly_score]),
+                "all series in 'anomaly_score' must be of type TimeSeries",
+            )
+
+            raise_if_not(
+                all([s.is_deterministic for s in anomaly_score]),
+                "all series in 'anomaly_score' must be deterministic (number of samples equal to 1).",
+            )
+        else:
+            raise_if_not(
+                isinstance(anomaly_score, TimeSeries),
+                f"Input 'anomaly_score' must be of type TimeSeries, found {type(anomaly_score)}",
+            )
+
+            raise_if_not(
+                anomaly_score.is_deterministic,
+                "Input 'anomaly_score' must be deterministic (number of samples equal to 1).",
+            )
 
         return eval_accuracy_from_binary_prediction(
             actual_anomalies, self.detect(anomaly_score), window, metric
@@ -100,10 +121,18 @@ class NonFittableDetector(Detector):
 
         list_series = [series] if not isinstance(series, Sequence) else series
 
+        raise_if_not(
+            all([isinstance(s, TimeSeries) for s in list_series]),
+            "all series in 'series' must be of type TimeSeries",
+        )
+
+        raise_if_not(
+            all([s.is_deterministic for s in list_series]),
+            "all series in 'series' must be deterministic (number of samples equal to 1).",
+        )
+
         detected_series = []
         for s in list_series:
-            _check_timeseries_type(s)
-
             detected_series.append(self._detect_core(s))
 
         if len(detected_series) == 1 and not isinstance(series, Sequence):
@@ -144,16 +173,24 @@ class FittableDetector(Detector):
             "The Detector has not been fitted yet. Call `fit()` first",
         )
 
+        raise_if_not(
+            all([isinstance(s, TimeSeries) for s in list_series]),
+            "all series in 'series' must be of type TimeSeries",
+        )
+
+        raise_if_not(
+            all([s.is_deterministic for s in list_series]),
+            "all series in 'series' must be deterministic (number of samples equal to 1).",
+        )
+
+        raise_if_not(
+            all([self.width_trained_on == s.width for s in list_series]),
+            f"all series in 'series' must have the same width as the data used for training the \
+            detector model, training width {self.width_trained_on}.",
+        )
+
         detected_series = []
         for s in list_series:
-            _check_timeseries_type(s)
-
-            raise_if_not(
-                self.width_trained_on == s.width,
-                f"Input must have the same width of the data used for training the detector model, \
-                found training width {self.width_trained_on} and input width {s.width}",
-            )
-
             detected_series.append(self._detect_core(s))
 
         if len(detected_series) == 1 and not isinstance(series, Sequence):
@@ -181,17 +218,22 @@ class FittableDetector(Detector):
 
         list_series = [series] if not isinstance(series, Sequence) else series
 
-        for idx, series in enumerate(list_series):
-            _check_timeseries_type(series)
+        raise_if_not(
+            all([isinstance(s, TimeSeries) for s in list_series]),
+            "all series in 'series' must be of type TimeSeries",
+        )
 
-            if idx == 0:
-                self.width_trained_on = series.width
-            else:
-                raise_if_not(
-                    series.width == self.width_trained_on,
-                    f"Series must have same width, found width {self.width_trained_on} \
-                    and {series.width} for index 0 and {idx}",
-                )
+        raise_if_not(
+            all([s.is_deterministic for s in list_series]),
+            "all series in 'series' must be deterministic (number of samples equal to 1).",
+        )
+
+        self.width_trained_on = list_series[0].width
+
+        raise_if_not(
+            all([s.width == self.width_trained_on for s in list_series]),
+            "all series in 'series' must have the same width",
+        )
 
         self._fit_core(list_series)
 
