@@ -1,6 +1,7 @@
 from typing import Dict, Sequence, Tuple
 
 import numpy as np
+import pandas as pd
 from pyod.models.knn import KNN
 
 from darts import TimeSeries
@@ -784,6 +785,128 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             0.7808056518442923,
             0.9800621192517156,
             0.9911842778990486,
+        ]
+
+        # check value of results
+        self.assertEqual(AUC_ROC_from_scores, true_AUC_ROC)
+        self.assertEqual(AUC_PR_from_scores, true_AUC_PR)
+
+    def test_univariate_covariate_ForecastingAnomalyModel(self):
+
+        np.random.seed(40)
+
+        day_week = [0, 1, 2, 3, 4, 5, 6]
+        np_day_week = np.array(day_week * 10)
+
+        np_train_series = 0.5 * np_day_week
+        np_test_series = 0.5 * np_day_week
+
+        np_test_series[30:35] = np_test_series[30:35] + np.random.normal(
+            loc=0, scale=2, size=5
+        )
+        np_test_series[50:60] = np_test_series[50:60] + np.random.normal(
+            loc=0, scale=1, size=10
+        )
+
+        covariates = TimeSeries.from_times_and_values(
+            pd.date_range(start="1949-01-01", end="1949-03-11"), np_day_week
+        )
+        series_train = TimeSeries.from_times_and_values(
+            pd.date_range(start="1949-01-01", end="1949-03-11"), np_train_series
+        )
+        series_test = TimeSeries.from_times_and_values(
+            pd.date_range(start="1949-01-01", end="1949-03-11"), np_test_series
+        )
+
+        np_anomalies = np.zeros(70)
+        np_anomalies[30:35] = 1
+        np_anomalies[50:60] = 1
+        TS_anomalies = TimeSeries.from_times_and_values(
+            series_test.time_index, np_anomalies, columns=["is_anomaly"]
+        )
+
+        anomaly_model = ForecastingAnomalyModel(
+            model=RegressionModel(lags=2, lags_future_covariates=[0]),
+            scorer=[
+                NormScorer(),
+                Difference(),
+                WassersteinScorer(),
+                KMeansScorer(),
+                KMeansScorer(window=10),
+                PyODScorer(model=KNN()),
+                PyODScorer(model=KNN(), window=10),
+                WassersteinScorer(window=15),
+            ],
+        )
+
+        anomaly_model.fit(
+            series_train,
+            allow_model_training=True,
+            future_covariates=covariates,
+            start=0.2,
+        )
+
+        score, model_output = anomaly_model.score(
+            series_test,
+            return_model_prediction=True,
+            future_covariates=covariates,
+            start=0.2,
+        )
+
+        # check that NormScorer is the abs difference of model_output and series_test
+        self.assertEqual(
+            (model_output - series_test.slice_intersect(model_output)).map(
+                lambda x: np.abs(x)
+            ),
+            NormScorer().score_from_prediction(model_output, series_test),
+        )
+
+        # check that Difference is the difference of model_output and series_test
+        self.assertEqual(
+            model_output - series_test.slice_intersect(model_output),
+            Difference().score_from_prediction(model_output, series_test),
+        )
+
+        dict_AUC_ROC = anomaly_model.eval_accuracy(
+            TS_anomalies, series_test, metric="AUC_ROC", start=0.2
+        )
+        dict_AUC_PR = anomaly_model.eval_accuracy(
+            TS_anomalies, series_test, metric="AUC_PR", start=0.2
+        )
+
+        AUC_ROC_from_scores = eval_accuracy_from_scores(
+            actual_anomalies=[TS_anomalies] * 8,
+            anomaly_score=score,
+            window=[1, 1, 10, 1, 10, 1, 10, 15],
+            metric="AUC_ROC",
+        )
+
+        AUC_PR_from_scores = eval_accuracy_from_scores(
+            actual_anomalies=[TS_anomalies] * 8,
+            anomaly_score=score,
+            window=[1, 1, 10, 1, 10, 1, 10, 15],
+            metric="AUC_PR",
+        )
+
+        # function eval_accuracy_from_scores and eval_accuracy must return an input of same length
+        self.assertEqual(len(AUC_ROC_from_scores), len(dict_AUC_ROC))
+        self.assertEqual(len(AUC_PR_from_scores), len(dict_AUC_PR))
+
+        # function eval_accuracy_from_scores and eval_accuracy must return the same values
+        self.assertEqual(AUC_ROC_from_scores, list(dict_AUC_ROC.values()))
+        self.assertEqual(AUC_PR_from_scores, list(dict_AUC_PR.values()))
+
+        true_AUC_ROC = [1.0, 0.6, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+
+        true_AUC_PR = [
+            1.0,
+            0.6914399076961142,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            0.9999999999999999,
         ]
 
         # check value of results
