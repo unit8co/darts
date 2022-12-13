@@ -1204,6 +1204,234 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             scorer.score(self.test[:50])  # len(self.test)=100
 
+        # univariate
+        np.random.seed(40)
+
+        # create the train set
+        np_width1 = np.random.choice(a=[0, 1], size=100, p=[0.5, 0.5])
+        np_width2 = (np_width1 == 0).astype(float)
+        PyOD_MTS_train = TimeSeries.from_values(
+            np.dstack((np_width1, np_width2))[0], columns=["width 1", "width 2"]
+        )
+
+        # create the test set
+        # inject anomalies in the test timeseries
+        np.random.seed(3)
+        np_width1 = np.random.choice(a=[0, 1], size=100, p=[0.5, 0.5])
+        np_width2 = (np_width1 == 0).astype(int)
+
+        # 2 anomalies per type
+        # type 1: random values for only one width
+        np_width1[20:21] = 2
+        np_width2[30:32] = 2
+
+        # type 2: shift both widths values (+/- 1 for both widths)
+        np_width1[45:47] = np_width1[45:47] + 1
+        np_width2[45:47] = np_width2[45:47] + 1
+        np_width1[60:64] = np_width1[65:69] - 1
+        np_width2[60:64] = np_width2[65:69] - 1
+
+        # type 3: switch one state to another for only one width (1 to 0 for one width)
+        np_width1[75:82] = (np_width1[75:82] != 1).astype(int)
+        np_width2[90:96] = (np_width2[90:96] != 1).astype(int)
+
+        PyOD_MTS_test = TimeSeries.from_values(
+            np.dstack((np_width1, np_width2))[0], columns=["width 1", "width 2"]
+        )
+
+        # create the anomaly series
+        anomalies_index = [
+            20,
+            30,
+            31,
+            45,
+            46,
+            60,
+            61,
+            62,
+            63,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81,
+            90,
+            91,
+            92,
+            93,
+            94,
+            95,
+        ]
+        np_anomalies = np.zeros(len(PyOD_MTS_test))
+        np_anomalies[anomalies_index] = 1
+        PyOD_MTS_anomalies = TimeSeries.from_times_and_values(
+            PyOD_MTS_test.time_index, np_anomalies, columns=["is_anomaly"]
+        )
+
+        PyOD_scorer = PyODScorer(
+            model=KNN(n_neighbors=10), component_wise=False, window=1
+        )
+        PyOD_scorer.fit(PyOD_MTS_train)
+
+        metric_AUC_ROC = PyOD_scorer.eval_accuracy(
+            PyOD_MTS_anomalies, PyOD_MTS_test, metric="AUC_ROC"
+        )
+        metric_AUC_PR = PyOD_scorer.eval_accuracy(
+            PyOD_MTS_anomalies, PyOD_MTS_test, metric="AUC_PR"
+        )
+
+        self.assertEqual(metric_AUC_ROC, 1.0)
+        self.assertEqual(metric_AUC_PR, 1.0)
+
+        # multivariate (different window)
+
+        np.random.seed(1)
+
+        # create the train set
+        np_series = np.zeros(100)
+        np_series[0] = 2
+
+        for i in range(1, len(np_series)):
+            np_series[i] = np_series[i - 1] + np.random.choice(a=[-1, 1], p=[0.5, 0.5])
+            if np_series[i] > 3:
+                np_series[i] = 3
+            if np_series[i] < 0:
+                np_series[i] = 0
+
+        TS_train = TimeSeries.from_values(np_series, columns=["series"])
+
+        # create the test set
+        np.random.seed(3)
+        np_series = np.zeros(100)
+        np_series[0] = 1
+
+        for i in range(1, len(np_series)):
+            np_series[i] = np_series[i - 1] + np.random.choice(a=[-1, 1], p=[0.5, 0.5])
+            if np_series[i] > 3:
+                np_series[i] = 3
+            if np_series[i] < 0:
+                np_series[i] = 0
+
+        # 3 anomalies per type
+        # type 1: sudden shift between state 0 to state 2 without passing by state 1
+        np_series[23] = 3
+        np_series[44] = 3
+        np_series[91] = 0
+
+        # type 2: having consecutive timestamps at state 1 or 2
+        np_series[3:5] = 2
+        np_series[17:19] = 1
+        np_series[62:65] = 2
+
+        TS_test = TimeSeries.from_values(np_series, columns=["series"])
+
+        anomalies_index = [4, 23, 18, 44, 63, 64, 91]
+        np_anomalies = np.zeros(100)
+        np_anomalies[anomalies_index] = 1
+        TS_anomalies = TimeSeries.from_times_and_values(
+            TS_test.time_index, np_anomalies, columns=["is_anomaly"]
+        )
+
+        PyOD_scorer_w1 = PyODScorer(
+            model=KNN(n_neighbors=10), component_wise=False, window=1
+        )
+        PyOD_scorer_w1.fit(TS_train)
+
+        PyOD_scorer_w2 = PyODScorer(
+            model=KNN(n_neighbors=10), component_wise=False, window=2
+        )
+        PyOD_scorer_w2.fit(TS_train)
+
+        AUC_ROC_w1 = PyOD_scorer_w1.eval_accuracy(
+            TS_anomalies, TS_test, metric="AUC_ROC"
+        )
+        AUC_PR_w1 = PyOD_scorer_w1.eval_accuracy(TS_anomalies, TS_test, metric="AUC_PR")
+
+        AUC_ROC_w2 = PyOD_scorer_w2.eval_accuracy(
+            TS_anomalies, TS_test, metric="AUC_ROC"
+        )
+        AUC_PR_w2 = PyOD_scorer_w2.eval_accuracy(TS_anomalies, TS_test, metric="AUC_PR")
+
+        self.assertAlmostEqual(AUC_ROC_w1, 0.5, delta=1e-05)
+        self.assertAlmostEqual(AUC_PR_w1, 0.07, delta=1e-05)
+        self.assertAlmostEqual(AUC_ROC_w2, 0.957513, delta=1e-05)
+        self.assertAlmostEqual(AUC_PR_w2, 0.88584, delta=1e-05)
+
+        # example multivariate KMeans component wise (True and False)
+
+        np_MTS_train_KMeans = np.abs(
+            np.random.normal(loc=[0, 0], scale=[0.1, 0.2], size=[100, 2])
+        )
+        MTS_train_KMeans = TimeSeries.from_times_and_values(
+            self.train._time_index, np_MTS_train_KMeans
+        )
+
+        np_MTS_test_KMeans = np.abs(
+            np.random.normal(loc=[0, 0], scale=[0.1, 0.2], size=[100, 2])
+        )
+        np_first_anomaly_width1 = np.abs(np.random.normal(loc=0.5, scale=0.4, size=10))
+        np_first_anomaly_width2 = np.abs(np.random.normal(loc=0, scale=0.5, size=10))
+        np_first_commmon_anomaly = np.abs(
+            np.random.normal(loc=0.5, scale=0.5, size=[10, 2])
+        )
+
+        np_MTS_test_KMeans[5:15, 0] = np_first_anomaly_width1
+        np_MTS_test_KMeans[35:45, 1] = np_first_anomaly_width2
+        np_MTS_test_KMeans[65:75, :] = np_first_commmon_anomaly
+
+        MTS_test_KMeans = TimeSeries.from_times_and_values(
+            MTS_train_KMeans._time_index, np_MTS_test_KMeans
+        )
+
+        # create the anomaly series width 1
+        np_anomalies_width1 = np.zeros(len(MTS_test_KMeans))
+        np_anomalies_width1[5:15] = 1
+        np_anomalies_width1[65:75] = 1
+
+        # create the anomaly series width 2
+        np_anomaly_width2 = np.zeros(len(MTS_test_KMeans))
+        np_anomaly_width2[35:45] = 1
+        np_anomaly_width2[65:75] = 1
+
+        anomalies_KMeans_per_width = TimeSeries.from_times_and_values(
+            MTS_test_KMeans.time_index,
+            list(zip(*[np_anomalies_width1, np_anomaly_width2])),
+            columns=["is_anomaly_0", "is_anomaly_1"],
+        )
+
+        # create the anomaly series for the entire series
+        np_commmon_anomaly = np.zeros(len(MTS_test_KMeans))
+        np_commmon_anomaly[5:15] = 1
+        np_commmon_anomaly[35:45] = 1
+        np_commmon_anomaly[65:75] = 1
+        anomalies_common_KMeans = TimeSeries.from_times_and_values(
+            MTS_test_KMeans.time_index, np_commmon_anomaly, columns=["is_anomaly"]
+        )
+
+        # test scorer with component_wise=False
+        scorer_w10_cwfalse = PyODScorer(
+            model=KNN(n_neighbors=10), component_wise=False, window=10
+        )
+        scorer_w10_cwfalse.fit(MTS_train_KMeans)
+        AUC_ROC_cwfalse = scorer_w10_cwfalse.eval_accuracy(
+            anomalies_common_KMeans, MTS_test_KMeans, metric="AUC_ROC"
+        )
+
+        # test scorer with component_wise=True
+        scorer_w10_cwtrue = PyODScorer(
+            model=KNN(n_neighbors=10), component_wise=True, window=10
+        )
+        scorer_w10_cwtrue.fit(MTS_train_KMeans)
+        AUC_ROC_cwtrue = scorer_w10_cwtrue.eval_accuracy(
+            anomalies_KMeans_per_width, MTS_test_KMeans, metric="AUC_ROC"
+        )
+
+        self.assertAlmostEqual(AUC_ROC_cwfalse, 0.913108, delta=1e-05)
+        self.assertAlmostEqual(AUC_ROC_cwtrue[0], 0.97729, delta=1e-05)
+        self.assertAlmostEqual(AUC_ROC_cwtrue[1], 0.908142, delta=1e-05)
+
     def test_NLLScorer(self):
 
         for s in list_NLLScorer:

@@ -214,6 +214,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         # Return of .detect() must be same len as input
         self.assertTrue(len(binary_detection) == len(self.test))
 
+        # univariate test
         # detector parameter 'abs_low_' must be equal to 9.13658 when trained on the series 'train'
         self.assertAlmostEqual(detector.abs_low_.flatten()[0], 9.13658, delta=1e-05)
 

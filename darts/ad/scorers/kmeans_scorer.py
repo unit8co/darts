@@ -137,7 +137,7 @@ class KMeansScorer(FittableAnomalyScorer):
         # TODO: vectorize
 
         if not self.component_wise:
-            self.model = KMeans(n_clusters=self.k)
+            self.model = KMeans(n_clusters=self.k, n_init=10)
             self.model.fit(
                 np.concatenate(
                     [
@@ -154,7 +154,7 @@ class KMeansScorer(FittableAnomalyScorer):
         else:
             models = []
             for width in range(self.width_trained_on):
-                model = KMeans(n_clusters=self.k)
+                model = KMeans(n_clusters=self.k, n_init=10)
                 model.fit(
                     np.concatenate(
                         [
