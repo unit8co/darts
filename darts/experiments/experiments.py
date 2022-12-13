@@ -11,6 +11,8 @@ from glob import glob
 from typing import List, Optional, Sequence, Tuple, Union
 from tqdm import tqdm
 from darts.utils.utils import series2seq
+from darts.dataprocessing.pipeline import Pipeline
+from darts.metrics import mse, mae, smape, rmse, mape
 
 import optuna
 from optuna.integration import PyTorchLightningPruningCallback
@@ -44,7 +46,9 @@ DEFAULT_EXP_ROOT = "./experiment_runs/"
 DATASETS = [ETTh1Dataset, ETTh2Dataset, ETTm1Dataset, ETTm2Dataset, ElectricityDataset, TrafficDataset, WeatherDataset,
     ILINetDataset, ExchangeRateDataset]
 
-class BaseExperiment(ABC):
+METRICS = [mse, mae, smape, rmse, mape]
+
+class BaseExperiment():
     """
     Abstract class to define the generic structure of an experiment.
 
@@ -55,6 +59,22 @@ class BaseExperiment(ABC):
     dataset
         The dataset to train on.
     """
+    # list here all possible attributes of an experiment (of any type)
+    experiment_root = None
+    experiment_dir = None
+    random_state = None
+    start_exp_time = None
+    experiment_name = None
+    horizon = None
+    split = None
+    training_set = None
+    validation_set = None
+    models_cls = None
+    datasets_cls = None
+    transformers_pipeline = None
+    transformed_val = None
+    val_predictions = None
+    verbose = None
 
     def __init__(self, experiment_root:Optional[str] = None, random_state: Optional[int] = None,
                  experiment_name: Optional[str] = None):
@@ -123,13 +143,51 @@ class BaseExperiment(ABC):
 
             self.split = split
 
+        self.train = train
+        self.val = val
+
         return train, val
 
-    def _preprocess_data(self):
+    def _preprocess_data(self, transformers: List[dict], transform_val: bool = True):
         """
-        Transform the data.
+        Preprocess the data with transformers.
+
+        Parameters
+        ----------
+            transforms: List[dict] a list of dictionaries containing the transformers and their corresponding parameters.
+            It is expected to be of the form [{"transformer": transformer_cls, "params": params_kwargs}, ...]
+            e.g., [{"transformer": MaxAbsScaler, "params": {}},
+                  {"transformer": MissingValuesFiller, "params": {"fill": 0}}]
+            The transformers in the list will be chained together is a pipeline.
         """
-        pass
+        transformers_instances = [transformer(**transformer["params"]) for transformer in transformers]
+        transformers_pipeline = Pipeline(transformers_instances)
+
+        # fit transforms on train and transform train
+        self.train = transformers_pipeline.fit_transform(self.train)
+
+        # transform val
+        if transform_val:
+            self.transformed_val = True
+            self.val = transformers_pipeline.transform(self.val)
+        else:
+            self.transformed_val = False
+
+        # save the transformers
+        self.transformers_pipeline = transformers_pipeline
+        return self
+
+    def _postprocess_data(self):
+        """
+        Post-process the predictions.
+        """
+
+        if self.transformers_pipeline.invertible() and self.transformed_val:
+            self.val_predictions = self.transformers_pipeline.inverse_transform(self.val_predictions)
+        else:
+            pass
+
+        return self
 
     def _explore_data(self):
         """
@@ -156,10 +214,17 @@ class BaseExperiment(ABC):
         """
         Train the model.
         """
+        self.models_trained = True
+        pass
+
+    def _predict_model(self):
+        """
+        Predict the model.
+        """
         pass
 
     # validate model
-    def _validate_model(self):
+    def _compute_validation_stats(self):
         """
         Validate the model.
         """
@@ -194,25 +259,26 @@ class StatsExperiment(BaseExperiment):
 
         super().__init__(experiment_root, random_state, experiment_name)
 
-        self.datasets = datasets if datasets is not None else DATASETS
-        self.models = models if models is not None else self.MODELS
+        self.datasets_cls = datasets if datasets is not None else DATASETS
+        self.models_cls = models if models is not None else self.MODELS
         self.verbose = verbose
 
     def run(self):
-        """
-        Run the experiment.
-        """
+        super().run()
+
         # load the data
         self._get_data()
         # train model
-        self._train_model()
+        self._train_model(self.train)
+        # predict model
+        self._predict_model(self.val)
         # validate model
-        self._validate_model()
-        # test model
-        self._test_model()
-        pass
+        self._compute_validation_stats()
+        # backup experiment
+        self._backup_exp()
 
-    def backup(self):
+
+    def _backup_exp(self):
         """
         Backup the experiment.
         """
@@ -234,8 +300,8 @@ class MLExperiment(BaseExperiment):
 
         super().__init__(experiment_root, random_state, experiment_name)
 
-        self.datasets = datasets if datasets is not None else DATASETS
-        self.models = models if models is not None else self.MODELS
+        self.datasets_cls = datasets if datasets is not None else DATASETS
+        self.models_cls = models if models is not None else self.MODELS
         self.verbose = verbose
 
 
@@ -254,6 +320,38 @@ class DLExperiment(BaseExperiment):
 
         super().__init__(experiment_root, random_state, experiment_name)
 
-        self.datasets = datasets if datasets is not None else DATASETS
-        self.models = models if models is not None else self.MODELS
+        self.datasets_cls = datasets if datasets is not None else DATASETS
+        self.models_cls = models if models is not None else self.MODELS
         self.verbose = verbose
+
+    def _preprocess_data(self, transformers: List[dict], transform_val: bool = True):
+        super()._preprocess_data(transformers, transform_val)
+        return self
+
+    def _optimize_hyperparameters(self):
+        pass
+
+    def _postprocess_predictions(self):
+        super()._postprocess_data()
+        return self
+
+    def run(self, transformers: List[dict], transform_val: bool = True):
+        super().run()
+
+        # load the data
+        self._get_data()
+        # preprocess the data
+        self._preprocess_data(transformers, transform_val)
+        # train model
+        self._train_model()
+        # predict
+        self._predict_model()
+        # post-process predictions
+        self._post_process_predictions()
+        # validate model
+        self._compute_validation_stats()
+        # backup the experiment
+        self._backup_exp()
+
+    def _backup_exp(self):
+        pass
