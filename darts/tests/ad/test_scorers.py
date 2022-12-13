@@ -2,7 +2,7 @@ from typing import Sequence
 
 import numpy as np
 from pyod.models.knn import KNN
-from scipy.stats import cauchy, expon, gamma, laplace, norm
+from scipy.stats import cauchy, expon, gamma, laplace, norm, poisson
 
 from darts import TimeSeries
 from darts.ad.scorers import CauchyNLLScorer
@@ -2030,6 +2030,107 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             np.array([cauchy_samples_1, cauchy_samples_2]).reshape(1, 2, -1)
         )
         actual_series = TimeSeries.from_values(np.array([3, -2]).reshape(1, -1))
+        value_multivariate = scorer.score_from_prediction(
+            actual_series, distribution_series
+        )
+
+        # check length
+        self.assertEqual(len(value_multivariate), 1)
+        # check width
+        self.assertEqual(value_multivariate.width, 2)
+
+        # check equal value_test1 and value_test2
+        self.assertEqual(value_multivariate.all_values().flatten()[0], value_test1)
+        self.assertEqual(value_multivariate.all_values().flatten()[1], value_test2)
+
+    def test_PoissonNLLScorer(self):
+
+        # window parameter
+        # window must be int
+        with self.assertRaises(ValueError):
+            PoissonNLLScorer(window=True)
+        with self.assertRaises(ValueError):
+            PoissonNLLScorer(window="string")
+        # window must be non negative
+        with self.assertRaises(ValueError):
+            PoissonNLLScorer(window=-1)
+        # window must be different from 0
+        with self.assertRaises(ValueError):
+            PoissonNLLScorer(window=0)
+
+        scorer = PoissonNLLScorer(window=101)
+        # window must be smaller than the input of score_from_prediction()
+        with self.assertRaises(ValueError):
+            scorer.score_from_prediction(
+                actual_series=self.test, pred_series=self.probabilistic
+            )  # len(self.test)=100
+
+        np.random.seed(4)
+        scorer = PoissonNLLScorer()
+
+        # test 1 univariate (len=1 and window=1)
+        poisson_samples_1 = np.random.poisson(size=100000, lam=1)
+        distribution_series = TimeSeries.from_values(
+            poisson_samples_1.reshape(1, 1, -1)
+        )
+        actual_series = TimeSeries.from_values(np.array([3]))
+        value_test1 = (
+            scorer.score_from_prediction(actual_series, distribution_series)
+            .all_values()
+            .flatten()[0]
+        )
+
+        # check if value_test1 is the - log likelihood
+        self.assertAlmostEqual(value_test1, -np.log(poisson.pmf(3, mu=1)), delta=1e-02)
+
+        # test 2 univariate (len=1 and window=1)
+        poisson_samples_2 = np.random.poisson(size=100000, lam=1)
+        distribution_series = TimeSeries.from_values(
+            poisson_samples_2.reshape(1, 1, -1)
+        )
+        actual_series = TimeSeries.from_values(np.array([10]))
+        value_test2 = (
+            scorer.score_from_prediction(actual_series, distribution_series)
+            .all_values()
+            .flatten()[0]
+        )
+
+        # check if value_test2 is the - log likelihood
+        self.assertAlmostEqual(value_test2, -np.log(poisson.pmf(10, mu=1)), delta=1e-02)
+
+        # test window univariate (len=2 and window=2)
+        distribution_series = TimeSeries.from_values(
+            np.array(
+                [poisson_samples_1.reshape(1, -1), poisson_samples_2.reshape(1, -1)]
+            )
+        )
+        actual_series = TimeSeries.from_values(np.array([3, 10]))
+        value_window = scorer.score_from_prediction(actual_series, distribution_series)
+
+        # check length
+        self.assertEqual(len(value_window), 2)
+        # check width
+        self.assertEqual(value_window.width, 1)
+
+        # check equal value_test1 and value_test2
+        self.assertEqual(value_window.all_values().flatten()[0], value_test1)
+        self.assertEqual(value_window.all_values().flatten()[1], value_test2)
+
+        scorer = PoissonNLLScorer(window=2)
+        # check avg of two values
+        self.assertEqual(
+            scorer.score_from_prediction(actual_series, distribution_series)
+            .all_values()
+            .flatten()[0],
+            (value_test1 + value_test2) / 2,
+        )
+
+        # test window multivariate (n_samples=2, len=1, window=1)
+        scorer = PoissonNLLScorer(window=1)
+        distribution_series = TimeSeries.from_values(
+            np.array([poisson_samples_1, poisson_samples_2]).reshape(1, 2, -1)
+        )
+        actual_series = TimeSeries.from_values(np.array([3, 10]).reshape(1, -1))
         value_multivariate = scorer.score_from_prediction(
             actual_series, distribution_series
         )
