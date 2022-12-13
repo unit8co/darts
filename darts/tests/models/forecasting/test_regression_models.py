@@ -712,7 +712,9 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         reg_model.fit(all_series)
         pred_features = reg_model._create_lagged_data(
             series4, None, None, max_samples_per_ts=1
-        )[0] # simulates features prep at prediction time
+        )[
+            0
+        ]  # simulates features prep at prediction time
         self.assertEqual(pred_features.shape, (1, all_series_width + max_scovs_width))
 
     def test_models_runnability(self):
