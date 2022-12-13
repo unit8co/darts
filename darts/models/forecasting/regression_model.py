@@ -336,13 +336,17 @@ class RegressionModel(GlobalForecastingModel):
         series in the sequence. If no static covariates are provided for a given series, its corresponding features
         are padded with 0.
         """
+
+        series = series2seq(series)
         reps = features.shape[0] // len(series)
         # collect static covariates info
         map = {"covs_width": [], "values": []}
         for ts in series:
             if ts.static_covariates is not None:
                 # reshape with order="F" to ensure that the covariates are read column wise
-                scovs = ts.static_covariates_values(copy=False).reshape(1, -1, order = "F")
+                scovs = ts.static_covariates_values(copy=False).reshape(
+                    1, -1, order="F"
+                )
                 map["covs_width"].append(scovs.shape[1])
                 map["values"].append(scovs)
             else:

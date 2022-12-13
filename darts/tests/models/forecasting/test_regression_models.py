@@ -7,6 +7,8 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import OneHotEncoder
+from darts.dataprocessing.transformers import StaticCovariatesTransformer
 
 import darts
 from darts import TimeSeries
@@ -637,6 +639,81 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     list(series_matrix[0, :, 0]),
                     [44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0],
                 )
+
+    def test_static_covs_addition(self):
+
+        static_covs1 = pd.DataFrame(
+            data={
+                "cont": [0.1, 0.2, 0.3],
+                "cat": ["a", "b", "c"],  # should lead to 9 one-hot encoded columns
+            }
+        ).astype(dtype={"cat": "category"})
+
+        static_covs2 = pd.DataFrame(data={"cont": [0.1, 0.2, 0.3]})
+
+        # default transformer_num = MinMaxScaler()
+        scaler = StaticCovariatesTransformer(transformer_cat=OneHotEncoder())
+        ref_series = tg.linear_timeseries(length=10)
+        series1 = TimeSeries.from_times_and_values(
+            times=ref_series.time_index,
+            values=np.concatenate([ref_series.values()] * 3, axis=1),
+            columns=["comp1", "comp2", "comp3"],
+            static_covariates=static_covs1,
+        )
+        series1 = scaler.fit_transform(series1)
+
+        series2 = TimeSeries.from_times_and_values(
+            times=ref_series.time_index,
+            values=np.concatenate([ref_series.values() * 100] * 3, axis=1),
+            columns=["comp1", "comp2", "comp3"],
+            static_covariates=static_covs2,
+        )
+
+        series3 = TimeSeries.from_times_and_values(
+            times=ref_series.time_index,
+            values=np.concatenate([ref_series.values() * 200] * 3, axis=1),
+            columns=["comp1", "comp2", "comp3"],
+        )
+
+        series4 = TimeSeries.from_times_and_values(
+            times=ref_series.time_index,
+            values=np.concatenate([ref_series.values()] * 3, axis=1),
+            columns=["comp1", "comp2", "comp3"],
+        )
+
+        reg_model = RegressionModel(lags=1, output_chunk_length=1)
+        all_series = [series1, series2, series3]
+        max_samples = 5
+        all_series_width = series1.n_components
+        max_scovs_width = max(
+            [
+                s.static_covariates_values(copy=False).reshape(1, -1).shape[1]
+                for s in all_series
+                if s.has_static_covariates
+            ]
+        )
+
+        # no static covs
+        features = reg_model._create_lagged_data(
+            series3, None, None, max_samples_per_ts=max_samples
+        )[0]
+        self.assertEqual(features.shape, (5, 3))
+
+        # static covs with different dims
+        features = reg_model._create_lagged_data(
+            all_series, None, None, max_samples_per_ts=max_samples
+        )[0]
+        self.assertEqual(
+            features.shape,
+            (max_samples * len(all_series), all_series_width + max_scovs_width),
+        )
+
+        # no static covs at prediction but static covs at training
+        reg_model.fit(all_series)
+        pred_features = reg_model._create_lagged_data(
+            series4, None, None, max_samples_per_ts=1
+        )[0] # simulates features prep at prediction time
+        self.assertEqual(pred_features.shape, (1, all_series_width + max_scovs_width))
 
     def test_models_runnability(self):
         train_y, test_y = self.sine_univariate1.split_before(0.7)
