@@ -20,7 +20,7 @@ import numpy as np
 import xarray as xr
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.logging import get_logger, raise_if, raise_if_not
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 
 logger = get_logger(__name__)
@@ -285,14 +285,12 @@ class BaseDataTransformer(ABC):
         `len(self._fixed_params[key])` does not equal `n_timeseries`.
         """
         for key in self._parallel_params:
-            if len(self._fixed_params[key]) != n_timeseries:
-                key = key[1:] if key[0] == "_" else key
-                msg = (
-                    f"{n_timeseries} TimeSeries were provided "
-                    f"but only {len(self._fixed_params[key])} {key} values "
-                    f"were specified upon initialising {self.name}."
-                )
-                raise_log(ValueError(msg))
+            raise_if(
+                n_timeseries > len(self._fixed_params[key]),
+                f"{n_timeseries} TimeSeries were provided "
+                f"but only {len(self._fixed_params[key])} {key} values "
+                f"were specified upon initialising {self.name}.",
+            )
         return None
 
     @staticmethod

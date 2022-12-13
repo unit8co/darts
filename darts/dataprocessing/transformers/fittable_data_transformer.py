@@ -7,7 +7,7 @@ from abc import abstractmethod
 from typing import Any, Generator, Iterator, List, Mapping, Sequence, Tuple, Union
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if_not, raise_log
+from darts.logging import get_logger, raise_if, raise_if_not
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 
 from .base_data_transformer import BaseDataTransformer
@@ -289,11 +289,13 @@ class FittableDataTransformer(BaseDataTransformer):
             fitted_params = self._fitted_params
         else:
             fitted_params = tuple()
-        if fitted_params and (len(fitted_params) != n_timeseries):
-            msg = (
-                f"{self.name} was fitted to {len(fitted_params)} "
-                f"timeseries, but {n_timeseries} timeseries were "
-                "provided to `transform`/`inverse_transform`."
+        if fitted_params:
+            raise_if(
+                n_timeseries > len(fitted_params),
+                (
+                    f"{n_timeseries} TimeSeries were provided "
+                    f"but only {len(fitted_params)} TimeSeries "
+                    f"were specified upon training {self.name}."
+                ),
             )
-            raise_log(ValueError(msg))
         return fitted_params
