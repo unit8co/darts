@@ -8,7 +8,6 @@ import pandas as pd
 from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import OneHotEncoder
-from darts.dataprocessing.transformers import StaticCovariatesTransformer
 
 import darts
 from darts import TimeSeries
@@ -16,6 +15,7 @@ from darts.dataprocessing.encoders import (
     FutureCyclicEncoder,
     PastDatetimeAttributeEncoder,
 )
+from darts.dataprocessing.transformers import StaticCovariatesTransformer
 from darts.logging import get_logger
 from darts.metrics import mae, rmse
 from darts.models import (
