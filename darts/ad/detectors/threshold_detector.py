@@ -68,4 +68,4 @@ class ThresholdDetector(NonFittableDetector):
             int
         )
 
-        return TimeSeries.from_times_and_values(series._time_index, detected)
+        return TimeSeries.from_times_and_values(series.time_index, detected)

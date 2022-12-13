@@ -6,7 +6,7 @@ Scorer wrapped around the individual detection algorithms of PyOD.
 `PyOD https://pyod.readthedocs.io/en/latest/#`_.
 """
 
-from typing import Optional, Sequence
+from typing import Sequence
 
 import numpy as np
 from pyod.models.base import BaseDetector
@@ -22,7 +22,7 @@ class PyODScorer(FittableAnomalyScorer):
     def __init__(
         self,
         model,
-        window: Optional[int] = None,
+        window: int = 1,
         component_wise: bool = False,
         diff_fn="abs_diff",
     ) -> None:
@@ -40,9 +40,9 @@ class PyODScorer(FittableAnomalyScorer):
         )
         self.component_wise = component_wise
 
-        returns_UTS = not component_wise
-
-        super().__init__(returns_UTS=returns_UTS, window=window, diff_fn=diff_fn)
+        super().__init__(
+            univariate_scorer=(not component_wise), window=window, diff_fn=diff_fn
+        )
 
     def __str__(self):
         return "PyODScorer model: {}".format(self.model.__str__().split("(")[0])
@@ -130,5 +130,5 @@ class PyODScorer(FittableAnomalyScorer):
                 np_anomaly_score.append(np.exp(np_anomaly_score_width))
 
         return TimeSeries.from_times_and_values(
-            series._time_index[self.window - 1 :], list(zip(*np_anomaly_score))
+            series.time_index[self.window - 1 :], list(zip(*np_anomaly_score))
         )

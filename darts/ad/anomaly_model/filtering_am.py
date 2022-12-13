@@ -246,6 +246,7 @@ class FilteringAnomalyModel(AnomalyModel):
         list_series = _to_list(series)
 
         preds = [self.filter.filter(s, **filter_kwargs) for s in list_series]
+
         scores = [
             [sc.score_from_prediction(s, p) for sc in self.scorers]
             for s, p in zip(list_series, preds)
@@ -321,7 +322,7 @@ class FilteringAnomalyModel(AnomalyModel):
         )
 
         _same_length(list_series, list_actual_anomalies)
-        self.check_returns_UTS(list_actual_anomalies)
+        self._check_univariate(list_actual_anomalies)
 
         list_anomaly_scores = self.score(series=list_series, **filter_kwargs)
 

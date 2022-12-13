@@ -7,21 +7,19 @@ Source of PDF function and parameters estimation (MLE):  `Gaussian distribution
 <https://programmathically.com/maximum-likelihood-estimation-for-gaussian-distributions/>`_.
 """
 
-from typing import Optional
-
 import numpy as np
 
 from darts.ad.scorers.scorers import NLLScorer
 
 
 class GaussianNLLScorer(NLLScorer):
-    def __init__(self, window: Optional[int] = None) -> None:
+    def __init__(self, window: int = 1) -> None:
         super().__init__(window=window)
 
     def __str__(self):
         return "GaussianNLLScorer"
 
-    def _score_core_NLlikelihood(
+    def _score_core_nllikelihood(
         self,
         deterministic_values: np.ndarray,
         probabilistic_estimations: np.ndarray,

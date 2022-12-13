@@ -11,7 +11,7 @@ References
 .. [1] https://en.wikipedia.org/wiki/Wasserstein_metric
 """
 
-from typing import Optional, Sequence
+from typing import Sequence
 
 import numpy as np
 from scipy.stats import wasserstein_distance
@@ -26,7 +26,7 @@ logger = get_logger(__name__)
 class WassersteinScorer(FittableAnomalyScorer):
     def __init__(
         self,
-        window: Optional[int] = None,
+        window: int = 10,
         component_wise: bool = False,
         diff_fn="abs_diff",
     ) -> None:
@@ -110,9 +110,6 @@ class WassersteinScorer(FittableAnomalyScorer):
             Default: False
         """
 
-        if window is None:
-            window = 10
-
         if type(window) is int:
             if window > 0 and window < 10:
                 logger.warning(
@@ -131,9 +128,9 @@ class WassersteinScorer(FittableAnomalyScorer):
         )
         self.component_wise = component_wise
 
-        returns_UTS = not component_wise
-
-        super().__init__(returns_UTS=returns_UTS, window=window, diff_fn=diff_fn)
+        super().__init__(
+            univariate_scorer=(not component_wise), window=window, diff_fn=diff_fn
+        )
 
     def __str__(self):
         return "WassersteinScorer"
@@ -190,7 +187,7 @@ class WassersteinScorer(FittableAnomalyScorer):
             ]
 
             return TimeSeries.from_times_and_values(
-                series._time_index[self.window - 1 :], np_anomaly_score
+                series.time_index[self.window - 1 :], np_anomaly_score
             )
 
         else:
@@ -209,5 +206,5 @@ class WassersteinScorer(FittableAnomalyScorer):
                 np_anomaly_score.append(np_anomaly_score_width)
 
             return TimeSeries.from_times_and_values(
-                series._time_index[self.window - 1 :], list(zip(*np_anomaly_score))
+                series.time_index[self.window - 1 :], list(zip(*np_anomaly_score))
             )

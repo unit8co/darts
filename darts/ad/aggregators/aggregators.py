@@ -117,7 +117,7 @@ class Aggregator(ABC):
             list_pred.append(self._predict_core(np_series[:, width, :], idx))
 
         return TimeSeries.from_times_and_values(
-            list_series[0]._time_index, list(zip(*list_pred))
+            list_series[0].time_index, list(zip(*list_pred))
         )
 
     def eval_accuracy(

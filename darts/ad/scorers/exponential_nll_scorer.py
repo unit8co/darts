@@ -7,21 +7,19 @@ Source of PDF function and parameters estimation (MLE):  `Exponential distributi
 <https://www.statlect.com/fundamentals-of-statistics/exponential-distribution-maximum-likelihood>`_.
 """
 
-from typing import Optional
-
 import numpy as np
 
 from darts.ad.scorers.scorers import NLLScorer
 
 
 class ExponentialNLLScorer(NLLScorer):
-    def __init__(self, window: Optional[int] = None) -> None:
+    def __init__(self, window: int = 1) -> None:
         super().__init__(window=window)
 
     def __str__(self):
         return "ExponentialNLLScorer"
 
-    def _score_core_NLlikelihood(
+    def _score_core_nllikelihood(
         self,
         deterministic_values: np.ndarray,
         probabilistic_estimations: np.ndarray,

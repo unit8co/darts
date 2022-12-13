@@ -156,9 +156,6 @@ class ForecastingAnomalyModel(AnomalyModel):
         model_fit_kwargs["past_covariates"] = list_past_covariates
         model_fit_kwargs["future_covariates"] = list_future_covariates
 
-        # remove None element from dictionary model_fit_kwargs
-        model_fit_kwargs = {k: v for k, v in model_fit_kwargs.items() if v is not None}
-
         # fit forecasting model
         if allow_model_training:
             # the model has not been trained yet
@@ -571,11 +568,6 @@ class ForecastingAnomalyModel(AnomalyModel):
             "verbose": False,
         }
 
-        # remove None element from dictionary historical_forecasts_param
-        historical_forecasts_param = {
-            k: v for k, v in historical_forecasts_param.items() if v is not None
-        }
-
         return self.model.historical_forecasts(series, **historical_forecasts_param)
 
     def eval_accuracy(
@@ -656,7 +648,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         )
 
         _same_length(list_actual_anomalies, list_series)
-        self.check_returns_UTS(list_actual_anomalies)
+        self._check_univariate(list_actual_anomalies)
 
         list_anomaly_scores = self.score(
             series=list_series,

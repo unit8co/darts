@@ -115,6 +115,4 @@ class QuantileDetector(FittableDetector):
                 ).astype(int)
             )
 
-        return TimeSeries.from_times_and_values(
-            series._time_index, list(zip(*detected))
-        )
+        return TimeSeries.from_times_and_values(series.time_index, list(zip(*detected)))

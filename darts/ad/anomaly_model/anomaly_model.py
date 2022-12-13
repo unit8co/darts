@@ -48,20 +48,20 @@ class AnomalyModel(ABC):
         )
 
         self.scorers_are_trainable = any(s.trainable for s in self.scorers)
-        self.univariate_scoring = any(s.returns_UTS for s in self.scorers)
+        self.univariate_scoring = any(s.univariate_scorer for s in self.scorers)
 
         self.model = model
 
-    def check_returns_UTS(self, actual_anomalies):
+    def _check_univariate(self, actual_anomalies):
         """Checks if `actual_anomalies` contains only univariate series, which
-        is required if any of the scorers is univariate.
+        is required if any of the scorers returns a univariate score.
         """
 
         if self.univariate_scoring:
             raise_if_not(
                 all([s.width == 1 for s in actual_anomalies]),
                 "Anomaly model contains scorer {} that will return".format(
-                    [s.__str__() for s in self.scorers if s.returns_UTS]
+                    [s.__str__() for s in self.scorers if s.univariate_scorer]
                 )
                 + " a univariate anomaly score series (width=1). Found a"
                 + " multivariate `actual_anomalies`. The evaluation of the"
@@ -110,13 +110,9 @@ class AnomalyModel(ABC):
             title = f"Anomaly results by model {self.model.__class__.__name__}"
 
         if names_of_scorers is None:
-            names_of_scorers = []
-            for scorer in self.scorers:
-                names_of_scorers.append(scorer.__str__())
+            names_of_scorers = [s.__str__() for s in self.scorers]
 
-        list_window = []
-        for scorer in self.scorers:
-            list_window.append(scorer.window)
+        list_window = [s.window for s in self.scorers]
 
         return show_anomalies_from_scores(
             series,

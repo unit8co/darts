@@ -7,21 +7,19 @@ Source of PDF function and parameters estimation (MLE):  `Laplace distribution
 <https://en.wikipedia.org/wiki/Laplace_distribution>`_.
 """
 
-from typing import Optional
-
 import numpy as np
 
 from darts.ad.scorers.scorers import NLLScorer
 
 
 class LaplaceNLLScorer(NLLScorer):
-    def __init__(self, window: Optional[int] = None) -> None:
+    def __init__(self, window: int = 1) -> None:
         super().__init__(window=window)
 
     def __str__(self):
         return "LaplaceNLLScorer"
 
-    def _score_core_NLlikelihood(
+    def _score_core_nllikelihood(
         self,
         deterministic_values: np.ndarray,
         probabilistic_estimations: np.ndarray,

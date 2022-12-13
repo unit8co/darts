@@ -11,7 +11,7 @@ References
 .. [1] https://en.wikipedia.org/wiki/K-means_clustering
 """
 
-from typing import Optional, Sequence
+from typing import Sequence
 
 import numpy as np
 from sklearn.cluster import KMeans
@@ -24,7 +24,7 @@ from darts.timeseries import TimeSeries
 class KMeansScorer(FittableAnomalyScorer):
     def __init__(
         self,
-        window: Optional[int] = None,
+        window: int = 1,
         k: int = 2,
         component_wise: bool = False,
         diff_fn="abs_diff",
@@ -117,9 +117,9 @@ class KMeansScorer(FittableAnomalyScorer):
 
         self.k = k
 
-        returns_UTS = not component_wise
-
-        super().__init__(returns_UTS=returns_UTS, window=window, diff_fn=diff_fn)
+        super().__init__(
+            univariate_scorer=(not component_wise), window=window, diff_fn=diff_fn
+        )
 
     def __str__(self):
         return "KMeansScorer"
@@ -213,5 +213,5 @@ class KMeansScorer(FittableAnomalyScorer):
                 np_anomaly_score.append(np_anomaly_score_width)
 
         return TimeSeries.from_times_and_values(
-            series._time_index[self.window - 1 :], list(zip(*np_anomaly_score))
+            series.time_index[self.window - 1 :], list(zip(*np_anomaly_score))
         )

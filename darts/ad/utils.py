@@ -433,9 +433,7 @@ def _window_adjustment_anomalies(series: TimeSeries, window: int) -> TimeSeries:
             for ind in range(len(np_series) - window + 1)
         ]
 
-        return TimeSeries.from_times_and_values(
-            series._time_index[window - 1 :], values
-        )
+        return TimeSeries.from_times_and_values(series.time_index[window - 1 :], values)
 
 
 def _to_list(series: Union[TimeSeries, Sequence[TimeSeries]]) -> Sequence[TimeSeries]:

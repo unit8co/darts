@@ -7,8 +7,6 @@ Source of PDF function and parameters estimation: `Cauchy distribution
 <https://en.wikipedia.org/wiki/Cauchy_distribution>`_
 """
 
-from typing import Optional
-
 import numpy as np
 
 from darts.ad.scorers.scorers import NLLScorer
@@ -21,13 +19,13 @@ class CauchyNLLScorer(NLLScorer):
         - scale parameter (gamma): half the sample interquartile range (Q3-Q1)/2
     """
 
-    def __init__(self, window: Optional[int] = None) -> None:
+    def __init__(self, window: int = 1) -> None:
         super().__init__(window=window)
 
     def __str__(self):
         return "CauchyNLLScorer"
 
-    def _score_core_NLlikelihood(
+    def _score_core_nllikelihood(
         self,
         deterministic_values: np.ndarray,
         probabilistic_estimations: np.ndarray,

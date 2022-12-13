@@ -57,7 +57,7 @@ class NormScorer(NonFittableAnomalyScorer):
 
         self.ord = ord
         self.component_wise = component_wise
-        super().__init__(returns_UTS=(not component_wise), window=None)
+        super().__init__(univariate_scorer=(not component_wise), window=1)
 
     def __str__(self):
         return f"Norm (ord={self.ord})"
@@ -68,8 +68,8 @@ class NormScorer(NonFittableAnomalyScorer):
         pred_series: TimeSeries,
     ) -> TimeSeries:
 
-        self._check_deterministic(actual_series, "actual_series")
-        self._check_deterministic(pred_series, "pred_series")
+        self._assert_deterministic(actual_series, "actual_series")
+        self._assert_deterministic(pred_series, "pred_series")
 
         diff = actual_series - pred_series
 
@@ -80,5 +80,5 @@ class NormScorer(NonFittableAnomalyScorer):
             diff_np = diff.all_values(copy=False)
 
             return TimeSeries.from_times_and_values(
-                diff._time_index, np.linalg.norm(diff_np, ord=self.ord, axis=1)
+                diff.time_index, np.linalg.norm(diff_np, ord=self.ord, axis=1)
             )

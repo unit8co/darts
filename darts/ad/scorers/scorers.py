@@ -63,7 +63,7 @@ More details can be found in the API documentation of each scorer.
 
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Sequence, Union
 
 import numpy as np
 
@@ -85,10 +85,7 @@ logger = get_logger(__name__)
 class AnomalyScorer(ABC):
     """Base class for all anomaly scorers"""
 
-    def __init__(self, returns_UTS: bool, window: Optional[int] = None) -> None:
-
-        if window is None:
-            window = 1
+    def __init__(self, univariate_scorer: bool, window: int) -> None:
 
         raise_if_not(
             type(window) is int,
@@ -102,13 +99,13 @@ class AnomalyScorer(ABC):
 
         self.window = window
 
-        self.returns_UTS = returns_UTS
+        self.univariate_scorer = univariate_scorer
 
-    def check_returns_UTS(self, actual_anomalies):
+    def _check_univariate_scorer(self, actual_anomalies):
         """Checks if `actual_anomalies` contains only univariate series when the scorer has the
-        parameter 'returns_UTS' set to True.
+        parameter 'univariate_scorer' set to True.
 
-        'returns_UTS' is:
+        'univariate_scorer' is:
             True -> when the function of the scorer ``score(series)`` (or, if applicable,
                 ``score_from_prediction(actual_series, pred_series)``) returns a univariate
                 anomaly score regardless of the input `series` (or, if applicable, `actual_series`
@@ -117,7 +114,7 @@ class AnomalyScorer(ABC):
                 same width as the input (can be univariate or multivariate).
         """
 
-        if self.returns_UTS:
+        if self.univariate_scorer:
             actual_anomalies = _to_list(actual_anomalies)
             raise_if_not(
                 all([isinstance(s, TimeSeries) for s in actual_anomalies]),
@@ -149,7 +146,7 @@ class AnomalyScorer(ABC):
         """
         return False
 
-    def _check_stochastic(self, series: TimeSeries, name_series: str):
+    def _assert_stochastic(self, series: TimeSeries, name_series: str):
         "Checks if the series is stochastic (number of samples is higher than one)."
 
         raise_if_not(
@@ -158,7 +155,7 @@ class AnomalyScorer(ABC):
             + f" (number of samples must be higher than 1, found: {series.n_samples}).",
         )
 
-    def _check_deterministic(self, series: TimeSeries, name_series: str):
+    def _assert_deterministic(self, series: TimeSeries, name_series: str):
         "Checks if the series is deterministic (number of samples is equal to one)."
 
         if not series.is_deterministic:
@@ -214,7 +211,7 @@ class AnomalyScorer(ABC):
                 Sequence is over the dimensions of each element in the sequence input.
         """
 
-        self.check_returns_UTS(actual_anomalies)
+        self._check_univariate_scorer(actual_anomalies)
 
         anomaly_score = self.score_from_prediction(actual_series, pred_series)
 
@@ -319,8 +316,8 @@ class AnomalyScorer(ABC):
 class NonFittableAnomalyScorer(AnomalyScorer):
     """Base class of anomaly scorers that do not need training."""
 
-    def __init__(self, returns_UTS, window) -> None:
-        super().__init__(returns_UTS=returns_UTS, window=window)
+    def __init__(self, univariate_scorer, window) -> None:
+        super().__init__(univariate_scorer=univariate_scorer, window=window)
 
         # indicates if the scorer is trainable or not
         self.trainable = False
@@ -336,13 +333,9 @@ class NonFittableAnomalyScorer(AnomalyScorer):
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Computes the anomaly score on the two (sequence of) series.
 
-        The function ``diff_fn`` passed as a parameter to the scorer, will transform `pred_series` and `actual_series`
-        into one series. By default, ``diff_fn`` will compute the absolute difference (Default: "abs_diff").
-        If actual_series and pred_seriesare sequences, ``diff_fn`` will be applied to all pairwise elements
-        of the sequences.
-
-        The scorer will then transform this series into an anomaly score. If a sequence of series is given,
-        the scorer will score each series independently and return an anomaly score for each series in the sequence.
+        If a pair of sequences is given, they must contain the same number
+        of series. The scorer will score each pair of series independently
+        and return an anomaly score for each pair.
 
         Parameters
         ----------
@@ -383,8 +376,8 @@ class NonFittableAnomalyScorer(AnomalyScorer):
 class FittableAnomalyScorer(AnomalyScorer):
     """Base class of scorers that do need training."""
 
-    def __init__(self, returns_UTS, window, diff_fn="abs_diff") -> None:
-        super().__init__(returns_UTS=returns_UTS, window=window)
+    def __init__(self, univariate_scorer, window, diff_fn="abs_diff") -> None:
+        super().__init__(univariate_scorer=univariate_scorer, window=window)
 
         # indicates if the scorer is trainable or not
         self.trainable = True
@@ -440,7 +433,7 @@ class FittableAnomalyScorer(AnomalyScorer):
                 series. Outer Sequence is over the sequence input and the inner Sequence
                 is over the dimensions of each element in the sequence input.
         """
-        self.check_returns_UTS(actual_anomalies)
+        self._check_univariate_scorer(actual_anomalies)
         anomaly_score = self.score(series)
 
         return eval_accuracy_from_scores(
@@ -476,7 +469,7 @@ class FittableAnomalyScorer(AnomalyScorer):
             _check_timeseries_type(s)
             self._check_window_size(s)
             anomaly_scores.append(
-                self._score_core(self._check_deterministic(s, "series"))
+                self._score_core(self._assert_deterministic(s, "series"))
             )
 
         if len(anomaly_scores) == 1 and not isinstance(series, Sequence):
@@ -594,8 +587,8 @@ class FittableAnomalyScorer(AnomalyScorer):
         anomaly_scores = []
         for (s1, s2) in zip(list_actual_series, list_pred_series):
             _sanity_check_2series(s1, s2)
-            s1 = self._check_deterministic(s1, "actual_series")
-            s2 = self._check_deterministic(s2, "pred_series")
+            s1 = self._assert_deterministic(s1, "actual_series")
+            s2 = self._assert_deterministic(s2, "pred_series")
             diff = self._diff_series(s1, s2)
             self._check_window_size(diff)
             anomaly_scores.append(self.score(diff))
@@ -645,7 +638,7 @@ class FittableAnomalyScorer(AnomalyScorer):
                 )
             self._check_window_size(s)
 
-            self._check_deterministic(s, "series")
+            self._assert_deterministic(s, "series")
 
         self._fit_core(list_series)
         self._fit_called = True
@@ -687,8 +680,8 @@ class FittableAnomalyScorer(AnomalyScorer):
         list_fit_series = []
         for s1, s2 in zip(list_actual_series, list_pred_series):
             _sanity_check_2series(s1, s2)
-            s1 = self._check_deterministic(s1, "actual_series")
-            s2 = self._check_deterministic(s2, "pred_series")
+            s1 = self._assert_deterministic(s1, "actual_series")
+            s2 = self._assert_deterministic(s2, "pred_series")
             list_fit_series.append(self._diff_series(s1, s2))
 
         self.fit(list_fit_series)
@@ -761,7 +754,7 @@ class NLLScorer(NonFittableAnomalyScorer):
     """Parent class for all LikelihoodScorer"""
 
     def __init__(self, window) -> None:
-        super().__init__(returns_UTS=False, window=window)
+        super().__init__(univariate_scorer=False, window=window)
 
     def _score_core_from_prediction(
         self,
@@ -785,8 +778,8 @@ class NLLScorer(NonFittableAnomalyScorer):
         -------
         TimeSeries
         """
-        actual_series = self._check_deterministic(actual_series, "actual_series")
-        self._check_stochastic(pred_series, "pred_series")
+        actual_series = self._assert_deterministic(actual_series, "actual_series")
+        self._assert_stochastic(pred_series, "pred_series")
 
         np_actual_series = actual_series.all_values(copy=False)
         np_pred_series = pred_series.all_values(copy=False)
@@ -794,7 +787,7 @@ class NLLScorer(NonFittableAnomalyScorer):
         np_anomaly_scores = []
         for width in range(pred_series.width):
             np_anomaly_scores.append(
-                self._score_core_NLlikelihood(
+                self._score_core_nllikelihood(
                     # shape actual: (time_steps, )
                     # shape pred: (time_steps, samples)
                     np_actual_series[:, width].flatten(),
@@ -831,19 +824,19 @@ class NLLScorer(NonFittableAnomalyScorer):
         if self.window == 1:
             return series
         else:
-            values = [
-                series[ind : ind + self.window].mean(axis=0).all_values().flatten()[0]
-                for (ind, _) in enumerate(series[self.window - 1 :].pd_series())
-            ]
-            return TimeSeries.from_times_and_values(
-                series._time_index[self.window - 1 :], values
-            )
+            return series.window_transform(
+                transforms={
+                    "window": self.window,
+                    "function": "mean",
+                    "mode": "rolling",
+                }
+            )[self.window - 1 :]
 
     def _expects_probabilistic(self) -> bool:
         return True
 
     @abstractmethod
-    def _score_core_NLlikelihood(self, input_1: Any, input_2: Any) -> Any:
+    def _score_core_nllikelihood(self, input_1: Any, input_2: Any) -> Any:
         """For each timestamp, the corresponding distribution is fitted on the probabilistic time-series
         input_2, and returns the negative log-likelihood of the deterministic time-series input_1
         given the distribution.
