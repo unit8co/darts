@@ -15,7 +15,7 @@ from darts.timeseries import TimeSeries, concatenate
 
 
 class NeuralProphet(GlobalForecastingModel):
-    def __init__(self, n_lags: int = 0, n_forecasts: int = 1, *kwargs):
+    def __init__(self, n_lags: int = 0, n_forecasts: int = 1, **kwargs):
         super().__init__()
 
         raise_if_not(n_lags >= 0, "Argument n_lags should be a non-negative integer")
@@ -23,7 +23,7 @@ class NeuralProphet(GlobalForecastingModel):
         self.n_lags = n_lags
         self.n_forecasts = n_forecasts
         self.model = neuralprophet.NeuralProphet(
-            n_lags=n_lags, n_forecasts=n_forecasts, *kwargs
+            n_lags=n_lags, n_forecasts=n_forecasts, **kwargs
         )
 
     def fit(
@@ -34,10 +34,25 @@ class NeuralProphet(GlobalForecastingModel):
     ) -> "NeuralProphet":
         super().fit(series, past_covariates, future_covariates)
 
-        self.training_series = self._as_sequence(series)
-        fit_df = self._convert_ts_to_df(self.training_series)
+        # TODO accept list of univariate series or one multivariate ???
+        # TODO series have to have the same frequency
 
-        self.model.fit(fit_df, freq=series.freq_str)
+        self.training_series = self._as_sequence(series)
+        self.train_past_cov = (
+            self._as_sequence(past_covariates) if past_covariates is not None else None
+        )
+        self.train_future_cov = (
+            self._as_sequence(future_covariates)
+            if future_covariates is not None
+            else None
+        )
+
+        fit_df = self._convert_ts_to_df(
+            self.model, self.training_series, self.train_past_cov, self.train_future_cov
+        )
+
+        # TODO check if all time series has common frequency string
+        self.model.fit(fit_df, freq=series[0].freq_str)
 
         return self
 
@@ -80,10 +95,21 @@ class NeuralProphet(GlobalForecastingModel):
             )
         return self._from_sequence(predictions)
 
-    def _convert_ts_to_df(self, series_list: Sequence[TimeSeries]):
+    def _convert_ts_to_df(
+        self,
+        model: neuralprophet.NeuralProphet,
+        series_list: Sequence[TimeSeries],
+        past_cov: Optional[Sequence[TimeSeries]],
+        future_cov: Optional[Sequence[TimeSeries]],
+    ):
+        raise_if_not(
+            len(past_cov) == 0 or len(past_cov) == len(series_list),
+            "Number of past covariates has to be zero or equal to number of fit time series.",
+        )
+
         dfs = []
 
-        for series in series_list:
+        for i, series in enumerate(series_list):
             for component in series.components:
                 new_df = (
                     series[component].pd_dataframe(copy=False).reset_index(names=["ds"])
@@ -94,7 +120,19 @@ class NeuralProphet(GlobalForecastingModel):
                     .rename(columns={component: "y"})
                 )
                 component_df["ID"] = component
-                dfs.append(component_df)
+
+            if past_cov is not None:
+                for component in past_cov[i].components:
+                    covaraite_df = (
+                        past_cov[i].pd_dataframe(copy=False).reset_index(names=["ds"])
+                    )
+                    covaraite_df = covaraite_df[["ds", component]].copy(deep=True)
+
+                    # TODO add checks if past covariate has full coverage
+                    component_df = component_df.merge(covaraite_df, how="left", on="ds")
+                    model.add_lagged_regressor(names=component)
+
+            dfs.append(component_df)
 
         return pd.concat(dfs)
 
@@ -129,15 +167,15 @@ class NeuralProphet(GlobalForecastingModel):
         )
 
     def _as_sequence(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]]
+        self, series: Optional[Union[TimeSeries, Sequence[TimeSeries]]]
     ) -> Sequence[TimeSeries]:
+        if series is None:
+            return []
+
         if isinstance(series, TimeSeries):
             return [series]
 
-        if isinstance(series, Sequence[TimeSeries]):
-            return series
-
-        raise ValueError("Invalid type. Expected TimeSeries or Sequence[TimeSeries]")
+        return series
 
     def _from_sequence(
         self, series_list: Sequence[TimeSeries]
