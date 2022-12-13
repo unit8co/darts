@@ -7,15 +7,16 @@ several anomaly scorer(s) to compute anomaly scores
 by comparing how actuals deviate from the model's predictions.
 """
 
-import warnings
 from typing import Dict, Sequence, Union
 
 from darts.ad.anomaly_model.anomaly_model import AnomalyModel
 from darts.ad.scorers.scorers import AnomalyScorer
 from darts.ad.utils import _same_length, _to_list, eval_accuracy_from_scores
-from darts.logging import raise_if_not
+from darts.logging import get_logger, raise_if_not
 from darts.models.filtering.filtering_model import FilteringModel
 from darts.timeseries import TimeSeries
+
+logger = get_logger(__name__)
 
 
 class FilteringAnomalyModel(AnomalyModel):
@@ -49,7 +50,7 @@ class FilteringAnomalyModel(AnomalyModel):
 
         raise_if_not(
             isinstance(model, FilteringModel),
-            f"`model` must be a darts.models.filtering not a {type(model)}",
+            f"`model` must be a darts.models.filtering not a {type(model)}.",
         )
         self.filter = model
 
@@ -88,22 +89,23 @@ class FilteringAnomalyModel(AnomalyModel):
 
         raise_if_not(
             type(allow_filter_training) is bool,
-            f"'allow_filter_training' must be Boolean, found type: {type(allow_filter_training)}",
+            f"`allow_filter_training` must be Boolean, found type: {type(allow_filter_training)}.",
         )
 
         # checks if model does not need training and all scorer(s) are not fittable
         if not allow_filter_training and not self.scorers_are_trainable:
-            return warnings.warn(
-                f"Warning: the filtering model {self.model.__class__.__name__} is not required to be \
-                trained because the parameter allow_filter_training is set to False, and all scorers are \
-                not fittable. No need to call the .fit() function"
+
+            logger.warning(
+                f"The filtering model {self.model.__class__.__name__} is not required to be trained"
+                + " because the parameter `allow_filter_training` is set to False, and all scorers are"
+                + " not fittable. No need to call the ``.fit()`` function."
             )
 
         list_series = _to_list(series)
 
         raise_if_not(
             all([isinstance(s, TimeSeries) for s in list_series]),
-            "all input 'series' must be of type Timeseries",
+            "all input `series` must be of type Timeseries.",
         )
 
         if allow_filter_training:
@@ -112,19 +114,19 @@ class FilteringAnomalyModel(AnomalyModel):
                 # TODO: check if filter is already fitted (for now fit it regardless -> only Kalman)
                 raise_if_not(
                     len(list_series) == 1,
-                    f"Filter model {self.model.__class__.__name__} can only be fitted on a \
-                    time series and not a list of time series",
+                    f"Filter model {self.model.__class__.__name__} can only be fitted on a"
+                    + " time series and not a list of time series.",
                 )
 
                 self.filter.fit(list_series[0], **filter_fit_kwargs)
             else:
                 raise ValueError(
-                    f"'allow_filter_training' was set to True, but the filter \
-                {self.model.__class__.__name__} is not fittable."
+                    "`allow_filter_training` was set to True, but the filter"
+                    + f" {self.model.__class__.__name__} is not fittable."
                 )
         else:
             # TODO: check if Kalman is fitted or not
-            # if not raise error "fit filter before, or set 'allow_filter_training' to TRUE"
+            # if not raise error "fit filter before, or set `allow_filter_training` to TRUE"
             pass
 
         if self.scorers_are_trainable:
@@ -156,8 +158,8 @@ class FilteringAnomalyModel(AnomalyModel):
             - the actual anomalies, if given.
 
         It is possible to:
-            - add a title to the figure with the parameter 'title'
-            - give personalized names for the scorers with 'names_of_scorers'
+            - add a title to the figure with the parameter `title`
+            - give personalized names for the scorers with `names_of_scorers`
             - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR), if the actual anomalies is given
 
         Parameters
@@ -180,7 +182,7 @@ class FilteringAnomalyModel(AnomalyModel):
         if isinstance(series, Sequence):
             raise_if_not(
                 len(series) == 1,
-                f"'show_anomalies' expects one series, found a sequence of length {len(series)} as input.",
+                f"`show_anomalies` expects one series, found a sequence of length {len(series)} as input.",
             )
 
             series = series[0]
@@ -238,7 +240,7 @@ class FilteringAnomalyModel(AnomalyModel):
         """
         raise_if_not(
             type(return_model_prediction) is bool,
-            f"'return_model_prediction' must be Boolean, found type: {type(return_model_prediction)}",
+            f"`return_model_prediction` must be Boolean, found type: {type(return_model_prediction)}.",
         )
 
         list_series = _to_list(series)
@@ -278,7 +280,7 @@ class FilteringAnomalyModel(AnomalyModel):
     ]:
         """Compute the accuracy of the anomaly scores computed by the model.
 
-        Predicts the 'series' with the filtering model, and applies the
+        Predicts the `series` with the filtering model, and applies the
         scorer(s) on the filtered time series and the given target time series. Returns the
         score(s) of an agnostic threshold metric, based on the anomaly score given by the scorer(s).
 
@@ -310,12 +312,12 @@ class FilteringAnomalyModel(AnomalyModel):
 
         raise_if_not(
             all([isinstance(s, TimeSeries) for s in list_series]),
-            "all input 'series' must be of type Timeseries",
+            "all input `series` must be of type Timeseries.",
         )
 
         raise_if_not(
             all([isinstance(s, TimeSeries) for s in list_actual_anomalies]),
-            "all input 'actual_anomalies' must be of type Timeseries",
+            "all input `actual_anomalies` must be of type Timeseries.",
         )
 
         _same_length(list_series, list_actual_anomalies)

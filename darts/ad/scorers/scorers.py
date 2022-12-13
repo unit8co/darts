@@ -92,12 +92,12 @@ class AnomalyScorer(ABC):
 
         raise_if_not(
             type(window) is int,
-            f"window must be an integer, found type {type(window)}",
+            f"Parameter `window` must be an integer, found type {type(window)}.",
         )
 
         raise_if_not(
             window > 0,
-            f"window must be stricly greater than 0, found size {window}",
+            f"Parameter `window` must be stricly greater than 0, found size {window}.",
         )
 
         self.window = window
@@ -105,14 +105,14 @@ class AnomalyScorer(ABC):
         self.returns_UTS = returns_UTS
 
     def check_returns_UTS(self, actual_anomalies):
-        """Checks if 'actual_anomalies' contains only univariate series when the scorer has the
+        """Checks if `actual_anomalies` contains only univariate series when the scorer has the
         parameter 'returns_UTS' set to True.
 
         'returns_UTS' is:
             True -> when the function of the scorer ``score(series)`` (or, if applicable,
                 ``score_from_prediction(actual_series, pred_series)``) returns a univariate
-                anomaly score regardless of the input 'series' (or, if applicable, 'actual_series'
-                and 'pred_series').
+                anomaly score regardless of the input `series` (or, if applicable, `actual_series`
+                and `pred_series`).
             False -> when the scorer will return a series that has the
                 same width as the input (can be univariate or multivariate).
         """
@@ -121,13 +121,14 @@ class AnomalyScorer(ABC):
             actual_anomalies = _to_list(actual_anomalies)
             raise_if_not(
                 all([isinstance(s, TimeSeries) for s in actual_anomalies]),
-                "all series in 'actual_anomalies' must be of type TimeSeries",
+                "all series in `actual_anomalies` must be of type TimeSeries.",
             )
 
             raise_if_not(
                 all([s.width == 1 for s in actual_anomalies]),
-                f"Scorer {self.__str__()} will return a univariate anomaly score series (width=1). \
-                Found a multivariate 'actual_anomalies'. The evaluation of the accuracy cannot be computed.",
+                f"Scorer {self.__str__()} will return a univariate anomaly score series (width=1)."
+                + " Found a multivariate `actual_anomalies`."
+                + " The evaluation of the accuracy cannot be computed between the two series.",
             )
 
     def _check_window_size(self, series: TimeSeries):
@@ -135,9 +136,9 @@ class AnomalyScorer(ABC):
 
         raise_if_not(
             self.window <= len(series),
-            f"Window size {self.window} is greater than the targeted series length {len(series)}, \
-            must be lower or equal. Decrease the window size or increase the length series input \
-            to score on.",
+            f"Window size {self.window} is greater than the targeted series length {len(series)}, "
+            + "must be lower or equal. Decrease the window size or increase the length series input"
+            + " to score on.",
         )
 
     @property
@@ -153,8 +154,8 @@ class AnomalyScorer(ABC):
 
         raise_if_not(
             series.is_stochastic,
-            f"Scorer {self.__str__()} is expecting '{name_series}' to be a stochastic timeseries \
-            (number of samples must be higher than 1, found: {series.n_samples}).",
+            f"Scorer {self.__str__()} is expecting `{name_series}` to be a stochastic timeseries"
+            + f" (number of samples must be higher than 1, found: {series.n_samples}).",
         )
 
     def _check_deterministic(self, series: TimeSeries, name_series: str):
@@ -162,9 +163,9 @@ class AnomalyScorer(ABC):
 
         if not series.is_deterministic:
             logger.warning(
-                f"Scorer {self.__str__()} is expecting '{name_series}' to be a (sequence of) deterministic \
-                timeseries (number of samples must be equal to 1, found: {series.n_samples}). \
-                The series will be converted to a deterministic series by taking the median of the samples.",
+                f"Scorer {self.__str__()} is expecting `{name_series}` to be a (sequence of) deterministic"
+                + f" timeseries (number of samples must be equal to 1, found: {series.n_samples}). The "
+                + "series will be converted to a deterministic series by taking the median of the samples.",
             )
             series = series.quantile_timeseries(quantile=0.5)
 
@@ -244,8 +245,8 @@ class AnomalyScorer(ABC):
             - the actual anomalies, if given.
 
         It is possible to:
-            - add a title to the figure with the parameter 'title'
-            - give personalized name to the scorer with 'name_of_scorer'
+            - add a title to the figure with the parameter `title`
+            - give personalized name to the scorer with `name_of_scorer`
             - show the results of a metric for the anomaly score (AUC_ROC or AUC_PR),
               if the actual anomalies is provided.
 
@@ -254,7 +255,7 @@ class AnomalyScorer(ABC):
         actual_series
             The actual series to visualize anomalies from.
         pred_series
-            The predicted series of 'actual_series'.
+            The predicted series of `actual_series`.
         actual_anomalies
             The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
         name_of_scorer
@@ -268,31 +269,31 @@ class AnomalyScorer(ABC):
         if isinstance(actual_series, Sequence):
             raise_if_not(
                 len(actual_series) == 1,
-                f"'show_anomalies' expects one series for 'actual_series', \
-                found a list of length {len(actual_series)} as input.",
+                "``show_anomalies_from_prediction`` expects only one series for `actual_series`,"
+                + f" found a list of length {len(actual_series)} as input.",
             )
 
             actual_series = actual_series[0]
 
         raise_if_not(
             isinstance(actual_series, TimeSeries),
-            f"'show_anomalies' expects an input of type TimeSeries, \
-            found type: {type(actual_series)} for 'actual_series'.",
+            "``show_anomalies_from_prediction`` expects an input of type TimeSeries,"
+            + f" found type {type(actual_series)} for `actual_series`.",
         )
 
         if isinstance(pred_series, Sequence):
             raise_if_not(
                 len(pred_series) == 1,
-                f"'show_anomalies' expects one series for 'pred_series', \
-                found a list of length {len(pred_series)} as input.",
+                "``show_anomalies_from_prediction`` expects one series for `pred_series`,"
+                + f" found a list of length {len(pred_series)} as input.",
             )
 
             pred_series = pred_series[0]
 
         raise_if_not(
             isinstance(pred_series, TimeSeries),
-            f"'show_anomalies' expects an input of type TimeSeries, \
-            found type: {type(pred_series)} for 'pred_series'.",
+            "``show_anomalies_from_prediction`` expects an input of type TimeSeries,"
+            + f" found type: {type(pred_series)} for `pred_series`.",
         )
 
         anomaly_score = self.score_from_prediction(actual_series, pred_series)
@@ -402,7 +403,7 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         raise_if_not(
             self._fit_called,
-            f"The Scorer {self.__str__()} has not been fitted yet. Call `fit()` first",
+            f"The Scorer {self.__str__()} has not been fitted yet. Call ``fit()`` first.",
         )
 
     def eval_accuracy(
@@ -501,8 +502,8 @@ class FittableAnomalyScorer(AnomalyScorer):
             - the actual anomalies, if given.
 
         It is possible to:
-            - add a title to the figure with the parameter 'title'
-            - give personalized name to the scorer with 'name_of_scorer'
+            - add a title to the figure with the parameter `title`
+            - give personalized name to the scorer with `name_of_scorer`
             - show the results of a metric for the anomaly score (AUC_ROC or AUC_PR),
             if the actual anomalies is provided.
 
@@ -524,16 +525,16 @@ class FittableAnomalyScorer(AnomalyScorer):
         if isinstance(series, Sequence):
             raise_if_not(
                 len(series) == 1,
-                f"'show_anomalies' expects one series for 'series', \
-                found a list of length {len(series)} as input.",
+                "``show_anomalies`` expects one series for `series`,"
+                + f" found a list of length {len(series)} as input.",
             )
 
             series = series[0]
 
         raise_if_not(
             isinstance(series, TimeSeries),
-            f"'show_anomalies' expects an input of type TimeSeries, \
-            found type: {type(series)} for 'series'.",
+            "``show_anomalies`` expects an input of type TimeSeries,"
+            + f" found type {type(series)} for `series`.",
         )
 
         anomaly_score = self.score(series)
@@ -638,8 +639,9 @@ class FittableAnomalyScorer(AnomalyScorer):
             else:
                 raise_if_not(
                     s.width == self.width_trained_on,
-                    f"Series must have same width, found width {self.width_trained_on} \
-                    and {s.width} for index 0 and {idx}",
+                    "series in `series` must have the same width,"
+                    + f" found width {self.width_trained_on}"
+                    + f" and {s.width} for index 0 and {idx}.",
                 )
             self._check_window_size(s)
 

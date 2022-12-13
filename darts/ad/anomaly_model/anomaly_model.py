@@ -44,7 +44,7 @@ class AnomalyModel(ABC):
 
         raise_if_not(
             all([isinstance(s, AnomalyScorer) for s in self.scorers]),
-            "all scorers must be of instance darts.ad.scorers.AnomalyScorer",
+            "all scorers must be of instance darts.ad.scorers.AnomalyScorer.",
         )
 
         self.scorers_are_trainable = any(s.trainable for s in self.scorers)
@@ -53,17 +53,19 @@ class AnomalyModel(ABC):
         self.model = model
 
     def check_returns_UTS(self, actual_anomalies):
-        """Checks if 'actual_anomalies' contains only univariate series, which
+        """Checks if `actual_anomalies` contains only univariate series, which
         is required if any of the scorers is univariate.
         """
 
         if self.univariate_scoring:
             raise_if_not(
                 all([s.width == 1 for s in actual_anomalies]),
-                "Anomaly model contains scorer {} that will return a univariate anomaly score series (width=1). \
-                Found a multivariate 'actual_anomalies'. The evaluation of the accuracy cannot be computed.".format(
+                "Anomaly model contains scorer {} that will return".format(
                     [s.__str__() for s in self.scorers if s.returns_UTS]
-                ),
+                )
+                + " a univariate anomaly score series (width=1). Found a"
+                + " multivariate `actual_anomalies`. The evaluation of the"
+                + " accuracy cannot be computed.",
             )
 
     @abstractmethod

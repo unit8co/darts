@@ -57,7 +57,7 @@ class ForecastingAnomalyModel(AnomalyModel):
 
         raise_if_not(
             isinstance(model, ForecastingModel),
-            f"Model must be a darts ForecastingModel not a {type(model)}",
+            f"Model must be a darts ForecastingModel not a {type(model)}.",
         )
         self.model = model
 
@@ -127,23 +127,23 @@ class ForecastingAnomalyModel(AnomalyModel):
 
         raise_if_not(
             type(allow_model_training) is bool,
-            f"'allow_model_training' must be Boolean, found type: {type(allow_model_training)}",
+            f"`allow_model_training` must be Boolean, found type: {type(allow_model_training)}.",
         )
 
         # checks if model does not need training and all scorer(s) are not fittable
         if not allow_model_training and not self.scorers_are_trainable:
 
             logger.warning(
-                f"The forecasting model {self.model.__class__.__name__} is not required to be \
-                trained because the parameter allow_model_training is set to False, and all scorers are not fittable.\
-                No need to call the .fit() function"
+                f"The forecasting model {self.model.__class__.__name__} is not required to be trained"
+                + " because the parameter `allow_model_training` is set to False, and all scorers are"
+                + " not fittable. No need to call the ``.fit()`` function."
             )
 
         list_series = _to_list(series)
 
         raise_if_not(
             all([isinstance(s, TimeSeries) for s in list_series]),
-            "all input 'series' must be of type Timeseries",
+            "all input `series` must be of type Timeseries.",
         )
 
         list_past_covariates = self._prepare_covariates(
@@ -174,15 +174,16 @@ class ForecastingAnomalyModel(AnomalyModel):
             else:
                 raise_if_not(
                     len(list_series) == 1,
-                    f"Forecasting model {self.model.__class__.__name__} only accepts a single time series for the training \
-                    phase and not a sequence of multiple of time series.",
+                    f"Forecasting model {self.model.__class__.__name__} only accepts a single time series"
+                    + " for the training phase and not a sequence of multiple of time series.",
                 )
                 self.model.fit(series=list_series[0], **model_fit_kwargs)
         else:
             raise_if_not(
                 self.model._fit_called,
-                f"Model {self.model.__class__.__name__} needs to be trained, otherwise set parameter 'allow_model_training' to True \
-                (default: False). The model will then be trained on the provided series.",
+                f"Model {self.model.__class__.__name__} needs to be trained, otherwise set parameter "
+                + "`allow_model_training` to True (default: False). "
+                + "The model will then be trained on the provided series.",
             )
 
         # generate the historical_forecast() prediction of the model on the train set
@@ -222,12 +223,12 @@ class ForecastingAnomalyModel(AnomalyModel):
         series: Sequence[TimeSeries],
         name_covariates: str,
     ) -> Sequence[TimeSeries]:
-        """Convert 'covariates' into Sequence, if not already, and checks if its length is equal to the one of 'series'.
+        """Convert `covariates` into Sequence, if not already, and checks if its length is equal to the one of `series`.
 
         Parameters
         ----------
         covariates
-            Covariate ("future" or "past") of 'series'.
+            Covariate ("future" or "past") of `series`.
         series
             The series to be trained on.
         name_covariates
@@ -249,8 +250,8 @@ class ForecastingAnomalyModel(AnomalyModel):
 
             raise_if_not(
                 len(list_covariates) == len(series),
-                f"Number of {name_covariates}_covariates must match the number of given series, \
-                found length: {len(list_covariates)} and {len(series)}",
+                f"Number of {name_covariates}_covariates must match the number of given "
+                + f"series, found length {len(list_covariates)} and expected {len(series)}.",
             )
 
         return list_covariates if covariates is not None else None
@@ -278,8 +279,8 @@ class ForecastingAnomalyModel(AnomalyModel):
             - the actual anomalies, if given.
 
         It is possible to:
-            - add a title to the figure with the parameter 'title'
-            - give personalized names for the scorers with 'names_of_scorers'
+            - add a title to the figure with the parameter `title`
+            - give personalized names for the scorers with `names_of_scorers`
             - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR),
               if the actual anomalies are provided.
 
@@ -321,14 +322,14 @@ class ForecastingAnomalyModel(AnomalyModel):
         if isinstance(series, Sequence):
             raise_if_not(
                 len(series) == 1,
-                f"'show_anomalies' expects one series, found a list of length {len(series)} as input.",
+                f"`show_anomalies` expects one series, found a list of length {len(series)} as input.",
             )
 
             series = series[0]
 
         raise_if_not(
             isinstance(series, TimeSeries),
-            f"'show_anomalies' expects an input of type TimeSeries, found type: {type(series)}.",
+            f"`show_anomalies` expects an input of type TimeSeries, found type: {type(series)}.",
         )
 
         anomaly_scores, model_output = self.score(
@@ -413,7 +414,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         """
         raise_if_not(
             type(return_model_prediction) is bool,
-            f"'return_model_prediction' must be Boolean, found type: {type(return_model_prediction)}",
+            f"`return_model_prediction` must be Boolean, found type: {type(return_model_prediction)}.",
         )
 
         if start is None:
@@ -421,7 +422,7 @@ class ForecastingAnomalyModel(AnomalyModel):
 
         raise_if_not(
             self.model._fit_called,
-            f"Model {self.model} has not been trained. Please call .fit()",
+            f"Model {self.model} has not been trained. Please call ``.fit()``.",
         )
 
         list_series = _to_list(series)
@@ -479,9 +480,9 @@ class ForecastingAnomalyModel(AnomalyModel):
     def _check_window_size(
         self, series: Sequence[TimeSeries], start: Union[pd.Timestamp, float, int]
     ):
-        """Checks if the parameters 'window' of the scorers are smaller than the maximum window size allowed.
-        The maximum size allowed is equal to the output length of the .historical_forecast() applied on 'series'.
-        It is defined by the parameter 'start' and the series’ length.
+        """Checks if the parameters `window` of the scorers are smaller than the maximum window size allowed.
+        The maximum size allowed is equal to the output length of the .historical_forecast() applied on `series`.
+        It is defined by the parameter `start` and the series’ length.
 
         Parameters
         ----------
@@ -500,8 +501,8 @@ class ForecastingAnomalyModel(AnomalyModel):
             )
             raise_if_not(
                 max_window <= max_possible_window,
-                f"Window size {max_window} is greater than the targeted series length {max_possible_window}, \
-                must be lower or equal. Reduce window size, or reduce start value (start value: 0.5).",
+                f"Window size {max_window} is greater than the targeted series length {max_possible_window},"
+                + f" must be lower or equal. Reduce window size, or reduce start value (start: {start}).",
             )
 
     def _predict_with_forecasting(
@@ -595,7 +596,7 @@ class ForecastingAnomalyModel(AnomalyModel):
     ]:
         """Compute the accuracy of the anomaly scores computed by the model.
 
-        Predicts the 'series' with the forecasting model, and applies the
+        Predicts the `series` with the forecasting model, and applies the
         scorer(s) on the predicted time series and the given target time series. Returns the
         score(s) of an agnostic threshold metric, based on the anomaly score given by the scorer(s).
 
@@ -646,12 +647,12 @@ class ForecastingAnomalyModel(AnomalyModel):
 
         raise_if_not(
             all([isinstance(s, TimeSeries) for s in list_series]),
-            "all input 'series' must be of type Timeseries",
+            "all input `series` must be of type Timeseries.",
         )
 
         raise_if_not(
             all([isinstance(s, TimeSeries) for s in list_actual_anomalies]),
-            "all input 'actual_anomalies' must be of type Timeseries",
+            "all input `actual_anomalies` must be of type Timeseries.",
         )
 
         _same_length(list_actual_anomalies, list_series)

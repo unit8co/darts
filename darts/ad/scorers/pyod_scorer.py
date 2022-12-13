@@ -29,20 +29,18 @@ class PyODScorer(FittableAnomalyScorer):
 
         raise_if_not(
             isinstance(model, BaseDetector),
-            f"model must be BaseDetector of the library PyOD, found type: {type(component_wise)}",
+            "`model` must be of type BaseDetector (from the library PyOD),"
+            + f" found type: {type(model)}.",
         )
         self.model = model
 
         raise_if_not(
             type(component_wise) is bool,
-            f"'component_wise' must be Boolean, found type: {type(component_wise)}",
+            f"Parameter `component_wise` must be Boolean, found type: {type(component_wise)}.",
         )
         self.component_wise = component_wise
 
-        if component_wise:
-            returns_UTS = False
-        else:
-            returns_UTS = True
+        returns_UTS = not component_wise
 
         super().__init__(returns_UTS=returns_UTS, window=window, diff_fn=diff_fn)
 
@@ -94,9 +92,9 @@ class PyODScorer(FittableAnomalyScorer):
 
         raise_if_not(
             self.width_trained_on == series.width,
-            "Input must have the same width of the data used for training the PyODScorer model {}, found \
-            width: {} and {}".format(
-                self.model.__str__().split("(")[0], self.width_trained_on, series.width
+            "Input must have the same width as the data used for training the PyODScorer"
+            + " model {}, found width {} and expected {}.".format(
+                self.model.__str__().split("(")[0], series.width, self.width_trained_on
             ),
         )
 

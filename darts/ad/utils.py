@@ -114,8 +114,9 @@ def eval_accuracy_from_scores(
     else:
         raise_if_not(
             len(list_window) == len(list_actual_anomalies),
-            f"List of windows must be of same length as list of anomaly_score and actual_anomalies. One window \
-            value for each series. Found length {len(list_window)}, expected {len(list_actual_anomalies)}",
+            "The list of windows must be the same length as the list of `anomaly_score` and"
+            + " `actual_anomalies`. There must be one window value for each series."
+            + f" Found length {len(list_window)}, expected {len(list_actual_anomalies)}.",
         )
 
     sol = []
@@ -211,8 +212,9 @@ def eval_accuracy_from_binary_prediction(
     else:
         raise_if_not(
             len(list_window) == len(list_actual_anomalies),
-            f"List of windows must be of same length as list of pred_anomalies and actual_anomalies. One window \
-            value for each series. Found length {len(list_window)}, expected {len(list_actual_anomalies)}",
+            "The list of windows must be the same length as the list of `pred_anomalies` and"
+            + " `actual_anomalies`. There must be one window value for each series."
+            + f" Found length {len(list_window)}, expected {len(list_actual_anomalies)}.",
         )
 
     sol = []
@@ -290,12 +292,12 @@ def _eval_accuracy_from_data(
 
         raise_if(
             nbr_anomalies_per_width.min() == 0,
-            f"'actual_anomalies' does not contain anomalies. {metric_name} cannot be computed.",
+            f"`actual_anomalies` does not contain anomalies. {metric_name} cannot be computed.",
         )
 
         raise_if(
             nbr_anomalies_per_width.max() == len(s_anomalies),
-            f"'actual_anomalies' contains only anomalies. {metric_name} cannot be computed."
+            f"`actual_anomalies` contains only anomalies. {metric_name} cannot be computed."
             + ["", f" Think about decreasing the window size (window={window})"][
                 window > 1
             ],
@@ -338,7 +340,7 @@ def _intersect(
     new_series_1 = series_1.slice_intersect(series_2)
     raise_if(
         len(new_series_1) == 0,
-        "Time intersection between the two series must be non empty",
+        "Time intersection between the two series must be non empty.",
     )
 
     return new_series_1, series_2.slice_intersect(series_1)
@@ -349,7 +351,7 @@ def _check_timeseries_type(series: TimeSeries, message: str = None):
 
     raise_if_not(
         isinstance(series, TimeSeries),
-        "{} must be type darts.timeseries.TimeSeries and not {}".format(
+        "{} must be type darts.timeseries.TimeSeries and not {}.".format(
             message if message is not None else "Series input", type(series)
         ),
     )
@@ -380,13 +382,13 @@ def _sanity_check_2series(
     # check if the two inputs time series have the same width
     raise_if_not(
         series_1.width == series_2.width,
-        f"Series must have the same width, found {series_1.width} and {series_2.width}",
+        f"Series must have the same width, found {series_1.width} and {series_2.width}.",
     )
 
     # check if the time intersection between the two inputs time series is not empty
     raise_if_not(
         len(series_1.time_index.intersection(series_2.time_index)) > 0,
-        "Series must have a non-empty intersection timestamps",
+        "Series must have a non-empty intersection timestamps.",
     )
 
 
@@ -411,12 +413,13 @@ def _window_adjustment_anomalies(series: TimeSeries, window: int) -> TimeSeries:
     """
 
     raise_if_not(
-        isinstance(window, int), f"Window must be of type int, found {type(window)}"
+        isinstance(window, int),
+        f"Parameter `window` must be of type int, found {type(window)}.",
     )
 
     raise_if_not(
         window > 0,
-        f"window must be stricly greater than 0, found size {window}",
+        f"Parameter `window` must be stricly greater than 0, found size {window}.",
     )
 
     if window == 1:
@@ -459,8 +462,8 @@ def _same_length(
 
     raise_if_not(
         len(list_series_1) == len(list_series_2),
-        f"Sequences of series must be of the same length, found length: \
-        {len(list_series_1)} and {len(list_series_2)}",
+        "Sequences of series must be of the same length, found length:"
+        + f" {len(list_series_1)} and {len(list_series_2)}.",
     )
 
 
@@ -487,8 +490,8 @@ def show_anomalies_from_scores(
         - the quantile 0.05 for a lower bound
 
     Possible to:
-        - add a title to the figure with the parameter 'title'
-        - give personalized names for the scorers with 'names_of_scorers'
+        - add a title to the figure with the parameter `title`
+        - give personalized names for the scorers with `names_of_scorers`
         - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR), if the actual anomalies is given
 
     Parameters
@@ -580,8 +583,8 @@ def show_anomalies_from_scores(
 
             raise_if_not(
                 len(names_of_scorers) == len(anomaly_scores),
-                f"The number of names in `names_of_scorers` must match the number of anomaly score given as input, \
-                found {len(names_of_scorers)} and expected {len(anomaly_scores)}.",
+                "The number of names in `names_of_scorers` must match the number of anomaly score "
+                + f"given as input, found {len(names_of_scorers)} and expected {len(anomaly_scores)}.",
             )
 
         if isinstance(window, int):
@@ -602,8 +605,8 @@ def show_anomalies_from_scores(
         else:
             raise_if_not(
                 len(window) == len(anomaly_scores),
-                f"The number of window in `window` must match the number of anomaly score given as input. One window \
-                value for each series. Found length {len(window)}, and expected {len(anomaly_scores)}.",
+                "The number of window in `window` must match the number of anomaly score given as input. One "
+                + f"window value for each series. Found length {len(window)}, and expected {len(anomaly_scores)}.",
             )
 
         nbr_plots = nbr_plots + len(set(window))

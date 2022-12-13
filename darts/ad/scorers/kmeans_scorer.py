@@ -111,16 +111,13 @@ class KMeansScorer(FittableAnomalyScorer):
 
         raise_if_not(
             type(component_wise) is bool,
-            f"'component_wise' must be Boolean, found type: {type(component_wise)}",
+            f"Parameter `component_wise` must be Boolean, found type: {type(component_wise)}.",
         )
         self.component_wise = component_wise
 
         self.k = k
 
-        if component_wise:
-            returns_UTS = False
-        else:
-            returns_UTS = True
+        returns_UTS = not component_wise
 
         super().__init__(returns_UTS=returns_UTS, window=window, diff_fn=diff_fn)
 
@@ -175,8 +172,8 @@ class KMeansScorer(FittableAnomalyScorer):
 
         raise_if_not(
             self.width_trained_on == series.width,
-            f"Input must have the same width of the data used for training the KMeans model, \
-            found width: {self.width_trained_on} and {series.width}",
+            "Input must have the same width as the data used for training the KMeans"
+            + f" model, found width {series.width} and expected {self.width_trained_on}.",
         )
 
         # TODO: vectorize
