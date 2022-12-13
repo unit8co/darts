@@ -1,6 +1,6 @@
 """
-ThresholdDetector
------
+Threshold Detector
+------------------
 
 Detector that detects anomaly based on user-given threshold.
 This detector compares time series values with user-given thresholds, and
