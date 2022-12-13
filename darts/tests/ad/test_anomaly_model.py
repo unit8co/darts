@@ -14,9 +14,12 @@ from darts.ad.scorers import (
     GaussianNLLScorer,
     KMeansScorer,
     LaplaceNLLScorer,
+    NormScorer,
+    PoissonNLLScorer,
+    PyODScorer,
+    WassersteinScorer,
 )
-from darts.ad.scorers import NormScorer as Norm
-from darts.ad.scorers import PoissonNLLScorer, PyODScorer, WassersteinScorer
+from darts.ad.utils import eval_accuracy_from_scores
 from darts.models import MovingAverage, NaiveSeasonal, RegressionModel
 from darts.tests.base_test_class import DartsBaseTestClass
 
@@ -71,7 +74,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
     def test_Scorer(self):
 
         list_NonFittableAnomalyScorer = [
-            Norm(),
+            NormScorer(),
             Difference(),
             GaussianNLLScorer(),
             ExponentialNLLScorer(),
@@ -107,10 +110,12 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
     def test_Score(self):
 
-        am1 = ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer=Norm())
+        am1 = ForecastingAnomalyModel(
+            model=RegressionModel(lags=10), scorer=NormScorer()
+        )
         am1.fit(self.train, allow_model_training=True)
 
-        am2 = FilteringAnomalyModel(model=MovingAverage(window=20), scorer=Norm())
+        am2 = FilteringAnomalyModel(model=MovingAverage(window=20), scorer=NormScorer())
 
         for am in [am1, am2]:
             # Parameter return_model_prediction
@@ -136,9 +141,9 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
     def test_FitFilteringAnomalyModelInput(self):
 
         for anomaly_model in [
-            FilteringAnomalyModel(model=MovingAverage(window=20), scorer=Norm()),
+            FilteringAnomalyModel(model=MovingAverage(window=20), scorer=NormScorer()),
             FilteringAnomalyModel(
-                model=MovingAverage(window=20), scorer=[Norm(), KMeansScorer()]
+                model=MovingAverage(window=20), scorer=[NormScorer(), KMeansScorer()]
             ),
             FilteringAnomalyModel(
                 model=MovingAverage(window=20), scorer=KMeansScorer()
@@ -170,9 +175,11 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
     def test_FitForecastingAnomalyModelInput(self):
 
         for anomaly_model in [
-            ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer=Norm()),
             ForecastingAnomalyModel(
-                model=RegressionModel(lags=10), scorer=[Norm(), KMeansScorer()]
+                model=RegressionModel(lags=10), scorer=NormScorer()
+            ),
+            ForecastingAnomalyModel(
+                model=RegressionModel(lags=10), scorer=[NormScorer(), KMeansScorer()]
             ),
             ForecastingAnomalyModel(
                 model=RegressionModel(lags=10), scorer=KMeansScorer()
@@ -241,16 +248,20 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             )
         with self.assertRaises(ValueError):
             ForecastingAnomalyModel(
-                model=fitted_model, scorer=[Norm(), KMeansScorer()]
+                model=fitted_model, scorer=[NormScorer(), KMeansScorer()]
             ).score(series=self.test)
 
         # forecasting model that do not accept past/future covariates
         # with self.assertRaises(ValueError):
         #    ForecastingAnomalyModel(model=ExponentialSmoothing(),
-        #       scorer=Norm()).fit(series=self.train, past_covariates=self.covariates, allow_model_training=True)
+        #       scorer=NormScorer()).fit(
+        #           series=self.train, past_covariates=self.covariates, allow_model_training=True
+        #       )
         # with self.assertRaises(ValueError):
         #    ForecastingAnomalyModel(model=ExponentialSmoothing(),
-        #       scorer=Norm()).fit(series=self.train, future_covariates=self.covariates, allow_model_training=True)
+        #       scorer=NormScorer()).fit(
+        #           series=self.train, future_covariates=self.covariates, allow_model_training=True
+        #       )
 
         # check window size
         # max window size is len(series.drop_before(series.get_timestamp_at_point(start))) + 1
@@ -261,16 +272,18 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
         # forecasting model that cannot be trained on a list of series
         with self.assertRaises(ValueError):
-            ForecastingAnomalyModel(model=NaiveSeasonal(), scorer=Norm()).fit(
+            ForecastingAnomalyModel(model=NaiveSeasonal(), scorer=NormScorer()).fit(
                 series=[self.train, self.train], allow_model_training=True
             )
 
     def test_ScoreForecastingAnomalyModelInput(self):
 
         for anomaly_model in [
-            ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer=Norm()),
             ForecastingAnomalyModel(
-                model=RegressionModel(lags=10), scorer=[Norm(), KMeansScorer()]
+                model=RegressionModel(lags=10), scorer=NormScorer()
+            ),
+            ForecastingAnomalyModel(
+                model=RegressionModel(lags=10), scorer=[NormScorer(), KMeansScorer()]
             ),
             ForecastingAnomalyModel(
                 model=RegressionModel(lags=10), scorer=KMeansScorer()
@@ -317,9 +330,9 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
     def test_ScoreFilteringAnomalyModelInput(self):
 
         for anomaly_model in [
-            FilteringAnomalyModel(model=MovingAverage(window=10), scorer=Norm()),
+            FilteringAnomalyModel(model=MovingAverage(window=10), scorer=NormScorer()),
             FilteringAnomalyModel(
-                model=MovingAverage(window=10), scorer=[Norm(), KMeansScorer()]
+                model=MovingAverage(window=10), scorer=[NormScorer(), KMeansScorer()]
             ),
             FilteringAnomalyModel(
                 model=MovingAverage(window=10), scorer=KMeansScorer()
@@ -331,10 +344,12 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
     def test_show_anomalies(self):
 
-        am1 = ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer=Norm())
+        am1 = ForecastingAnomalyModel(
+            model=RegressionModel(lags=10), scorer=NormScorer()
+        )
         am1.fit(self.train, allow_model_training=True)
 
-        am2 = FilteringAnomalyModel(model=MovingAverage(window=20), scorer=Norm())
+        am2 = FilteringAnomalyModel(model=MovingAverage(window=20), scorer=NormScorer())
 
         for am in [am1, am2]:
             # input 'series' must be a series and not a Sequence of series
@@ -343,18 +358,20 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
     def test_eval_accuracy(self):
 
-        am1 = ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer=Norm())
+        am1 = ForecastingAnomalyModel(
+            model=RegressionModel(lags=10), scorer=NormScorer()
+        )
         am1.fit(self.train, allow_model_training=True)
 
-        am2 = FilteringAnomalyModel(model=MovingAverage(window=20), scorer=Norm())
+        am2 = FilteringAnomalyModel(model=MovingAverage(window=20), scorer=NormScorer())
 
         am3 = ForecastingAnomalyModel(
-            model=RegressionModel(lags=10), scorer=[Norm(), WassersteinScorer()]
+            model=RegressionModel(lags=10), scorer=[NormScorer(), WassersteinScorer()]
         )
         am3.fit(self.train, allow_model_training=True)
 
         am4 = FilteringAnomalyModel(
-            model=MovingAverage(window=20), scorer=[Norm(), WassersteinScorer()]
+            model=MovingAverage(window=20), scorer=[NormScorer(), WassersteinScorer()]
         )
         am4.fit(self.train)
 
@@ -487,15 +504,15 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         # model input
         # model input must be of type ForecastingModel
         with self.assertRaises(ValueError):
-            ForecastingAnomalyModel(model="str", scorer=Norm())
+            ForecastingAnomalyModel(model="str", scorer=NormScorer())
         with self.assertRaises(ValueError):
-            ForecastingAnomalyModel(model=1, scorer=Norm())
+            ForecastingAnomalyModel(model=1, scorer=NormScorer())
         with self.assertRaises(ValueError):
-            ForecastingAnomalyModel(model=MovingAverage(window=10), scorer=Norm())
+            ForecastingAnomalyModel(model=MovingAverage(window=10), scorer=NormScorer())
         with self.assertRaises(ValueError):
             ForecastingAnomalyModel(
                 model=[RegressionModel(lags=10), RegressionModel(lags=5)],
-                scorer=Norm(),
+                scorer=NormScorer(),
             )
 
         # scorer input
@@ -510,7 +527,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             )
         with self.assertRaises(ValueError):
             ForecastingAnomalyModel(
-                model=RegressionModel(lags=10), scorer=[Norm(), "str"]
+                model=RegressionModel(lags=10), scorer=[NormScorer(), "str"]
             )
 
     def test_FilteringAnomalyModelInput(self):
@@ -518,15 +535,15 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         # model input
         # model input must be of type FilteringModel
         with self.assertRaises(ValueError):
-            FilteringAnomalyModel(model="str", scorer=Norm())
+            FilteringAnomalyModel(model="str", scorer=NormScorer())
         with self.assertRaises(ValueError):
-            FilteringAnomalyModel(model=1, scorer=Norm())
+            FilteringAnomalyModel(model=1, scorer=NormScorer())
         with self.assertRaises(ValueError):
-            FilteringAnomalyModel(model=RegressionModel(lags=10), scorer=Norm())
+            FilteringAnomalyModel(model=RegressionModel(lags=10), scorer=NormScorer())
         with self.assertRaises(ValueError):
             FilteringAnomalyModel(
                 model=[MovingAverage(window=10), MovingAverage(window=10)],
-                scorer=Norm(),
+                scorer=NormScorer(),
             )
 
         # scorer input
@@ -541,5 +558,234 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             )
         with self.assertRaises(ValueError):
             FilteringAnomalyModel(
-                model=MovingAverage(window=10), scorer=[Norm(), "str"]
+                model=MovingAverage(window=10), scorer=[NormScorer(), "str"]
             )
+
+    def test_univariate_ForecastingAnomalyModel(self):
+
+        np.random.seed(40)
+
+        np_train_slope = np.array(range(0, 100, 1))
+        np_test_slope = np.array(range(0, 100, 1))
+
+        np_test_slope[30:32] = 29
+        np_test_slope[50:65] = np_test_slope[50:65] + 1
+        np_test_slope[75:80] = np_test_slope[75:80] * 0.98
+
+        train_series_slope = TimeSeries.from_values(np_train_slope)
+        test_series_slope = TimeSeries.from_values(np_test_slope)
+
+        np_anomalies = np.zeros(100)
+        np_anomalies[30:32] = 1
+        np_anomalies[50:55] = 1
+        np_anomalies[70:80] = 1
+        TS_anomalies = TimeSeries.from_times_and_values(
+            test_series_slope.time_index, np_anomalies, columns=["is_anomaly"]
+        )
+
+        anomaly_model = ForecastingAnomalyModel(
+            model=RegressionModel(lags=5),
+            scorer=[
+                NormScorer(),
+                Difference(),
+                WassersteinScorer(),
+                KMeansScorer(),
+                KMeansScorer(window=10),
+                PyODScorer(model=KNN()),
+                PyODScorer(model=KNN(), window=10),
+                WassersteinScorer(window=15),
+            ],
+        )
+
+        anomaly_model.fit(train_series_slope, allow_model_training=True, start=0.1)
+        score, model_output = anomaly_model.score(
+            test_series_slope, return_model_prediction=True, start=0.1
+        )
+
+        # check that NormScorer is the abs difference of model_output and test_series_slope
+        self.assertEqual(
+            (model_output - test_series_slope.slice_intersect(model_output)).map(
+                lambda x: np.abs(x)
+            ),
+            NormScorer().score_from_prediction(model_output, test_series_slope),
+        )
+
+        # check that Difference is the difference of model_output and test_series_slope
+        self.assertEqual(
+            model_output - test_series_slope.slice_intersect(model_output),
+            Difference().score_from_prediction(model_output, test_series_slope),
+        )
+
+        dict_AUC_ROC = anomaly_model.eval_accuracy(
+            TS_anomalies, test_series_slope, metric="AUC_ROC", start=0.1
+        )
+        dict_AUC_PR = anomaly_model.eval_accuracy(
+            TS_anomalies, test_series_slope, metric="AUC_PR", start=0.1
+        )
+
+        AUC_ROC_from_scores = eval_accuracy_from_scores(
+            actual_anomalies=[TS_anomalies] * 8,
+            anomaly_score=score,
+            window=[1, 1, 10, 1, 10, 1, 10, 15],
+            metric="AUC_ROC",
+        )
+
+        AUC_PR_from_scores = eval_accuracy_from_scores(
+            actual_anomalies=[TS_anomalies] * 8,
+            anomaly_score=score,
+            window=[1, 1, 10, 1, 10, 1, 10, 15],
+            metric="AUC_PR",
+        )
+
+        # function eval_accuracy_from_scores and eval_accuracy must return an input of same length
+        self.assertEqual(len(AUC_ROC_from_scores), len(dict_AUC_ROC))
+        self.assertEqual(len(AUC_PR_from_scores), len(dict_AUC_PR))
+
+        # function eval_accuracy_from_scores and eval_accuracy must return the same values
+        self.assertEqual(AUC_ROC_from_scores, list(dict_AUC_ROC.values()))
+        self.assertEqual(AUC_PR_from_scores, list(dict_AUC_PR.values()))
+
+        true_AUC_ROC = [
+            0.773449920508744,
+            0.40659777424483307,
+            0.9153708133971291,
+            0.7702702702702702,
+            0.9135765550239234,
+            0.7603338632750397,
+            0.9153708133971292,
+            0.9006591337099811,
+        ]
+
+        true_AUC_PR = [
+            0.4818991248542174,
+            0.20023033665128342,
+            0.9144135170539835,
+            0.47953161438253644,
+            0.9127969832903458,
+            0.47039678636225957,
+            0.9147124232933175,
+            0.9604714100445533,
+        ]
+
+        # check value of results
+        self.assertEqual(AUC_ROC_from_scores, true_AUC_ROC)
+        self.assertEqual(AUC_PR_from_scores, true_AUC_PR)
+
+    def test_univariate_FilteringAnomalyModel(self):
+
+        np.random.seed(40)
+
+        np_series_train = np.array(range(0, 100, 1)) + np.random.normal(
+            loc=0, scale=1, size=100
+        )
+        np_series_test = np.array(range(0, 100, 1)) + np.random.normal(
+            loc=0, scale=1, size=100
+        )
+
+        np_series_test[30:35] = np_series_test[30:35] + np.random.normal(
+            loc=0, scale=10, size=5
+        )
+        np_series_test[50:60] = np_series_test[50:60] + np.random.normal(
+            loc=0, scale=4, size=10
+        )
+        np_series_test[75:80] = np_series_test[75:80] + np.random.normal(
+            loc=0, scale=3, size=5
+        )
+
+        train_series_noise = TimeSeries.from_values(np_series_train)
+        test_series_noise = TimeSeries.from_values(np_series_test)
+
+        np_anomalies = np.zeros(100)
+        np_anomalies[30:35] = 1
+        np_anomalies[50:60] = 1
+        np_anomalies[75:80] = 1
+        TS_anomalies = TimeSeries.from_times_and_values(
+            test_series_noise.time_index, np_anomalies, columns=["is_anomaly"]
+        )
+
+        anomaly_model = FilteringAnomalyModel(
+            model=MovingAverage(window=5),
+            scorer=[
+                NormScorer(),
+                Difference(),
+                WassersteinScorer(),
+                KMeansScorer(),
+                KMeansScorer(window=10),
+                PyODScorer(model=KNN()),
+                PyODScorer(model=KNN(), window=10),
+                WassersteinScorer(window=15),
+            ],
+        )
+        anomaly_model.fit(train_series_noise)
+        score, model_output = anomaly_model.score(
+            test_series_noise, return_model_prediction=True
+        )
+
+        # check that NormScorer is the abs difference of model_output and test_series_noise
+        self.assertEqual(
+            (model_output - test_series_noise.slice_intersect(model_output)).map(
+                lambda x: np.abs(x)
+            ),
+            NormScorer().score_from_prediction(model_output, test_series_noise),
+        )
+
+        # check that Difference is the difference of model_output and test_series_noise
+        self.assertEqual(
+            model_output - test_series_noise.slice_intersect(model_output),
+            Difference().score_from_prediction(model_output, test_series_noise),
+        )
+
+        dict_AUC_ROC = anomaly_model.eval_accuracy(
+            TS_anomalies, test_series_noise, metric="AUC_ROC"
+        )
+        dict_AUC_PR = anomaly_model.eval_accuracy(
+            TS_anomalies, test_series_noise, metric="AUC_PR"
+        )
+
+        AUC_ROC_from_scores = eval_accuracy_from_scores(
+            actual_anomalies=[TS_anomalies] * 8,
+            anomaly_score=score,
+            window=[1, 1, 10, 1, 10, 1, 10, 15],
+            metric="AUC_ROC",
+        )
+
+        AUC_PR_from_scores = eval_accuracy_from_scores(
+            actual_anomalies=[TS_anomalies] * 8,
+            anomaly_score=score,
+            window=[1, 1, 10, 1, 10, 1, 10, 15],
+            metric="AUC_PR",
+        )
+
+        # function eval_accuracy_from_scores and eval_accuracy must return an input of same length
+        self.assertEqual(len(AUC_ROC_from_scores), len(dict_AUC_ROC))
+        self.assertEqual(len(AUC_PR_from_scores), len(dict_AUC_PR))
+
+        # function eval_accuracy_from_scores and eval_accuracy must return the same values
+        self.assertEqual(AUC_ROC_from_scores, list(dict_AUC_ROC.values()))
+        self.assertEqual(AUC_PR_from_scores, list(dict_AUC_PR.values()))
+
+        true_AUC_ROC = [
+            0.875625,
+            0.5850000000000001,
+            0.952127659574468,
+            0.814375,
+            0.9598646034816247,
+            0.88125,
+            0.9666344294003868,
+            0.9731182795698925,
+        ]
+
+        true_AUC_PR = [
+            0.7691407907338141,
+            0.5566414178265074,
+            0.9720504927710986,
+            0.741298584352156,
+            0.9744855592642071,
+            0.7808056518442923,
+            0.9800621192517156,
+            0.9911842778990486,
+        ]
+
+        # check value of results
+        self.assertEqual(AUC_ROC_from_scores, true_AUC_ROC)
+        self.assertEqual(AUC_PR_from_scores, true_AUC_PR)
