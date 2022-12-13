@@ -765,7 +765,8 @@ class NLLScorer(NonFittableAnomalyScorer):
             - the parameters of the considered distribution are fitted on the samples of the probabilistic time series
             - the negative log-likelihood of the determinisitc time series values are computed
 
-        If the series are multivariate, the score will be computed on each width independently.
+        The score will be computed on each component independently. Additionally, if the series is
+        multivariate, the score will be computed on each width independently.
 
         Parameters
         ----------
