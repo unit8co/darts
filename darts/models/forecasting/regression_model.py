@@ -330,16 +330,19 @@ class RegressionModel(GlobalForecastingModel):
         return training_samples, training_labels
 
     def _add_static_covariates(self, series, features):
-        """Add static covariates to the features. Accounts for series with different static covariates by padding
-        with 0 to accomodate for the maximum number of available static_covariates in any of the given series in the
-        sequence. If no static covariates are provided for a given series, its corresponding features are padded with 0.
+        """
+        Add static covariates to the features. Accounts for series with potentially different static covariates
+        by padding with 0 to accomodate for the maximum number of available static_covariates in any of the given
+        series in the sequence. If no static covariates are provided for a given series, its corresponding features
+        are padded with 0.
         """
         reps = features.shape[0] // len(series)
         # collect static covariates info
         map = {"covs_width": [], "values": []}
         for ts in series:
             if ts.static_covariates is not None:
-                scovs = ts.static_covariates_values().reshape(1, -1)
+                # reshape with order="F" to ensure that the covariates are read column wise
+                scovs = ts.static_covariates_values(copy=False).reshape(1, -1, order = "F")
                 map["covs_width"].append(scovs.shape[1])
                 map["values"].append(scovs)
             else:
