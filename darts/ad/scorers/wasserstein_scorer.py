@@ -174,35 +174,42 @@ class WassersteinScorer(FittableAnomalyScorer):
                 found width: {self.width_trained_on} and {series.width}",
         )
 
-        distance = []
-
         np_series = series.all_values(copy=False)
+        np_anomaly_score = []
 
         # TODO: vectorize
 
-        for i in range(len(series) - self.window + 1):
+        if not self.component_wise:
 
-            temp_test = np_series[i : i + self.window + 1]
+            np_anomaly_score = [
+                wasserstein_distance(self.training_data[0], window_samples)
+                for window_samples in np.array(
+                    [
+                        np.array(np_series[i : i + self.window])
+                        for i in range(len(series) - self.window + 1)
+                    ]
+                ).reshape(-1, self.window * series.width)
+            ]
 
-            if self.component_wise:
-                width_result = []
-                for width in range(self.width_trained_on):
-                    width_result.append(
-                        wasserstein_distance(
-                            self.training_data[width], temp_test[width].flatten()
-                        )
-                    )
+            return TimeSeries.from_times_and_values(
+                series._time_index[self.window - 1 :], np_anomaly_score
+            )
 
-                distance.append(width_result)
+        else:
 
-            else:
-                distance.append(
-                    wasserstein_distance(
-                        self.training_data[0],
-                        temp_test.flatten(),
-                    )
-                )
+            for width in range(self.width_trained_on):
+                np_anomaly_score_width = [
+                    wasserstein_distance(self.training_data[width], window_samples)
+                    for window_samples in np.array(
+                        [
+                            np.array(np_series[i : i + self.window, width])
+                            for i in range(len(series) - self.window + 1)
+                        ]
+                    ).reshape(-1, self.window)
+                ]
 
-        return TimeSeries.from_times_and_values(
-            series._time_index[self.window - 1 :], distance
-        )
+                np_anomaly_score.append(np_anomaly_score_width)
+
+            return TimeSeries.from_times_and_values(
+                series._time_index[self.window - 1 :], list(zip(*np_anomaly_score))
+            )

@@ -33,6 +33,8 @@ class PoissonNLLScorer(NLLScorer):
         # TODO: vectorize
 
         return [
-            -np.log(np.exp(x1.mean()) * (x1.mean() ** x2) / math.factorial(x2))
+            -np.log(
+                np.exp(-x1.mean()) * (x1.mean() ** x2) / math.factorial(x2.astype(int))
+            )
             for (x1, x2) in zip(probabilistic_estimations, deterministic_values)
         ]
