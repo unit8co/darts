@@ -61,15 +61,15 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
     )
 
     # multivariate series
-    np_MTS_train = np.random.normal(loc=[10, 5], scale=[0.5, 1], size=[100, 2])
-    MTS_train = TimeSeries.from_values(np_MTS_train)
+    np_mts_train = np.random.normal(loc=[10, 5], scale=[0.5, 1], size=[100, 2])
+    mts_train = TimeSeries.from_values(np_mts_train)
 
-    np_MTS_test = np.random.normal(loc=[10, 5], scale=[1, 1.5], size=[100, 2])
-    MTS_test = TimeSeries.from_times_and_values(MTS_train._time_index, np_MTS_test)
+    np_mts_test = np.random.normal(loc=[10, 5], scale=[1, 1.5], size=[100, 2])
+    mts_test = TimeSeries.from_times_and_values(mts_train._time_index, np_mts_test)
 
-    np_MTS_anomalies = np.random.choice(a=[0, 1], size=[100, 2], p=[0.9, 0.1])
-    MTS_anomalies = TimeSeries.from_times_and_values(
-        MTS_train._time_index, np_MTS_anomalies
+    np_mts_anomalies = np.random.choice(a=[0, 1], size=[100, 2], p=[0.9, 0.1])
+    mts_anomalies = TimeSeries.from_times_and_values(
+        mts_train._time_index, np_mts_anomalies
     )
 
     def test_Scorer(self):
@@ -383,16 +383,16 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             if am.univariate_scoring:
                 with self.assertRaises(ValueError):
                     am.eval_accuracy(
-                        actual_anomalies=self.MTS_anomalies, series=self.test
+                        actual_anomalies=self.mts_anomalies, series=self.test
                     )
                 with self.assertRaises(ValueError):
                     am.eval_accuracy(
-                        actual_anomalies=self.MTS_anomalies, series=self.MTS_test
+                        actual_anomalies=self.mts_anomalies, series=self.mts_test
                     )
                 with self.assertRaises(ValueError):
                     am.eval_accuracy(
-                        actual_anomalies=[self.anomalies, self.MTS_anomalies],
-                        series=[self.test, self.MTS_test],
+                        actual_anomalies=[self.anomalies, self.mts_anomalies],
+                        series=[self.test, self.mts_test],
                     )
 
             # 'metric' must be str and "AUC_ROC" or "AUC_PR"
@@ -580,7 +580,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         np_anomalies[30:32] = 1
         np_anomalies[50:55] = 1
         np_anomalies[70:80] = 1
-        TS_anomalies = TimeSeries.from_times_and_values(
+        ts_anomalies = TimeSeries.from_times_and_values(
             test_series_slope.time_index, np_anomalies, columns=["is_anomaly"]
         )
 
@@ -617,36 +617,36 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             Difference().score_from_prediction(model_output, test_series_slope),
         )
 
-        dict_AUC_ROC = anomaly_model.eval_accuracy(
-            TS_anomalies, test_series_slope, metric="AUC_ROC", start=0.1
+        dict_auc_roc = anomaly_model.eval_accuracy(
+            ts_anomalies, test_series_slope, metric="AUC_ROC", start=0.1
         )
-        dict_AUC_PR = anomaly_model.eval_accuracy(
-            TS_anomalies, test_series_slope, metric="AUC_PR", start=0.1
+        dict_auc_pr = anomaly_model.eval_accuracy(
+            ts_anomalies, test_series_slope, metric="AUC_PR", start=0.1
         )
 
-        AUC_ROC_from_scores = eval_accuracy_from_scores(
-            actual_anomalies=[TS_anomalies] * 8,
+        auc_roc_from_scores = eval_accuracy_from_scores(
+            actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
             metric="AUC_ROC",
         )
 
-        AUC_PR_from_scores = eval_accuracy_from_scores(
-            actual_anomalies=[TS_anomalies] * 8,
+        auc_pr_from_scores = eval_accuracy_from_scores(
+            actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
             metric="AUC_PR",
         )
 
         # function eval_accuracy_from_scores and eval_accuracy must return an input of same length
-        self.assertEqual(len(AUC_ROC_from_scores), len(dict_AUC_ROC))
-        self.assertEqual(len(AUC_PR_from_scores), len(dict_AUC_PR))
+        self.assertEqual(len(auc_roc_from_scores), len(dict_auc_roc))
+        self.assertEqual(len(auc_pr_from_scores), len(dict_auc_pr))
 
         # function eval_accuracy_from_scores and eval_accuracy must return the same values
-        self.assertEqual(AUC_ROC_from_scores, list(dict_AUC_ROC.values()))
-        self.assertEqual(AUC_PR_from_scores, list(dict_AUC_PR.values()))
+        self.assertEqual(auc_roc_from_scores, list(dict_auc_roc.values()))
+        self.assertEqual(auc_pr_from_scores, list(dict_auc_pr.values()))
 
-        true_AUC_ROC = [
+        true_auc_roc = [
             0.773449920508744,
             0.40659777424483307,
             0.9153708133971291,
@@ -657,7 +657,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             0.9006591337099811,
         ]
 
-        true_AUC_PR = [
+        true_auc_pr = [
             0.4818991248542174,
             0.20023033665128342,
             0.9144135170539835,
@@ -669,8 +669,8 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         ]
 
         # check value of results
-        self.assertEqual(AUC_ROC_from_scores, true_AUC_ROC)
-        self.assertEqual(AUC_PR_from_scores, true_AUC_PR)
+        self.assertEqual(auc_roc_from_scores, true_auc_roc)
+        self.assertEqual(auc_pr_from_scores, true_auc_pr)
 
     def test_univariate_FilteringAnomalyModel(self):
 
@@ -700,7 +700,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         np_anomalies[30:35] = 1
         np_anomalies[50:60] = 1
         np_anomalies[75:80] = 1
-        TS_anomalies = TimeSeries.from_times_and_values(
+        ts_anomalies = TimeSeries.from_times_and_values(
             test_series_noise.time_index, np_anomalies, columns=["is_anomaly"]
         )
 
@@ -736,36 +736,36 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             Difference().score_from_prediction(model_output, test_series_noise),
         )
 
-        dict_AUC_ROC = anomaly_model.eval_accuracy(
-            TS_anomalies, test_series_noise, metric="AUC_ROC"
+        dict_auc_roc = anomaly_model.eval_accuracy(
+            ts_anomalies, test_series_noise, metric="AUC_ROC"
         )
-        dict_AUC_PR = anomaly_model.eval_accuracy(
-            TS_anomalies, test_series_noise, metric="AUC_PR"
+        dict_auc_pr = anomaly_model.eval_accuracy(
+            ts_anomalies, test_series_noise, metric="AUC_PR"
         )
 
-        AUC_ROC_from_scores = eval_accuracy_from_scores(
-            actual_anomalies=[TS_anomalies] * 8,
+        auc_roc_from_scores = eval_accuracy_from_scores(
+            actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
             metric="AUC_ROC",
         )
 
-        AUC_PR_from_scores = eval_accuracy_from_scores(
-            actual_anomalies=[TS_anomalies] * 8,
+        auc_pr_from_scores = eval_accuracy_from_scores(
+            actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
             metric="AUC_PR",
         )
 
         # function eval_accuracy_from_scores and eval_accuracy must return an input of same length
-        self.assertEqual(len(AUC_ROC_from_scores), len(dict_AUC_ROC))
-        self.assertEqual(len(AUC_PR_from_scores), len(dict_AUC_PR))
+        self.assertEqual(len(auc_roc_from_scores), len(dict_auc_roc))
+        self.assertEqual(len(auc_pr_from_scores), len(dict_auc_pr))
 
         # function eval_accuracy_from_scores and eval_accuracy must return the same values
-        self.assertEqual(AUC_ROC_from_scores, list(dict_AUC_ROC.values()))
-        self.assertEqual(AUC_PR_from_scores, list(dict_AUC_PR.values()))
+        self.assertEqual(auc_roc_from_scores, list(dict_auc_roc.values()))
+        self.assertEqual(auc_pr_from_scores, list(dict_auc_pr.values()))
 
-        true_AUC_ROC = [
+        true_auc_roc = [
             0.875625,
             0.5850000000000001,
             0.952127659574468,
@@ -776,7 +776,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             0.9731182795698925,
         ]
 
-        true_AUC_PR = [
+        true_auc_pr = [
             0.7691407907338141,
             0.5566414178265074,
             0.9720504927710986,
@@ -788,8 +788,8 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         ]
 
         # check value of results
-        self.assertEqual(AUC_ROC_from_scores, true_AUC_ROC)
-        self.assertEqual(AUC_PR_from_scores, true_AUC_PR)
+        self.assertEqual(auc_roc_from_scores, true_auc_roc)
+        self.assertEqual(auc_pr_from_scores, true_auc_pr)
 
     def test_univariate_covariate_ForecastingAnomalyModel(self):
 
@@ -821,7 +821,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         np_anomalies = np.zeros(70)
         np_anomalies[30:35] = 1
         np_anomalies[50:60] = 1
-        TS_anomalies = TimeSeries.from_times_and_values(
+        ts_anomalies = TimeSeries.from_times_and_values(
             series_test.time_index, np_anomalies, columns=["is_anomaly"]
         )
 
@@ -867,38 +867,38 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             Difference().score_from_prediction(model_output, series_test),
         )
 
-        dict_AUC_ROC = anomaly_model.eval_accuracy(
-            TS_anomalies, series_test, metric="AUC_ROC", start=0.2
+        dict_auc_roc = anomaly_model.eval_accuracy(
+            ts_anomalies, series_test, metric="AUC_ROC", start=0.2
         )
-        dict_AUC_PR = anomaly_model.eval_accuracy(
-            TS_anomalies, series_test, metric="AUC_PR", start=0.2
+        dict_auc_pr = anomaly_model.eval_accuracy(
+            ts_anomalies, series_test, metric="AUC_PR", start=0.2
         )
 
-        AUC_ROC_from_scores = eval_accuracy_from_scores(
-            actual_anomalies=[TS_anomalies] * 8,
+        auc_roc_from_scores = eval_accuracy_from_scores(
+            actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
             metric="AUC_ROC",
         )
 
-        AUC_PR_from_scores = eval_accuracy_from_scores(
-            actual_anomalies=[TS_anomalies] * 8,
+        auc_pr_from_scores = eval_accuracy_from_scores(
+            actual_anomalies=[ts_anomalies] * 8,
             anomaly_score=score,
             window=[1, 1, 10, 1, 10, 1, 10, 15],
             metric="AUC_PR",
         )
 
         # function eval_accuracy_from_scores and eval_accuracy must return an input of same length
-        self.assertEqual(len(AUC_ROC_from_scores), len(dict_AUC_ROC))
-        self.assertEqual(len(AUC_PR_from_scores), len(dict_AUC_PR))
+        self.assertEqual(len(auc_roc_from_scores), len(dict_auc_roc))
+        self.assertEqual(len(auc_pr_from_scores), len(dict_auc_pr))
 
         # function eval_accuracy_from_scores and eval_accuracy must return the same values
-        self.assertEqual(AUC_ROC_from_scores, list(dict_AUC_ROC.values()))
-        self.assertEqual(AUC_PR_from_scores, list(dict_AUC_PR.values()))
+        self.assertEqual(auc_roc_from_scores, list(dict_auc_roc.values()))
+        self.assertEqual(auc_pr_from_scores, list(dict_auc_pr.values()))
 
-        true_AUC_ROC = [1.0, 0.6, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+        true_auc_roc = [1.0, 0.6, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
 
-        true_AUC_PR = [
+        true_auc_pr = [
             1.0,
             0.6914399076961142,
             1.0,
@@ -910,5 +910,221 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         ]
 
         # check value of results
-        self.assertEqual(AUC_ROC_from_scores, true_AUC_ROC)
-        self.assertEqual(AUC_PR_from_scores, true_AUC_PR)
+        self.assertEqual(auc_roc_from_scores, true_auc_roc)
+        self.assertEqual(auc_pr_from_scores, true_auc_pr)
+
+    def test_multivariate__ForecastingAnomalyModel(self):
+
+        np.random.seed(40)
+
+        data_sin = np.array([np.sin(x) for x in np.arange(0, 20 * np.pi, 0.2)])
+        data_cos = np.array([np.cos(x) for x in np.arange(0, 20 * np.pi, 0.2)])
+
+        mts_series_train = TimeSeries.from_values(
+            np.dstack((data_sin, data_cos))[0], columns=["width 1", "width 2"]
+        )
+
+        data_sin[10:20] = 0
+        data_cos[60:80] = 0
+
+        data_sin[100:110] = 1
+        data_cos[150:155] = 1
+
+        data_sin[200:240] = 0.9 * data_cos[200:240]
+        data_cos[200:240] = 0.9 * data_sin[200:240]
+
+        data_sin[275:295] = data_sin[275:295] + np.random.normal(0, 0.1, 20)
+        data_cos[275:295] = data_cos[275:295] + np.random.normal(0, 0.1, 20)
+
+        mts_series_test = TimeSeries.from_values(
+            np.dstack((data_sin, data_cos))[0], columns=["width 1", "width 2"]
+        )
+
+        np1_anomalies = np.zeros(len(data_sin))
+        np1_anomalies[10:20] = 1
+        np1_anomalies[100:110] = 1
+        np1_anomalies[200:240] = 1
+        np1_anomalies[275:295] = 1
+
+        np2_anomalies = np.zeros(len(data_cos))
+        np2_anomalies[60:80] = 1
+        np2_anomalies[150:155] = 1
+        np2_anomalies[200:240] = 1
+        np2_anomalies[275:295] = 1
+
+        np_anomalies = np.zeros(len(data_cos))
+        np_anomalies[10:20] = 1
+        np_anomalies[60:80] = 1
+        np_anomalies[100:110] = 1
+        np_anomalies[150:155] = 1
+        np_anomalies[200:240] = 1
+        np_anomalies[275:295] = 1
+
+        ts_anomalies = TimeSeries.from_times_and_values(
+            mts_series_train.time_index,
+            np.dstack((np1_anomalies, np2_anomalies))[0],
+            columns=["is_anomaly_1", "is_anomaly_2"],
+        )
+
+        mts_anomalies = TimeSeries.from_times_and_values(
+            mts_series_train.time_index, np_anomalies, columns=["is_anomaly"]
+        )
+
+        # first case: scorers that return univariate scores
+        anomaly_model = ForecastingAnomalyModel(
+            model=RegressionModel(lags=10),
+            scorer=[
+                NormScorer(component_wise=False),
+                WassersteinScorer(),
+                WassersteinScorer(window=20),
+                KMeansScorer(),
+                KMeansScorer(window=20),
+                PyODScorer(model=KNN()),
+                PyODScorer(model=KNN(), window=10),
+            ],
+        )
+        anomaly_model.fit(mts_series_train, allow_model_training=True, start=0.1)
+
+        scores, model_output = anomaly_model.score(
+            mts_series_test, return_model_prediction=True, start=0.1
+        )
+
+        # model_output must be multivariate (same width as input)
+        self.assertEqual(model_output.width, mts_series_test.width)
+
+        # scores must be of the same length as the number of scorers
+        self.assertEqual(len(scores), len(anomaly_model.scorers))
+
+        dict_auc_roc = anomaly_model.eval_accuracy(
+            mts_anomalies, mts_series_test, start=0.1, metric="AUC_ROC"
+        )
+        dict_auc_pr = anomaly_model.eval_accuracy(
+            mts_anomalies, mts_series_test, start=0.1, metric="AUC_PR"
+        )
+
+        auc_roc_from_scores = eval_accuracy_from_scores(
+            actual_anomalies=[mts_anomalies] * 7,
+            anomaly_score=scores,
+            window=[1, 10, 20, 1, 20, 1, 10],
+            metric="AUC_ROC",
+        )
+
+        auc_pr_from_scores = eval_accuracy_from_scores(
+            actual_anomalies=[mts_anomalies] * 7,
+            anomaly_score=scores,
+            window=[1, 10, 20, 1, 20, 1, 10],
+            metric="AUC_PR",
+        )
+
+        # function eval_accuracy_from_scores and eval_accuracy must return an input of same length
+        self.assertEqual(len(auc_roc_from_scores), len(dict_auc_roc))
+        self.assertEqual(len(auc_pr_from_scores), len(dict_auc_pr))
+
+        # function eval_accuracy_from_scores and eval_accuracy must return the same values
+        self.assertEqual(auc_roc_from_scores, list(dict_auc_roc.values()))
+        self.assertEqual(auc_pr_from_scores, list(dict_auc_pr.values()))
+
+        true_auc_roc = [
+            0.9252575884154831,
+            0.9130158730158731,
+            0.9291228070175439,
+            0.9252575884154832,
+            0.9211929824561403,
+            0.9252575884154831,
+            0.9158730158730158,
+        ]
+
+        true_auc_pr = [
+            0.8389462532437767,
+            0.9151621069238896,
+            0.9685249535885079,
+            0.8389462532437765,
+            0.9662153835545242,
+            0.8389462532437764,
+            0.9212725256428516,
+        ]
+
+        # check value of results
+        self.assertEqual(auc_roc_from_scores, true_auc_roc)
+        self.assertEqual(auc_pr_from_scores, true_auc_pr)
+
+        # second case: scorers that return scorers that have the same width as the input
+        anomaly_model = ForecastingAnomalyModel(
+            model=RegressionModel(lags=10),
+            scorer=[
+                NormScorer(component_wise=True),
+                Difference(),
+                WassersteinScorer(component_wise=True),
+                WassersteinScorer(window=20, component_wise=True),
+                KMeansScorer(component_wise=True),
+                KMeansScorer(window=20, component_wise=True),
+                PyODScorer(model=KNN(), component_wise=True),
+                PyODScorer(model=KNN(), window=10, component_wise=True),
+            ],
+        )
+        anomaly_model.fit(mts_series_train, allow_model_training=True, start=0.1)
+
+        scores, model_output = anomaly_model.score(
+            mts_series_test, return_model_prediction=True, start=0.1
+        )
+
+        # model_output must be multivariate (same width as input)
+        self.assertEqual(model_output.width, mts_series_test.width)
+
+        # scores must be of the same length as the number of scorers
+        self.assertEqual(len(scores), len(anomaly_model.scorers))
+
+        dict_auc_roc = anomaly_model.eval_accuracy(
+            ts_anomalies, mts_series_test, start=0.1, metric="AUC_ROC"
+        )
+        dict_auc_pr = anomaly_model.eval_accuracy(
+            ts_anomalies, mts_series_test, start=0.1, metric="AUC_PR"
+        )
+
+        auc_roc_from_scores = eval_accuracy_from_scores(
+            actual_anomalies=[ts_anomalies] * 8,
+            anomaly_score=scores,
+            window=[1, 1, 10, 20, 1, 20, 1, 10],
+            metric="AUC_ROC",
+        )
+
+        auc_pr_from_scores = eval_accuracy_from_scores(
+            actual_anomalies=[ts_anomalies] * 8,
+            anomaly_score=scores,
+            window=[1, 1, 10, 20, 1, 20, 1, 10],
+            metric="AUC_PR",
+        )
+
+        # function eval_accuracy_from_scores and eval_accuracy must return an input of same length
+        self.assertEqual(len(auc_roc_from_scores), len(dict_auc_roc))
+        self.assertEqual(len(auc_pr_from_scores), len(dict_auc_pr))
+
+        # function eval_accuracy_from_scores and eval_accuracy must return the same values
+        self.assertEqual(auc_roc_from_scores, list(dict_auc_roc.values()))
+        self.assertEqual(auc_pr_from_scores, list(dict_auc_pr.values()))
+
+        true_auc_roc = [
+            [0.8803738317757009, 0.912267218445167],
+            [0.48898531375166887, 0.5758202778598878],
+            [0.8375999073323295, 0.9162283996994741],
+            [0.7798128494807715, 0.8739249880554228],
+            [0.8803738317757008, 0.912267218445167],
+            [0.7787287458632889, 0.8633540372670807],
+            [0.8803738317757009, 0.9122672184451671],
+            [0.8348777945094406, 0.9137061285821616],
+        ]
+
+        true_auc_pr = [
+            [0.7123114333965317, 0.7579757115620807],
+            [0.4447973021706103, 0.596776950584551],
+            [0.744325434474558, 0.8984960888744328],
+            [0.7653561450296187, 0.9233662817550338],
+            [0.7123114333965317, 0.7579757115620807],
+            [0.7852553779986415, 0.9185701347601994],
+            [0.7123114333965319, 0.7579757115620807],
+            [0.7572084510579269, 0.8967178983419622],
+        ]
+
+        # check value of results
+        self.assertEqual(auc_roc_from_scores, true_auc_roc)
+        self.assertEqual(auc_pr_from_scores, true_auc_pr)

@@ -45,7 +45,7 @@ class PyODScorer(FittableAnomalyScorer):
         )
 
     def __str__(self):
-        return "PyODScorer model: {}".format(self.model.__str__().split("(")[0])
+        return "PyODScorer (model {})".format(self.model.__str__().split("(")[0])
 
     def _fit_core(self, list_series: Sequence[TimeSeries]):
 

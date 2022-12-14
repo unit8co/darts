@@ -808,9 +808,9 @@ class NLLScorer(NonFittableAnomalyScorer):
     ) -> TimeSeries:
         """Slides a window of size self.window along the input series, and replaces the value of
         the input time series by the mean of the values contained in the window (past self.window
-        and itself points).
+        points, including itself).
 
-        A series of length N will be transformed into a series of length N-self.window.
+        A series of length N will be transformed into a series of length N-self.window+1.
 
         Parameters
         ----------
@@ -823,6 +823,7 @@ class NLLScorer(NonFittableAnomalyScorer):
         """
 
         if self.window == 1:
+            # the process results in replacing every value by itself -> return directly the series
             return series
         else:
             return series.window_transform(
@@ -830,8 +831,10 @@ class NLLScorer(NonFittableAnomalyScorer):
                     "window": self.window,
                     "function": "mean",
                     "mode": "rolling",
-                }
-            )[self.window - 1 :]
+                    "min_periods": self.window,
+                },
+                treat_na="dropna",
+            )
 
     def _expects_probabilistic(self) -> bool:
         return True

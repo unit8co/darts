@@ -426,14 +426,15 @@ def _window_adjustment_anomalies(series: TimeSeries, window: int) -> TimeSeries:
         # the process results in replacing every value by itself -> return directly the series
         return series
     else:
-        np_series = series.all_values(copy=False)
-
-        values = [
-            np_series[ind : ind + window].max(axis=0)
-            for ind in range(len(np_series) - window + 1)
-        ]
-
-        return TimeSeries.from_times_and_values(series.time_index[window - 1 :], values)
+        return series.window_transform(
+            transforms={
+                "window": window,
+                "function": "max",
+                "mode": "rolling",
+                "min_periods": window,
+            },
+            treat_na="dropna",
+        )
 
 
 def _to_list(series: Union[TimeSeries, Sequence[TimeSeries]]) -> Sequence[TimeSeries]:

@@ -65,7 +65,8 @@ class AnomalyModel(ABC):
                 )
                 + " a univariate anomaly score series (width=1). Found a"
                 + " multivariate `actual_anomalies`. The evaluation of the"
-                + " accuracy cannot be computed.",
+                + " accuracy cannot be computed. If applicable, think about"
+                + " setting the scorer parameter `componenet_wise` to True.",
             )
 
     @abstractmethod

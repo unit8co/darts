@@ -79,25 +79,25 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
     )
 
     # multivariate series
-    np_MTS_train = np.random.normal(loc=[10, 5], scale=[0.5, 1], size=[100, 2])
-    MTS_train = TimeSeries.from_values(np_MTS_train)
+    np_mts_train = np.random.normal(loc=[10, 5], scale=[0.5, 1], size=[100, 2])
+    mts_train = TimeSeries.from_values(np_mts_train)
 
-    np_MTS_test = np.random.normal(loc=[10, 5], scale=[1, 1.5], size=[100, 2])
-    MTS_test = TimeSeries.from_times_and_values(MTS_train._time_index, np_MTS_test)
+    np_mts_test = np.random.normal(loc=[10, 5], scale=[1, 1.5], size=[100, 2])
+    mts_test = TimeSeries.from_times_and_values(mts_train._time_index, np_mts_test)
 
-    np_MTS_anomalies = np.random.choice(a=[0, 1], size=[100, 2], p=[0.9, 0.1])
-    MTS_anomalies = TimeSeries.from_times_and_values(
-        MTS_train._time_index, np_MTS_anomalies
+    np_mts_anomalies = np.random.choice(a=[0, 1], size=[100, 2], p=[0.9, 0.1])
+    mts_anomalies = TimeSeries.from_times_and_values(
+        mts_train._time_index, np_mts_anomalies
     )
 
-    modified_MTS_train = MovingAverage(window=10).filter(MTS_train)
-    modified_MTS_test = MovingAverage(window=10).filter(MTS_test)
+    modified_mts_train = MovingAverage(window=10).filter(mts_train)
+    modified_mts_test = MovingAverage(window=10).filter(mts_test)
 
-    np_MTS_probabilistic = np.random.normal(
+    np_mts_probabilistic = np.random.normal(
         loc=[[10], [5]], scale=[[1], [1.5]], size=[100, 2, 20]
     )
-    MTS_probabilistic = TimeSeries.from_times_and_values(
-        MTS_train._time_index, np_MTS_probabilistic
+    mts_probabilistic = TimeSeries.from_times_and_values(
+        mts_train._time_index, np_mts_probabilistic
     )
 
     def test_ScoreNonFittableAnomalyScorer(self):
@@ -122,7 +122,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # Check if return type is Sequence when input is a multivariate series
         self.assertTrue(
             isinstance(
-                scorer.score_from_prediction(self.MTS_test, self.modified_MTS_test),
+                scorer.score_from_prediction(self.mts_test, self.modified_mts_test),
                 TimeSeries,
             )
         )
@@ -130,7 +130,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # Check if return type is Sequence when input is a multivariate series
         self.assertTrue(
             isinstance(
-                scorer.score_from_prediction([self.MTS_test], [self.modified_MTS_test]),
+                scorer.score_from_prediction([self.mts_test], [self.modified_mts_test]),
                 Sequence,
             )
         )
@@ -146,12 +146,12 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # Check if return type is Sequence when input is a sequence of series
         self.assertTrue(isinstance(scorer.score([self.test]), Sequence))
 
-        scorer.fit(self.MTS_train)
+        scorer.fit(self.mts_train)
         # Check if return type is Sequence when input is a multivariate series
-        self.assertTrue(isinstance(scorer.score(self.MTS_test), TimeSeries))
+        self.assertTrue(isinstance(scorer.score(self.mts_test), TimeSeries))
 
         # Check if return type is Sequence when input is a sequence of multivariate series
-        self.assertTrue(isinstance(scorer.score([self.MTS_test]), Sequence))
+        self.assertTrue(isinstance(scorer.score([self.mts_test]), Sequence))
 
         # Check return types for score_from_prediction()
         scorer.fit_from_prediction(self.train, self.modified_train)
@@ -170,11 +170,11 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             )
         )
 
-        scorer.fit_from_prediction(self.MTS_train, self.modified_MTS_train)
+        scorer.fit_from_prediction(self.mts_train, self.modified_mts_train)
         # Check if return type is Sequence when input is a multivariate series
         self.assertTrue(
             isinstance(
-                scorer.score_from_prediction(self.MTS_test, self.modified_MTS_test),
+                scorer.score_from_prediction(self.mts_test, self.modified_mts_test),
                 TimeSeries,
             )
         )
@@ -182,7 +182,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # Check if return type is Sequence when input is a multivariate series
         self.assertTrue(
             isinstance(
-                scorer.score_from_prediction([self.MTS_test], [self.modified_MTS_test]),
+                scorer.score_from_prediction([self.mts_test], [self.modified_mts_test]),
                 Sequence,
             )
         )
@@ -215,7 +215,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         self.assertTrue(
             isinstance(
                 scorer.eval_accuracy_from_prediction(
-                    self.anomalies, self.MTS_test, self.modified_MTS_test
+                    self.anomalies, self.mts_test, self.modified_mts_test
                 ),
                 float,
             )
@@ -225,7 +225,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         self.assertTrue(
             isinstance(
                 scorer.eval_accuracy_from_prediction(
-                    self.anomalies, [self.MTS_test], self.modified_MTS_test
+                    self.anomalies, [self.mts_test], self.modified_mts_test
                 ),
                 Sequence,
             )
@@ -257,7 +257,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         self.assertTrue(
             isinstance(
                 scorer.eval_accuracy_from_prediction(
-                    self.MTS_anomalies, self.MTS_test, self.modified_MTS_test
+                    self.mts_anomalies, self.mts_test, self.modified_mts_test
                 ),
                 Sequence,
             )
@@ -267,97 +267,97 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         self.assertTrue(
             isinstance(
                 scorer.eval_accuracy_from_prediction(
-                    self.MTS_anomalies, [self.MTS_test], self.modified_MTS_test
+                    self.mts_anomalies, [self.mts_test], self.modified_mts_test
                 ),
                 Sequence,
             )
         )
 
-        Non_fittable_scorer = Norm(component_wise=False)
-        Fittable_scorer = KMeansScorer(component_wise=False)
-        Fittable_scorer.fit(self.train)
+        non_fittable_scorer = Norm(component_wise=False)
+        fittable_scorer = KMeansScorer(component_wise=False)
+        fittable_scorer.fit(self.train)
 
         # if component_wise set to False, 'actual_anomalies' must have widths of 1
         with self.assertRaises(ValueError):
-            Fittable_scorer.eval_accuracy(
-                actual_anomalies=self.MTS_anomalies, series=self.test
+            fittable_scorer.eval_accuracy(
+                actual_anomalies=self.mts_anomalies, series=self.test
             )
         with self.assertRaises(ValueError):
-            Fittable_scorer.eval_accuracy(
-                actual_anomalies=[self.anomalies, self.MTS_anomalies],
+            fittable_scorer.eval_accuracy(
+                actual_anomalies=[self.anomalies, self.mts_anomalies],
                 series=[self.test, self.test],
             )
 
         # 'metric' must be str and "AUC_ROC" or "AUC_PR"
         with self.assertRaises(ValueError):
-            Fittable_scorer.eval_accuracy(
+            fittable_scorer.eval_accuracy(
                 actual_anomalies=self.anomalies, series=self.test, metric=1
             )
         with self.assertRaises(ValueError):
-            Fittable_scorer.eval_accuracy(
+            fittable_scorer.eval_accuracy(
                 actual_anomalies=self.anomalies, series=self.test, metric="auc_roc"
             )
         with self.assertRaises(ValueError):
-            Fittable_scorer.eval_accuracy(
+            fittable_scorer.eval_accuracy(
                 actual_anomalies=self.anomalies, series=self.test, metric=["AUC_ROC"]
             )
 
         # 'actual_anomalies' must be binary
         with self.assertRaises(ValueError):
-            Fittable_scorer.eval_accuracy(actual_anomalies=self.test, series=self.test)
+            fittable_scorer.eval_accuracy(actual_anomalies=self.test, series=self.test)
 
         # 'actual_anomalies' must contain anomalies (at least one)
         with self.assertRaises(ValueError):
-            Fittable_scorer.eval_accuracy(
+            fittable_scorer.eval_accuracy(
                 actual_anomalies=self.only_0_anomalies, series=self.test
             )
 
         # 'actual_anomalies' cannot contain only anomalies
         with self.assertRaises(ValueError):
-            Fittable_scorer.eval_accuracy(
+            fittable_scorer.eval_accuracy(
                 actual_anomalies=self.only_1_anomalies, series=self.test
             )
 
         # 'actual_anomalies' must match the number of series
         with self.assertRaises(ValueError):
-            Fittable_scorer.eval_accuracy(
+            fittable_scorer.eval_accuracy(
                 actual_anomalies=self.anomalies, series=[self.test, self.test]
             )
         with self.assertRaises(ValueError):
-            Fittable_scorer.eval_accuracy(
+            fittable_scorer.eval_accuracy(
                 actual_anomalies=[self.anomalies, self.anomalies], series=self.test
             )
 
         # 'actual_anomalies' must have non empty intersection with 'series'
         with self.assertRaises(ValueError):
-            Fittable_scorer.eval_accuracy(
+            fittable_scorer.eval_accuracy(
                 actual_anomalies=self.anomalies[:20], series=self.test[30:]
             )
         with self.assertRaises(ValueError):
-            Fittable_scorer.eval_accuracy(
+            fittable_scorer.eval_accuracy(
                 actual_anomalies=[self.anomalies, self.anomalies[:20]],
                 series=[self.test, self.test[40:]],
             )
 
-        for scorer in [Non_fittable_scorer, Fittable_scorer]:
+        for scorer in [non_fittable_scorer, fittable_scorer]:
 
             # 'metric' must be str and "AUC_ROC" or "AUC_PR"
             with self.assertRaises(ValueError):
-                Fittable_scorer.eval_accuracy_from_prediction(
+                fittable_scorer.eval_accuracy_from_prediction(
                     actual_anomalies=self.anomalies,
                     actual_series=self.test,
                     pred_series=self.modified_test,
                     metric=1,
                 )
             with self.assertRaises(ValueError):
-                Fittable_scorer.eval_accuracy_from_prediction(
+                fittable_scorer.eval_accuracy_from_prediction(
                     actual_anomalies=self.anomalies,
                     actual_series=self.test,
                     pred_series=self.modified_test,
                     metric="auc_roc",
                 )
             with self.assertRaises(ValueError):
-                Fittable_scorer.eval_accuracy_from_prediction(
+                fittable_scorer.eval_accuracy_from_prediction(
                     actual_anomalies=self.anomalies,
                     actual_series=self.test,
                     pred_series=self.modified_test,
@@ -432,7 +432,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
                 )
             # score on sequence with series that have different width
             with self.assertRaises(ValueError):
-                scorer.score_from_prediction(self.train, self.modified_MTS_train)
+                scorer.score_from_prediction(self.train, self.modified_mts_train)
             # input sequences have different length
             with self.assertRaises(ValueError):
                 scorer.score_from_prediction(
@@ -467,13 +467,13 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
             # fit on sequence with series that have different width
             with self.assertRaises(ValueError):
-                scorer.fit([self.train, self.MTS_train])
+                scorer.fit([self.train, self.mts_train])
 
             # fit on sequence with series that have different width
             with self.assertRaises(ValueError):
                 scorer.fit_from_prediction(
-                    [self.train, self.MTS_train],
-                    [self.modified_train, self.modified_MTS_train],
+                    [self.train, self.mts_train],
+                    [self.modified_train, self.modified_mts_train],
                 )
 
             # checks for fit_from_prediction()
@@ -491,12 +491,12 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
                 )
             # two inputs must have the same width
             with self.assertRaises(ValueError):
-                scorer.fit_from_prediction([self.train], [self.modified_MTS_train])
+                scorer.fit_from_prediction([self.train], [self.modified_mts_train])
             # every element must have the same width
             with self.assertRaises(ValueError):
                 scorer.fit_from_prediction(
-                    [self.train, self.MTS_train],
-                    [self.modified_train, self.modified_MTS_train],
+                    [self.train, self.mts_train],
+                    [self.modified_train, self.modified_mts_train],
                 )
             # two inputs must have a non zero intersection
             with self.assertRaises(ValueError):
@@ -530,12 +530,12 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
                 )
             # two inputs must have the same width
             with self.assertRaises(ValueError):
-                scorer.score_from_prediction([self.train], [self.modified_MTS_train])
+                scorer.score_from_prediction([self.train], [self.modified_mts_train])
             # every element must have the same width
             with self.assertRaises(ValueError):
                 scorer.score_from_prediction(
-                    [self.train, self.MTS_train],
-                    [self.modified_train, self.modified_MTS_train],
+                    [self.train, self.mts_train],
+                    [self.modified_train, self.modified_mts_train],
                 )
             # two inputs must have a non zero intersection
             with self.assertRaises(ValueError):
@@ -561,10 +561,10 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             self.assertTrue(scorerA1._fit_called)
             with self.assertRaises(ValueError):
                 # series must be same width as series used for training
-                scorerA1.score(self.MTS_test)
+                scorerA1.score(self.mts_test)
             # case2: fit on MTS
             scorerA2 = scorer
-            scorerA2.fit(self.MTS_train)
+            scorerA2.fit(self.mts_train)
             # Check if _fit_called is True after being fitted
             self.assertTrue(scorerA2._fit_called)
             with self.assertRaises(ValueError):
@@ -579,10 +579,10 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             self.assertTrue(scorerB1._fit_called)
             with self.assertRaises(ValueError):
                 # series must be same width as series used for training
-                scorerB1.score_from_prediction(self.MTS_test, self.modified_MTS_test)
+                scorerB1.score_from_prediction(self.mts_test, self.modified_mts_test)
             # case2: fit on MTS
             scorerB2 = scorer
-            scorerB2.fit_from_prediction(self.MTS_train, self.modified_MTS_train)
+            scorerB2.fit_from_prediction(self.mts_train, self.modified_mts_train)
             # Check if _fit_called is True after being fitted
             self.assertTrue(scorerB2._fit_called)
             with self.assertRaises(ValueError):
@@ -602,7 +602,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             scorer.score_from_prediction(self.test, self.modified_test).width == 1
         )
         self.assertTrue(
-            scorer.score_from_prediction(self.MTS_test, self.modified_MTS_test).width
+            scorer.score_from_prediction(self.mts_test, self.modified_mts_test).width
             == 1
         )
         # if component_wise=True must always return the same width as the input
@@ -611,8 +611,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             scorer.score_from_prediction(self.test, self.modified_test).width == 1
         )
         self.assertTrue(
-            scorer.score_from_prediction(self.MTS_test, self.modified_MTS_test).width
-            == self.MTS_test.width
+            scorer.score_from_prediction(self.mts_test, self.modified_mts_test).width
+            == self.mts_test.width
         )
 
         scorer = Norm(component_wise=True)
@@ -641,21 +641,21 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # multivariate case with component_wise set to True (equivalent to abs diff)
         # abs(a - 2a) =  a
         self.assertEqual(
-            scorer.score_from_prediction(self.MTS_test, self.MTS_test * 2)["0"],
-            self.MTS_test["0"],
+            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["0"],
+            self.mts_test["0"],
         )
         self.assertEqual(
-            scorer.score_from_prediction(self.MTS_test, self.MTS_test * 2)["1"],
-            self.MTS_test["1"],
+            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["1"],
+            self.mts_test["1"],
         )
         # abs(2a - a) =  a
         self.assertEqual(
-            scorer.score_from_prediction(self.MTS_test * 2, self.MTS_test)["0"],
-            self.MTS_test["0"],
+            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["0"],
+            self.mts_test["0"],
         )
         self.assertEqual(
-            scorer.score_from_prediction(self.MTS_test * 2, self.MTS_test)["1"],
-            self.MTS_test["1"],
+            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["1"],
+            self.mts_test["1"],
         )
 
         scorer = Norm(component_wise=False)
@@ -681,11 +681,11 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # multivariate case with component_wise set to False
         # norm(a - a + sqrt(2)) = 2 * len(a) with a being series of dim=2
         self.assertAlmostEqual(
-            scorer.score_from_prediction(self.MTS_test, self.MTS_test + np.sqrt(2))
+            scorer.score_from_prediction(self.mts_test, self.mts_test + np.sqrt(2))
             .sum(axis=0)
             .all_values()
             .flatten()[0],
-            2 * len(self.MTS_test),
+            2 * len(self.mts_test),
             delta=1e-05,
         )
 
@@ -718,27 +718,27 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # multivariate case
         # output of score() must be the same width as the width of the input
         self.assertEqual(
-            scorer.score_from_prediction(self.MTS_test, self.MTS_test).width,
-            self.MTS_test.width,
+            scorer.score_from_prediction(self.mts_test, self.mts_test).width,
+            self.mts_test.width,
         )
 
         # a - 2a = - a
         self.assertEqual(
-            scorer.score_from_prediction(self.MTS_test, self.MTS_test * 2)["0"],
-            -self.MTS_test["0"],
+            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["0"],
+            -self.mts_test["0"],
         )
         self.assertEqual(
-            scorer.score_from_prediction(self.MTS_test, self.MTS_test * 2)["1"],
-            -self.MTS_test["1"],
+            scorer.score_from_prediction(self.mts_test, self.mts_test * 2)["1"],
+            -self.mts_test["1"],
         )
         # 2a - a =  a
         self.assertEqual(
-            scorer.score_from_prediction(self.MTS_test * 2, self.MTS_test)["0"],
-            self.MTS_test["0"],
+            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["0"],
+            self.mts_test["0"],
         )
         self.assertEqual(
-            scorer.score_from_prediction(self.MTS_test * 2, self.MTS_test)["1"],
-            self.MTS_test["1"],
+            scorer.score_from_prediction(self.mts_test * 2, self.mts_test)["1"],
+            self.mts_test["1"],
         )
 
     def test_WassersteinScorer(self):
@@ -753,14 +753,14 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         scorer = WassersteinScorer(component_wise=False)
         scorer.fit(self.train)
         self.assertTrue(scorer.score(self.test).width == 1)
-        scorer.fit(self.MTS_train)
-        self.assertTrue(scorer.score(self.MTS_test).width == 1)
+        scorer.fit(self.mts_train)
+        self.assertTrue(scorer.score(self.mts_test).width == 1)
         # if component_wise=True must always return the same width as the input
         scorer = WassersteinScorer(component_wise=True)
         scorer.fit(self.train)
         self.assertTrue(scorer.score(self.test).width == 1)
-        scorer.fit(self.MTS_train)
-        self.assertTrue(scorer.score(self.MTS_test).width == self.MTS_test.width)
+        scorer.fit(self.mts_train)
+        self.assertTrue(scorer.score(self.mts_test).width == self.mts_test.width)
 
         # window parameter
         # window must be int
@@ -836,40 +836,40 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # test model with window of 10
         scorer_10 = WassersteinScorer(window=10)
         scorer_10.fit(train_wasserstein)
-        AUC_ROC_w10 = scorer_10.eval_accuracy(
+        auc_roc_w10 = scorer_10.eval_accuracy(
             anomalies_wasserstein, test_wasserstein, metric="AUC_ROC"
         )
-        AUC_PR_w10 = scorer_10.eval_accuracy(
+        auc_pr_w10 = scorer_10.eval_accuracy(
             anomalies_wasserstein, test_wasserstein, metric="AUC_PR"
         )
 
         # test model with window of 20
         scorer_20 = WassersteinScorer(window=20)
         scorer_20.fit(train_wasserstein)
-        AUC_ROC_w20 = scorer_20.eval_accuracy(
+        auc_roc_w20 = scorer_20.eval_accuracy(
             anomalies_wasserstein, test_wasserstein, metric="AUC_ROC"
         )
-        AUC_PR_w20 = scorer_20.eval_accuracy(
+        auc_pr_w20 = scorer_20.eval_accuracy(
             anomalies_wasserstein, test_wasserstein, metric="AUC_PR"
         )
 
-        self.assertAlmostEqual(AUC_ROC_w10, 0.80637, delta=1e-05)
-        self.assertAlmostEqual(AUC_PR_w10, 0.83390, delta=1e-05)
-        self.assertAlmostEqual(AUC_ROC_w20, 0.77828, delta=1e-05)
-        self.assertAlmostEqual(AUC_PR_w20, 0.93934, delta=1e-05)
+        self.assertAlmostEqual(auc_roc_w10, 0.80637, delta=1e-05)
+        self.assertAlmostEqual(auc_pr_w10, 0.83390, delta=1e-05)
+        self.assertAlmostEqual(auc_roc_w20, 0.77828, delta=1e-05)
+        self.assertAlmostEqual(auc_pr_w20, 0.93934, delta=1e-05)
 
     def test_multivariate_componentwise_Wasserstein(self):
 
         # example multivariate WassersteinScorer component wise (True and False)
         np.random.seed(3)
-        np_MTS_train_wasserstein = np.abs(
+        np_mts_train_wasserstein = np.abs(
             np.random.normal(loc=[0, 0], scale=[0.1, 0.2], size=[100, 2])
         )
-        MTS_train_wasserstein = TimeSeries.from_times_and_values(
-            self.train._time_index, np_MTS_train_wasserstein
+        mts_train_wasserstein = TimeSeries.from_times_and_values(
+            self.train._time_index, np_mts_train_wasserstein
         )
 
-        np_MTS_test_wasserstein = np.abs(
+        np_mts_test_wasserstein = np.abs(
             np.random.normal(loc=[0, 0], scale=[0.1, 0.2], size=[100, 2])
         )
         np_first_anomaly_width1 = np.abs(np.random.normal(loc=0.5, scale=0.4, size=10))
@@ -878,58 +878,58 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             np.random.normal(loc=0.5, scale=0.5, size=[10, 2])
         )
 
-        np_MTS_test_wasserstein[5:15, 0] = np_first_anomaly_width1
-        np_MTS_test_wasserstein[35:45, 1] = np_first_anomaly_width2
-        np_MTS_test_wasserstein[65:75, :] = np_first_commmon_anomaly
+        np_mts_test_wasserstein[5:15, 0] = np_first_anomaly_width1
+        np_mts_test_wasserstein[35:45, 1] = np_first_anomaly_width2
+        np_mts_test_wasserstein[65:75, :] = np_first_commmon_anomaly
 
-        MTS_test_wasserstein = TimeSeries.from_times_and_values(
-            MTS_train_wasserstein._time_index, np_MTS_test_wasserstein
+        mts_test_wasserstein = TimeSeries.from_times_and_values(
+            mts_train_wasserstein._time_index, np_mts_test_wasserstein
         )
 
         # create the anomaly series width 1
-        np_anomalies_width1 = np.zeros(len(MTS_test_wasserstein))
+        np_anomalies_width1 = np.zeros(len(mts_test_wasserstein))
         np_anomalies_width1[5:15] = 1
         np_anomalies_width1[65:75] = 1
 
         # create the anomaly series width 2
-        np_anomaly_width2 = np.zeros(len(MTS_test_wasserstein))
+        np_anomaly_width2 = np.zeros(len(mts_test_wasserstein))
         np_anomaly_width2[35:45] = 1
         np_anomaly_width2[65:75] = 1
 
         anomalies_wasserstein_per_width = TimeSeries.from_times_and_values(
-            MTS_test_wasserstein.time_index,
+            mts_test_wasserstein.time_index,
             list(zip(*[np_anomalies_width1, np_anomaly_width2])),
             columns=["is_anomaly_0", "is_anomaly_1"],
         )
 
         # create the anomaly series for the entire series
-        np_commmon_anomaly = np.zeros(len(MTS_test_wasserstein))
+        np_commmon_anomaly = np.zeros(len(mts_test_wasserstein))
         np_commmon_anomaly[5:15] = 1
         np_commmon_anomaly[35:45] = 1
         np_commmon_anomaly[65:75] = 1
         anomalies_common_wasserstein = TimeSeries.from_times_and_values(
-            MTS_test_wasserstein.time_index, np_commmon_anomaly, columns=["is_anomaly"]
+            mts_test_wasserstein.time_index, np_commmon_anomaly, columns=["is_anomaly"]
         )
 
         # test scorer with component_wise=False
         scorer_w10_cwfalse = WassersteinScorer(window=10, component_wise=False)
-        scorer_w10_cwfalse.fit(MTS_train_wasserstein)
-        AUC_ROC_cwfalse = scorer_w10_cwfalse.eval_accuracy(
-            anomalies_common_wasserstein, MTS_test_wasserstein, metric="AUC_ROC"
+        scorer_w10_cwfalse.fit(mts_train_wasserstein)
+        auc_roc_cwfalse = scorer_w10_cwfalse.eval_accuracy(
+            anomalies_common_wasserstein, mts_test_wasserstein, metric="AUC_ROC"
         )
 
         # test scorer with component_wise=True
         scorer_w10_cwtrue = WassersteinScorer(window=10, component_wise=True)
-        scorer_w10_cwtrue.fit(MTS_train_wasserstein)
-        AUC_ROC_cwtrue = scorer_w10_cwtrue.eval_accuracy(
-            anomalies_wasserstein_per_width, MTS_test_wasserstein, metric="AUC_ROC"
+        scorer_w10_cwtrue.fit(mts_train_wasserstein)
+        auc_roc_cwtrue = scorer_w10_cwtrue.eval_accuracy(
+            anomalies_wasserstein_per_width, mts_test_wasserstein, metric="AUC_ROC"
         )
 
-        self.assertAlmostEqual(AUC_ROC_cwfalse, 0.94637, delta=1e-05)
-        self.assertAlmostEqual(AUC_ROC_cwtrue[0], 0.99742, delta=1e-05)
-        self.assertAlmostEqual(AUC_ROC_cwtrue[1], 0.93445, delta=1e-05)
+        self.assertAlmostEqual(auc_roc_cwfalse, 0.94637, delta=1e-05)
+        self.assertAlmostEqual(auc_roc_cwtrue[0], 0.99742, delta=1e-05)
+        self.assertAlmostEqual(auc_roc_cwtrue[1], 0.93445, delta=1e-05)
 
-    def test_KMeansScorer(self):
+    def test_kmeansScorer(self):
 
         # component_wise parameter
         # component_wise must be bool
@@ -941,14 +941,14 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         scorer = KMeansScorer(component_wise=False)
         scorer.fit(self.train)
         self.assertTrue(scorer.score(self.test).width == 1)
-        scorer.fit(self.MTS_train)
-        self.assertTrue(scorer.score(self.MTS_test).width == 1)
+        scorer.fit(self.mts_train)
+        self.assertTrue(scorer.score(self.mts_test).width == 1)
         # if component_wise=True must always return the same width as the input
         scorer = KMeansScorer(component_wise=True)
         scorer.fit(self.train)
         self.assertTrue(scorer.score(self.test).width == 1)
-        scorer.fit(self.MTS_train)
-        self.assertTrue(scorer.score(self.MTS_test).width == self.MTS_test.width)
+        scorer.fit(self.mts_train)
+        self.assertTrue(scorer.score(self.mts_test).width == self.mts_test.width)
 
         # window parameter
         # window must be int
@@ -990,7 +990,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             scorer.score(self.test[:50])  # len(self.test)=100
 
-    def test_univariate_KMeans(self):
+    def test_univariate_kmeans(self):
 
         # univariate example
 
@@ -999,7 +999,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # create the train set
         np_width1 = np.random.choice(a=[0, 1], size=100, p=[0.5, 0.5])
         np_width2 = (np_width1 == 0).astype(float)
-        KMeans_MTS_train = TimeSeries.from_values(
+        KMeans_mts_train = TimeSeries.from_values(
             np.dstack((np_width1, np_width2))[0], columns=["width 1", "width 2"]
         )
 
@@ -1024,7 +1024,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         np_width1[75:82] = (np_width1[75:82] != 1).astype(int)
         np_width2[90:96] = (np_width2[90:96] != 1).astype(int)
 
-        KMeans_MTS_test = TimeSeries.from_values(
+        KMeans_mts_test = TimeSeries.from_values(
             np.dstack((np_width1, np_width2))[0], columns=["width 1", "width 2"]
         )
 
@@ -1053,26 +1053,26 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             94,
             95,
         ]
-        np_anomalies = np.zeros(len(KMeans_MTS_test))
+        np_anomalies = np.zeros(len(KMeans_mts_test))
         np_anomalies[anomalies_index] = 1
-        KMeans_MTS_anomalies = TimeSeries.from_times_and_values(
-            KMeans_MTS_test.time_index, np_anomalies, columns=["is_anomaly"]
+        KMeans_mts_anomalies = TimeSeries.from_times_and_values(
+            KMeans_mts_test.time_index, np_anomalies, columns=["is_anomaly"]
         )
 
-        Kmeans_scorer = KMeansScorer(k=2, window=1, component_wise=False)
-        Kmeans_scorer.fit(KMeans_MTS_train)
+        kmeans_scorer = KMeansScorer(k=2, window=1, component_wise=False)
+        kmeans_scorer.fit(KMeans_mts_train)
 
-        metric_AUC_ROC = Kmeans_scorer.eval_accuracy(
-            KMeans_MTS_anomalies, KMeans_MTS_test, metric="AUC_ROC"
+        metric_AUC_ROC = kmeans_scorer.eval_accuracy(
+            KMeans_mts_anomalies, KMeans_mts_test, metric="AUC_ROC"
         )
-        metric_AUC_PR = Kmeans_scorer.eval_accuracy(
-            KMeans_MTS_anomalies, KMeans_MTS_test, metric="AUC_PR"
+        metric_AUC_PR = kmeans_scorer.eval_accuracy(
+            KMeans_mts_anomalies, KMeans_mts_test, metric="AUC_PR"
         )
 
         self.assertEqual(metric_AUC_ROC, 1.0)
         self.assertEqual(metric_AUC_PR, 1.0)
 
-    def test_multivariate_window_KMeans(self):
+    def test_multivariate_window_kmeans(self):
 
         # multivariate example with different windows
 
@@ -1089,7 +1089,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             if np_series[i] < 0:
                 np_series[i] = 0
 
-        TS_train = TimeSeries.from_values(np_series, columns=["series"])
+        ts_train = TimeSeries.from_values(np_series, columns=["series"])
 
         # create the test set
         np.random.seed(3)
@@ -1114,53 +1114,53 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         np_series[17:19] = 1
         np_series[62:65] = 2
 
-        TS_test = TimeSeries.from_values(np_series, columns=["series"])
+        ts_test = TimeSeries.from_values(np_series, columns=["series"])
 
         anomalies_index = [4, 23, 18, 44, 63, 64, 91]
         np_anomalies = np.zeros(100)
         np_anomalies[anomalies_index] = 1
-        TS_anomalies = TimeSeries.from_times_and_values(
-            TS_test.time_index, np_anomalies, columns=["is_anomaly"]
+        ts_anomalies = TimeSeries.from_times_and_values(
+            ts_test.time_index, np_anomalies, columns=["is_anomaly"]
         )
 
-        Kmeans_scorer_w1 = KMeansScorer(k=4, window=1)
-        Kmeans_scorer_w1.fit(TS_train)
+        kmeans_scorer_w1 = KMeansScorer(k=4, window=1)
+        kmeans_scorer_w1.fit(ts_train)
 
-        Kmeans_scorer_w2 = KMeansScorer(k=8, window=2)
-        Kmeans_scorer_w2.fit(TS_train)
+        kmeans_scorer_w2 = KMeansScorer(k=8, window=2)
+        kmeans_scorer_w2.fit(ts_train)
 
-        AUC_ROC_w1 = Kmeans_scorer_w1.eval_accuracy(
-            TS_anomalies, TS_test, metric="AUC_ROC"
+        auc_roc_w1 = kmeans_scorer_w1.eval_accuracy(
+            ts_anomalies, ts_test, metric="AUC_ROC"
         )
-        AUC_PR_w1 = Kmeans_scorer_w1.eval_accuracy(
-            TS_anomalies, TS_test, metric="AUC_PR"
-        )
-
-        AUC_ROC_w2 = Kmeans_scorer_w2.eval_accuracy(
-            TS_anomalies, TS_test, metric="AUC_ROC"
-        )
-        AUC_PR_w2 = Kmeans_scorer_w2.eval_accuracy(
-            TS_anomalies, TS_test, metric="AUC_PR"
+        auc_pr_w1 = kmeans_scorer_w1.eval_accuracy(
+            ts_anomalies, ts_test, metric="AUC_PR"
         )
 
-        self.assertAlmostEqual(AUC_ROC_w1, 0.41551, delta=1e-05)
-        self.assertAlmostEqual(AUC_PR_w1, 0.064761, delta=1e-05)
-        self.assertAlmostEqual(AUC_ROC_w2, 0.957513, delta=1e-05)
-        self.assertAlmostEqual(AUC_PR_w2, 0.88584, delta=1e-05)
+        auc_roc_w2 = kmeans_scorer_w2.eval_accuracy(
+            ts_anomalies, ts_test, metric="AUC_ROC"
+        )
+        auc_pr_w2 = kmeans_scorer_w2.eval_accuracy(
+            ts_anomalies, ts_test, metric="AUC_PR"
+        )
 
-    def test_multivariate_componentwise_KMeans(self):
+        self.assertAlmostEqual(auc_roc_w1, 0.41551, delta=1e-05)
+        self.assertAlmostEqual(auc_pr_w1, 0.064761, delta=1e-05)
+        self.assertAlmostEqual(auc_roc_w2, 0.957513, delta=1e-05)
+        self.assertAlmostEqual(auc_pr_w2, 0.88584, delta=1e-05)
+
+    def test_multivariate_componentwise_kmeans(self):
 
         # example multivariate KMeans component wise (True and False)
         np.random.seed(1)
 
-        np_MTS_train_KMeans = np.abs(
+        np_mts_train_kmeans = np.abs(
             np.random.normal(loc=[0, 0], scale=[0.1, 0.2], size=[100, 2])
         )
-        MTS_train_KMeans = TimeSeries.from_times_and_values(
-            self.train._time_index, np_MTS_train_KMeans
+        mts_train_kmeans = TimeSeries.from_times_and_values(
+            self.train._time_index, np_mts_train_kmeans
         )
 
-        np_MTS_test_KMeans = np.abs(
+        np_mts_test_kmeans = np.abs(
             np.random.normal(loc=[0, 0], scale=[0.1, 0.2], size=[100, 2])
         )
         np_first_anomaly_width1 = np.abs(np.random.normal(loc=0.5, scale=0.4, size=10))
@@ -1169,56 +1169,56 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             np.random.normal(loc=0.5, scale=0.5, size=[10, 2])
         )
 
-        np_MTS_test_KMeans[5:15, 0] = np_first_anomaly_width1
-        np_MTS_test_KMeans[35:45, 1] = np_first_anomaly_width2
-        np_MTS_test_KMeans[65:75, :] = np_first_commmon_anomaly
+        np_mts_test_kmeans[5:15, 0] = np_first_anomaly_width1
+        np_mts_test_kmeans[35:45, 1] = np_first_anomaly_width2
+        np_mts_test_kmeans[65:75, :] = np_first_commmon_anomaly
 
-        MTS_test_KMeans = TimeSeries.from_times_and_values(
-            MTS_train_KMeans._time_index, np_MTS_test_KMeans
+        mts_test_kmeans = TimeSeries.from_times_and_values(
+            mts_train_kmeans._time_index, np_mts_test_kmeans
         )
 
         # create the anomaly series width 1
-        np_anomalies_width1 = np.zeros(len(MTS_test_KMeans))
+        np_anomalies_width1 = np.zeros(len(mts_test_kmeans))
         np_anomalies_width1[5:15] = 1
         np_anomalies_width1[65:75] = 1
 
         # create the anomaly series width 2
-        np_anomaly_width2 = np.zeros(len(MTS_test_KMeans))
+        np_anomaly_width2 = np.zeros(len(mts_test_kmeans))
         np_anomaly_width2[35:45] = 1
         np_anomaly_width2[65:75] = 1
 
-        anomalies_KMeans_per_width = TimeSeries.from_times_and_values(
-            MTS_test_KMeans.time_index,
+        anomalies_kmeans_per_width = TimeSeries.from_times_and_values(
+            mts_test_kmeans.time_index,
             list(zip(*[np_anomalies_width1, np_anomaly_width2])),
             columns=["is_anomaly_0", "is_anomaly_1"],
         )
 
         # create the anomaly series for the entire series
-        np_commmon_anomaly = np.zeros(len(MTS_test_KMeans))
+        np_commmon_anomaly = np.zeros(len(mts_test_kmeans))
         np_commmon_anomaly[5:15] = 1
         np_commmon_anomaly[35:45] = 1
         np_commmon_anomaly[65:75] = 1
-        anomalies_common_KMeans = TimeSeries.from_times_and_values(
-            MTS_test_KMeans.time_index, np_commmon_anomaly, columns=["is_anomaly"]
+        anomalies_common_kmeans = TimeSeries.from_times_and_values(
+            mts_test_kmeans.time_index, np_commmon_anomaly, columns=["is_anomaly"]
         )
 
         # test scorer with component_wise=False
         scorer_w10_cwfalse = KMeansScorer(window=10, component_wise=False)
-        scorer_w10_cwfalse.fit(MTS_train_KMeans)
-        AUC_ROC_cwfalse = scorer_w10_cwfalse.eval_accuracy(
-            anomalies_common_KMeans, MTS_test_KMeans, metric="AUC_ROC"
+        scorer_w10_cwfalse.fit(mts_train_kmeans)
+        auc_roc_cwfalse = scorer_w10_cwfalse.eval_accuracy(
+            anomalies_common_kmeans, mts_test_kmeans, metric="AUC_ROC"
         )
 
         # test scorer with component_wise=True
         scorer_w10_cwtrue = KMeansScorer(window=10, component_wise=True)
-        scorer_w10_cwtrue.fit(MTS_train_KMeans)
-        AUC_ROC_cwtrue = scorer_w10_cwtrue.eval_accuracy(
-            anomalies_KMeans_per_width, MTS_test_KMeans, metric="AUC_ROC"
+        scorer_w10_cwtrue.fit(mts_train_kmeans)
+        auc_roc_cwtrue = scorer_w10_cwtrue.eval_accuracy(
+            anomalies_kmeans_per_width, mts_test_kmeans, metric="AUC_ROC"
         )
 
-        self.assertAlmostEqual(AUC_ROC_cwfalse, 0.98957, delta=1e-05)
-        self.assertAlmostEqual(AUC_ROC_cwtrue[0], 1.0, delta=1e-05)
-        self.assertAlmostEqual(AUC_ROC_cwtrue[1], 0.98262, delta=1e-05)
+        self.assertAlmostEqual(auc_roc_cwfalse, 0.98957, delta=1e-05)
+        self.assertAlmostEqual(auc_roc_cwtrue[0], 1.0, delta=1e-05)
+        self.assertAlmostEqual(auc_roc_cwtrue[1], 0.98262, delta=1e-05)
 
     def test_PyODScorer(self):
 
@@ -1236,14 +1236,14 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         scorer = PyODScorer(model=KNN(), component_wise=False)
         scorer.fit(self.train)
         self.assertTrue(scorer.score(self.test).width == 1)
-        scorer.fit(self.MTS_train)
-        self.assertTrue(scorer.score(self.MTS_test).width == 1)
+        scorer.fit(self.mts_train)
+        self.assertTrue(scorer.score(self.mts_test).width == 1)
         # if component_wise=True must always return the same width as the input
         scorer = PyODScorer(model=KNN(), component_wise=True)
         scorer.fit(self.train)
         self.assertTrue(scorer.score(self.test).width == 1)
-        scorer.fit(self.MTS_train)
-        self.assertTrue(scorer.score(self.MTS_test).width == self.MTS_test.width)
+        scorer.fit(self.mts_train)
+        self.assertTrue(scorer.score(self.mts_test).width == self.mts_test.width)
 
         # window parameter
         # window must be int
@@ -1293,7 +1293,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # create the train set
         np_width1 = np.random.choice(a=[0, 1], size=100, p=[0.5, 0.5])
         np_width2 = (np_width1 == 0).astype(float)
-        PyOD_MTS_train = TimeSeries.from_values(
+        pyod_mts_train = TimeSeries.from_values(
             np.dstack((np_width1, np_width2))[0], columns=["width 1", "width 2"]
         )
 
@@ -1318,7 +1318,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         np_width1[75:82] = (np_width1[75:82] != 1).astype(int)
         np_width2[90:96] = (np_width2[90:96] != 1).astype(int)
 
-        PyOD_MTS_test = TimeSeries.from_values(
+        pyod_mts_test = TimeSeries.from_values(
             np.dstack((np_width1, np_width2))[0], columns=["width 1", "width 2"]
         )
 
@@ -1347,22 +1347,22 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             94,
             95,
         ]
-        np_anomalies = np.zeros(len(PyOD_MTS_test))
+        np_anomalies = np.zeros(len(pyod_mts_test))
         np_anomalies[anomalies_index] = 1
-        PyOD_MTS_anomalies = TimeSeries.from_times_and_values(
-            PyOD_MTS_test.time_index, np_anomalies, columns=["is_anomaly"]
+        pyod_mts_anomalies = TimeSeries.from_times_and_values(
+            pyod_mts_test.time_index, np_anomalies, columns=["is_anomaly"]
         )
 
-        PyOD_scorer = PyODScorer(
+        pyod_scorer = PyODScorer(
             model=KNN(n_neighbors=10), component_wise=False, window=1
         )
-        PyOD_scorer.fit(PyOD_MTS_train)
+        pyod_scorer.fit(pyod_mts_train)
 
-        metric_AUC_ROC = PyOD_scorer.eval_accuracy(
-            PyOD_MTS_anomalies, PyOD_MTS_test, metric="AUC_ROC"
+        metric_AUC_ROC = pyod_scorer.eval_accuracy(
+            pyod_mts_anomalies, pyod_mts_test, metric="AUC_ROC"
         )
-        metric_AUC_PR = PyOD_scorer.eval_accuracy(
-            PyOD_MTS_anomalies, PyOD_MTS_test, metric="AUC_PR"
+        metric_AUC_PR = pyod_scorer.eval_accuracy(
+            pyod_mts_anomalies, pyod_mts_test, metric="AUC_PR"
         )
 
         self.assertEqual(metric_AUC_ROC, 1.0)
@@ -1385,7 +1385,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             if np_series[i] < 0:
                 np_series[i] = 0
 
-        TS_train = TimeSeries.from_values(np_series, columns=["series"])
+        ts_train = TimeSeries.from_values(np_series, columns=["series"])
 
         # create the test set
         np.random.seed(3)
@@ -1410,39 +1410,39 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         np_series[17:19] = 1
         np_series[62:65] = 2
 
-        TS_test = TimeSeries.from_values(np_series, columns=["series"])
+        ts_test = TimeSeries.from_values(np_series, columns=["series"])
 
         anomalies_index = [4, 23, 18, 44, 63, 64, 91]
         np_anomalies = np.zeros(100)
         np_anomalies[anomalies_index] = 1
-        TS_anomalies = TimeSeries.from_times_and_values(
-            TS_test.time_index, np_anomalies, columns=["is_anomaly"]
+        ts_anomalies = TimeSeries.from_times_and_values(
+            ts_test.time_index, np_anomalies, columns=["is_anomaly"]
         )
 
-        PyOD_scorer_w1 = PyODScorer(
+        pyod_scorer_w1 = PyODScorer(
             model=KNN(n_neighbors=10), component_wise=False, window=1
         )
-        PyOD_scorer_w1.fit(TS_train)
+        pyod_scorer_w1.fit(ts_train)
 
-        PyOD_scorer_w2 = PyODScorer(
+        pyod_scorer_w2 = PyODScorer(
             model=KNN(n_neighbors=10), component_wise=False, window=2
         )
-        PyOD_scorer_w2.fit(TS_train)
+        pyod_scorer_w2.fit(ts_train)
 
-        AUC_ROC_w1 = PyOD_scorer_w1.eval_accuracy(
-            TS_anomalies, TS_test, metric="AUC_ROC"
+        auc_roc_w1 = pyod_scorer_w1.eval_accuracy(
+            ts_anomalies, ts_test, metric="AUC_ROC"
         )
-        AUC_PR_w1 = PyOD_scorer_w1.eval_accuracy(TS_anomalies, TS_test, metric="AUC_PR")
+        auc_pr_w1 = pyod_scorer_w1.eval_accuracy(ts_anomalies, ts_test, metric="AUC_PR")
 
-        AUC_ROC_w2 = PyOD_scorer_w2.eval_accuracy(
-            TS_anomalies, TS_test, metric="AUC_ROC"
+        auc_roc_w2 = pyod_scorer_w2.eval_accuracy(
+            ts_anomalies, ts_test, metric="AUC_ROC"
         )
-        AUC_PR_w2 = PyOD_scorer_w2.eval_accuracy(TS_anomalies, TS_test, metric="AUC_PR")
+        auc_pr_w2 = pyod_scorer_w2.eval_accuracy(ts_anomalies, ts_test, metric="AUC_PR")
 
-        self.assertAlmostEqual(AUC_ROC_w1, 0.5, delta=1e-05)
-        self.assertAlmostEqual(AUC_PR_w1, 0.07, delta=1e-05)
-        self.assertAlmostEqual(AUC_ROC_w2, 0.957513, delta=1e-05)
-        self.assertAlmostEqual(AUC_PR_w2, 0.88584, delta=1e-05)
+        self.assertAlmostEqual(auc_roc_w1, 0.5, delta=1e-05)
+        self.assertAlmostEqual(auc_pr_w1, 0.07, delta=1e-05)
+        self.assertAlmostEqual(auc_roc_w2, 0.957513, delta=1e-05)
+        self.assertAlmostEqual(auc_pr_w2, 0.88584, delta=1e-05)
 
     def test_multivariate_componentwise_PyODScorer(self):
 
@@ -1450,14 +1450,14 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         np.random.seed(1)
 
-        np_MTS_train_PyOD = np.abs(
+        np_mts_train_PyOD = np.abs(
             np.random.normal(loc=[0, 0], scale=[0.1, 0.2], size=[100, 2])
         )
-        MTS_train_PyOD = TimeSeries.from_times_and_values(
-            self.train._time_index, np_MTS_train_PyOD
+        mts_train_PyOD = TimeSeries.from_times_and_values(
+            self.train._time_index, np_mts_train_PyOD
         )
 
-        np_MTS_test_PyOD = np.abs(
+        np_mts_test_PyOD = np.abs(
             np.random.normal(loc=[0, 0], scale=[0.1, 0.2], size=[100, 2])
         )
         np_first_anomaly_width1 = np.abs(np.random.normal(loc=0.5, scale=0.4, size=10))
@@ -1466,60 +1466,60 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             np.random.normal(loc=0.5, scale=0.5, size=[10, 2])
         )
 
-        np_MTS_test_PyOD[5:15, 0] = np_first_anomaly_width1
-        np_MTS_test_PyOD[35:45, 1] = np_first_anomaly_width2
-        np_MTS_test_PyOD[65:75, :] = np_first_commmon_anomaly
+        np_mts_test_PyOD[5:15, 0] = np_first_anomaly_width1
+        np_mts_test_PyOD[35:45, 1] = np_first_anomaly_width2
+        np_mts_test_PyOD[65:75, :] = np_first_commmon_anomaly
 
-        MTS_test_PyOD = TimeSeries.from_times_and_values(
-            MTS_train_PyOD._time_index, np_MTS_test_PyOD
+        mts_test_PyOD = TimeSeries.from_times_and_values(
+            mts_train_PyOD._time_index, np_mts_test_PyOD
         )
 
         # create the anomaly series width 1
-        np_anomalies_width1 = np.zeros(len(MTS_test_PyOD))
+        np_anomalies_width1 = np.zeros(len(mts_test_PyOD))
         np_anomalies_width1[5:15] = 1
         np_anomalies_width1[65:75] = 1
 
         # create the anomaly series width 2
-        np_anomaly_width2 = np.zeros(len(MTS_test_PyOD))
+        np_anomaly_width2 = np.zeros(len(mts_test_PyOD))
         np_anomaly_width2[35:45] = 1
         np_anomaly_width2[65:75] = 1
 
-        anomalies_PyOD_per_width = TimeSeries.from_times_and_values(
-            MTS_test_PyOD.time_index,
+        anomalies_pyod_per_width = TimeSeries.from_times_and_values(
+            mts_test_PyOD.time_index,
             list(zip(*[np_anomalies_width1, np_anomaly_width2])),
             columns=["is_anomaly_0", "is_anomaly_1"],
         )
 
         # create the anomaly series for the entire series
-        np_commmon_anomaly = np.zeros(len(MTS_test_PyOD))
+        np_commmon_anomaly = np.zeros(len(mts_test_PyOD))
         np_commmon_anomaly[5:15] = 1
         np_commmon_anomaly[35:45] = 1
         np_commmon_anomaly[65:75] = 1
         anomalies_common_PyOD = TimeSeries.from_times_and_values(
-            MTS_test_PyOD.time_index, np_commmon_anomaly, columns=["is_anomaly"]
+            mts_test_PyOD.time_index, np_commmon_anomaly, columns=["is_anomaly"]
         )
 
         # test scorer with component_wise=False
         scorer_w10_cwfalse = PyODScorer(
             model=KNN(n_neighbors=10), component_wise=False, window=10
         )
-        scorer_w10_cwfalse.fit(MTS_train_PyOD)
-        AUC_ROC_cwfalse = scorer_w10_cwfalse.eval_accuracy(
-            anomalies_common_PyOD, MTS_test_PyOD, metric="AUC_ROC"
+        scorer_w10_cwfalse.fit(mts_train_PyOD)
+        auc_roc_cwfalse = scorer_w10_cwfalse.eval_accuracy(
+            anomalies_common_PyOD, mts_test_PyOD, metric="AUC_ROC"
         )
 
         # test scorer with component_wise=True
         scorer_w10_cwtrue = PyODScorer(
             model=KNN(n_neighbors=10), component_wise=True, window=10
         )
-        scorer_w10_cwtrue.fit(MTS_train_PyOD)
-        AUC_ROC_cwtrue = scorer_w10_cwtrue.eval_accuracy(
-            anomalies_PyOD_per_width, MTS_test_PyOD, metric="AUC_ROC"
+        scorer_w10_cwtrue.fit(mts_train_PyOD)
+        auc_roc_cwtrue = scorer_w10_cwtrue.eval_accuracy(
+            anomalies_pyod_per_width, mts_test_PyOD, metric="AUC_ROC"
         )
 
-        self.assertAlmostEqual(AUC_ROC_cwfalse, 0.990566, delta=1e-05)
-        self.assertAlmostEqual(AUC_ROC_cwtrue[0], 1.0, delta=1e-05)
-        self.assertAlmostEqual(AUC_ROC_cwtrue[1], 0.98311, delta=1e-05)
+        self.assertAlmostEqual(auc_roc_cwfalse, 0.990566, delta=1e-05)
+        self.assertAlmostEqual(auc_roc_cwtrue[0], 1.0, delta=1e-05)
+        self.assertAlmostEqual(auc_roc_cwtrue[1], 0.98311, delta=1e-05)
 
     def test_NLLScorer(self):
 
