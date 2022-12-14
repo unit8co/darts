@@ -157,6 +157,13 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
     def test_NonFittableAggregator(self):
 
         for aggregator in list_NonFittableAggregator:
+
+            # name must be of type str
+            self.assertEqual(
+                type(aggregator.__str__()),
+                str,
+            )
+
             # Check if trainable is False, being a NonFittableAggregator
             self.assertTrue(not aggregator.trainable)
 
@@ -211,6 +218,12 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
     def test_FittableAggregator(self):
 
         for aggregator in list_FittableAggregator:
+
+            # name must be of type str
+            self.assertEqual(
+                type(aggregator.__str__()),
+                str,
+            )
 
             # Need to call fit() before calling predict()
             with self.assertRaises(ValueError):

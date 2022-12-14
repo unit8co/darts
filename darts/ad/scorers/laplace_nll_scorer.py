@@ -8,6 +8,7 @@ Source of PDF function and parameters estimation (MLE):  `Laplace distribution
 """
 
 import numpy as np
+from scipy.stats import laplace
 
 from darts.ad.scorers.scorers import NLLScorer
 
@@ -25,16 +26,9 @@ class LaplaceNLLScorer(NLLScorer):
         probabilistic_estimations: np.ndarray,
     ) -> np.ndarray:
 
-        # TODO: raise error when all values are equal to the median -> divide by 0
-
         # TODO: vectorize
 
         return [
-            -np.log(
-                (1 / (2 * np.abs(x1 - np.median(x1)).mean()))
-                * np.exp(
-                    -(np.abs(x2 - np.median(x1)) / np.abs(x1 - np.median(x1)).mean())
-                )
-            )
+            -laplace.logpdf(x2, *laplace.fit(x1))
             for (x1, x2) in zip(probabilistic_estimations, deterministic_values)
         ]

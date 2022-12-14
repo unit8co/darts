@@ -341,6 +341,12 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         for scorer in [non_fittable_scorer, fittable_scorer]:
 
+            # name must be of type str
+            self.assertEqual(
+                type(scorer.__str__()),
+                str,
+            )
+
             # 'metric' must be str and "AUC_ROC" or "AUC_PR"
             with self.assertRaises(ValueError):
                 fittable_scorer.eval_accuracy_from_prediction(

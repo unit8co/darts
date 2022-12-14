@@ -8,17 +8,12 @@ Source of PDF function and parameters estimation: `Cauchy distribution
 """
 
 import numpy as np
+from scipy.stats import cauchy
 
 from darts.ad.scorers.scorers import NLLScorer
 
 
 class CauchyNLLScorer(NLLScorer):
-    """
-    For computational reasons, we opted for the simple method to estimate the parameters:
-        - location parameter (x_0): median of the samples
-        - scale parameter (gamma): half the sample interquartile range (Q3-Q1)/2
-    """
-
     def __init__(self, window: int = 1) -> None:
         super().__init__(window=window)
 
@@ -31,20 +26,9 @@ class CauchyNLLScorer(NLLScorer):
         probabilistic_estimations: np.ndarray,
     ) -> np.ndarray:
 
-        # TODO: raise error when gamma is equal to 0 -> interquartile is equal to 0
-
         # TODO: vectorize
 
         return [
-            -np.log(
-                (2 / (np.pi * np.subtract(*np.percentile(x1, [75, 25]))))
-                * (
-                    (np.subtract(*np.percentile(x1, [75, 25])) / 2) ** 2
-                    / (
-                        ((x2 - np.median(x1)) ** 2)
-                        + ((np.subtract(*np.percentile(x1, [75, 25])) / 2) ** 2)
-                    )
-                )
-            )
+            -cauchy.logpdf(x2, *cauchy.fit(x1))
             for (x1, x2) in zip(probabilistic_estimations, deterministic_values)
         ]
