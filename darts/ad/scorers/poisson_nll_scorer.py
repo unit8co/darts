@@ -27,8 +27,6 @@ class PoissonNLLScorer(NLLScorer):
         probabilistic_estimations: np.ndarray,
     ) -> np.ndarray:
 
-        # TODO: raise error if values of deterministic_values are not (int and >=0). Required by the factorial function
-
         # TODO: vectorize
 
         return [

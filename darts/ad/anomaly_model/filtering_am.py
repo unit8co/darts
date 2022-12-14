@@ -130,9 +130,7 @@ class FilteringAnomalyModel(AnomalyModel):
             pass
 
         if self.scorers_are_trainable:
-            list_pred = []
-            for series in list_series:
-                list_pred.append(self.filter.filter(series))
+            list_pred = [self.filter.filter(series) for series in list_series]
 
         # fit the scorers
         for scorer in self.scorers:
@@ -245,12 +243,16 @@ class FilteringAnomalyModel(AnomalyModel):
 
         list_series = _to_list(series)
 
-        preds = [self.filter.filter(s, **filter_kwargs) for s in list_series]
+        list_pred = [self.filter.filter(s, **filter_kwargs) for s in list_series]
 
-        scores = [
-            [sc.score_from_prediction(s, p) for sc in self.scorers]
-            for s, p in zip(list_series, preds)
-        ]
+        scores = list(
+            zip(
+                *[
+                    sc.score_from_prediction(list_series, list_pred)
+                    for sc in self.scorers
+                ]
+            )
+        )
 
         if len(scores) == 1 and not isinstance(series, Sequence):
             # there's only one series
@@ -259,11 +261,11 @@ class FilteringAnomalyModel(AnomalyModel):
                 # there's only one scorer
                 scores = scores[0]
 
-        if len(preds) == 1:
-            preds = preds[0]
+        if len(list_pred) == 1:
+            list_pred = list_pred[0]
 
         if return_model_prediction:
-            return scores, preds
+            return scores, list_pred
         else:
             return scores
 

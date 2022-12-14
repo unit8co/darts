@@ -454,10 +454,14 @@ class ForecastingAnomalyModel(AnomalyModel):
                 )
             )
 
-        scores = [
-            [sc.score_from_prediction(s, p) for sc in self.scorers]
-            for s, p in zip(list_series, list_pred)
-        ]
+        scores = list(
+            zip(
+                *[
+                    sc.score_from_prediction(list_series, list_pred)
+                    for sc in self.scorers
+                ]
+            )
+        )
 
         if len(scores) == 1 and not isinstance(series, Sequence):
             # there's only one series
