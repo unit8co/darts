@@ -122,7 +122,9 @@ class BaseDataTransformerTestCase(unittest.TestCase):
         Tests for correct transformation of multiple series when
         different param values are used for different parallel
         jobs (i.e. test that `parallel_params` argument is treated
-        correctly)/
+        correctly). Also tests that transformer correctly handles
+        being provided with fewer input series than fixed parameter
+        value sets.
         """
         test_input_1 = constant_timeseries(value=1, length=10)
         test_input_2 = constant_timeseries(value=2, length=11)
@@ -145,6 +147,11 @@ class BaseDataTransformerTestCase(unittest.TestCase):
         # 3 * 2 + 10 = 16
         self.assertEqual(transformed_2, constant_timeseries(value=16, length=11))
 
+        # If only one timeseries provided, should apply parameters defined for
+        # for the first to that series:
+        transformed_1 = mock.transform(test_input_1)
+        self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
+
         # Have different `scale`, `translation`, and `stack_samples` params for different jobs:
         mock = self.DataTransformerMock(
             scale=(2, 3),
@@ -157,6 +164,33 @@ class BaseDataTransformerTestCase(unittest.TestCase):
         # 2 * 1 + 10 = 12
         self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
         # 3 * 2 + 11 = 17
+        self.assertEqual(transformed_2, constant_timeseries(value=17, length=11))
+
+        # If only one timeseries provided, should apply parameters defined for
+        # for the first to that series:
+        transformed_1 = mock.transform(test_input_1)
+        self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
+
+        # Specify three sets of fixed params, but pass only one or two series as inputs
+        # to `transform`; transformer should apply `i`th set of fixed params to the `i`th
+        # input passed to `transform`
+        mock = self.DataTransformerMock(
+            scale=(2, 3, 4),
+            translation=(10, 11, 12),
+            stack_samples=(False, True, False),
+            mask_components=(False, False, False),
+            parallel_params=True,
+        )
+        # If single series provided to transformer with three sets of
+        # fixed params, should transform using the first set of fixed
+        # parameters:
+        transformed_1 = mock.transform(test_input_1)
+        self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
+        # If two series provided to transformer with three sets of
+        # fixed params, should transform using the first and second set of fixed
+        # parameters:
+        transformed_1, transformed_2 = mock.transform((test_input_1, test_input_2))
+        self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
         self.assertEqual(transformed_2, constant_timeseries(value=17, length=11))
 
     def test_input_transformed_multiple_samples(self):

@@ -195,10 +195,13 @@ class BaseDataTransformerTestCase(unittest.TestCase):
         Tests for correct transformation of multiple series when
         different param values are used for different parallel
         jobs (i.e. test that `parallel_params` argument is treated
-        correctly)/
+        correctly). Also tests that transformer correctly handles
+        being provided with fewer input series than series used
+        to fit the transformer.
         """
         test_input_1 = constant_timeseries(value=1, length=10)
         test_input_2 = constant_timeseries(value=2, length=11)
+        test_input_3 = constant_timeseries(value=3, length=12)
 
         # Don't have different params for different jobs:
         mock = self.DataTransformerMock(scale=2, translation=10, parallel_params=False)
@@ -213,6 +216,13 @@ class BaseDataTransformerTestCase(unittest.TestCase):
         inv_1, inv_2 = mock.inverse_transform((transformed_1, transformed_2))
         self.assertEqual(inv_1, test_input_1)
         self.assertEqual(inv_2, test_input_2)
+
+        # If only one timeseries provided, should apply parameters defined for
+        # for the first to that series:
+        transformed_1 = mock.transform(test_input_1)
+        self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
+        inv_1 = mock.inverse_transform(transformed_1)
+        self.assertEqual(inv_1, test_input_1)
 
         # Have different `scale` param for different jobs:
         mock = self.DataTransformerMock(
@@ -246,6 +256,36 @@ class BaseDataTransformerTestCase(unittest.TestCase):
         # 3 * 2 + 11 = 17
         self.assertEqual(transformed_2, constant_timeseries(value=17, length=11))
         # Should get input back:
+        inv_1, inv_2 = mock.inverse_transform((transformed_1, transformed_2))
+        self.assertEqual(inv_1, test_input_1)
+        self.assertEqual(inv_2, test_input_2)
+
+        # Train on three series with three different fixed param values,
+        # but pass only one or two series as inputs to `transform` or
+        # `inverse_transform`; transformer should use the parameters
+        # fitted to `i`th series to apply `transform`/`inverse_transform`
+        # to the `i`th input:
+        mock = self.DataTransformerMock(
+            scale=(2, 3, 4),
+            translation=(10, 11, 12),
+            stack_samples=(False, True, False),
+            mask_components=(False, False, False),
+            parallel_params=True,
+        )
+        mock.fit([test_input_1, test_input_2, test_input_3])
+        # If single series provided to transformer trained on three
+        # series, should transform/inverse transform using the first set
+        # of fitted parameters:
+        transformed_1 = mock.transform(test_input_1)
+        self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
+        inv_1 = mock.inverse_transform(transformed_1)
+        self.assertEqual(inv_1, test_input_1)
+        # If two series provided to transformer trained on three
+        # series, should transform/inverse transform using the first and
+        # second set of fitted parameters:
+        transformed_1, transformed_2 = mock.transform((test_input_1, test_input_2))
+        self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
+        self.assertEqual(transformed_2, constant_timeseries(value=17, length=11))
         inv_1, inv_2 = mock.inverse_transform((transformed_1, transformed_2))
         self.assertEqual(inv_1, test_input_1)
         self.assertEqual(inv_2, test_input_2)
