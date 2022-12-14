@@ -1637,6 +1637,80 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         self.assertEqual(value_multivariate.all_values().flatten()[0], value_test1)
         self.assertEqual(value_multivariate.all_values().flatten()[1], value_test2)
 
+        # test window multivariate (n_samples=2, len=2, window=1 and 2)
+        scorer_w1 = GaussianNLLScorer(window=1)
+        scorer_w2 = GaussianNLLScorer(window=2)
+
+        gaussian_samples_3 = np.random.normal(0, 1, 10000)
+        gaussian_samples_4 = np.random.normal(0, 1, 10000)
+
+        distribution_series = TimeSeries.from_values(
+            np.array(
+                [
+                    gaussian_samples_1,
+                    gaussian_samples_2,
+                    gaussian_samples_3,
+                    gaussian_samples_4,
+                ]
+            ).reshape(2, 2, -1)
+        )
+
+        actual_series = TimeSeries.from_values(
+            np.array([1.5, 2.1, 0.1, 0.001]).reshape(2, -1)
+        )
+
+        score_w1 = scorer_w1.score_from_prediction(actual_series, distribution_series)
+        score_w2 = scorer_w2.score_from_prediction(actual_series, distribution_series)
+
+        # check length
+        self.assertEqual(len(score_w1), 2)
+        self.assertEqual(len(score_w2), 1)
+        # check width
+        self.assertEqual(score_w1.width, 2)
+        self.assertEqual(score_w2.width, 2)
+
+        # check values for window=1
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[0],
+            -np.log(norm.pdf(1.5, loc=0, scale=1)),
+            delta=1e-01,
+        )
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[1],
+            -np.log(norm.pdf(2.1, loc=0, scale=1)),
+            delta=1e-01,
+        )
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[2],
+            -np.log(norm.pdf(0.1, loc=0, scale=1)),
+            delta=1e-01,
+        )
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[3],
+            -np.log(norm.pdf(0.001, loc=0, scale=1)),
+            delta=1e-01,
+        )
+
+        # check values for window=2 (must be equal to the mean of the past 2 values)
+        self.assertAlmostEqual(
+            score_w2.all_values().flatten()[0],
+            (
+                -np.log(norm.pdf(1.5, loc=0, scale=1))
+                - np.log(norm.pdf(0.1, loc=0, scale=1))
+            )
+            / 2,
+            delta=1e-01,
+        )
+        self.assertAlmostEqual(
+            score_w2.all_values().flatten()[1],
+            (
+                -np.log(norm.pdf(2.1, loc=0, scale=1))
+                - np.log(norm.pdf(0.001, loc=0, scale=1))
+            )
+            / 2,
+            delta=1e-01,
+        )
+
     def test_LaplaceNLLScorer(self):
 
         # window parameter
@@ -1742,6 +1816,80 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # check equal value_test1 and value_test2
         self.assertEqual(value_multivariate.all_values().flatten()[0], value_test1)
         self.assertEqual(value_multivariate.all_values().flatten()[1], value_test2)
+
+        # test window multivariate (n_samples=2, len=2, window=1 and 2)
+        scorer_w1 = LaplaceNLLScorer(window=1)
+        scorer_w2 = LaplaceNLLScorer(window=2)
+
+        laplace_samples_3 = np.random.laplace(0, 1, 1000)
+        laplace_samples_4 = np.random.laplace(0, 1, 1000)
+
+        distribution_series = TimeSeries.from_values(
+            np.array(
+                [
+                    laplace_samples_1,
+                    laplace_samples_2,
+                    laplace_samples_3,
+                    laplace_samples_4,
+                ]
+            ).reshape(2, 2, -1)
+        )
+
+        actual_series = TimeSeries.from_values(
+            np.array([1.5, 2, 0.1, 0.001]).reshape(2, -1)
+        )
+
+        score_w1 = scorer_w1.score_from_prediction(actual_series, distribution_series)
+        score_w2 = scorer_w2.score_from_prediction(actual_series, distribution_series)
+
+        # check length
+        self.assertEqual(len(score_w1), 2)
+        self.assertEqual(len(score_w2), 1)
+        # check width
+        self.assertEqual(score_w1.width, 2)
+        self.assertEqual(score_w2.width, 2)
+
+        # check values for window=1
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[0],
+            -np.log(laplace.pdf(1.5, loc=0, scale=1)),
+            delta=1e-01,
+        )
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[1],
+            -np.log(laplace.pdf(2, loc=0, scale=1)),
+            delta=1e-01,
+        )
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[2],
+            -np.log(laplace.pdf(0.1, loc=0, scale=1)),
+            delta=1e-01,
+        )
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[3],
+            -np.log(laplace.pdf(0.001, loc=0, scale=1)),
+            delta=1e-01,
+        )
+
+        # check values for window=2 (must be equal to the mean of the past 2 values)
+        self.assertAlmostEqual(
+            score_w2.all_values().flatten()[0],
+            (
+                -np.log(laplace.pdf(1.5, loc=0, scale=1))
+                - np.log(laplace.pdf(0.1, loc=0, scale=1))
+            )
+            / 2,
+            delta=1e-01,
+        )
+        self.assertAlmostEqual(
+            score_w2.all_values().flatten()[1],
+            (
+                -np.log(laplace.pdf(2, loc=0, scale=1))
+                - np.log(laplace.pdf(0.001, loc=0, scale=1))
+            )
+            / 2,
+            delta=1e-01,
+        )
 
     def test_ExponentialNLLScorer(self):
 
@@ -1849,6 +1997,72 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         self.assertEqual(value_multivariate.all_values().flatten()[0], value_test1)
         self.assertEqual(value_multivariate.all_values().flatten()[1], value_test2)
 
+        # test window multivariate (n_samples=2, len=2, window=1 and 2)
+        scorer_w1 = ExponentialNLLScorer(window=1)
+        scorer_w2 = ExponentialNLLScorer(window=2)
+
+        exponential_samples_3 = np.random.exponential(1, 1000)
+        exponential_samples_4 = np.random.exponential(1, 1000)
+
+        distribution_series = TimeSeries.from_values(
+            np.array(
+                [
+                    exponential_samples_1,
+                    exponential_samples_2,
+                    exponential_samples_3,
+                    exponential_samples_4,
+                ]
+            ).reshape(2, 2, -1)
+        )
+
+        actual_series = TimeSeries.from_values(
+            np.array([1.5, 2, 0.1, 0.001]).reshape(2, -1)
+        )
+
+        score_w1 = scorer_w1.score_from_prediction(actual_series, distribution_series)
+        score_w2 = scorer_w2.score_from_prediction(actual_series, distribution_series)
+
+        # check length
+        self.assertEqual(len(score_w1), 2)
+        self.assertEqual(len(score_w2), 1)
+        # check width
+        self.assertEqual(score_w1.width, 2)
+        self.assertEqual(score_w2.width, 2)
+
+        # check values for window=1
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[0],
+            -np.log(expon.pdf(1.5, scale=1)),
+            delta=1e-01,
+        )
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[1],
+            -np.log(expon.pdf(2, scale=1)),
+            delta=1e-01,
+        )
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[2],
+            -np.log(expon.pdf(0.1, scale=1)),
+            delta=1e-01,
+        )
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[3],
+            -np.log(expon.pdf(0.001, scale=1)),
+            delta=1e-01,
+        )
+
+        # check values for window=2 (must be equal to the mean of the past 2 values)
+        self.assertAlmostEqual(
+            score_w2.all_values().flatten()[0],
+            (-np.log(expon.pdf(1.5, scale=1)) - np.log(expon.pdf(0.1, scale=1))) / 2,
+            delta=1e-01,
+        )
+        self.assertAlmostEqual(
+            score_w2.all_values().flatten()[1],
+            (-np.log(expon.pdf(2, scale=1)) - np.log(expon.pdf(0.001, scale=1))) / 2,
+            delta=1e-01,
+        )
+
     def test_GammaNLLScorer(self):
 
         # window parameter
@@ -1948,6 +2162,69 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         self.assertEqual(value_multivariate.all_values().flatten()[0], value_test1)
         self.assertEqual(value_multivariate.all_values().flatten()[1], value_test2)
 
+        # test window multivariate (n_samples=2, len=2, window=1 and 2)
+        scorer_w1 = GammaNLLScorer(window=1)
+        scorer_w2 = GammaNLLScorer(window=2)
+
+        gamma_samples_3 = np.random.gamma(2, scale=1, size=10000)
+        gamma_samples_4 = np.random.gamma(2, scale=1, size=10000)
+
+        distribution_series = TimeSeries.from_values(
+            np.array(
+                [gamma_samples_1, gamma_samples_2, gamma_samples_3, gamma_samples_4]
+            ).reshape(2, 2, -1)
+        )
+
+        actual_series = TimeSeries.from_values(
+            np.array([1.5, 2, 0.5, 0.9]).reshape(2, -1)
+        )
+
+        score_w1 = scorer_w1.score_from_prediction(actual_series, distribution_series)
+        score_w2 = scorer_w2.score_from_prediction(actual_series, distribution_series)
+
+        # check length
+        self.assertEqual(len(score_w1), 2)
+        self.assertEqual(len(score_w2), 1)
+        # check width
+        self.assertEqual(score_w1.width, 2)
+        self.assertEqual(score_w2.width, 2)
+
+        # check values for window=1
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[0],
+            -np.log(gamma.pdf(1.5, 2, scale=1)),
+            delta=1e-01,
+        )
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[1],
+            -np.log(gamma.pdf(2, 2, scale=1)),
+            delta=1e-01,
+        )
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[2],
+            -np.log(gamma.pdf(0.5, 2, scale=1)),
+            delta=1e-01,
+        )
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[3],
+            -np.log(gamma.pdf(0.9, 2, scale=1)),
+            delta=1e-01,
+        )
+
+        # check values for window=2 (must be equal to the mean of the past 2 values)
+        self.assertAlmostEqual(
+            score_w2.all_values().flatten()[0],
+            (-np.log(gamma.pdf(1.5, 2, scale=1)) - np.log(gamma.pdf(0.5, 2, scale=1)))
+            / 2,
+            delta=1e-01,
+        )
+        self.assertAlmostEqual(
+            score_w2.all_values().flatten()[1],
+            (-np.log(gamma.pdf(2, 2, scale=1)) - np.log(gamma.pdf(0.9, 2, scale=1)))
+            / 2,
+            delta=1e-01,
+        )
+
     def test_CauchyNLLScorer(self):
 
         # window parameter
@@ -2042,6 +2319,59 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # check equal value_test1 and value_test2
         self.assertEqual(value_multivariate.all_values().flatten()[0], value_test1)
         self.assertEqual(value_multivariate.all_values().flatten()[1], value_test2)
+
+        # test window multivariate (n_samples=2, len=2, window=1 and 2)
+        scorer_w1 = CauchyNLLScorer(window=1)
+        scorer_w2 = CauchyNLLScorer(window=2)
+
+        cauchy_samples_3 = np.random.standard_cauchy(size=100000)
+        cauchy_samples_4 = np.random.standard_cauchy(size=100000)
+
+        distribution_series = TimeSeries.from_values(
+            np.array(
+                [cauchy_samples_1, cauchy_samples_2, cauchy_samples_3, cauchy_samples_4]
+            ).reshape(2, 2, -1)
+        )
+
+        actual_series = TimeSeries.from_values(
+            np.array([1.5, 2, 0.5, 0.9]).reshape(2, -1)
+        )
+
+        score_w1 = scorer_w1.score_from_prediction(actual_series, distribution_series)
+        score_w2 = scorer_w2.score_from_prediction(actual_series, distribution_series)
+
+        # check length
+        self.assertEqual(len(score_w1), 2)
+        self.assertEqual(len(score_w2), 1)
+        # check width
+        self.assertEqual(score_w1.width, 2)
+        self.assertEqual(score_w2.width, 2)
+
+        # check values for window=1
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[0], -np.log(cauchy.pdf(1.5)), delta=1e-01
+        )
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[1], -np.log(cauchy.pdf(2)), delta=1e-01
+        )
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[2], -np.log(cauchy.pdf(0.5)), delta=1e-01
+        )
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[3], -np.log(cauchy.pdf(0.9)), delta=1e-01
+        )
+
+        # check values for window=2 (must be equal to the mean of the past 2 values)
+        self.assertAlmostEqual(
+            score_w2.all_values().flatten()[0],
+            (-np.log(cauchy.pdf(1.5)) - np.log(cauchy.pdf(0.5))) / 2,
+            delta=1e-01,
+        )
+        self.assertAlmostEqual(
+            score_w2.all_values().flatten()[1],
+            (-np.log(cauchy.pdf(2)) - np.log(cauchy.pdf(0.9))) / 2,
+            delta=1e-01,
+        )
 
     def test_PoissonNLLScorer(self):
 
@@ -2143,3 +2473,67 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         # check equal value_test1 and value_test2
         self.assertEqual(value_multivariate.all_values().flatten()[0], value_test1)
         self.assertEqual(value_multivariate.all_values().flatten()[1], value_test2)
+
+        # test window multivariate (n_samples=2, len=2, window=1 and 2)
+        scorer_w1 = PoissonNLLScorer(window=1)
+        scorer_w2 = PoissonNLLScorer(window=2)
+
+        poisson_samples_3 = np.random.poisson(size=100000, lam=1)
+        poisson_samples_4 = np.random.poisson(size=100000, lam=1)
+
+        distribution_series = TimeSeries.from_values(
+            np.array(
+                [
+                    poisson_samples_1,
+                    poisson_samples_2,
+                    poisson_samples_3,
+                    poisson_samples_4,
+                ]
+            ).reshape(2, 2, -1)
+        )
+
+        actual_series = TimeSeries.from_values(np.array([1, 2, 3, 4]).reshape(2, -1))
+
+        score_w1 = scorer_w1.score_from_prediction(actual_series, distribution_series)
+        score_w2 = scorer_w2.score_from_prediction(actual_series, distribution_series)
+
+        # check length
+        self.assertEqual(len(score_w1), 2)
+        self.assertEqual(len(score_w2), 1)
+        # check width
+        self.assertEqual(score_w1.width, 2)
+        self.assertEqual(score_w2.width, 2)
+
+        # check values for window=1
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[0],
+            -np.log(poisson.pmf(1, mu=1)),
+            delta=1e-01,
+        )
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[1],
+            -np.log(poisson.pmf(2, mu=1)),
+            delta=1e-01,
+        )
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[2],
+            -np.log(poisson.pmf(3, mu=1)),
+            delta=1e-01,
+        )
+        self.assertAlmostEqual(
+            score_w1.all_values().flatten()[3],
+            -np.log(poisson.pmf(4, mu=1)),
+            delta=1e-01,
+        )
+
+        # check values for window=2 (must be equal to the mean of the past 2 values)
+        self.assertAlmostEqual(
+            score_w2.all_values().flatten()[0],
+            (-np.log(poisson.pmf(1, mu=1)) - np.log(poisson.pmf(3, mu=1))) / 2,
+            delta=1e-01,
+        )
+        self.assertAlmostEqual(
+            score_w2.all_values().flatten()[1],
+            (-np.log(poisson.pmf(2, mu=1)) - np.log(poisson.pmf(4, mu=1))) / 2,
+            delta=1e-01,
+        )

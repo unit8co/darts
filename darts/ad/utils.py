@@ -27,7 +27,9 @@ from sklearn.metrics import (
 )
 
 from darts import TimeSeries
-from darts.logging import raise_if, raise_if_not
+from darts.logging import get_logger, raise_if, raise_if_not
+
+logger = get_logger(__name__)
 
 
 def check_if_binary(series: TimeSeries, name_series: str):
@@ -599,6 +601,11 @@ def show_anomalies_from_scores(
                 f"Input `window` must be of type int or Sequence, found {type(window)}."
             )
 
+        raise_if_not(
+            all([w > 0 for w in window]),
+            "All windows must be positive integer.",
+        )
+
         if len(window) == 1:
             window = window * len(anomaly_scores)
         else:
@@ -608,7 +615,27 @@ def show_anomalies_from_scores(
                 + f"window value for each series. Found length {len(window)}, and expected {len(anomaly_scores)}.",
             )
 
+        raise_if_not(
+            all([w < len(s) for (w, s) in zip(window, anomaly_scores)]),
+            "All windows must be smaller than the length of their corresponding score.",
+        )
+
         nbr_plots = nbr_plots + len(set(window))
+    else:
+        if window is not None:
+            logger.warning(
+                "The parameter `window` is given, but the input `anomaly_scores` is None."
+            )
+
+        if names_of_scorers is not None:
+            logger.warning(
+                "The parameter `names_of_scorers` is given, but the input `anomaly_scores` is None."
+            )
+
+        if metric is not None:
+            logger.warning(
+                "The parameter `metric` is given, but the input `anomaly_scores` is None."
+            )
 
     fig, axs = plt.subplots(
         nbr_plots,

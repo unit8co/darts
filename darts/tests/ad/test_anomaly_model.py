@@ -20,7 +20,7 @@ from darts.ad.scorers import (
     PyODScorer,
     WassersteinScorer,
 )
-from darts.ad.utils import eval_accuracy_from_scores
+from darts.ad.utils import eval_accuracy_from_scores, show_anomalies_from_scores
 from darts.models import MovingAverage, NaiveSeasonal, RegressionModel
 from darts.tests.base_test_class import DartsBaseTestClass
 
@@ -343,20 +343,6 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             if anomaly_model.scorers_are_trainable:
                 anomaly_model.fit(self.train)
 
-    def test_show_anomalies(self):
-
-        am1 = ForecastingAnomalyModel(
-            model=RegressionModel(lags=10), scorer=NormScorer()
-        )
-        am1.fit(self.train, allow_model_training=True)
-
-        am2 = FilteringAnomalyModel(model=MovingAverage(window=20), scorer=NormScorer())
-
-        for am in [am1, am2]:
-            # input 'series' must be a series and not a Sequence of series
-            with self.assertRaises(ValueError):
-                am.show_anomalies([self.train, self.train])
-
     def test_eval_accuracy(self):
 
         am1 = ForecastingAnomalyModel(
@@ -378,7 +364,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
         for am in [am1, am2, am3, am4]:
 
-            # if the anomaly_model have scorers that have the parameter returns_UTS set to True,
+            # if the anomaly_model have scorers that have the parameter univariate_scorer set to True,
             # 'actual_anomalies' must have widths of 1
             if am.univariate_scoring:
                 with self.assertRaises(ValueError):
@@ -1128,3 +1114,202 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         # check value of results
         self.assertEqual(auc_roc_from_scores, true_auc_roc)
         self.assertEqual(auc_pr_from_scores, true_auc_pr)
+
+    def test_show_anomalies(self):
+
+        forecasting_anomaly_model = ForecastingAnomalyModel(
+            model=RegressionModel(lags=10), scorer=NormScorer()
+        )
+        forecasting_anomaly_model.fit(self.train, allow_model_training=True)
+
+        filtering_anomaly_model = FilteringAnomalyModel(
+            model=MovingAverage(window=10), scorer=NormScorer()
+        )
+
+        for anomaly_model in [forecasting_anomaly_model, filtering_anomaly_model]:
+
+            # must input only one series
+            with self.assertRaises(ValueError):
+                anomaly_model.show_anomalies(series=[self.train, self.train])
+
+            # input must be a series
+            with self.assertRaises(ValueError):
+                anomaly_model.show_anomalies(series=[1, 2, 4])
+
+            # metric must be "AUC_ROC" or "AUC_PR"
+            with self.assertRaises(ValueError):
+                anomaly_model.show_anomalies(
+                    series=self.train, actual_anomalies=self.anomalies, metric="str"
+                )
+            with self.assertRaises(ValueError):
+                anomaly_model.show_anomalies(
+                    series=self.train, actual_anomalies=self.anomalies, metric="auc_roc"
+                )
+            with self.assertRaises(ValueError):
+                anomaly_model.show_anomalies(
+                    series=self.train, actual_anomalies=self.anomalies, metric=1
+                )
+
+            # actual_anomalies must be not none if metric is given
+            with self.assertRaises(ValueError):
+                anomaly_model.show_anomalies(series=self.train, metric="AUC_ROC")
+
+            # actual_anomalies must be binary
+            with self.assertRaises(ValueError):
+                anomaly_model.show_anomalies(
+                    series=self.train, actual_anomalies=self.test, metric="AUC_ROC"
+                )
+
+            # actual_anomalies must contain at least 1 anomaly if metric is given
+            with self.assertRaises(ValueError):
+                anomaly_model.show_anomalies(
+                    series=self.train,
+                    actual_anomalies=self.only_0_anomalies,
+                    metric="AUC_ROC",
+                )
+
+            # actual_anomalies must contain at least 1 non-anomoulous timestamp
+            # if metric is given
+            with self.assertRaises(ValueError):
+                anomaly_model.show_anomalies(
+                    series=self.train,
+                    actual_anomalies=self.only_1_anomalies,
+                    metric="AUC_ROC",
+                )
+
+            # names_of_scorers must be str
+            with self.assertRaises(ValueError):
+                anomaly_model.show_anomalies(series=self.train, names_of_scorers=2)
+            # nbr of names_of_scorers must match the nbr of scores (only 1 here)
+            with self.assertRaises(ValueError):
+                anomaly_model.show_anomalies(
+                    series=self.train, names_of_scorers=["scorer1", "scorer2"]
+                )
+
+            # title must be str
+            with self.assertRaises(ValueError):
+                anomaly_model.show_anomalies(series=self.train, title=1)
+
+    def test_show_anomalies_from_scores(self):
+
+        # must input only one series
+        with self.assertRaises(ValueError):
+            show_anomalies_from_scores(series=[self.train, self.train])
+
+        # input must be a series
+        with self.assertRaises(ValueError):
+            show_anomalies_from_scores(series=[1, 2, 4])
+
+        # must input only one model_output
+        with self.assertRaises(ValueError):
+            show_anomalies_from_scores(
+                series=self.train, model_output=[self.test, self.train]
+            )
+
+        # metric must be "AUC_ROC" or "AUC_PR"
+        with self.assertRaises(ValueError):
+            show_anomalies_from_scores(
+                series=self.train,
+                anomaly_scores=self.test,
+                actual_anomalies=self.anomalies,
+                metric="str",
+            )
+        with self.assertRaises(ValueError):
+            show_anomalies_from_scores(
+                series=self.train,
+                anomaly_scores=self.test,
+                actual_anomalies=self.anomalies,
+                metric="auc_roc",
+            )
+        with self.assertRaises(ValueError):
+            show_anomalies_from_scores(
+                series=self.train,
+                anomaly_scores=self.test,
+                actual_anomalies=self.anomalies,
+                metric=1,
+            )
+
+        # actual_anomalies must be not none if metric is given
+        with self.assertRaises(ValueError):
+            show_anomalies_from_scores(
+                series=self.train, anomaly_scores=self.test, metric="AUC_ROC"
+            )
+
+        # actual_anomalies must be binary
+        with self.assertRaises(ValueError):
+            show_anomalies_from_scores(
+                series=self.train,
+                anomaly_scores=self.test,
+                actual_anomalies=self.test,
+                metric="AUC_ROC",
+            )
+
+        # actual_anomalies must contain at least 1 anomaly if metric is given
+        with self.assertRaises(ValueError):
+            show_anomalies_from_scores(
+                series=self.train,
+                anomaly_scores=self.test,
+                actual_anomalies=self.only_0_anomalies,
+                metric="AUC_ROC",
+            )
+
+        # actual_anomalies must contain at least 1 non-anomoulous timestamp
+        # if metric is given
+        with self.assertRaises(ValueError):
+            show_anomalies_from_scores(
+                series=self.train,
+                anomaly_scores=self.test,
+                actual_anomalies=self.only_1_anomalies,
+                metric="AUC_ROC",
+            )
+
+        # window must be int
+        with self.assertRaises(ValueError):
+            show_anomalies_from_scores(
+                series=self.train, anomaly_scores=self.test, window="1"
+            )
+        # window must be an int positive
+        with self.assertRaises(ValueError):
+            show_anomalies_from_scores(
+                series=self.train, anomaly_scores=self.test, window=-1
+            )
+        # window must smaller than the score series
+        with self.assertRaises(ValueError):
+            show_anomalies_from_scores(
+                series=self.train, anomaly_scores=self.test, window=200
+            )
+
+        # must have the same nbr of windows than scores
+        with self.assertRaises(ValueError):
+            show_anomalies_from_scores(
+                series=self.train, anomaly_scores=self.test, window=[1, 2]
+            )
+        with self.assertRaises(ValueError):
+            show_anomalies_from_scores(
+                series=self.train,
+                anomaly_scores=[self.test, self.test],
+                window=[1, 2, 1],
+            )
+
+        # names_of_scorers must be str
+        with self.assertRaises(ValueError):
+            show_anomalies_from_scores(
+                series=self.train, anomaly_scores=self.test, names_of_scorers=2
+            )
+        # nbr of names_of_scorers must match the nbr of scores
+        with self.assertRaises(ValueError):
+            show_anomalies_from_scores(
+                series=self.train,
+                anomaly_scores=self.test,
+                names_of_scorers=["scorer1", "scorer2"],
+            )
+        with self.assertRaises(ValueError):
+            show_anomalies_from_scores(
+                series=self.train,
+                anomaly_scores=[self.test, self.test],
+                names_of_scorers=["scorer1", "scorer2", "scorer3"],
+            )
+
+        # title must be str
+        with self.assertRaises(ValueError):
+            show_anomalies_from_scores(series=self.train, title=1)
