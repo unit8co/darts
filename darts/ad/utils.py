@@ -163,6 +163,10 @@ def eval_accuracy_from_binary_prediction(
         - width/dimension
         - binary and has values belonging to the two classes (1 and 0)
 
+    If one series is given for `actual_anomalies` and `pred_anomalies` contains more than
+    one series, the function will consider `actual_anomalies` as the true anomalies for
+    all scores in `anomaly_score`.
+
     Parameters
     ----------
     actual_anomalies
@@ -216,6 +220,10 @@ def eval_accuracy_from_binary_prediction(
         _to_list(binary_pred_anomalies),
         _to_list(window),
     )
+
+    if len(list_actual_anomalies) == 1 and len(list_binary_pred_anomalies) > 1:
+        list_actual_anomalies = list_actual_anomalies * len(list_binary_pred_anomalies)
+
     _same_length(list_actual_anomalies, list_binary_pred_anomalies)
 
     if len(list_window) == 1:

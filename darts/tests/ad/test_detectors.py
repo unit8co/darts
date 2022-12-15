@@ -176,27 +176,126 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             QuantileDetector(low=None, high=None)
 
-        # Parameter low must be int or float
+        # Parameter low must be float or Sequence of float
         with self.assertRaises(ValueError):
             QuantileDetector(low="0.5")
         with self.assertRaises(ValueError):
-            QuantileDetector(low=[0.5])
+            QuantileDetector(low=[0.2, "0.1"])
 
-        # Parameter high must be int or float
+        # Parameter high must be float or Sequence of float
         with self.assertRaises(ValueError):
             QuantileDetector(high="0.5")
         with self.assertRaises(ValueError):
-            QuantileDetector(high=[0.5])
+            QuantileDetector(high=[0.2, "0.1"])
 
-        # Parameter must be bewteen 0 and 1
+        # if high and low are both sequences of length>1, they must be of the same size
+        with self.assertRaises(ValueError):
+            QuantileDetector(low=[0.2, 0.1], high=[0.95, 0.8, 0.9])
+        with self.assertRaises(ValueError):
+            QuantileDetector(low=[0.2, 0.1, 0.7], high=[0.95, 0.8])
+
+        # Parameter must be between 0 and 1
         with self.assertRaises(ValueError):
             QuantileDetector(high=1.1)
         with self.assertRaises(ValueError):
             QuantileDetector(high=-0.2)
         with self.assertRaises(ValueError):
+            QuantileDetector(high=[-0.1, 0.9])
+        with self.assertRaises(ValueError):
             QuantileDetector(low=1.1)
         with self.assertRaises(ValueError):
             QuantileDetector(low=-0.2)
+        with self.assertRaises(ValueError):
+            QuantileDetector(low=[-0.2, 0.3])
+
+        # Parameter high must be higher than parameter low
+        with self.assertRaises(ValueError):
+            QuantileDetector(low=0.7, high=0.2)
+        with self.assertRaises(ValueError):
+            QuantileDetector(low=[0.2, 0.9], high=[0.95, 0.1])
+        with self.assertRaises(ValueError):
+            QuantileDetector(low=0.2, high=[0.95, 0.1])
+        with self.assertRaises(ValueError):
+            QuantileDetector(low=[0.2, 0.9], high=0.8)
+
+        # Parameter high/low cannot be sequence of only None
+        with self.assertRaises(ValueError):
+            QuantileDetector(low=[None, None, None])
+        with self.assertRaises(ValueError):
+            QuantileDetector(high=[None, None, None])
+        with self.assertRaises(ValueError):
+            QuantileDetector(low=[None], high=[None, None, None])
+
+        # widths of series used for fitting must match the number of values given for high or/and low,
+        # if high and low have a length higher than 1
+
+        detector = QuantileDetector(low=0.1, high=[0.8, 0.7])
+        with self.assertRaises(ValueError):
+            detector.fit(self.train)
+        with self.assertRaises(ValueError):
+            detector.fit([self.train, self.mts_train])
+
+        detector = QuantileDetector(low=[0.1, 0.2], high=[0.8, 0.9])
+        with self.assertRaises(ValueError):
+            detector.fit(self.train)
+        with self.assertRaises(ValueError):
+            detector.fit([self.train, self.mts_train])
+
+        detector = QuantileDetector(low=[0.1, 0.2], high=0.8)
+        with self.assertRaises(ValueError):
+            detector.fit(self.train)
+        with self.assertRaises(ValueError):
+            detector.fit([self.train, self.mts_train])
+
+        detector = QuantileDetector(low=[0.1, 0.2])
+        with self.assertRaises(ValueError):
+            detector.fit(self.train)
+        with self.assertRaises(ValueError):
+            detector.fit([self.train, self.mts_train])
+
+        detector = QuantileDetector(high=[0.1, 0.2])
+        with self.assertRaises(ValueError):
+            detector.fit(self.train)
+        with self.assertRaises(ValueError):
+            detector.fit([self.train, self.mts_train])
+
+        # widths of series used for scoring must match the number of values given for high or/and low,
+        # if high and low have a length higher than 1
+
+        detector = QuantileDetector(low=0.1, high=[0.8, 0.7])
+        detector.fit(self.mts_train)
+        with self.assertRaises(ValueError):
+            detector.detect(self.train)
+        with self.assertRaises(ValueError):
+            detector.detect([self.train, self.mts_train])
+
+        detector = QuantileDetector(low=[0.1, 0.2], high=[0.8, 0.9])
+        detector.fit(self.mts_train)
+        with self.assertRaises(ValueError):
+            detector.detect(self.train)
+        with self.assertRaises(ValueError):
+            detector.detect([self.train, self.mts_train])
+
+        detector = QuantileDetector(low=[0.1, 0.2], high=0.8)
+        detector.fit(self.mts_train)
+        with self.assertRaises(ValueError):
+            detector.detect(self.train)
+        with self.assertRaises(ValueError):
+            detector.detect([self.train, self.mts_train])
+
+        detector = QuantileDetector(low=[0.1, 0.2])
+        detector.fit(self.mts_train)
+        with self.assertRaises(ValueError):
+            detector.detect(self.train)
+        with self.assertRaises(ValueError):
+            detector.detect([self.train, self.mts_train])
+
+        detector = QuantileDetector(high=[0.1, 0.2])
+        detector.fit(self.mts_train)
+        with self.assertRaises(ValueError):
+            detector.detect(self.train)
+        with self.assertRaises(ValueError):
+            detector.detect([self.train, self.mts_train])
 
         detector = QuantileDetector(low=0.05, high=0.95)
         detector.fit(self.train)
@@ -255,7 +354,113 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         )
 
         # multivariate test
-        detector = QuantileDetector(low=0.05, high=0.95)
+        detector_1param = QuantileDetector(low=0.05, high=0.95)
+        detector_1param.fit(self.mts_train)
+        binary_detection = detector_1param.detect(self.mts_test)
+
+        # if two values are given for low and high, and a series of width 2 is given, then the results must
+        # be the same as a detector that was given only one value for low and high.
+        # (will duplicate the value for each width)
+        detector_2param = QuantileDetector(low=[0.05, 0.05], high=[0.95, 0.95])
+        detector_2param.fit(self.mts_train)
+        binary_detection_2param = detector_2param.detect(self.mts_test)
+        self.assertEqual(binary_detection, binary_detection_2param)
+
+        # width of output must be equal to 2 (same dimension as input)
+        self.assertEqual(binary_detection.width, 2)
+        self.assertEqual(
+            len(
+                detector_1param.eval_accuracy(
+                    self.mts_anomalies, self.mts_test, metric="accuracy"
+                )
+            ),
+            2,
+        )
+        self.assertEqual(
+            len(
+                detector_1param.eval_accuracy(
+                    self.mts_anomalies, self.mts_test, metric="recall"
+                )
+            ),
+            2,
+        )
+        self.assertEqual(
+            len(
+                detector_1param.eval_accuracy(
+                    self.mts_anomalies, self.mts_test, metric="f1"
+                )
+            ),
+            2,
+        )
+        self.assertEqual(
+            len(
+                detector_1param.eval_accuracy(
+                    self.mts_anomalies, self.mts_test, metric="precision"
+                )
+            ),
+            2,
+        )
+
+        abs_low_ = detector_1param.abs_low_.flatten()
+        abs_high_ = detector_1param.abs_high_.flatten()
+
+        # detector_1param parameter 'abs_high_' must be equal to 10.83047 when trained
+        # on the series 'train' for the 1st width
+        self.assertAlmostEqual(abs_high_[0], 10.83047, delta=1e-05)
+        # detector_1param parameter 'abs_high_' must be equal to 6.47822 when trained
+        # on the series 'train' for the 2nd width
+        self.assertAlmostEqual(abs_high_[1], 6.47822, delta=1e-05)
+
+        # detector_1param parameter 'abs_low_' must be equal to 9.20248 when trained
+        # on the series 'train' for the 1st width
+        self.assertAlmostEqual(abs_low_[0], 9.20248, delta=1e-05)
+        # detector_1param parameter 'abs_low_' must be equal to 3.61853 when trained
+        # on the series 'train' for the 2nd width
+        self.assertAlmostEqual(abs_low_[1], 3.61853, delta=1e-05)
+
+        # detector_1param must found 37 anomalies on the first width of the series 'test'
+        self.assertEqual(
+            binary_detection["0"].sum(axis=0).all_values().flatten()[0], 37
+        )
+        # detector_1param must found 38 anomalies on the second width of the series 'test'
+        self.assertEqual(
+            binary_detection["1"].sum(axis=0).all_values().flatten()[0], 38
+        )
+
+        acc = detector_1param.eval_accuracy(
+            self.mts_anomalies, self.mts_test, metric="accuracy"
+        )
+        # detector_1param must have an accuracy of 0.58 on the first width of the series 'mts_test'
+        self.assertAlmostEqual(acc[0], 0.58, delta=1e-05)
+        # detector_1param must have an accuracy of 0.58 on the second width of the series 'mts_test'
+        self.assertAlmostEqual(acc[1], 0.58, delta=1e-05)
+
+        precision = detector_1param.eval_accuracy(
+            self.mts_anomalies, self.mts_test, metric="precision"
+        )
+        # detector_1param must have an precision of 0.08108 on the first width of the series 'mts_test'
+        self.assertAlmostEqual(precision[0], 0.08108, delta=1e-05)
+        # detector_1param must have an precision of 0.07894 on the second width of the series 'mts_test'
+        self.assertAlmostEqual(precision[1], 0.07894, delta=1e-05)
+
+        recall = detector_1param.eval_accuracy(
+            self.mts_anomalies, self.mts_test, metric="recall"
+        )
+        # detector_1param must have an recall of 0.2727 on the first width of the series 'mts_test'
+        self.assertAlmostEqual(recall[0], 0.27272, delta=1e-05)
+        # detector_1param must have an recall of 0.3 on the second width of the series 'mts_test'
+        self.assertAlmostEqual(recall[1], 0.3, delta=1e-05)
+
+        f1 = detector_1param.eval_accuracy(
+            self.mts_anomalies, self.mts_test, metric="f1"
+        )
+        # detector_1param must have an f1 of 0.125 on the first width of the series 'mts_test'
+        self.assertAlmostEqual(f1[0], 0.125, delta=1e-05)
+        # detector_1param must have an f1 of 0.125 on the second width of the series 'mts_test'
+        self.assertAlmostEqual(f1[1], 0.125, delta=1e-05)
+
+        # exemple multivariate with Nones
+        detector = QuantileDetector(low=[0.05, None], high=[None, 0.95])
         detector.fit(self.mts_train)
         binary_detection = detector.detect(self.mts_test)
 
@@ -290,57 +495,44 @@ class ADDetectorsTestCase(DartsBaseTestClass):
             2,
         )
 
-        abs_low_ = detector.abs_low_.flatten()
-        abs_high_ = detector.abs_high_.flatten()
-
-        # detector parameter 'abs_high_' must be equal to 10.83047 when trained on the series 'train' for the 1st width
-        self.assertAlmostEqual(abs_high_[0], 10.83047, delta=1e-05)
-        # detector parameter 'abs_high_' must be equal to 6.47822 when trained on the series 'train' for the 2nd width
-        self.assertAlmostEqual(abs_high_[1], 6.47822, delta=1e-05)
-
-        # detector parameter 'abs_low_' must be equal to 9.20248 when trained on the series 'train' for the 1st width
-        self.assertAlmostEqual(abs_low_[0], 9.20248, delta=1e-05)
-        # detector parameter 'abs_low_' must be equal to 3.61853 when trained on the series 'train' for the 2nd width
-        self.assertAlmostEqual(abs_low_[1], 3.61853, delta=1e-05)
-
-        # detector must found 37 anomalies on the first width of the series 'test'
+        # detector must found 26 anomalies on the first width of the series 'test'
         self.assertEqual(
-            binary_detection["0"].sum(axis=0).all_values().flatten()[0], 37
+            binary_detection["0"].sum(axis=0).all_values().flatten()[0], 26
         )
-        # detector must found 38 anomalies on the second width of the series 'test'
+        # detector must found 24 anomalies on the second width of the series 'test'
         self.assertEqual(
-            binary_detection["1"].sum(axis=0).all_values().flatten()[0], 38
+            binary_detection["1"].sum(axis=0).all_values().flatten()[0], 24
         )
 
         acc = detector.eval_accuracy(
             self.mts_anomalies, self.mts_test, metric="accuracy"
         )
-        # detector must have an accuracy of 0.58 on the first width of the series 'mts_test'
-        self.assertAlmostEqual(acc[0], 0.58, delta=1e-05)
-        # detector must have an accuracy of 0.58 on the second width of the series 'mts_test'
-        self.assertAlmostEqual(acc[1], 0.58, delta=1e-05)
+        # detector must have an accuracy of 0.67 on the first width of the series 'mts_test'
+        self.assertAlmostEqual(acc[0], 0.67, delta=1e-05)
+        # detector must have an accuracy of 0.7 on the second width of the series 'mts_test'
+        self.assertAlmostEqual(acc[1], 0.7, delta=1e-05)
 
         precision = detector.eval_accuracy(
             self.mts_anomalies, self.mts_test, metric="precision"
         )
-        # detector must have an precision of 0.08108 on the first width of the series 'mts_test'
-        self.assertAlmostEqual(precision[0], 0.08108, delta=1e-05)
-        # detector must have an precision of 0.07894 on the second width of the series 'mts_test'
-        self.assertAlmostEqual(precision[1], 0.07894, delta=1e-05)
+        # detector must have an precision of 0.07692 and  on the first width of the series 'mts_test'
+        self.assertAlmostEqual(precision[0], 0.07692, delta=1e-05)
+        # detector must have an precision of 0.08333 on the second width of the series 'mts_test'
+        self.assertAlmostEqual(precision[1], 0.08333, delta=1e-05)
 
         recall = detector.eval_accuracy(
             self.mts_anomalies, self.mts_test, metric="recall"
         )
-        # detector must have an recall of 0.2727 on the first width of the series 'mts_test'
-        self.assertAlmostEqual(recall[0], 0.27272, delta=1e-05)
-        # detector must have an recall of 0.3 on the second width of the series 'mts_test'
-        self.assertAlmostEqual(recall[1], 0.3, delta=1e-05)
+        # detector must have an recall of 0.18181 on the first width of the series 'mts_test'
+        self.assertAlmostEqual(recall[0], 0.18181, delta=1e-05)
+        # detector must have an recall of 0.2 on the second width of the series 'mts_test'
+        self.assertAlmostEqual(recall[1], 0.2, delta=1e-05)
 
         f1 = detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="f1")
-        # detector must have an f1 of 0.125 on the first width of the series 'mts_test'
-        self.assertAlmostEqual(f1[0], 0.125, delta=1e-05)
-        # detector must have an f1 of 0.125 on the second width of the series 'mts_test'
-        self.assertAlmostEqual(f1[1], 0.125, delta=1e-05)
+        # detector must have an f1 of 0.10810 on the first width of the series 'mts_test'
+        self.assertAlmostEqual(f1[0], 0.10810, delta=1e-05)
+        # detector must have an f1 of 0.11764 on the second width of the series 'mts_test'
+        self.assertAlmostEqual(f1[1], 0.11764, delta=1e-05)
 
     def test_ThresholdDetector(self):
 
@@ -351,17 +543,76 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             ThresholdDetector(low=None, high=None)
 
-        # Parameter low must be int or float
+        # Parameter low must be int/float or Sequence of float/int
         with self.assertRaises(ValueError):
-            ThresholdDetector(low="1")
+            ThresholdDetector(low="0.5")
         with self.assertRaises(ValueError):
-            ThresholdDetector(low=[1])
+            ThresholdDetector(low=[0.2, "0.1"])
 
-        # Parameter high must be int or float
+        # Parameter high must be int/float or Sequence of float/int
         with self.assertRaises(ValueError):
-            ThresholdDetector(high="1")
+            ThresholdDetector(high="0.5")
         with self.assertRaises(ValueError):
-            ThresholdDetector(high=[1])
+            ThresholdDetector(high=[0.2, "0.1"])
+
+        # if high and low are both sequences of length>1, they must be of the same size
+        with self.assertRaises(ValueError):
+            ThresholdDetector(low=[0.2, 0.1], high=[0.95, 0.8, 0.9])
+        with self.assertRaises(ValueError):
+            ThresholdDetector(low=[0.2, 0.1, 0.7], high=[0.95, 0.8])
+
+        # Parameter high must be higher than parameter low
+        with self.assertRaises(ValueError):
+            ThresholdDetector(low=0.7, high=0.2)
+        with self.assertRaises(ValueError):
+            ThresholdDetector(low=[0.2, 0.9], high=[0.95, 0.1])
+        with self.assertRaises(ValueError):
+            ThresholdDetector(low=0.2, high=[0.95, 0.1])
+        with self.assertRaises(ValueError):
+            ThresholdDetector(low=[0.2, 0.9], high=0.8)
+        with self.assertRaises(ValueError):
+            ThresholdDetector(low=[0.2, 0.9, None], high=0.8)
+
+        # Parameter high/low cannot be sequence of only None
+        with self.assertRaises(ValueError):
+            ThresholdDetector(low=[None, None, None])
+        with self.assertRaises(ValueError):
+            ThresholdDetector(high=[None, None, None])
+        with self.assertRaises(ValueError):
+            ThresholdDetector(low=[None], high=[None, None, None])
+
+        # widths of series used for scoring must match the number of values given for high or/and low,
+        # if high and low have a length higher than 1
+
+        detector = ThresholdDetector(low=0.1, high=[0.8, 0.7])
+        with self.assertRaises(ValueError):
+            detector.detect(self.train)
+        with self.assertRaises(ValueError):
+            detector.detect([self.train, self.mts_train])
+
+        detector = ThresholdDetector(low=[0.1, 0.2], high=[0.8, 0.9])
+        with self.assertRaises(ValueError):
+            detector.detect(self.train)
+        with self.assertRaises(ValueError):
+            detector.detect([self.train, self.mts_train])
+
+        detector = ThresholdDetector(low=[0.1, 0.2], high=0.8)
+        with self.assertRaises(ValueError):
+            detector.detect(self.train)
+        with self.assertRaises(ValueError):
+            detector.detect([self.train, self.mts_train])
+
+        detector = ThresholdDetector(low=[0.1, 0.2])
+        with self.assertRaises(ValueError):
+            detector.detect(self.train)
+        with self.assertRaises(ValueError):
+            detector.detect([self.train, self.mts_train])
+
+        detector = ThresholdDetector(high=[0.1, 0.2])
+        with self.assertRaises(ValueError):
+            detector.detect(self.train)
+        with self.assertRaises(ValueError):
+            detector.detect([self.train, self.mts_train])
 
         detector = ThresholdDetector(low=9.5, high=10.5)
         binary_detection = detector.detect(self.test)
@@ -408,6 +659,13 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         # multivariate test
         detector = ThresholdDetector(low=4.8, high=10.5)
         binary_detection = detector.detect(self.mts_test)
+
+        # if two values are given for low and high, and a series of width 2 is given,
+        # then the results must be the same as a detector that was given only one value
+        # for low and high. (will duplicate the value for each width)
+        detector_2param = ThresholdDetector(low=[4.8, 4.8], high=[10.5, 10.5])
+        binary_detection_2param = detector_2param.detect(self.mts_test)
+        self.assertEqual(binary_detection, binary_detection_2param)
 
         # width of output must be equal to 2 (same dimension as input)
         self.assertEqual(binary_detection.width, 2)
@@ -462,8 +720,8 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         )
         # detector must have an precision of 0.17857 on the first width of the series 'mts_test'
         self.assertAlmostEqual(precision[0], 0.17857, delta=1e-05)
-        # detector must have an precision of 0.096153 on the second width of the series 'mts_test'
-        self.assertAlmostEqual(precision[1], 0.096153, delta=1e-05)
+        # detector must have an precision of 0.09615 on the second width of the series 'mts_test'
+        self.assertAlmostEqual(precision[1], 0.09615, delta=1e-05)
 
         recall = detector.eval_accuracy(
             self.mts_anomalies, self.mts_test, metric="recall"
@@ -478,6 +736,80 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         self.assertAlmostEqual(f1[0], 0.25641, delta=1e-05)
         # detector must have an f1 of 0.16129 on the second width of the series 'mts_test'
         self.assertAlmostEqual(f1[1], 0.16129, delta=1e-05)
+
+        # exemple multivariate with Nones
+        detector = ThresholdDetector(low=[10, None], high=[None, 5])
+        binary_detection = detector.detect(self.mts_test)
+
+        # width of output must be equal to 2 (same dimension as input)
+        self.assertEqual(binary_detection.width, 2)
+        self.assertEqual(
+            len(
+                detector.eval_accuracy(
+                    self.mts_anomalies, self.mts_test, metric="accuracy"
+                )
+            ),
+            2,
+        )
+        self.assertEqual(
+            len(
+                detector.eval_accuracy(
+                    self.mts_anomalies, self.mts_test, metric="recall"
+                )
+            ),
+            2,
+        )
+        self.assertEqual(
+            len(detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="f1")),
+            2,
+        )
+        self.assertEqual(
+            len(
+                detector.eval_accuracy(
+                    self.mts_anomalies, self.mts_test, metric="precision"
+                )
+            ),
+            2,
+        )
+
+        # detector must found 48 anomalies on the first width of the series 'test'
+        self.assertEqual(
+            binary_detection["0"].sum(axis=0).all_values().flatten()[0], 48
+        )
+        # detector must found 43 anomalies on the second width of the series 'test'
+        self.assertEqual(
+            binary_detection["1"].sum(axis=0).all_values().flatten()[0], 43
+        )
+
+        acc = detector.eval_accuracy(
+            self.mts_anomalies, self.mts_test, metric="accuracy"
+        )
+        # detector must have an accuracy of 0.51 on the first width of the series 'mts_test'
+        self.assertAlmostEqual(acc[0], 0.51, delta=1e-05)
+        # detector must have an accuracy of 0.57 on the second width of the series 'mts_test'
+        self.assertAlmostEqual(acc[1], 0.57, delta=1e-05)
+
+        precision = detector.eval_accuracy(
+            self.mts_anomalies, self.mts_test, metric="precision"
+        )
+        # detector must have an precision of 0.10416 and  on the first width of the series 'mts_test'
+        self.assertAlmostEqual(precision[0], 0.10416, delta=1e-05)
+        # detector must have an precision of 0.11627 on the second width of the series 'mts_test'
+        self.assertAlmostEqual(precision[1], 0.11627, delta=1e-05)
+
+        recall = detector.eval_accuracy(
+            self.mts_anomalies, self.mts_test, metric="recall"
+        )
+        # detector must have an recall of 0.45454 on the first width of the series 'mts_test'
+        self.assertAlmostEqual(recall[0], 0.45454, delta=1e-05)
+        # detector must have an recall of 0.5 on the second width of the series 'mts_test'
+        self.assertAlmostEqual(recall[1], 0.5, delta=1e-05)
+
+        f1 = detector.eval_accuracy(self.mts_anomalies, self.mts_test, metric="f1")
+        # detector must have an f1 of 0.16949 on the first width of the series 'mts_test'
+        self.assertAlmostEqual(f1[0], 0.16949, delta=1e-05)
+        # detector must have an f1 of 0.18867 on the second width of the series 'mts_test'
+        self.assertAlmostEqual(f1[1], 0.18867, delta=1e-05)
 
     def test_fit_detect(self):
 
