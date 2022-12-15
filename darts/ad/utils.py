@@ -64,6 +64,11 @@ def eval_accuracy_from_scores(
         - `actual_anomalies` and `anomaly_score` are the same type, length, width/dimension
         - `actual_anomalies` is binary and has values belonging to the two classes (1 and 0)
 
+    If one series is given for `actual_anomalies` and `anomaly_score` contains more than
+    one series, the function will consider `actual_anomalies` as the true anomalies for
+    all scores in `anomaly_score`.
+
+
     Parameters
     ----------
     actual_anomalies
@@ -109,6 +114,10 @@ def eval_accuracy_from_scores(
         _to_list(anomaly_score),
         _to_list(window),
     )
+
+    if len(list_actual_anomalies) == 1 and len(list_anomaly_scores) > 1:
+        list_actual_anomalies = list_actual_anomalies * len(list_anomaly_scores)
+
     _same_length(list_actual_anomalies, list_anomaly_scores)
 
     if len(list_window) == 1:

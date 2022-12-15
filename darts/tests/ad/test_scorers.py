@@ -318,14 +318,15 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
                 actual_anomalies=self.only_1_anomalies, series=self.test
             )
 
-        # 'actual_anomalies' must match the number of series
-        with self.assertRaises(ValueError):
-            fittable_scorer.eval_accuracy(
-                actual_anomalies=self.anomalies, series=[self.test, self.test]
-            )
+        # 'actual_anomalies' must match the number of series if length higher than 1
         with self.assertRaises(ValueError):
             fittable_scorer.eval_accuracy(
                 actual_anomalies=[self.anomalies, self.anomalies], series=self.test
+            )
+        with self.assertRaises(ValueError):
+            fittable_scorer.eval_accuracy(
+                actual_anomalies=[self.anomalies, self.anomalies],
+                series=[self.test, self.test, self.test],
             )
 
         # 'actual_anomalies' must have non empty intersection with 'series'
@@ -394,12 +395,16 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
                     pred_series=self.modified_test,
                 )
 
-            # 'actual_anomalies' must match the number of series
+            # 'actual_anomalies' must match the number of series if length higher than 1
             with self.assertRaises(ValueError):
                 scorer.eval_accuracy_from_prediction(
-                    actual_anomalies=self.anomalies,
-                    actual_series=[self.test, self.test],
-                    pred_series=[self.modified_test, self.modified_test],
+                    actual_anomalies=[self.anomalies, self.anomalies],
+                    actual_series=[self.test, self.test, self.test],
+                    pred_series=[
+                        self.modified_test,
+                        self.modified_test,
+                        self.modified_test,
+                    ],
                 )
             with self.assertRaises(ValueError):
                 scorer.eval_accuracy_from_prediction(

@@ -27,10 +27,14 @@ ground-truth time series indicating the presence of actual anomalies.
 
 
 from abc import ABC, abstractmethod
-from typing import Sequence, Union
+from typing import Dict, Sequence, Union
 
 from darts.ad.scorers.scorers import AnomalyScorer
-from darts.ad.utils import _to_list, show_anomalies_from_scores
+from darts.ad.utils import (
+    _to_list,
+    eval_accuracy_from_scores,
+    show_anomalies_from_scores,
+)
 from darts.logging import raise_if_not
 from darts.timeseries import TimeSeries
 
@@ -125,3 +129,44 @@ class AnomalyModel(ABC):
             title=title,
             metric=metric,
         )
+
+    def _eval_accuracy_from_scores(
+        self,
+        list_actual_anomalies: Sequence[TimeSeries],
+        list_anomaly_scores: Sequence[TimeSeries],
+        metric: str,
+    ) -> Union[Sequence[Dict[str, float]], Sequence[Dict[str, Sequence[float]]]]:
+        """Internal function that computes the accuracy of the anomaly scores
+        computed by the model. Called by the function eval_accuracy().
+        """
+        windows = [s.window for s in self.scorers]
+
+        # create a list of unique names for each scorer that
+        # will be used as keys for the dictionary containing
+        # the accuracy of each scorer.
+        name_scorers = []
+        for idx, scorer in enumerate(self.scorers):
+            name = scorer.__str__() + "_w" + str(scorer.window)
+
+            if name in name_scorers:
+                i = 1
+                new_name = name + "_" + str(i)
+                while new_name in name_scorers:
+                    i = i + 1
+                    new_name = name + "_" + str(i)
+                name = new_name
+
+            name_scorers.append(name)
+
+        acc = []
+        for anomalies, scores in zip(list_actual_anomalies, list_anomaly_scores):
+            acc.append(
+                eval_accuracy_from_scores(
+                    actual_anomalies=anomalies,
+                    anomaly_score=scores,
+                    window=windows,
+                    metric=metric,
+                )
+            )
+
+        return [dict(zip(name_scorers, scorer_values)) for scorer_values in acc]
