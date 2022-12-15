@@ -77,7 +77,7 @@ class NaiveSeasonal(LocalForecastingModel):
             f"The time series requires at least K={self.K} points",
             logger,
         )
-        self.last_k_vals = series.values()[-self.K :, :]
+        self.last_k_vals = series.values(copy=False)[-self.K :, :]
         return self
 
     def predict(self, n: int, num_samples: int = 1, verbose: bool = False):
