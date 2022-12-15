@@ -663,28 +663,37 @@ class ForecastingAnomalyModel(AnomalyModel):
             num_samples=num_samples,
         )
 
-        acc_anomaly_scores = []
-        for anomalies, scores in zip(list_actual_anomalies, list_anomaly_scores):
+        windows = [s.window for s in self.scorers]
+        nbr_scorers = len(windows)
 
-            scorer_results = {}
-            for idx, scorer in enumerate(self.scorers):
-                name = scorer.__str__() + "_w" + str(scorer.window)
+        name_scorers = []
+        for idx, scorer in enumerate(self.scorers):
+            name = scorer.__str__() + "_w" + str(scorer.window)
 
-                if name in scorer_results:
-                    i = 1
+            if name in name_scorers:
+                i = 1
+                new_name = name + "_" + str(i)
+                while new_name in name_scorers:
+                    i = i + 1
                     new_name = name + "_" + str(i)
-                    while new_name in scorer_results:
-                        i = i + 1
-                        new_name = name + "_" + str(i)
-                    name = new_name
+                name = new_name
 
-                scorer_results[name] = eval_accuracy_from_scores(
-                    actual_anomalies=anomalies,
-                    anomaly_score=scores[idx],
-                    window=scorer.window,
+            name_scorers.append(name)
+
+        sol = []
+        for anomalies, scores in zip(list_actual_anomalies, list_anomaly_scores):
+            sol.append(
+                eval_accuracy_from_scores(
+                    actual_anomalies=[anomalies] * nbr_scorers,
+                    anomaly_score=scores,
+                    window=windows,
                     metric=metric,
                 )
-            acc_anomaly_scores.append(scorer_results)
+            )
+
+        acc_anomaly_scores = [
+            dict(zip(name_scorers, scorer_values)) for scorer_values in sol
+        ]
 
         if len(acc_anomaly_scores) == 1 and not isinstance(series, Sequence):
             return acc_anomaly_scores[0]
