@@ -103,15 +103,13 @@ class PyODScorer(FittableAnomalyScorer):
         if not self.component_wise:
 
             np_anomaly_score.append(
-                np.exp(
-                    self.model.decision_function(
-                        np.array(
-                            [
-                                np.array(np_series[i : i + self.window])
-                                for i in range(len(series) - self.window + 1)
-                            ]
-                        ).reshape(-1, self.window * series.width)
-                    )
+                self.model.decision_function(
+                    np.array(
+                        [
+                            np.array(np_series[i : i + self.window])
+                            for i in range(len(series) - self.window + 1)
+                        ]
+                    ).reshape(-1, self.window * series.width)
                 )
             )
         else:
@@ -126,7 +124,7 @@ class PyODScorer(FittableAnomalyScorer):
                     ).reshape(-1, self.window)
                 )
 
-                np_anomaly_score.append(np.exp(np_anomaly_score_width))
+                np_anomaly_score.append(np_anomaly_score_width)
 
         return TimeSeries.from_times_and_values(
             series.time_index[self.window - 1 :], list(zip(*np_anomaly_score))

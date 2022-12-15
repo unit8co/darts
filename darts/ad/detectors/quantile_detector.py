@@ -148,7 +148,6 @@ class QuantileDetector(FittableDetector):
         are beyond the thresholds (lower and upper).
         """
 
-        # peut etre enlever
         if lower is not None:
             if len(lower) != len(np_data):
                 lower = lower * len(np_data)
