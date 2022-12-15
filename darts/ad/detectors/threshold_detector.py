@@ -33,7 +33,7 @@ class ThresholdDetector(NonFittableDetector):
 
         raise_if(
             low is None and high is None,
-            "At least one parameter must be not None (low and high both None)",
+            "At least one parameter must be not None (`low` and `high`are both None).",
         )
 
         self._check_param(low, "low")
@@ -49,12 +49,12 @@ class ThresholdDetector(NonFittableDetector):
         self.high = high
 
     def _check_param(self, param: Union[int, float, None], name_param: str):
-        "Checks if parameter `param` is of type float or int if not None"
+        "Checks if parameter `param` is of type float or int if not None."
 
         if param is not None:
             raise_if_not(
                 isinstance(param, (float, int)),
-                f"Parameter {name_param} must be of type float, found type {type(param)}",
+                f"Parameter `{name_param}` must be of type float, found type {type(param)}.",
             )
 
     def _detect_core(self, series: TimeSeries) -> TimeSeries:
@@ -68,4 +68,4 @@ class ThresholdDetector(NonFittableDetector):
             int
         )
 
-        return TimeSeries.from_times_and_values(series._time_index, detected)
+        return TimeSeries.from_times_and_values(series.time_index, detected)

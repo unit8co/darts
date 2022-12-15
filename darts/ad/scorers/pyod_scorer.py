@@ -6,7 +6,7 @@ Scorer wrapped around the individual detection algorithms of PyOD.
 `PyOD https://pyod.readthedocs.io/en/latest/#`_.
 """
 
-from typing import Optional, Sequence
+from typing import Sequence
 
 import numpy as np
 from pyod.models.base import BaseDetector
@@ -22,29 +22,29 @@ class PyODScorer(FittableAnomalyScorer):
     def __init__(
         self,
         model,
-        window: Optional[int] = None,
+        window: int = 1,
         component_wise: bool = False,
         diff_fn="abs_diff",
     ) -> None:
 
         raise_if_not(
             isinstance(model, BaseDetector),
-            f"model must be a PyOD BaseDetector, found type: {type(component_wise)}",
+            f"model must be a PyOD BaseDetector, found type: {type(model)}",
         )
         self.model = model
 
         raise_if_not(
             type(component_wise) is bool,
-            f"'component_wise' must be Boolean, found type: {type(component_wise)}",
+            f"Parameter `component_wise` must be Boolean, found type: {type(component_wise)}.",
         )
         self.component_wise = component_wise
 
         super().__init__(
-            returns_UTS=(not component_wise), window=window, diff_fn=diff_fn
+            univariate_scorer=(not component_wise), window=window, diff_fn=diff_fn
         )
 
     def __str__(self):
-        return "PyODScorer model: {}".format(self.model.__str__().split("(")[0])
+        return "PyODScorer (model {})".format(self.model.__str__().split("(")[0])
 
     def _fit_core(self, list_series: Sequence[TimeSeries]):
 
@@ -91,9 +91,9 @@ class PyODScorer(FittableAnomalyScorer):
 
         raise_if_not(
             self.width_trained_on == series.width,
-            "Input must have the same width of the data used for training the PyODScorer model {}, found \
-            width: {} and {}".format(
-                self.model.__str__().split("(")[0], self.width_trained_on, series.width
+            "Input must have the same width as the data used for training the PyODScorer"
+            + " model {}, found width {} and expected {}.".format(
+                self.model.__str__().split("(")[0], series.width, self.width_trained_on
             ),
         )
 
@@ -129,5 +129,5 @@ class PyODScorer(FittableAnomalyScorer):
                 np_anomaly_score.append(np.exp(np_anomaly_score_width))
 
         return TimeSeries.from_times_and_values(
-            series._time_index[self.window - 1 :], list(zip(*np_anomaly_score))
+            series.time_index[self.window - 1 :], list(zip(*np_anomaly_score))
         )

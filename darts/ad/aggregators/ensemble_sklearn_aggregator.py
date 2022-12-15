@@ -18,8 +18,8 @@ class EnsembleSklearnAggregator(FittableAggregator):
 
         raise_if_not(
             isinstance(model, BaseEnsemble),
-            f"Scorer is expecting a model of type  BaseEnsemble (from sklearn ensemble), \
-            found type {type(model)}",
+            f"Scorer is expecting a model of type BaseEnsemble (from sklearn ensemble), \
+            found type {type(model)}.",
         )
 
         self.model = model

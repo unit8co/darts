@@ -43,7 +43,7 @@ class QuantileDetector(FittableDetector):
 
         raise_if(
             low is None and high is None,
-            "At least one parameter must be not None (low and high both None)",
+            "At least one parameter must be not None (`low` and `high` are both None).",
         )
 
         self._check_param(low, "low")
@@ -64,12 +64,12 @@ class QuantileDetector(FittableDetector):
         if param is not None:
             raise_if_not(
                 isinstance(param, (float, int)),
-                f"Parameter {name_param} must be of type float, found type {type(param)}",
+                f"Parameter `{name_param}` must be of type float, found type {type(param)}.",
             )
 
             raise_if_not(
                 param >= 0 and param <= 1,
-                f"Parameter {name_param} must be between 0 and 1, found value {param}",
+                f"Parameter `{name_param}` must be between 0 and 1, found value {param}.",
             )
 
     def _fit_core(self, list_series: Sequence[TimeSeries]) -> None:
@@ -115,6 +115,4 @@ class QuantileDetector(FittableDetector):
                 ).astype(int)
             )
 
-        return TimeSeries.from_times_and_values(
-            series._time_index, list(zip(*detected))
-        )
+        return TimeSeries.from_times_and_values(series.time_index, list(zip(*detected)))

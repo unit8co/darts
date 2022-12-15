@@ -46,25 +46,25 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
     probabilistic = TimeSeries.from_values(np_probabilistic)
 
     # multivariate series
-    np_MTS_train = np.random.normal(loc=[10, 5], scale=[0.5, 1], size=[100, 2])
-    MTS_train = TimeSeries.from_values(np_MTS_train)
+    np_mts_train = np.random.normal(loc=[10, 5], scale=[0.5, 1], size=[100, 2])
+    mts_train = TimeSeries.from_values(np_mts_train)
 
     np_anomalies = np.random.choice(a=[0, 1], size=[100, 2], p=[0.5, 0.5])
-    MTS_anomalies1 = TimeSeries.from_times_and_values(train._time_index, np_anomalies)
+    mts_anomalies1 = TimeSeries.from_times_and_values(train._time_index, np_anomalies)
 
     np_anomalies = np.random.choice(a=[0, 1], size=[100, 2], p=[0.5, 0.5])
-    MTS_anomalies2 = TimeSeries.from_times_and_values(train._time_index, np_anomalies)
+    mts_anomalies2 = TimeSeries.from_times_and_values(train._time_index, np_anomalies)
 
     np_anomalies = np.random.choice(a=[0, 1], size=[100, 2], p=[0.5, 0.5])
-    MTS_anomalies3 = TimeSeries.from_times_and_values(train._time_index, np_anomalies)
+    mts_anomalies3 = TimeSeries.from_times_and_values(train._time_index, np_anomalies)
 
-    np_MTS_real_anomalies = np.random.choice(a=[0, 1], size=[100, 2], p=[0.9, 0.1])
-    MTS_real_anomalies = TimeSeries.from_times_and_values(
-        train._time_index, np_MTS_real_anomalies
+    np_mts_real_anomalies = np.random.choice(a=[0, 1], size=[100, 2], p=[0.9, 0.1])
+    mts_real_anomalies = TimeSeries.from_times_and_values(
+        train._time_index, np_mts_real_anomalies
     )
 
     np_probabilistic = np.random.choice(a=[0, 1], p=[0.5, 0.5], size=[100, 2, 5])
-    MTS_probabilistic = TimeSeries.from_values(np_probabilistic)
+    mts_probabilistic = TimeSeries.from_values(np_probabilistic)
 
     def test_DetectNonFittableAggregator(self):
 
@@ -80,7 +80,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
         # Check if return type is TimeSeries when input is Sequence of multivariate series
         self.assertTrue(
             isinstance(
-                aggregator.predict([self.MTS_anomalies1, self.MTS_anomalies2]),
+                aggregator.predict([self.mts_anomalies1, self.mts_anomalies2]),
                 TimeSeries,
             )
         )
@@ -98,12 +98,12 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
         )
 
         aggregator.fit(
-            self.MTS_real_anomalies, [self.MTS_anomalies1, self.MTS_anomalies2]
+            self.mts_real_anomalies, [self.mts_anomalies1, self.mts_anomalies2]
         )
         # Check if return type is TimeSeries when input is Sequence of multivariate series
         self.assertTrue(
             isinstance(
-                aggregator.predict([self.MTS_anomalies1, self.MTS_anomalies2]),
+                aggregator.predict([self.mts_anomalies1, self.mts_anomalies2]),
                 TimeSeries,
             )
         )
@@ -126,7 +126,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
         self.assertTrue(
             isinstance(
                 aggregator.eval_accuracy(
-                    self.MTS_real_anomalies, [self.MTS_anomalies1, self.MTS_anomalies2]
+                    self.mts_real_anomalies, [self.mts_anomalies1, self.mts_anomalies2]
                 ),
                 Sequence,
             )
@@ -144,8 +144,8 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
             # intersection between 'actual_anomalies' and the series in the sequence 'list_series'
             # must be non empty (multivariate)
             aggregator.eval_accuracy(
-                self.MTS_real_anomalies[60:],
-                [self.MTS_anomalies1[:40], self.MTS_anomalies1[:40]],
+                self.mts_real_anomalies[60:],
+                [self.mts_anomalies1[:40], self.mts_anomalies1[:40]],
             )
 
         with self.assertRaises(ValueError):
@@ -157,6 +157,13 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
     def test_NonFittableAggregator(self):
 
         for aggregator in list_NonFittableAggregator:
+
+            # name must be of type str
+            self.assertEqual(
+                type(aggregator.__str__()),
+                str,
+            )
+
             # Check if trainable is False, being a NonFittableAggregator
             self.assertTrue(not aggregator.trainable)
 
@@ -182,15 +189,15 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
 
             with self.assertRaises(ValueError):
                 # input a probabilistic series (multivariate)
-                aggregator.predict([self.MTS_anomalies1, self.MTS_probabilistic])
+                aggregator.predict([self.mts_anomalies1, self.mts_probabilistic])
 
             with self.assertRaises(ValueError):
                 # input an element that is not a series (string)
-                aggregator.predict([self.MTS_anomalies1, "random"])
+                aggregator.predict([self.mts_anomalies1, "random"])
 
             with self.assertRaises(ValueError):
                 # input an element that is not a series (number)
-                aggregator.predict([self.MTS_anomalies1, 1])
+                aggregator.predict([self.mts_anomalies1, 1])
 
             with self.assertRaises(ValueError):
                 # intersection between inputs must be non empty
@@ -201,16 +208,22 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
             self.assertTrue(
                 len(
                     aggregator.eval_accuracy(
-                        self.MTS_real_anomalies,
-                        [self.MTS_anomalies1, self.MTS_anomalies2],
+                        self.mts_real_anomalies,
+                        [self.mts_anomalies1, self.mts_anomalies2],
                     )
                 ),
-                self.MTS_real_anomalies.width,
+                self.mts_real_anomalies.width,
             )
 
     def test_FittableAggregator(self):
 
         for aggregator in list_FittableAggregator:
+
+            # name must be of type str
+            self.assertEqual(
+                type(aggregator.__str__()),
+                str,
+            )
 
             # Need to call fit() before calling predict()
             with self.assertRaises(ValueError):
@@ -225,7 +238,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
             with self.assertRaises(ValueError):
                 # fit on sequence with series that have different width
                 aggregator.fit(
-                    self.real_anomalies, [self.anomalies1, self.MTS_anomalies1]
+                    self.real_anomalies, [self.anomalies1, self.mts_anomalies1]
                 )
 
             with self.assertRaises(ValueError):
@@ -249,17 +262,17 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
             with self.assertRaises(ValueError):
                 # input a probabilistic series (multivariate)
                 aggregator.fit(
-                    self.MTS_real_anomalies,
-                    [self.MTS_anomalies1, self.MTS_probabilistic],
+                    self.mts_real_anomalies,
+                    [self.mts_anomalies1, self.mts_probabilistic],
                 )
 
             with self.assertRaises(ValueError):
                 # input an element that is not a series (string)
-                aggregator.fit(self.MTS_real_anomalies, [self.MTS_anomalies1, "random"])
+                aggregator.fit(self.mts_real_anomalies, [self.mts_anomalies1, "random"])
 
             with self.assertRaises(ValueError):
                 # input an element that is not a series (number)
-                aggregator.fit(self.MTS_real_anomalies, [self.MTS_anomalies1, 1])
+                aggregator.fit(self.mts_real_anomalies, [self.mts_anomalies1, 1])
 
             with self.assertRaises(ValueError):
                 # intersection between inputs must be non empty (univariate)
@@ -270,8 +283,8 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
             with self.assertRaises(ValueError):
                 # intersection between inputs must be non empty (multivariate)
                 aggregator.fit(
-                    self.MTS_real_anomalies,
-                    [self.MTS_anomalies1[:40], self.MTS_anomalies1[60:]],
+                    self.mts_real_anomalies,
+                    [self.mts_anomalies1[:40], self.mts_anomalies1[60:]],
                 )
 
             # case1: fit on UTS
@@ -283,15 +296,15 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
 
             with self.assertRaises(ValueError):
                 # series must be same width as series used for training
-                aggregator1.predict([self.MTS_anomalies1, self.MTS_anomalies2])
+                aggregator1.predict([self.mts_anomalies1, self.mts_anomalies2])
 
             with self.assertRaises(ValueError):
                 # series must be same width as series used for training
-                aggregator1.predict([self.anomalies1, self.MTS_anomalies2])
+                aggregator1.predict([self.anomalies1, self.mts_anomalies2])
 
             with self.assertRaises(ValueError):
                 # series must be same width as series used for training
-                aggregator1.predict([self.MTS_anomalies1, self.anomalies2])
+                aggregator1.predict([self.mts_anomalies1, self.anomalies2])
 
             with self.assertRaises(ValueError):
                 # series must be same length as series used for training
@@ -324,7 +337,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
             # case2: fit on MTS
             aggregator2 = aggregator
             aggregator2.fit(
-                self.MTS_real_anomalies, [self.MTS_anomalies1, self.MTS_anomalies2]
+                self.mts_real_anomalies, [self.mts_anomalies1, self.mts_anomalies2]
             )
 
             # Check if _fit_called is True after being fitted
@@ -336,52 +349,52 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
 
             with self.assertRaises(ValueError):
                 # series must be same width as series used for training
-                aggregator2.predict([self.anomalies1, self.MTS_anomalies2])
+                aggregator2.predict([self.anomalies1, self.mts_anomalies2])
 
             with self.assertRaises(ValueError):
                 # series must be same width as series used for training
-                aggregator2.predict([self.MTS_anomalies1, self.anomalies2])
+                aggregator2.predict([self.mts_anomalies1, self.anomalies2])
 
             with self.assertRaises(ValueError):
                 # series must be same length as series used for training
-                aggregator2.predict([self.MTS_anomalies1])
+                aggregator2.predict([self.mts_anomalies1])
 
             with self.assertRaises(ValueError):
                 # series must be same length as series used for training
                 aggregator2.predict(
-                    [self.MTS_anomalies1, self.MTS_anomalies2, self.MTS_anomalies3]
+                    [self.mts_anomalies1, self.mts_anomalies2, self.mts_anomalies3]
                 )
 
             with self.assertRaises(ValueError):
                 # input a non binary series
-                aggregator.predict([self.MTS_anomalies1, self.MTS_train])
+                aggregator.predict([self.mts_anomalies1, self.mts_train])
 
             with self.assertRaises(ValueError):
                 # input a probabilistic series (univariate)
-                aggregator.predict([self.anomalies1, self.MTS_probabilistic])
+                aggregator.predict([self.anomalies1, self.mts_probabilistic])
 
             with self.assertRaises(ValueError):
                 # input an element that is not a series (string)
-                aggregator.predict([self.MTS_anomalies1, "random"])
+                aggregator.predict([self.mts_anomalies1, "random"])
 
             with self.assertRaises(ValueError):
                 # input an element that is not a series (number)
-                aggregator.predict([self.MTS_anomalies1, 1])
+                aggregator.predict([self.mts_anomalies1, 1])
 
             with self.assertRaises(ValueError):
                 # intersection between inputs must be non empty (univariate)
-                aggregator.predict([self.MTS_anomalies1[:40], self.MTS_anomalies1[60:]])
+                aggregator.predict([self.mts_anomalies1[:40], self.mts_anomalies1[60:]])
 
             # Check width return
             # Check if return type is the same number of width as 'actual_anomalies' (multivariate)
             self.assertTrue(
                 len(
                     aggregator2.eval_accuracy(
-                        self.MTS_real_anomalies,
-                        [self.MTS_anomalies1, self.MTS_anomalies2],
+                        self.mts_real_anomalies,
+                        [self.mts_anomalies1, self.mts_anomalies2],
                     )
                 ),
-                self.MTS_real_anomalies.width,
+                self.mts_real_anomalies.width,
             )
 
     def test_OrAggregator(self):
@@ -437,66 +450,66 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
 
         # multivariate case
         binary_detection = aggregator.predict(
-            [self.MTS_anomalies1, self.MTS_anomalies2]
+            [self.mts_anomalies1, self.mts_anomalies2]
         )
 
         # aggregator must found 76 anomalies on the first width of the results on
-        # [MTS_anomalies1, MTS_anomalies2]
+        # [mts_anomalies1, mts_anomalies2]
         self.assertEqual(
             binary_detection["0"].sum(axis=0).all_values().flatten()[0], 76
         )
         # aggregator must found 81 anomalies on the second width of the results on
-        # [MTS_anomalies1, MTS_anomalies2]
+        # [mts_anomalies1, mts_anomalies2]
         self.assertEqual(
             binary_detection["1"].sum(axis=0).all_values().flatten()[0], 81
         )
 
         acc = aggregator.eval_accuracy(
-            self.MTS_real_anomalies,
-            [self.MTS_anomalies1, self.MTS_anomalies2],
+            self.mts_real_anomalies,
+            [self.mts_anomalies1, self.mts_anomalies2],
             metric="accuracy",
         )
         # aggregator must have an accuracy of 0.25 on the first width of the results on
-        # [MTS_anomalies1, MTS_anomalies2]
+        # [mts_anomalies1, mts_anomalies2]
         self.assertAlmostEqual(acc[0], 0.25, delta=1e-05)
         # aggregator must have an accuracy of 0.26 on the second width of the results on
-        # [MTS_anomalies1, MTS_anomalies2]
+        # [mts_anomalies1, mts_anomalies2]
         self.assertAlmostEqual(acc[1], 0.26, delta=1e-05)
 
         precision = aggregator.eval_accuracy(
-            self.MTS_real_anomalies,
-            [self.MTS_anomalies1, self.MTS_anomalies2],
+            self.mts_real_anomalies,
+            [self.mts_anomalies1, self.mts_anomalies2],
             metric="precision",
         )
         # aggregator must have an precision of 0.06578 on the first width of the results on
-        # [MTS_anomalies1, MTS_anomalies2]
+        # [mts_anomalies1, mts_anomalies2]
         self.assertAlmostEqual(precision[0], 0.06578, delta=1e-05)
         # aggregator must have an precision of 0.08641 on the second width of the results on
-        # [MTS_anomalies1, MTS_anomalies2]
+        # [mts_anomalies1, mts_anomalies2]
         self.assertAlmostEqual(precision[1], 0.08641, delta=1e-05)
 
         recall = aggregator.eval_accuracy(
-            self.MTS_real_anomalies,
-            [self.MTS_anomalies1, self.MTS_anomalies2],
+            self.mts_real_anomalies,
+            [self.mts_anomalies1, self.mts_anomalies2],
             metric="recall",
         )
         # aggregator must have an recall of 0.55555 on the first width of the results on
-        # [MTS_anomalies1, MTS_anomalies2]
+        # [mts_anomalies1, mts_anomalies2]
         self.assertAlmostEqual(recall[0], 0.55555, delta=1e-05)
         # aggregator must have an recall of 1.0 on the second width of the results on
-        # [MTS_anomalies1, MTS_anomalies2]
+        # [mts_anomalies1, mts_anomalies2]
         self.assertAlmostEqual(recall[1], 1.0, delta=1e-05)
 
         f1 = aggregator.eval_accuracy(
-            self.MTS_real_anomalies,
-            [self.MTS_anomalies1, self.MTS_anomalies2],
+            self.mts_real_anomalies,
+            [self.mts_anomalies1, self.mts_anomalies2],
             metric="f1",
         )
         # aggregator must have an f1 of 0.11764 on the first width of the results on
-        # [MTS_anomalies1, MTS_anomalies2]
+        # [mts_anomalies1, mts_anomalies2]
         self.assertAlmostEqual(f1[0], 0.11764, delta=1e-05)
         # aggregator must have an recall of 0.15909 on the second width of the results on
-        # [MTS_anomalies1, MTS_anomalies2]
+        # [mts_anomalies1, mts_anomalies2]
         self.assertAlmostEqual(f1[1], 0.15909, delta=1e-05)
 
     def test_AndAggregator(self):
@@ -552,66 +565,66 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
 
         # multivariate case
         binary_detection = aggregator.predict(
-            [self.MTS_anomalies1, self.MTS_anomalies2]
+            [self.mts_anomalies1, self.mts_anomalies2]
         )
 
         # aggregator must found 23 anomalies on the first width of the results on
-        # [MTS_anomalies1, MTS_anomalies2]
+        # [mts_anomalies1, mts_anomalies2]
         self.assertEqual(
             binary_detection["0"].sum(axis=0).all_values().flatten()[0], 23
         )
         # aggregator must found 28 anomalies on the second width of the results on
-        # [MTS_anomalies1, MTS_anomalies2]
+        # [mts_anomalies1, mts_anomalies2]
         self.assertEqual(
             binary_detection["1"].sum(axis=0).all_values().flatten()[0], 28
         )
 
         acc = aggregator.eval_accuracy(
-            self.MTS_real_anomalies,
-            [self.MTS_anomalies1, self.MTS_anomalies2],
+            self.mts_real_anomalies,
+            [self.mts_anomalies1, self.mts_anomalies2],
             metric="accuracy",
         )
         # aggregator must have an accuracy of 0.72 on the first width of the results on
-        # [MTS_anomalies1, MTS_anomalies2]
+        # [mts_anomalies1, mts_anomalies2]
         self.assertAlmostEqual(acc[0], 0.72, delta=1e-05)
         # aggregator must have an accuracy of 0.69 on the second width of the results on
-        # [MTS_anomalies1, MTS_anomalies2]
+        # [mts_anomalies1, mts_anomalies2]
         self.assertAlmostEqual(acc[1], 0.69, delta=1e-05)
 
         precision = aggregator.eval_accuracy(
-            self.MTS_real_anomalies,
-            [self.MTS_anomalies1, self.MTS_anomalies2],
+            self.mts_real_anomalies,
+            [self.mts_anomalies1, self.mts_anomalies2],
             metric="recall",
         )
         # aggregator must have an recall of 0.22222 on the first width of the results on
-        # [MTS_anomalies1, MTS_anomalies2]
+        # [mts_anomalies1, mts_anomalies2]
         self.assertAlmostEqual(precision[0], 0.22222, delta=1e-05)
         # aggregator must have an recall of 0.28571 on the second width of the results on
-        # [MTS_anomalies1, MTS_anomalies2]
+        # [mts_anomalies1, mts_anomalies2]
         self.assertAlmostEqual(precision[1], 0.28571, delta=1e-05)
 
         recall = aggregator.eval_accuracy(
-            self.MTS_real_anomalies,
-            [self.MTS_anomalies1, self.MTS_anomalies2],
+            self.mts_real_anomalies,
+            [self.mts_anomalies1, self.mts_anomalies2],
             metric="precision",
         )
         # aggregator must have an recall of 0.08695 on the first width of the results on
-        # [MTS_anomalies1, MTS_anomalies2]
+        # [mts_anomalies1, mts_anomalies2]
         self.assertAlmostEqual(recall[0], 0.08695, delta=1e-05)
         # aggregator must have an recall of 0.07142 on the second width of the results on
-        # [MTS_anomalies1, MTS_anomalies2]
+        # [mts_anomalies1, mts_anomalies2]
         self.assertAlmostEqual(recall[1], 0.07142, delta=1e-05)
 
         f1 = aggregator.eval_accuracy(
-            self.MTS_real_anomalies,
-            [self.MTS_anomalies1, self.MTS_anomalies2],
+            self.mts_real_anomalies,
+            [self.mts_anomalies1, self.mts_anomalies2],
             metric="f1",
         )
         # aggregator must have an f1 of 0.125 on the first width of the results on
-        # [MTS_anomalies1, MTS_anomalies2]
+        # [mts_anomalies1, mts_anomalies2]
         self.assertAlmostEqual(f1[0], 0.125, delta=1e-05)
         # aggregator must have an recall of 0.11428 on the second width of the results on
-        # [MTS_anomalies1, MTS_anomalies2]
+        # [mts_anomalies1, mts_anomalies2]
         self.assertAlmostEqual(f1[1], 0.11428, delta=1e-05)
 
     def test_EnsembleSklearn(self):

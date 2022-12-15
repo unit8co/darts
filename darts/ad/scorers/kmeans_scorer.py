@@ -11,7 +11,7 @@ References
 .. [1] https://en.wikipedia.org/wiki/K-means_clustering
 """
 
-from typing import Optional, Sequence
+from typing import Sequence
 
 import numpy as np
 from sklearn.cluster import KMeans
@@ -24,7 +24,7 @@ from darts.timeseries import TimeSeries
 class KMeansScorer(FittableAnomalyScorer):
     def __init__(
         self,
-        window: Optional[int] = None,
+        window: int = 1,
         k: int = 2,
         component_wise: bool = False,
         diff_fn="abs_diff",
@@ -111,18 +111,15 @@ class KMeansScorer(FittableAnomalyScorer):
 
         raise_if_not(
             type(component_wise) is bool,
-            f"'component_wise' must be Boolean, found type: {type(component_wise)}",
+            f"Parameter `component_wise` must be Boolean, found type: {type(component_wise)}.",
         )
         self.component_wise = component_wise
 
         self.k = k
 
-        if component_wise:
-            returns_UTS = False
-        else:
-            returns_UTS = True
-
-        super().__init__(returns_UTS=returns_UTS, window=window, diff_fn=diff_fn)
+        super().__init__(
+            univariate_scorer=(not component_wise), window=window, diff_fn=diff_fn
+        )
 
     def __str__(self):
         return "KMeansScorer"
@@ -175,8 +172,8 @@ class KMeansScorer(FittableAnomalyScorer):
 
         raise_if_not(
             self.width_trained_on == series.width,
-            f"Input must have the same width of the data used for training the KMeans model, \
-            found width: {self.width_trained_on} and {series.width}",
+            "Input must have the same width as the data used for training the KMeans"
+            + f" model, found width {series.width} and expected {self.width_trained_on}.",
         )
 
         # TODO: vectorize
@@ -216,5 +213,5 @@ class KMeansScorer(FittableAnomalyScorer):
                 np_anomaly_score.append(np_anomaly_score_width)
 
         return TimeSeries.from_times_and_values(
-            series._time_index[self.window - 1 :], list(zip(*np_anomaly_score))
+            series.time_index[self.window - 1 :], list(zip(*np_anomaly_score))
         )

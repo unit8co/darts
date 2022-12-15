@@ -76,8 +76,8 @@ class Aggregator(ABC):
 
             raise_if_not(
                 series.is_deterministic,
-                f"Series in list must be deterministic (one value per timestamp per dimension), \
-                found {series.n_samples} values for series at index {idx}.",
+                "Series in list must be deterministic (one value per timestamp per dimension),"
+                + f" found {series.n_samples} values for series at index {idx}.",
             )
 
             if idx == 0:
@@ -86,8 +86,8 @@ class Aggregator(ABC):
 
             raise_if_not(
                 series.width == series_width,
-                f"Element of list needs to have the same dimension/width, \
-                found width {series.width} and {series_width}.",
+                "Element of list needs to have the same dimension/width,"
+                + f" found width {series.width} and {series_width}.",
             )
 
             series_0, list_series[idx] = _intersect(series_0, series)
@@ -98,8 +98,8 @@ class Aggregator(ABC):
 
             raise_if(
                 len(list_series[idx]) == 0,
-                f"Element {idx} of 'list_series' must have a non empty intersection \
-                with the other series of the sequence.",
+                f"Element {idx} of `list_series` must have a non empty intersection"
+                + " with the other series of the sequence.",
             )
 
         list_series[0] = series_0
@@ -117,7 +117,7 @@ class Aggregator(ABC):
             list_pred.append(self._predict_core(np_series[:, width, :], idx))
 
         return TimeSeries.from_times_and_values(
-            list_series[0]._time_index, list(zip(*list_pred))
+            list_series[0].time_index, list(zip(*list_pred))
         )
 
     def eval_accuracy(
@@ -154,15 +154,15 @@ class Aggregator(ABC):
 
         raise_if_not(
             isinstance(actual_anomalies, TimeSeries),
-            f"'actual_anomalies' must be of type TimeSeries, found type {type(actual_anomalies)}",
+            f"`actual_anomalies` must be of type TimeSeries, found type {type(actual_anomalies)}.",
         )
 
         series = self.predict(list_series)
 
         raise_if_not(
             actual_anomalies.width == series.width,
-            f"'actual_anomalies' must have the same width as the series in the sequence 'list_series', \
-            found width {actual_anomalies.width} and width {series.width}",
+            "`actual_anomalies` must have the same width as the series in the sequence "
+            + f"`list_series`, found width {actual_anomalies.width} and expected {series.width}.",
         )
 
         return eval_accuracy_from_binary_prediction(
@@ -238,13 +238,13 @@ class FittableAggregator(Aggregator):
 
         raise_if_not(
             isinstance(actual_anomalies, TimeSeries),
-            f"'actual_anomalies' must be of type TimeSeries, found type {type(actual_anomalies)}",
+            f"`actual_anomalies` must be of type TimeSeries, found type {type(actual_anomalies)}.",
         )
 
         raise_if_not(
             actual_anomalies.width == self.width_trained_on,
-            f"'actual_anomalies' must have the same width as the series in the sequence 'list_series', \
-            found width {actual_anomalies.width} and width {self.width_trained_on}",
+            "`actual_anomalies` must have the same width as the series in the sequence `list_series`,"
+            + f" found width {actual_anomalies.width} and width {self.width_trained_on}.",
         )
 
         for idx, s in enumerate(list_series):
@@ -252,8 +252,8 @@ class FittableAggregator(Aggregator):
 
         raise_if(
             len(list_series[0]) == 0,
-            "'actual_anomalies' must have a non-empty time intersection with the series in the \
-            sequence 'list_series'",
+            "`actual_anomalies` must have a non-empty time intersection with the series in the"
+            + " sequence `list_series`.",
         )
 
         np_training_data = np.concatenate(
@@ -290,16 +290,14 @@ class FittableAggregator(Aggregator):
 
         raise_if_not(
             len(list_series) == self.len_training_set,
-            "The model was trained on a list of length {}, found for prediciton a list of different \
-            length {}.".format(
-                self.len_training_set, len(list_series)
-            ),
+            f"The model was trained on a list of length {self.len_training_set}, and found for prediciton"
+            + f" a list of different length {len(list_series)}.",
         )
 
         raise_if_not(
             all([s.width == self.width_trained_on for s in list_series]),
-            f"all series in 'series' must have the same width as the data used for training the \
-            detector model, training width {self.width_trained_on}.",
+            "all series in `series` must have the same width as the data used for training the"
+            + f" detector model, training width {self.width_trained_on}.",
         )
 
         return self._predict(list_series)

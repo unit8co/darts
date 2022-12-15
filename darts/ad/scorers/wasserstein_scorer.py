@@ -11,7 +11,7 @@ References
 .. [1] https://en.wikipedia.org/wiki/Wasserstein_metric
 """
 
-from typing import Optional, Sequence
+from typing import Sequence
 
 import numpy as np
 from scipy.stats import wasserstein_distance
@@ -26,7 +26,7 @@ logger = get_logger(__name__)
 class WassersteinScorer(FittableAnomalyScorer):
     def __init__(
         self,
-        window: Optional[int] = None,
+        window: int = 10,
         component_wise: bool = False,
         diff_fn="abs_diff",
     ) -> None:
@@ -110,32 +110,27 @@ class WassersteinScorer(FittableAnomalyScorer):
             Default: False
         """
 
-        if window is None:
-            window = 10
-
         if type(window) is int:
             if window > 0 and window < 10:
                 logger.warning(
-                    f"The window parameter WassersteinScorer is smaller than 10 (w={window}). \
-                The value represents the window length rolled on the series given as input in \
-                the ``score`` function. At each position, the w values will constitute a subset, \
-                and the Wasserstein distance between the subset and the train distribution \
-                will be computed. To better represent the constituted test distribution, \
-                the window parameter should be larger than 10."
+                    f"The `window` parameter WassersteinScorer is smaller than 10 (w={window})."
+                    + " The value represents the window length rolled on the series given as"
+                    + " input in the ``score`` function. At each position, the w values will"
+                    + " constitute a subset, and the Wasserstein distance between the subset"
+                    + " and the train distribution will be computed. To better represent the"
+                    + " constituted test distribution, the window parameter should be larger"
+                    + " than 10."
                 )
 
         raise_if_not(
             type(component_wise) is bool,
-            f"'component_wise' must be Boolean, found type: {type(component_wise)}",
+            f"Parameter `component_wise` must be Boolean, found type: {type(component_wise)}.",
         )
         self.component_wise = component_wise
 
-        if component_wise:
-            returns_UTS = False
-        else:
-            returns_UTS = True
-
-        super().__init__(returns_UTS=returns_UTS, window=window, diff_fn=diff_fn)
+        super().__init__(
+            univariate_scorer=(not component_wise), window=window, diff_fn=diff_fn
+        )
 
     def __str__(self):
         return "WassersteinScorer"
@@ -170,8 +165,8 @@ class WassersteinScorer(FittableAnomalyScorer):
 
         raise_if_not(
             self.width_trained_on == series.width,
-            f"Input must have the same width of the data used for training the Wassertein model, \
-                found width: {self.width_trained_on} and {series.width}",
+            "Input must have the same width as the data used for training the Wasserstein"
+            + f" model, found width {series.width} and expected {self.width_trained_on}.",
         )
 
         np_series = series.all_values(copy=False)
@@ -192,7 +187,7 @@ class WassersteinScorer(FittableAnomalyScorer):
             ]
 
             return TimeSeries.from_times_and_values(
-                series._time_index[self.window - 1 :], np_anomaly_score
+                series.time_index[self.window - 1 :], np_anomaly_score
             )
 
         else:
@@ -211,5 +206,5 @@ class WassersteinScorer(FittableAnomalyScorer):
                 np_anomaly_score.append(np_anomaly_score_width)
 
             return TimeSeries.from_times_and_values(
-                series._time_index[self.window - 1 :], list(zip(*np_anomaly_score))
+                series.time_index[self.window - 1 :], list(zip(*np_anomaly_score))
             )
