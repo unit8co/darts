@@ -29,7 +29,7 @@ class PyODScorer(FittableAnomalyScorer):
 
         raise_if_not(
             isinstance(model, BaseDetector),
-            f"model must be BaseDetector of the library PyOD, found type: {type(component_wise)}",
+            f"model must be a PyOD BaseDetector, found type: {type(component_wise)}",
         )
         self.model = model
 
@@ -39,12 +39,9 @@ class PyODScorer(FittableAnomalyScorer):
         )
         self.component_wise = component_wise
 
-        if component_wise:
-            returns_UTS = False
-        else:
-            returns_UTS = True
-
-        super().__init__(returns_UTS=returns_UTS, window=window, diff_fn=diff_fn)
+        super().__init__(
+            returns_UTS=(not component_wise), window=window, diff_fn=diff_fn
+        )
 
     def __str__(self):
         return "PyODScorer model: {}".format(self.model.__str__().split("(")[0])
