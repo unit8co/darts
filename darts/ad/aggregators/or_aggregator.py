@@ -19,5 +19,5 @@ class OrAggregator(NonFittableAggregator):
         return "OrAggregator"
 
     def _predict_core(self, np_series: np.ndarray, width: int) -> np.ndarray:
-
+        # TODO vectorize
         return [1 if timestamp.sum() >= 1 else 0 for timestamp in np_series]

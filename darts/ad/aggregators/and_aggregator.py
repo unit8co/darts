@@ -1,5 +1,6 @@
 """
-AndAggregator
+And Aggregator
+--------------
 
 Aggregator that identifies a time point as anomalous only if it is
 included in all the input anomaly lists.
@@ -18,5 +19,5 @@ class AndAggregator(NonFittableAggregator):
         return "AndAggregator"
 
     def _predict_core(self, np_series: np.ndarray, width: int) -> np.ndarray:
-
+        # TODO vectorize
         return [0 if 0 in timestamp else 1 for timestamp in np_series]

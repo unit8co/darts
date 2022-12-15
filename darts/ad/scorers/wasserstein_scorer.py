@@ -46,31 +46,31 @@ class WassersteinScorer(FittableAnomalyScorer):
         If set to True, the model will treat each series dimension independently. If set to False, the model will
         concatenate the dimension in the considered `window` W and compute the score.
 
-        **Training with ``fit()``:**
+        **Training with** ``fit()``:
 
         The input can be a series (univariate or multivariate) or multiple series.
 
         In case of a single series of length `N` and dimension `D`, the components are concatenated in an array of
-        length `N`x`D` (if `component_wise` is False) or `D` arrays of length `N` (if `component_wise` is True).
+        length `N` * `D` (if `component_wise` is False) or `D` arrays of length `N` (if `component_wise` is True).
 
         If a sequence of series is given of length `L`, their underlying arrays will be concatenated to
-        form a continuous array of length `L`x`D`x`N` (if `component_wise` is False) or `D` arrays of length
-        `L`x`N` (if `component_wise` is True).
+        form a continuous array of length `L` * `D` * `N` (if `component_wise` is False) or `D` arrays of length
+        `L` * `N` (if `component_wise` is True).
 
         The arrays will be kept in memory, representing the training data distribution.
         In practice, the series or list of series can for instance represent residuals than can be
         considered independent and identically distributed (iid).
 
-        **Computing score with ``score()``:**
+        **Computing score with** ``score()``:
 
         The input is a series (univariate or multivariate) or a sequence of series.
 
         For each series, if the series is multivariate of dimension `D`:
 
-            - if `component_wise` is set to False: it will return a univariate series representing
-            the anomaly score of the entire series in the considered window at each timestamp.
-            - if `component_wise` is set to True: it will return a multivariate series of dimension D. Each dimension
-            represents the anomaly score of the corresponding dimension of the input.
+        * if `component_wise` is set to False: it will return a univariate series representing
+          the anomaly score of the entire series in the considered window at each timestamp.
+        * if `component_wise` is set to True: it will return a multivariate series of dimension D. Each dimension
+          represents the anomaly score of the corresponding dimension of the input.
 
         If the series is univariate, it will return a univariate series regardless of the parameter
         `component_wise`.
@@ -80,7 +80,7 @@ class WassersteinScorer(FittableAnomalyScorer):
         being the dimension of the series. The subset values are considered to be observed from the same (empirical)
         distribution. The Wasserstein distance will be computed between this subset and the train distribution. The
         function will return a scalar indicating how different these two distributions are. The output will be
-        a series of dimension one and length `N`-`W`+1, with `N` being the length of the input series. Each value will
+        a series of dimension one and length `N` - `W`+1, with `N` being the length of the input series. Each value will
         represent how anomalous the sample of the `D` previous values is.
 
         Parameters

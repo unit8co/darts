@@ -1,17 +1,16 @@
 """
 Aggregators
----------------
-Module for aggregators. An aggregator combines multiple lists of anomalies into one.
-
-TODO:
-- add customize aggregators
-- add in trainable aggregators
-    - log regression
-    - decision tree
-- show all combined (info about correlation, and from what path did
-the anomaly alarm comes from)
-
+-----------
+Module for aggregators. An aggregator combines multiple series of detected anomalies into one.
 """
+
+# TODO:
+# - add customize aggregators
+# - add in trainable aggregators
+#     - log regression
+#     - decision tree
+# - show all combined (info about correlation, and from what path did
+# the anomaly alarm comes from)
 
 from abc import ABC, abstractmethod
 from typing import Any, Sequence, Union
@@ -43,9 +42,8 @@ class Aggregator(ABC):
             - it is a Sequence
             - it contains at least two elements
             - each element of input is
-                - a Timeseries
+                - a deterministic TimeSeries
                 - binary (only values equal to 0 or 1)
-                - 1 value per timestamp per dimension (num_samples equal to 1)
             - all elements needs to have the same width/dimension
         """
 
@@ -76,7 +74,7 @@ class Aggregator(ABC):
 
             raise_if_not(
                 series.is_deterministic,
-                "Series in list must be deterministic (one value per timestamp per dimension),"
+                "Series in list must be deterministic (one sample per timestamp per dimension),"
                 + f" found {series.n_samples} values for series at index {idx}.",
             )
 
