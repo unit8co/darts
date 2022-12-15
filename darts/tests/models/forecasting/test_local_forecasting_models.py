@@ -22,6 +22,8 @@ from darts.models import (
     FourTheta,
     KalmanForecaster,
     LinearRegressionModel,
+    NaiveDrift,
+    NaiveMean,
     NaiveSeasonal,
     Prophet,
     RandomForest,
@@ -59,7 +61,6 @@ models = [
     (FourTheta(model_mode=ModelMode.MULTIPLICATIVE), 11.4),
     (FourTheta(season_mode=SeasonalityMode.ADDITIVE), 14.2),
     (FFT(trend="poly"), 11.4),
-    (NaiveSeasonal(), 32.4),
     (KalmanForecaster(dim_x=3), 17.0),
     (LinearRegressionModel(lags=12), 11.0),
     (RandomForest(lags=12, n_estimators=5, max_depth=3), 17.0),
@@ -74,6 +75,9 @@ multivariate_models = [
     (VARIMA(1, 0, 0), 55.6),
     (VARIMA(1, 1, 1), 57.0),
     (KalmanForecaster(dim_x=30), 30.0),
+    (NaiveSeasonal(), 32.4),
+    (NaiveMean(), 50.0),
+    (NaiveDrift(), 40.0),
 ]
 
 dual_models = [
@@ -182,7 +186,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             np.random.seed(1)  # some models are probabilist...
             model.fit(self.ts_pass_train)
             prediction = model.predict(len(self.ts_pass_val))
-            current_mape = mape(prediction, self.ts_pass_val)
+            current_mape = mape(self.ts_pass_val, prediction)
             self.assertTrue(
                 current_mape < max_mape,
                 "{} model exceeded the maximum MAPE of {}. "
@@ -195,7 +199,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             np.random.seed(1)
             model.fit(self.ts_ice_heater_train)
             prediction = model.predict(len(self.ts_ice_heater_val))
-            current_mape = mape(prediction, self.ts_ice_heater_val)
+            current_mape = mape(self.ts_ice_heater_val, prediction)
             self.assertTrue(
                 current_mape < max_mape,
                 "{} model exceeded the maximum MAPE of {}. "
