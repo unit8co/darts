@@ -11,7 +11,7 @@ from typing import Dict, Sequence, Union
 
 from darts.ad.anomaly_model.anomaly_model import AnomalyModel
 from darts.ad.scorers.scorers import AnomalyScorer
-from darts.ad.utils import _same_length, _to_list, eval_accuracy_from_scores
+from darts.ad.utils import _same_length, _to_list
 from darts.logging import get_logger, raise_if_not
 from darts.models.filtering.filtering_model import FilteringModel
 from darts.timeseries import TimeSeries
@@ -328,28 +328,11 @@ class FilteringAnomalyModel(AnomalyModel):
 
         list_anomaly_scores = self.score(series=list_series, **filter_kwargs)
 
-        acc_anomaly_scores = []
-        for anomalies, scores in zip(list_actual_anomalies, list_anomaly_scores):
-
-            scorer_results = {}
-            for idx, scorer in enumerate(self.scorers):
-                name = scorer.__str__() + "_w" + str(scorer.window)
-
-                if name in scorer_results:
-                    i = 1
-                    new_name = name + "_" + str(i)
-                    while new_name in scorer_results:
-                        i = i + 1
-                        new_name = name + "_" + str(i)
-                    name = new_name
-
-                scorer_results[name] = eval_accuracy_from_scores(
-                    actual_anomalies=anomalies,
-                    anomaly_score=scores[idx],
-                    window=scorer.window,
-                    metric=metric,
-                )
-            acc_anomaly_scores.append(scorer_results)
+        acc_anomaly_scores = self._eval_accuracy_from_scores(
+            list_actual_anomalies=list_actual_anomalies,
+            list_anomaly_scores=list_anomaly_scores,
+            metric=metric,
+        )
 
         if len(acc_anomaly_scores) == 1 and not isinstance(series, Sequence):
             return acc_anomaly_scores[0]
