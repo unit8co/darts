@@ -1,17 +1,17 @@
 """
-Utils
----------------
+Utils for Anomaly Detection
+---------------------------
 
 Common functions used by anomaly_model.py, scorers.py, aggregators.py and detectors.py
-
-TODO:
-    - change structure of eval_accuracy_from_scores and eval_accuracy_from_binary_prediction (a lot of repeated code)
-    - migrate metrics function to darts.metric
-    - check error message
-    - create a zoom option on anomalies for a show function
-    - add an option visualize: "by window", "unique", "together"
-    - create a normalize option in plot function (norm every anomaly score btw 1 and 0) -> to be seen on the same plot
 """
+
+# TODO:
+#     - change structure of eval_accuracy_from_scores and eval_accuracy_from_binary_prediction (a lot of repeated code)
+#     - migrate metrics function to darts.metric
+#     - check error message
+#     - create a zoom option on anomalies for a show function
+#     - add an option visualize: "by window", "unique", "together"
+#     - create a normalize option in plot function (norm every anomaly score btw 1 and 0) -> to be seen on the same plot
 
 from typing import Sequence, Union
 
