@@ -31,15 +31,11 @@ class WassersteinScorer(FittableAnomalyScorer):
         diff_fn="abs_diff",
     ) -> None:
         """
-        TODO:
-            - understand better the math behind the Wasserstein distance when the test distribution contains
-            only one sample
-            - check if there is an equivalent Wasserstein distance for d-D distributions (currently only accepts 1D)
-
         When calling ``fit(series)``, the series will be kept in memory and is considered as a subset of samples
-        representing the training 1D distribution. When calling ``score(series)``, a moving window is applied on
-        the series, which results in a set of vectors of size W, where W is the window size. The Wasserstein distance
-        will be computed between the training distribution and each vector, resulting in an anomaly score.
+        representing the training 1-D distribution. When calling ``score(series)``, a moving window is applied on
+        the series, which results in a set of vectors of size `W`, where `W` is the window size.
+        The Wasserstein distance will be computed between the training distribution and each vector,
+        resulting in an anomaly score.
 
         Alternatively, the scorer has the functions ``fit_from_prediction()`` and ``score_from_prediction()``.
         Both require two inputs and transform them into one series by applying the function ``diff_fn``
@@ -50,48 +46,42 @@ class WassersteinScorer(FittableAnomalyScorer):
         If set to True, the model will treat each series dimension independently. If set to False, the model will
         concatenate the dimension in the considered `window` W and compute the score.
 
-        Training with ``fit()``:
+        **Training with ``fit()``:**
 
-        The input can be a series (univariate or multivariate) or a list of series. The element of a list will be
-        concatenated to form one continuous array (by definition, each element have the same dimensions).
+        The input can be a series (univariate or multivariate) or multiple series.
 
-        If the series is of length N and dimension D, the array will be of length N*D. If `component_wise` is True,
-        each dimension D is treated independently, and the data is stored in a list of size d. Each element is an array
-        of length N.
+        In case of a single series of length `N` and dimension `D`, the components are concatenated in an array of
+        length `N`x`D` (if `component_wise` is False) or `D` arrays of length `N` (if `component_wise` is True).
 
-        If a sequence of series is given of length L, each series of the sequence will be reduced to an array, and the
-        L arrays will then be concatenated to form a continuous array of length L*D*N. If `component_wise` is True,
-        the data is stored in a list of size D. Each element is an array of length L*N.
+        If a sequence of series is given of length `L`, their underlying arrays will be concatenated to
+        form a continuous array of length `L`x`D`x`N` (if `component_wise` is False) or `D` arrays of length
+        `L`x`N` (if `component_wise` is True).
 
-        The array will be kept in memory, representing the training data distribution. In practice, the series or list
-        of series would represent residuals than can be considered independent and identically distributed (iid).
+        The arrays will be kept in memory, representing the training data distribution.
+        In practice, the series or list of series can for instance represent residuals than can be
+        considered independent and identically distributed (iid).
 
-        Compute score with ``score()``:
+        **Computing score with ``score()``:**
 
-        The input is a series (univariate or multivariate) or a list of series.
+        The input is a series (univariate or multivariate) or a sequence of series.
 
-        - If the series is multivariate of dimension D:
-            - if `component_wise` is set to False: it will return a univariate series (dimension=1). It represents
+        For each series, if the series is multivariate of dimension `D`:
+
+            - if `component_wise` is set to False: it will return a univariate series representing
             the anomaly score of the entire series in the considered window at each timestamp.
             - if `component_wise` is set to True: it will return a multivariate series of dimension D. Each dimension
             represents the anomaly score of the corresponding dimension of the input.
 
-        - If the series is univariate, it will return a univariate series regardless of the parameter
+        If the series is univariate, it will return a univariate series regardless of the parameter
         `component_wise`.
 
-        A window of size W (given as a parameter named `window`) is rolled on the series with a stride equal to 1.
-        At each timestamp, the previous W values will be used to form a subset of W * D elements, with D being the
-        dimension of the series. The subset values are considered to be observed from the same (empirical)
+        A window of size `W` (given as a parameter named `window`) is rolled on the series (with a stride of 1).
+        At each timestamp, the previous `W` values are be used to form a subset of `W` * `D` elements, with `D`
+        being the dimension of the series. The subset values are considered to be observed from the same (empirical)
         distribution. The Wasserstein distance will be computed between this subset and the train distribution. The
-        function will return a float number indicating how different these two distributions are. The output will be
-        a series of dimension one and length N-W+1, with N being the length of the input series. Each value will
-        represent how anomalous the sample of the D previous values is.
-
-        If a list is given, a for loop will iterate through the list, and the function ``_score_core()`` will be
-        applied independently on each series. The function will return an anomaly score for each series in the list.
-
-        If `component_wise` is set to True, the algorithm will be applied to each dimension independently,
-        and be compared to their corresponding training data samples computed in the ``fit()`` method.
+        function will return a scalar indicating how different these two distributions are. The output will be
+        a series of dimension one and length `N`-`W`+1, with `N` being the length of the input series. Each value will
+        represent how anomalous the sample of the `D` previous values is.
 
         Parameters
         ----------
@@ -109,6 +99,11 @@ class WassersteinScorer(FittableAnomalyScorer):
             or by concatenating the width in the considered window to compute one score (False).
             Default: False
         """
+
+        # TODO:
+        #     - understand better the math behind the Wasserstein distance when the test distribution contains
+        #     only one sample
+        #     - check if there is an equivalent Wasserstein distance for d-D distributions (currently only accepts 1D)
 
         if type(window) is int:
             if window > 0 and window < 10:
