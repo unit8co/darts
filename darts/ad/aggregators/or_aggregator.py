@@ -1,6 +1,6 @@
 """
-OrAggregator
------
+Or Aggregator
+-------------
 
 Aggregator that identifies a time point as anomalous as long as it is
 included in one of the input anomaly lists.

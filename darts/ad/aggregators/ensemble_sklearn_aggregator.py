@@ -1,6 +1,6 @@
 """
-EnsembleSklearnAggregator
------
+Ensemble scikit-learn aggregator
+--------------------------------
 
 Aggregator wrapped around the Ensemble model of sklearn.
 `sklearn https://scikit-learn.org/stable/modules/ensemble.html`_.
