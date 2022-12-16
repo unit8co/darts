@@ -363,10 +363,9 @@ class RegressionModel(GlobalForecastingModel):
             ):
                 # for when series in prediction do not have static covariates but some of the training series did
                 pad_zeros = np.zeros((1, self.model.n_features_in_ - features.shape[1]))
-                features = np.concatenate(
+                return np.concatenate(
                     [features, np.tile(pad_zeros, reps=(reps, 1))], axis=1
                 )
-                return features
             else:
                 return features
 
@@ -386,8 +385,7 @@ class RegressionModel(GlobalForecastingModel):
             static_covs = np.concatenate(static_covs, axis=0)
 
             # concatenate static covariates to features
-            features = np.concatenate([features, static_covs], axis=1)
-            return features
+            return np.concatenate([features, static_covs], axis=1)
 
     def _fit_model(
         self,
