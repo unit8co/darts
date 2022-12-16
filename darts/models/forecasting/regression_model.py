@@ -267,20 +267,7 @@ class RegressionModel(GlobalForecastingModel):
         )
 
     @property
-    def extreme_lags(
-        self,
-    ) -> Tuple[
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-    ]:
-        """
-        Returns a 5-tuple containing in order:
-        (minimum target lag, maximum target lag, min past covariate lag, min future covariate lag, max future covariate
-        lag).
-        """
+    def extreme_lags(self):
         min_target_lag = self.lags.get("target")[0] if "target" in self.lags else None
         max_target_lag = self.output_chunk_length
         min_past_cov_lag = self.lags.get("past")[0] if "past" in self.lags else None

@@ -1635,16 +1635,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         )
 
     @property
-    def extreme_lags(
-        self,
-    ) -> Tuple[
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-    ]:
-
+    def extreme_lags(self):
         return (
             -self.input_chunk_length,
             self.output_chunk_length,
@@ -1729,15 +1720,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
         )
 
     @property
-    def extreme_lags(
-        self,
-    ) -> Tuple[
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-    ]:
+    def extreme_lags(self):
         return (
             -self.input_chunk_length,
             self.output_chunk_length,
@@ -1814,16 +1797,7 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
         )
 
     @property
-    def extreme_lags(
-        self,
-    ) -> Tuple[
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-    ]:
-
+    def extreme_lags(self):
         return (
             -self.input_chunk_length,
             self.output_chunk_length,
@@ -1897,16 +1871,7 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         )
 
     @property
-    def extreme_lags(
-        self,
-    ) -> Tuple[
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-    ]:
-
+    def extreme_lags(self):
         return (
             -self.input_chunk_length,
             self.output_chunk_length,
@@ -1981,16 +1946,7 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         )
 
     @property
-    def extreme_lags(
-        self,
-    ) -> Tuple[
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-    ]:
-
+    def extreme_lags(self):
         return (
             -self.input_chunk_length,
             self.output_chunk_length,
