@@ -32,7 +32,7 @@ from darts.logging import get_logger, raise_if, raise_if_not
 logger = get_logger(__name__)
 
 
-def check_if_binary(series: TimeSeries, name_series: str):
+def _check_if_binary(series: TimeSeries, name_series: str):
     """Checks if series is a binary timeseries (1 and 0)"
 
     Parameters
@@ -133,7 +133,7 @@ def eval_accuracy_from_scores(
         zip(list_actual_anomalies, list_anomaly_scores)
     ):
 
-        check_if_binary(s_anomalies, "actual_anomalies")
+        _check_if_binary(s_anomalies, "actual_anomalies")
 
         sol.append(
             _eval_accuracy_from_data(
@@ -239,8 +239,8 @@ def eval_accuracy_from_binary_prediction(
         zip(list_actual_anomalies, list_binary_pred_anomalies)
     ):
 
-        check_if_binary(s_pred, "pred_anomalies")
-        check_if_binary(s_anomalies, "actual_anomalies")
+        _check_if_binary(s_pred, "pred_anomalies")
+        _check_if_binary(s_anomalies, "actual_anomalies")
 
         sol.append(
             _eval_accuracy_from_data(
