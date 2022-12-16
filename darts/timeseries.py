@@ -2085,7 +2085,8 @@ class TimeSeries:
         self, split_point: Union[pd.Timestamp, float, int], after: bool = True
     ) -> Tuple["TimeSeries", "TimeSeries"]:
 
-        point_index = self.get_index_at_point(split_point, after)
+        # Get index with not after in order to avoid moving twice if split_point is not in self
+        point_index = self.get_index_at_point(split_point, not after)
         return (
             self[: point_index + (1 if after else 0)],
             self[point_index + (1 if after else 0) :],
