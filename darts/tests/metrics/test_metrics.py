@@ -415,7 +415,10 @@ class MetricsTestCase(DartsBaseTestClass):
             self.assertEqual(
                 metric(self.series1 + 1, self.series2), metric(series11, series22)
             )
-            self.assertEqual([metric(series11, series22)] * 2, metric(multi_1, multi_2))
+            np.testing.assert_array_almost_equal(
+                np.array([metric(series11, series22)] * 2),
+                np.array(metric(multi_1, multi_2)),
+            )
 
         # trying different functions
         shifted_1 = self.series1 + 1
