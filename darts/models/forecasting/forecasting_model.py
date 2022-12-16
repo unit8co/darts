@@ -138,8 +138,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         self
             Fitted model.
         """
-        if not isinstance(self, FutureCovariatesLocalForecastingModel):
-            series._assert_univariate()
         raise_if_not(
             len(series) >= self.min_train_series_length,
             "Train series only contains {} elements but {} model requires at least {} entries".format(
@@ -249,8 +247,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         past_covariates: Optional[TimeSeries],
         future_covariates: Optional[TimeSeries],
         num_samples: int,
+        verbose: bool = False,
     ) -> TimeSeries:
-        return self.predict(n, num_samples=num_samples)
+        return self.predict(n, num_samples=num_samples, verbose=verbose)
 
     @property
     def min_train_series_length(self) -> int:
@@ -873,6 +872,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     past_covariates=past_covariates_,
                     future_covariates=future_covariates_,
                     num_samples=num_samples,
+                    verbose=verbose,
                 )
 
                 if last_points_only:
@@ -1251,6 +1251,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     metric=metric,
                     reduction=reduction,
                     last_points_only=last_points_only,
+                    verbose=verbose,
                 )
             else:  # split mode
                 model._fit_wrapper(series, past_covariates, future_covariates)
@@ -1260,6 +1261,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     past_covariates,
                     future_covariates,
                     num_samples=1,
+                    verbose=verbose,
                 )
                 error = metric(val_series, pred)
 
@@ -1468,6 +1470,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         return model
 
+    def _assert_univariate(self, series: TimeSeries):
+        if not series.is_univariate:
+            raise_log(
+                ValueError("This model only supports univariate TimeSeries instances")
+            )
+
 
 class LocalForecastingModel(ForecastingModel, ABC):
     """The base class for "local" forecasting models, handling only single univariate time series.
@@ -1477,10 +1485,13 @@ class LocalForecastingModel(ForecastingModel, ABC):
     the entire target series supplied when calling :func:`fit()` at once. They can also predict in one go with
     :func:`predict()` for any number of predictions `n` after the end of the training series.
 
-    All implementations must implement the `_fit()` and `_predict()` methods.
+    All implementations must implement the `fit()` and `predict()` methods.
     """
 
-    pass
+    @abstractmethod
+    def fit(self, series: TimeSeries) -> "LocalForecastingModel":
+        super().fit(series)
+        series._assert_deterministic()
 
 
 class GlobalForecastingModel(ForecastingModel, ABC):
@@ -1577,6 +1588,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
+        verbose: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Forecasts values for `n` time steps after the end of the series.
 
@@ -1643,6 +1655,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         past_covariates: Optional[TimeSeries],
         future_covariates: Optional[TimeSeries],
         num_samples: int,
+        verbose: bool = False,
     ) -> TimeSeries:
         return self.predict(
             n,
@@ -1650,6 +1663,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             num_samples=num_samples,
+            verbose=verbose,
         )
 
     def _fit_wrapper(
@@ -1931,6 +1945,8 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         n: int,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        verbose: bool = False,
+        **kwargs,
     ) -> TimeSeries:
         """Forecasts values for a certain number of time steps after the end of the series.
         DualCovariatesModels must implement the predict logic in this method.
@@ -1952,9 +1968,13 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         past_covariates: Optional[TimeSeries],
         future_covariates: Optional[TimeSeries],
         num_samples: int,
+        verbose: bool = False,
     ) -> TimeSeries:
         return self.predict(
-            n, future_covariates=future_covariates, num_samples=num_samples
+            n,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            verbose=verbose,
         )
 
 
@@ -2072,6 +2092,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
         historic_future_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        verbose: bool = False,
     ) -> TimeSeries:
         """Forecasts values for a certain number of time steps after the end of the series.
         TransferableFutureCovariatesLocalForecastingModel must implement the predict logic in this method.
@@ -2085,12 +2106,14 @@ class TransferableFutureCovariatesLocalForecastingModel(
         past_covariates: Optional[TimeSeries],
         future_covariates: Optional[TimeSeries],
         num_samples: int,
+        verbose: bool = False,
     ) -> TimeSeries:
         return self.predict(
             n=n,
             series=series,
             future_covariates=future_covariates,
             num_samples=num_samples,
+            verbose=verbose,
         )
 
     def _supports_non_retrainable_historical_forecasts(self) -> bool:

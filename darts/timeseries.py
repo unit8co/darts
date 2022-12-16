@@ -31,7 +31,9 @@ Read our `user guide on covariates <https://unit8co.github.io/darts/userguide/co
 ``TimeSeries`` documentation for more information on covariates.
 """
 
+import itertools
 import pickle
+import re
 from collections import defaultdict
 from copy import deepcopy
 from inspect import signature
@@ -1300,6 +1302,7 @@ class TimeSeries:
     Some asserts
     =============
     """
+
     # TODO: put at the bottom
 
     def _assert_univariate(self):
@@ -1405,12 +1408,14 @@ class TimeSeries:
         else:
             return pd.Series(self._xa[:, 0, 0].values, index=self._time_index)
 
-    def pd_dataframe(self, copy=True) -> pd.DataFrame:
+    def pd_dataframe(self, copy=True, suppress_warnings=False) -> pd.DataFrame:
         """
-        Return a Pandas DataFrame representation of this deterministic time series.
+        Return a Pandas DataFrame representation of this time series.
 
         Each of the series components will appear as a column in the DataFrame.
-        Works only for deterministic series (i.e., made of 1 sample).
+        If the series is stochastic, the samples are returned as columns of the dataframe with column names
+        as 'component_s#' (e.g. with two components and two samples:
+        'comp0_s0', 'comp0_s1' 'comp1_s0' 'comp1_s1').
 
         Parameters
         ----------
@@ -1423,25 +1428,46 @@ class TimeSeries:
             The Pandas DataFrame representation of this time series
         """
         if not self.is_deterministic:
-            raise_log(
-                AssertionError(
-                    "The pd_dataframe() method can only return DataFrames of deterministic "
-                    "time series, and this series is not deterministic (it contains several samples). "
-                    "Consider calling quantile_df() instead."
+            if not suppress_warnings:
+                logger.warning(
+                    "You are transforming a stochastic TimeSeries (i.e., contains several samples). "
+                    "The resulting DataFrame is a 2D object with all samples on the columns. "
+                    "If this is not the expected behavior consider calling a function "
+                    "adapted to stochastic TimeSeries like quantile_df()."
                 )
-            )
-        if copy:
-            return pd.DataFrame(
-                self._xa[:, :, 0].values.copy(),
-                index=self._time_index.copy(),
-                columns=self._xa.get_index(DIMS[1]).copy(),
-            )
+
+            comp_name = list(self.components)
+            samples = range(self.n_samples)
+            df_col_names = [
+                "_s".join((comp_name, str(sample_id)))
+                for comp_name, sample_id in itertools.product(comp_name, samples)
+            ]
+
+            if copy:
+                return pd.DataFrame(
+                    self._xa.stack(data=(DIMS[1], DIMS[2])).values.copy(),
+                    index=self._time_index.copy(),
+                    columns=df_col_names.copy(),
+                )
+            else:
+                return pd.DataFrame(
+                    self._xa.stack(data=(DIMS[1], DIMS[2])).values,
+                    index=self._time_index,
+                    columns=df_col_names,
+                )
         else:
-            return pd.DataFrame(
-                self._xa[:, :, 0].values,
-                index=self._time_index,
-                columns=self._xa.get_index(DIMS[1]),
-            )
+            if copy:
+                return pd.DataFrame(
+                    self._xa[:, :, 0].values.copy(),
+                    index=self._time_index.copy(),
+                    columns=self._xa.get_index(DIMS[1]).copy(),
+                )
+            else:
+                return pd.DataFrame(
+                    self._xa[:, :, 0].values,
+                    index=self._time_index,
+                    columns=self._xa.get_index(DIMS[1]),
+                )
 
     def quantile_df(self, quantile=0.5) -> pd.DataFrame:
         """
@@ -2059,7 +2085,8 @@ class TimeSeries:
         self, split_point: Union[pd.Timestamp, float, int], after: bool = True
     ) -> Tuple["TimeSeries", "TimeSeries"]:
 
-        point_index = self.get_index_at_point(split_point, after)
+        # Get index with not after in order to avoid moving twice if split_point is not in self
+        point_index = self.get_index_at_point(split_point, not after)
         return (
             self[: point_index + (1 if after else 0)],
             self[point_index + (1 if after else 0) :],
@@ -2841,7 +2868,7 @@ class TimeSeries:
         Parameters
         -------
         col_names
-            String or list of strings corresponding the the columns to be dropped.
+            String or list of strings corresponding to the columns to be dropped.
 
         Returns
         -------
@@ -3130,6 +3157,396 @@ class TimeSeries:
 
         return self.__class__(new_xa)
 
+    def window_transform(
+        self,
+        transforms: Union[Dict, Sequence[Dict]],
+        treat_na: Optional[Union[str, Union[int, float]]] = None,
+        forecasting_safe: Optional[bool] = True,
+        keep_non_transformed: Optional[bool] = False,
+        include_current: Optional[bool] = True,
+    ) -> "TimeSeries":
+        """
+        Applies a moving/rolling, expanding or exponentially weighted window transformation over this ``TimeSeries``.
+
+        Parameters
+        ----------
+        transforms
+            A dictionary or a list of dictionaries.
+            Each dictionary specifies a different window transform.
+
+            The dictionaries can contain the following keys:
+
+            :``"function"``: Mandatory. The name of one of the pandas builtin transformation functions,
+                            or a callable function that can be applied to the input series.
+                            Pandas' functions can be found in the
+                            `documentation <https://pandas.pydata.org/docs/reference/window.html>`_.
+
+            :``"mode"``: Optional. The name of the pandas windowing mode on which the ``"function"`` is going to be
+                        applied. The options are "rolling", "expanding" and "ewm".
+                        If not provided, Darts defaults to "expanding".
+                        User defined functions can use either "rolling" or "expanding" modes.
+                        More information on pandas windowing operations can be found in the `documentation
+                        <https://pandas.pydata.org/pandas-docs/stable/user_guide/window.html>`_.
+
+            :``"components"``: Optional. A string or list of strings specifying the TimeSeries components on which the
+                               transformation should be applied. If not specified, the transformation will be
+                               applied on all components.
+
+            All other dictionary items provided will be treated as keyword arguments for the windowing mode
+            (i.e., ``rolling/ewm/expanding``) or for the specific function
+            in that mode (i.e., ``pandas.DataFrame.rolling.mean/std/max/min...`` or
+            ``pandas.DataFrame.ewm.mean/std/sum``).
+            This allows for more flexibility in configuring the transformation, by providing for
+            example:
+
+            * :``"window"``: Size of the moving window for the "rolling" mode.
+                            If an integer, the fixed number of observations used for each window.
+                            If an offset, the time period of each window.
+            * :``"min_periods"``: The minimum number of observations in the window required to have a value (otherwise
+                NaN). Darts reuses pandas defaults of 1 for "rolling" and "expanding" modes and of 0 for "ewm" mode.
+            * :``"win_type"``: The type of weigthing to apply to the window elements.
+                If provided, it should be one of `scipy.signal.windows
+                <https://docs.scipy.org/doc/scipy/reference/signal.windows.html#module-scipy.signal.windows>`_.
+            * :``"center"``: ``True``/``False`` to set the observation at the current timestep at the center of the
+                window (when ``forecasting_safe`` is `True`, Darts enforces ``"center"`` to ``False``).
+            * :``"closed"``: ``"right"``/``"left"``/``"both"``/``"neither"`` to specify whether the right,
+                left or both ends of the window are included in the window, or neither of them.
+                Darts defaults to pandas default of ``"right"``.
+
+            More information on the available functions and their parameters can be found in the
+            `Pandas documentation <https://pandas.pydata.org/docs/reference/window.html>`_.
+
+            For user-provided functions, extra keyword arguments in the transformation dictionary are passed to the
+            user-defined function.
+            By default, Darts expects user-defined functions to receive numpy arrays as input.
+            This can be modified by adding item ``"raw": False`` in the transformation dictionary.
+            It is expected that the function returns a single
+            value for each window. Other possible configurations can be found in the
+            `pandas.DataFrame.rolling().apply()
+            documentation <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.rolling.html>`_
+            and `pandas.DataFrame.expanding().apply()
+            documentation <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.expanding.html>`_.
+
+        treat_na
+            Specifies how to treat missing values that were added by the window transformations
+            at the beginning of the resulting TimeSeries. By default, Darts will leave NaNs in the resulting TimeSeries.
+            This parameter can be one of the following:
+
+            * :``"dropna"``: to truncate the TimeSeries and drop rows containing missing values.
+                If multiple columns contain different numbers of missing values, only the minimum number
+                of rows is dropped. This operation might reduce the length of the resulting TimeSeries.
+
+            * :``"bfill"`` or ``"backfill"``: to specify that NaNs should be filled with the last transformed
+                and valid observation. If the original TimeSeries starts with NaNs, those are kept.
+                When ``forecasting_safe`` is ``True``, this option returns an exception to avoid future observation
+                contaminating the past.
+
+            * :an integer or float: in which case NaNs will be filled with this value.
+                All columns will be filled with the same provided value.
+
+        forecasting_safe
+            If True, Darts enforces that the resulting TimeSeries is safe to be used in forecasting models as target
+            or as feature. The window transformation will not allow future values to be included in the computations
+            at their corresponding current timestep. Default is ``True``.
+            "ewm" and "expanding" modes are forecasting safe by default.
+            "rolling" mode is forecasting safe if ``"center": False`` is guaranteed.
+
+        keep_non_transformed
+            ``False`` to return the transformed components only, ``True`` to return all original components along
+            the transformed ones. Default is ``False``.
+
+        include_current
+            ``True`` to include the current time step in the window, ``False`` to exclude it. Default is ``True``.
+
+        Returns
+        -------
+        TimeSeries
+            Returns a new TimeSeries instance with the transformed components. If ``keep_non_transformed`` is ``True``,
+            the resulting TimeSeries will contain the original non-transformed components along the transformed ones.
+            If the input series is stochastic, all samples are identically transformed.
+            The naming convention for the transformed components is as follows:
+            [window_mode]_[function_name]_[window_size if provided]_[min_periods if not default]_[original_comp_name],
+            e.g., rolling_sum_3_comp_0 (i.e., window_mode= rolling, function_name = sum, window_size=3,
+            original_comp_name=comp_0) ;
+            ewm_mean_comp_1 (i.e., window_mode= ewm, function_name = mean, original_comp_name=comp_1);
+            expanding_sum_3_comp_2 (i.e., window_mode= expanding, function_name = sum, window_size=3,
+            original_comp_name=comp_2). For user-defined functions, function_name = udf.
+        """
+        VALID_BFILL_NA = {"bfill", "backfill"}
+        VALID_TREAT_NA = VALID_BFILL_NA.union({"dropna"})
+
+        PD_WINDOW_OPERATIONS = {
+            "rolling": pd.DataFrame.rolling,
+            "expanding": pd.DataFrame.expanding,
+            "ewm": pd.DataFrame.ewm,
+        }
+
+        # helper function to read and format kwargs
+        def _get_kwargs(transformation, forecasting_safe):
+            """
+            Builds the kwargs dictionary for the transformation function.
+
+            Parameters
+            ----------
+            transformation
+                The transformation dictionary.
+            builtins
+                The built-in transformations read from the WindowTransformer class.
+
+            Returns
+            -------
+            dict, dict
+                The kwargs dictionaries for both the function group and the specific function.
+            """
+
+            # take expanding as the default window operation if not specified, safer than rolling
+            mode = transformation.get("mode", "expanding")
+
+            raise_if_not(
+                mode in PD_WINDOW_OPERATIONS.keys(),
+                f"Invalid window operation: '{mode}'. Must be one of {PD_WINDOW_OPERATIONS.keys()}.",
+                logger,
+            )
+            window_mode = PD_WINDOW_OPERATIONS[mode]
+
+            # minimum number of observations in window required to have a value (otherwise result in NaN)
+            if "min_periods" not in transformation:
+                transformation["min_periods"] = 0 if mode == "ewm" else 1
+
+            if mode == "rolling":
+                # pandas default for 'center' is False, no need to set it explicitly
+                if "center" in transformation:
+                    raise_if_not(
+                        not (transformation["center"] and forecasting_safe),
+                        "When `forecasting_safe` is True, `center` must be False.",
+                        logger,
+                    )
+
+            if isinstance(transformation["function"], Callable):
+                fn = "apply"
+                udf = transformation["function"]
+                # make sure that we provide a numpy array to the user function, "raw": True
+                if "raw" not in transformation:
+                    transformation["raw"] = True
+            elif isinstance(transformation["function"], str):
+                fn = transformation["function"]
+            else:
+                raise_log(
+                    ValueError(
+                        "Transformation function must be a string or a callable. "
+                        "String can be the name of any function available for pandas window. "
+                        "A list of those function can be found in the `documentation "
+                        "<https://pandas.pydata.org/pandas-docs/stable/reference/window.html>`."
+                    ),
+                    logger,
+                )
+
+            available_keys = set(transformation.keys()) - {
+                "function",
+                "group",
+                "components",
+            }
+
+            window_mode_expected_args = set(window_mode.__code__.co_varnames)
+            window_mode_available_keys = window_mode_expected_args.intersection(
+                available_keys
+            )
+
+            window_mode_available_kwargs = {
+                k: v
+                for k, v in transformation.items()
+                if k in window_mode_available_keys
+            }
+
+            available_keys -= window_mode_available_keys
+
+            function_expected_args = set(
+                getattr(
+                    getattr(pd.DataFrame(), window_mode.__name__)(
+                        **window_mode_available_kwargs
+                    ),
+                    fn,
+                ).__code__.co_varnames
+            )
+
+            function_available_keys = function_expected_args.intersection(
+                set(available_keys)
+            )
+
+            function_available_kwargs = {
+                k: v for k, v in transformation.items() if k in function_available_keys
+            }
+
+            available_keys -= function_available_keys
+
+            udf_expected_args = set(udf.__code__.co_varnames) if fn == "apply" else None
+            udf_available_keys = (
+                udf_expected_args.intersection(set(available_keys))
+                if fn == "apply"
+                else None
+            )
+
+            udf_kwargs = (
+                {k: v for k, v in transformation.items() if k in udf_available_keys}
+                if fn == "apply"
+                else None
+            )
+
+            function_available_kwargs.update(
+                {"func": udf, "kwargs": udf_kwargs} if fn == "apply" else {}
+            )
+
+            return (window_mode.__name__, window_mode_available_kwargs), (
+                fn,
+                function_available_kwargs,
+            )
+
+        # make sure we have a list in transforms
+        if isinstance(transforms, dict):
+            transforms = [transforms]
+
+        raise_if_not(
+            all([isinstance(tr, dict) for tr in transforms]),
+            "`transforms` must be a non-empty dictionary or a non-empty list of dictionaries.",
+        )
+
+        # read series dataframe
+        ts_df = self.pd_dataframe(copy=False, suppress_warnings=True)
+
+        # store some original attributes of the series
+        original_components = self.components
+        n_samples = self.n_samples
+        original_index = self._time_index
+
+        resulting_transformations = pd.DataFrame()
+        new_columns = []
+        added_na = []
+
+        # run through all transformations in transforms
+        for transformation in transforms:
+
+            if "components" in transformation:
+                if isinstance(transformation["components"], str):
+                    transformation["components"] = [transformation["components"]]
+                comps_to_transform = transformation["components"]
+
+            else:
+                comps_to_transform = original_components
+
+            df_cols = ts_df.columns
+
+            if not self.is_deterministic:
+                filter_df_columns = [
+                    df_col
+                    for df_col in df_cols
+                    if re.sub("_s.*$", "", df_col) in comps_to_transform
+                ]
+
+            else:
+                filter_df_columns = [df_col for df_col in comps_to_transform]
+
+            (window_mode, window_mode_kwargs), (fn, function_kwargs) = _get_kwargs(
+                transformation, forecasting_safe
+            )
+
+            closed = transformation.get("closed", None)
+            if not include_current:
+                if window_mode == "rolling":
+                    shifts = 0 if closed == "left" else 1  # avoid shifting twice
+                else:
+                    shifts = 1
+            else:
+                shifts = 0
+
+            resulting_transformations = pd.concat(
+                [
+                    resulting_transformations,
+                    getattr(
+                        getattr(ts_df[filter_df_columns], window_mode)(
+                            **window_mode_kwargs
+                        ),
+                        fn,
+                    )(**function_kwargs).shift(periods=shifts),
+                ],
+                axis=1,
+            )
+            min_periods = transformation["min_periods"]
+            # set new columns names
+            name_prefix = (
+                f"{window_mode}_{fn if fn != 'apply' else 'udf'}"
+                f"{'_'+str(transformation['window']) if 'window' in transformation else ''}"
+                f"{'_'+str(min_periods) if min_periods>1 else ''}"
+            )
+
+            new_columns.extend(
+                [f"{name_prefix}_{comp_name}" for comp_name in comps_to_transform]
+            )
+
+            # track how many NaN rows are added by each transformation on each transformed column
+            # NaNs would appear only if user changes "min_periods" to else than 1, if not,
+            # by default there should be no NaNs unless the original series starts with NaNs (those would be maintained)
+            total_na = min_periods + shifts + (closed == "left")
+            added_na.extend(
+                [
+                    total_na - 1 if min_periods > 0 else total_na
+                    for _ in filter_df_columns
+                ]
+            )
+
+        # keep all original components
+        if keep_non_transformed:
+            resulting_transformations = pd.concat(
+                [resulting_transformations, ts_df], axis=1
+            )
+            new_columns.extend(original_components)
+
+        # Treat NaNs that were introduced by the transformations only
+        # Default to leave NaNs
+        if isinstance(treat_na, str):
+            raise_if_not(
+                treat_na in VALID_TREAT_NA,
+                f"`treat_na` must be one of {VALID_TREAT_NA} or a scalar, but found {treat_na}",
+                logger,
+            )
+
+            raise_if_not(
+                not (treat_na in VALID_BFILL_NA and forecasting_safe),
+                "when `forecasting_safe` is True, back filling NaNs is not allowed as "
+                "it risks contaminating past time steps with future values.",
+                logger,
+            )
+
+        if isinstance(treat_na, (int, float)) or (treat_na in VALID_BFILL_NA):
+            for i in range(0, len(added_na), n_samples):
+                s_idx = added_na[i : (i + n_samples)][0]
+                value = (
+                    treat_na
+                    if isinstance(treat_na, (int, float))
+                    else resulting_transformations.values[s_idx, i : (i + n_samples)]
+                )
+                resulting_transformations.values[:s_idx, i : (i + n_samples)] = value
+        elif treat_na == "dropna":
+            # can only drop the NaN rows that are common among the columns
+            drop_before_index = original_index[np.min(added_na)]
+            resulting_transformations = resulting_transformations.loc[
+                drop_before_index:
+            ]
+
+        # revert dataframe to TimeSeries
+        new_index = original_index.__class__(resulting_transformations.index)
+
+        transformed_time_series = TimeSeries.from_times_and_values(
+            times=new_index,
+            values=resulting_transformations.values.reshape(
+                len(new_index), -1, n_samples
+            ),
+            columns=new_columns,
+            static_covariates=self.static_covariates,
+            hierarchy=self.hierarchy,
+        )
+
+        return transformed_time_series
+
     def to_json(self) -> str:
         """
         Return a JSON string representation of this deterministic series.
@@ -3198,6 +3615,7 @@ class TimeSeries:
         low_quantile: Optional[float] = 0.05,
         high_quantile: Optional[float] = 0.95,
         default_formatting: bool = True,
+        label: Optional[Union[str, Sequence[str]]] = "",
         *args,
         **kwargs,
     ):
@@ -3224,6 +3642,9 @@ class TimeSeries:
             interval is shown if `high_quantile` is None (default 0.95).
         default_formatting
             Whether or not to use the darts default scheme.
+        label
+            A prefix that will appear in front of each component of the TimeSeries or a list of string of
+            length the number of components in the plotted TimeSeries (default "").
         args
             some positional arguments for the `plot()` method
         kwargs
@@ -3251,7 +3672,6 @@ class TimeSeries:
             else (kwargs["figure"] if "figure" in kwargs else plt.gcf())
         )
         kwargs["figure"] = fig
-        label = kwargs["label"] if "label" in kwargs else ""
 
         if not any(lw in kwargs for lw in ["lw", "linewidth"]):
             kwargs["lw"] = 2
@@ -3262,6 +3682,18 @@ class TimeSeries:
                     self.n_components
                 )
             )
+
+        if not isinstance(label, str) and isinstance(label, Sequence):
+            raise_if_not(
+                len(label) == self.n_components
+                or (self.n_components > 10 and len(label) >= 10),
+                "The label argument should have the same length as the number of plotted components "
+                f"({min(self.n_components, 10)}), only {len(label)} labels were provided",
+                logger,
+            )
+            custom_labels = True
+        else:
+            custom_labels = False
 
         for i, c in enumerate(self._xa.component[:10]):
             comp_name = str(c.values)
@@ -3283,11 +3715,14 @@ class TimeSeries:
             alpha = kwargs["alpha"] if "alpha" in kwargs else None
             kwargs["alpha"] = 1
 
-            label_to_use = (
-                (label + ("_" + str(i) if len(self.components) > 1 else ""))
-                if label != ""
-                else "" + str(comp_name)
-            )
+            if custom_labels:
+                label_to_use = label[i]
+            else:
+                label_to_use = (
+                    (label + ("_" + str(i) if len(self.components) > 1 else ""))
+                    if label != ""
+                    else "" + str(comp_name)
+                )
             kwargs["label"] = label_to_use
 
             if central_series.shape[0] > 1:
