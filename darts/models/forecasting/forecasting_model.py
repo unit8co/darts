@@ -707,7 +707,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # If the model has never been fitted before using historical_forecasts,
         # we need to know if it uses past or future covariates. The only possible assumption is that
-        # the user is using the same covariates as he would in the fit method.
+        # the user is using the same covariates as they would in the fit method.
         if self._fit_called is False:
             if past_covariates is not None:
                 self._uses_past_covariates = True
