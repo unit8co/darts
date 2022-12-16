@@ -397,6 +397,18 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             with test_case.assertRaises(ValueError):
                 test_series.split_before(value)
 
+        # Test split points between series indeces
+        times = pd.date_range("20130101", "20130120", freq="2D")
+        pd_series = pd.Series(range(10), index=times)
+        test_series2: TimeSeries = TimeSeries.from_series(pd_series)
+        split_date = pd.Timestamp("20130110")
+        seriesM, seriesN = test_series2.split_before(split_date)
+        seriesO, seriesP = test_series2.split_after(split_date)
+        test_case.assertLess(seriesM.end_time(), split_date)
+        test_case.assertGreaterEqual(seriesN.start_time(), split_date)
+        test_case.assertLessEqual(seriesO.end_time(), split_date)
+        test_case.assertGreater(seriesP.start_time(), split_date)
+
     @staticmethod
     def helper_test_drop(test_case, test_series: TimeSeries):
         seriesA = test_series.drop_after(pd.Timestamp("20130105"))

@@ -315,6 +315,118 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
             len(transformed_series._time_index),
         )
 
+    def test_include_current(self):
+        # if "closed"="left" should not shift the index
+        transformation = {
+            "function": "sum",
+            "mode": "rolling",
+            "window": 1,
+            "closed": "left",
+        }
+        expected_transformed_series = TimeSeries.from_times_and_values(
+            self.times,
+            ["NaN", 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            columns=["rolling_sum_1_0"],
+        )
+        transformed_ts = self.target.window_transform(
+            transformation, include_current=False
+        )
+        self.assertEqual(transformed_ts, expected_transformed_series)
+
+        # shift the index
+        transformation = {"function": "sum", "mode": "rolling", "window": 1}
+        expected_transformed_series = TimeSeries.from_times_and_values(
+            self.times,
+            ["NaN", 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            columns=["rolling_sum_1_0"],
+        )
+        transformed_ts = self.target.window_transform(
+            transformation, include_current=False
+        )
+        self.assertEqual(transformed_ts, expected_transformed_series)
+
+        transformation = [
+            {"function": "sum", "mode": "rolling", "window": 1, "closed": "left"},
+            {"function": "sum", "mode": "ewm", "span": 1},
+        ]
+        expected_transformed_series = TimeSeries.from_times_and_values(
+            self.times,
+            [
+                ["NaN", "NaN"],
+                [1, 1],
+                [2, 2],
+                [3, 3],
+                [4, 4],
+                [5, 5],
+                [6, 6],
+                [7, 7],
+                [8, 8],
+                [9, 9],
+            ],
+            columns=["rolling_sum_1_0", "ewm_sum_0"],
+        )
+        transformed_ts = self.target.window_transform(
+            transformation, include_current=False
+        )
+        self.assertEqual(transformed_ts, expected_transformed_series)
+
+        expected_transformed_series = TimeSeries.from_times_and_values(
+            self.times,
+            [
+                [1, 1],
+                [1, 1],
+                [2, 2],
+                [3, 3],
+                [4, 4],
+                [5, 5],
+                [6, 6],
+                [7, 7],
+                [8, 8],
+                [9, 9],
+            ],
+            columns=["rolling_sum_1_0", "ewm_sum_0"],
+        )
+        transformed_ts = self.target.window_transform(
+            transformation,
+            include_current=False,
+            forecasting_safe=False,
+            treat_na="bfill",
+        )
+        self.assertEqual(transformed_ts, expected_transformed_series)
+
+        transformation = [
+            {
+                "function": "sum",
+                "mode": "rolling",
+                "window": 2,
+                "closed": "left",
+                "min_periods": 2,
+            },
+            {"function": "sum", "mode": "ewm", "span": 1, "min_periods": 2},
+        ]
+
+        expected_transformed_series = TimeSeries.from_times_and_values(
+            self.times,
+            [
+                ["NaN", "NaN"],
+                ["NaN", "NaN"],
+                [3, 2],
+                [5, 3],
+                [7, 4],
+                [9, 5],
+                [11, 6],
+                [13, 7],
+                [15, 8],
+                [17, 9],
+            ],
+            columns=["rolling_sum_2_2_0", "ewm_sum_2_0"],
+        )
+
+        transformed_ts = self.target.window_transform(
+            transformation, include_current=False
+        )
+        self.assertEqual(transformed_ts, expected_transformed_series)
+
 
 class WindowTransformerTestCase(unittest.TestCase):
 
@@ -346,6 +458,7 @@ class WindowTransformerTestCase(unittest.TestCase):
             "keep_non_transformed": False,
             "treat_na": None,
             "forecasting_safe": True,
+            "include_current": True,
         }
         associations_list = list(transformer._transform_iterator(self.sequence_det))
         self.assertEqual(len(associations_list), 2)
@@ -362,6 +475,7 @@ class WindowTransformerTestCase(unittest.TestCase):
             "keep_non_transformed": False,
             "treat_na": None,
             "forecasting_safe": True,
+            "include_current": True,
         }
         associations_list = list(transformer._transform_iterator(self.sequence_det))
         self.assertEqual(len(associations_list), 2)
@@ -394,11 +508,6 @@ class WindowTransformerTestCase(unittest.TestCase):
         )
 
     def test_transformers_pipline(self):
-        """
-        Test that the forecasting window transformer can be used in a pipeline
-
-        """
-
         times1 = pd.date_range("20130101", "20130110")
         series_1 = TimeSeries.from_times_and_values(times1, range(1, 11))
 

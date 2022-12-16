@@ -2085,7 +2085,8 @@ class TimeSeries:
         self, split_point: Union[pd.Timestamp, float, int], after: bool = True
     ) -> Tuple["TimeSeries", "TimeSeries"]:
 
-        point_index = self.get_index_at_point(split_point, after)
+        # Get index with not after in order to avoid moving twice if split_point is not in self
+        point_index = self.get_index_at_point(split_point, not after)
         return (
             self[: point_index + (1 if after else 0)],
             self[point_index + (1 if after else 0) :],
@@ -3162,6 +3163,7 @@ class TimeSeries:
         treat_na: Optional[Union[str, Union[int, float]]] = None,
         forecasting_safe: Optional[bool] = True,
         keep_non_transformed: Optional[bool] = False,
+        include_current: Optional[bool] = True,
     ) -> "TimeSeries":
         """
         Applies a moving/rolling, expanding or exponentially weighted window transformation over this ``TimeSeries``.
@@ -3253,6 +3255,9 @@ class TimeSeries:
             ``False`` to return the transformed components only, ``True`` to return all original components along
             the transformed ones. Default is ``False``.
 
+        include_current
+            ``True`` to include the current time step in the window, ``False`` to exclude it. Default is ``True``.
+
         Returns
         -------
         TimeSeries
@@ -3296,6 +3301,7 @@ class TimeSeries:
 
             # take expanding as the default window operation if not specified, safer than rolling
             mode = transformation.get("mode", "expanding")
+
             raise_if_not(
                 mode in PD_WINDOW_OPERATIONS.keys(),
                 f"Invalid window operation: '{mode}'. Must be one of {PD_WINDOW_OPERATIONS.keys()}.",
@@ -3443,6 +3449,15 @@ class TimeSeries:
                 transformation, forecasting_safe
             )
 
+            closed = transformation.get("closed", None)
+            if not include_current:
+                if window_mode == "rolling":
+                    shifts = 0 if closed == "left" else 1  # avoid shifting twice
+                else:
+                    shifts = 1
+            else:
+                shifts = 0
+
             resulting_transformations = pd.concat(
                 [
                     resulting_transformations,
@@ -3451,7 +3466,7 @@ class TimeSeries:
                             **window_mode_kwargs
                         ),
                         fn,
-                    )(**function_kwargs),
+                    )(**function_kwargs).shift(periods=shifts),
                 ],
                 axis=1,
             )
@@ -3470,9 +3485,10 @@ class TimeSeries:
             # track how many NaN rows are added by each transformation on each transformed column
             # NaNs would appear only if user changes "min_periods" to else than 1, if not,
             # by default there should be no NaNs unless the original series starts with NaNs (those would be maintained)
+            total_na = min_periods + shifts + (closed == "left")
             added_na.extend(
                 [
-                    min_periods - 1 if min_periods > 0 else min_periods
+                    total_na - 1 if min_periods > 0 else total_na
                     for _ in filter_df_columns
                 ]
             )
@@ -3525,6 +3541,8 @@ class TimeSeries:
                 len(new_index), -1, n_samples
             ),
             columns=new_columns,
+            static_covariates=self.static_covariates,
+            hierarchy=self.hierarchy,
         )
 
         return transformed_time_series
