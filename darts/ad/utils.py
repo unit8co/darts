@@ -441,6 +441,12 @@ def _window_adjustment_anomalies(series: TimeSeries, window: int) -> TimeSeries:
         f"Parameter `window` must be stricly greater than 0, found size {window}.",
     )
 
+    raise_if_not(
+        window < len(series),
+        "Parameter `window` must be smaller than the length of the input series, "
+        + f" found window size {(window)}, and max size {len(series)}.",
+    )
+
     if window == 1:
         # the process results in replacing every value by itself -> return directly the series
         return series
