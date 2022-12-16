@@ -853,9 +853,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
         # check that NormScorer is the abs difference of model_output and series_test
         self.assertEqual(
-            (model_output - series_test.slice_intersect(model_output)).map(
-                lambda x: np.abs(x)
-            ),
+            (model_output - series_test.slice_intersect(model_output)).__abs__(),
             NormScorer().score_from_prediction(model_output, series_test),
         )
 
