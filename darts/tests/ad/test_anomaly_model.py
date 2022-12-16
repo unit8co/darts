@@ -714,18 +714,18 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             test_series_noise, return_model_prediction=True
         )
 
+        # check that Difference is the difference of model_output and test_series_noise
+        self.assertEqual(
+            model_output - test_series_noise.slice_intersect(model_output),
+            Difference().score_from_prediction(model_output, test_series_noise),
+        )
+
         # check that NormScorer is the abs difference of model_output and test_series_noise
         self.assertEqual(
             (model_output - test_series_noise.slice_intersect(model_output)).map(
                 lambda x: np.abs(x)
             ),
             NormScorer().score_from_prediction(model_output, test_series_noise),
-        )
-
-        # check that Difference is the difference of model_output and test_series_noise
-        self.assertEqual(
-            model_output - test_series_noise.slice_intersect(model_output),
-            Difference().score_from_prediction(model_output, test_series_noise),
         )
 
         dict_auc_roc = anomaly_model.eval_accuracy(
