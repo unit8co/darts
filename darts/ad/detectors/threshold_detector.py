@@ -52,12 +52,18 @@ class ThresholdDetector(NonFittableDetector):
         )
 
         if low is not None:
-            low = [low] if not isinstance(low, Sequence) else low
+            if isinstance(low, np.ndarray):
+                low = low.tolist()
+            elif not isinstance(low, Sequence):
+                low = [low]
             self._check_param(low, "low")
             low = [-float("inf") if x is None else x for x in low]
 
         if high is not None:
-            high = [high] if not isinstance(high, Sequence) else high
+            if isinstance(high, np.ndarray):
+                high = high.tolist()
+            elif not isinstance(high, Sequence):
+                high = [high]
             self._check_param(high, "high")
             high = [float("inf") if x is None else x for x in high]
 

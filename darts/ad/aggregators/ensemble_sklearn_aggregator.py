@@ -6,9 +6,12 @@ Aggregator wrapped around the Ensemble model of sklearn.
 `sklearn https://scikit-learn.org/stable/modules/ensemble.html`_.
 """
 
+from typing import Sequence
+
 import numpy as np
 from sklearn.ensemble import BaseEnsemble
 
+from darts import TimeSeries
 from darts.ad.aggregators.aggregators import FittableAggregator
 from darts.logging import raise_if_not
 
@@ -31,9 +34,37 @@ class EnsembleSklearnAggregator(FittableAggregator):
         )
 
     def _fit_core(
-        self, np_series: np.ndarray, np_actual_anomalies: np.ndarray
-    ) -> np.ndarray:
-        self.model.fit(np_series, np_actual_anomalies)
+        self,
+        list_actual_anomalies: Sequence[TimeSeries],
+        list_series: Sequence[TimeSeries],
+    ):
 
-    def _predict_core(self, np_series: np.ndarray, width: int) -> np.ndarray:
-        return self.models[width].predict(np_series)
+        X = np.concatenate(
+            [
+                series.all_values(copy=False).reshape(len(series), -1)
+                for series in list_series
+            ],
+            axis=0,
+        )
+
+        y = np.concatenate(
+            [
+                anomalies.all_values(copy=False).reshape(len(anomalies))
+                for anomalies in list_actual_anomalies
+            ],
+            axis=0,
+        )
+
+        self.model.fit(y=y, X=X)
+
+    def _predict_core(self, list_series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
+
+        return [
+            TimeSeries.from_times_and_values(
+                series.time_index,
+                self.model.predict(
+                    (series).all_values(copy=False).reshape(len(series), -1)
+                ),
+            )
+            for series in list_series
+        ]
