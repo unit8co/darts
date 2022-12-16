@@ -630,10 +630,10 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
         # function eval_accuracy_from_scores and eval_accuracy must return the same values
         np.testing.assert_array_almost_equal(
-            auc_roc_from_scores, list(dict_auc_roc.values()), decimal=2
+            auc_roc_from_scores, list(dict_auc_roc.values()), decimal=1
         )
         np.testing.assert_array_almost_equal(
-            auc_pr_from_scores, list(dict_auc_pr.values()), decimal=2
+            auc_pr_from_scores, list(dict_auc_pr.values()), decimal=1
         )
 
         true_auc_roc = [
@@ -660,9 +660,9 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
         # check value of results
         np.testing.assert_array_almost_equal(
-            auc_roc_from_scores, true_auc_roc, decimal=2
+            auc_roc_from_scores, true_auc_roc, decimal=1
         )
-        np.testing.assert_array_almost_equal(auc_pr_from_scores, true_auc_pr, decimal=2)
+        np.testing.assert_array_almost_equal(auc_pr_from_scores, true_auc_pr, decimal=1)
 
     def test_univariate_FilteringAnomalyModel(self):
 
@@ -755,10 +755,10 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
         # function eval_accuracy_from_scores and eval_accuracy must return the same values
         np.testing.assert_array_almost_equal(
-            auc_roc_from_scores, list(dict_auc_roc.values()), decimal=2
+            auc_roc_from_scores, list(dict_auc_roc.values()), decimal=1
         )
         np.testing.assert_array_almost_equal(
-            auc_pr_from_scores, list(dict_auc_pr.values()), decimal=2
+            auc_pr_from_scores, list(dict_auc_pr.values()), decimal=1
         )
 
         true_auc_roc = [
@@ -785,9 +785,9 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
         # check value of results
         np.testing.assert_array_almost_equal(
-            auc_roc_from_scores, true_auc_roc, decimal=2
+            auc_roc_from_scores, true_auc_roc, decimal=1
         )
-        np.testing.assert_array_almost_equal(auc_pr_from_scores, true_auc_pr, decimal=2)
+        np.testing.assert_array_almost_equal(auc_pr_from_scores, true_auc_pr, decimal=1)
 
     def test_univariate_covariate_ForecastingAnomalyModel(self):
 
@@ -892,10 +892,10 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
         # function eval_accuracy_from_scores and eval_accuracy must return the same values
         np.testing.assert_array_almost_equal(
-            auc_roc_from_scores, list(dict_auc_roc.values()), decimal=2
+            auc_roc_from_scores, list(dict_auc_roc.values()), decimal=1
         )
         np.testing.assert_array_almost_equal(
-            auc_pr_from_scores, list(dict_auc_pr.values()), decimal=2
+            auc_pr_from_scores, list(dict_auc_pr.values()), decimal=1
         )
 
         true_auc_roc = [1.0, 0.6, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
@@ -913,9 +913,9 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
         # check value of results
         np.testing.assert_array_almost_equal(
-            auc_roc_from_scores, true_auc_roc, decimal=2
+            auc_roc_from_scores, true_auc_roc, decimal=1
         )
-        np.testing.assert_array_almost_equal(auc_pr_from_scores, true_auc_pr, decimal=2)
+        np.testing.assert_array_almost_equal(auc_pr_from_scores, true_auc_pr, decimal=1)
 
     def test_multivariate__FilteringAnomalyModel(self):
 
@@ -1025,10 +1025,10 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
         # function eval_accuracy_from_scores and eval_accuracy must return the same values
         np.testing.assert_array_almost_equal(
-            auc_roc_from_scores, list(dict_auc_roc.values()), decimal=2
+            auc_roc_from_scores, list(dict_auc_roc.values()), decimal=1
         )
         np.testing.assert_array_almost_equal(
-            auc_pr_from_scores, list(dict_auc_pr.values()), decimal=2
+            auc_pr_from_scores, list(dict_auc_pr.values()), decimal=1
         )
 
         true_auc_roc = [
@@ -1053,9 +1053,9 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
         # check value of results
         np.testing.assert_array_almost_equal(
-            auc_roc_from_scores, true_auc_roc, decimal=2
+            auc_roc_from_scores, true_auc_roc, decimal=1
         )
-        np.testing.assert_array_almost_equal(auc_pr_from_scores, true_auc_pr, decimal=2)
+        np.testing.assert_array_almost_equal(auc_pr_from_scores, true_auc_pr, decimal=1)
 
         # second case: scorers that return scorers that have the same width as the input
         anomaly_model = FilteringAnomalyModel(
@@ -1110,10 +1110,10 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
         # function eval_accuracy_from_scores and eval_accuracy must return the same values
         np.testing.assert_array_almost_equal(
-            auc_roc_from_scores, list(dict_auc_roc.values()), decimal=2
+            auc_roc_from_scores, list(dict_auc_roc.values()), decimal=1
         )
         np.testing.assert_array_almost_equal(
-            auc_pr_from_scores, list(dict_auc_pr.values()), decimal=2
+            auc_pr_from_scores, list(dict_auc_pr.values()), decimal=1
         )
 
         true_auc_roc = [
@@ -1140,9 +1140,9 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
         # check value of results
         np.testing.assert_array_almost_equal(
-            auc_roc_from_scores, true_auc_roc, decimal=2
+            auc_roc_from_scores, true_auc_roc, decimal=1
         )
-        np.testing.assert_array_almost_equal(auc_pr_from_scores, true_auc_pr, decimal=2)
+        np.testing.assert_array_almost_equal(auc_pr_from_scores, true_auc_pr, decimal=1)
 
     def test_multivariate__ForecastingAnomalyModel(self):
 
@@ -1253,10 +1253,10 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
         # function eval_accuracy_from_scores and eval_accuracy must return the same values
         np.testing.assert_array_almost_equal(
-            auc_roc_from_scores, list(dict_auc_roc.values()), decimal=2
+            auc_roc_from_scores, list(dict_auc_roc.values()), decimal=1
         )
         np.testing.assert_array_almost_equal(
-            auc_pr_from_scores, list(dict_auc_pr.values()), decimal=2
+            auc_pr_from_scores, list(dict_auc_pr.values()), decimal=1
         )
 
         true_auc_roc = [
@@ -1281,9 +1281,9 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
         # check value of results
         np.testing.assert_array_almost_equal(
-            auc_roc_from_scores, true_auc_roc, decimal=2
+            auc_roc_from_scores, true_auc_roc, decimal=1
         )
-        np.testing.assert_array_almost_equal(auc_pr_from_scores, true_auc_pr, decimal=2)
+        np.testing.assert_array_almost_equal(auc_pr_from_scores, true_auc_pr, decimal=1)
 
         # second case: scorers that return scorers that have the same width as the input
         anomaly_model = ForecastingAnomalyModel(
@@ -1338,10 +1338,10 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
         # function eval_accuracy_from_scores and eval_accuracy must return the same values
         np.testing.assert_array_almost_equal(
-            auc_roc_from_scores, list(dict_auc_roc.values()), decimal=2
+            auc_roc_from_scores, list(dict_auc_roc.values()), decimal=1
         )
         np.testing.assert_array_almost_equal(
-            auc_pr_from_scores, list(dict_auc_pr.values()), decimal=2
+            auc_pr_from_scores, list(dict_auc_pr.values()), decimal=1
         )
 
         true_auc_roc = [
@@ -1368,9 +1368,9 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
         # check value of results
         np.testing.assert_array_almost_equal(
-            auc_roc_from_scores, true_auc_roc, decimal=2
+            auc_roc_from_scores, true_auc_roc, decimal=1
         )
-        np.testing.assert_array_almost_equal(auc_pr_from_scores, true_auc_pr, decimal=2)
+        np.testing.assert_array_almost_equal(auc_pr_from_scores, true_auc_pr, decimal=1)
 
     def test_show_anomalies(self):
 
