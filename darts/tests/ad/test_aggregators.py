@@ -505,7 +505,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
         np.testing.assert_array_almost_equal(
             [v.sum(axis=0).all_values().flatten()[0] for v in values],
             [67, 75],
-            decimal=2,
+            decimal=1,
         )
 
         # aggregator must have an accuracy of [0.56,0.52] for the input [mts_anomalies1, mts_anomalies2]
@@ -518,7 +518,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
                 )
             ),
             np.array([0.56, 0.52]),
-            decimal=2,
+            decimal=1,
         )
         # aggregator must have an recall of [0.72549,0.764706] for the input [mts_anomalies1, mts_anomalies2]
         np.testing.assert_array_almost_equal(
@@ -530,7 +530,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
                 )
             ),
             np.array([0.72549, 0.764706]),
-            decimal=2,
+            decimal=1,
         )
         # aggregator must have an f1 of [0.627119,0.619048] for the input [mts_anomalies1, mts_anomalies2]
         np.testing.assert_array_almost_equal(
@@ -542,7 +542,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
                 )
             ),
             np.array([0.627119, 0.619048]),
-            decimal=2,
+            decimal=1,
         )
         # aggregator must have an precision of [0.552239,0.52] for the input [mts_anomalies1, mts_anomalies2]
         np.testing.assert_array_almost_equal(
@@ -554,7 +554,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
                 )
             ),
             np.array([0.552239, 0.52]),
-            decimal=2,
+            decimal=1,
         )
 
     def test_AndAggregator(self):
@@ -669,7 +669,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
         np.testing.assert_array_almost_equal(
             [v.sum(axis=0).all_values().flatten()[0] for v in values],
             [27, 24],
-            decimal=2,
+            decimal=1,
         )
 
         # aggregator must have an accuracy of [0.44,0.53] for the input [mts_anomalies1, mts_anomalies2]
@@ -682,7 +682,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
                 )
             ),
             np.array([0.44, 0.53]),
-            decimal=2,
+            decimal=1,
         )
         # aggregator must have an recall of [0.215686,0.27451] for the input [mts_anomalies1, mts_anomalies2]
         np.testing.assert_array_almost_equal(
@@ -694,7 +694,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
                 )
             ),
             np.array([0.215686, 0.27451]),
-            decimal=2,
+            decimal=1,
         )
         # aggregator must have an f1 of [0.282051,0.373333] for the input [mts_anomalies1, mts_anomalies2]
         np.testing.assert_array_almost_equal(
@@ -706,7 +706,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
                 )
             ),
             np.array([0.282051, 0.373333]),
-            decimal=2,
+            decimal=1,
         )
         # aggregator must have an precision of [0.407407, 0.583333] for the input [mts_anomalies1, mts_anomalies2]
         np.testing.assert_array_almost_equal(
@@ -718,7 +718,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
                 )
             ),
             np.array([0.407407, 0.583333]),
-            decimal=2,
+            decimal=1,
         )
 
     def test_EnsembleSklearn(self):
@@ -758,7 +758,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
                 )
             ),
             np.array([0.92, 0.92]),
-            decimal=2,
+            decimal=1,
         )
 
         # single series case (random example)
@@ -821,7 +821,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
         np.testing.assert_array_almost_equal(
             [v.sum(axis=0).all_values().flatten()[0] for v in values],
             [100, 100.0],
-            decimal=2,
+            decimal=1,
         )
 
         # aggregator must have an accuracy of [0.51, 0.51] for the input [mts_anomalies1, mts_anomalies2]
@@ -834,7 +834,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
                 )
             ),
             np.array([0.51, 0.51]),
-            decimal=2,
+            decimal=1,
         )
         # aggregator must have an recall of [1,1] for the input [mts_anomalies1, mts_anomalies2]
         np.testing.assert_array_almost_equal(
@@ -846,7 +846,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
                 )
             ),
             np.array([1, 1]),
-            decimal=2,
+            decimal=1,
         )
         # aggregator must have an f1 of [0.675497, 0.675497] for the input [mts_anomalies1, mts_anomalies2]
         np.testing.assert_array_almost_equal(
@@ -858,7 +858,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
                 )
             ),
             np.array([0.675497, 0.675497]),
-            decimal=2,
+            decimal=1,
         )
         # aggregator must have an precision of [0.51, 0.51] for the input [mts_anomalies1, mts_anomalies2]
         np.testing.assert_array_almost_equal(
@@ -870,5 +870,5 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
                 )
             ),
             np.array([0.51, 0.51]),
-            decimal=2,
+            decimal=1,
         )
