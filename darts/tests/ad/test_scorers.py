@@ -1011,7 +1011,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         np_width1 = np.random.choice(a=[0, 1], size=100, p=[0.5, 0.5])
         np_width2 = (np_width1 == 0).astype(float)
         KMeans_mts_train = TimeSeries.from_values(
-            np.dstack((np_width1, np_width2))[0], columns=["width 1", "width 2"]
+            np.dstack((np_width1, np_width2))[0], columns=["component 1", "component 2"]
         )
 
         # create the test set
@@ -1036,7 +1036,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         np_width2[90:96] = (np_width2[90:96] != 1).astype(int)
 
         KMeans_mts_test = TimeSeries.from_values(
-            np.dstack((np_width1, np_width2))[0], columns=["width 1", "width 2"]
+            np.dstack((np_width1, np_width2))[0], columns=["component 1", "component 2"]
         )
 
         # create the anomaly series
@@ -1305,7 +1305,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         np_width1 = np.random.choice(a=[0, 1], size=100, p=[0.5, 0.5])
         np_width2 = (np_width1 == 0).astype(float)
         pyod_mts_train = TimeSeries.from_values(
-            np.dstack((np_width1, np_width2))[0], columns=["width 1", "width 2"]
+            np.dstack((np_width1, np_width2))[0], columns=["component 1", "component 2"]
         )
 
         # create the test set
@@ -1330,7 +1330,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         np_width2[90:96] = (np_width2[90:96] != 1).astype(int)
 
         pyod_mts_test = TimeSeries.from_values(
-            np.dstack((np_width1, np_width2))[0], columns=["width 1", "width 2"]
+            np.dstack((np_width1, np_width2))[0], columns=["component 1", "component 2"]
         )
 
         # create the anomaly series

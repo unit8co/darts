@@ -62,7 +62,8 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
     onlyzero = TimeSeries.from_times_and_values(train._time_index, np_anomalies_0)
 
     series_1_and_0 = TimeSeries.from_values(
-        np.dstack((np_anomalies_1, np_anomalies_0))[0], columns=["width 1", "width 2"]
+        np.dstack((np_anomalies_1, np_anomalies_0))[0],
+        columns=["component 1", "component 2"],
     )
 
     np_real_anomalies_3w = [
