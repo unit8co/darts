@@ -31,7 +31,7 @@ class KMeansScorer(FittableAnomalyScorer):
     ) -> None:
         """
         When calling ``fit(series)``, a moving window is applied, which results in a set of vectors of size W,
-        where W is the window size. The KMeans model is trained on these vectors. The ``score(series)`` function
+        where `W` is the window size. The KMeans model is trained on these vectors. The ``score(series)`` function
         will apply the same moving window and return the minimal distance between the K centroid and for each
         vector of size W.
 
@@ -42,54 +42,49 @@ class KMeansScorer(FittableAnomalyScorer):
 
         `component_wise` is a boolean parameter indicating how the model should behave with multivariate inputs
         series. If set to True, the model will treat each series dimension independently by fitting a different
-        KMeans model for each dimension. If the input series has a dimension of D, the model will train D KMeans
+        KMeans model for each dimension. If the input series has a dimension of `D`, the model will train `D` KMeans
         models. If set to False, the model will concatenate the dimensions in the considered `window` W and compute
         the score using only one trained KMeans model.
 
-        Training with ``fit()``:
+        **Training with** ``fit()``:
 
-        The input can be a series (univariate or multivariate) or a sequence of series. The series will be partitioned
-        into equal size subsequences. The subsequence will be of size W * D, with:
-            - W being the size of the window given as a parameter `window` (w>0)
-            - D being the dimension of the series (D=1 if deterministic)
+        The input can be a series (univariate or multivariate) or multiple series. The series will be partitioned
+        into equal size subsequences. The subsequence will be of size `W` * `D`, with:
 
-        For a series of length N, (N-W+1)/W subsequences will be generated. If a list of series is given of length L,
-        each series will be partitioned into subsequences, and the results will be concatenated into an array of
-        length L * number of subsequences.
+        * `W` being the size of the window given as a parameter `window` (w>0)
+        * `D` being the dimension of the series (`D`=1 if deterministic)
+
+        For a series of length `N`, (`N`-`W`+1)/W subsequences will be generated. If a list of series is given
+        of length L, each series will be partitioned into subsequences, and the results will be concatenated into
+        an array of length L * number of subsequences of each series.
 
         The model KMeans will be fitted on the generated subsequences. The model will find `k` clusters
-        in the vector space of dimension equal to the length of the subsequences (D*W).
+        in the vector space of dimension equal to the length of the subsequences (`D`*W).
 
         If `component_wise` is set to True, the algorithm will be applied to each dimension independently. For each
         dimension, a KMeans model will be trained.
 
-        Compute score with ``score()``:
+        **Computing score with** ``score()``:
 
         The input can be a series (univariate or multivariate) or a sequence of series. The given series must have the
-        same dimension D as the data used to train the KMeans model.
+        same dimension `D` as the data used to train the KMeans model.
 
-        - If the series is multivariate of dimension D:
-            - if `component_wise` is set to False: it will return a univariate series (dimension=1). It represents
-            the anomaly score of the entire series in the considered window at each timestamp.
-            - if `component_wise` is set to True: it will return a multivariate series of dimension D. Each dimension
-            represents the anomaly score of the corresponding component of the input.
+        For each series, if the series is multivariate of dimension `D`:
 
-        - If the series is univariate, it will return a univariate series regardless of the parameter
+        * if `component_wise` is set to False: it will return a univariate series (dimension=1). It represents
+        the anomaly score of the entire series in the considered window at each timestamp.
+        * if `component_wise` is set to True: it will return a multivariate series of dimension `D`. Each dimension
+        represents the anomaly score of the corresponding component of the input.
+
+        If the series is univariate, it will return a univariate series regardless of the parameter
         `component_wise`.
 
-        A window of size W is rolled on the series with a stride equal to 1. It is the same size window W used during
-        the training phase. At each timestamp, the previous W values will form a vector of size W * D
-        of the series (with D being the series dimensions). The KMeans model will then retrieve the closest centroid
-        to this vector and compute the euclidean distance between the centroid and the vector. The output will be a
-        series of dimension one and length N-W+1, with N being the length of the input series. Each value represents
-        how anomalous the sample of the W previous values is.
-
-        If a list is given, a for loop will iterate through the list, and the function ``_score_core()`` will be
-        applied independently on each series. The function will return an anomaly score for each series in the list.
-
-        If `component_wise` is set to True, the algorithm will be applied to each dimension independently. The distance
-        will be computed between the vector and the closest centroid found by the model trained on the corresponding
-        dimension during the training.
+        A window of size `W` is rolled on the series with a stride equal to 1. It is the same size window `W` used
+        during the training phase. At each timestamp, the previous `W` values will form a vector of size `W` * `D`
+        of the series (with `D` being the series dimensions). The KMeans model will then retrieve the closest
+        centroid to this vector and compute the euclidean distance between the centroid and the vector. The output
+        will be a series of dimension one and length `N` - `W`+1, with `N` being the length of the input series.
+        Each value will represent how anomalous the sample of the `W` previous values is.
 
         Parameters
         ----------
@@ -99,13 +94,13 @@ class KMeansScorer(FittableAnomalyScorer):
             The number of clusters to form as well as the number of centroids to generate by the KMeans model.
         diff_fn
             Optionally, reduced function to use if two series are given. It will transform the two series into one.
-            This allows the KMeansScorer to apply KMeans on the original series or on its residuals (difference between
-            the prediction and the original series).
+            This allows the KMeansScorer to apply KMeans on the original series or on its residuals (difference
+            between the prediction and the original series).
             Must be one of "abs_diff" and "diff" (defined in ``_diff_series()``).
             Default: "abs_diff"
         component_wise
-            Boolean value indicating if the score needs to be computed for each width/dimension independently (True)
-            or by concatenating the width in the considered window to compute one score (False).
+            Boolean value indicating if the score needs to be computed for each component independently (True)
+            or by concatenating the component in the considered window to compute one score (False).
             Default: False
         """
 
@@ -150,14 +145,16 @@ class KMeansScorer(FittableAnomalyScorer):
             )
         else:
             models = []
-            for width in range(self.width_trained_on):
+            for component_idx in range(self.width_trained_on):
                 model = KMeans(n_clusters=self.k, n_init=10)
                 model.fit(
                     np.concatenate(
                         [
                             np.array(
                                 [
-                                    np.array(np_series[i : i + self.window, width])
+                                    np.array(
+                                        np_series[i : i + self.window, component_idx]
+                                    )
                                     for i in range(len(np_series) - self.window + 1)
                                 ]
                             ).reshape(-1, self.window)
@@ -172,8 +169,9 @@ class KMeansScorer(FittableAnomalyScorer):
 
         raise_if_not(
             self.width_trained_on == series.width,
-            "Input must have the same width as the data used for training the KMeans"
-            + f" model, found width {series.width} and expected {self.width_trained_on}.",
+            "Input must have the same number of components as the data used for"
+            + " training the KMeans model, found number of components equal to"
+            + f" {series.width} and expected {self.width_trained_on}.",
         )
 
         # TODO: vectorize
@@ -196,13 +194,13 @@ class KMeansScorer(FittableAnomalyScorer):
             )  # only return the clostest distance out of the k ones (k centroids)
         else:
 
-            for width in range(self.width_trained_on):
+            for component_idx in range(self.width_trained_on):
                 np_anomaly_score_width = (
-                    self.models[width]
+                    self.models[component_idx]
                     .transform(
                         np.array(
                             [
-                                np.array(np_series[i : i + self.window, width])
+                                np.array(np_series[i : i + self.window, component_idx])
                                 for i in range(len(series) - self.window + 1)
                             ]
                         ).reshape(-1, self.window)

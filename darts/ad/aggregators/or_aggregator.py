@@ -20,9 +20,6 @@ class OrAggregator(NonFittableAggregator):
     def __str__(self):
         return "OrAggregator"
 
-    def _predict_core(self, list_series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
+    def _predict_core(self, series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
 
-        return [
-            series.sum(axis=1).map(lambda x: (x > 0).astype(float))
-            for series in list_series
-        ]
+        return [s.sum(axis=1).map(lambda x: (x > 0).astype(float)) for s in series]

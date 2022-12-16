@@ -185,8 +185,9 @@ class FittableDetector(Detector):
 
         raise_if_not(
             all([self.width_trained_on == s.width for s in list_series]),
-            "all series in `series` must have the same width as the data used for training"
-            + f" the detector model, training width {self.width_trained_on}.",
+            "all series in `series` must have the same number of components as the data "
+            + "used for training the detector model, number of components in training: "
+            + f" {self.width_trained_on}.",
         )
 
         detected_series = []
@@ -232,7 +233,7 @@ class FittableDetector(Detector):
 
         raise_if_not(
             all([s.width == self.width_trained_on for s in list_series]),
-            "all series in `series` must have the same width.",
+            "all series in `series` must have the same number of components.",
         )
 
         self._fit_core(list_series)

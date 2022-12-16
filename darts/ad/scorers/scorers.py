@@ -101,7 +101,7 @@ class AnomalyScorer(ABC):
 
         self.univariate_scorer = univariate_scorer
 
-    def _check_univariate_scorer(self, actual_anomalies):
+    def _check_univariate_scorer(self, actual_anomalies: Sequence[TimeSeries]):
         """Checks if `actual_anomalies` contains only univariate series when the scorer has the
         parameter 'univariate_scorer' set to True.
 
@@ -111,11 +111,10 @@ class AnomalyScorer(ABC):
                 anomaly score regardless of the input `series` (or, if applicable, `actual_series`
                 and `pred_series`).
             False -> when the scorer will return a series that has the
-                same width as the input (can be univariate or multivariate).
+                same number of components as the input (can be univariate or multivariate).
         """
 
         if self.univariate_scorer:
-            actual_anomalies = _to_list(actual_anomalies)
             raise_if_not(
                 all([isinstance(s, TimeSeries) for s in actual_anomalies]),
                 "all series in `actual_anomalies` must be of type TimeSeries.",
@@ -210,7 +209,7 @@ class AnomalyScorer(ABC):
                 of multivariate series. Outer Sequence is over the sequence input and the inner
                 Sequence is over the dimensions of each element in the sequence input.
         """
-
+        actual_anomalies = _to_list(actual_anomalies)
         self._check_univariate_scorer(actual_anomalies)
 
         anomaly_score = self.score_from_prediction(actual_series, pred_series)
@@ -433,6 +432,7 @@ class FittableAnomalyScorer(AnomalyScorer):
                 series. Outer Sequence is over the sequence input and the inner Sequence
                 is over the dimensions of each element in the sequence input.
         """
+        actual_anomalies = _to_list(actual_anomalies)
         self._check_univariate_scorer(actual_anomalies)
         anomaly_score = self.score(series)
 
@@ -632,9 +632,9 @@ class FittableAnomalyScorer(AnomalyScorer):
             else:
                 raise_if_not(
                     s.width == self.width_trained_on,
-                    "series in `series` must have the same width,"
-                    + f" found width {self.width_trained_on}"
-                    + f" and {s.width} for index 0 and {idx}.",
+                    "series in `series` must have the same number of components,"
+                    + f" found number of components equal to {self.width_trained_on}"
+                    + f" at index 0 and {s.width} at index {idx}.",
                 )
             self._check_window_size(s)
 
@@ -701,7 +701,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         """Calls the function ``_diff_series()`` on every pair (s1,s2) in the list (list_series_1,list_series_2).
 
         `list_series_1` and `list_series_2` must have the same length n. Each pair of series in `list_series_1` and
-        `list_series_2` must be of the same length and width/dimension.
+        `list_series_2` must be of the same length and width.
 
         Parameters
         ----------
@@ -723,7 +723,7 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         series_1 and series_2 must:
             - have a non empty time intersection
-            - be of the same width/dimension W
+            - be of the same width W
 
         Parameters
         ----------
@@ -735,7 +735,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         Returns
         -------
         TimeSeries
-            series of width/dimension W
+            series of width W
         """
         series_1, series_2 = _intersect(series_1, series_2)
 
@@ -765,8 +765,7 @@ class NLLScorer(NonFittableAnomalyScorer):
             - the parameters of the considered distribution are fitted on the samples of the probabilistic time series
             - the negative log-likelihood of the determinisitc time series values are computed
 
-        The score will be computed on each component independently. Additionally, if the series is
-        multivariate, the score will be computed on each width independently.
+        If the series is multivariate, the score will be computed on each component independently.
 
         Parameters
         ----------
@@ -786,13 +785,13 @@ class NLLScorer(NonFittableAnomalyScorer):
         np_pred_series = pred_series.all_values(copy=False)
 
         np_anomaly_scores = []
-        for width in range(pred_series.width):
+        for component_idx in range(pred_series.width):
             np_anomaly_scores.append(
                 self._score_core_nllikelihood(
                     # shape actual: (time_steps, )
                     # shape pred: (time_steps, samples)
-                    np_actual_series[:, width].flatten(),
-                    np_pred_series[:, width],
+                    np_actual_series[:, component_idx].flatten(),
+                    np_pred_series[:, component_idx],
                 )
             )
 

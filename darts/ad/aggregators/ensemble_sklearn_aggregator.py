@@ -35,36 +35,28 @@ class EnsembleSklearnAggregator(FittableAggregator):
 
     def _fit_core(
         self,
-        list_actual_anomalies: Sequence[TimeSeries],
-        list_series: Sequence[TimeSeries],
+        actual_anomalies: Sequence[TimeSeries],
+        series: Sequence[TimeSeries],
     ):
 
         X = np.concatenate(
-            [
-                series.all_values(copy=False).reshape(len(series), -1)
-                for series in list_series
-            ],
+            [s.all_values(copy=False).reshape(len(s), -1) for s in series],
             axis=0,
         )
 
         y = np.concatenate(
-            [
-                anomalies.all_values(copy=False).reshape(len(anomalies))
-                for anomalies in list_actual_anomalies
-            ],
+            [s.all_values(copy=False).reshape(len(s)) for s in actual_anomalies],
             axis=0,
         )
 
         self.model.fit(y=y, X=X)
 
-    def _predict_core(self, list_series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
+    def _predict_core(self, series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
 
         return [
             TimeSeries.from_times_and_values(
-                series.time_index,
-                self.model.predict(
-                    (series).all_values(copy=False).reshape(len(series), -1)
-                ),
+                s.time_index,
+                self.model.predict((s).all_values(copy=False).reshape(len(s), -1)),
             )
-            for series in list_series
+            for s in series
         ]

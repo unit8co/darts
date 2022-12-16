@@ -20,12 +20,6 @@ threshold metric (AUC-ROC or AUC-PR), between the predicted anomaly score time s
 ground-truth time series indicating the presence of actual anomalies.
 """
 
-# TODO:
-#     - check if warning is the right way to do: with import warnings
-#     - put start default value to its minimal value
-#     - check problem with component wise is False/True fit with a uni/multi and score on a uni/multi
-
-
 from abc import ABC, abstractmethod
 from typing import Dict, Sequence, Union
 

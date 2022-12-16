@@ -26,11 +26,7 @@ class GaussianNLLScorer(NLLScorer):
         probabilistic_estimations: np.ndarray,
     ) -> np.ndarray:
 
-        # TODO: vectorize
-
-        return [
-            -norm.logpdf(value, scale=std, loc=mean)
-            for value, (mean, std) in zip(
-                deterministic_values, list(map(norm.fit, probabilistic_estimations))
-            )
-        ]
+        mu, std = np.mean(probabilistic_estimations, axis=1), np.std(
+            probabilistic_estimations, axis=1
+        )
+        return -norm.logpdf(deterministic_values, loc=mu, scale=std)

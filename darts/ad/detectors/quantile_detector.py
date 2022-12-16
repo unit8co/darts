@@ -24,10 +24,11 @@ class QuantileDetector(FittableDetector):
         - if the length of one parameter is equal to one, the value will be duplicated
           to have the same length as the other parameter
         - the functions ``fit()`` and ``score()``:
-            * only accepts series with the same width as the number of values in the given sequence.
-              The quantile will be computed along each width with the corresponding value.
-            * if a series has a width higher than 1, and the sequences for the parameters
-              are equal to 1. The same quantile will be computed for all the widths.
+            * only accepts series that have the same number of components as the number of
+              values in the given sequence. The quantile will be computed along each component
+              with the corresponding value.
+            * if a series is multivariate, and the sequences for the parameters
+              are equal to 1: the same quantile will be computed for all the components.
 
     Parameters
     ----------
@@ -133,8 +134,8 @@ class QuantileDetector(FittableDetector):
         )
 
     def _check_input_width(self, series: TimeSeries):
-        """Checks if input widths is equal to the number of values
-        contained in parameter `high` or/and `low`.
+        """Checks if the number of components of the input is equal to the number
+        of values contained in parameter `high` or/and `low`.
         """
 
         if self.low is not None:
@@ -145,8 +146,9 @@ class QuantileDetector(FittableDetector):
         if len(param) > 1:
             raise_if_not(
                 len(param) == series.width,
-                "Input widths must be equal to the number of values given for `high`"
-                + f"or/and `low`, found width {series.width} and expected {len(param)}.",
+                "The number of components of input must be equal to the number"
+                + " of values given for `high` or/and `low`, found number of "
+                + f"components equal to {series.width} and expected {len(param)}.",
             )
 
     def _detection_per_array(self, np_data, lower, upper):

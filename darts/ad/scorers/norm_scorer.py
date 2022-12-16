@@ -31,9 +31,10 @@ class NormScorer(NonFittableAnomalyScorer):
 
         The scoring function expects two series.
 
-        If the two series are multivariate of width w:
-            - if `component_wise` is set to False: it will return a univariate series (width=1).
-            - if `component_wise` is set to True: it will return a multivariate series of width w
+        If the two series are multivariate of width W:
+
+        * if `component_wise` is set to False: it will return a univariate series (width=1).
+        * if `component_wise` is set to True: it will return a multivariate series of width W
 
         If the two series are univariate, it will return a univariate series regardless of the parameter
         `component_wise`.

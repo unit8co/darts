@@ -197,7 +197,7 @@ class FittableAggregator(Aggregator):
     ):
         """Fit the aggregators on the (sequence of) multivariate binary series.
 
-        If a list of series is given, they must have the same widths.
+        If a list of series is given, they must have the same number of components.
 
         Parameters
         ----------
@@ -271,8 +271,9 @@ class FittableAggregator(Aggregator):
 
         raise_if_not(
             all([s.width == self.width_trained_on for s in list_series]),
-            "all series in `series` must have the same width as the data used for training the"
-            + f" detector model, training width: {self.width_trained_on}.",
+            "all series in `series` must have the same number of components as the data"
+            + " used for training the detector model, number of components in training:"
+            + f" {self.width_trained_on}.",
         )
 
         if isinstance(series, TimeSeries):

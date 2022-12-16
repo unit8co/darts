@@ -158,7 +158,7 @@ def eval_accuracy_from_binary_prediction(
     checks that `pred_anomalies` and `actual_anomalies` are the same:
         - type,
         - length,
-        - width/dimension
+        - number of components
         - binary and has values belonging to the two classes (1 and 0)
 
     If one series is given for `actual_anomalies` and `pred_anomalies` contains more than
@@ -321,15 +321,15 @@ def _eval_accuracy_from_data(
         )
 
     metrics = []
-    for width in range(s_data.width):
+    for component_idx in range(s_data.width):
         metrics.append(
             metric_fn(
-                s_anomalies.all_values(copy=False)[:, width],
-                s_data.all_values(copy=False)[:, width],
+                s_anomalies.all_values(copy=False)[:, component_idx],
+                s_data.all_values(copy=False)[:, component_idx],
             )
         )
 
-    if width == 0:
+    if len(metrics) == 1:
         return metrics[0]
     else:
         return metrics
@@ -382,7 +382,7 @@ def _sanity_check_2series(
 
     Checks if the two inputs:
         - type is Darts Timeseries
-        - have the same width/dimension
+        - have the same number of components
         - if their intersection in time is not null
 
     Parameters
@@ -396,10 +396,11 @@ def _sanity_check_2series(
     _check_timeseries_type(series_1)
     _check_timeseries_type(series_2)
 
-    # check if the two inputs time series have the same width
+    # check if the two inputs time series have the same number of components
     raise_if_not(
         series_1.width == series_2.width,
-        f"Series must have the same width, found {series_1.width} and {series_2.width}.",
+        "Series must have the same number of components,"
+        + f" found {series_1.width} and {series_2.width}.",
     )
 
     # check if the time intersection between the two inputs time series is not empty

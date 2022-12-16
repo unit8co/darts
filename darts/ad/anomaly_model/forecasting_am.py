@@ -6,6 +6,9 @@ Wraps around a Darts forecasting model and one or several anomaly scorer(s) to c
 by comparing how actuals deviate from the model's forecasts.
 """
 
+# TODO:
+#     - put start default value to its minimal value (wait for the release of historical_forecast)
+
 import inspect
 from typing import Dict, Optional, Sequence, Union
 

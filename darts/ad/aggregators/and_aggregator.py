@@ -19,9 +19,8 @@ class AndAggregator(NonFittableAggregator):
     def __str__(self):
         return "AndAggregator"
 
-    def _predict_core(self, list_series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
+    def _predict_core(self, series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
 
         return [
-            series.sum(axis=1).map(lambda x: (x >= series.width).astype(float))
-            for series in list_series
+            s.sum(axis=1).map(lambda x: (x >= s.width).astype(float)) for s in series
         ]

@@ -24,10 +24,11 @@ class ThresholdDetector(NonFittableDetector):
         - if the length of one parameter is equal to one, the value will be duplicated
           to have the same length as the other parameter
         - the functions ``fit()`` and ``score()``:
-            * only accepts series with the same width as the number of values in the given sequence.
-              The thresholding algorithm will be computed along each width with the corresponding value.
-            * if a series has a width higher than 1, and the sequences for the parameters
-              are equal to 1. The same threshold will be used for all the widths.
+            * only accepts series that have the same number of components as the number of values
+              in the given sequence. The thresholding algorithm will be computed for each component
+              with the corresponding value.
+            * if a series is multivariate, and the sequences for the parameters
+              are equal to 1: the same threshold will be used for all the components.
 
     Parameters
     ----------
@@ -122,8 +123,9 @@ class ThresholdDetector(NonFittableDetector):
         if len(param) > 1:
             raise_if_not(
                 len(param) == series.width,
-                "Input widths must be equal to the number of values given for `high`"
-                + f"or/and `low`, found width {series.width} and expected {len(param)}.",
+                "The number of components of input must be equal to the number"
+                + " of values given for `high` or/and `low`, found number of "
+                + f"components equal to {series.width} and expected {len(param)}.",
             )
 
     def _detect_core(self, series: TimeSeries) -> TimeSeries:

@@ -243,6 +243,7 @@ class FilteringAnomalyModel(AnomalyModel):
 
         list_series = _to_list(series)
 
+        # TODO: vectorize this call later on if we have any filtering models allowing this
         list_pred = [self.filter.filter(s, **filter_kwargs) for s in list_series]
 
         scores = list(

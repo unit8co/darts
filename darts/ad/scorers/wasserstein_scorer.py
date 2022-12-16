@@ -95,9 +95,10 @@ class WassersteinScorer(FittableAnomalyScorer):
             Must be one of "abs_diff" and "diff" (defined in ``_diff_series()``).
             Default: "abs_diff"
         component_wise
-            Boolean value indicating if the score needs to be computed for each width/dimension independently (True)
-            or by concatenating the width in the considered window to compute one score (False).
+            Boolean value indicating if the score needs to be computed for each component independently (True)
+            or by concatenating the component in the considered window to compute one score (False).
             Default: False
+
         """
 
         # TODO:
@@ -144,8 +145,8 @@ class WassersteinScorer(FittableAnomalyScorer):
             # TODO: vectorize
 
             training_data = []
-            for width in range(self.width_trained_on):
-                training_data.append(concatenated_data[:, width].flatten())
+            for component_idx in range(self.width_trained_on):
+                training_data.append(concatenated_data[:, component_idx].flatten())
 
             self.training_data = training_data
 
@@ -160,8 +161,9 @@ class WassersteinScorer(FittableAnomalyScorer):
 
         raise_if_not(
             self.width_trained_on == series.width,
-            "Input must have the same width as the data used for training the Wasserstein"
-            + f" model, found width {series.width} and expected {self.width_trained_on}.",
+            "Input must have the same number of components as the data used for"
+            + " training the Wasserstein model, found number of components equal"
+            + f" to {series.width} and expected {self.width_trained_on}.",
         )
 
         np_series = series.all_values(copy=False)
@@ -187,12 +189,14 @@ class WassersteinScorer(FittableAnomalyScorer):
 
         else:
 
-            for width in range(self.width_trained_on):
+            for component_idx in range(self.width_trained_on):
                 np_anomaly_score_width = [
-                    wasserstein_distance(self.training_data[width], window_samples)
+                    wasserstein_distance(
+                        self.training_data[component_idx], window_samples
+                    )
                     for window_samples in np.array(
                         [
-                            np.array(np_series[i : i + self.window, width])
+                            np.array(np_series[i : i + self.window, component_idx])
                             for i in range(len(series) - self.window + 1)
                         ]
                     ).reshape(-1, self.window)
