@@ -11,6 +11,7 @@ from darts.models import (
     NaiveDrift,
     NaiveEnsembleModel,
     NaiveSeasonal,
+    RegressionEnsembleModel,
     Theta,
 )
 from darts.tests.base_test_class import DartsBaseTestClass
@@ -82,6 +83,18 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         self.assertTrue(
             np.array_equal(forecast_naive_ensemble.values(), forecast_mean.values())
         )
+
+    def test_stochastic_ensemble(self):
+        model1 = LinearRegressionModel(lags=1, likelihood="quantile")
+        model2 = LinearRegressionModel(lags=2, likelihood="quantile")
+
+        naive_ensemble = NaiveEnsembleModel([model1, model2])
+        self.assertTrue(naive_ensemble._is_probabilistic())
+
+        regression_ensemble = RegressionEnsembleModel(
+            [model1, model2], regression_train_n_points=1
+        )
+        self.assertTrue(regression_ensemble._is_probabilistic())
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_input_models_global_models(self):
