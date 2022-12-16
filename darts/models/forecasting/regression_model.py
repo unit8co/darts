@@ -33,7 +33,7 @@ from sklearn.linear_model import LinearRegression
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
-from darts.utils.data.tabularization import _create_lagged_data
+from darts.utils.data.tabularization import _create_lagged_data, _add_static_covariates
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import _check_quantiles, seq2series, series2seq
 
@@ -325,67 +325,9 @@ class RegressionModel(GlobalForecastingModel):
             multi_models=self.multi_models,
         )
 
-        training_samples = self._add_static_covariates(target_series, training_samples)
+        training_samples = _add_static_covariates(self.model, target_series, training_samples)
 
         return training_samples, training_labels
-
-    def _add_static_covariates(self, series, features):
-        """
-        Add static covariates to the features. Accounts for series with potentially different static covariates
-        by padding with 0 to accomodate for the maximum number of available static_covariates in any of the given
-        series in the sequence. If no static covariates are provided for a given series, its corresponding features
-        are padded with 0.
-        """
-
-        series = series2seq(series)
-        reps = features.shape[0] // len(series)
-        # collect static covariates info
-        map = {"covs_width": [], "values": []}
-        for ts in series:
-            if ts.static_covariates is not None:
-                # reshape with order="F" to ensure that the covariates are read column wise
-                scovs = ts.static_covariates_values(copy=False).reshape(
-                    1, -1, order="F"
-                )
-                map["covs_width"].append(scovs.shape[1])
-                map["values"].append(scovs)
-            else:
-                map["covs_width"].append(0)
-                map["values"].append(np.array([]))
-
-        max_width = max(map["covs_width"])
-
-        if max_width == 0:
-            if (
-                hasattr(self.model, "n_features_in_")
-                and self.model.n_features_in_ is not None
-                and self.model.n_features_in_ > features.shape[1]
-            ):
-                # for when series in prediction do not have static covariates but some of the training series did
-                pad_zeros = np.zeros((1, self.model.n_features_in_ - features.shape[1]))
-                return np.concatenate(
-                    [features, np.tile(pad_zeros, reps=(reps, 1))], axis=1
-                )
-            else:
-                return features
-
-        else:
-            # at least one series in the sequence has static covariates
-            static_covs = []
-
-            # build static covariates array
-            for i in range(len(series)):
-                pad_zeros = np.zeros((1, max_width - map["covs_width"][i]))
-                scovs = (
-                    np.concatenate((map["values"][i], pad_zeros), axis=1)
-                    if map["covs_width"][i] > 0
-                    else pad_zeros
-                )
-                static_covs.append(np.tile(scovs, reps=(reps, 1)))
-            static_covs = np.concatenate(static_covs, axis=0)
-
-            # concatenate static covariates to features
-            return np.concatenate([features, static_covs], axis=1)
 
     def _fit_model(
         self,
@@ -715,7 +657,7 @@ class RegressionModel(GlobalForecastingModel):
 
             # concatenate retrieved lags
             X = np.concatenate(np_X, axis=1)
-            X = self._add_static_covariates(series, X)
+            X = _add_static_covariates(self.model, series, X)
 
             # X has shape (n_series * n_samples, n_regression_features)
             prediction = self._predict_and_sample(X, num_samples, **kwargs)
