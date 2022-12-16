@@ -26,7 +26,6 @@ class GammaNLLScorer(NLLScorer):
         probabilistic_estimations: np.ndarray,
     ) -> np.ndarray:
 
-        # TODO: takes a very long time to compute, understand why
         # TODO: vectorize
 
         return [

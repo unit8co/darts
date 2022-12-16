@@ -26,9 +26,5 @@ class ExponentialNLLScorer(NLLScorer):
         probabilistic_estimations: np.ndarray,
     ) -> np.ndarray:
 
-        # TODO: vectorize
-
-        return [
-            -expon.logpdf(x2, *expon.fit(x1))
-            for (x1, x2) in zip(probabilistic_estimations, deterministic_values)
-        ]
+        mu = np.mean(probabilistic_estimations, axis=1)
+        return -expon.logpdf(deterministic_values, scale=mu)

@@ -26,9 +26,5 @@ class CauchyNLLScorer(NLLScorer):
         probabilistic_estimations: np.ndarray,
     ) -> np.ndarray:
 
-        # TODO: vectorize
-
-        return [
-            -cauchy.logpdf(x2, *cauchy.fit(x1))
-            for (x1, x2) in zip(probabilistic_estimations, deterministic_values)
-        ]
+        median = np.median(probabilistic_estimations, axis=1)
+        return -cauchy.logpdf(deterministic_values, median)

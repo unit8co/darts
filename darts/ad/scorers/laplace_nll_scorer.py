@@ -28,7 +28,6 @@ class LaplaceNLLScorer(NLLScorer):
 
         # TODO: vectorize
 
-        return [
-            -laplace.logpdf(x2, *laplace.fit(x1))
-            for (x1, x2) in zip(probabilistic_estimations, deterministic_values)
-        ]
+        median = np.median(probabilistic_estimations, axis=1)
+
+        return -laplace.logpdf(deterministic_values, loc=median)
