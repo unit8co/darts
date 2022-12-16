@@ -23,7 +23,7 @@ Behind the scenes this model is tabularizing the time series data to make it wor
 The lags can be specified either using an integer - in which case it represents the _number_ of (past or future) lags
 to take into consideration, or as a list - in which case the lags have to be enumerated (strictly negative values
 denoting past lags and positive values including 0 denoting future lags).
-When static covariates are present, they are appended to the lagged features. When mulitple time series are passed,
+When static covariates are present, they are appended to the lagged features. When multiple time series are passed,
 if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.
 """
 
