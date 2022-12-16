@@ -717,6 +717,65 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         ]  # simulates features prep at prediction time
         self.assertEqual(pred_features.shape, (1, all_series_width + max_scovs_width))
 
+    def test_static_cov_accuracy(self):
+        # based on : https://unit8co.github.io/darts/examples/15-static-covariates.html
+
+        # given
+        period = 20
+        sine_series = tg.sine_timeseries(
+            length=4 * period,
+            value_frequency=1 / period,
+            column_name="smooth",
+            freq="h",
+        )
+
+        sine_vals = sine_series.values()
+        linear_vals = np.expand_dims(np.linspace(1, -1, num=19), -1)
+
+        sine_vals[21:40] = linear_vals
+        sine_vals[61:80] = linear_vals
+        irregular_series = TimeSeries.from_times_and_values(
+            values=sine_vals, times=sine_series.time_index, columns=["irregular"]
+        )
+
+        # no static covs
+        train_series_no_cov = [sine_series, irregular_series]
+
+        # categorical static covs
+        sine_series_st_cat = sine_series.with_static_covariates(
+            pd.DataFrame(data={"curve_type": ["smooth"]})
+        )
+        irregular_series_st_cat = irregular_series.with_static_covariates(
+            pd.DataFrame(data={"curve_type": ["non_smooth"]})
+        )
+        train_series_static_cov = [sine_series_st_cat, irregular_series_st_cat]
+
+        scaler = StaticCovariatesTransformer(transformer_cat=OneHotEncoder())
+        train_series_static_cov = scaler.fit_transform(train_series_static_cov)
+
+        # when
+        model_no_static_cov = RandomForest(lags=period // 2, bootstrap=False)
+        model_no_static_cov.fit(train_series_no_cov)
+        predict_series_no_cov = [series[:60] for series in train_series_no_cov]
+        pred_no_static_cov = model_no_static_cov.predict(
+            n=int(period / 2), series=predict_series_no_cov
+        )
+
+        model_static_cov = RandomForest(lags=period // 2, bootstrap=False)
+        model_static_cov.fit(train_series_static_cov)
+        predict_series_static_cov = [series[:60] for series in train_series_static_cov]
+        pred_static_cov = model_static_cov.predict(
+            n=int(period / 2), series=predict_series_static_cov
+        )
+
+        # then
+        for series, ps_no_st, ps_st_cat in zip(
+            train_series_static_cov, pred_no_static_cov, pred_static_cov
+        ):
+            rmses = [rmse(series, ps) for ps in [ps_no_st, ps_st_cat]]
+
+            self.assertLess(rmses[1], rmses[0])
+
     def test_models_runnability(self):
         train_y, test_y = self.sine_univariate1.split_before(0.7)
         multi_models_modes = [True, False]

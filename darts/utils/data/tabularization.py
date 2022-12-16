@@ -179,9 +179,7 @@ def _add_static_covariates(model, series, features):
     for ts in series:
         if ts.static_covariates is not None:
             # reshape with order="F" to ensure that the covariates are read column wise
-            scovs = ts.static_covariates_values(copy=False).reshape(
-                1, -1, order="F"
-            )
+            scovs = ts.static_covariates_values(copy=False).reshape(1, -1, order="F")
             map["covs_width"].append(scovs.shape[1])
             map["values"].append(scovs)
         else:

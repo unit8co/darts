@@ -37,7 +37,7 @@ from sklearn.linear_model import LinearRegression
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
-from darts.utils.data.tabularization import _create_lagged_data, _add_static_covariates
+from darts.utils.data.tabularization import _add_static_covariates, _create_lagged_data
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import _check_quantiles, seq2series, series2seq
 
@@ -329,7 +329,9 @@ class RegressionModel(GlobalForecastingModel):
             multi_models=self.multi_models,
         )
 
-        training_samples = _add_static_covariates(self.model, target_series, training_samples)
+        training_samples = _add_static_covariates(
+            self.model, target_series, training_samples
+        )
 
         return training_samples, training_labels
 
