@@ -64,14 +64,17 @@ class MultiOutputRegressor(sk_MultiOutputRegressor):
 
         if "eval_set" in fit_params_validated.keys():
             # with validation set
-            (X_val, y_val) = fit_params_validated.pop("eval_set")
+            eval_set = fit_params_validated.pop("eval_set")
             self.estimators_ = Parallel(n_jobs=self.n_jobs)(
                 delayed(_fit_estimator)(
                     self.estimator,
                     X,
                     y[:, i],
                     sample_weight,
-                    eval_set=(X_val, y_val[:, i]),
+                    # eval set may be a list (for XGBRegressor), in which case we have to keep it as a list
+                    eval_set=[(eval_set[0][0], eval_set[0][1][:, i])]
+                    if isinstance(eval_set, list)
+                    else (eval_set[0], eval_set[1][:, i]),
                     **fit_params_validated
                 )
                 for i in range(y.shape[1])

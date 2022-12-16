@@ -196,3 +196,6 @@ class EnsembleModel(GlobalForecastingModel):
     @property
     def min_train_series_length(self) -> int:
         return max(model.min_train_series_length for model in self.models)
+
+    def _is_probabilistic(self) -> bool:
+        return all([model._is_probabilistic() for model in self.models])
