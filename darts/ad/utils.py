@@ -60,14 +60,12 @@ def eval_accuracy_from_scores(
 ) -> Union[float, Sequence[float], Sequence[Sequence[float]]]:
     """Scores the results against true anomalies.
 
-    checks:
-        - `actual_anomalies` and `anomaly_score` are the same type, length, width/dimension
-        - `actual_anomalies` is binary and has values belonging to the two classes (1 and 0)
+    `actual_anomalies` and `anomaly_score` must have the same shape.
+    `actual_anomalies` must be binary and have values belonging to the two classes (0 and 1).
 
     If one series is given for `actual_anomalies` and `anomaly_score` contains more than
-    one series, the function will consider `actual_anomalies` as the true anomalies for
+    one series, the function will consider `actual_anomalies` as the ground truth anomalies for
     all scores in `anomaly_score`.
-
 
     Parameters
     ----------
