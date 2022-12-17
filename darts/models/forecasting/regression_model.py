@@ -74,7 +74,7 @@ class RegressionModel(GlobalForecastingModel):
             `lags_past_covariates` past lags are used (inclusive, starting from lag -1). Otherwise a list of integers
             with lags < 0 is required.
         lags_future_covariates
-            Number of lagged future_covariates values used to predict the next time step. If an tuple (past, future) is
+            Number of lagged future_covariates values used to predict the next time step. If a tuple (past, future) is
             given the last `past` lags in the past are used (inclusive, starting from lag -1) along with the first
             `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list
             of integers with lags is required.
@@ -243,15 +243,15 @@ class RegressionModel(GlobalForecastingModel):
         self,
     ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
         target_lags = self.lags.get("target", [0])
-        past_covariates_lags = self.lags.get("past", None)
-        future_covariates_lags = self.lags.get("future", None)
+        lags_past_covariates = self.lags.get("past", None)
+        lags_future_covariates = self.lags.get("future", None)
         return (
             abs(min(target_lags)),
             self.output_chunk_length,
-            past_covariates_lags is not None,
-            future_covariates_lags is not None,
-            past_covariates_lags,
-            future_covariates_lags,
+            lags_past_covariates is not None,
+            lags_future_covariates is not None,
+            lags_past_covariates,
+            lags_future_covariates,
         )
 
     @property

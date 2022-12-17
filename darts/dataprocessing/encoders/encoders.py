@@ -236,7 +236,7 @@ class PastCyclicEncoder(CyclicTemporalEncoder):
         attribute: str,
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
-        covariates_lags: Optional[List[int]] = None,
+        lags_covariates: Optional[List[int]] = None,
     ):
         """
         Parameters
@@ -258,16 +258,16 @@ class PastCyclicEncoder(CyclicTemporalEncoder):
             :class:`TorchForecastingModel`, and :class:`RegressionModel`.
             Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and
             :class:`RegressionModel`.
-        covariates_lags
+        lags_covariates
             Optionally, a list of integers representing the past covariate lags. Accepts integer lag values <= -1.
             Only required for :class:`RegressionModel`.
-            Corresponds to parameter `past_covariates_lags` from :class:`RegressionModel`.
+            Corresponds to the lag values from parameter `lags_past_covariates` of :class:`RegressionModel`.
         """
         super().__init__(
             index_generator=PastCovariatesIndexGenerator(
                 input_chunk_length,
                 output_chunk_length,
-                covariates_lags=covariates_lags,
+                lags_covariates=lags_covariates,
             ),
             attribute=attribute,
         )
@@ -281,7 +281,7 @@ class FutureCyclicEncoder(CyclicTemporalEncoder):
         attribute: str,
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
-        covariates_lags: Optional[List[int]] = None,
+        lags_covariates: Optional[List[int]] = None,
     ):
         """
         Parameters
@@ -303,16 +303,16 @@ class FutureCyclicEncoder(CyclicTemporalEncoder):
             :class:`TorchForecastingModel`, and :class:`RegressionModel`.
             Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and
             :class:`RegressionModel`.
-        covariates_lags
+        lags_covariates
             Optionally, a list of integers representing the future covariate lags. Accepts all integer values.
             Only required for :class:`RegressionModel`.
-            Corresponds to parameter `future_covariates_lags` from :class:`RegressionModel`.
+            Corresponds to the lag values from parameter `lags_future_covariates` from :class:`RegressionModel`.
         """
         super().__init__(
             index_generator=FutureCovariatesIndexGenerator(
                 input_chunk_length,
                 output_chunk_length,
-                covariates_lags=covariates_lags,
+                lags_covariates=lags_covariates,
             ),
             attribute=attribute,
         )
@@ -375,7 +375,7 @@ class PastDatetimeAttributeEncoder(DatetimeAttributeEncoder):
         attribute: str,
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
-        covariates_lags: Optional[List[int]] = None,
+        lags_covariates: Optional[List[int]] = None,
     ):
         """
         Parameters
@@ -397,16 +397,16 @@ class PastDatetimeAttributeEncoder(DatetimeAttributeEncoder):
             :class:`TorchForecastingModel`, and :class:`RegressionModel`.
             Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and
             :class:`RegressionModel`.
-        covariates_lags
+        lags_covariates
             Optionally, a list of integers representing the past covariate lags. Accepts integer lag values <= -1.
             Only required for :class:`RegressionModel`.
-            Corresponds to parameter `past_covariates_lags` from :class:`RegressionModel`.
+            Corresponds to the lag values from parameter `lags_past_covariates` of :class:`RegressionModel`.
         """
         super().__init__(
             index_generator=PastCovariatesIndexGenerator(
                 input_chunk_length,
                 output_chunk_length,
-                covariates_lags=covariates_lags,
+                lags_covariates=lags_covariates,
             ),
             attribute=attribute,
         )
@@ -420,7 +420,7 @@ class FutureDatetimeAttributeEncoder(DatetimeAttributeEncoder):
         attribute: str,
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
-        covariates_lags: Optional[List[int]] = None,
+        lags_covariates: Optional[List[int]] = None,
     ):
         """
         Parameters
@@ -442,16 +442,16 @@ class FutureDatetimeAttributeEncoder(DatetimeAttributeEncoder):
             :class:`TorchForecastingModel`, and :class:`RegressionModel`.
             Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and
             :class:`RegressionModel`.
-        covariates_lags
+        lags_covariates
             Optionally, a list of integers representing the future covariate lags. Accepts all integer values.
             Only required for :class:`RegressionModel`.
-            Corresponds to parameter `future_covariates_lags` from :class:`RegressionModel`.
+            Corresponds to the lag values from parameter `lags_future_covariates` from :class:`RegressionModel`.
         """
         super().__init__(
             index_generator=FutureCovariatesIndexGenerator(
                 input_chunk_length,
                 output_chunk_length,
-                covariates_lags=covariates_lags,
+                lags_covariates=lags_covariates,
             ),
             attribute=attribute,
         )
@@ -540,7 +540,7 @@ class PastIntegerIndexEncoder(IntegerIndexEncoder):
         attribute: str,
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
-        covariates_lags: Optional[List[int]] = None,
+        lags_covariates: Optional[List[int]] = None,
     ):
         """
         Parameters
@@ -558,16 +558,16 @@ class PastIntegerIndexEncoder(IntegerIndexEncoder):
             :class:`TorchForecastingModel`, and :class:`RegressionModel`.
             Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and
             :class:`RegressionModel`.
-        covariates_lags
+        lags_covariates
             Optionally, a list of integers representing the past covariate lags. Accepts integer lag values <= -1.
             Only required for :class:`RegressionModel`.
-            Corresponds to parameter `past_covariates_lags` from :class:`RegressionModel`.
+            Corresponds to the lag values from parameter `lags_past_covariates` of :class:`RegressionModel`.
         """
         super().__init__(
             index_generator=PastCovariatesIndexGenerator(
                 input_chunk_length,
                 output_chunk_length,
-                covariates_lags=covariates_lags,
+                lags_covariates=lags_covariates,
             ),
             attribute=attribute,
         )
@@ -583,7 +583,7 @@ class FutureIntegerIndexEncoder(IntegerIndexEncoder):
         attribute: str,
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
-        covariates_lags: Optional[List[int]] = None,
+        lags_covariates: Optional[List[int]] = None,
     ):
         """
         Parameters
@@ -601,16 +601,16 @@ class FutureIntegerIndexEncoder(IntegerIndexEncoder):
             :class:`TorchForecastingModel`, and :class:`RegressionModel`.
             Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and
             :class:`RegressionModel`.
-        covariates_lags
+        lags_covariates
             Optionally, a list of integers representing the future covariate lags. Accepts all integer values.
             Only required for :class:`RegressionModel`.
-            Corresponds to parameter `future_covariates_lags` from :class:`RegressionModel`.
+            Corresponds to the lag values from parameter `lags_future_covariates` from :class:`RegressionModel`.
         """
         super().__init__(
             index_generator=FutureCovariatesIndexGenerator(
                 input_chunk_length,
                 output_chunk_length,
-                covariates_lags=covariates_lags,
+                lags_covariates=lags_covariates,
             ),
             attribute=attribute,
         )
@@ -682,7 +682,7 @@ class PastCallableIndexEncoder(CallableIndexEncoder):
         attribute: Callable,
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
-        covariates_lags: Optional[List[int]] = None,
+        lags_covariates: Optional[List[int]] = None,
     ):
         """
         Parameters
@@ -703,16 +703,16 @@ class PastCallableIndexEncoder(CallableIndexEncoder):
             :class:`TorchForecastingModel`, and :class:`RegressionModel`.
             Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and
             :class:`RegressionModel`.
-        covariates_lags
+        lags_covariates
             Optionally, a list of integers representing the past covariate lags. Accepts integer lag values <= -1.
             Only required for :class:`RegressionModel`.
-            Corresponds to parameter `past_covariates_lags` from :class:`RegressionModel`.
+            Corresponds to the lag values from parameter `lags_past_covariates` of :class:`RegressionModel`.
         """
         super().__init__(
             index_generator=PastCovariatesIndexGenerator(
                 input_chunk_length,
                 output_chunk_length,
-                covariates_lags=covariates_lags,
+                lags_covariates=lags_covariates,
             ),
             attribute=attribute,
         )
@@ -728,7 +728,7 @@ class FutureCallableIndexEncoder(CallableIndexEncoder):
         attribute: Callable,
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
-        covariates_lags: Optional[List[int]] = None,
+        lags_covariates: Optional[List[int]] = None,
     ):
         """
         Parameters
@@ -749,17 +749,16 @@ class FutureCallableIndexEncoder(CallableIndexEncoder):
             :class:`TorchForecastingModel`, and :class:`RegressionModel`.
             Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and
             :class:`RegressionModel`.
-        covariates_lags
+        lags_covariates
             Optionally, a list of integers representing the future covariate lags. Accepts all integer values.
             Only required for :class:`RegressionModel`.
-            Corresponds to parameter `future_covariates_lags` from :class:`RegressionModel`.
+            Corresponds to the lag values from parameter `lags_future_covariates` from :class:`RegressionModel`.
         """
-
         super().__init__(
             index_generator=FutureCovariatesIndexGenerator(
                 input_chunk_length,
                 output_chunk_length,
-                covariates_lags=covariates_lags,
+                lags_covariates=lags_covariates,
             ),
             attribute=attribute,
         )
@@ -775,12 +774,11 @@ class SequentialEncoder(Encoder):
         add_encoders: Dict,
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
-        past_covariates_lags: Optional[List[int]] = None,
-        future_covariates_lags: Optional[List[int]] = None,
+        lags_past_covariates: Optional[List[int]] = None,
+        lags_future_covariates: Optional[List[int]] = None,
         takes_past_covariates: bool = False,
         takes_future_covariates: bool = False,
     ) -> None:
-
         """
         SequentialEncoder automatically creates encoder objects from parameter `add_encoders`. `add_encoders` can also
         be set directly in all of Darts' `ForecastingModels`. This will automatically set up a
@@ -850,20 +848,19 @@ class SequentialEncoder(Encoder):
             :class:`TorchForecastingModel`, and :class:`RegressionModel`.
             Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and
             :class:`RegressionModel`.
-        past_covariates_lags
+        lags_past_covariates
             Optionally, a list of integers representing the past covariate lags. Accepts integer lag values <= -1.
             Only required for :class:`RegressionModel`.
-            Corresponds to parameter `past_covariates_lags` from :class:`RegressionModel`.
-        future_covariates_lags
+            Corresponds to the lag values from parameter `lags_past_covariates` of :class:`RegressionModel`.
+        lags_future_covariates
             Optionally, a list of integers representing the future covariate lags. Accepts all integer values.
             Only required for :class:`RegressionModel`.
-            Corresponds to parameter `future_covariates_lags` from :class:`RegressionModel`.
+            Corresponds to the lag values from parameter `lags_future_covariates` from :class:`RegressionModel`.
         takes_past_covariates
             Whether to encode/generate past covariates.
         takes_future_covariates
             Whether to encode/generate future covariates.
         """
-
         super().__init__()
         self.params = add_encoders
         self.input_chunk_length = input_chunk_length
@@ -871,8 +868,8 @@ class SequentialEncoder(Encoder):
         self.encoding_available = False
         self.takes_past_covariates = takes_past_covariates
         self.takes_future_covariates = takes_future_covariates
-        self.past_covariates_lags = past_covariates_lags
-        self.future_covariates_lags = future_covariates_lags
+        self.lags_past_covariates = lags_past_covariates
+        self.lags_future_covariates = lags_future_covariates
 
         # encoders
         self._past_encoders: List[SingleEncoder] = []
@@ -1014,7 +1011,6 @@ class SequentialEncoder(Encoder):
 
         If `n` is not `None` it is a prediction, otherwise it is training.
         """
-
         if not self.encoding_available:
             return past_covariates, future_covariates
 
@@ -1197,7 +1193,7 @@ class SequentialEncoder(Encoder):
                 attribute=attr,
                 input_chunk_length=self.input_chunk_length,
                 output_chunk_length=self.output_chunk_length,
-                covariates_lags=self.past_covariates_lags,
+                lags_covariates=self.lags_past_covariates,
             )
             for enc_id, attr in past_encoders
         ]
@@ -1206,7 +1202,7 @@ class SequentialEncoder(Encoder):
                 attribute=attr,
                 input_chunk_length=self.input_chunk_length,
                 output_chunk_length=self.output_chunk_length,
-                covariates_lags=self.future_covariates_lags,
+                lags_covariates=self.lags_future_covariates,
             )
             for enc_id, attr in future_encoders
         ]
@@ -1262,7 +1258,6 @@ class SequentialEncoder(Encoder):
             1) if the outermost key is other than (`past`, `future`)
             2) if the innermost values are other than type `str` or `Sequence`
         """
-
         if not params:
             return [], []
 
@@ -1340,7 +1335,6 @@ class SequentialEncoder(Encoder):
             Dict from parameter `add_encoders` (kwargs) used at model creation. Relevant parameters are:
             * params={'transformer': Scaler()}
         """
-
         if not params:
             return None, [], []
 

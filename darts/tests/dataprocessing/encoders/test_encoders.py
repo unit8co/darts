@@ -824,8 +824,8 @@ class EncoderTestCase(DartsBaseTestClass):
             output_chunk_length=output_chunk_length,
             takes_past_covariates=True,
             takes_future_covariates=True,
-            past_covariates_lags=[min_pc_lag, max_pc_lag],
-            future_covariates_lags=[min_fc_lag, max_fc_lag],
+            lags_past_covariates=[min_pc_lag, max_pc_lag],
+            lags_future_covariates=[min_fc_lag, max_fc_lag],
         )
         pc1, fc1 = encs.encode_train(ts)
         self.assertTrue(

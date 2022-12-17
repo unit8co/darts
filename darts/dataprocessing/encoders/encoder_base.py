@@ -24,7 +24,7 @@ class CovariatesIndexGenerator(ABC):
         self,
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
-        covariates_lags: Optional[List[int]] = None,
+        lags_covariates: Optional[List[int]] = None,
     ):
         """:class:`CovariatesIndexGenerator` generates a time index for covariates at training and inference /
         prediction time with methods :func:`generate_train_idx()`, and :func:`generate_inference_idx()`.
@@ -36,12 +36,12 @@ class CovariatesIndexGenerator(ABC):
                 All parameters can be ignored. This scenario is only supported by
                 :class:`FutureCovariatesIndexGenerator`.
         B   in combination with :class:`RegressionModel`:
-                Set `input_chunk_length`, `output_chunk_length`, and `covariates_lags`.
+                Set `input_chunk_length`, `output_chunk_length`, and `lags_covariates`.
                 `input_chunk_length` is the absolute value of the minimum target lag `abs(min(lags))` used with the
                 regression model.
-                Set `output_chunk_length`, and `covariates_lags` with the identical values used at forecasting model
-                creation. For the covariates lags, use `past_covariates_lags` for class:`PastCovariatesIndexGenerator`,
-                and `future_covariates_lags` for class:`PastCovariatesIndexGenerator`.
+                Set `output_chunk_length`, and `lags_covariates` with the identical values used at forecasting model
+                creation. For the covariates lags, use `lags_past_covariates` for class:`PastCovariatesIndexGenerator`,
+                and `lags_future_covariates` for class:`PastCovariatesIndexGenerator`.
         C   in combination with :class:`TorchForecastingModel`:
                 Set `input_chunk_length`, and `output_chunk_length` with the identical values used at forecasting model
                 creation.
@@ -55,13 +55,13 @@ class CovariatesIndexGenerator(ABC):
         output_chunk_length
             Optionally, the number of output target time steps per chunk. Only required in scenarios B, and C.
             Corresponds to `output_chunk_length` for both :class:`TorchForecastingModel`, and :class:`RegressionModel`.
-        covariates_lags
-            Optionally, a list of covariates lags used for Darts' RegressionModels. Only required in scenario B.
-            Corresponds to `past_covariates_lags` for past covariates, and `future_covariates_lags` for future
-            covariates.
+        lags_covariates
+            Optionally, a list of integers giving the covariates lags used for Darts' RegressionModels. Only required
+            in scenario B. Corresponds to the lag values from `lags_past_covariates` for past covariates, and
+            `lags_future_covariates` for future covariates.
         """
         # check that parameters match one of the scenarios
-        self._verify_scenario(input_chunk_length, output_chunk_length, covariates_lags)
+        self._verify_scenario(input_chunk_length, output_chunk_length, lags_covariates)
 
         # input/output chunk length are guaranteed to both be `None`, or both be defined
         self.input_chunk_length = input_chunk_length
@@ -69,10 +69,10 @@ class CovariatesIndexGenerator(ABC):
 
         # check lags validity
         min_covariates_lag = (
-            min(covariates_lags) if covariates_lags is not None else None
+            min(lags_covariates) if lags_covariates is not None else None
         )
         max_covariates_lag = (
-            max(covariates_lags) if covariates_lags is not None else None
+            max(lags_covariates) if lags_covariates is not None else None
         )
         self._verify_lags(min_covariates_lag, max_covariates_lag)
 
@@ -141,26 +141,26 @@ class CovariatesIndexGenerator(ABC):
         self,
         input_chunk_length: Optional[int] = None,
         output_chunk_length: Optional[int] = None,
-        covariates_lags: Optional[List[int]] = None,
+        lags_covariates: Optional[List[int]] = None,
     ):
         # LocalForecastingModel, or model agnostic (only supported by future covariates)
         is_scenario_a = (
             isinstance(self, FutureCovariatesIndexGenerator)
             and input_chunk_length is None
             and output_chunk_length is None
-            and covariates_lags is None
+            and lags_covariates is None
         )
         # RegressionModel
         is_scenario_b = (
             input_chunk_length is not None
             and output_chunk_length is not None
-            and covariates_lags is not None
+            and lags_covariates is not None
         )
         # TorchForecastingModel
         is_scenario_c = (
             input_chunk_length is not None
             and output_chunk_length is not None
-            and covariates_lags is None
+            and lags_covariates is None
         )
 
         if not any([is_scenario_a, is_scenario_b, is_scenario_c]):

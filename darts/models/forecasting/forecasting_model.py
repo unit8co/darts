@@ -1004,16 +1004,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             output_chunk_length,
             takes_past_covariates,
             takes_future_covariates,
-            past_covariates_lags,
-            future_covariates_lags,
+            lags_past_covariates,
+            lags_future_covariates,
         ) = self._model_encoder_settings
 
         return SequentialEncoder(
             add_encoders=self.add_encoders,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
-            past_covariates_lags=past_covariates_lags,
-            future_covariates_lags=future_covariates_lags,
+            lags_past_covariates=lags_past_covariates,
+            lags_future_covariates=lags_future_covariates,
             takes_past_covariates=takes_past_covariates,
             takes_future_covariates=takes_future_covariates,
         )
@@ -1119,7 +1119,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """Abstract property that returns model specific encoder settings that are used to initialize the encoders.
 
         Must return Tuple (input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates,
-        past_covariates_lags, future_covariates_lags).
+        lags_past_covariates, lags_future_covariates).
         """
         pass
 
