@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts.datasets import AirPassengersDataset, IceCreamHeaterDataset
 from darts.logging import get_logger
@@ -87,6 +88,15 @@ dual_models = [
     StatsForecastETS(season_length=12),
     Prophet(),
     AutoARIMA(),
+]
+
+# test only a few models for encoder support reduce time
+encoder_support_models = [
+    VARIMA(1, 0, 0),
+    ARIMA(),
+    AutoARIMA(),
+    Prophet(),
+    KalmanForecaster(dim_x=30),
 ]
 
 
@@ -274,9 +284,16 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
         target = self.ts_gaussian[:-3]
         future_covariates = self.ts_gaussian
 
-        future_cov_models = dual_models + [m for m, _ in multivariate_models]
         add_encoders = {"custom": {"future": [lambda x: x.dayofweek]}}
-        for model_object in future_cov_models:
+
+        # test some models that do not support encoders
+        no_support_model_cls = [NaiveMean, Theta]
+        for model_cls in no_support_model_cls:
+            with pytest.raises(TypeError):
+                _ = model_cls(add_encoders=add_encoders)
+
+        # test some models that support encoders
+        for model_object in encoder_support_models:
             series = (
                 target
                 if not isinstance(model_object, VARIMA)
