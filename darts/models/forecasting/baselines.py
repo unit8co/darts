@@ -41,7 +41,7 @@ class NaiveMean(LocalForecastingModel):
 
     def predict(self, n: int, num_samples: int = 1, verbose: bool = False):
         super().predict(n, num_samples)
-        forecast = np.tile(self.mean_val, (1, n))
+        forecast = np.tile(self.mean_val, (n, 1))
         return self._build_forecast_series(forecast)
 
 
