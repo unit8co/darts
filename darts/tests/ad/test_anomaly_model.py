@@ -591,16 +591,14 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
         # check that NormScorer is the abs difference of model_output and test_series_slope
         self.assertEqual(
-            (model_output - test_series_slope.slice_intersect(model_output)).map(
-                lambda x: np.abs(x)
-            ),
-            NormScorer().score_from_prediction(model_output, test_series_slope),
+            (model_output - test_series_slope.slice_intersect(model_output)).__abs__(),
+            NormScorer().score_from_prediction(test_series_slope, model_output),
         )
 
         # check that Difference is the difference of model_output and test_series_slope
         self.assertEqual(
-            model_output - test_series_slope.slice_intersect(model_output),
-            Difference().score_from_prediction(model_output, test_series_slope),
+            test_series_slope.slice_intersect(model_output) - model_output,
+            Difference().score_from_prediction(test_series_slope, model_output),
         )
 
         dict_auc_roc = anomaly_model.eval_accuracy(
@@ -716,16 +714,14 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
         # check that Difference is the difference of model_output and test_series_noise
         self.assertEqual(
-            model_output - test_series_noise.slice_intersect(model_output),
-            Difference().score_from_prediction(model_output, test_series_noise),
+            test_series_noise.slice_intersect(model_output) - model_output,
+            Difference().score_from_prediction(test_series_noise, model_output),
         )
 
         # check that NormScorer is the abs difference of model_output and test_series_noise
         self.assertEqual(
-            (model_output - test_series_noise.slice_intersect(model_output)).map(
-                lambda x: np.abs(x)
-            ),
-            NormScorer().score_from_prediction(model_output, test_series_noise),
+            (test_series_noise.slice_intersect(model_output) - model_output).__abs__(),
+            NormScorer().score_from_prediction(test_series_noise, model_output),
         )
 
         dict_auc_roc = anomaly_model.eval_accuracy(
@@ -853,14 +849,14 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
         # check that NormScorer is the abs difference of model_output and series_test
         self.assertEqual(
-            (model_output - series_test.slice_intersect(model_output)).__abs__(),
-            NormScorer().score_from_prediction(model_output, series_test),
+            (series_test.slice_intersect(model_output) - model_output).__abs__(),
+            NormScorer().score_from_prediction(series_test, model_output),
         )
 
         # check that Difference is the difference of model_output and series_test
         self.assertEqual(
-            model_output - series_test.slice_intersect(model_output),
-            Difference().score_from_prediction(model_output, series_test),
+            series_test.slice_intersect(model_output) - model_output,
+            Difference().score_from_prediction(series_test, model_output),
         )
 
         dict_auc_roc = anomaly_model.eval_accuracy(
