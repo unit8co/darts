@@ -343,7 +343,7 @@ def create_lagged_data(
     return X, y, times
 
 
-def create_training_lagged_data(
+def create_lagged_training_data(
     target_series: TimeSeries,
     output_chunk_length: int,
     past_covariates: Optional[TimeSeries] = None,
@@ -372,7 +372,7 @@ def create_training_lagged_data(
     )
 
 
-def create_prediction_lagged_data(
+def create_lagged_prediction_data(
     target_series: Optional[TimeSeries] = None,
     past_covariates: Optional[TimeSeries] = None,
     future_covariates: Optional[TimeSeries] = None,
@@ -477,14 +477,20 @@ def _create_lagged_data_by_moving_window(
                 vals, window_len=max_lag_i + 1, stride=1, axis=0, check_inputs=False
             )
             # Last point in each window corresponds to time `t`, so need
-            lagged_vals = _extract_lagged_vals_from_windows(
-                windows, lags_to_extract=np.array(lags_i, dtype=int) - 1
+            lags_to_extract = (
+                np.array(lags_i, dtype=int) - 1
+                if is_training
+                else np.array(lags_i, dtype=int)
             )
+            lagged_vals = _extract_lagged_vals_from_windows(windows, lags_to_extract)
             X.append(lagged_vals)
         # Required for creating labels:
         if is_target_series:
             # Add back `max_lag_i`, since we don't want lagged values when creating labels:
             label_window_start_idx = window_start_idx
+    raise_if(
+        check_inputs and len(X) == 0, "Must specify at least one series-lags pair."
+    )
     X = np.concatenate(X, axis=1)
     if is_training:
         if multi_models:
@@ -594,6 +600,7 @@ def _create_lagged_data_by_intersecting_times(
             shared_time_idx = np.searchsorted(series_i.time_index, shared_times)
         if series_and_lags_specified:
             idx_to_get = shared_time_idx.reshape(-1, 1) + np.array(lags_i, dtype=int)
+            idx_to_get += 1 if not is_training else 0
             # Before reshaping: lagged_vals.shape = (n_observations, num_lags, n_components, n_samples)
             lagged_vals = series_i.all_values(copy=False)[idx_to_get, :, :]
             # After reshaping: lagged_vals.shape = (n_observations, num_lags*n_components, n_samples)
@@ -604,6 +611,9 @@ def _create_lagged_data_by_intersecting_times(
         # `target_series` indices required for creating labels:
         if is_target_series:
             label_shared_time_idx = shared_time_idx
+    raise_if(
+        check_inputs and len(X) == 0, "Must specify at least one series-lags pair."
+    )
     X = np.concatenate(X, axis=1)
     if is_training:
         if multi_models:
@@ -730,6 +740,10 @@ def get_feature_times(
         "Must specify `target_series` and `output_chunk_length` when `is_training = True`.",
     )
     if check_inputs:
+        raise_if(
+            not isinstance(output_chunk_length, int) or output_chunk_length < 1,
+            "`output_chunk_length` must be a positive `int`.",
+        )
         _check_lags(lags, lags_past_covariates, lags_future_covariates)
     feature_times, max_lags = [], []
     for name_i, series_i, lags_i in zip(
@@ -812,22 +826,33 @@ def get_shared_times(
         )
         return times_1.intersection(times_2, sort=sort)
 
-    shared_times = reduce(
-        intersection_func, [series for series in series_or_times if series is not None]
-    )
-    # Empty intersection may result from intersecting time indices being of different types - throw error if so:
-    if shared_times.empty:
-        times_types = [
-            type(ts.time_index if isinstance(ts, TimeSeries) else ts)
-            for ts in series_or_times
-        ]
-        raise_if_not(
-            len(set(times_types)) == 1,
-            (
-                "Time indices must be of the same type"
-                "(i.e. all `pd.DaterangeIndex` or all `pd.RangeIndex`)."
-            ),
+    specified_inputs = [series for series in series_or_times if series is not None]
+
+    if not specified_inputs:
+        shared_times = None
+    elif len(specified_inputs) == 1:
+        shared_times = (
+            specified_inputs[0].time_index
+            if isinstance(specified_inputs[0], TimeSeries)
+            else specified_inputs[0]
         )
+    else:
+        shared_times = reduce(intersection_func, specified_inputs)
+        # Empty intersection may result from intersecting time indices being of different types - throw error if so:
+        if shared_times.empty:
+            shared_times = None
+            times_types = [
+                type(ts.time_index if isinstance(ts, TimeSeries) else ts)
+                for ts in specified_inputs
+            ]
+            raise_if_not(
+                len(set(times_types)) == 1,
+                (
+                    "Specified series and/or times must all "
+                    "have the same type of `time_index` (i.e. all "
+                    "`pd.RangeIndex` or all `pd.DatetimeIndex`)."
+                ),
+            )
     return shared_times
 
 
@@ -886,17 +911,24 @@ def get_shared_times_bounds(
                 val.start_time() if isinstance(val, TimeSeries) else val[0]
             )
             end_times.append(val.end_time() if isinstance(val, TimeSeries) else val[-1])
-    times_types = [type(time) for time in start_times]
-    raise_if_not(
-        len(set(times_types)) == 1,
-        "Specified series and/or times must all have the same type of `time_index`.",
-    )
-    # If `start_times` empty, no series were specified -> `bounds = (1, -1)` will
-    # be 'converted' to `None` in next line:
-    bounds = (max(start_times), min(end_times)) if start_times else (1, -1)
-    # Specified timeseries share no overlapping periods.
-    if bounds[1] <= bounds[0]:
+    if not start_times:
         bounds = None
+    else:
+        times_types = [type(time) for time in start_times]
+        raise_if_not(
+            len(set(times_types)) == 1,
+            (
+                "Specified series and/or times must all "
+                "have the same type of `time_index` "
+                "(i.e. all `pd.RangeIndex` or all `pd.DatetimeIndex`)."
+            ),
+        )
+        # If `start_times` empty, no series were specified -> `bounds = (1, -1)` will
+        # be 'converted' to `None` in next line:
+        bounds = (max(start_times), min(end_times)) if start_times else (1, -1)
+        # Specified timeseries share no overlapping periods.
+        if bounds[1] <= bounds[0]:
+            bounds = None
     return bounds
 
 
@@ -959,22 +991,15 @@ def strided_moving_window(
     .. [1] https://numpy.org/doc/stable/reference/generated/numpy.lib.stride_tricks.as_strided.html
     """
     if check_inputs:
-        raise_if(stride < 1, f"`stride` (= {window_len}) must be positive.")
+        raise_if(stride < 1, "`stride` must be positive.")
         raise_if(
             window_len < 1,
-            f"`window_len` (= {window_len}) must be positive.",
+            "`window_len` must be positive.",
         )
-        raise_if_not(
-            axis < x.ndim,
-            (f"`axis` (= {axis}) must be " "less than `x.ndim` (= {x.ndim})."),
-        )
+        raise_if_not(axis < x.ndim, "`axis` must be less than `x.ndim`.")
         raise_if(
             window_len > x.shape[axis],
-            (
-                f"`window_len` (= {window_len}) must "
-                "be less than or equal to"
-                f"x.shape[axis] (= {x.shape[axis]})."
-            ),
+            "`window_len` must be less than or equal to x.shape[axis].",
         )
     num_windows = (x.shape[axis] - window_len) // stride + 1
     new_shape = list(x.shape)
@@ -1017,8 +1042,8 @@ def _check_lags(
         lags_is_none.append(lags_i is None)
         if not lags_is_none[-1]:
             raise_if(
-                any(lag >= 0 for lag in lags_i),
-                f"`lags{suffix}` must contain only negative values.",
+                any((lag >= 0 or not isinstance(lag, int)) for lag in lags_i),
+                f"`lags{suffix}` must be a `Sequence` containing only negative `int` values.",
             )
     raise_if(
         all(lags_is_none),
