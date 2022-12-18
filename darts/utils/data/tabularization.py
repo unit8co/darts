@@ -186,6 +186,7 @@ def create_lagged_data(
     multi_models: bool = True,
     check_inputs: bool = True,
     use_moving_windows: bool = False,
+    is_training: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray, pd.Index]:
 
     """
@@ -303,6 +304,10 @@ def create_lagged_data(
     .. [1] https://otexts.com/fpp2/AR.html#AR
     .. [2] https://unit8.com/resources/time-series-forecasting-using-past-and-future-external-data-with-darts/
     """
+    raise_if(
+        is_training and (target_series is None),
+        "Must specify `target_series` if `is_training = True`.",
+    )
     if max_samples_per_ts is None:
         max_samples_per_ts = inf
     if use_moving_windows and _all_equal_freq(
@@ -319,6 +324,7 @@ def create_lagged_data(
             max_samples_per_ts,
             multi_models,
             check_inputs,
+            is_training,
         )
     else:
         X, y, times = _create_lagged_data_by_intersecting_times(
@@ -332,11 +338,12 @@ def create_lagged_data(
             max_samples_per_ts,
             multi_models,
             check_inputs,
+            is_training,
         )
     return X, y, times
 
 
-def _create_lagged_data_by_moving_window(
+def create_training_lagged_data(
     target_series: TimeSeries,
     output_chunk_length: int,
     past_covariates: Optional[TimeSeries] = None,
@@ -344,9 +351,64 @@ def _create_lagged_data_by_moving_window(
     lags: Optional[Sequence[int]] = None,
     lags_past_covariates: Optional[Sequence[int]] = None,
     lags_future_covariates: Optional[Sequence[int]] = None,
-    max_samples_per_ts: Optional[int] = inf,
+    max_samples_per_ts: Optional[int] = None,
     multi_models: bool = True,
     check_inputs: bool = True,
+    use_moving_windows: bool = False,
+) -> Tuple[np.ndarray, np.ndarray, pd.Index]:
+    return create_lagged_data(
+        target_series=target_series,
+        past_covariates=past_covariates,
+        future_covariates=future_covariates,
+        lags=lags,
+        lags_past_covariates=lags_past_covariates,
+        lags_future_covariates=lags_future_covariates,
+        output_chunk_length=output_chunk_length,
+        max_samples_per_ts=max_samples_per_ts,
+        multi_models=multi_models,
+        check_inputs=check_inputs,
+        use_moving_windows=use_moving_windows,
+        is_training=True,
+    )
+
+
+def create_prediction_lagged_data(
+    target_series: Optional[TimeSeries] = None,
+    past_covariates: Optional[TimeSeries] = None,
+    future_covariates: Optional[TimeSeries] = None,
+    lags: Optional[Sequence[int]] = None,
+    lags_past_covariates: Optional[Sequence[int]] = None,
+    lags_future_covariates: Optional[Sequence[int]] = None,
+    max_samples_per_ts: Optional[int] = None,
+    check_inputs: bool = True,
+    use_moving_windows: bool = False,
+) -> Tuple[np.ndarray, np.ndarray, pd.Index]:
+    return create_lagged_data(
+        target_series=target_series,
+        past_covariates=past_covariates,
+        future_covariates=future_covariates,
+        lags=lags,
+        lags_past_covariates=lags_past_covariates,
+        lags_future_covariates=lags_future_covariates,
+        max_samples_per_ts=max_samples_per_ts,
+        check_inputs=check_inputs,
+        use_moving_windows=use_moving_windows,
+        is_training=False,
+    )
+
+
+def _create_lagged_data_by_moving_window(
+    target_series: TimeSeries,
+    output_chunk_length: int,
+    past_covariates: Optional[TimeSeries],
+    future_covariates: Optional[TimeSeries],
+    lags: Optional[Sequence[int]],
+    lags_past_covariates: Optional[Sequence[int]],
+    lags_future_covariates: Optional[Sequence[int]],
+    max_samples_per_ts: Optional[int],
+    multi_models: bool,
+    check_inputs: bool,
+    is_training: bool,
 ) -> Tuple[np.ndarray, np.ndarray, pd.Index]:
     """
     Helper function called by `_create_lagged_data` that computes `X`, `y`, and `times` by
@@ -370,7 +432,7 @@ def _create_lagged_data_by_moving_window(
         lags_past_covariates,
         lags_future_covariates,
         output_chunk_length,
-        is_training=True,
+        is_training=is_training,
         check_inputs=check_inputs,
         return_max_lags=True,
     )
@@ -403,7 +465,7 @@ def _create_lagged_data_by_moving_window(
         )
     ):
         series_and_lags_specified = max_lag_i is not None
-        is_target_series = i == 0
+        is_target_series = is_training and (i == 0)
         if series_and_lags_specified or is_target_series:
             window_start_idx = np.searchsorted(series_i.time_index, window_start_time)
             window_end_idx = window_start_idx + num_samples
@@ -424,24 +486,31 @@ def _create_lagged_data_by_moving_window(
             # Add back `max_lag_i`, since we don't want lagged values when creating labels:
             label_window_start_idx = window_start_idx
     X = np.concatenate(X, axis=1)
-    if multi_models:
-        label_window_end_idx = label_window_start_idx + num_samples
-        # Need to include end point, so `+1`:
-        vals = target_series.all_values(copy=False)[
-            label_window_start_idx : label_window_end_idx + output_chunk_length - 1,
-            :,
-            :,
-        ]
-        windows = strided_moving_window(
-            vals, window_len=output_chunk_length, stride=1, axis=0, check_inputs=False
-        )
-        y = _extract_lagged_vals_from_windows(windows)
+    if is_training:
+        if multi_models:
+            label_window_end_idx = label_window_start_idx + num_samples
+            # Need to include end point, so `+1`:
+            vals = target_series.all_values(copy=False)[
+                label_window_start_idx : label_window_end_idx + output_chunk_length - 1,
+                :,
+                :,
+            ]
+            windows = strided_moving_window(
+                vals,
+                window_len=output_chunk_length,
+                stride=1,
+                axis=0,
+                check_inputs=False,
+            )
+            y = _extract_lagged_vals_from_windows(windows)
+        else:
+            label_window_start_idx += output_chunk_length - 1
+            label_window_end_idx = label_window_start_idx + num_samples
+            y = target_series.all_values(copy=False)[
+                label_window_start_idx:label_window_end_idx, :, :
+            ]
     else:
-        label_window_start_idx += output_chunk_length - 1
-        label_window_end_idx = label_window_start_idx + num_samples
-        y = target_series.all_values(copy=False)[
-            label_window_start_idx:label_window_end_idx, :, :
-        ]
+        y = None
     return X, y, times
 
 
@@ -474,14 +543,15 @@ def _extract_lagged_vals_from_windows(
 def _create_lagged_data_by_intersecting_times(
     target_series: TimeSeries,
     output_chunk_length: int,
-    past_covariates: Optional[TimeSeries] = None,
-    future_covariates: Optional[TimeSeries] = None,
-    lags: Optional[Sequence[int]] = None,
-    lags_past_covariates: Optional[Sequence[int]] = None,
-    lags_future_covariates: Optional[Sequence[int]] = None,
-    max_samples_per_ts: Optional[int] = inf,
-    multi_models: bool = True,
-    check_inputs: bool = True,
+    past_covariates: Optional[TimeSeries],
+    future_covariates: Optional[TimeSeries],
+    lags: Optional[Sequence[int]],
+    lags_past_covariates: Optional[Sequence[int]],
+    lags_future_covariates: Optional[Sequence[int]],
+    max_samples_per_ts: Optional[int],
+    multi_models: bool,
+    check_inputs: bool,
+    is_training: bool,
 ) -> Tuple[np.ndarray, np.ndarray, Union[pd.RangeIndex, pd.DatetimeIndex]]:
     """
     Helper function called by `_create_lagged_data` that computes `X`, `y`, and `times` by
@@ -499,7 +569,7 @@ def _create_lagged_data_by_intersecting_times(
         lags_past_covariates,
         lags_future_covariates,
         output_chunk_length,
-        is_training=True,
+        is_training=is_training,
         check_inputs=check_inputs,
         return_max_lags=True,
     )
@@ -519,7 +589,7 @@ def _create_lagged_data_by_intersecting_times(
         )
     ):
         series_and_lags_specified = max_lag_i is not None
-        is_target_series = i == 0
+        is_target_series = is_training and (i == 0)
         if series_and_lags_specified or is_target_series:
             shared_time_idx = np.searchsorted(series_i.time_index, shared_times)
         if series_and_lags_specified:
@@ -535,18 +605,23 @@ def _create_lagged_data_by_intersecting_times(
         if is_target_series:
             label_shared_time_idx = shared_time_idx
     X = np.concatenate(X, axis=1)
-    if multi_models:
-        # All points between time `t` and `t + output_chunk_length` are labels:
-        time_idx_to_get = label_shared_time_idx.reshape(-1, 1) + np.arange(
-            output_chunk_length
-        )
+    if is_training:
+        if multi_models:
+            # All points between time `t` and `t + output_chunk_length` are labels:
+            time_idx_to_get = label_shared_time_idx.reshape(-1, 1) + np.arange(
+                output_chunk_length
+            )
+        else:
+            # Only point at time `t + output_chunk_length` is a label:
+            time_idx_to_get = (
+                label_shared_time_idx.reshape(-1, 1) + output_chunk_length - 1
+            )
+        # Before reshaping: lagged_vals.shape = (n_observations, num_lags, n_components, n_samples)
+        lagged_vals = target_series.all_values(copy=False)[time_idx_to_get, :, :]
+        # After reshaping: lagged_vals.shape = (n_observations, num_lags*n_components, n_samples)
+        y = lagged_vals.reshape(lagged_vals.shape[0], -1, lagged_vals.shape[-1])
     else:
-        # Only point at time `t + output_chunk_length` is a label:
-        time_idx_to_get = label_shared_time_idx.reshape(-1, 1) + output_chunk_length - 1
-    # Before reshaping: lagged_vals.shape = (n_observations, num_lags, n_components, n_samples)
-    lagged_vals = target_series.all_values(copy=False)[time_idx_to_get, :, :]
-    # After reshaping: lagged_vals.shape = (n_observations, num_lags*n_components, n_samples)
-    y = lagged_vals.reshape(lagged_vals.shape[0], -1, lagged_vals.shape[-1])
+        y = None
     return X, y, shared_times
 
 

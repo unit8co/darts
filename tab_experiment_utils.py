@@ -3,7 +3,6 @@ import pstats
 import time
 from functools import reduce
 from itertools import product
-from math import inf
 from pstats import SortKey
 from typing import Optional, Sequence, Union
 
@@ -186,9 +185,7 @@ def test_correctness(
             lags_future_covariates=lags_future_covariates,
             output_chunk_length=output_chunk_length,
             multi_models=multi_models,
-            max_samples_per_ts=inf
-            if max_samples_per_ts is None
-            else max_samples_per_ts,
+            max_samples_per_ts=max_samples_per_ts,
             use_moving_windows=equal_freq,
         )
 
@@ -245,9 +242,7 @@ def perform_profiling(
                 lags_future_covariates=lags_future_covariates,
                 output_chunk_length=output_chunk_length,
                 multi_models=multi_models,
-                max_samples_per_ts=inf
-                if max_samples_per_ts is None
-                else max_samples_per_ts,
+                max_samples_per_ts=max_samples_per_ts,
                 use_moving_windows=use_moving_windows,
             )
     sortby = SortKey.CUMULATIVE
@@ -357,9 +352,7 @@ def _perform_single_benchmark(
             lags_future_covariates=lags_future_covariates,
             output_chunk_length=output_chunk_length,
             multi_models=multi_models,
-            max_samples_per_ts=inf
-            if max_samples_per_ts is None
-            else max_samples_per_ts,
+            max_samples_per_ts=max_samples_per_ts,
             use_moving_windows=use_moving_windows,
         )
     refact_implem_time = time.time() - start_time
