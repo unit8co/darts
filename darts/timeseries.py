@@ -2604,9 +2604,9 @@ class TimeSeries:
             attrs=self._xa.attrs,
         )
 
-        # new_xa = xr.concat(objs=[self._xa, other_xa], dim=str(self._time_dim))
-        if not self._has_datetime_index:
-            new_xa = new_xa.reset_index(dims_or_levels=new_xa.dims[0])
+        # # new_xa = xr.concat(objs=[self._xa, other_xa], dim=str(self._time_dim))
+        # if not self._has_datetime_index:
+        #     new_xa = new_xa.reset_index(dims_or_levels=new_xa.dims[0])
 
         return self.__class__.from_xarray(
             new_xa, fill_missing_dates=True, freq=self._freq_str
@@ -2626,7 +2626,6 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries with the new values appended
         """
-
         if self._has_datetime_index:
             idx = pd.DatetimeIndex(
                 [self.end_time() + i * self._freq for i in range(1, len(values) + 1)],
@@ -2634,9 +2633,10 @@ class TimeSeries:
             )
         else:
             idx = pd.RangeIndex(
-                len(self), len(self) + self.freq * len(values), step=self.freq
+                start=self.end_time() + self._freq,
+                stop=self.end_time() + (len(values) + 1) * self._freq,
+                step=self._freq,
             )
-
         return self.append(
             self.__class__.from_times_and_values(
                 values=values,
