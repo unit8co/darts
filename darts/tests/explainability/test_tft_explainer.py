@@ -254,11 +254,18 @@ class TFTExplainerTestCase(DartsBaseTestClass):
         # assert
         self.assertTrue(isinstance(res, dict))
         self.assertTrue(res.keys() == {"encoder_importance", "decoder_importance"})
+
+        # Test specific variable selection weights
+        # Because of numerical differences between architectures (mac vs linux) we allow a difference of 1
         pd.testing.assert_frame_equal(
-            res["encoder_importance"], expected_encoder_importance
+            res["encoder_importance"],
+            expected_encoder_importance,
+            atol=1,
         )
         pd.testing.assert_frame_equal(
-            res["decoder_importance"], expected_decoder_importance
+            res["decoder_importance"],
+            expected_decoder_importance,
+            atol=1,
         )
 
     def test_explain(self):
