@@ -7,6 +7,7 @@ Darts is still in an early development phase, and we cannot always guarantee bac
 - Fixed edge case in ShapExplainer for regression models where covariates series > target series [#1310](https://https://github.com/unit8co/darts/pull/1310) by [Rijk van der Meulen](https://github.com/rijkvandermeulen)
 - Removed `IPython` as a dependency. [#1331](https://github.com/unit8co/darts/pull/1331) by [Erik Hasse](https://github.com/erik-hasse)
 - New models: `DLinearModel` and `NLinearModel` as proposed in [this paper](https://arxiv.org/pdf/2205.13504.pdf). [#1139](https://github.com/unit8co/darts/pull/1139) by [Julien Herzen](https://github.com/hrzn) and [Greg DeVos](https://github.com/gdevos010).
+- 🔴 Improvements to `TorchForecastingModels`: Load models directly to CPU that were trained on GPU. Save file size reduced. Improved PyTorch Lightning Trainer handling fixing several minor issues. Removed deprecated methods `load_model` and `save_model` [#1371](https://github.com/unit8co/darts/pull/1371) by [Dennis Bader](https://github.com/dennisbader).
 
 [Full Changelog](https://github.com/unit8co/darts/compare/0.22.0...master)
 
