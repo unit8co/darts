@@ -3,6 +3,7 @@ Neural Prophet
 ------------
 """
 
+import warnings
 from typing import Optional, Sequence, Union
 
 import neuralprophet
@@ -17,6 +18,7 @@ from darts.timeseries import TimeSeries, concatenate
 class NeuralProphet(ForecastingModel):
     def __init__(self, n_lags: int = 0, n_forecasts: int = 1, **kwargs):
         super().__init__()
+        # TODO improve passing arguments to the model
 
         raise_if_not(n_lags >= 0, "Argument n_lags should be a non-negative integer")
 
@@ -36,7 +38,7 @@ class NeuralProphet(ForecastingModel):
 
         raise_if_not(
             series.has_datetime_index,
-            "NeuralProphet model is limited to TimeSeries index with DatetimeIndex",
+            "NeuralProphet model is limited to TimeSeries indexed with DatetimeIndex",
         )
 
         raise_if_not(
@@ -48,11 +50,16 @@ class NeuralProphet(ForecastingModel):
         fit_df = self._convert_ts_to_df(series)
 
         if past_covariates is not None:
-            fit_df = self._add_past_covariate(self.model, fit_df, past_covariates)
+            fit_df = self._add_past_covariates(self.model, fit_df, past_covariates)
 
-        # TODO add future covariates to df
+        if future_covariates is not None:
+            fit_df = self._add_future_covariates(self.model, fit_df, future_covariates)
+            self.future_components = future_covariates.components
+        else:
+            self.future_components = None
 
-        self.model.fit(fit_df, freq=series.freq_str, minimal=True)
+        with warnings.catch_warnings():
+            self.model.fit(fit_df, freq=series.freq_str)
 
         self.fit_df = fit_df
         return self
@@ -68,12 +75,24 @@ class NeuralProphet(ForecastingModel):
 
         raise_if_not(
             self.n_lags == 0 or n <= self.n_forecasts,
-            "Auto-regression has been configured. `n` must be smaller than or equal to"
+            "Auto-regression has been enabled. `n` must be smaller than or equal to"
             "`n_forecasts` parameter in the constructor.",
         )
 
-        future_df = self.model.make_future_dataframe(df=self.fit_df, periods=n)
-        forecast_df = self.model.predict(future_df)
+        self._future_covariates_checks(future_covariates)
+
+        regressors_df = (
+            self._future_covariates_df(future_covariates)
+            if self.future_components is not None
+            else None
+        )
+
+        future_df = self.model.make_future_dataframe(
+            df=self.fit_df, regressors_df=regressors_df, periods=n
+        )
+
+        with warnings.catch_warnings():
+            forecast_df = self.model.predict(future_df)
 
         return self._convert_df_to_ts(
             forecast_df,
@@ -98,19 +117,49 @@ class NeuralProphet(ForecastingModel):
 
         return pd.concat(dfs).copy(deep=True)
 
-    def _add_past_covariate(
+    def _add_past_covariates(
         self,
         model: neuralprophet.NeuralProphet,
         df: pd.DataFrame,
-        past_covariates: TimeSeries,
+        covariates: TimeSeries,
+    ):
+        df = self._add_covariate(df, covariates)
+        model.add_lagged_regressor(names=list(covariates.components))
+        return df
+
+    def _add_future_covariates(
+        self,
+        model: neuralprophet.NeuralProphet,
+        df: pd.DataFrame,
+        covariates: TimeSeries,
+    ):
+        df = self._add_covariate(df, covariates)
+        for component in covariates.components:
+            model.add_future_regressor(name=component)
+
+        return df
+
+    def _add_covariate(
+        self,
+        df: pd.DataFrame,
+        covariates: TimeSeries,
     ) -> pd.DataFrame:
         """Convert past covariates from TimeSeries and add them to DataFrame"""
 
-        # TODO add checks if past covariate Time series has enough coverage and the same frequency
+        raise_if_not(
+            self.training_series.freq == covariates.freq,
+            "Covariate TimeSeries has to have the same frequency as the TimeSeries that model is fitted on.",
+        )
 
-        for component in past_covariates.components:
+        raise_if_not(
+            covariates.start_time() <= self.training_series.start_time()
+            and self.training_series.end_time() <= covariates.end_time(),
+            "Covaraite TimeSeries has to span across all TimeSeries that model is fitted on",
+        )
+
+        for component in covariates.components:
             covariate_df = (
-                past_covariates[component]
+                covariates[component]
                 .pd_dataframe(copy=False)
                 .reset_index(names=["ds"])
                 .filter(items=["ds", component])
@@ -118,15 +167,13 @@ class NeuralProphet(ForecastingModel):
 
             df = df.merge(covariate_df, how="left", on="ds")
 
-            model.add_lagged_regressor(names=component)
-
         return df
 
     def _convert_df_to_ts(self, forecast: pd.DataFrame, last_train_date, components):
         groups = []
         for component in components:
             if self.n_lags == 0:
-                # output format is different when AR is not used
+                # output format is different when AR is not enabled
                 groups.append(
                     forecast[
                         (forecast["ID"] == component)
@@ -151,6 +198,33 @@ class NeuralProphet(ForecastingModel):
             [TimeSeries.from_dataframe(group, time_col="ds") for group in groups],
             axis=1,
         )
+
+    def _future_covariates_df(self, series: TimeSeries) -> pd.DataFrame:
+        component_dfs = []
+        for component in series.components:
+            component_dfs.append(series[component].pd_dataframe())
+
+        return pd.concat(component_dfs, axis=1).reset_index(names=["ds"])
+
+    def _future_covariates_checks(self, future_covariates: Optional[TimeSeries]):
+        raise_if_not(
+            self.future_components is None
+            or (
+                future_covariates is not None
+                and set(self.future_components) == set(future_covariates.components)
+            ),
+            f"Missing future covariate TimeSeries. Model was trained with {self.future_components} "
+            "future components",
+        )
+
+        raise_if_not(
+            self.future_components is None
+            or future_covariates.freq == self.training_series.freq,
+            "Invalid frequency in future covariate TimeSeries",
+        )
+
+    def uses_future_covariates(self):
+        return True
 
     def __str__(self):
         return "Neural Prophet"
