@@ -5,12 +5,20 @@ import pandas as pd
 from pyod.models.knn import KNN
 
 from darts import TimeSeries
-from darts.ad.anomaly_model.filtering_am import FilteringAnomalyModel
-from darts.ad.anomaly_model.forecasting_am import ForecastingAnomalyModel
-from darts.ad.scorers import CauchyNLLScorer
-from darts.ad.scorers import DifferenceScorer as Difference
-from darts.ad.scorers import (
+
+# anomaly aggregators
+# import everything in darts.ad (also for testing imports)
+from darts.ad import AndAggregator  # noqa: F401
+from darts.ad import EnsembleSklearnAggregator  # noqa: F401
+from darts.ad import OrAggregator  # noqa: F401
+from darts.ad import QuantileDetector  # noqa: F401
+from darts.ad import ThresholdDetector  # noqa: F401
+from darts.ad import CauchyNLLScorer
+from darts.ad import DifferenceScorer as Difference
+from darts.ad import (
     ExponentialNLLScorer,
+    FilteringAnomalyModel,
+    ForecastingAnomalyModel,
     GammaNLLScorer,
     GaussianNLLScorer,
     KMeansScorer,
@@ -26,7 +34,6 @@ from darts.tests.base_test_class import DartsBaseTestClass
 
 
 class ADAnomalyModelTestCase(DartsBaseTestClass):
-
     np.random.seed(42)
 
     # univariate series

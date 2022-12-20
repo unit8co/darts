@@ -1,7 +1,7 @@
 """
-Aggregators
------------
-Module for aggregators. An aggregator combines multiple components of a multivariate binary series into one.
+Aggregator Base Classes
+-----------------------
+An aggregator combines multiple components of a multivariate binary series into one.
 """
 
 # TODO:
