@@ -1,13 +1,15 @@
 """
 Regression Model
 ----------------
-A `RegressionModel` forecasts future values of a target series based on lagged values of
+A `RegressionModel` forecasts future values of a target series based on
 
 * The target series (past lags only)
 
 * An optional past_covariates series (past lags only)
 
 * An optional future_covariates series (possibly past and future lags)
+
+* Available static covariates
 
 
 The regression models are learned in a supervised way, and they can wrap around any "scikit-learn like" regression model
@@ -21,6 +23,8 @@ Behind the scenes this model is tabularizing the time series data to make it wor
 The lags can be specified either using an integer - in which case it represents the _number_ of (past or future) lags
 to take into consideration, or as a list - in which case the lags have to be enumerated (strictly negative values
 denoting past lags and positive values including 0 denoting future lags).
+When static covariates are present, they are appended to the lagged features. When multiple time series are passed,
+if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.
 """
 
 import math
@@ -33,7 +37,7 @@ from sklearn.linear_model import LinearRegression
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
-from darts.utils.data.tabularization import _create_lagged_data
+from darts.utils.data.tabularization import _add_static_covariates, _create_lagged_data
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import _check_quantiles, seq2series, series2seq
 
@@ -323,6 +327,10 @@ class RegressionModel(GlobalForecastingModel):
             lags_future_covariates=lags_future_covariates,
             max_samples_per_ts=max_samples_per_ts,
             multi_models=self.multi_models,
+        )
+
+        training_samples = _add_static_covariates(
+            self.model, target_series, training_samples
         )
 
         return training_samples, training_labels
@@ -655,6 +663,8 @@ class RegressionModel(GlobalForecastingModel):
 
             # concatenate retrieved lags
             X = np.concatenate(np_X, axis=1)
+            X = _add_static_covariates(self.model, series, X)
+
             # X has shape (n_series * n_samples, n_regression_features)
             prediction = self._predict_and_sample(X, num_samples, **kwargs)
             # prediction shape (n_series * n_samples, output_chunk_length, n_components)
@@ -686,6 +696,10 @@ class RegressionModel(GlobalForecastingModel):
 
     def __str__(self):
         return self.model.__str__()
+
+    @staticmethod
+    def _supports_static_covariates() -> bool:
+        return True
 
 
 class _LikelihoodMixin:
