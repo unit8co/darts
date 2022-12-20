@@ -700,6 +700,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             delta=1e-05,
         )
 
+        self.assertFalse(scorer.is_probabilistic)
+
     def test_Difference(self):
 
         scorer = Difference()
@@ -752,6 +754,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             self.mts_test["1"],
         )
 
+        self.assertFalse(scorer.is_probabilistic)
+
     def test_WassersteinScorer(self):
 
         # component_wise parameter
@@ -793,6 +797,14 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             WassersteinScorer(diff_fn=1)
 
+        # test _diff_series() directly
+        with self.assertRaises(ValueError):
+            s_tmp = WassersteinScorer()
+            s_tmp.diff_fn = "random"
+            s_tmp._diff_series(self.train, self.test)
+        WassersteinScorer(diff_fn="diff")._diff_series(self.train, self.test)
+        WassersteinScorer()._diff_series(self.train, self.test)
+
         scorer = WassersteinScorer()
 
         # always expects a deterministic input
@@ -812,6 +824,35 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         scorer.fit(self.train)
         with self.assertRaises(ValueError):
             scorer.score(self.test[:50])  # len(self.test)=100
+
+        # test plotting (just call the functions)
+        scorer = WassersteinScorer(window=2)
+        scorer.fit(self.train)
+        scorer.show_anomalies(self.test, self.anomalies)
+        with self.assertRaises(ValueError):
+            # should fail for a sequence of series
+            scorer.show_anomalies([self.test, self.test], self.anomalies)
+        scorer.show_anomalies_from_prediction(
+            actual_series=self.test,
+            pred_series=self.test + 1,
+            actual_anomalies=self.anomalies,
+        )
+        with self.assertRaises(ValueError):
+            # should fail for a sequence of series
+            scorer.show_anomalies_from_prediction(
+                actual_series=[self.test, self.test],
+                pred_series=self.test + 1,
+                actual_anomalies=self.anomalies,
+            )
+        with self.assertRaises(ValueError):
+            # should fail for a sequence of series
+            scorer.show_anomalies_from_prediction(
+                actual_series=self.test,
+                pred_series=[self.test + 1, self.test + 2],
+                actual_anomalies=self.anomalies,
+            )
+
+        self.assertFalse(scorer.is_probabilistic)
 
     def test_univariate_Wasserstein(self):
 
@@ -1000,6 +1041,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         scorer.fit(self.train)
         with self.assertRaises(ValueError):
             scorer.score(self.test[:50])  # len(self.test)=100
+
+        self.assertFalse(scorer.is_probabilistic)
 
     def test_univariate_kmeans(self):
 
@@ -1295,6 +1338,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         scorer.fit(self.train)
         with self.assertRaises(ValueError):
             scorer.score(self.test[:50])  # len(self.test)=100
+
+        self.assertFalse(scorer.is_probabilistic)
 
     def test_univariate_PyODScorer(self):
 
@@ -1722,6 +1767,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             delta=1e-01,
         )
 
+        self.assertTrue(scorer.is_probabilistic)
+
     def test_LaplaceNLLScorer(self):
 
         # window parameter
@@ -1902,6 +1949,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             delta=1e-01,
         )
 
+        self.assertTrue(scorer.is_probabilistic)
+
     def test_ExponentialNLLScorer(self):
 
         # window parameter
@@ -2074,6 +2123,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             delta=1e-01,
         )
 
+        self.assertTrue(scorer.is_probabilistic)
+
     def test_GammaNLLScorer(self):
 
         # window parameter
@@ -2236,6 +2287,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             delta=1e-01,
         )
 
+        self.assertTrue(scorer.is_probabilistic)
+
     def test_CauchyNLLScorer(self):
 
         # window parameter
@@ -2383,6 +2436,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             (-np.log(cauchy.pdf(2)) - np.log(cauchy.pdf(0.9))) / 2,
             delta=1e-01,
         )
+
+        self.assertTrue(scorer.is_probabilistic)
 
     def test_PoissonNLLScorer(self):
 
@@ -2548,3 +2603,5 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             (-np.log(poisson.pmf(2, mu=1)) - np.log(poisson.pmf(4, mu=1))) / 2,
             delta=1e-01,
         )
+
+        self.assertTrue(scorer.is_probabilistic)

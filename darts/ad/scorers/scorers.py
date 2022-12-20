@@ -138,11 +138,8 @@ class AnomalyScorer(ABC):
         )
 
     @property
-    def _expects_probabilistic(self) -> bool:
-        """Checks if the scorer expects a probabilistic prediction for its first input.
-        By default, returns False. Needs to be overwritten by scorers that do expects
-        probabilistic prediction.
-        """
+    def is_probabilistic(self) -> bool:
+        """Whether the scorer expects a probabilistic prediction for its first input."""
         return False
 
     def _assert_stochastic(self, series: TimeSeries, name_series: str):
@@ -695,29 +692,6 @@ class FittableAnomalyScorer(AnomalyScorer):
     def _score_core(self, series: Any) -> Any:
         pass
 
-    def _diff_sequence(
-        self, list_series_1: Sequence[TimeSeries], list_series_2: Sequence[TimeSeries]
-    ) -> Sequence[TimeSeries]:
-        """Calls the function ``_diff_series()`` on every pair (s1,s2) in the list (list_series_1,list_series_2).
-
-        `list_series_1` and `list_series_2` must have the same length n. Each pair of series in `list_series_1` and
-        `list_series_2` must be of the same length and width.
-
-        Parameters
-        ----------
-        series_1
-            1st sequence of time series
-        series_2:
-            2nd sequence of time series
-
-        Returns
-        -------
-        TimeSeries
-            Sequence of series of length n
-        """
-
-        return list(map(self._diff_series, list_series_1, list_series_2))
-
     def _diff_series(self, series_1: TimeSeries, series_2: TimeSeries) -> TimeSeries:
         """Applies the ``diff_fn`` to the two time series. Converts two time series into 1.
 
@@ -835,7 +809,8 @@ class NLLScorer(NonFittableAnomalyScorer):
                 treat_na="dropna",
             )
 
-    def _expects_probabilistic(self) -> bool:
+    @property
+    def is_probabilistic(self) -> bool:
         return True
 
     @abstractmethod
