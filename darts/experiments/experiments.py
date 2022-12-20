@@ -12,11 +12,12 @@ from typing import List, Optional, Sequence, Tuple, Union
 from tqdm import tqdm
 from darts.utils.utils import series2seq
 from darts.dataprocessing.pipeline import Pipeline
-from darts.metrics import mse, mae, smape, rmse, mape
+from darts.metrics import mse, mae, smape, rmse, mape, mase
 import torch
 from pytorch_lightning.callbacks import Callback, EarlyStopping
 from typing import Callable
 from darts import TimeSeries
+import numpy as np
 
 import optuna
 from optuna.integration import PyTorchLightningPruningCallback
@@ -81,6 +82,7 @@ class BaseExperiment():
     dataset = None
     transformers_pipeline = None
     transformed_val = None #bool
+    val_predictions = {} #dict with keys as model names and values as timeseries predictions
     test_predictions = {} #dict with keys as model names and values as timeseries predictions
     test_stats = {}
     verbose = None
@@ -162,6 +164,7 @@ class BaseExperiment():
             test = [s[1] for s in vals]
             val = [s[0] for s in vals]
             self.split = split
+            self.val_len = len(val[0])
 
         self.orig_train = train
         self.orig_val = val
@@ -201,14 +204,16 @@ class BaseExperiment():
         self.transformers_pipeline = transformers_pipeline
         return self
 
-    def _postprocess_predictions(self, model):
+    def _postprocess_predictions(self, model, predictions, test = False):
         """
         Post-process the predictions.
         """
 
-        if self.transformers_pipeline.invertible():
-
-            self.val_predictions[model] = self.transformers_pipeline.inverse_transform(self.val_predictions[model])
+        if self.transformers_pipeline is not None and self.transformers_pipeline.invertible():
+            if not test:
+                self.val_predictions[model] = self.transformers_pipeline.inverse_transform(predictions)
+            else:
+                self.test_predictions[model] = self.transformers_pipeline.inverse_transform(predictions)
 
         return self
 
@@ -247,7 +252,7 @@ class BaseExperiment():
         pass
 
     # validate model
-    def _compute_validation_stats(self, predictions, ground_truth, metric):
+    def _compute_validation_stats(self, ground_truth, predictions, metric):
         """
         Validate the model.
         """
@@ -348,21 +353,27 @@ def NHiTSModelBuilder(self):
     pass
 
 def TCNModelBuilder(experiment, in_len, out_len, kernel_size, num_filters, weight_norm, dilation_base,
-dropout, lr, encoders = None, likelihood=None):
+dropout, lr, encoders = None, likelihood=None, callbacks = None):
     torch.manual_seed(experiment.random_state)
+
+    early_stopper = EarlyStopping("val_loss", min_delta=0.001, patience=3, verbose=True)
+    if callbacks is None:
+        callbacks = [early_stopper]
+    else:
+        callbacks.append(early_stopper)
 
     # detect if a GPU is available
     if torch.cuda.is_available():
-        experiment.pl_trainer_kwargs = {
+        pl_trainer_kwargs = {
             "accelerator": "gpu",
             "gpus": -1,
             "auto_select_gpus": True,
-            "callbacks": experiment.callbacks,
+            "callbacks": callbacks,
         }
-        experiment.num_workers = 4
+        num_workers = 4
     else:
-        experiment.pl_trainer_kwargs = {"callbacks": experiment.callbacks}
-        experiment.num_workers = 0
+        pl_trainer_kwargs = {"callbacks": callbacks}
+        num_workers = 0
 
     # build the model
     model = TCNModel(
@@ -379,7 +390,7 @@ dropout, lr, encoders = None, likelihood=None):
         optimizer_kwargs={"lr": lr},
         add_encoders=encoders,
         likelihood=likelihood,
-        pl_trainer_kwargs=experiment.pl_trainer_kwargs,
+        pl_trainer_kwargs=pl_trainer_kwargs,
         model_name="tcn_model",
         force_reset=True,
         save_checkpoints=True,
@@ -391,7 +402,7 @@ dropout, lr, encoders = None, likelihood=None):
         series=train,
         val_series=val,
         max_samples_per_ts=experiment.MAX_SAMPLES_PER_TS,
-        num_loader_workers=experiment.num_workers,
+        num_loader_workers=num_workers,
     )
 
     # reload best model over course of training
@@ -408,8 +419,8 @@ class DLExperiment(BaseExperiment):
     NAME = "DL_Experiments"
 
     # parameters shared by all models
-    BATCH_SIZE = 1024
-    MAX_N_EPOCHS = 30
+    BATCH_SIZE = 32#1024
+    MAX_N_EPOCHS = 3#30
     NR_EPOCHS_VAL_PERIOD = 1
     MAX_SAMPLES_PER_TS = 1000
 
@@ -425,10 +436,7 @@ class DLExperiment(BaseExperiment):
         self.verbose = verbose
         self.metrics = metrics if metrics is not None else METRICS
 
-        # early stopping by monitoring validation loss
-        self.early_stopper = EarlyStopping("val_loss", min_delta=0.001, patience=3, verbose=True)
 
-        self.callbacks = [self.early_stopper]
 
     MODEL_BUILDERS = {DLinearModel: DLinearModelBuilder,
                       NLinearModel: NLinearModelBuilder,
@@ -442,7 +450,7 @@ class DLExperiment(BaseExperiment):
         super()._preprocess_data(transformers, transform_val)
         return self
 
-    def _define_optuna_objective(self, params_dict, model_builder, metric):
+    def _define_optuna_objective(self, params_dict, model_cl, metric):
         """
         Define the objective function for optuna.
 
@@ -453,6 +461,8 @@ class DLExperiment(BaseExperiment):
             e.g., {"lr": ("float", [0.01, 0.05]), "optimizer": ("categorical", ["Adam", "RMSprop", "SGD"]),
             "batch_size": ("int", [32])}
         """
+        model_builder = self.MODEL_BUILDERS[model_cl]
+
         def objective(trial):
             # sample the parameters
             params = {}
@@ -466,10 +476,13 @@ class DLExperiment(BaseExperiment):
                 else:
                     raise ValueError(f"Unknown parameter type {param_type}")
 
-            self.pruning_callback = optuna.integration.PyTorchLightningPruningCallback(trial, "val_loss")
-            self.callbacks.append(self.pruning_callback)
+            # early stopping by monitoring validation loss
+
+            pruning_callback = optuna.integration.PyTorchLightningPruningCallback(trial, "val_loss")
+            callbacks = [pruning_callback]
 
             params.update({"experiment":self})
+            params.update({"callbacks": callbacks})
 
             # build the model
             model = model_builder(**params)
@@ -480,12 +493,18 @@ class DLExperiment(BaseExperiment):
             # predict the model
             val_predictions = model.predict(n = self.val_len)
 
-            val_predictions = self._postprocess_predictions(val_predictions)
+            val_predictions = self._postprocess_predictions(model_cl, val_predictions, test = False)
 
+            val = self.val
             # compute the validation stats
-            val_stats = self._compute_validation_stats(self.val, val_predictions, metric)
+            if metric == mase:
+                val_stats = mase(val, val_predictions, insample=self.train, n_jobs = -1, verbose = self.verbose)
+            else :
+                val_stats = metric(val, val_predictions, n_jobs = -1, verbose = self.verbose)
 
-            return val_stats
+            val_stats = np.mean(val_stats)
+
+            return val_stats if val_stats != np.nan else float("inf")
 
         return objective
 
@@ -510,8 +529,8 @@ class DLExperiment(BaseExperiment):
 
         return best_prams
 
-    def _postprocess_predictions(self):
-        super()._postprocess_predictions()
+    def _postprocess_predictions(self, model, predictions, test):
+        super()._postprocess_predictions(model=model, predictions=predictions, test=test)
         return self
 
     def run(self, dataset, hyperparams, transformers: List[dict], transform_val: bool = True):
@@ -519,16 +538,16 @@ class DLExperiment(BaseExperiment):
 
         self._get_data()
         self._preprocess_data(transformers, transform_val)
-        for model in self.models_cls:
+        for model_cl in self.models_cls:
             for metric in self.metrics:
-                optuna_objective = self._define_optuna_objective(hyperparams, self.MODEL_BUILDERS[model], metric)
+                optuna_objective = self._define_optuna_objective(hyperparams, model_cl, metric)
                 best_params = self._optimize_hyperparameters(optuna_objective)
-                best_model = self.MODEL_BUILDERS[model](**best_params) # returns a fitted model
+                best_model = self.MODEL_BUILDERS[model_cl](**best_params) # returns a fitted model
                 test_predictions = best_model.predict(series = self.val, n = self.val_len)
-                test_predictions = self._postprocess_predictions(test_predictions)
-                self.test_predictions[model] = test_predictions
-                self.test_stats[f"{model.__class__.__name__}_{metric}"] = self._compute_validation_stats(self.test, test_predictions, metric)
-                self._backup_exp(dataset, model, metric, best_params)
+                test_predictions = self._postprocess_predictions(model_cl, test_predictions, test = True)
+                self.test_predictions[model_cl] = test_predictions
+                self.test_stats[f"{model_cl.__class__.__name__}_{metric}"] = self._compute_validation_stats(self.test, test_predictions, metric)
+                self._backup_exp(dataset, model_cl, metric, best_params)
 
     def _backup_exp(self):
         pass
