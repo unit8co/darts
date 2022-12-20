@@ -16,7 +16,7 @@ import pandas as pd
 
 from darts.ad.anomaly_model.anomaly_model import AnomalyModel
 from darts.ad.scorers.scorers import AnomalyScorer
-from darts.ad.utils import _check_timeseries_type, _same_length, _to_list
+from darts.ad.utils import _assert_same_length, _assert_timeseries, _to_list
 from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.timeseries import TimeSeries
@@ -239,7 +239,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             list_covariates = _to_list(covariates)
 
             for covariates in list_covariates:
-                _check_timeseries_type(
+                _assert_timeseries(
                     covariates, name_covariates + "_covariates input series"
                 )
 
@@ -649,7 +649,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             "all input `actual_anomalies` must be of type Timeseries.",
         )
 
-        _same_length(list_actual_anomalies, list_series)
+        _assert_same_length(list_actual_anomalies, list_series)
         self._check_univariate(list_actual_anomalies)
 
         list_anomaly_scores = self.score(

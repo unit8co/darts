@@ -69,10 +69,10 @@ import numpy as np
 
 from darts import TimeSeries
 from darts.ad.utils import (
-    _check_timeseries_type,
+    _assert_same_length,
+    _assert_timeseries,
     _intersect,
-    _same_length,
-    _sanity_check_2series,
+    _sanity_check_two_series,
     _to_list,
     eval_accuracy_from_scores,
     show_anomalies_from_scores,
@@ -348,12 +348,12 @@ class NonFittableAnomalyScorer(AnomalyScorer):
         list_actual_series, list_pred_series = _to_list(actual_series), _to_list(
             pred_series
         )
-        _same_length(list_actual_series, list_pred_series)
+        _assert_same_length(list_actual_series, list_pred_series)
 
         anomaly_scores = []
 
         for s1, s2 in zip(list_actual_series, list_pred_series):
-            _sanity_check_2series(s1, s2)
+            _sanity_check_two_series(s1, s2)
             s1, s2 = _intersect(s1, s2)
             self._check_window_size(s1)
             self._check_window_size(s2)
@@ -463,7 +463,7 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         anomaly_scores = []
         for s in list_series:
-            _check_timeseries_type(s)
+            _assert_timeseries(s)
             self._check_window_size(s)
             anomaly_scores.append(
                 self._score_core(self._assert_deterministic(s, "series"))
@@ -579,11 +579,11 @@ class FittableAnomalyScorer(AnomalyScorer):
         list_actual_series, list_pred_series = _to_list(actual_series), _to_list(
             pred_series
         )
-        _same_length(list_actual_series, list_pred_series)
+        _assert_same_length(list_actual_series, list_pred_series)
 
         anomaly_scores = []
         for (s1, s2) in zip(list_actual_series, list_pred_series):
-            _sanity_check_2series(s1, s2)
+            _sanity_check_two_series(s1, s2)
             s1 = self._assert_deterministic(s1, "actual_series")
             s2 = self._assert_deterministic(s2, "pred_series")
             diff = self._diff_series(s1, s2)
@@ -622,7 +622,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         list_series = _to_list(series)
 
         for idx, s in enumerate(list_series):
-            _check_timeseries_type(s)
+            _assert_timeseries(s)
 
             if idx == 0:
                 self.width_trained_on = s.width
@@ -672,11 +672,11 @@ class FittableAnomalyScorer(AnomalyScorer):
         list_actual_series, list_pred_series = _to_list(actual_series), _to_list(
             pred_series
         )
-        _same_length(list_actual_series, list_pred_series)
+        _assert_same_length(list_actual_series, list_pred_series)
 
         list_fit_series = []
         for s1, s2 in zip(list_actual_series, list_pred_series):
-            _sanity_check_2series(s1, s2)
+            _sanity_check_two_series(s1, s2)
             s1 = self._assert_deterministic(s1, "actual_series")
             s2 = self._assert_deterministic(s2, "pred_series")
             list_fit_series.append(self._diff_series(s1, s2))

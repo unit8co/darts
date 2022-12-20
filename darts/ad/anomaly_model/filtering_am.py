@@ -11,7 +11,7 @@ from typing import Dict, Sequence, Union
 
 from darts.ad.anomaly_model.anomaly_model import AnomalyModel
 from darts.ad.scorers.scorers import AnomalyScorer
-from darts.ad.utils import _same_length, _to_list
+from darts.ad.utils import _assert_same_length, _to_list
 from darts.logging import get_logger, raise_if_not
 from darts.models.filtering.filtering_model import FilteringModel
 from darts.timeseries import TimeSeries
@@ -324,7 +324,7 @@ class FilteringAnomalyModel(AnomalyModel):
             "all input `actual_anomalies` must be of type Timeseries.",
         )
 
-        _same_length(list_series, list_actual_anomalies)
+        _assert_same_length(list_series, list_actual_anomalies)
         self._check_univariate(list_actual_anomalies)
 
         list_anomaly_scores = self.score(series=list_series, **filter_kwargs)

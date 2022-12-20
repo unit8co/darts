@@ -28,12 +28,31 @@ class Aggregator(ABC):
 
     @abstractmethod
     def __str__(self):
-        "returns the name of the aggregator"
+        """returns the name of the aggregator"""
         pass
 
     @abstractmethod
     def _predict_core(self):
-        "returns the aggregated results"
+        """returns the aggregated results"""
+        pass
+
+    @abstractmethod
+    def predict(
+        self, series: Union[TimeSeries, Sequence[TimeSeries]]
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        """Aggregates the (sequence of) multivariate binary series given as
+        input into a (sequence of) univariate binary series.
+
+        Parameters
+        ----------
+        series
+            The (sequence of) multivariate binary series to aggregate
+
+        Returns
+        -------
+        TimeSeries
+            (Sequence of) aggregated results
+        """
         pass
 
     def _check_input(self, series: Union[TimeSeries, Sequence[TimeSeries]]):

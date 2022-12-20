@@ -397,7 +397,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
                 am.eval_accuracy(
                     actual_anomalies=self.anomalies, series=self.test, metric="auc_roc"
                 )
-            with self.assertRaises(ValueError):
+            with self.assertRaises(TypeError):
                 am.eval_accuracy(
                     actual_anomalies=self.anomalies,
                     series=self.test,

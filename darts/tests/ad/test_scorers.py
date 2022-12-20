@@ -297,7 +297,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             fittable_scorer.eval_accuracy(
                 actual_anomalies=self.anomalies, series=self.test, metric="auc_roc"
             )
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             fittable_scorer.eval_accuracy(
                 actual_anomalies=self.anomalies, series=self.test, metric=["AUC_ROC"]
             )
@@ -363,7 +363,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
                     pred_series=self.modified_test,
                     metric="auc_roc",
                 )
-            with self.assertRaises(ValueError):
+            with self.assertRaises(TypeError):
                 fittable_scorer.eval_accuracy_from_prediction(
                     actual_anomalies=self.anomalies,
                     actual_series=self.test,

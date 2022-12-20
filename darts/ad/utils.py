@@ -32,7 +32,7 @@ from darts.logging import get_logger, raise_if, raise_if_not
 logger = get_logger(__name__)
 
 
-def _check_if_binary(series: TimeSeries, name_series: str):
+def _assert_binary(series: TimeSeries, name_series: str):
     """Checks if series is a binary timeseries (1 and 0)"
 
     Parameters
@@ -88,24 +88,23 @@ def eval_accuracy_from_scores(
     -------
     Union[float, Sequence[float], Sequence[Sequence[float]]]
         Score of the anomalies score prediction
-            - float -> if `anomaly_score` is a univariate series (dimension=1).
-            - Sequence[float]
-                -> if `anomaly_score` is a multivariate series (dimension>1),
-            returns one value per dimension.
-                OR
-                -> if `anomaly_score` is a sequence of univariate series, returns one
-                value per series
-            - Sequence[Sequence[float]]] -> if `anomaly_score` is a sequence of multivariate
-            series. Outer Sequence is over the sequence input, and the inner Sequence is over
-            the dimensions of each element in the sequence input.
+            * ``float`` if `anomaly_score` is a univariate series (dimension=1).
+            * ``Sequence[float]``
+
+                * if `anomaly_score` is a multivariate series (dimension>1),
+                  returns one value per dimension.
+                * if `anomaly_score` is a sequence of univariate series, returns one
+                  value per series
+            * ``Sequence[Sequence[float]]`` if `anomaly_score` is a sequence of
+              multivariate series. Outer Sequence is over the sequence input, and the inner
+              Sequence is over the dimensions of each element in the sequence input.
     """
 
-    if metric == "AUC_ROC":
-        metric_fn = roc_auc_score
-    elif metric == "AUC_PR":
-        metric_fn = average_precision_score
-    else:
-        raise ValueError("Argument `metric` must be one of 'AUC_ROC', 'AUC_PR'")
+    raise_if_not(
+        metric in {"AUC_ROC", "AUC_PR"},
+        "Argument `metric` must be one of 'AUC_ROC', 'AUC_PR'",
+    )
+    metric_fn = roc_auc_score if metric == "AUC_ROC" else average_precision_score
 
     list_actual_anomalies, list_anomaly_scores, list_window = (
         _to_list(actual_anomalies),
@@ -116,7 +115,7 @@ def eval_accuracy_from_scores(
     if len(list_actual_anomalies) == 1 and len(list_anomaly_scores) > 1:
         list_actual_anomalies = list_actual_anomalies * len(list_anomaly_scores)
 
-    _same_length(list_actual_anomalies, list_anomaly_scores)
+    _assert_same_length(list_actual_anomalies, list_anomaly_scores)
 
     if len(list_window) == 1:
         list_window = list_window * len(actual_anomalies)
@@ -133,7 +132,7 @@ def eval_accuracy_from_scores(
         zip(list_actual_anomalies, list_anomaly_scores)
     ):
 
-        _check_if_binary(s_anomalies, "actual_anomalies")
+        _assert_binary(s_anomalies, "actual_anomalies")
 
         sol.append(
             _eval_accuracy_from_data(
@@ -170,11 +169,10 @@ def eval_accuracy_from_binary_prediction(
     actual_anomalies
         The (sequence of) ground truth of the anomalies (1 if it is an anomaly and 0 if not)
     binary_pred_anomalies
-        Anomalies prediction.
+        Anomaly predictions.
     window
         Integer value indicating the number of past samples each point represents
-        in the pred_anomalies. The parameter will be used by the function
-        ``_window_adjustment_anomalies()`` to transform actual_anomalies.
+        in the pred_anomalies. The parameter will be used to transform actual_anomalies.
         If a list is given. the length must match the number of series in pred_anomalies
         and actual_anomalies. If only one window is given, the value will be used for every
         series in pred_anomalies and actual_anomalies.
@@ -187,17 +185,24 @@ def eval_accuracy_from_binary_prediction(
     -------
     Union[float, Sequence[float], Sequence[Sequence[float]]]
         Score of the anomalies prediction
-            - float -> if `binary_pred_anomalies` is a univariate series (dimension=1).
-            - Sequence[float]
-                -> if `binary_pred_anomalies` is a multivariate series (dimension>1),
-            returns one value per dimension.
-                OR
-                -> if `binary_pred_anomalies` is a sequence of univariate series, returns one
-                value per series
-            - Sequence[Sequence[float]]] -> if `binary_pred_anomalies` is a sequence of
-            multivariate series. Outer Sequence is over the sequence input, and the inner
-            Sequence is over the dimensions of each element in the sequence input.
+
+            * ``float`` if `binary_pred_anomalies` is a univariate series (dimension=1).
+            * ``Sequence[float]``
+
+                * if `binary_pred_anomalies` is a multivariate series (dimension>1),
+                  returns one value per dimension.
+                * if `binary_pred_anomalies` is a sequence of univariate series, returns one
+                  value per series
+            * ``Sequence[Sequence[float]]`` if `binary_pred_anomalies` is a sequence of
+              multivariate series. Outer Sequence is over the sequence input, and the inner
+              Sequence is over the dimensions of each element in the sequence input.
     """
+
+    raise_if_not(
+        metric in {"recall", "precision", "f1", "accuracy"},
+        "Argument `metric` must be one of 'recall', 'precision', "
+        "'f1' and 'accuracy'.",
+    )
 
     if metric == "recall":
         metric_fn = recall_score
@@ -205,13 +210,8 @@ def eval_accuracy_from_binary_prediction(
         metric_fn = precision_score
     elif metric == "f1":
         metric_fn = f1_score
-    elif metric == "accuracy":
-        metric_fn = accuracy_score
     else:
-        raise ValueError(
-            "Argument `metric` must be one of 'recall', 'precision', "
-            "'f1' and 'accuracy'."
-        )
+        metric_fn = accuracy_score
 
     list_actual_anomalies, list_binary_pred_anomalies, list_window = (
         _to_list(actual_anomalies),
@@ -222,7 +222,7 @@ def eval_accuracy_from_binary_prediction(
     if len(list_actual_anomalies) == 1 and len(list_binary_pred_anomalies) > 1:
         list_actual_anomalies = list_actual_anomalies * len(list_binary_pred_anomalies)
 
-    _same_length(list_actual_anomalies, list_binary_pred_anomalies)
+    _assert_same_length(list_actual_anomalies, list_binary_pred_anomalies)
 
     if len(list_window) == 1:
         list_window = list_window * len(actual_anomalies)
@@ -239,8 +239,8 @@ def eval_accuracy_from_binary_prediction(
         zip(list_actual_anomalies, list_binary_pred_anomalies)
     ):
 
-        _check_if_binary(s_pred, "pred_anomalies")
-        _check_if_binary(s_anomalies, "actual_anomalies")
+        _assert_binary(s_pred, "pred_anomalies")
+        _assert_binary(s_anomalies, "actual_anomalies")
 
         sol.append(
             _eval_accuracy_from_data(
@@ -293,33 +293,36 @@ def _eval_accuracy_from_data(
             returns one value per dimension.
     """
 
-    _check_timeseries_type(s_data, "Prediction series input")
-    _check_timeseries_type(s_anomalies, "actual_anomalies input")
+    _assert_timeseries(s_data, "Prediction series input")
+    _assert_timeseries(s_anomalies, "actual_anomalies input")
 
     # if window > 1, the anomalies will be adjusted so that it can be compared timewise with s_data
-    s_anomalies = _window_adjustment_anomalies(s_anomalies, window)
+    s_anomalies = _max_pooling(s_anomalies, window)
 
-    _sanity_check_2series(s_data, s_anomalies)
+    _sanity_check_two_series(s_data, s_anomalies)
 
     s_data, s_anomalies = _intersect(s_data, s_anomalies)
 
     if metric_name == "AUC_ROC" or metric_name == "AUC_PR":
 
-        nbr_anomalies_per_width = s_anomalies.sum(axis=0).values(copy=False).flatten()
+        nr_anomalies_per_component = (
+            s_anomalies.sum(axis=0).values(copy=False).flatten()
+        )
 
         raise_if(
-            nbr_anomalies_per_width.min() == 0,
+            nr_anomalies_per_component.min() == 0,
             f"`actual_anomalies` does not contain anomalies. {metric_name} cannot be computed.",
         )
 
         raise_if(
-            nbr_anomalies_per_width.max() == len(s_anomalies),
-            f"`actual_anomalies` contains only anomalies. {metric_name} cannot be computed."
-            + ["", f" Think about decreasing the window size (window={window})"][
+            nr_anomalies_per_component.max() == len(s_anomalies),
+            f"`actual_anomalies` only contains anomalies. {metric_name} cannot be computed."
+            + ["", f" Consider decreasing the window size (window={window})"][
                 window > 1
             ],
         )
 
+    # TODO: could we vectorize this?
     metrics = []
     for component_idx in range(s_data.width):
         metrics.append(
@@ -363,7 +366,7 @@ def _intersect(
     return new_series_1, series_2.slice_intersect(series_1)
 
 
-def _check_timeseries_type(series: TimeSeries, message: str = None):
+def _assert_timeseries(series: TimeSeries, message: str = None):
     """Checks if given input is of type Darts TimeSeries"""
 
     raise_if_not(
@@ -374,7 +377,7 @@ def _check_timeseries_type(series: TimeSeries, message: str = None):
     )
 
 
-def _sanity_check_2series(
+def _sanity_check_two_series(
     series_1: TimeSeries,
     series_2: TimeSeries,
 ):
@@ -393,8 +396,8 @@ def _sanity_check_2series(
         2nd time series
     """
 
-    _check_timeseries_type(series_1)
-    _check_timeseries_type(series_2)
+    _assert_timeseries(series_1)
+    _assert_timeseries(series_2)
 
     # check if the two inputs time series have the same number of components
     raise_if_not(
@@ -410,8 +413,8 @@ def _sanity_check_2series(
     )
 
 
-def _window_adjustment_anomalies(series: TimeSeries, window: int) -> TimeSeries:
-    """Slides a window of size window along the input series, and replaces the value of the
+def _max_pooling(series: TimeSeries, window: int) -> TimeSeries:
+    """Slides a window of size `window` along the input series, and replaces the value of the
     input time series by the maximum of the values contained in the window.
 
     The binary time series output represents if there is an anomaly (=1) or not (=0) in the past
@@ -477,7 +480,7 @@ def _to_list(series: Union[TimeSeries, Sequence[TimeSeries]]) -> Sequence[TimeSe
     return [series] if not isinstance(series, Sequence) else series
 
 
-def _same_length(
+def _assert_same_length(
     list_series_1: Sequence[TimeSeries],
     list_series_2: Sequence[TimeSeries],
 ):
