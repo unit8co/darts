@@ -321,7 +321,7 @@ class BacktestingTestCase(DartsBaseTestClass):
 
         # Using RandomForest's start default value
         score = RandomForest(lags=12, random_state=0).backtest(
-            series=target, forecast_horizon=3, metric=r2_score
+            series=target, forecast_horizon=3, start=0.5, metric=r2_score
         )
         self.assertGreater(score, 0.95)
 

@@ -55,25 +55,6 @@ class TestResidualsTestCase(DartsBaseTestClass):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
-        # residuals() will fail if the inputs are not of TimeSeries type (Sequence[TimeSeries] don't work)
-        # because it starts by asserting that the provided object is a univariate TimeSeries.
-        # The following asserts the correct TimeSeries types
-
-        with self.assertRaises(ValueError):
-            model.residuals(target_series)
-
-        with self.assertRaises(ValueError):
-            model.residuals(target_series, past_covariates=past_covariates)
-
-        with self.assertRaises(ValueError):
-            model.residuals(target_series, future_covariates=future_covariates)
-
-        with self.assertRaises(ValueError):
-            model.residuals(
-                target_series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-            )
 
     def test_forecasting_residuals_cov_output(self):
         # if covariates are constant and the target is constant/linear,
