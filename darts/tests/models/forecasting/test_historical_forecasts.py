@@ -6,23 +6,24 @@ from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
 from darts.datasets import AirPassengersDataset
 from darts.logging import get_logger
-from darts.models import (
-    BlockRNNModel,
-    CatBoostModel,
-    LightGBMModel,
-    LinearRegressionModel,
-    NBEATSModel,
-    RNNModel,
-    TCNModel,
-    TFTModel,
-    TransformerModel,
-)
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
-from darts.utils.likelihood_models import GaussianLikelihood
 
 try:
     import torch
+
+    from darts.models import (
+        BlockRNNModel,
+        CatBoostModel,
+        LightGBMModel,
+        LinearRegressionModel,
+        NBEATSModel,
+        RNNModel,
+        TCNModel,
+        TFTModel,
+        TransformerModel,
+    )
+    from darts.utils.likelihood_models import GaussianLikelihood
 
     TORCH_AVAILABLE = True
 except ImportError:
