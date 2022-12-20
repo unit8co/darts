@@ -2,8 +2,8 @@
 Forecasting Anomaly Model
 -------------------------
 
-Wraps around a Darts forecasting model and one or several anomaly scorer(s) to compute anomaly scores
-by comparing how actuals deviate from the model's forecasts.
+A ``ForecastingAnomalyModel`` wraps around a Darts forecasting model and one or several anomaly
+scorer(s) to compute anomaly scores by comparing how actuals deviate from the model's forecasts.
 """
 
 # TODO:
@@ -80,7 +80,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         Once the model is fitted, the series historical forecasts are computed,
         representing what would have been forecasted by this model on the series.
 
-        The prediction and the series will then be used to train the scorer(s).
+        The prediction and the series are then used to train the scorer(s).
 
         Parameters
         ----------
@@ -120,7 +120,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         Returns
         -------
         self
-            Fitted Anomaly model (forecasting model and scorer(s))
+            Fitted model
         """
 
         raise_if_not(
@@ -130,12 +130,12 @@ class ForecastingAnomalyModel(AnomalyModel):
 
         # checks if model does not need training and all scorer(s) are not fittable
         if not allow_model_training and not self.scorers_are_trainable:
-
             logger.warning(
-                f"The forecasting model {self.model.__class__.__name__} is not required to be trained"
-                + " because the parameter `allow_model_training` is set to False, and all scorers are"
-                + " not fittable. No need to call the ``.fit()`` function."
+                f"The forecasting model {self.model.__class__.__name__} won't be trained"
+                + " because the parameter `allow_model_training` is set to False, and no scorer"
+                + " is fittable. ``.fit()`` method has no effect."
             )
+            return
 
         list_series = _to_list(series)
 
@@ -162,7 +162,7 @@ class ForecastingAnomalyModel(AnomalyModel):
                 inspect.signature(self.model.fit).parameters["series"].annotation
             )
 
-            # checks if model can be trained on a list of time series or only on a time series
+            # checks if model can be trained on multiple time series or only on a time series
             # TODO: check if model can accept multivariate timeseries, raise error if given and model cannot
             if "Sequence[darts.timeseries.TimeSeries]" in str(fit_signature_series):
                 self.model.fit(series=list_series, **model_fit_kwargs)
@@ -176,14 +176,14 @@ class ForecastingAnomalyModel(AnomalyModel):
         else:
             raise_if_not(
                 self.model._fit_called,
-                f"Model {self.model.__class__.__name__} needs to be trained, otherwise set parameter "
+                f"Model {self.model.__class__.__name__} needs to be trained, consider training "
+                + "it beforehand or setting "
                 + "`allow_model_training` to True (default: False). "
                 + "The model will then be trained on the provided series.",
             )
 
         # generate the historical_forecast() prediction of the model on the train set
         if self.scorers_are_trainable:
-
             # check if the window size of the scorers are lower than the max size allowed
             self._check_window_size(list_series, start)
 
@@ -211,6 +211,8 @@ class ForecastingAnomalyModel(AnomalyModel):
         for scorer in self.scorers:
             if hasattr(scorer, "fit"):
                 scorer.fit_from_prediction(list_series, list_pred)
+
+        return self
 
     def _prepare_covariates(
         self,
@@ -257,7 +259,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         past_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         forecast_horizon: int = 1,
-        start: Union[pd.Timestamp, float, int] = None,
+        start: Union[pd.Timestamp, float, int] = 0.5,
         num_samples: int = 1,
         actual_anomalies: TimeSeries = None,
         names_of_scorers: Union[str, Sequence[str]] = None,
@@ -269,15 +271,17 @@ class ForecastingAnomalyModel(AnomalyModel):
         Computes the score on the given series input. And shows the different anomaly scores with respect to time.
 
         The plot will be composed of the following:
-            - the series itself with the output of the forecasting model.
-            - the anomaly score for each scorer. The scorers with different windows will be separated.
-            - the actual anomalies, if given.
+
+        - the series itself with the output of the forecasting model.
+        - the anomaly score for each scorer. The scorers with different windows will be separated.
+        - the actual anomalies, if given.
 
         It is possible to:
-            - add a title to the figure with the parameter `title`
-            - give personalized names for the scorers with `names_of_scorers`
-            - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR),
-              if the actual anomalies are provided.
+
+        - add a title to the figure with the parameter `title`
+        - give personalized names for the scorers with `names_of_scorers`
+        - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR),
+            if the actual anomalies are provided.
 
         Parameters
         ----------
@@ -353,7 +357,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         forecast_horizon: int = 1,
-        start: Union[pd.Timestamp, float, int] = None,
+        start: Union[pd.Timestamp, float, int] = 0.5,
         num_samples: int = 1,
         return_model_prediction: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
@@ -383,7 +387,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             In the case of ``int``, the parameter will be treated as an integer index to the time index of
             `series` that will be used as first prediction time.
             In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
-            directly.
+            directly. Default: 0.5
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1 for
             deterministic models.
@@ -396,24 +400,21 @@ class ForecastingAnomalyModel(AnomalyModel):
         Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
             Anomaly scores series generated by the anomaly model scorers
 
-            - ``TimeSeries`` if `series` is a series, and the anomaly model contains one scorer.
-            - ``Sequence[TimeSeries]``
+                - ``TimeSeries`` if `series` is a series, and the anomaly model contains one scorer.
+                - ``Sequence[TimeSeries]``
 
-                * If `series` is a series, and the anomaly model contains multiple scorers.
-                  returns one series per scorer.
-                * If `series` is a sequence, and the anomaly model contains one scorer.
-                  returns one series per series in the sequence.
-            - ``Sequence[Sequence[TimeSeries]]`` if `series` is a sequence, and the anomaly
-              model contains multiple scorers.
-              The outer sequence is over the series, and inner sequence is over the scorers.
+                    * if `series` is a series, and the anomaly model contains multiple scorers,
+                      returns one series per scorer.
+                    * if `series` is a sequence, and the anomaly model contains one scorer,
+                      returns one series per series in the sequence.
+                - ``Sequence[Sequence[TimeSeries]]`` if `series` is a sequence, and the anomaly
+                  model contains multiple scorers. The outer sequence is over the series,
+                  and inner sequence is over the scorers.
         """
         raise_if_not(
             type(return_model_prediction) is bool,
             f"`return_model_prediction` must be Boolean, found type: {type(return_model_prediction)}.",
         )
-
-        if start is None:
-            start = 0.5
 
         raise_if_not(
             self.model._fit_called,
@@ -579,7 +580,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         forecast_horizon: int = 1,
-        start: Union[pd.Timestamp, float, int] = None,
+        start: Union[pd.Timestamp, float, int] = 0.5,
         num_samples: int = 1,
         metric: str = "AUC_ROC",
     ) -> Union[
@@ -635,9 +636,8 @@ class ForecastingAnomalyModel(AnomalyModel):
             will be a Sequence containing the score for each dimension.
         """
 
-        list_actual_anomalies, list_series = _to_list(actual_anomalies), _to_list(
-            series
-        )
+        list_actual_anomalies = _to_list(actual_anomalies)
+        list_series = _to_list(series)
 
         raise_if_not(
             all([isinstance(s, TimeSeries) for s in list_series]),

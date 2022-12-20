@@ -50,6 +50,7 @@ class EnsembleSklearnAggregator(FittableAggregator):
         )
 
         self.model.fit(y=y, X=X)
+        return self
 
     def _predict_core(self, series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
 

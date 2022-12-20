@@ -1,7 +1,5 @@
 """
-Aggregator Base Classes
------------------------
-An aggregator combines multiple components of a multivariate binary series into one.
+Anomaly aggregators base classes
 """
 
 # TODO:
@@ -201,7 +199,7 @@ class FittableAggregator(Aggregator):
         # indicates if the Aggregator has been trained yet
         self._fit_called = False
 
-    def check_if_fit_called(self):
+    def _assert_fit_called(self):
         """Checks if the Aggregator has been fitted before calling its `score()` function."""
 
         raise_if_not(
@@ -266,8 +264,9 @@ class FittableAggregator(Aggregator):
         list_actual_anomalies = list(same_intersection[0])
         list_series = list(same_intersection[1])
 
-        self._fit_core(list_actual_anomalies, list_series)
+        ret = self._fit_core(list_actual_anomalies, list_series)
         self._fit_called = True
+        return ret
 
     def predict(
         self, series: Union[TimeSeries, Sequence[TimeSeries]]
@@ -285,7 +284,7 @@ class FittableAggregator(Aggregator):
         TimeSeries
             (Sequence of) aggregated results
         """
-        self.check_if_fit_called()
+        self._assert_fit_called()
         list_series = self._check_input(series)
 
         raise_if_not(

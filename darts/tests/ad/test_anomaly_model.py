@@ -160,25 +160,23 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
             # filter must be fittable if allow_filter_training is set to True
             with self.assertRaises(ValueError):
-                anomaly_model.fit(self.train, allow_filter_training=True)
+                anomaly_model.fit(self.train, allow_model_training=True)
 
             # input 'series' must be a series or Sequence of series
             with self.assertRaises(ValueError):
-                anomaly_model.fit([self.train, "str"], allow_filter_training=True)
+                anomaly_model.fit([self.train, "str"], allow_model_training=True)
             with self.assertRaises(ValueError):
-                anomaly_model.fit(
-                    [[self.train, self.train]], allow_filter_training=True
-                )
+                anomaly_model.fit([[self.train, self.train]], allow_model_training=True)
             with self.assertRaises(ValueError):
-                anomaly_model.fit("str", allow_filter_training=True)
+                anomaly_model.fit("str", allow_model_training=True)
             with self.assertRaises(ValueError):
-                anomaly_model.fit([1, 2, 3], allow_filter_training=True)
+                anomaly_model.fit([1, 2, 3], allow_model_training=True)
 
             # allow_model_training must be a bool
             with self.assertRaises(ValueError):
-                anomaly_model.fit(self.train, allow_filter_training=1)
+                anomaly_model.fit(self.train, allow_model_training=1)
             with self.assertRaises(ValueError):
-                anomaly_model.fit(self.train, allow_filter_training="True")
+                anomaly_model.fit(self.train, allow_model_training="True")
 
     def test_FitForecastingAnomalyModelInput(self):
 

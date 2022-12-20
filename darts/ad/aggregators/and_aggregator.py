@@ -1,9 +1,9 @@
 """
-And Aggregator
+AND Aggregator
 --------------
 
-Aggregator that identifies a time point as anomalous only if it is
-included in all the input anomaly lists.
+Aggregator that identifies a time step as anomalous if all the components
+are flagged as anomalous (logical AND).
 """
 
 from typing import Sequence
@@ -20,7 +20,6 @@ class AndAggregator(NonFittableAggregator):
         return "AndAggregator"
 
     def _predict_core(self, series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
-
         return [
-            s.sum(axis=1).map(lambda x: (x >= s.width).astype(float)) for s in series
+            s.sum(axis=1).map(lambda x: (x >= s.width).astype(s.dtype)) for s in series
         ]

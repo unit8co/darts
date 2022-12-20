@@ -4,7 +4,7 @@ Filtering Anomaly Model
 
 A ``FilteringAnomalyModel`` wraps around a Darts filtering model and one or
 several anomaly scorer(s) to compute anomaly scores
-by comparing how actuals deviate from the model's predictions.
+by comparing how actuals deviate from the model's predictions (filtered series).
 """
 
 from typing import Dict, Sequence, Union
@@ -28,10 +28,10 @@ class FilteringAnomalyModel(AnomalyModel):
         """Filtering-based Anomaly Detection Model
 
         The filtering model may or may not be already fitted. The underlying assumption is that this model
-        should be able to acurately predict the series in the absence of anomalies. For this reason,
+        should be able to adequately filter the series in the absence of anomalies. For this reason,
         it is recommend to either provide a model that has already been fitted and evaluated to work
         appropriately on a series without anomalies, or to ensure that a simple call to the :func:`fit()`
-        method of the model will be sufficient to train it to satisfactory performance on a series without anomalies.
+        function of the model will be sufficient to train it to satisfactory performance on series without anomalies.
 
         Calling :func:`fit()` on the anomaly model will fit the underlying filtering model only
         if ``allow_model_training`` is set to ``True`` upon calling ``fit()``.
@@ -59,12 +59,12 @@ class FilteringAnomalyModel(AnomalyModel):
     def fit(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
-        allow_filter_training: bool = False,
+        allow_model_training: bool = False,
         **filter_fit_kwargs,
     ):
         """Fit the underlying filtering model (if applicable) and the fittable scorers, if any.
 
-        Train the filter (if not already fitted and ``allow_filter_training`` is set to True)
+        Train the filter (if not already fitted and `allow_filter_training` is set to True)
         and the scorer(s) on the given time series.
 
         The filter model will be applied to the given series, and the results will be used
@@ -84,22 +84,23 @@ class FilteringAnomalyModel(AnomalyModel):
         Returns
         -------
         self
-            Fitted Anomaly model (filtering model and scorer(s))
+            Fitted model
         """
+        # TODO: add support for covariates (see eg. Kalman Filter)
 
         raise_if_not(
-            type(allow_filter_training) is bool,
-            f"`allow_filter_training` must be Boolean, found type: {type(allow_filter_training)}.",
+            type(allow_model_training) is bool,
+            f"`allow_filter_training` must be Boolean, found type: {type(allow_model_training)}.",
         )
 
         # checks if model does not need training and all scorer(s) are not fittable
-        if not allow_filter_training and not self.scorers_are_trainable:
-
+        if not allow_model_training and not self.scorers_are_trainable:
             logger.warning(
                 f"The filtering model {self.model.__class__.__name__} is not required to be trained"
-                + " because the parameter `allow_filter_training` is set to False, and all scorers are"
-                + " not fittable. No need to call the ``.fit()`` function."
+                + " because the parameter `allow_filter_training` is set to False, and no scorer"
+                + " fittable. The ``.fit()`` function has no effect."
             )
+            return
 
         list_series = _to_list(series)
 
@@ -108,21 +109,21 @@ class FilteringAnomalyModel(AnomalyModel):
             "all input `series` must be of type Timeseries.",
         )
 
-        if allow_filter_training:
+        if allow_model_training:
             # fit filtering model
             if hasattr(self.filter, "fit"):
                 # TODO: check if filter is already fitted (for now fit it regardless -> only Kalman)
                 raise_if_not(
                     len(list_series) == 1,
                     f"Filter model {self.model.__class__.__name__} can only be fitted on a"
-                    + " time series and not a list of time series.",
+                    + " single time series, but multiple are provided.",
                 )
 
                 self.filter.fit(list_series[0], **filter_fit_kwargs)
             else:
                 raise ValueError(
                     "`allow_filter_training` was set to True, but the filter"
-                    + f" {self.model.__class__.__name__} is not fittable."
+                    + f" {self.model.__class__.__name__} has no fit() method."
                 )
         else:
             # TODO: check if Kalman is fitted or not
@@ -136,6 +137,8 @@ class FilteringAnomalyModel(AnomalyModel):
         for scorer in self.scorers:
             if hasattr(scorer, "fit"):
                 scorer.fit_from_prediction(list_series, list_pred)
+
+        return self
 
     def show_anomalies(
         self,
@@ -151,14 +154,16 @@ class FilteringAnomalyModel(AnomalyModel):
         Computes the score on the given series input. And shows the different anomaly scores with respect to time.
 
         The plot will be composed of the following:
-            - the series itself with the output of the filtering model
-            - the anomaly score of each scorer. The scorer with different windows will be separated.
-            - the actual anomalies, if given.
+
+        - the series itself with the output of the filtering model
+        - the anomaly score of each scorer. The scorer with different windows will be separated.
+        - the actual anomalies, if given.
 
         It is possible to:
-            - add a title to the figure with the parameter `title`
-            - give personalized names for the scorers with `names_of_scorers`
-            - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR), if the actual anomalies is given
+
+        - add a title to the figure with the parameter `title`
+        - give personalized names for the scorers with `names_of_scorers`
+        - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR), if the actual anomalies is given
 
         Parameters
         ----------
@@ -205,10 +210,12 @@ class FilteringAnomalyModel(AnomalyModel):
         return_model_prediction: bool = False,
         **filter_kwargs,
     ):
-        """Compute anomaly score(s) for the given series.
+        """Compute the anomaly score(s) for the given series.
 
         Predicts the given target time series with the filtering model, and applies the scorer(s)
-        on the prediction and the provided series. Outputs the anomaly score of the provided time series.
+        to compare the predicted (filtered) series and the provided series.
+
+        Outputs the anomaly score(s) of the provided time series.
 
         Parameters
         ----------
@@ -225,16 +232,16 @@ class FilteringAnomalyModel(AnomalyModel):
         Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]
             Anomaly scores series generated by the anomaly model scorers
 
-            - ``TimeSeries`` if `series` is a series, and the anomaly model contains one scorer.
-            - ``Sequence[TimeSeries]``
+                - ``TimeSeries`` if `series` is a series, and the anomaly model contains one scorer.
+                - ``Sequence[TimeSeries]``
 
-                * If `series` is a series, and the anomaly model contains multiple scorers.
-                  returns one series per scorer.
-                * If `series` is a sequence, and the anomaly model contains one scorer.
-                  returns one series per series in the sequence.
-            - ``Sequence[Sequence[TimeSeries]]`` if `series` is a sequence, and the anomaly
-              model contains multiple scorers.
-              The outer sequence is over the series, and inner sequence is over the scorers.
+                    * If `series` is a series, and the anomaly model contains multiple scorers,
+                    returns one series per scorer.
+                    * If `series` is a sequence, and the anomaly model contains one scorer,
+                    returns one series per series in the sequence.
+                - ``Sequence[Sequence[TimeSeries]]`` if `series` is a sequence, and the anomaly
+                model contains multiple scorers.
+                The outer sequence is over the series, and inner sequence is over the scorers.
         """
         raise_if_not(
             type(return_model_prediction) is bool,

@@ -1,9 +1,9 @@
 """
-Or Aggregator
+OR Aggregator
 -------------
 
-Aggregator that identifies a time point as anomalous as long as it is
-included in one of the input anomaly lists.
+Aggregator that identifies a time step as anomalous if any of the components
+is flagged as anomalous (logical OR).
 """
 
 
@@ -21,5 +21,4 @@ class OrAggregator(NonFittableAggregator):
         return "OrAggregator"
 
     def _predict_core(self, series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
-
-        return [s.sum(axis=1).map(lambda x: (x > 0).astype(float)) for s in series]
+        return [s.sum(axis=1).map(lambda x: (x > 0).astype(s.dtype)) for s in series]
