@@ -11,162 +11,132 @@ from typing import Sequence, Union
 
 import numpy as np
 
-from darts.ad.detectors.detectors import NonFittableDetector
+from darts.ad.detectors.detectors import Detector
 from darts.logging import raise_if, raise_if_not
 from darts.timeseries import TimeSeries
 
 
-class ThresholdDetector(NonFittableDetector):
-    """
-
-    If a sequence of values is given for the parameters `low` and/or `high`:
-        - they must be of the same length
-        - if the length of one parameter is equal to one, the value will be duplicated
-          to have the same length as the other parameter
-        - the functions ``fit()`` and ``score()``:
-            * only accepts series that have the same number of components as the number of values
-              in the given sequence. The thresholding algorithm will be computed for each component
-              with the corresponding value.
-            * if a series is multivariate, and the sequences for the parameters
-              are equal to 1: the same threshold will be used for all the components.
-
-    Parameters
-    ----------
-    low: float, optional
-        Threshold below which a value is regarded anomaly. Default: None, i.e.
-        no threshold on lower side.
-    high: float, optional
-        Threshold above which a value is regarded anomaly. Default: None, i.e.
-        no threshold on upper side.
-    """
-
+class ThresholdDetector(Detector):
     def __init__(
         self,
-        low: Union[int, float, Sequence[int], Sequence[float], None] = None,
-        high: Union[int, float, Sequence[int], Sequence[float], None] = None,
+        low_threshold: Union[int, float, Sequence[float], None] = None,
+        high_threshold: Union[int, float, Sequence[float], None] = None,
     ) -> None:
+        """
+        Flags values that are either below or above the `low_threshold` and `high_threshold`,
+        respectively.
+
+        If a single value is provided for `low_threshold` or `high_threshold`, this same
+        value will be used across all components of the series.
+
+        If sequences of values are given for the parameters `low_threshold` and/or `high_threshold`,
+        they must be of the same length, matching the dimensionality of the series passed
+        to ``detect()``, or have a length of 1. In the latter case, this single value will be used
+        across all components of the series.
+
+        If either `low_threshold` or `high_threshold` is None, the corresponding bound will not be used.
+        However, at least one of the two must be set.
+
+        Parameters
+        ----------
+        low_threshold
+            (Sequence of) lower bounds.
+            If a sequence, must match the dimensionality of the series
+            this detector is applied to.
+        high_threshold
+            (Sequence of) upper bounds.
+            If a sequence, must match the dimensionality of the series
+            this detector is applied to.
+        """
+
         super().__init__()
 
         raise_if(
-            low is None and high is None,
+            low_threshold is None and high_threshold is None,
             "At least one parameter must be not None (`low` and `high` are both None).",
         )
 
-        if low is not None:
-            if isinstance(low, np.ndarray):
-                low = low.tolist()
-            elif not isinstance(low, Sequence):
-                low = [low]
-            self._check_param(low, "low")
-            low = [-float("inf") if x is None else x for x in low]
-
-        if high is not None:
-            if isinstance(high, np.ndarray):
-                high = high.tolist()
-            elif not isinstance(high, Sequence):
-                high = [high]
-            self._check_param(high, "high")
-            high = [float("inf") if x is None else x for x in high]
-
-        if low is not None and high is not None:
-
-            if len(low) == 1 and len(high) > 1:
-                low = low * len(high)
-            if len(high) == 1 and len(low) > 1:
-                high = high * len(low)
-
-            raise_if_not(
-                len(low) == len(high),
-                "Parameters `low` and `high` must be of the same length,"
-                + f" found `low`: {len(low)} and `high`: {len(high)}.",
+        def _prep_thresholds(q):
+            return (
+                q.tolist()
+                if isinstance(q, np.ndarray)
+                else [q]
+                if not isinstance(q, Sequence)
+                else q
             )
 
-            raise_if_not(
-                all(
-                    [
-                        l < h
-                        for (l, h) in zip(low, high)
-                        if (l is not None) & (h is not None)
-                    ]
-                ),
-                "all values in `low` must be lower than their corresponding value in `high`.",
-            )
+        low = _prep_thresholds(low_threshold)
+        high = _prep_thresholds(high_threshold)
 
-        self.low = low
-        self.high = high
+        self.low_threshold = low * len(high) if len(low) == 1 else low
+        self.high_threshold = high * len(low) if len(high) == 1 else high
 
-    def _check_param(
-        self, param: Union[Sequence[float], Sequence[int]], name_param: str
-    ):
-        "Checks if parameter `param` is of type float or int if not None."
+        # the threshold parameters are now sequences of the same length,
+        # possibly containing some None values, but at least one non-None value
 
         raise_if_not(
-            all([isinstance(p, (float, int)) for p in param if p is not None]),
-            f"all values in parameter `{name_param}` must be of type float or int.",
+            len(self.low_threshold) == len(self.high_threshold),
+            "Parameters `low_threshold` and `high_threshold` must be of the same length,"
+            + f" found `low`: {len(self.low_threshold)} and `high`: {len(self.high_threshold)}.",
         )
 
         raise_if(
-            all([p is None for p in param]),
-            f"all values in parameter `{name_param}` cannot be None.",
+            all([lo is None for lo in self.low_threshold])
+            and all([hi is None for hi in self.high_threshold]),
+            "All provided threshold values are None.",
         )
 
-    def _check_input_width(self, series: TimeSeries):
-        """Checks if input widths is equal to the number of values
-        contained in parameter `high` or/and `low`.
-        """
-
-        if self.low is not None:
-            param = self.low
-        else:
-            param = self.high
-
-        if len(param) > 1:
-            raise_if_not(
-                len(param) == series.width,
-                "The number of components of input must be equal to the number"
-                + " of values given for `high` or/and `low`, found number of "
-                + f"components equal to {series.width} and expected {len(param)}.",
-            )
+        raise_if_not(
+            all(
+                [
+                    l < h
+                    for (l, h) in zip(self.low_threshold, self.high_threshold)
+                    if ((l is not None) and (h is not None))
+                ]
+            ),
+            "all values in `low_threshold` must be lower than their corresponding value in `high_threshold`.",
+        )
 
     def _detect_core(self, series: TimeSeries) -> TimeSeries:
-        self._check_input_width(series)
-        np_series = series.all_values(copy=False)
-
-        detected = self._detection_per_array(
-            np_series.flatten(order="F").reshape(series[0].width, -1),
-            lower=self.low if self.low is not None else None,
-            upper=self.high if self.high is not None else None,
+        raise_if_not(
+            series.is_deterministic, "This detector only works on deterministic series."
         )
 
-        return TimeSeries.from_times_and_values(series.time_index, list(zip(*detected)))
+        raise_if(
+            len(self.low_threshold) > 1 and len(self.low_threshold) != series.width,
+            "The number of components of input must be equal to the number"
+            + " of threshold values. Found number of "
+            + f"components equal to {series.width} and expected {len(self.low_threshold)}.",
+        )
 
-    def _detection_per_array(self, np_data, lower, upper):
-        """Identifies time points as anomalous when values
-        are beyond the thresholds (lower and upper).
-        """
+        # if length is 1, tile it to series width:
+        low_threshold = (
+            self.low_threshold * series.width
+            if len(self.low_threshold) == 1
+            else self.low_threshold
+        )
+        high_threshold = (
+            self.high_threshold * series.width
+            if len(self.high_threshold) == 1
+            else self.high_threshold
+        )
 
-        if lower is not None:
-            if len(lower) != len(np_data):
-                lower = lower * len(np_data)
-        else:
-            lower = [None] * len(np_data)
+        # (time, components)
+        np_series = series.all_values(copy=False).squeeze(-1)
 
-        if upper is not None:
-            if len(upper) != len(np_data):
-                upper = upper * len(np_data)
-        else:
-            upper = [None] * len(np_data)
+        def _detect_fn(x, lo, hi):
+            # x of shape (time,) for 1 component
+            return (x < (np.NINF if lo is None else lo)) | (
+                x > (np.Inf if hi is None else hi)
+            )
 
-        return np.apply_along_axis(
-            lambda x: (x[2:] < (x[0] if (x[0] is not None) else -float("inf")))
-            | (x[2:] > (x[1] if (x[1] is not None) else float("inf"))),
-            1,
-            np.concatenate(
-                [
-                    np.array(lower)[:, np.newaxis],
-                    np.array(upper)[:, np.newaxis],
-                    np_data,
-                ],
-                axis=1,
-            ),
-        ).astype(int)
+        detected = np.zeros_like(np_series, dtype=int)
+
+        for component_idx in range(series.width):
+            detected[:, component_idx] = _detect_fn(
+                np_series[:, component_idx],
+                low_threshold[component_idx],
+                high_threshold[component_idx],
+            )
+
+        return TimeSeries.from_times_and_values(series.time_index, detected)

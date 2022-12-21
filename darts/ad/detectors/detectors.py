@@ -120,21 +120,12 @@ class Detector(ABC):
         )
 
 
-class NonFittableDetector(Detector):
-    """Base class of Detectors that do not need training."""
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.trainable = False
-
-
 class FittableDetector(Detector):
     """Base class of Detectors that need training."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self._fit_called = False
-        self.trainable = True
 
     def detect(
         self,

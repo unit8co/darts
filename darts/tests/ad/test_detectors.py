@@ -7,7 +7,7 @@ from darts.ad.detectors.quantile_detector import QuantileDetector
 from darts.ad.detectors.threshold_detector import ThresholdDetector
 from darts.tests.base_test_class import DartsBaseTestClass
 
-list_NonFittableDetector = [ThresholdDetector(low=0.2)]
+list_NonFittableDetector = [ThresholdDetector(low_threshold=0.2)]
 
 list_FittableDetector = [QuantileDetector(low_quantile=0.2)]
 
@@ -43,7 +43,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
 
     def test_DetectNonFittableDetector(self):
 
-        detector = ThresholdDetector(low=0.2)
+        detector = ThresholdDetector(low_threshold=0.2)
 
         # Check return types
         # Check if return TimeSeries is float when input is a series
@@ -87,7 +87,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
 
     def test_eval_accuracy(self):
 
-        detector = ThresholdDetector(low=0.2)
+        detector = ThresholdDetector(low_threshold=0.2)
 
         # Check return types
         # Check if return type is float when input is a series
@@ -118,12 +118,6 @@ class ADDetectorsTestCase(DartsBaseTestClass):
             # Input cannot be probabilistic
             detector.eval_accuracy(self.anomalies, self.probabilistic)
 
-    def test_NonFittableDetector(self):
-
-        for detector in list_NonFittableDetector:
-            # Check if trainable is False, being a NonFittableDetector
-            self.assertTrue(not detector.trainable)
-
     def test_FittableDetector(self):
 
         for detector in list_FittableDetector:
@@ -131,9 +125,6 @@ class ADDetectorsTestCase(DartsBaseTestClass):
             # Need to call fit() before calling detect()
             with self.assertRaises(ValueError):
                 detector.detect(self.test)
-
-            # Check if trainable is True, being a FittableDetector
-            self.assertTrue(detector.trainable)
 
             # Check if _fit_called is False
             self.assertTrue(not detector._fit_called)
@@ -542,80 +533,70 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             ThresholdDetector()
         with self.assertRaises(ValueError):
-            ThresholdDetector(low=None, high=None)
-
-        # Parameter low must be int/float or Sequence of float/int
-        with self.assertRaises(ValueError):
-            ThresholdDetector(low="0.5")
-        with self.assertRaises(ValueError):
-            ThresholdDetector(low=[0.2, "0.1"])
-
-        # Parameter high must be int/float or Sequence of float/int
-        with self.assertRaises(ValueError):
-            ThresholdDetector(high="0.5")
-        with self.assertRaises(ValueError):
-            ThresholdDetector(high=[0.2, "0.1"])
+            ThresholdDetector(low_threshold=None, high_threshold=None)
 
         # if high and low are both sequences of length>1, they must be of the same size
         with self.assertRaises(ValueError):
-            ThresholdDetector(low=[0.2, 0.1], high=[0.95, 0.8, 0.9])
+            ThresholdDetector(low_threshold=[0.2, 0.1], high_threshold=[0.95, 0.8, 0.9])
         with self.assertRaises(ValueError):
-            ThresholdDetector(low=[0.2, 0.1, 0.7], high=[0.95, 0.8])
+            ThresholdDetector(low_threshold=[0.2, 0.1, 0.7], high_threshold=[0.95, 0.8])
 
         # Parameter high must be higher than parameter low
         with self.assertRaises(ValueError):
-            ThresholdDetector(low=0.7, high=0.2)
+            ThresholdDetector(low_threshold=0.7, high_threshold=0.2)
         with self.assertRaises(ValueError):
-            ThresholdDetector(low=[0.2, 0.9], high=[0.95, 0.1])
+            ThresholdDetector(low_threshold=[0.2, 0.9], high_threshold=[0.95, 0.1])
         with self.assertRaises(ValueError):
-            ThresholdDetector(low=0.2, high=[0.95, 0.1])
+            ThresholdDetector(low_threshold=0.2, high_threshold=[0.95, 0.1])
         with self.assertRaises(ValueError):
-            ThresholdDetector(low=[0.2, 0.9], high=0.8)
+            ThresholdDetector(low_threshold=[0.2, 0.9], high_threshold=0.8)
         with self.assertRaises(ValueError):
-            ThresholdDetector(low=[0.2, 0.9, None], high=0.8)
+            ThresholdDetector(low_threshold=[0.2, 0.9, None], high_threshold=0.8)
 
         # Parameter high/low cannot be sequence of only None
         with self.assertRaises(ValueError):
-            ThresholdDetector(low=[None, None, None])
+            ThresholdDetector(low_threshold=[None, None, None])
         with self.assertRaises(ValueError):
-            ThresholdDetector(high=[None, None, None])
+            ThresholdDetector(high_threshold=[None, None, None])
         with self.assertRaises(ValueError):
-            ThresholdDetector(low=[None], high=[None, None, None])
+            ThresholdDetector(low_threshold=[None], high_threshold=[None, None, None])
 
         # widths of series used for scoring must match the number of values given for high or/and low,
         # if high and low have a length higher than 1
 
-        detector = ThresholdDetector(low=0.1, high=[0.8, 0.7])
+        detector = ThresholdDetector(low_threshold=0.1, high_threshold=[0.8, 0.7])
         with self.assertRaises(ValueError):
             detector.detect(self.train)
         with self.assertRaises(ValueError):
             detector.detect([self.train, self.mts_train])
 
-        detector = ThresholdDetector(low=[0.1, 0.2], high=[0.8, 0.9])
+        detector = ThresholdDetector(
+            low_threshold=[0.1, 0.2], high_threshold=[0.8, 0.9]
+        )
         with self.assertRaises(ValueError):
             detector.detect(self.train)
         with self.assertRaises(ValueError):
             detector.detect([self.train, self.mts_train])
 
-        detector = ThresholdDetector(low=[0.1, 0.2], high=0.8)
+        detector = ThresholdDetector(low_threshold=[0.1, 0.2], high_threshold=0.8)
         with self.assertRaises(ValueError):
             detector.detect(self.train)
         with self.assertRaises(ValueError):
             detector.detect([self.train, self.mts_train])
 
-        detector = ThresholdDetector(low=[0.1, 0.2])
+        detector = ThresholdDetector(low_threshold=[0.1, 0.2])
         with self.assertRaises(ValueError):
             detector.detect(self.train)
         with self.assertRaises(ValueError):
             detector.detect([self.train, self.mts_train])
 
-        detector = ThresholdDetector(high=[0.1, 0.2])
+        detector = ThresholdDetector(high_threshold=[0.1, 0.2])
         with self.assertRaises(ValueError):
             detector.detect(self.train)
         with self.assertRaises(ValueError):
             detector.detect([self.train, self.mts_train])
 
-        detector = ThresholdDetector(low=9.5, high=10.5)
+        detector = ThresholdDetector(low_threshold=9.5, high_threshold=10.5)
         binary_detection = detector.detect(self.test)
 
         # Return of .detect() must be binary
@@ -658,13 +639,15 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         )
 
         # multivariate test
-        detector = ThresholdDetector(low=4.8, high=10.5)
+        detector = ThresholdDetector(low_threshold=4.8, high_threshold=10.5)
         binary_detection = detector.detect(self.mts_test)
 
         # if two values are given for low and high, and a series of width 2 is given,
         # then the results must be the same as a detector that was given only one value
         # for low and high. (will duplicate the value for each width)
-        detector_2param = ThresholdDetector(low=[4.8, 4.8], high=[10.5, 10.5])
+        detector_2param = ThresholdDetector(
+            low_threshold=[4.8, 4.8], high_threshold=[10.5, 10.5]
+        )
         binary_detection_2param = detector_2param.detect(self.mts_test)
         self.assertEqual(binary_detection, binary_detection_2param)
 
@@ -739,7 +722,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         self.assertAlmostEqual(f1[1], 0.16129, delta=1e-05)
 
         # exemple multivariate with Nones
-        detector = ThresholdDetector(low=[10, None], high=[None, 5])
+        detector = ThresholdDetector(low_threshold=[10, None], high_threshold=[None, 5])
         binary_detection = detector.detect(self.mts_test)
 
         # width of output must be equal to 2 (same dimension as input)

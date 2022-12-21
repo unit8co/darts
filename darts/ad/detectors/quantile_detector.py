@@ -12,6 +12,7 @@ from typing import Sequence, Union
 import numpy as np
 
 from darts.ad.detectors.detectors import FittableDetector
+from darts.ad.detectors.threshold_detector import ThresholdDetector
 from darts.logging import raise_if, raise_if_not
 from darts.timeseries import TimeSeries
 
@@ -23,13 +24,14 @@ class QuantileDetector(FittableDetector):
         high_quantile: Union[Sequence[float], float, None] = None,
     ) -> None:
         """
-        Builds a QuantileDetector that flags anomaly scores that are either
-        below or above `low_quantile` and `high_quantile` quantiles of historical data, respectively.
+        Flags values that are either
+        below or above the `low_quantile` and `high_quantile`
+        quantiles of historical data, respectively.
 
         If a single value is provided for `low_quantile` or `high_quantile`, this same
         value will be used across all components of the series.
 
-        If sequences of values is given for the parameters `low_quantile` and/or `high_quantile`,
+        If sequences of values are given for the parameters `low_quantile` and/or `high_quantile`,
         they must be of the same length, matching the dimensionality of the series passed
         to ``fit()``, or have a length of 1. In the latter case, this single value will be used
         across all components of the series.
@@ -87,6 +89,10 @@ class QuantileDetector(FittableDetector):
         # the quantiles parameters are now sequences of the same length,
         # possibly containing some None values, but at least one non-None value
 
+        # We'll use an inner Threshold detector once the quantiles are fitted
+        self.detector = None
+
+        # A few more checks:
         raise_if_not(
             len(self.low_quantile) == len(self.high_quantile),
             "Parameters `low_quantile` and `high_quantile` must be of the same length,"
@@ -107,7 +113,7 @@ class QuantileDetector(FittableDetector):
                     if ((l is not None) and (h is not None))
                 ]
             ),
-            "all values in `low` must be lower than their corresponding value in `high`.",
+            "all values in `low_quantile` must be lower than their corresponding value in `high_quantile`.",
         )
 
     def _fit_core(self, list_series: Sequence[TimeSeries]) -> None:
@@ -156,37 +162,11 @@ class QuantileDetector(FittableDetector):
             for i, hi in enumerate(self.high_quantile)
         ]
 
+        self.detector = ThresholdDetector(
+            low_threshold=self.low_threshold, high_threshold=self.high_threshold
+        )
+
         return self
 
     def _detect_core(self, series: TimeSeries) -> TimeSeries:
-
-        raise_if_not(
-            len(self.low_threshold) == series.width,
-            "The number of components of input must be equal to the number"
-            + " of values this detector has been fitted on. Found number of "
-            + f"components equal to {series.width} and expected {len(self.low_threshold)}.",
-        )
-
-        raise_if_not(
-            series.is_deterministic, "This detector only works on deterministic series."
-        )
-
-        # (time, components)
-        np_series = series.all_values(copy=False).squeeze(-1)
-
-        def _detect_fn(x, lo, hi):
-            # x of shape (time,) for 1 component
-            return (x < (np.NINF if lo is None else lo)) | (
-                x > (np.Inf if hi is None else hi)
-            )
-
-        detected = np.zeros_like(np_series, dtype=int)
-
-        for component_idx in range(series.width):
-            detected[:, component_idx] = _detect_fn(
-                np_series[:, component_idx],
-                self.low_threshold[component_idx],
-                self.high_threshold[component_idx],
-            )
-
-        return TimeSeries.from_times_and_values(series.time_index, detected)
+        return self.detector.detect(series)
