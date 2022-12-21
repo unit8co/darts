@@ -23,7 +23,6 @@ to take into consideration, or as a list - in which case the lags have to be enu
 denoting past lags and positive values including 0 denoting future lags).
 """
 
-import math
 from collections import OrderedDict
 from typing import List, Optional, Sequence, Tuple, Union
 
@@ -536,54 +535,42 @@ class RegressionModel(GlobalForecastingModel):
         covariate_matrices = {}
         # dictionary containing covariate lags relative to minimum covariate lag
         relative_cov_lags = {}
-        # number of prediction steps given forecast horizon and output_chunk_length
-        n_pred_steps = math.ceil(n / self.output_chunk_length)
         for cov_type, (covs, lags) in covariates.items():
-            if covs is not None:
-                relative_cov_lags[cov_type] = np.array(lags) - lags[0]
-                covariate_matrices[cov_type] = []
-                for idx, (ts, cov) in enumerate(zip(series, covs)):
-                    # calculating first and last prediction time steps
-                    first_pred_ts = ts.end_time() + 1 * ts.freq
-                    last_pred_ts = (
-                        (
-                            first_pred_ts
-                            + ((n_pred_steps - 1) * self.output_chunk_length) * ts.freq
-                        )
-                        if self.multi_models
-                        else (first_pred_ts + (n - 1) * ts.freq)
-                    )
+            if covs is None:
+                continue
 
-                    # calculating first and last required time steps
-                    first_req_ts = (
-                        first_pred_ts + (lags[0] - shift) * ts.freq
-                    )  # shift lags if using one_shot
-                    last_req_ts = last_pred_ts + (lags[-1] - shift) * ts.freq
-                    # check for sufficient covariate data
-                    raise_if_not(
-                        cov.start_time() <= first_req_ts
-                        and cov.end_time() >= last_req_ts,
-                        f"The corresponding {cov_type}_covariate of the series at index {idx} isn't sufficiently long. "
-                        f"Given horizon `n={n}`, `min(lags_{cov_type}_covariates)={lags[0]}`, "
-                        f"`max(lags_{cov_type}_covariates)={lags[-1]}` and "
-                        f"`output_chunk_length={self.output_chunk_length}`\n"
-                        f"the {cov_type}_covariate has to range from {first_req_ts} until {last_req_ts} (inclusive), "
-                        f"but it ranges only from {cov.start_time()} until {cov.end_time()}.",
-                    )
+            relative_cov_lags[cov_type] = np.array(lags) - lags[0]
+            covariate_matrices[cov_type] = []
+            for idx, (ts, cov) in enumerate(zip(series, covs)):
+                # how many steps to go back from end of target series for start of covariates
+                steps_back = -(min(lags) + 1 + shift)
+                lags_diff = max(lags) - min(lags) + 1
+                # over how many steps the covariates range
+                n_steps = lags_diff + max(0, n - self.output_chunk_length) + shift
 
-                    # Note: we use slice() rather than the [] operator because
-                    # for integer-indexed series [] does not act on the time index.
-                    last_req_ts = (
-                        # For range indexes, we need to make the end timestamp inclusive here
-                        last_req_ts + ts.freq
-                        if ts.has_range_index
-                        else last_req_ts
-                    )
-                    covariate_matrices[cov_type].append(
-                        cov.slice(first_req_ts, last_req_ts).values(copy=False)
-                    )
+                # calculate first and last required covariate time steps
+                start_ts = ts.end_time() - ts.freq * steps_back
+                end_ts = start_ts + ts.freq * (n_steps - 1)
 
-                covariate_matrices[cov_type] = np.stack(covariate_matrices[cov_type])
+                # check for sufficient covariate data
+                raise_if_not(
+                    cov.start_time() <= start_ts and cov.end_time() >= end_ts,
+                    f"The corresponding {cov_type}_covariate of the series at index {idx} isn't sufficiently long. "
+                    f"Given horizon `n={n}`, `min(lags_{cov_type}_covariates)={lags[0]}`, "
+                    f"`max(lags_{cov_type}_covariates)={lags[-1]}` and "
+                    f"`output_chunk_length={self.output_chunk_length}`\n"
+                    f"the {cov_type}_covariate has to range from {start_ts} until {end_ts} (inclusive), "
+                    f"but it ranges only from {cov.start_time()} until {cov.end_time()}.",
+                )
+
+                # use slice() instead of [] as for integer-indexed series [] does not act on time index
+                # for range indexes, we make the end timestamp inclusive here
+                end_ts = end_ts + ts.freq if ts.has_range_index else end_ts
+                covariate_matrices[cov_type].append(
+                    cov.slice(start_ts, end_ts).values(copy=False)
+                )
+
+            covariate_matrices[cov_type] = np.stack(covariate_matrices[cov_type])
 
         series_matrix = None
         if "target" in self.lags:
@@ -605,6 +592,11 @@ class RegressionModel(GlobalForecastingModel):
         predictions = []
         # t_pred indicates the number of time steps after the first prediction
         for t_pred in range(0, n, step):
+            # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
+            # we have to step back `step` from `n` in the last iteration
+            if 0 < n - t_pred < step and t_pred > 0:
+                t_pred = n - step
+
             np_X = []
             # retrieve target lags
             if "target" in self.lags:
