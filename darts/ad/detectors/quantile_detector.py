@@ -2,10 +2,9 @@
 Quantile Detector
 -----------------
 
-Detector that detects anomalies based on quantiles of historical data.
-This detector compares time series values with user-specified quantiles
-of historical data, and identifies time points as anomalous when values
-are beyond the thresholds.
+Flags anomalies that are beyond some quantiles of historical data.
+This is similar to a threshold-based detector, where the thresholds are
+computed as quantiles of historical data when the detector is fitted.
 """
 
 from typing import Sequence, Union
@@ -18,200 +17,176 @@ from darts.timeseries import TimeSeries
 
 
 class QuantileDetector(FittableDetector):
-    """
-    If a sequence of values is given for the parameters `low` and/or `high`:
-        - they must be of the same length
-        - if the length of one parameter is equal to one, the value will be duplicated
-          to have the same length as the other parameter
-        - the functions ``fit()`` and ``score()``:
-            * only accepts series that have the same number of components as the number of
-              values in the given sequence. The quantile will be computed along each component
-              with the corresponding value.
-            * if a series is multivariate, and the sequences for the parameters
-              are equal to 1: the same quantile will be computed for all the components.
-
-    Parameters
-    ----------
-    low: float, optional
-        (Sequence of) quantile of historical data lower which a value is regarded as anomaly.
-        Must be between 0 and 1.
-    high: float, optional
-        (Sequence of) quantile of historical data above which a value is regarded as anomaly.
-        Must be between 0 and 1.
-
-    Attributes
-    ----------
-    abs_low_: float
-        The (sequence of) fitted lower bound of normal range.
-    abs_high_: float
-        The (sequence of) fitted upper bound of normal range.
-    """
-
     def __init__(
         self,
-        low: Union[Sequence[float], float, None] = None,
-        high: Union[Sequence[float], float, None] = None,
+        low_quantile: Union[Sequence[float], float, None] = None,
+        high_quantile: Union[Sequence[float], float, None] = None,
     ) -> None:
+        """
+        Builds a QuantileDetector that flags anomaly scores that are either
+        below or above `low_quantile` and `high_quantile` quantiles of historical data, respectively.
+
+        If a single value is provided for `low_quantile` or `high_quantile`, this same
+        value will be used across all components of the series.
+
+        If sequences of values is given for the parameters `low_quantile` and/or `high_quantile`,
+        they must be of the same length, matching the dimensionality of the series passed
+        to ``fit()``, or have a length of 1. In the latter case, this single value will be used
+        across all components of the series.
+
+        If either `low_quantile` or `high_quantile` is None, the corresponding bound will not be used.
+        However, at least one of the two must be set.
+
+        Parameters
+        ----------
+        low_quantile
+            (Sequence of) quantile of historical data below which a value is regarded as anomaly.
+            Must be between 0 and 1. If a sequence, must match the dimensionality of the series
+            this detector is applied to.
+        high_quantile
+            (Sequence of) quantile of historical data above which a value is regarded as anomaly.
+            Must be between 0 and 1. If a sequence, must match the dimensionality of the series
+            this detector is applied to.
+
+        Attributes
+        ----------
+        low_threshold
+            The (sequence of) lower quantile values.
+        high_threshold
+            The (sequence of) upper quantile values.
+        """
+
         super().__init__()
 
         raise_if(
-            low is None and high is None,
+            low_quantile is None and high_quantile is None,
             "At least one parameter must be not None (`low` and `high` are both None).",
         )
 
-        if low is not None:
-            if isinstance(low, np.ndarray):
-                low = low.tolist()
-            elif not isinstance(low, Sequence):
-                low = [low]
-            self._check_param(low, "low")
-            low = [0.0 if x is None else x for x in low]
-
-        if high is not None:
-            if isinstance(high, np.ndarray):
-                high = high.tolist()
-            elif not isinstance(high, Sequence):
-                high = [high]
-            self._check_param(high, "high")
-            high = [1.0 if x is None else x for x in high]
-
-        if low is not None and high is not None:
-
-            if len(low) == 1 and len(high) > 1:
-                low = low * len(high)
-            if len(high) == 1 and len(low) > 1:
-                high = high * len(low)
-
-            raise_if_not(
-                len(low) == len(high),
-                "Parameters `low` and `high` must be of the same length,"
-                + f" found `low`: {len(low)} and `high`: {len(high)}.",
+        def _prep_quantile(q):
+            return (
+                q.tolist()
+                if isinstance(q, np.ndarray)
+                else [q]
+                if not isinstance(q, Sequence)
+                else q
             )
 
+        low = _prep_quantile(low_quantile)
+        high = _prep_quantile(high_quantile)
+
+        for q in (low, high):
             raise_if_not(
-                all(
-                    [
-                        l < h
-                        for (l, h) in zip(low, high)
-                        if ((l is not None) & (h is not None))
-                    ]
-                ),
-                "all values in `low` must be lower than their corresponding value in `high`.",
+                all([x is None or 0 <= x <= 1 for x in q]),
+                "Quantiles must be between 0 and 1, or None.",
             )
 
-        self.low = low
-        self.high = high
+        self.low_quantile = low * len(high) if len(low) == 1 else low
+        self.high_quantile = high * len(low) if len(high) == 1 else high
 
-    def _check_param(self, param: Sequence[float], name_param: str):
-        "Checks if parameter `param` is of type float or int if not None"
-
-        raise_if_not(
-            all([isinstance(p, float) for p in param if p is not None]),
-            f"all values in parameter `{name_param}` must be of type float.",
-        )
+        # the quantiles parameters are now sequences of the same length,
+        # possibly containing some None values, but at least one non-None value
 
         raise_if_not(
-            all([(p >= 0 and p <= 1) for p in param if p is not None]),
-            f"all values in parameter `{name_param}` must be between 0 and 1.",
+            len(self.low_quantile) == len(self.high_quantile),
+            "Parameters `low_quantile` and `high_quantile` must be of the same length,"
+            + f" found `low`: {len(self.low_quantile)} and `high`: {len(self.high_quantile)}.",
         )
 
         raise_if(
-            all([p is None for p in param]),
-            f"all values in parameter `{name_param}` cannot be None.",
+            all([lo is None for lo in self.low_quantile])
+            and all([hi is None for hi in self.high_quantile]),
+            "All provided quantile values are None.",
         )
 
-    def _quantile_per_array(self, np_data, quantiles):
-        """Computes the quantile along each dimnension of np_data
-        with a different quantile value.
-        """
-        if len(quantiles) != len(np_data):
-            quantiles = quantiles * len(np_data)
-
-        return np.apply_along_axis(
-            lambda x: np.quantile(x[1:], x[0]),
-            1,
-            np.concatenate([np.array(quantiles)[:, np.newaxis], np_data], axis=1),
-        )
-
-    def _check_input_width(self, series: TimeSeries):
-        """Checks if the number of components of the input is equal to the number
-        of values contained in parameter `high` or/and `low`.
-        """
-
-        if self.low is not None:
-            param = self.low
-        else:
-            param = self.high
-
-        if len(param) > 1:
-            raise_if_not(
-                len(param) == series.width,
-                "The number of components of input must be equal to the number"
-                + " of values given for `high` or/and `low`, found number of "
-                + f"components equal to {series.width} and expected {len(param)}.",
-            )
-
-    def _detection_per_array(self, np_data, lower, upper):
-        """Identifies time points as anomalous when values
-        are beyond the thresholds (lower and upper).
-        """
-
-        if lower is not None:
-            if len(lower) != len(np_data):
-                lower = lower * len(np_data)
-        else:
-            lower = [None] * len(np_data)
-
-        if upper is not None:
-            if len(upper) != len(np_data):
-                upper = upper * len(np_data)
-        else:
-            upper = [None] * len(np_data)
-
-        return np.apply_along_axis(
-            lambda x: (x[2:] < (x[0] if (x[0] is not None) else -float("inf")))
-            | (x[2:] > (x[1] if (x[1] is not None) else float("inf"))),
-            1,
-            np.concatenate(
+        raise_if_not(
+            all(
                 [
-                    np.array(lower)[:, np.newaxis],
-                    np.array(upper)[:, np.newaxis],
-                    np_data,
-                ],
-                axis=1,
+                    l < h
+                    for (l, h) in zip(self.low_quantile, self.high_quantile)
+                    if ((l is not None) and (h is not None))
+                ]
             ),
-        ).astype(int)
+            "all values in `low` must be lower than their corresponding value in `high`.",
+        )
 
     def _fit_core(self, list_series: Sequence[TimeSeries]) -> None:
 
-        self._check_input_width(list_series[0])
-
-        np_series = np.concatenate(
-            [series.all_values(copy=False) for series in list_series]
+        # if len(low) > 1 and len(high) > 1, then check it matches input width:
+        raise_if(
+            len(self.low_quantile) > 1
+            and len(self.low_quantile) != list_series[0].width,
+            "The number of components of input must be equal to the number"
+            + " of values given for `high_quantile` or/and `low_quantile`. Found number of "
+            + f"components equal to {list_series[0].width} and expected {len(self.low_quantile)}.",
         )
 
-        if self.high is not None:
-            self.abs_high_ = self._quantile_per_array(
-                np_series.flatten(order="F").reshape(list_series[0].width, -1),
-                self.high,
-            )
+        # otherwise, make them the right length
+        self.low_quantile = (
+            self.low_quantile * list_series[0].width
+            if len(self.low_quantile) == 1
+            else self.low_quantile
+        )
+        self.high_quantile = (
+            self.high_quantile * list_series[0].width
+            if len(self.high_quantile) == 1
+            else self.high_quantile
+        )
 
-        if self.low is not None:
-            self.abs_low_ = self._quantile_per_array(
-                np_series.flatten(order="F").reshape(list_series[0].width, -1), self.low
-            )
+        # concatenate everything along time axis
+        np_series = np.concatenate(
+            [series.all_values(copy=False) for series in list_series], axis=0
+        )
 
-        self._fit_called = True
+        # move sample dimension to position 1
+        np_series = np.moveaxis(np_series, 2, 1)
+
+        # flatten it in order to obtain an array of shape (time * samples, components)
+        # where all samples of a given component are concatenated along time
+        np_series = np_series.reshape(np_series.shape[0] * np_series.shape[1], -1)
+
+        # Compute 2 thresholds (low, high) for each component:
+        # TODO: we could make this more efficient when low_quantile or high_quantile contain a single value
+        self.low_threshold = [
+            np.quantile(np_series[:, i], q=lo, axis=0) if lo is not None else None
+            for i, lo in enumerate(self.low_quantile)
+        ]
+        self.high_threshold = [
+            np.quantile(np_series[:, i], q=hi, axis=0) if hi is not None else None
+            for i, hi in enumerate(self.high_quantile)
+        ]
+
+        return self
 
     def _detect_core(self, series: TimeSeries) -> TimeSeries:
 
-        self._check_input_width(series)
-        np_series = series.all_values(copy=False)
-
-        detected = self._detection_per_array(
-            np_series.flatten(order="F").reshape(series[0].width, -1),
-            lower=self.abs_low_ if self.low is not None else None,
-            upper=self.abs_high_ if self.high is not None else None,
+        raise_if_not(
+            len(self.low_threshold) == series.width,
+            "The number of components of input must be equal to the number"
+            + " of values this detector has been fitted on. Found number of "
+            + f"components equal to {series.width} and expected {len(self.low_threshold)}.",
         )
 
-        return TimeSeries.from_times_and_values(series.time_index, list(zip(*detected)))
+        raise_if_not(
+            series.is_deterministic, "This detector only works on deterministic series."
+        )
+
+        # (time, components)
+        np_series = series.all_values(copy=False).squeeze(-1)
+
+        def _detect_fn(x, lo, hi):
+            # x of shape (time,) for 1 component
+            return (x < (np.NINF if lo is None else lo)) | (
+                x > (np.Inf if hi is None else hi)
+            )
+
+        detected = np.zeros_like(np_series, dtype=int)
+
+        for component_idx in range(series.width):
+            detected[:, component_idx] = _detect_fn(
+                np_series[:, component_idx],
+                self.low_threshold[component_idx],
+                self.high_threshold[component_idx],
+            )
+
+        return TimeSeries.from_times_and_values(series.time_index, detected)

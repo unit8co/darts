@@ -23,9 +23,43 @@ class Detector(ABC):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         pass
 
-    @abstractmethod
-    def detect(self, input: Any) -> Any:
-        pass
+    def detect(
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        """Detect anomalies on given time series.
+
+        Parameters
+        ----------
+        series
+            series on which to detect anomalies.
+
+        Returns
+        -------
+        Union[TimeSeries, Sequence[TimeSeries]]
+            binary prediciton (1 if considered as an anomaly, 0 if not)
+        """
+
+        list_series = [series] if not isinstance(series, Sequence) else series
+
+        raise_if_not(
+            all([isinstance(s, TimeSeries) for s in list_series]),
+            "all series in `series` must be of type TimeSeries.",
+        )
+
+        raise_if_not(
+            all([s.is_deterministic for s in list_series]),
+            "all series in `series` must be deterministic (number of samples equal to 1).",
+        )
+
+        detected_series = []
+        for s in list_series:
+            detected_series.append(self._detect_core(s))
+
+        if len(detected_series) == 1 and not isinstance(series, Sequence):
+            return detected_series[0]
+        else:
+            return detected_series
 
     @abstractmethod
     def _detect_core(self, input: Any) -> Any:
@@ -93,44 +127,6 @@ class NonFittableDetector(Detector):
         super().__init__(*args, **kwargs)
         self.trainable = False
 
-    def detect(
-        self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        """Detect anomalies from given time series.
-
-        Parameters
-        ----------
-        series
-            series to detect anomalies from.
-
-        Returns
-        -------
-        Union[TimeSeries, Sequence[TimeSeries]]
-            binary prediciton (1 if considered as an anomaly, 0 if not)
-        """
-
-        list_series = [series] if not isinstance(series, Sequence) else series
-
-        raise_if_not(
-            all([isinstance(s, TimeSeries) for s in list_series]),
-            "all series in `series` must be of type TimeSeries.",
-        )
-
-        raise_if_not(
-            all([s.is_deterministic for s in list_series]),
-            "all series in `series` must be deterministic (number of samples equal to 1).",
-        )
-
-        detected_series = []
-        for s in list_series:
-            detected_series.append(self._detect_core(s))
-
-        if len(detected_series) == 1 and not isinstance(series, Sequence):
-            return detected_series[0]
-        else:
-            return detected_series
-
 
 class FittableDetector(Detector):
     """Base class of Detectors that need training."""
@@ -144,12 +140,12 @@ class FittableDetector(Detector):
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        """Detect anomalies from given time series.
+        """Detect anomalies on given time series.
 
         Parameters
         ----------
         series
-            series to detect anomalies from.
+            series on which to detect anomalies.
 
         Returns
         -------
@@ -165,30 +161,13 @@ class FittableDetector(Detector):
         )
 
         raise_if_not(
-            all([isinstance(s, TimeSeries) for s in list_series]),
-            "all series in `series` must be of type TimeSeries.",
-        )
-
-        raise_if_not(
-            all([s.is_deterministic for s in list_series]),
-            "all series in `series` must be deterministic (number of samples equal to 1).",
-        )
-
-        raise_if_not(
             all([self.width_trained_on == s.width for s in list_series]),
             "all series in `series` must have the same number of components as the data "
             + "used for training the detector model, number of components in training: "
             + f" {self.width_trained_on}.",
         )
 
-        detected_series = []
-        for s in list_series:
-            detected_series.append(self._detect_core(s))
-
-        if len(detected_series) == 1 and not isinstance(series, Sequence):
-            return detected_series[0]
-        else:
-            return detected_series
+        return super().detect(series)
 
     @abstractmethod
     def _fit_core(self, input: Any) -> Any:
@@ -227,7 +206,8 @@ class FittableDetector(Detector):
             "all series in `series` must have the same number of components.",
         )
 
-        self._fit_core(list_series)
+        self._fit_called = True
+        return self._fit_core(list_series)
 
     def fit_detect(
         self, series: Union[TimeSeries, Sequence[TimeSeries]]
