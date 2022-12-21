@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import OneHotEncoder
 
 import darts
 from darts import TimeSeries
@@ -14,6 +15,7 @@ from darts.dataprocessing.encoders import (
     FutureCyclicEncoder,
     PastDatetimeAttributeEncoder,
 )
+from darts.dataprocessing.transformers import StaticCovariatesTransformer
 from darts.logging import get_logger
 from darts.metrics import mae, rmse
 from darts.models import (
@@ -637,6 +639,142 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     list(series_matrix[0, :, 0]),
                     [44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0],
                 )
+
+    def test_static_covs_addition(self):
+
+        static_covs1 = pd.DataFrame(
+            data={
+                "cont": [0.1, 0.2, 0.3],
+                "cat": ["a", "b", "c"],  # should lead to 9 one-hot encoded columns
+            }
+        ).astype(dtype={"cat": "category"})
+
+        static_covs2 = pd.DataFrame(data={"cont": [0.1, 0.2, 0.3]})
+
+        # default transformer_num = MinMaxScaler()
+        scaler = StaticCovariatesTransformer(transformer_cat=OneHotEncoder())
+        ref_series = tg.linear_timeseries(length=10)
+        series1 = TimeSeries.from_times_and_values(
+            times=ref_series.time_index,
+            values=np.concatenate([ref_series.values()] * 3, axis=1),
+            columns=["comp1", "comp2", "comp3"],
+            static_covariates=static_covs1,
+        )
+        series1 = scaler.fit_transform(series1)
+
+        series2 = TimeSeries.from_times_and_values(
+            times=ref_series.time_index,
+            values=np.concatenate([ref_series.values() * 100] * 3, axis=1),
+            columns=["comp1", "comp2", "comp3"],
+            static_covariates=static_covs2,
+        )
+
+        series3 = TimeSeries.from_times_and_values(
+            times=ref_series.time_index,
+            values=np.concatenate([ref_series.values() * 200] * 3, axis=1),
+            columns=["comp1", "comp2", "comp3"],
+        )
+
+        series4 = TimeSeries.from_times_and_values(
+            times=ref_series.time_index,
+            values=np.concatenate([ref_series.values()] * 3, axis=1),
+            columns=["comp1", "comp2", "comp3"],
+        )
+
+        reg_model = RegressionModel(lags=1, output_chunk_length=1)
+        all_series = [series1, series2, series3]
+        max_samples = 5
+        all_series_width = series1.n_components
+        max_scovs_width = max(
+            [
+                s.static_covariates_values(copy=False).reshape(1, -1).shape[1]
+                for s in all_series
+                if s.has_static_covariates
+            ]
+        )
+
+        # no static covs
+        features = reg_model._create_lagged_data(
+            series3, None, None, max_samples_per_ts=max_samples
+        )[0]
+        self.assertEqual(features.shape, (5, 3))
+
+        # static covs with different dims
+        features = reg_model._create_lagged_data(
+            all_series, None, None, max_samples_per_ts=max_samples
+        )[0]
+        self.assertEqual(
+            features.shape,
+            (max_samples * len(all_series), all_series_width + max_scovs_width),
+        )
+
+        # no static covs at prediction but static covs at training
+        reg_model.fit(all_series)
+        pred_features = reg_model._create_lagged_data(
+            series4, None, None, max_samples_per_ts=1
+        )[
+            0
+        ]  # simulates features prep at prediction time
+        self.assertEqual(pred_features.shape, (1, all_series_width + max_scovs_width))
+
+    def test_static_cov_accuracy(self):
+        # based on : https://unit8co.github.io/darts/examples/15-static-covariates.html
+
+        # given
+        period = 20
+        sine_series = tg.sine_timeseries(
+            length=4 * period,
+            value_frequency=1 / period,
+            column_name="smooth",
+            freq="h",
+        )
+
+        sine_vals = sine_series.values()
+        linear_vals = np.expand_dims(np.linspace(1, -1, num=19), -1)
+
+        sine_vals[21:40] = linear_vals
+        sine_vals[61:80] = linear_vals
+        irregular_series = TimeSeries.from_times_and_values(
+            values=sine_vals, times=sine_series.time_index, columns=["irregular"]
+        )
+
+        # no static covs
+        train_series_no_cov = [sine_series, irregular_series]
+
+        # categorical static covs
+        sine_series_st_cat = sine_series.with_static_covariates(
+            pd.DataFrame(data={"curve_type": ["smooth"]})
+        )
+        irregular_series_st_cat = irregular_series.with_static_covariates(
+            pd.DataFrame(data={"curve_type": ["non_smooth"]})
+        )
+        train_series_static_cov = [sine_series_st_cat, irregular_series_st_cat]
+
+        scaler = StaticCovariatesTransformer(transformer_cat=OneHotEncoder())
+        train_series_static_cov = scaler.fit_transform(train_series_static_cov)
+
+        # when
+        model_no_static_cov = RandomForest(lags=period // 2, bootstrap=False)
+        model_no_static_cov.fit(train_series_no_cov)
+        predict_series_no_cov = [series[:60] for series in train_series_no_cov]
+        pred_no_static_cov = model_no_static_cov.predict(
+            n=int(period / 2), series=predict_series_no_cov
+        )
+
+        model_static_cov = RandomForest(lags=period // 2, bootstrap=False)
+        model_static_cov.fit(train_series_static_cov)
+        predict_series_static_cov = [series[:60] for series in train_series_static_cov]
+        pred_static_cov = model_static_cov.predict(
+            n=int(period / 2), series=predict_series_static_cov
+        )
+
+        # then
+        for series, ps_no_st, ps_st_cat in zip(
+            train_series_static_cov, pred_no_static_cov, pred_static_cov
+        ):
+            rmses = [rmse(series, ps) for ps in [ps_no_st, ps_st_cat]]
+
+            self.assertLess(rmses[1], rmses[0])
 
     def test_models_runnability(self):
         train_y, test_y = self.sine_univariate1.split_before(0.7)
