@@ -243,7 +243,19 @@ class RegressionModel(GlobalForecastingModel):
     ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
         target_lags = self.lags.get("target", [0])
         lags_past_covariates = self.lags.get("past", None)
+        if lags_past_covariates is not None:
+            lags_past_covariates = [
+                min(lags_past_covariates)
+                - int(not self.multi_models) * (self.output_chunk_length - 1),
+                max(lags_past_covariates),
+            ]
         lags_future_covariates = self.lags.get("future", None)
+        if lags_future_covariates is not None:
+            lags_future_covariates = [
+                min(lags_future_covariates)
+                - int(not self.multi_models) * (self.output_chunk_length - 1),
+                max(lags_future_covariates),
+            ]
         return (
             abs(min(target_lags)),
             self.output_chunk_length,
@@ -543,7 +555,7 @@ class RegressionModel(GlobalForecastingModel):
             covariate_matrices[cov_type] = []
             for idx, (ts, cov) in enumerate(zip(series, covs)):
                 # how many steps to go back from end of target series for start of covariates
-                steps_back = -(min(lags) + 1 + shift)
+                steps_back = -(min(lags) + 1) + shift
                 lags_diff = max(lags) - min(lags) + 1
                 # over how many steps the covariates range
                 n_steps = lags_diff + max(0, n - self.output_chunk_length) + shift
@@ -553,15 +565,18 @@ class RegressionModel(GlobalForecastingModel):
                 end_ts = start_ts + ts.freq * (n_steps - 1)
 
                 # check for sufficient covariate data
-                raise_if_not(
-                    cov.start_time() <= start_ts and cov.end_time() >= end_ts,
-                    f"The corresponding {cov_type}_covariate of the series at index {idx} isn't sufficiently long. "
-                    f"Given horizon `n={n}`, `min(lags_{cov_type}_covariates)={lags[0]}`, "
-                    f"`max(lags_{cov_type}_covariates)={lags[-1]}` and "
-                    f"`output_chunk_length={self.output_chunk_length}`\n"
-                    f"the {cov_type}_covariate has to range from {start_ts} until {end_ts} (inclusive), "
-                    f"but it ranges only from {cov.start_time()} until {cov.end_time()}.",
-                )
+                if not cov.start_time() <= start_ts and cov.end_time() >= end_ts:
+                    raise_log(
+                        ValueError(
+                            f"The corresponding {cov_type}_covariate of the series at index {idx} isn't sufficiently "
+                            f"long. Given horizon `n={n}`, `min(lags_{cov_type}_covariates)={lags[0]}`, "
+                            f"`max(lags_{cov_type}_covariates)={lags[-1]}` and "
+                            f"`output_chunk_length={self.output_chunk_length}`, the {cov_type}_covariate has to range "
+                            f"from {start_ts} until {end_ts} (inclusive), but it ranges only from {cov.start_time()} "
+                            f"until {cov.end_time()}."
+                        ),
+                        logger=logger,
+                    )
 
                 # use slice() instead of [] as for integer-indexed series [] does not act on time index
                 # for range indexes, we make the end timestamp inclusive here

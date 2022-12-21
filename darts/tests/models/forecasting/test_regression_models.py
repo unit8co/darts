@@ -1315,7 +1315,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             },
         }
 
-        multi_models_mode = [True]
+        multi_models_mode = [False]
         ocl = 2
         for mode in multi_models_mode:
             for model_cls in [
@@ -1354,12 +1354,14 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     lags=2,
                     lags_past_covariates=[max_past_lag, -1],
                     add_encoders=encoder_examples["past"],
+                    multi_models=mode,
                     output_chunk_length=ocl,
                 )
                 model_fc_valid1 = model_cls(
                     lags=2,
                     lags_future_covariates=[0, max_future_lag],
                     add_encoders=encoder_examples["future"],
+                    multi_models=mode,
                     output_chunk_length=ocl,
                 )
                 model_mixed_valid1 = model_cls(
@@ -1367,6 +1369,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     lags_past_covariates=[max_past_lag, -1],
                     lags_future_covariates=[0, max_future_lag],
                     add_encoders=encoder_examples["mixed"],
+                    multi_models=mode,
                     output_chunk_length=ocl,
                 )
 
@@ -1423,34 +1426,26 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             def to_ts(dt):
                 return pd.Timestamp(dt, freq=freq)
 
+            def train_start_end(start_base, end_base):
+                start = to_ts(start_base) - int(not multi_model) * (ocl - 1) * freq
+                if not n_predict:
+                    end = to_ts(end_base) - (ocl - 1) * freq
+                else:
+                    end = to_ts(end_base) + freq * max(n_predict - ocl, 0)
+                return start, end
+
             if not n_predict:
                 # expected train start, and end
-                pc1_start, pc1_end = to_ts("1999-11-01"), to_ts("2000-11-01")
-                pc2_start, pc2_end = to_ts("2000-11-01"), to_ts("2001-11-01")
-                fc1_start, fc1_end = to_ts("2000-03-01"), to_ts("2001-04-01")
-                fc2_start, fc2_end = to_ts("2001-03-01"), to_ts("2002-04-01")
-                pc1_end = pc1_end - (ocl - 1) * freq
-                pc2_end = pc2_end - (ocl - 1) * freq
-                fc1_end = fc1_end - (ocl - 1) * freq
-                fc2_end = fc2_end - (ocl - 1) * freq
+                pc1_start, pc1_end = train_start_end("1999-11-01", "2000-11-01")
+                pc2_start, pc2_end = train_start_end("2000-11-01", "2001-11-01")
+                fc1_start, fc1_end = train_start_end("2000-03-01", "2001-04-01")
+                fc2_start, fc2_end = train_start_end("2001-03-01", "2002-04-01")
             else:
                 # expected inference start, and end
-                pc1_start, pc1_end = (
-                    to_ts("2000-09-01"),
-                    to_ts("2000-12-01") + freq * max(n_predict - ocl, 0),
-                )
-                pc2_start, pc2_end = (
-                    to_ts("2001-09-01"),
-                    to_ts("2001-12-01") + freq * max(n_predict - ocl, 0),
-                )
-                fc1_start, fc1_end = (
-                    to_ts("2001-01-01"),
-                    to_ts("2001-05-01") + freq * max(n_predict - ocl, 0),
-                )
-                fc2_start, fc2_end = (
-                    to_ts("2002-01-01"),
-                    to_ts("2002-05-01") + freq * max(n_predict - ocl, 0),
-                )
+                pc1_start, pc1_end = train_start_end("2000-09-01", "2000-12-01")
+                pc2_start, pc2_end = train_start_end("2001-09-01", "2001-12-01")
+                fc1_start, fc1_end = train_start_end("2001-01-01", "2001-05-01")
+                fc2_start, fc2_end = train_start_end("2002-01-01", "2002-05-01")
 
             times = {
                 "pc_start": [pc1_start, pc2_start],
