@@ -1,10 +1,10 @@
 """
-Difference
------
+Difference Scorer
+-----------------
 
-Difference distance metric. Returns the difference between each
-timestamps of two series. If the two series are multivariate, it
-will return a multivariate series.
+This scorer simply computes the elementwise difference
+between two series. If the two series are multivariate, it
+returns a multivariate series.
 """
 
 from darts.ad.scorers.scorers import NonFittableAnomalyScorer

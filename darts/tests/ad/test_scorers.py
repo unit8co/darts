@@ -1270,9 +1270,9 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             anomalies_kmeans_per_width, mts_test_kmeans, metric="AUC_ROC"
         )
 
-        self.assertAlmostEqual(auc_roc_cwfalse, 0.98957, delta=1e-05)
+        self.assertAlmostEqual(auc_roc_cwfalse, 0.9851, delta=1e-05)
         self.assertAlmostEqual(auc_roc_cwtrue[0], 1.0, delta=1e-05)
-        self.assertAlmostEqual(auc_roc_cwtrue[1], 0.98262, delta=1e-05)
+        self.assertAlmostEqual(auc_roc_cwtrue[1], 0.97666, delta=1e-05)
 
     def test_PyODScorer(self):
 

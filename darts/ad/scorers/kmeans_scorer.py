@@ -2,9 +2,7 @@
 k-means Scorer
 --------------
 
-`k`-means Scorer (k-means clustering) [1]_.
-The implementations is wrapped around `scikit-learn
-<https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html>`_.
+`k`-means Scorer implementing `k`-means clustering [1]_.
 
 References
 ----------
@@ -14,6 +12,7 @@ References
 from typing import Sequence
 
 import numpy as np
+from numpy.lib.stride_tricks import sliding_window_view
 from sklearn.cluster import KMeans
 
 from darts.ad.scorers.scorers import FittableAnomalyScorer
@@ -25,66 +24,63 @@ class KMeansScorer(FittableAnomalyScorer):
     def __init__(
         self,
         window: int = 1,
-        k: int = 2,
+        k: int = 8,
         component_wise: bool = False,
         diff_fn="abs_diff",
+        **kwargs,
     ) -> None:
         """
         When calling ``fit(series)``, a moving window is applied, which results in a set of vectors of size W,
-        where `W` is the window size. The KMeans model is trained on these vectors. The ``score(series)`` function
-        will apply the same moving window and return the minimal distance between the K centroid and for each
-        vector of size W.
+        where `W` is the window size. The `k`-means model is trained on these vectors. The ``score(series)`` function
+        applies the same moving window and returns the distance to the closest of the `k` centroids for each
+        vector of size `W`.
 
         Alternatively, the scorer has the functions ``fit_from_prediction()`` and ``score_from_prediction()``.
-        Both require two inputs and transform them into one series by applying the function ``diff_fn``
-        (default: absolute difference). The resulting series will then be passed to the respective function
-        ``fit()`` and ``score()``.
+        Both require two series (actual and prediction), and compute a "difference" series by applying the
+        function ``diff_fn`` (default: absolute difference). The resulting series is then passed to the
+        functions ``fit()`` and ``score()``, respectively.
 
         `component_wise` is a boolean parameter indicating how the model should behave with multivariate inputs
-        series. If set to True, the model will treat each series dimension independently by fitting a different
-        KMeans model for each dimension. If the input series has a dimension of `D`, the model will train `D` KMeans
-        models. If set to False, the model will concatenate the dimensions in the considered `window` W and compute
-        the score using only one trained KMeans model.
+        series. If set to True, the model will treat each component independently by fitting a different
+        `k`-means model for each dimension. If set to False, the model concatenates the dimensions in
+        each windows of length `W` and computes the score using only one underlying `k`-means model.
 
         **Training with** ``fit()``:
 
-        The input can be a series (univariate or multivariate) or multiple series. The series will be partitioned
+        The input can be a series (univariate or multivariate) or multiple series. The series will be sliced
         into equal size subsequences. The subsequence will be of size `W` * `D`, with:
 
-        * `W` being the size of the window given as a parameter `window` (w>0)
-        * `D` being the dimension of the series (`D`=1 if deterministic)
+        * `W` being the size of the window given as a parameter `window`
+        * `D` being the dimension of the series (`D` = 1 if univariate or if `component_wise` is set to True)
 
-        For a series of length `N`, (`N`-`W`+1)/W subsequences will be generated. If a list of series is given
+        For a series of length `N`, (`N` - `W` + 1)/W subsequences will be generated. If a list of series is given
         of length L, each series will be partitioned into subsequences, and the results will be concatenated into
         an array of length L * number of subsequences of each series.
 
-        The model KMeans will be fitted on the generated subsequences. The model will find `k` clusters
-        in the vector space of dimension equal to the length of the subsequences (`D`*W).
+        The `k`-means model will be fitted on the generated subsequences. The model will find `k` clusters
+        in the vector space of dimension equal to the length of the subsequences (`D` * `W`).
 
         If `component_wise` is set to True, the algorithm will be applied to each dimension independently. For each
-        dimension, a KMeans model will be trained.
+        dimension, a `k`-means model will be trained.
 
         **Computing score with** ``score()``:
 
         The input can be a series (univariate or multivariate) or a sequence of series. The given series must have the
-        same dimension `D` as the data used to train the KMeans model.
+        same dimension `D` as the data used to train the `k`-means model.
 
         For each series, if the series is multivariate of dimension `D`:
 
-        * if `component_wise` is set to False: it will return a univariate series (dimension=1). It represents
-        the anomaly score of the entire series in the considered window at each timestamp.
-        * if `component_wise` is set to True: it will return a multivariate series of dimension `D`. Each dimension
-        represents the anomaly score of the corresponding component of the input.
+        * if `component_wise` is set to False: it returns a univariate series (dimension=1). It represents
+          the anomaly score of the entire series in the considered window at each timestamp.
+        * if `component_wise` is set to True: it returns a multivariate series of dimension `D`. Each dimension
+          represents the anomaly score of the corresponding component of the input.
 
-        If the series is univariate, it will return a univariate series regardless of the parameter
+        If the series is univariate, it returns a univariate series regardless of the parameter
         `component_wise`.
 
         A window of size `W` is rolled on the series with a stride equal to 1. It is the same size window `W` used
-        during the training phase. At each timestamp, the previous `W` values will form a vector of size `W` * `D`
-        of the series (with `D` being the series dimensions). The KMeans model will then retrieve the closest
-        centroid to this vector and compute the euclidean distance between the centroid and the vector. The output
-        will be a series of dimension one and length `N` - `W`+1, with `N` being the length of the input series.
-        Each value will represent how anomalous the sample of the `W` previous values is.
+        during the training phase.
+        Each value in the score series thus represents how anomalous the sample of the `W` previous values is.
 
         Parameters
         ----------
@@ -102,6 +98,8 @@ class KMeansScorer(FittableAnomalyScorer):
             Boolean value indicating if the score needs to be computed for each component independently (True)
             or by concatenating the component in the considered window to compute one score (False).
             Default: False
+        kwargs
+            Additional keyword arguments passed to the internal scikit-learn KMeans model(s).
         """
 
         raise_if_not(
@@ -110,14 +108,15 @@ class KMeansScorer(FittableAnomalyScorer):
         )
         self.component_wise = component_wise
 
-        self.k = k
+        self.kmeans_kwargs = kwargs
+        self.kmeans_kwargs["n_clusters"] = k
 
         super().__init__(
             univariate_scorer=(not component_wise), window=window, diff_fn=diff_fn
         )
 
     def __str__(self):
-        return "KMeansScorer"
+        return "k-means Scorer"
 
     def _fit_core(
         self,
@@ -126,47 +125,40 @@ class KMeansScorer(FittableAnomalyScorer):
 
         list_np_series = [series.all_values(copy=False) for series in list_series]
 
-        # TODO: vectorize
-
         if not self.component_wise:
-            self.model = KMeans(n_clusters=self.k, n_init=10)
+            self.model = KMeans(**self.kmeans_kwargs)
             self.model.fit(
                 np.concatenate(
                     [
-                        np.array(
-                            [
-                                np.array(np_series[i : i + self.window])
-                                for i in range(len(np_series) - self.window + 1)
-                            ]
-                        ).reshape(-1, self.window * len(np_series[0]))
-                        for np_series in list_np_series
-                    ]
+                        sliding_window_view(ar, window_shape=self.window, axis=0)
+                        .transpose(0, 3, 1, 2)
+                        .reshape(-1, self.window * len(ar[0]))
+                        for ar in list_np_series
+                    ],
+                    axis=0,
                 )
             )
         else:
             models = []
             for component_idx in range(self.width_trained_on):
-                model = KMeans(n_clusters=self.k, n_init=10)
+                model = KMeans(**self.kmeans_kwargs)
                 model.fit(
                     np.concatenate(
                         [
-                            np.array(
-                                [
-                                    np.array(
-                                        np_series[i : i + self.window, component_idx]
-                                    )
-                                    for i in range(len(np_series) - self.window + 1)
-                                ]
-                            ).reshape(-1, self.window)
-                            for np_series in list_np_series
-                        ]
+                            sliding_window_view(
+                                ar[:, component_idx], window_shape=self.window, axis=0
+                            )
+                            .transpose(0, 2, 1)
+                            .reshape(-1, self.window)
+                            for ar in list_np_series
+                        ],
+                        axis=0,
                     )
                 )
                 models.append(model)
             self.models = models
 
     def _score_core(self, series: TimeSeries) -> TimeSeries:
-
         raise_if_not(
             self.width_trained_on == series.width,
             "Input must have the same number of components as the data used for"
@@ -174,41 +166,35 @@ class KMeansScorer(FittableAnomalyScorer):
             + f" {series.width} and expected {self.width_trained_on}.",
         )
 
-        # TODO: vectorize
-
         np_series = series.all_values(copy=False)
         np_anomaly_score = []
 
         if not self.component_wise:
-
             # return distance to the clostest centroid
             np_anomaly_score.append(
                 self.model.transform(
-                    np.array(
-                        [
-                            np.array(np_series[i : i + self.window])
-                            for i in range(len(series) - self.window + 1)
-                        ]
-                    ).reshape(-1, self.window * series.width)
+                    sliding_window_view(np_series, window_shape=self.window, axis=0)
+                    .transpose(0, 3, 1, 2)
+                    .reshape(-1, self.window * series.width)
                 ).min(axis=1)
-            )  # only return the clostest distance out of the k ones (k centroids)
+            )  # only return the closest distance out of the k ones (k centroids)
         else:
-
             for component_idx in range(self.width_trained_on):
-                np_anomaly_score_width = (
+                score = (
                     self.models[component_idx]
                     .transform(
-                        np.array(
-                            [
-                                np.array(np_series[i : i + self.window, component_idx])
-                                for i in range(len(series) - self.window + 1)
-                            ]
-                        ).reshape(-1, self.window)
+                        sliding_window_view(
+                            np_series[:, component_idx],
+                            window_shape=self.window,
+                            axis=0,
+                        )
+                        .transpose(0, 2, 1)
+                        .reshape(-1, self.window)
                     )
                     .min(axis=1)
                 )
 
-                np_anomaly_score.append(np_anomaly_score_width)
+                np_anomaly_score.append(score)
 
         return TimeSeries.from_times_and_values(
             series.time_index[self.window - 1 :], list(zip(*np_anomaly_score))
