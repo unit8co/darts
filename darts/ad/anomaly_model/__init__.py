@@ -15,7 +15,7 @@ time series and produces one or multiple anomaly scores time series, for each pr
 
 :class:`ForecastingAnomalyModel` works with Darts forecasting models, and :class:`FilteringAnomalyModel`
 works with Darts filtering models.
-The anomaly models also can be fitted by calling :func:`fit()`, which trains the scorer(s)
+The anomaly models can also be fitted by calling :func:`fit()`, which trains the scorer(s)
 (in case some are trainable), and potentially the model as well.
 
 The function :func:`eval_accuracy()` is the same as :func:`score()`, but outputs the score of an agnostic
