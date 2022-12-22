@@ -89,7 +89,7 @@ class KMeansScorer(FittableAnomalyScorer):
         k
             The number of clusters to form as well as the number of centroids to generate by the KMeans model.
         diff_fn
-            Optionally, reduced function to use if two series are given. It will transform the two series into one.
+            Optionally, reduction function to use if two series are given. It will transform the two series into one.
             This allows the KMeansScorer to apply KMeans on the original series or on its residuals (difference
             between the prediction and the original series).
             Must be one of "abs_diff" and "diff" (defined in ``_diff_series()``).
