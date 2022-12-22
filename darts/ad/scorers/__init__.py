@@ -32,7 +32,7 @@ As an example, the ``KMeansScorer``, which is trainable, can be applied using th
   from the clusters found during the training phase.
     
 Note that `Anomaly Models <https://unit8co.github.io/darts/generated_api/darts.ad.anomaly_model.html>`_
-can be used to conveniently combine any of Darts forecasting and filtering model with one or multiple scorers.
+can be used to conveniently combine any of Darts forecasting and filtering models with one or multiple scorers.
 
 Most of the scorers have the following main parameters:
 
