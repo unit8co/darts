@@ -13,7 +13,7 @@ Common functions used by anomaly_model.py, scorers.py, aggregators.py and detect
 #     - add an option visualize: "by window", "unique", "together"
 #     - create a normalize option in plot function (norm every anomaly score btw 1 and 0) -> to be seen on the same plot
 
-from typing import Sequence, Union
+from typing import Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -341,7 +341,7 @@ def _eval_accuracy_from_data(
 def _intersect(
     series_1: TimeSeries,
     series_2: TimeSeries,
-) -> tuple[TimeSeries, TimeSeries]:
+) -> Tuple[TimeSeries, TimeSeries]:
     """Returns the sub-series of series_1 and of series_2 that share the same time index.
     (Intersection in time of the two time series)
 
