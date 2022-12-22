@@ -151,7 +151,7 @@ class FilteringAnomalyModel(AnomalyModel):
     ):
         """Plot the results of the anomaly model.
 
-        Computes the score on the given series input. And shows the different anomaly scores with respect to time.
+        Computes the score on the given series input and shows the different anomaly scores with respect to time.
 
         The plot will be composed of the following:
 
