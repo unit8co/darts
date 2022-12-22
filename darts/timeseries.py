@@ -754,8 +754,11 @@ class TimeSeries:
         static_cov_cols = group_cols + static_cols
 
         # split df by groups, and store group values and static values (static covariates)
+        # single elements group columns must be unpacked for same groupby() behavior across different pandas versions
         splits = []
-        for static_cov_vals, group in df.groupby(group_cols):
+        for static_cov_vals, group in df.groupby(
+            group_cols[0] if len(group_cols) == 1 else group_cols
+        ):
             static_cov_vals = (
                 (static_cov_vals,)
                 if not isinstance(static_cov_vals, tuple)
@@ -2622,7 +2625,6 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries with the new values appended
         """
-
         if self._has_datetime_index:
             idx = pd.DatetimeIndex(
                 [self.end_time() + i * self._freq for i in range(1, len(values) + 1)],
@@ -2630,9 +2632,10 @@ class TimeSeries:
             )
         else:
             idx = pd.RangeIndex(
-                len(self), len(self) + self.freq * len(values), step=self.freq
+                start=self.end_time() + self._freq,
+                stop=self.end_time() + (len(values) + 1) * self._freq,
+                step=self._freq,
             )
-
         return self.append(
             self.__class__.from_times_and_values(
                 values=values,

@@ -462,7 +462,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             model: TransferableFutureCovariatesLocalForecastingModel = model_cls(
                 **kwargs
             )
-            model.backtest(series1, future_covariates=exog1, retrain=False)
+            model.backtest(series1, future_covariates=exog1, start=0.5, retrain=False)
 
     @patch("typing.Callable")
     def test_backtest_retrain(
