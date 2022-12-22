@@ -74,7 +74,7 @@ class FilteringAnomalyModel(AnomalyModel):
         ----------
         series
             The (sequence of) series to be trained on.
-        allow_filter_training
+        allow_model_training
             Boolean value that indicates if the filtering model needs to be fitted on the given series.
             If set to False, the model needs to be already fitted.
             Default: False
