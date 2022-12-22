@@ -34,7 +34,7 @@ class ForecastingAnomalyModel(AnomalyModel):
 
         The forecasting model may or may not be already fitted. The underlying assumption is that `model`
         should be able to accurately forecast the series in the absence of anomalies. For this reason,
-        it is recommend to either provide a model that has already been fitted and evaluated to work
+        it is recommended to either provide a model that has already been fitted and evaluated to work
         appropriately on a series without anomalies, or to ensure that a simple call to the :func:`fit()`
         method of the model will be sufficient to train it to satisfactory performance on a series without anomalies.
 
