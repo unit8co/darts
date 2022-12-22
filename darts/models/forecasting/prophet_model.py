@@ -27,6 +27,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         add_seasonalities: Optional[Union[dict, List[dict]]] = None,
         country_holidays: Optional[str] = None,
         suppress_stdout_stderror: bool = True,
+        add_encoders: Optional[dict] = None,
         **prophet_kwargs,
     ):
         """Facebook Prophet
@@ -71,13 +72,33 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             Egypt (EG), China (CN), and Russia (RU).
         suppress_stdout_stderror
             Optionally suppress the log output produced by Prophet during training.
+        add_encoders
+            A large number of future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
+            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'position': {'future': ['relative']},
+                    'custom': {'future': [lambda idx: (idx.year - 1950) / 50]},
+                    'transformer': Scaler()
+                }
+            ..
         prophet_kwargs
             Some optional keyword arguments for Prophet.
             For information about the parameters see:
             `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py>`_.
         """
 
-        super().__init__()
+        super().__init__(add_encoders=add_encoders)
 
         self._auto_seasonalities = self._extract_auto_seasonality(prophet_kwargs)
 
