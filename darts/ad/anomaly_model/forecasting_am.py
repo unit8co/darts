@@ -92,7 +92,7 @@ class ForecastingAnomalyModel(AnomalyModel):
             If set to False, the model needs to be already fitted.
             Default: False
         
-            Parameters to be passed on to the forecast model ``fit()`` method.
+           
         past_covariates
             Optional past-observed covariate series or sequence of series. This applies only if the model
             supports past covariates.
