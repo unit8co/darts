@@ -49,7 +49,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         scorer
             One or multiple scorer(s) that will be used to compare the actual and predicted time series in order
             to obtain an anomaly score ``TimeSeries``.
-            If a list of `N` scorer is given, the anomaly model will call each
+            If a list of `N` scorers is given, the anomaly model will call each
             one of the scorers and output a list of `N` anomaly scores ``TimeSeries``.
         """
 
