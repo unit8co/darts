@@ -565,7 +565,7 @@ class RegressionModel(GlobalForecastingModel):
                 end_ts = start_ts + ts.freq * (n_steps - 1)
 
                 # check for sufficient covariate data
-                if not cov.start_time() <= start_ts and cov.end_time() >= end_ts:
+                if not (cov.start_time() <= start_ts and cov.end_time() >= end_ts):
                     raise_log(
                         ValueError(
                             f"The corresponding {cov_type}_covariate of the series at index {idx} isn't sufficiently "
@@ -605,25 +605,30 @@ class RegressionModel(GlobalForecastingModel):
             covariate_matrices[cov_type] = np.repeat(data, num_samples, axis=0)
         # prediction
         predictions = []
+        last_step_shift = 0
+
         # t_pred indicates the number of time steps after the first prediction
         for t_pred in range(0, n, step):
             # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
             # we have to step back `step` from `n` in the last iteration
             if 0 < n - t_pred < step and t_pred > 0:
+                last_step_shift = t_pred - (n - step)
                 t_pred = n - step
 
             np_X = []
             # retrieve target lags
             if "target" in self.lags:
-
-                target_matrix = (
-                    np.concatenate([series_matrix, *predictions], axis=1)
-                    if predictions
-                    else series_matrix
-                )
+                if predictions:
+                    series_matrix = np.concatenate(
+                        [series_matrix, predictions[-1]], axis=1
+                    )
                 np_X.append(
-                    target_matrix[
-                        :, [lag - shift for lag in self.lags["target"]]
+                    series_matrix[
+                        :,
+                        [
+                            lag - (shift + last_step_shift)
+                            for lag in self.lags["target"]
+                        ],
                     ].reshape(len(series) * num_samples, -1)
                 )
             # retrieve covariate lags, enforce order (dict only preserves insertion order for python 3.6+)
@@ -641,7 +646,7 @@ class RegressionModel(GlobalForecastingModel):
             prediction = self._predict_and_sample(X, num_samples, **kwargs)
             # prediction shape (n_series * n_samples, output_chunk_length, n_components)
             # append prediction to final predictions
-            predictions.append(prediction)
+            predictions.append(prediction[:, last_step_shift:])
 
         # concatenate and use first n points as prediction
         predictions = np.concatenate(predictions, axis=1)[:, :n]

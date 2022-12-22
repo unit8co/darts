@@ -775,7 +775,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                         series=train_series, past_covariates=train_past_covariates
                     )
                     prediction = model_instance.predict(
-                        n=len(test_series),
+                        n=len(test_series[:-1]),
                         series=train_series,
                         past_covariates=past_covariates,
                     )
@@ -1154,20 +1154,18 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 max_samples_per_ts=1,
             )
 
+            n = 10
             # output_chunk_length, required past_offset, required future_offset
-            test_cases_multi_models = [
-                (1, 0, 13),
-                (5, -4, 9),
-                (7, -2, 11),
-            ]
-
-            test_cases_one_shot = [
+            test_cases = [
                 (1, 0, 13),
                 (5, -4, 9),
                 (7, -6, 7),
+                (
+                    12,
+                    -9,
+                    4,
+                ),  # output_chunk_length > n -> covariate requirements are capped
             ]
-
-            test_cases = test_cases_multi_models if mode else test_cases_one_shot
 
             for (output_chunk_length, req_past_offset, req_future_offset) in test_cases:
                 model = RegressionModel(
@@ -1184,7 +1182,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
                 # check that given the required offsets no ValueError is raised
                 model.predict(
-                    10,
+                    n,
                     series=target_series[:-25],
                     past_covariates=past_covariates[: -25 + req_past_offset],
                     future_covariates=future_covariates[: -25 + req_future_offset],
@@ -1192,7 +1190,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 # check that one less past covariate time step causes ValueError
                 with self.assertRaises(ValueError):
                     model.predict(
-                        10,
+                        n,
                         series=target_series[:-25],
                         past_covariates=past_covariates[: -26 + req_past_offset],
                         future_covariates=future_covariates[: -25 + req_future_offset],
@@ -1200,7 +1198,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 # check that one less future covariate time step causes ValueError
                 with self.assertRaises(ValueError):
                     model.predict(
-                        10,
+                        n,
                         series=target_series[:-25],
                         past_covariates=past_covariates[: -25 + req_past_offset],
                         future_covariates=future_covariates[: -26 + req_future_offset],
@@ -1315,96 +1313,95 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             },
         }
 
-        multi_models_mode = [False]
-        ocl = 2
+        multi_models_mode = [True, False]
         for mode in multi_models_mode:
-            for model_cls in [
-                RegressionModel,
-                LinearRegressionModel,
-                LightGBMModel,
-                XGBModel,
-            ]:
-                model_pc_valid0 = model_cls(
-                    lags=2,
-                    add_encoders=encoder_examples["past"],
-                    multi_models=mode,
-                    output_chunk_length=ocl,
-                )
-                model_fc_valid0 = model_cls(
-                    lags=2,
-                    add_encoders=encoder_examples["future"],
-                    multi_models=mode,
-                    output_chunk_length=ocl,
-                )
-                model_mixed_valid0 = model_cls(
-                    lags=2,
-                    add_encoders=encoder_examples["mixed"],
-                    multi_models=mode,
-                    output_chunk_length=ocl,
-                )
-
-                # encoders will not generate covariates without lags
-                for model in [model_pc_valid0, model_fc_valid0, model_mixed_valid0]:
-                    model.fit(ts)
-                    assert not model.encoders.encoding_available
-                    _ = model.predict(n=1, series=ts)
-                    _ = model.predict(n=3, series=ts)
-
-                model_pc_valid1 = model_cls(
-                    lags=2,
-                    lags_past_covariates=[max_past_lag, -1],
-                    add_encoders=encoder_examples["past"],
-                    multi_models=mode,
-                    output_chunk_length=ocl,
-                )
-                model_fc_valid1 = model_cls(
-                    lags=2,
-                    lags_future_covariates=[0, max_future_lag],
-                    add_encoders=encoder_examples["future"],
-                    multi_models=mode,
-                    output_chunk_length=ocl,
-                )
-                model_mixed_valid1 = model_cls(
-                    lags=2,
-                    lags_past_covariates=[max_past_lag, -1],
-                    lags_future_covariates=[0, max_future_lag],
-                    add_encoders=encoder_examples["mixed"],
-                    multi_models=mode,
-                    output_chunk_length=ocl,
-                )
-
-                for model, ex in zip(
-                    [model_pc_valid1, model_fc_valid1, model_mixed_valid1], examples
-                ):
-                    print(ex)
-                    covariates = covariates_examples[ex]
-                    # don't pass covariates, let them be generated by encoders. Test single target series input
-                    model_copy = copy.deepcopy(model)
-                    model_copy.fit(ts[0])
-                    assert model_copy.encoders.encoding_available
-                    self.helper_test_encoders_settings(model_copy, ex)
-                    _ = model_copy.predict(n=1, series=ts)
-                    self.helper_compare_encoded_covs_with_ref(
-                        model_copy, ts, covariates, n=1, ocl=ocl, multi_model=mode
+            for ocl in [1, 2]:
+                for model_cls in [
+                    RegressionModel,
+                    LinearRegressionModel,
+                    LightGBMModel,
+                    XGBModel,
+                ]:
+                    model_pc_valid0 = model_cls(
+                        lags=2,
+                        add_encoders=encoder_examples["past"],
+                        multi_models=mode,
+                        output_chunk_length=ocl,
+                    )
+                    model_fc_valid0 = model_cls(
+                        lags=2,
+                        add_encoders=encoder_examples["future"],
+                        multi_models=mode,
+                        output_chunk_length=ocl,
+                    )
+                    model_mixed_valid0 = model_cls(
+                        lags=2,
+                        add_encoders=encoder_examples["mixed"],
+                        multi_models=mode,
+                        output_chunk_length=ocl,
                     )
 
-                    _ = model_copy.predict(n=3, series=ts)
-                    self.helper_compare_encoded_covs_with_ref(
-                        model_copy, ts, covariates, n=3, ocl=ocl, multi_model=mode
+                    # encoders will not generate covariates without lags
+                    for model in [model_pc_valid0, model_fc_valid0, model_mixed_valid0]:
+                        model.fit(ts)
+                        assert not model.encoders.encoding_available
+                        _ = model.predict(n=1, series=ts)
+                        _ = model.predict(n=3, series=ts)
+
+                    model_pc_valid1 = model_cls(
+                        lags=2,
+                        lags_past_covariates=[max_past_lag, -1],
+                        add_encoders=encoder_examples["past"],
+                        multi_models=mode,
+                        output_chunk_length=ocl,
+                    )
+                    model_fc_valid1 = model_cls(
+                        lags=2,
+                        lags_future_covariates=[0, max_future_lag],
+                        add_encoders=encoder_examples["future"],
+                        multi_models=mode,
+                        output_chunk_length=ocl,
+                    )
+                    model_mixed_valid1 = model_cls(
+                        lags=2,
+                        lags_past_covariates=[max_past_lag, -1],
+                        lags_future_covariates=[0, max_future_lag],
+                        add_encoders=encoder_examples["mixed"],
+                        multi_models=mode,
+                        output_chunk_length=ocl,
                     )
 
-                    _ = model_copy.predict(n=8, series=ts)
-                    self.helper_compare_encoded_covs_with_ref(
-                        model_copy, ts, covariates, n=8, ocl=ocl, multi_model=mode
-                    )
+                    for model, ex in zip(
+                        [model_pc_valid1, model_fc_valid1, model_mixed_valid1], examples
+                    ):
+                        covariates = covariates_examples[ex]
+                        # don't pass covariates, let them be generated by encoders. Test single target series input
+                        model_copy = copy.deepcopy(model)
+                        model_copy.fit(ts[0])
+                        assert model_copy.encoders.encoding_available
+                        self.helper_test_encoders_settings(model_copy, ex)
+                        _ = model_copy.predict(n=1, series=ts)
+                        self.helper_compare_encoded_covs_with_ref(
+                            model_copy, ts, covariates, n=1, ocl=ocl, multi_model=mode
+                        )
 
-                    # manually pass covariates, let encoders add more
-                    model.fit(ts, **covariates)
-                    assert model.encoders.encoding_available
-                    self.helper_test_encoders_settings(model, ex)
-                    _ = model.predict(n=1, series=ts, **covariates)
-                    _ = model.predict(n=3, series=ts, **covariates)
-                    _ = model.predict(n=8, series=ts, **covariates)
+                        _ = model_copy.predict(n=3, series=ts)
+                        self.helper_compare_encoded_covs_with_ref(
+                            model_copy, ts, covariates, n=3, ocl=ocl, multi_model=mode
+                        )
+
+                        _ = model_copy.predict(n=8, series=ts)
+                        self.helper_compare_encoded_covs_with_ref(
+                            model_copy, ts, covariates, n=8, ocl=ocl, multi_model=mode
+                        )
+
+                        # manually pass covariates, let encoders add more
+                        model.fit(ts, **covariates)
+                        assert model.encoders.encoding_available
+                        self.helper_test_encoders_settings(model, ex)
+                        _ = model.predict(n=1, series=ts, **covariates)
+                        _ = model.predict(n=3, series=ts, **covariates)
+                        _ = model.predict(n=8, series=ts, **covariates)
 
     @staticmethod
     def helper_compare_encoded_covs_with_ref(
