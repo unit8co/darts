@@ -2,7 +2,7 @@
 PyODScorer
 -----
 
-Scorer wrapped around the individual detection algorithms of PyOD.
+This scorer can wrap around detection algorithms of PyOD.
 `PyOD https://pyod.readthedocs.io/en/latest/#`_.
 """
 
@@ -27,60 +27,56 @@ class PyODScorer(FittableAnomalyScorer):
         component_wise: bool = False,
         diff_fn="abs_diff",
     ) -> None:
-
         """
         When calling ``fit(series)``, a moving window is applied, which results in a set of vectors of size `W`,
         where `W` is the window size. The PyODScorer model is trained on these vectors. The ``score(series)``
         function will apply the same moving window and return the predicted raw anomaly score of each vector.
 
         Alternatively, the scorer has the functions ``fit_from_prediction()`` and ``score_from_prediction()``.
-        Both require two inputs and transform them into one series by applying the function ``diff_fn``
-        (default: absolute difference). The resulting series will then be passed to the respective function
-        ``fit()`` and ``score()``.
+        Both require two series (actual and prediction), and compute a "difference" series by applying the
+        function ``diff_fn`` (default: absolute difference). The resulting series is then passed to the
+        functions ``fit()`` and ``score()``, respectively.
 
         `component_wise` is a boolean parameter indicating how the model should behave with multivariate inputs
         series. If set to True, the model will treat each series dimension independently by fitting a different
-        PyODScorer model for each dimension. If the input series has a dimension of `D`, the model will train
-        `D` PyODScorer models. If set to False, the model will concatenate the dimensions in the considered
-        `window` W and compute the score using only one trained PyODScorer model.
+        PyODScorer model for each dimension. If set to False, the model concatenates the dimensions in
+        each windows of length `W` and compute the score using only one underlying PyODScorer model.
 
         **Training with** ``fit()``:
 
         The input can be a series (univariate or multivariate) or multiple series. The series will be partitioned
         into equal size subsequences. The subsequence will be of size `W` * `D`, with:
 
-        * `W` being the size of the window given as a parameter `window` (w>0)
-        * `D` being the dimension of the series (`D`=1 if deterministic)
+        * `W` being the size of the window given as a parameter `window`
+        * `D` being the dimension of the series (`D` = 1 if univariate or if `component_wise` is set to True)
 
-        For a series of length `N`, (`N`-`W`+1)/`W` subsequences will be generated. If a list of series is given
+        For a series of length `N`, (`N` - `W` + 1)/W subsequences will be generated. If a list of series is given
         of length L, each series will be partitioned into subsequences, and the results will be concatenated into
-        an array of length L * number of subsequences.
+        an array of length L * number of subsequences of each series.
 
-        The model PyODScorer will be fitted on the generated subsequences.
+        The PyOD model will be fitted on the generated subsequences.
 
         If `component_wise` is set to True, the algorithm will be applied to each dimension independently. For each
-        dimension, a PyODScorer model will be trained.
+        dimension, a PyOD model will be trained.
 
         **Computing score with** ``score()``:
 
-        The input can be a series (univariate or multivariate) or a sequence of series. The given series must have
-        the same dimension `D` as the data used to train the PyODScorer model(s).
+        The input can be a series (univariate or multivariate) or a sequence of series. The given series must have the
+        same dimension `D` as the data used to train the PyOD model.
 
         For each series, if the series is multivariate of dimension `D`:
 
-        * if `component_wise` is set to False: it will return a univariate series (dimension=1). It represents
-         the anomaly score of the entire series in the considered window at each timestamp.
-        * if `component_wise` is set to True: it will return a multivariate series of dimension `D`. Each
-         dimension represents the anomaly score of the corresponding component of the input.
+        * if `component_wise` is set to False: it returns a univariate series (dimension=1). It represents
+          the anomaly score of the entire series in the considered window at each timestamp.
+        * if `component_wise` is set to True: it returns a multivariate series of dimension `D`. Each dimension
+          represents the anomaly score of the corresponding component of the input.
 
-        If the series is univariate, it will return a univariate series regardless of the parameter
+        If the series is univariate, it returns a univariate series regardless of the parameter
         `component_wise`.
 
         A window of size `W` is rolled on the series with a stride equal to 1. It is the same size window `W` used
-        during the training phase. At each timestamp, the previous `W` values will form a vector of size `W` * `D`
-        of the series (with `D` being the series dimensions). The PyODScorer model will then return the raw anomaly
-        score of the vector. The output will be a series of dimension one and length `N`-`W`+1, with `N` being the
-        length of the input series. Each value represents how anomalous the sample of the `W` previous values is.
+        during the training phase.
+        Each value in the score series thus represents how anomalous the sample of the `W` previous values is.
 
         Parameters
         ----------

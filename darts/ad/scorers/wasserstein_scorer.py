@@ -32,57 +32,59 @@ class WassersteinScorer(FittableAnomalyScorer):
         diff_fn="abs_diff",
     ) -> None:
         """
-        When calling ``fit(series)``, the series will be kept in memory and is considered as a subset of samples
-        representing the training 1-D distribution. When calling ``score(series)``, a moving window is applied on
-        the series, which results in a set of vectors of size `W`, where `W` is the window size.
-        The Wasserstein distance will be computed between the training distribution and each vector,
+        When calling ``fit(series)``, a moving window is applied, which results in a set of vectors of size `W`,
+        where `W` is the window size. These vectors are kept in memory, representing the training
+        distribution. The ``score(series)``
+        function will apply the same moving window.
+        The Wasserstein distance is computed between the training distribution and each vector,
         resulting in an anomaly score.
 
         Alternatively, the scorer has the functions ``fit_from_prediction()`` and ``score_from_prediction()``.
-        Both require two inputs and transform them into one series by applying the function ``diff_fn``
-        (default: absolute difference). The resulting series will then be passed to the respective function
-        ``fit()`` and ``score()``.
+        Both require two series (actual and prediction), and compute a "difference" series by applying the
+        function ``diff_fn`` (default: absolute difference). The resulting series is then passed to the
+        functions ``fit()`` and ``score()``, respectively.
 
-        `component_wise` is a boolean parameter indicating how the model should behave with multivariate inputs series.
-        If set to True, the model will treat each series dimension independently. If set to False, the model will
-        concatenate the dimension in the considered `window` W and compute the score.
+        `component_wise` is a boolean parameter indicating how the model should behave with multivariate inputs
+        series. If set to True, the model will treat each series dimension independently. If set to False, the model
+        concatenates the dimensions in each windows of length `W` and computes a single score for all dimensions.
 
         **Training with** ``fit()``:
 
-        The input can be a series (univariate or multivariate) or multiple series.
+        The input can be a series (univariate or multivariate) or multiple series. The series will be partitioned
+        into equal size subsequences. The subsequence will be of size `W` * `D`, with:
 
-        In case of a single series of length `N` and dimension `D`, the components are concatenated in an array of
-        length `N` * `D` (if `component_wise` is False) or `D` arrays of length `N` (if `component_wise` is True).
+        * `W` being the size of the window given as a parameter `window`
+        * `D` being the dimension of the series (`D` = 1 if univariate or if `component_wise` is set to True)
 
-        If a sequence of series is given of length `L`, their underlying arrays will be concatenated to
-        form a continuous array of length `L` * `D` * `N` (if `component_wise` is False) or `D` arrays of length
-        `L` * `N` (if `component_wise` is True).
+        For a series of length `N`, (`N` - `W` + 1)/W subsequences will be generated. If a list of series is given
+        of length L, each series will be partitioned into subsequences, and the results will be concatenated into
+        an array of length L * number of subsequences of each series.
 
         The arrays will be kept in memory, representing the training data distribution.
         In practice, the series or list of series can for instance represent residuals than can be
         considered independent and identically distributed (iid).
 
+        If `component_wise` is set to True, the algorithm will be applied to each dimension independently. For each
+        dimension, a PyOD model will be trained.
+
         **Computing score with** ``score()``:
 
-        The input is a series (univariate or multivariate) or a sequence of series.
+        The input can be a series (univariate or multivariate) or a sequence of series. The given series must have the
+        same dimension `D` as the data used to train the PyOD model.
 
         For each series, if the series is multivariate of dimension `D`:
 
-        * if `component_wise` is set to False: it will return a univariate series representing
+        * if `component_wise` is set to False: it returns a univariate series (dimension=1). It represents
           the anomaly score of the entire series in the considered window at each timestamp.
-        * if `component_wise` is set to True: it will return a multivariate series of dimension D. Each dimension
-          represents the anomaly score of the corresponding dimension of the input.
+        * if `component_wise` is set to True: it returns a multivariate series of dimension `D`. Each dimension
+          represents the anomaly score of the corresponding component of the input.
 
-        If the series is univariate, it will return a univariate series regardless of the parameter
+        If the series is univariate, it returns a univariate series regardless of the parameter
         `component_wise`.
 
-        A window of size `W` (given as a parameter named `window`) is rolled on the series (with a stride of 1).
-        At each timestamp, the previous `W` values are be used to form a subset of `W` * `D` elements, with `D`
-        being the dimension of the series. The subset values are considered to be observed from the same (empirical)
-        distribution. The Wasserstein distance will be computed between this subset and the train distribution. The
-        function will return a scalar indicating how different these two distributions are. The output will be
-        a series of dimension one and length `N` - `W`+1, with `N` being the length of the input series. Each value will
-        represent how anomalous the sample of the `D` previous values is.
+        A window of size `W` is rolled on the series with a stride equal to 1. It is the same size window `W` used
+        during the training phase.
+        Each value in the score series thus represents how anomalous the sample of the `W` previous values is.
 
         Parameters
         ----------
