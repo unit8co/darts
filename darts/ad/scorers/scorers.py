@@ -168,7 +168,7 @@ class AnomalyScorer(ABC):
         self,
         actual_series: TimeSeries,
         pred_series: TimeSeries,
-        name_of_scorer: str = None,
+        scorer_name: str = None,
         actual_anomalies: TimeSeries = None,
         title: str = None,
         metric: str = None,
@@ -184,7 +184,7 @@ class AnomalyScorer(ABC):
 
         It is possible to:
             - add a title to the figure with the parameter `title`
-            - give personalized name to the scorer with `name_of_scorer`
+            - give personalized name to the scorer with `scorer_name`
             - show the results of a metric for the anomaly score (AUC_ROC or AUC_PR),
               if the actual anomalies is provided.
 
@@ -196,7 +196,7 @@ class AnomalyScorer(ABC):
             The predicted series of `actual_series`.
         actual_anomalies
             The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
-        name_of_scorer
+        scorer_name
             Name of the scorer.
         title
             Title of the figure
@@ -239,15 +239,15 @@ class AnomalyScorer(ABC):
         if title is None:
             title = f"Anomaly results by scorer {self.__str__()}"
 
-        if name_of_scorer is None:
-            name_of_scorer = [f"anomaly score by {self.__str__()}"]
+        if scorer_name is None:
+            scorer_name = [f"anomaly score by {self.__str__()}"]
 
         return show_anomalies_from_scores(
             actual_series,
             model_output=pred_series,
             anomaly_scores=anomaly_score,
             window=self.window,
-            names_of_scorers=name_of_scorer,
+            names_of_scorers=scorer_name,
             actual_anomalies=actual_anomalies,
             title=title,
             metric=metric,
@@ -423,7 +423,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         self,
         series: TimeSeries,
         actual_anomalies: TimeSeries = None,
-        name_of_scorer: str = None,
+        scorer_name: str = None,
         title: str = None,
         metric: str = None,
     ):
@@ -438,7 +438,7 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         It is possible to:
             - add a title to the figure with the parameter `title`
-            - give personalized name to the scorer with `name_of_scorer`
+            - give personalized name to the scorer with `scorer_name`
             - show the results of a metric for the anomaly score (AUC_ROC or AUC_PR),
             if the actual anomalies is provided.
 
@@ -448,7 +448,7 @@ class FittableAnomalyScorer(AnomalyScorer):
             The series to visualize anomalies from.
         actual_anomalies
             The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
-        name_of_scorer
+        scorer_name
             Name of the scorer.
         title
             Title of the figure
@@ -477,14 +477,14 @@ class FittableAnomalyScorer(AnomalyScorer):
         if title is None:
             title = f"Anomaly results by scorer {self.__str__()}"
 
-        if name_of_scorer is None:
-            name_of_scorer = f"anomaly score by {self.__str__()}"
+        if scorer_name is None:
+            scorer_name = f"anomaly score by {self.__str__()}"
 
         return show_anomalies_from_scores(
             series,
             anomaly_scores=anomaly_score,
             window=self.window,
-            names_of_scorers=name_of_scorer,
+            names_of_scorers=scorer_name,
             actual_anomalies=actual_anomalies,
             title=title,
             metric=metric,

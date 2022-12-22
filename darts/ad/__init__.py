@@ -30,8 +30,7 @@ on time series.
 from .aggregators import AndAggregator, EnsembleSklearnAggregator, OrAggregator
 
 # anomaly models
-from .anomaly_model.filtering_am import FilteringAnomalyModel
-from .anomaly_model.forecasting_am import ForecastingAnomalyModel
+from .anomaly_model import FilteringAnomalyModel, ForecastingAnomalyModel
 
 # anomaly detectors
 from .detectors import QuantileDetector, ThresholdDetector

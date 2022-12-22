@@ -24,3 +24,6 @@ ground-truth time series indicating the presence of actual anomalies.
 Finally, the function :func:`show_anomalies()` can also be used to visualize the predictions
 (in-sample predictions and anomaly scores) of the anomaly model.
 """
+
+from .filtering_am import FilteringAnomalyModel
+from .forecasting_am import ForecastingAnomalyModel
