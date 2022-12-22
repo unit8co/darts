@@ -552,7 +552,7 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         If sequence of series is given, the scorer will be fitted on the concatenation of the sequence.
 
-        The assumptions is that the series `series` used for training are generally anomaly-free.
+        The assumption is that the series `series` used for training are generally anomaly-free.
 
         Parameters
         ----------
