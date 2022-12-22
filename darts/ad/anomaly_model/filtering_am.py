@@ -172,7 +172,7 @@ class FilteringAnomalyModel(AnomalyModel):
         actual_anomalies
             The ground truth of the anomalies (1 if it is an anomaly and 0 if not)
         names_of_scorers
-            Name of the scores. Must be a list of length equal to the number of scorers in the anomaly_model.
+            Name of the scorers. Must be a list of length equal to the number of scorers in the anomaly_model.
         title
             Title of the figure
         metric
