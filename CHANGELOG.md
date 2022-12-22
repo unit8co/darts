@@ -49,6 +49,8 @@ Darts is still in an early development phase, and we cannot always guarantee bac
   [#1373](https://github.com/unit8co/darts/pull/1373) by [Błażej Nowicki](https://github.com/BlazejNowicki).
 - Improvement to `TimeSeries.gaps()` [#1265](https://github.com/unit8co/darts/pull/1265) by
   [Antoine Madrona](https://github.com/madtoinou).
+- Speedup of `TimeSeries.quantile_timeseries()` method
+  [#1351](https://github.com/unit8co/darts/pull/1351) by [@tranquilitysmile](https://github.com/tranquilitysmile).
 - Some dependencies which can be hard to install (LightGBM, Catboost, XGBoost, Prophet, Statsforecast)
   are not required anymore (if not installed the corresponding models will not be available)
   [#1360](https://github.com/unit8co/darts/pull/1360) by [Antoine Madrona](https://github.com/madtoinou).
@@ -63,8 +65,14 @@ Darts is still in an early development phase, and we cannot always guarantee bac
   [#1310](https://https://github.com/unit8co/darts/pull/1310) by [Rijk van der Meulen](https://github.com/rijkvandermeulen)
 - Fixed a bug in `TimeSeries.resample()` [#1350](https://github.com/unit8co/darts/pull/1350)
   by [Antoine Madrona](https://github.com/madtoinou).
+- Fixed splitting methods when split point is not in the series
+  [#1415](https://github.com/unit8co/darts/pull/1415) by [@DavidKleindienst](https://github.com/DavidKleindienst)
+- Fixed issues with `append_values()` and `prepend_values()` not correctly extending `RangeIndex`es
+  [#1435](https://github.com/unit8co/darts/pull/1435) by [Matt Bilton](https://github.com/mabilton).
 - Fixed some issues with time zones [#1343](https://github.com/unit8co/darts/pull/1343)
   by [Antoine Madrona](https://github.com/madtoinou).
+- Fixed some issues when using a single target series with `RegressionEnsembleModel`
+  [#1357](https://github.com/unit8co/darts/pull/1357) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed treatment of stochastic models in ensemble models
   [#1423](https://github.com/unit8co/darts/pull/1423) by [Eliane Maalouf](https://github.com/eliane-maalouf).
 
