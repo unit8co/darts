@@ -500,7 +500,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         The function ``diff_fn`` passed as a parameter to the scorer, will transform `pred_series` and `actual_series`
         into one "difference" series. By default, ``diff_fn`` will compute the absolute difference
         (Default: "abs_diff").
-        If actual_series and pred_seriesare sequences, ``diff_fn`` will be applied to all pairwise elements
+        If actual_series and pred_series are sequences, ``diff_fn`` will be applied to all pairwise elements
         of the sequences.
 
         The scorer will then transform this series into an anomaly score. If a sequence of series is given,
