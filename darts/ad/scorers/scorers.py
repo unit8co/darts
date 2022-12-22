@@ -111,7 +111,7 @@ class AnomalyScorer(ABC):
 
     @abstractmethod
     def __str__(self):
-        "returns the name of the scorer"
+        """returns the name of the scorer"""
         pass
 
     def eval_accuracy_from_prediction(
