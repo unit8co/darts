@@ -1,8 +1,6 @@
 import cProfile
 import pstats
 import time
-from functools import reduce
-from itertools import product
 from pstats import SortKey
 from typing import Optional, Sequence, Union
 
@@ -98,117 +96,6 @@ def create_test_series(num_timesteps: int, equal_freq: bool, use_range_idx: bool
     return target_series, past_covariates, future_covariates
 
 
-def test_correctness(
-    equal_freq: bool,
-    use_range_idx: bool,
-    num_timesteps: int = 1000,
-    print_freq: int = 1000,
-):
-
-    """
-    Checks the correctness of `create_lagged_data` against what's produced by `_create_lagged_data` over
-    a very large number of input paramter combinations. An error is thrown if the `X`, `y`, or `times`
-    produced by `create_lagged_data` doesn't exactly match what's produced by `_create_lagged_data`.
-    """
-
-    target_series, past_covariates, future_covariates = create_test_series(
-        num_timesteps, equal_freq, use_range_idx
-    )
-
-    # Check case where `past_covariates` is and is not specified:
-    past_covariates_combos = [past_covariates, None]
-    # Check case where `future_covariates` is and is not specified:
-    future_covariates_combos = [future_covariates, None]
-    # Single lags, multiple lags, multiple + noncontiguous lags:
-    lags_combos = lags_past_covariates_combos = lags_future_covariates_combos = (
-        [-1],
-        [-2, -1],
-        [-5, -2],
-        [-6, -4, -2],
-    )
-    # Try out variety of `output_chunk_length`s:
-    output_chunk_length_combos = [1, 5, 10, 20]
-    # With and without multiple model predictions:
-    multi_models_combos = [False, True]
-    # Differing max number of `max_sample_per_ts` (`None` means no limit on number of samples)""
-    max_sample_per_ts_combos = [1, 5, 10, 20, None]
-    # Take Cartersian product of all input combinations:
-    all_combos = [
-        past_covariates_combos,
-        future_covariates_combos,
-        lags_combos,
-        lags_past_covariates_combos,
-        lags_future_covariates_combos,
-        output_chunk_length_combos,
-        multi_models_combos,
-        max_sample_per_ts_combos,
-    ]
-    num_param_combos = reduce(lambda a, b: a * b, [len(combo) for combo in all_combos])
-    for i, (
-        past_covariates,
-        future_covariates,
-        lags,
-        lags_past_covariates,
-        lags_future_covariates,
-        output_chunk_length,
-        multi_models,
-        max_samples_per_ts,
-    ) in enumerate(product(*all_combos)):
-
-        # If `*_covariates` is not specified, set `lags_*_covariates` to `None`,
-        # otherwise `_create_lagged_data` throws an error:
-        if past_covariates is None:
-            lags_past_covariates = None
-        if future_covariates is None:
-            lags_future_covariates = None
-
-        # Current implmentation:
-        (X, y, Ts) = _create_lagged_data(
-            target_series,
-            lags=lags,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            lags_past_covariates=lags_past_covariates,
-            lags_future_covariates=lags_future_covariates,
-            output_chunk_length=output_chunk_length,
-            multi_models=multi_models,
-            is_training=True,
-            max_samples_per_ts=max_samples_per_ts,
-        )
-        # Refactored implementation:
-        my_X, my_y, my_Ts = create_lagged_data(
-            target_series,
-            lags=lags,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            lags_past_covariates=lags_past_covariates,
-            lags_future_covariates=lags_future_covariates,
-            output_chunk_length=output_chunk_length,
-            multi_models=multi_models,
-            max_samples_per_ts=max_samples_per_ts,
-            use_moving_windows=equal_freq,
-        )
-
-        try:
-            assert list(my_Ts) == list(Ts[0])
-        except AssertionError:
-            raise ValueError("Ts incorrect")
-
-        try:
-            assert np.allclose(my_X.squeeze(), X.squeeze())
-        except AssertionError:
-            raise ValueError("X incorrect")
-
-        try:
-            assert np.allclose(my_y.squeeze(), y.squeeze())
-        except AssertionError:
-            raise ValueError("y incorrect")
-
-        if (i + 1) % print_freq == 0:
-            print(f"Passed {i+1}/{num_param_combos}")
-    return None
-
-
 def perform_profiling(
     num_repeats: int,
     lags: Sequence[int],
@@ -220,6 +107,7 @@ def perform_profiling(
     use_moving_windows: bool,
     equal_freq: bool,
     num_timesteps: int = 10000,
+    use_range_idx: bool = True,
 ):
     """
     Returns the profiling statistics of `create_lagged_data` over `num_repeats` repititions of calling
@@ -228,7 +116,7 @@ def perform_profiling(
     """
 
     target_series, past_covariates, future_covariates = create_test_series(
-        num_timesteps, equal_freq
+        num_timesteps, equal_freq, use_range_idx
     )
 
     with cProfile.Profile() as pr:
@@ -260,6 +148,7 @@ def perform_benchmarks(
     max_samples_per_ts: int,
     multi_models: bool,
     num_timesteps: int = 10000,
+    check_inputs: bool = True,
 ):
     """
     Benchmarks the performance of `create_lagged_data` against `_create_lagged_data` across three scenarios:
@@ -299,6 +188,7 @@ def perform_benchmarks(
             params["use_moving_windows"],
             params["equal_freq"],
             num_timesteps,
+            check_inputs,
         )
         print()
 
@@ -315,6 +205,7 @@ def _perform_single_benchmark(
     use_moving_windows: bool,
     equal_freq: bool,
     num_timesteps: int,
+    check_inputs: bool,
 ):
 
     """
@@ -327,7 +218,7 @@ def _perform_single_benchmark(
 
     start_time = time.time()
     for _ in range(num_repeats):
-        (X, y, Ts) = _create_lagged_data(
+        _ = _create_lagged_data(
             target_series,
             lags=lags,
             past_covariates=past_covariates,
@@ -343,7 +234,7 @@ def _perform_single_benchmark(
 
     start_time = time.time()
     for _ in range(num_repeats):
-        my_X, my_y, my_Ts = create_lagged_data(
+        _ = create_lagged_data(
             target_series,
             lags=lags,
             past_covariates=past_covariates,
@@ -354,13 +245,9 @@ def _perform_single_benchmark(
             multi_models=multi_models,
             max_samples_per_ts=max_samples_per_ts,
             use_moving_windows=use_moving_windows,
+            check_inputs=check_inputs,
         )
     refact_implem_time = time.time() - start_time
-
-    # Ensure reimplemented function is correct:
-    assert np.allclose(my_X.squeeze(), X.squeeze())
-    assert np.allclose(my_y.squeeze(), y.squeeze())
-    assert list(my_Ts) == list(Ts[0])
 
     print(
         f"Current implementation: {current_implem_time} secs for {num_repeats} repetitions"

@@ -8,7 +8,12 @@ from darts.utils.timeseries_generation import linear_timeseries
 
 
 class GetSharedTimesTestCase(DartsBaseTestClass):
-    def test_equal_frequency_range_index(self):
+
+    """
+    Tests `get_shared_times` function defined in `darts.utils.data.tabularization`.
+    """
+
+    def test_shared_times_equal_freq_range_idx(self):
         series_1 = linear_timeseries(start=1, end=11, freq=2)
         series_2 = linear_timeseries(start=3, end=13, freq=2)
         series_3 = linear_timeseries(start=5, end=15, freq=2)
@@ -42,7 +47,7 @@ class GetSharedTimesTestCase(DartsBaseTestClass):
             )
         )
 
-    def test_equal_frequency_datetime_index(self):
+    def test_shared_times_equal_freq_datetime_idx(self):
         series_1 = linear_timeseries(
             start=pd.Timestamp("1/1/2000"), end=pd.Timestamp("1/11/2000"), freq="2d"
         )
@@ -82,7 +87,7 @@ class GetSharedTimesTestCase(DartsBaseTestClass):
             )
         )
 
-    def test_unequal_frequency_range_index(self):
+    def test_shared_times_unequal_freq_range_idx(self):
         series_1 = linear_timeseries(start=1, end=11, freq=1)
         series_2 = linear_timeseries(start=3, end=13, freq=2)
         series_3 = linear_timeseries(start=5, end=17, freq=3)
@@ -132,7 +137,7 @@ class GetSharedTimesTestCase(DartsBaseTestClass):
             )
         )
 
-    def test_unequal_frequency_datetime_index(self):
+    def test_shared_times_unequal_freq_datetime_idx(self):
         series_1 = linear_timeseries(
             start=pd.Timestamp("1/1/2000"), end=pd.Timestamp("1/11/2000"), freq="2d"
         )
@@ -186,7 +191,7 @@ class GetSharedTimesTestCase(DartsBaseTestClass):
             )
         )
 
-    def test_no_overlap_range_index(self):
+    def test_shared_times_no_overlap_range_idx(self):
         series_1 = linear_timeseries(start=1, end=11, freq=2)
         series_2 = linear_timeseries(start=series_1.end_time() + 1, length=5, freq=3)
         self.assertEqual(get_shared_times(series_1, series_2), None)
@@ -194,7 +199,7 @@ class GetSharedTimesTestCase(DartsBaseTestClass):
         self.assertEqual(get_shared_times(series_1, series_2, series_2), None)
         self.assertEqual(get_shared_times(series_1, series_1, series_2, series_2), None)
 
-    def test_no_overlap_datetime_index(self):
+    def test_shared_times_no_overlap_datetime_idx(self):
         series_1 = linear_timeseries(
             start=pd.Timestamp("1/1/2000"), end=pd.Timestamp("1/11/2000"), freq="2d"
         )
@@ -206,7 +211,7 @@ class GetSharedTimesTestCase(DartsBaseTestClass):
         self.assertEqual(get_shared_times(series_1, series_2, series_2), None)
         self.assertEqual(get_shared_times(series_1, series_1, series_2, series_2), None)
 
-    def test_single_time_point_overlap_range_index(self):
+    def test_shared_times_single_time_point_overlap_range_idx(self):
         series_1 = linear_timeseries(start=1, end=11, freq=2)
         series_2 = linear_timeseries(start=series_1.end_time(), length=5, freq=3)
         overlap_val = series_1.end_time()
@@ -217,7 +222,7 @@ class GetSharedTimesTestCase(DartsBaseTestClass):
             get_shared_times(series_1, series_1, series_2, series_2), overlap_val
         )
 
-    def test_single_time_point_overlap_datetime_index(self):
+    def test_shared_times_single_time_point_overlap_datetime_idx(self):
         series_1 = linear_timeseries(
             start=pd.Timestamp("1/1/2000"), end=pd.Timestamp("1/11/2000"), freq="2d"
         )
@@ -230,7 +235,7 @@ class GetSharedTimesTestCase(DartsBaseTestClass):
             get_shared_times(series_1, series_1, series_2, series_2), overlap_val
         )
 
-    def test_different_time_index_types_error(self):
+    def test_shared_times_different_time_index_types_error(self):
         series_1 = linear_timeseries(start=1, length=5, freq=1)
         series_2 = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=5, freq="d")
         with self.assertRaises(ValueError) as e:
@@ -244,7 +249,7 @@ class GetSharedTimesTestCase(DartsBaseTestClass):
             str(e.exception),
         )
 
-    def test_identical_inputs_range_index(self):
+    def test_shared_times_identical_inputs_range_idx(self):
         series = linear_timeseries(start=0, length=5, freq=1)
         self.assertTrue(series.time_index.equals(get_shared_times(series)))
         self.assertTrue(series.time_index.equals(get_shared_times(series, series)))
@@ -252,7 +257,7 @@ class GetSharedTimesTestCase(DartsBaseTestClass):
             series.time_index.equals(get_shared_times(series, series, series))
         )
 
-    def test_identical_inputs_datetime_index(self):
+    def test_shared_times_identical_inputs_datetime_idx(self):
         series = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=5, freq="d")
         self.assertTrue(series.time_index.equals(get_shared_times(series)))
         self.assertTrue(series.time_index.equals(get_shared_times(series, series)))
@@ -260,7 +265,7 @@ class GetSharedTimesTestCase(DartsBaseTestClass):
             series.time_index.equals(get_shared_times(series, series, series))
         )
 
-    def test_unspecified_inputs(self):
+    def test_shared_times_unspecified_inputs(self):
         series = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=5, freq="d")
         self.assertEqual(get_shared_times(None), None)
         self.assertTrue(series.time_index.equals(get_shared_times(series, None)))
@@ -269,7 +274,7 @@ class GetSharedTimesTestCase(DartsBaseTestClass):
             series.time_index.equals(get_shared_times(None, series.time_index, None))
         )
 
-    def test_time_index_inputs(self):
+    def test_shared_times_time_index_inputs(self):
         series_1 = linear_timeseries(start=0, end=10, freq=1)
         series_2 = linear_timeseries(start=0, end=20, freq=2)
         # `stop=10+1` since `stop` is exclusive
@@ -285,3 +290,9 @@ class GetSharedTimesTestCase(DartsBaseTestClass):
                 get_shared_times(series_1.time_index, series_2.time_index)
             )
         )
+
+    def test_shared_times_empty_input(self):
+        series = linear_timeseries(start=0, length=0, freq=1)
+        self.assertEqual(get_shared_times(series), None)
+        self.assertEqual(get_shared_times(series.time_index), None)
+        self.assertEqual(get_shared_times(series, series.time_index), None)

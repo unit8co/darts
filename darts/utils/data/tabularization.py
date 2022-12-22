@@ -9,6 +9,7 @@ from numpy.lib.stride_tricks import as_strided
 
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.timeseries import TimeSeries
+from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
 
@@ -28,16 +29,12 @@ def _create_lagged_data(
     """
     Helper function that creates training/validation matrices (X and y as required in sklearn), given series and
     max_samples_per_ts.
-
     X has the following structure:
     lags_target | lags_past_covariates | lags_future_covariates
-
     Where each lags_X has the following structure (lags_X=[-2,-1] and X has 2 components):
     lag_-2_comp_1_X | lag_-2_comp_2_X | lag_-1_comp_1_X | lag_-1_comp_2_X
-
     y has the following structure (output_chunk_length=4 and target has 2 components):
     lag_+0_comp_1_target | lag_+0_comp_2_target | ... | lag_+3_comp_1_target | lag_+3_comp_2_target
-
     Parameters
     ----------
     target_series
@@ -97,13 +94,13 @@ def _create_lagged_data(
             for future_target_lag in range(output_chunk_length):
                 df_y.append(
                     df_target.shift(-future_target_lag).rename(
-                        columns=lambda x: f"{x}_output_chunk_length_lag{future_target_lag}"
+                        columns=lambda x: f"{x}_horizon_lag{future_target_lag}"
                     )
                 )
         else:
             df_y.append(
                 df_target.shift(-output_chunk_length + 1).rename(
-                    columns=lambda x: f"{x}_output_chunk_length_lag{output_chunk_length-1}"
+                    columns=lambda x: f"{x}_horizon_lag{output_chunk_length-1}"
                 )
             )
 
@@ -169,6 +166,63 @@ def _create_lagged_data(
     return X, y, Ts
 
 
+def _add_static_covariates(model, series, features):
+    """
+    Add static covariates to the features. Accounts for series with potentially different static covariates
+    by padding with 0 to accomodate for the maximum number of available static_covariates in any of the given
+    series in the sequence. If no static covariates are provided for a given series, its corresponding features
+    are padded with 0.
+    """
+
+    series = series2seq(series)
+    reps = features.shape[0] // len(series)
+    # collect static covariates info
+    map = {"covs_width": [], "values": []}
+    for ts in series:
+        if ts.static_covariates is not None:
+            # reshape with order="F" to ensure that the covariates are read column wise
+            scovs = ts.static_covariates_values(copy=False).reshape(1, -1, order="F")
+            map["covs_width"].append(scovs.shape[1])
+            map["values"].append(scovs)
+        else:
+            map["covs_width"].append(0)
+            map["values"].append(np.array([]))
+
+    max_width = max(map["covs_width"])
+
+    if max_width == 0:
+        if (
+            hasattr(model, "n_features_in_")
+            and model.n_features_in_ is not None
+            and model.n_features_in_ > features.shape[1]
+        ):
+            # for when series in prediction do not have static covariates but some of the training series did
+            pad_zeros = np.zeros((1, model.n_features_in_ - features.shape[1]))
+            return np.concatenate(
+                [features, np.tile(pad_zeros, reps=(reps, 1))], axis=1
+            )
+        else:
+            return features
+
+    else:
+        # at least one series in the sequence has static covariates
+        static_covs = []
+
+        # build static covariates array
+        for i in range(len(series)):
+            pad_zeros = np.zeros((1, max_width - map["covs_width"][i]))
+            scovs = (
+                np.concatenate((map["values"][i], pad_zeros), axis=1)
+                if map["covs_width"][i] > 0
+                else pad_zeros
+            )
+            static_covs.append(np.tile(scovs, reps=(reps, 1)))
+        static_covs = np.concatenate(static_covs, axis=0)
+
+        # concatenate static covariates to features
+        return np.concatenate([features, static_covs], axis=1)
+
+
 #
 #   Refactored Implementation:
 #
@@ -185,7 +239,7 @@ def create_lagged_data(
     max_samples_per_ts: Optional[int] = None,
     multi_models: bool = True,
     check_inputs: bool = True,
-    use_moving_windows: bool = False,
+    use_moving_windows: bool = True,
     is_training: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray, pd.Index]:
 
@@ -354,7 +408,7 @@ def create_lagged_training_data(
     max_samples_per_ts: Optional[int] = None,
     multi_models: bool = True,
     check_inputs: bool = True,
-    use_moving_windows: bool = False,
+    use_moving_windows: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray, pd.Index]:
     return create_lagged_data(
         target_series=target_series,
@@ -381,9 +435,9 @@ def create_lagged_prediction_data(
     lags_future_covariates: Optional[Sequence[int]] = None,
     max_samples_per_ts: Optional[int] = None,
     check_inputs: bool = True,
-    use_moving_windows: bool = False,
-) -> Tuple[np.ndarray, np.ndarray, pd.Index]:
-    return create_lagged_data(
+    use_moving_windows: bool = True,
+) -> Tuple[np.ndarray, pd.Index]:
+    X, _, times = create_lagged_data(
         target_series=target_series,
         past_covariates=past_covariates,
         future_covariates=future_covariates,
@@ -395,6 +449,7 @@ def create_lagged_prediction_data(
         use_moving_windows=use_moving_windows,
         is_training=False,
     )
+    return X, times
 
 
 def _create_lagged_data_by_moving_window(
@@ -424,7 +479,7 @@ def _create_lagged_data_by_moving_window(
     -----
 
     """
-    feature_times, max_lags = get_feature_times(
+    feature_times, min_lags, max_lags = get_feature_times(
         target_series,
         past_covariates,
         future_covariates,
@@ -433,71 +488,76 @@ def _create_lagged_data_by_moving_window(
         lags_future_covariates,
         output_chunk_length,
         is_training=is_training,
+        return_min_and_max_lags=True,
         check_inputs=check_inputs,
-        return_max_lags=True,
     )
+    if check_inputs:
+        series_and_lags_not_specified = [max_lag is None for max_lag in max_lags]
+        raise_if(
+            all(series_and_lags_not_specified),
+            "Must specify at least one series-lags pair.",
+        )
     time_bounds = get_shared_times_bounds(*feature_times)
     raise_if(
         time_bounds is None,
         "Specified series do not share any common times for which features can be created.",
     )
-    if isinstance(target_series.time_index, pd.DatetimeIndex):
-        times = pd.date_range(
-            start=time_bounds[0], end=time_bounds[1], freq=target_series.freq
+    freq = _get_freqs(target_series, past_covariates, future_covariates)[0]
+    if isinstance(time_bounds[0], int):
+        times = pd.RangeIndex(
+            start=time_bounds[0], stop=time_bounds[1] + freq, step=freq
         )
     else:
-        freq = target_series.freq
-        # Since `stop` is exclusive:
-        stop = time_bounds[1] + freq
-        times = pd.RangeIndex(start=time_bounds[0], stop=stop, step=freq)
+        times = pd.date_range(start=time_bounds[0], end=time_bounds[1], freq=freq)
     num_samples = len(times)
     if num_samples > max_samples_per_ts:
         times = times[-max_samples_per_ts:]
         num_samples = max_samples_per_ts
-    window_start_time = times[0]
     # Construct features:
     X = []
-    for i, (series_i, lags_i, max_lag_i) in enumerate(
+    for i, (series_i, lags_i, min_lag_i, max_lag_i) in enumerate(
         zip(
             [target_series, past_covariates, future_covariates],
             [lags, lags_past_covariates, lags_future_covariates],
+            min_lags,
             max_lags,
         )
     ):
-        series_and_lags_specified = max_lag_i is not None
+        series_and_lags_specified = min_lag_i is not None
         is_target_series = is_training and (i == 0)
-        if series_and_lags_specified or is_target_series:
-            window_start_idx = np.searchsorted(series_i.time_index, window_start_time)
-            window_end_idx = window_start_idx + num_samples
+        if is_target_series or series_and_lags_specified:
+            time_index_i = series_i.time_index
+            time_idx_too_short = (not is_target_series) and (
+                time_index_i[-1] < times[-1]
+            )
+            if time_idx_too_short:
+                time_index_i = _extend_time_index(
+                    time_index_i, series_i.freq, new_end=times[-1]
+                )
+            start_time_idx = np.searchsorted(time_index_i, times[0])
         if series_and_lags_specified:
+            window_start_idx = start_time_idx - min_lag_i
+            window_end_idx = window_start_idx + num_samples
+            window_len = max_lag_i - min_lag_i + 1
             vals = series_i.all_values(copy=False)[
-                window_start_idx - max_lag_i : window_end_idx, :, :
+                (window_start_idx - window_len + 1) : window_end_idx, :, :
             ]
             windows = strided_moving_window(
-                vals, window_len=max_lag_i + 1, stride=1, axis=0, check_inputs=False
+                vals, window_len, stride=1, axis=0, check_inputs=False
             )
-            # Last point in each window corresponds to time `t`, so need
-            lags_to_extract = (
-                np.array(lags_i, dtype=int) - 1
-                if is_training
-                else np.array(lags_i, dtype=int)
-            )
+            lags_to_extract = np.array(lags_i, dtype=int) + min_lag_i - 1
             lagged_vals = _extract_lagged_vals_from_windows(windows, lags_to_extract)
             X.append(lagged_vals)
         # Required for creating labels:
         if is_target_series:
-            # Add back `max_lag_i`, since we don't want lagged values when creating labels:
-            label_window_start_idx = window_start_idx
-    raise_if(
-        check_inputs and len(X) == 0, "Must specify at least one series-lags pair."
-    )
+            target_start_time_idx = start_time_idx
     X = np.concatenate(X, axis=1)
     if is_training:
         if multi_models:
-            label_window_end_idx = label_window_start_idx + num_samples
+            target_window_end_idx = target_start_time_idx + num_samples
             # Need to include end point, so `+1`:
             vals = target_series.all_values(copy=False)[
-                label_window_start_idx : label_window_end_idx + output_chunk_length - 1,
+                target_start_time_idx : target_window_end_idx + output_chunk_length - 1,
                 :,
                 :,
             ]
@@ -510,10 +570,10 @@ def _create_lagged_data_by_moving_window(
             )
             y = _extract_lagged_vals_from_windows(windows)
         else:
-            label_window_start_idx += output_chunk_length - 1
-            label_window_end_idx = label_window_start_idx + num_samples
+            target_start_time_idx += output_chunk_length - 1
+            target_window_end_idx = target_start_time_idx + num_samples
             y = target_series.all_values(copy=False)[
-                label_window_start_idx:label_window_end_idx, :, :
+                target_start_time_idx:target_window_end_idx, :, :
             ]
     else:
         y = None
@@ -567,7 +627,7 @@ def _create_lagged_data_by_intersecting_times(
     values in each timeseries by using the offset indexing arrays. This approach is used if
     we *cannot* assume that the specified series are of the same frequency.
     """
-    feature_times, max_lags = get_feature_times(
+    feature_times, min_lags, _ = get_feature_times(
         target_series,
         past_covariates,
         future_covariates,
@@ -576,9 +636,15 @@ def _create_lagged_data_by_intersecting_times(
         lags_future_covariates,
         output_chunk_length,
         is_training=is_training,
+        return_min_and_max_lags=True,
         check_inputs=check_inputs,
-        return_max_lags=True,
     )
+    if check_inputs:
+        series_and_lags_not_specified = [min_lag is None for min_lag in min_lags]
+        raise_if(
+            all(series_and_lags_not_specified),
+            "Must specify at least one series-lags pair.",
+        )
     shared_times = get_shared_times(*feature_times, sort=True)
     raise_if(
         shared_times is None,
@@ -587,20 +653,27 @@ def _create_lagged_data_by_intersecting_times(
     if len(shared_times) > max_samples_per_ts:
         shared_times = shared_times[-max_samples_per_ts:]
     X = []
-    for i, (series_i, lags_i, max_lag_i) in enumerate(
+    for i, (series_i, lags_i, min_lag_i) in enumerate(
         zip(
             [target_series, past_covariates, future_covariates],
             [lags, lags_past_covariates, lags_future_covariates],
-            max_lags,
+            min_lags,
         )
     ):
-        series_and_lags_specified = max_lag_i is not None
+        series_and_lags_specified = min_lag_i is not None
         is_target_series = is_training and (i == 0)
         if series_and_lags_specified or is_target_series:
-            shared_time_idx = np.searchsorted(series_i.time_index, shared_times)
+            time_index_i = series_i.time_index
+            time_idx_too_short = (not is_target_series) and (
+                time_index_i[-1] < shared_times[-1]
+            )
+            if time_idx_too_short:
+                time_index_i = _extend_time_index(
+                    time_index_i, series_i.freq, new_end=shared_times[-1]
+                )
+            shared_time_idx = np.searchsorted(time_index_i, shared_times).reshape(-1, 1)
         if series_and_lags_specified:
-            idx_to_get = shared_time_idx.reshape(-1, 1) + np.array(lags_i, dtype=int)
-            idx_to_get += 1 if not is_training else 0
+            idx_to_get = shared_time_idx + np.array(lags_i, dtype=int)
             # Before reshaping: lagged_vals.shape = (n_observations, num_lags, n_components, n_samples)
             lagged_vals = series_i.all_values(copy=False)[idx_to_get, :, :]
             # After reshaping: lagged_vals.shape = (n_observations, num_lags*n_components, n_samples)
@@ -611,23 +684,16 @@ def _create_lagged_data_by_intersecting_times(
         # `target_series` indices required for creating labels:
         if is_target_series:
             label_shared_time_idx = shared_time_idx
-    raise_if(
-        check_inputs and len(X) == 0, "Must specify at least one series-lags pair."
-    )
     X = np.concatenate(X, axis=1)
     if is_training:
         if multi_models:
             # All points between time `t` and `t + output_chunk_length` are labels:
-            time_idx_to_get = label_shared_time_idx.reshape(-1, 1) + np.arange(
-                output_chunk_length
-            )
+            idx_to_get = label_shared_time_idx + np.arange(output_chunk_length)
         else:
             # Only point at time `t + output_chunk_length` is a label:
-            time_idx_to_get = (
-                label_shared_time_idx.reshape(-1, 1) + output_chunk_length - 1
-            )
+            idx_to_get = label_shared_time_idx + output_chunk_length - 1
         # Before reshaping: lagged_vals.shape = (n_observations, num_lags, n_components, n_samples)
-        lagged_vals = target_series.all_values(copy=False)[time_idx_to_get, :, :]
+        lagged_vals = target_series.all_values(copy=False)[idx_to_get, :, :]
         # After reshaping: lagged_vals.shape = (n_observations, num_lags*n_components, n_samples)
         y = lagged_vals.reshape(lagged_vals.shape[0], -1, lagged_vals.shape[-1])
     else:
@@ -638,6 +704,7 @@ def _create_lagged_data_by_intersecting_times(
 FeatureTimes = Tuple[
     Union[pd.Index, None], Union[pd.Index, None], Union[pd.Index, None]
 ]
+MinLags = Tuple[Union[int, None], Union[int, None], Union[int, None]]
 MaxLags = Tuple[Union[int, None], Union[int, None], Union[int, None]]
 
 
@@ -648,11 +715,11 @@ def get_feature_times(
     lags: Optional[Sequence[int]] = None,
     lags_past_covariates: Optional[Sequence[int]] = None,
     lags_future_covariates: Optional[Sequence[int]] = None,
-    output_chunk_length: Optional[int] = None,
+    output_chunk_length: int = 1,
     is_training: bool = True,
+    return_min_and_max_lags: bool = False,
     check_inputs: bool = True,
-    return_max_lags: bool = False,
-) -> Union[FeatureTimes, Tuple[FeatureTimes, MaxLags]]:
+) -> Union[FeatureTimes, Tuple[FeatureTimes, MinLags, MaxLags]]:
     """
     Returns a tuple containing the times in `target_series`, the times in `past_covariates`, and the times in
     `future_covariates` that *could* be used to create features. More specifically, we note that:
@@ -695,11 +762,6 @@ def get_feature_times(
     output_chunk_length
         Optionally, the number of timesteps ahead into the future the regression model is to predict. This is ignored
         if `is_training = False`.
-    multi_models
-        Optionally, specifies whether the regression model predicts multiple timesteps into the future. If `True`,
-        then the regression model is assumed to predict all of the timesteps from time `t` to `t+output_chunk_length`.
-        If `False`, then the regression model is assumed to predict *only* the timestep at `t+output_chunk_length`.
-        This is ignored if `is_training = False`.
     is_training
         Optionally, specifies that training data is to be generated from the specified series. If `True`,
         `target_series`, `output_chunk_length`, and `multi_models` must all be specified.
@@ -736,8 +798,8 @@ def get_feature_times(
 
     """
     raise_if(
-        is_training and ((target_series is None) or (output_chunk_length is None)),
-        "Must specify `target_series` and `output_chunk_length` when `is_training = True`.",
+        is_training and (target_series is None),
+        "Must specify `target_series` when `is_training = True`.",
     )
     if check_inputs:
         raise_if(
@@ -745,7 +807,7 @@ def get_feature_times(
             "`output_chunk_length` must be a positive `int`.",
         )
         _check_lags(lags, lags_past_covariates, lags_future_covariates)
-    feature_times, max_lags = [], []
+    feature_times, min_lags, max_lags = [], [], []
     for name_i, series_i, lags_i in zip(
         ["target_series", "past_covariates", "future_covariates"],
         [target_series, past_covariates, future_covariates],
@@ -759,14 +821,18 @@ def get_feature_times(
                 is_training,
                 name_i,
             )
-        times_i = series_i.time_index if series_i is not None else None
-        max_lag_i = -min(lags_i) if lags_i is not None else None
-        series_specified = times_i is not None
-        lags_specified = max_lag_i is not None
+        series_specified = series_i is not None
+        lags_specified = lags_i is not None
         is_label_series = is_training and name_i == "target_series"
+        times_i = series_i.time_index if series_specified else None
+        max_lag_i = -min(lags_i) if lags_specified else None
+        min_lag_i = -max(lags_i) if lags_specified else None
         if is_label_series:
             end_idx = -output_chunk_length + 1 if output_chunk_length > 1 else None
             times_i = times_i[:end_idx]
+        elif series_specified and lags_specified:
+            new_end = times_i[-1] + series_i.freq * min_lag_i
+            times_i = _extend_time_index(times_i, series_i.freq, new_end)
         if series_specified and lags_specified:
             times_i = times_i[max_lag_i:]
         elif (not is_label_series) and (series_specified ^ lags_specified):
@@ -778,8 +844,17 @@ def get_feature_times(
                 f"`{specified}` was specified without accompanying `{unspecified}` and, thus, will be ignored."
             )
         feature_times.append(times_i)
-        max_lags.append(max_lag_i)
-    return (feature_times, max_lags) if return_max_lags else feature_times
+        if series_specified and lags_specified:
+            min_lags.append(min_lag_i)
+            max_lags.append(max_lag_i)
+        else:
+            min_lags.append(None)
+            max_lags.append(None)
+    return (
+        (feature_times, min_lags, max_lags)
+        if return_min_and_max_lags
+        else feature_times
+    )
 
 
 def get_shared_times(
@@ -836,6 +911,7 @@ def get_shared_times(
             if isinstance(specified_inputs[0], TimeSeries)
             else specified_inputs[0]
         )
+        shared_times = None if len(shared_times) == 0 else shared_times
     else:
         shared_times = reduce(intersection_func, specified_inputs)
         # Empty intersection may result from intersecting time indices being of different types - throw error if so:
@@ -906,7 +982,7 @@ def get_shared_times_bounds(
     """
     start_times, end_times = [], []
     for val in series_or_times:
-        if val is not None:
+        if (val is not None) and (len(val) > 0):
             start_times.append(
                 val.start_time() if isinstance(val, TimeSeries) else val[0]
             )
@@ -927,7 +1003,7 @@ def get_shared_times_bounds(
         # be 'converted' to `None` in next line:
         bounds = (max(start_times), min(end_times)) if start_times else (1, -1)
         # Specified timeseries share no overlapping periods.
-        if bounds[1] <= bounds[0]:
+        if bounds[1] < bounds[0]:
             bounds = None
     return bounds
 
@@ -1012,18 +1088,35 @@ def strided_moving_window(
 
 
 #
-#   Private Input Checker Functions
+#   Private Functions
 #
+
+
+def _extend_time_index(time_index, freq, new_end):
+    is_range_idx = isinstance(freq, int)
+    if is_range_idx:
+        time_index = pd.RangeIndex(start=time_index[0], stop=new_end + freq, step=freq)
+    else:
+        time_index = pd.date_range(start=time_index[0], end=new_end, freq=freq)
+    return time_index
+
+
+def _get_freqs(*series: Sequence[Union[TimeSeries, None]]):
+    """
+    Returns list with the frequency of all of the specified (i.e. non-`None`) `series`.
+    """
+    freqs = []
+    for ts in series:
+        if ts is not None:
+            freqs.append(ts.freq)
+    return freqs
 
 
 def _all_equal_freq(*series: Sequence[Union[TimeSeries, None]]) -> bool:
     """
     Returns `True` is all of the specified (i.e. non-`None`) `series` have the same frequency.
     """
-    freqs = []
-    for ts in series:
-        if ts is not None:
-            freqs.append(ts.freq)
+    freqs = _get_freqs(*series)
     return len(set(freqs)) == 1
 
 
@@ -1067,19 +1160,17 @@ def _check_series_length(
     lags_specified = lags is not None
     if is_label_series:
         minimum_len_str = (
-            "-min(lags) + 1 + output_chunk_length"
+            "-min(lags) + output_chunk_length"
             if lags_specified
             else "output_chunk_length"
         )
         minimum_len = (
-            -min(lags) + 1 + output_chunk_length
-            if lags_specified
-            else output_chunk_length
+            -min(lags) + output_chunk_length if lags_specified else output_chunk_length
         )
     elif lags_specified:
         lags_name = "lags" if name == "target_series" else f"lags_{name}"
-        minimum_len_str = f"-min({lags_name}) + 1"
-        minimum_len = -min(lags) + 1
+        minimum_len_str = f"-min({lags_name}) + max({lags_name}) + 1"
+        minimum_len = -min(lags) + max(lags) + 1
     if lags_specified:
         raise_if(
             series.n_timesteps < minimum_len,
