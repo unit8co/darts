@@ -1,10 +1,11 @@
 """
-GammaNLLScorer
------
+NLL Gamma Scorer
+----------------
 
-Gamma negative log-likelihood Scorer.
-The implementations is wrapped around `scipy.stats
-<https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gamma.html>`_.
+Gamma distribution negative log-likelihood Scorer.
+
+The anomaly score is the negative log likelihood of the actual series values
+under a Gamma distribution estimated from the stochastic prediction.
 """
 
 import numpy as np
@@ -26,9 +27,7 @@ class GammaNLLScorer(NLLScorer):
         probabilistic_estimations: np.ndarray,
     ) -> np.ndarray:
 
-        # TODO: vectorize
-
-        return [
-            -gamma.logpdf(x2, *gamma.fit(x1))
-            for (x1, x2) in zip(probabilistic_estimations, deterministic_values)
-        ]
+        params = np.apply_along_axis(gamma.fit, axis=1, arr=probabilistic_estimations)
+        return -gamma.logpdf(
+            deterministic_values, a=params[:, 0], loc=params[:, 1], scale=params[:, 2]
+        )

@@ -49,6 +49,8 @@ class ThresholdDetector(Detector):
             this detector is applied to.
         """
 
+        # TODO: could we refactor some code common between ThresholdDetector and QuantileDetector?
+
         super().__init__()
 
         raise_if(

@@ -1,10 +1,11 @@
 """
-CauchyNLLScorer
------
+NLL Cauchy Scorer
+-----------------
 
-Cauchy negative log-likelihood Scorer.
-Source of PDF function and parameters estimation: `Cauchy distribution
-<https://en.wikipedia.org/wiki/Cauchy_distribution>`_
+Cauchy distribution negative log-likelihood Scorer.
+
+The anomaly score is the negative log likelihood of the actual series values
+under a Cauchy distribution estimated from the stochastic prediction.
 """
 
 import numpy as np
@@ -26,5 +27,7 @@ class CauchyNLLScorer(NLLScorer):
         probabilistic_estimations: np.ndarray,
     ) -> np.ndarray:
 
-        median = np.median(probabilistic_estimations, axis=1)
-        return -cauchy.logpdf(deterministic_values, median)
+        params = np.apply_along_axis(cauchy.fit, axis=1, arr=probabilistic_estimations)
+        return -cauchy.logpdf(
+            deterministic_values, loc=params[:, 0], scale=params[:, 1]
+        )

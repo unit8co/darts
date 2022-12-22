@@ -1,15 +1,15 @@
 """
-PoissonNLLScorer
------
+NLL Poisson Scorer
+------------------
 
-Poisson negative log-likelihood Scorer
-Source of PDF function and parameters estimation (MLE):  `Poisson distribution
-<https://www.statlect.com/fundamentals-of-statistics/Poisson-distribution-maximum-likelihood>`_.
+Poisson distribution negative log-likelihood Scorer.
+
+The anomaly score is the negative log likelihood of the actual series values
+under a Poisson distribution estimated from the stochastic prediction.
 """
 
-import math
-
 import numpy as np
+from scipy.stats import poisson
 
 from darts.ad.scorers.scorers import NLLScorer
 
@@ -27,11 +27,5 @@ class PoissonNLLScorer(NLLScorer):
         probabilistic_estimations: np.ndarray,
     ) -> np.ndarray:
 
-        # TODO: vectorize
-
-        return [
-            -np.log(
-                np.exp(-x1.mean()) * (x1.mean() ** x2) / math.factorial(x2.astype(int))
-            )
-            for (x1, x2) in zip(probabilistic_estimations, deterministic_values)
-        ]
+        mu = np.mean(probabilistic_estimations, axis=1)
+        return -poisson.logpmf(deterministic_values, mu=mu)
