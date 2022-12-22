@@ -476,7 +476,7 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
             use_static_covariates=use_static_covariates,
         )
 
-        # This dataset is in charge of serving historic and future future covariates
+        # This dataset is in charge of serving historic and future covariates
         self.ds_future = DualCovariatesInferenceDataset(
             target_series=target_series,
             covariates=future_covariates,

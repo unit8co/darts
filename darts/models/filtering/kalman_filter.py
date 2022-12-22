@@ -55,7 +55,6 @@ class KalmanFilter(FilteringModel, ABC):
         # TODO: Add support for x_init. Needs reimplementation of NFourSID.
 
         super().__init__()
-        self._expect_covariates = False
 
         if kf is None:
             self.kf = None
