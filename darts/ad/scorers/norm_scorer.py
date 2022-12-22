@@ -3,8 +3,6 @@ Norm Scorer
 -----------
 
 Norm anomaly score (of given order) [1]_.
-The implementations is wrapped around `linalg.norm numpy
-<https://numpy.org/doc/stable/reference/generated/numpy.linalg.norm.html>`_.
 
 References
 ----------
@@ -21,22 +19,22 @@ from darts.timeseries import TimeSeries
 class NormScorer(NonFittableAnomalyScorer):
     def __init__(self, ord=None, component_wise: bool = False) -> None:
         """
-        Returns the norm of a given order for each timestamp of the two input series' differences.
+        Returns the elementwise norm of a given order between two series' values.
 
-        If component_wise is set to False, each timestamp of the difference will be considered as a vector
-        and its norm will be computed.
+        If `component_wise` is False, the norm is computed between vectors
+        made of the series' components (one norm per timestamp).
 
-        If component_wise is set to True, for any `ord` this effectively amounts to computing the absolute
-        value for each element of the difference.
+        If `component_wise` is True, for any `ord` this effectively amounts to computing the absolute
+        value of the difference.
 
         The scoring function expects two series.
 
-        If the two series are multivariate of width W:
+        If the two series are multivariate of width `w`:
 
-        * if `component_wise` is set to False: it will return a univariate series (width=1).
-        * if `component_wise` is set to True: it will return a multivariate series of width W
+        * if `component_wise` is set to False: it returns a univariate series (width=1).
+        * if `component_wise` is set to True: it returns a multivariate series of width `w`.
 
-        If the two series are univariate, it will return a univariate series regardless of the parameter
+        If the two series are univariate, it returns a univariate series regardless of the parameter
         `component_wise`.
 
         Parameters
@@ -46,8 +44,7 @@ class NormScorer(NonFittableAnomalyScorer):
             <https://numpy.org/doc/stable/reference/generated/numpy.linalg.norm.html>.
             Default: None
         component_wise
-            Boolean value indicating if the norm needs to be computed element-wise (True)
-            or component-wise (False) equivalent to axis=1.
+            Whether to compare components of the two series in isolation (True), or jointly (False).
             Default: False
         """
 

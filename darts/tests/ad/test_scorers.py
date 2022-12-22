@@ -978,8 +978,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         self.assertAlmostEqual(auc_roc_cwfalse, 0.94637, delta=1e-05)
-        self.assertAlmostEqual(auc_roc_cwtrue[0], 0.99742, delta=1e-05)
-        self.assertAlmostEqual(auc_roc_cwtrue[1], 0.93445, delta=1e-05)
+        self.assertAlmostEqual(auc_roc_cwtrue[0], 0.98606, delta=1e-05)
+        self.assertAlmostEqual(auc_roc_cwtrue[1], 0.96722, delta=1e-05)
 
     def test_kmeansScorer(self):
 

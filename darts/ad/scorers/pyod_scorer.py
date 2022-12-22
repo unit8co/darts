@@ -9,6 +9,7 @@ Scorer wrapped around the individual detection algorithms of PyOD.
 from typing import Sequence
 
 import numpy as np
+from numpy.lib.stride_tricks import sliding_window_view
 from pyod.models.base import BaseDetector
 
 from darts.ad.scorers.scorers import FittableAnomalyScorer
@@ -68,9 +69,9 @@ class PyODScorer(FittableAnomalyScorer):
         For each series, if the series is multivariate of dimension `D`:
 
         * if `component_wise` is set to False: it will return a univariate series (dimension=1). It represents
-        the anomaly score of the entire series in the considered window at each timestamp.
+         the anomaly score of the entire series in the considered window at each timestamp.
         * if `component_wise` is set to True: it will return a multivariate series of dimension `D`. Each
-        dimension represents the anomaly score of the corresponding component of the input.
+         dimension represents the anomaly score of the corresponding component of the input.
 
         If the series is univariate, it will return a univariate series regardless of the parameter
         `component_wise`.
@@ -122,19 +123,16 @@ class PyODScorer(FittableAnomalyScorer):
 
         list_np_series = [series.all_values(copy=False) for series in list_series]
 
-        # TODO: vectorize
+        # TODO: can we factorize code in common bteween PyODScorer and KMeansScorer?
 
         if not self.component_wise:
             self.model.fit(
                 np.concatenate(
                     [
-                        np.array(
-                            [
-                                np.array(np_series[i : i + self.window])
-                                for i in range(len(np_series) - self.window + 1)
-                            ]
-                        ).reshape(-1, self.window * len(np_series[0]))
-                        for np_series in list_np_series
+                        sliding_window_view(ar, window_shape=self.window, axis=0)
+                        .transpose(0, 3, 1, 2)
+                        .reshape(-1, self.window * len(ar[0]))
+                        for ar in list_np_series
                     ]
                 )
             )
@@ -146,15 +144,12 @@ class PyODScorer(FittableAnomalyScorer):
                 model_width.fit(
                     np.concatenate(
                         [
-                            np.array(
-                                [
-                                    np.array(
-                                        np_series[i : i + self.window, component_idx]
-                                    )
-                                    for i in range(len(np_series) - self.window + 1)
-                                ]
-                            ).reshape(-1, self.window)
-                            for np_series in list_np_series
+                            sliding_window_view(
+                                ar[:, component_idx], window_shape=self.window, axis=0
+                            )
+                            .transpose(0, 2, 1)
+                            .reshape(-1, self.window)
+                            for ar in list_np_series
                         ]
                     )
                 )
@@ -178,27 +173,25 @@ class PyODScorer(FittableAnomalyScorer):
 
             np_anomaly_score.append(
                 self.model.decision_function(
-                    np.array(
-                        [
-                            np.array(np_series[i : i + self.window])
-                            for i in range(len(series) - self.window + 1)
-                        ]
-                    ).reshape(-1, self.window * series.width)
+                    sliding_window_view(np_series, window_shape=self.window, axis=0)
+                    .transpose(0, 3, 1, 2)
+                    .reshape(-1, self.window * series.width)
                 )
             )
         else:
 
             for component_idx in range(self.width_trained_on):
-                np_anomaly_score_width = self.models[component_idx].decision_function(
-                    np.array(
-                        [
-                            np.array(np_series[i : i + self.window, component_idx])
-                            for i in range(len(series) - self.window + 1)
-                        ]
-                    ).reshape(-1, self.window)
+                score = self.models[component_idx].decision_function(
+                    sliding_window_view(
+                        np_series[:, component_idx],
+                        window_shape=self.window,
+                        axis=0,
+                    )
+                    .transpose(0, 2, 1)
+                    .reshape(-1, self.window)
                 )
 
-                np_anomaly_score.append(np_anomaly_score_width)
+                np_anomaly_score.append(score)
 
         return TimeSeries.from_times_and_values(
             series.time_index[self.window - 1 :], list(zip(*np_anomaly_score))
