@@ -87,18 +87,16 @@ class ForecastingAnomalyModel(AnomalyModel):
         series
             One or multiple (if the model supports it) target series to be
             trained on (generally assumed to be anomaly-free).
-        allow_model_training
-            Boolean value that indicates if the forecasting model needs to be fitted on the given series.
-            If set to False, the model needs to be already fitted.
-            Default: False
-        
-           
         past_covariates
             Optional past-observed covariate series or sequence of series. This applies only if the model
             supports past covariates.
         future_covariates
             Optional future-known covariate series or sequence of series. This applies only if the model
             supports future covariates.
+        allow_model_training
+            Boolean value that indicates if the forecasting model needs to be fitted on the given series.
+            If set to False, the model needs to be already fitted.
+            Default: False
         forecast_horizon
             The forecast horizon for the predictions.
         start
