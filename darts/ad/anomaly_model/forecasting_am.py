@@ -220,7 +220,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         series: Sequence[TimeSeries],
         name_covariates: str,
     ) -> Sequence[TimeSeries]:
-        """Convert `covariates` into Sequence, if not already, and checks if its length is equal to the one of `series`.
+        """Convert `covariates` into Sequence, if not already, and checks if their length is equal to the one of `series`.
 
         Parameters
         ----------
