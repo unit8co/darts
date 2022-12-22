@@ -22,7 +22,7 @@ logger = get_logger(__name__)
 class PyODScorer(FittableAnomalyScorer):
     def __init__(
         self,
-        model,
+        model: BaseDetector,
         window: int = 1,
         component_wise: bool = False,
         diff_fn="abs_diff",
