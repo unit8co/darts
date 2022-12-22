@@ -34,8 +34,7 @@ class WassersteinScorer(FittableAnomalyScorer):
         """
         When calling ``fit(series)``, a moving window is applied, which results in a set of vectors of size `W`,
         where `W` is the window size. These vectors are kept in memory, representing the training
-        distribution. The ``score(series)``
-        function will apply the same moving window.
+        distribution. The ``score(series)`` function will apply the same moving window.
         The Wasserstein distance is computed between the training distribution and each vector,
         resulting in an anomaly score.
 
