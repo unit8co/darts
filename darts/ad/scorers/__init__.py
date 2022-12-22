@@ -65,15 +65,15 @@ Other useful functions are:
 More details can be found in the API documentation of each scorer.
 """
 
-from .cauchy_nll_scorer import CauchyNLLScorer
 from .difference_scorer import DifferenceScorer
-from .exponential_nll_scorer import ExponentialNLLScorer
-from .gamma_nll_scorer import GammaNLLScorer
-from .gaussian_nll_scorer import GaussianNLLScorer
 from .kmeans_scorer import KMeansScorer
-from .laplace_nll_scorer import LaplaceNLLScorer
+from .nll_cauchy_scorer import CauchyNLLScorer
+from .nll_exponential_scorer import ExponentialNLLScorer
+from .nll_gamma_scorer import GammaNLLScorer
+from .nll_gaussian_scorer import GaussianNLLScorer
+from .nll_laplace_scorer import LaplaceNLLScorer
+from .nll_poisson_scorer import PoissonNLLScorer
 from .norm_scorer import NormScorer
-from .poisson_nll_scorer import PoissonNLLScorer
 from .pyod_scorer import PyODScorer
 from .scorers import FittableAnomalyScorer, NonFittableAnomalyScorer
 from .wasserstein_scorer import WassersteinScorer
