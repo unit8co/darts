@@ -911,7 +911,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                         series=train_series, past_covariates=train_past_covariates
                     )
                     prediction = model_instance.predict(
-                        n=len(test_series[:-1]),
+                        n=len(test_series),
                         series=train_series,
                         past_covariates=past_covariates,
                     )
