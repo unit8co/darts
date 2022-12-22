@@ -29,7 +29,7 @@ class FilteringAnomalyModel(AnomalyModel):
 
         The filtering model may or may not be already fitted. The underlying assumption is that this model
         should be able to adequately filter the series in the absence of anomalies. For this reason,
-        it is recommend to either provide a model that has already been fitted and evaluated to work
+        it is recommended to either provide a model that has already been fitted and evaluated to work
         appropriately on a series without anomalies, or to ensure that a simple call to the :func:`fit()`
         function of the model will be sufficient to train it to satisfactory performance on series without anomalies.
 
