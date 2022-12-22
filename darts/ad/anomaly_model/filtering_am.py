@@ -163,7 +163,7 @@ class FilteringAnomalyModel(AnomalyModel):
 
         - add a title to the figure with the parameter `title`
         - give personalized names for the scorers with `names_of_scorers`
-        - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR), if the actual anomalies is given
+        - show the results of a metric for each anomaly score (AUC_ROC or AUC_PR), if the actual anomalies are given
 
         Parameters
         ----------
