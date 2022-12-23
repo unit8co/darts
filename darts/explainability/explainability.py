@@ -99,8 +99,7 @@ class ForecastingModelExplainer(ABC):
                 (
                     background_past_covariates,
                     background_future_covariates,
-                ) = self.model.generate_predict_encodings(
-                    n=len(background_series) - self.model.min_train_series_length,
+                ) = self.model.generate_fit_encodings(
                     series=background_series,
                     past_covariates=background_past_covariates,
                     future_covariates=background_future_covariates,
@@ -110,16 +109,16 @@ class ForecastingModelExplainer(ABC):
         self.background_past_covariates = series2seq(background_past_covariates)
         self.background_future_covariates = series2seq(background_future_covariates)
 
-        if self.model.uses_past_covariates:
+        if self.model.supports_past_covariates:
             raise_if(
-                self.model._expect_past_covariates
+                self.model.uses_past_covariates
                 and self.background_past_covariates is None,
                 "A background past covariates is not provided, but the model needs past covariates.",
             )
 
-        if self.model.uses_future_covariates:
+        if self.model.supports_future_covariates:
             raise_if(
-                self.model._expect_future_covariates
+                self.model.uses_future_covariates
                 and self.background_future_covariates is None,
                 "A background future covariates is not provided, but the model needs future covariates.",
             )

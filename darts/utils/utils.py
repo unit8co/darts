@@ -16,6 +16,7 @@ from tqdm.notebook import tqdm as tqdm_notebook
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.utils.timeseries_generation import generate_index
 
 try:
     from IPython import get_ipython
@@ -213,61 +214,57 @@ def _historical_forecasts_general_checks(series, kwargs):
         stride > 0, "The provided stride parameter must be a positive integer.", logger
     )
 
+    series = series2seq(series)
+
     # check start parameter
     if hasattr(n, "start"):
         if isinstance(n.start, float):
             raise_if_not(
                 0.0 <= n.start < 1.0, "`start` should be between 0.0 and 1.0.", logger
             )
-        elif isinstance(n.start, pd.Timestamp):
-            raise_if(
-                n.start not in series,
-                "`start` timestamp must be an entry in the time series' time index",
-            )
-            raise_if(
-                n.start == series.end_time(),
-                "`start` timestamp is the last timestamp of the series",
-                logger,
-            )
         elif isinstance(n.start, (int, np.int64)):
             raise_if_not(n.start >= 0, logger=logger)
             raise_if(
-                n.start > len(series),
+                any([n.start > len(serie) for serie in series]),
                 "`start` index should be smaller than length of the series",
                 logger,
             )
-        else:
+        elif n.start and not isinstance(n.start, pd.Timestamp):
             raise_log(
                 TypeError(
-                    "`start` needs to be either `float`, `int` or `pd.Timestamp`"
+                    "`start` needs to be either `float`, `int`, `pd.Timestamp` or `None`"
                 ),
                 logger,
             )
 
-    start = series.get_timestamp_at_point(n.start)
+    if n.start is not None:
+        for idx, serie in enumerate(series):
 
-    # check start parameter
-    raise_if(
-        start == series.end_time(),
-        "`start` timestamp is the last timestamp of the series",
-        logger,
-    )
-    raise_if(
-        start == series.start_time(),
-        "`start` corresponds to the first timestamp of the series, resulting in empty training set",
-        logger,
-    )
+            start = serie.get_timestamp_at_point(n.start)
 
-    # check that overlap_end and start together form a valid combination
-    overlap_end = n.overlap_end
+            # check start parameter
+            raise_if(
+                start == serie.end_time(),
+                f"`start` timestamp is the last timestamp of the series {idx}.",
+                logger,
+            )
+            raise_if(
+                start == serie.start_time(),
+                "`start` corresponds to the first timestamp of the series {}, resulting "
+                "in empty training set".format(idx),
+                logger,
+            )
 
-    if not overlap_end:
-        raise_if_not(
-            start + series.freq * forecast_horizon in series,
-            "`start` timestamp is too late in the series to make any predictions with"
-            "`overlap_end` set to `False`.",
-            logger,
-        )
+            # check that overlap_end and start together form a valid combination
+            overlap_end = n.overlap_end
+
+            if not overlap_end:
+                raise_if_not(
+                    start + serie.freq * forecast_horizon in serie,
+                    "`start` timestamp is too late in the series {} to make any predictions with"
+                    "`overlap_end` set to `False`.".format(idx),
+                    logger,
+                )
 
 
 def _parallel_apply(
@@ -378,3 +375,107 @@ def seq2series(
     """
 
     return ts[0] if isinstance(ts, Sequence) and len(ts) == 1 else ts
+
+
+def slice_index(
+    index: Union[pd.RangeIndex, pd.DatetimeIndex],
+    start: Union[int, pd.Timestamp],
+    end: Union[int, pd.Timestamp],
+) -> Union[pd.RangeIndex, pd.DatetimeIndex]:
+    """
+    Returns a new Index with the same type as the input `index`, containing the values between `start`
+    and `end` included. If start and end are not in the index, the closest values are used instead.
+    The start and end values can be either integers (in which case they are interpreted as indices),
+    or pd.Timestamps (in which case they are interpreted as actual timestamps).
+
+
+    Parameters
+    ----------
+    index
+        The index to slice.
+    start
+        The start of the returned index.
+    end
+        The end of the returned index.
+
+    Returns
+    -------
+    Union[pd.RangeIndex, pd.DatetimeIndex]
+        A new index with the same type as the input `index`, but with only the values between `start` and `end`
+        included.
+    """
+
+    if type(start) != type(end):
+        raise_log(
+            ValueError(
+                "start and end values must be of the same type (either both integers or both pd.Timestamps)"
+            ),
+            logger,
+        )
+
+    if isinstance(start, pd.Timestamp) and isinstance(index, pd.RangeIndex):
+        raise_log(
+            ValueError(
+                "start and end values are a pd.Timestamp, but time_index is a RangeIndex. "
+                "Please provide an integer start value."
+            ),
+            logger,
+        )
+    if isinstance(start, int) and isinstance(index, pd.DatetimeIndex):
+        raise_log(
+            ValueError(
+                "start and end value are integer, but time_index is a RangeIndex. "
+                "Please provide an integer end value."
+            ),
+            logger,
+        )
+
+    start_idx = index.get_indexer(generate_index(start, length=1), method="nearest")[0]
+    end_idx = index.get_indexer(generate_index(end, length=1), method="nearest")[0]
+
+    return index[start_idx : end_idx + 1]
+
+
+def drop_before_index(
+    index: Union[pd.RangeIndex, pd.DatetimeIndex],
+    split_point: Union[int, pd.Timestamp],
+) -> Union[pd.RangeIndex, pd.DatetimeIndex]:
+    """
+    Drops everything before the provided time `split_point` (excluded) from the index.
+
+    Parameters
+    ----------
+    index
+        The index to drop values from.
+    split_point
+        The timestamp that indicates cut-off time.
+
+    Returns
+    -------
+    Union[pd.RangeIndex, pd.DatetimeIndex]
+        A new index with values before `split_point` dropped.
+    """
+    return slice_index(index, split_point, index[-1])
+
+
+def drop_after_index(
+    index: Union[pd.RangeIndex, pd.DatetimeIndex],
+    split_point: Union[int, pd.Timestamp],
+) -> Union[pd.RangeIndex, pd.DatetimeIndex]:
+    """
+    Drops everything after the provided time `split_point` (excluded) from the index.
+
+    Parameters
+    ----------
+    index
+        The index to drop values from.
+    split_point
+        The timestamp that indicates cut-off time.
+
+    Returns
+    -------
+    Union[pd.RangeIndex, pd.DatetimeIndex]
+        A new index with values after `split_point` dropped.
+    """
+
+    return slice_index(index, index[0], split_point)
