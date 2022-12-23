@@ -1,0 +1,4 @@
+
+.. automodule:: darts.ad.scorers.nll_cauchy_scorer
+   :members:
+   :undoc-members:

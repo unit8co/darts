@@ -1,0 +1,12 @@
+
+
+
+.. automodule:: darts.ad.detectors
+
+    .. toctree::
+        :maxdepth: 1
+        
+        
+        darts.ad.detectors.detectors
+        darts.ad.detectors.quantile_detector
+        darts.ad.detectors.threshold_detector

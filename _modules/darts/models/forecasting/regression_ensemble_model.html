@@ -176,12 +176,13 @@
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.ensemble_model</span> <span class="kn">import</span> <span class="n">EnsembleModel</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.forecasting_model</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">ForecastingModel</span><span class="p">,</span>
     <span class="n">GlobalForecastingModel</span><span class="p">,</span>
+    <span class="n">LocalForecastingModel</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.linear_regression_model</span> <span class="kn">import</span> <span class="n">LinearRegressionModel</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.regression_model</span> <span class="kn">import</span> <span class="n">RegressionModel</span>
 <span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">seq2series</span><span class="p">,</span> <span class="n">series2seq</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -189,7 +190,9 @@
 <div class="viewcode-block" id="RegressionEnsembleModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel">[docs]</a><span class="k">class</span> <span class="nc">RegressionEnsembleModel</span><span class="p">(</span><span class="n">EnsembleModel</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">forecasting_models</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">ForecastingModel</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">GlobalForecastingModel</span><span class="p">]],</span>
+        <span class="n">forecasting_models</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="n">List</span><span class="p">[</span><span class="n">LocalForecastingModel</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">GlobalForecastingModel</span><span class="p">]</span>
+        <span class="p">],</span>
         <span class="n">regression_train_n_points</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">regression_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
@@ -255,7 +258,8 @@
         <span class="p">)</span>
 
         <span class="c1"># spare train_n_points points to serve as regression target</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_single_series</span><span class="p">:</span>
+        <span class="n">is_single_series</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">is_single_series</span><span class="p">:</span>
             <span class="n">train_n_points_too_big</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">train_n_points_too_big</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span>
@@ -269,7 +273,7 @@
             <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_single_series</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_single_series</span><span class="p">:</span>
             <span class="n">forecast_training</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="p">[:</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span><span class="p">]</span>
             <span class="n">regression_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span> <span class="p">:]</span>
         <span class="k">else</span><span class="p">:</span>
@@ -305,9 +309,9 @@
         <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_global_ensemble</span><span class="p">:</span>
                 <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">uses_past_covariates</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span><span class="p">:</span>
                     <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;past_covariates&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">past_covariates</span>
-                <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">uses_future_covariates</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span><span class="p">:</span>
                     <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;future_covariates&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">future_covariates</span>
                 <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
@@ -321,9 +325,10 @@
         <span class="n">predictions</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_single_series</span><span class="p">:</span>
-            <span class="n">predictions</span> <span class="o">=</span> <span class="p">[</span><span class="n">predictions</span><span class="p">]</span>
-            <span class="n">series</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span>
+
+        <span class="n">is_single_series</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="ow">or</span> <span class="n">series</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span>
+        <span class="n">series</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="k">if</span> <span class="n">series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span>
 
         <span class="n">ensembled</span> <span class="o">=</span> <span class="p">[</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
@@ -331,8 +336,7 @@
             <span class="p">)</span>
             <span class="k">for</span> <span class="n">serie</span><span class="p">,</span> <span class="n">prediction</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">predictions</span><span class="p">)</span>
         <span class="p">]</span>
-
-        <span class="k">return</span> <span class="n">ensembled</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_single_series</span> <span class="k">else</span> <span class="n">ensembled</span></div></div>
+        <span class="k">return</span> <span class="n">seq2series</span><span class="p">(</span><span class="n">ensembled</span><span class="p">)</span> <span class="k">if</span> <span class="n">is_single_series</span> <span class="k">else</span> <span class="n">ensembled</span></div></div>
 </pre></div>
 
               </div>

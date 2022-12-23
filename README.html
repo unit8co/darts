@@ -253,14 +253,19 @@
 <a class="reference external image-reference" href="https://codecov.io/gh/unit8co/darts"><img alt="codecov" src="https://codecov.io/gh/unit8co/darts/branch/master/graph/badge.svg?token=7F1TLUFHQW" /></a>
 <a class="reference external image-reference" href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg" /></a>
 <a class="reference external image-reference" href="https://gitter.im/u8darts/darts?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge&amp;utm_content=badge"><img alt="Join the chat at https://gitter.im/u8darts/darts" src="https://badges.gitter.im/u8darts/darts.svg" /></a>
-<p><strong>darts</strong> is a Python library for easy manipulation and forecasting of time series.
-It contains a variety of models, from classics such as ARIMA to deep neural networks.
-The models can all be used in the same way, using <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> functions,
-similar to scikit-learn. The library also makes it easy to backtest models,
+<p><strong>Darts</strong> is a Python library for user-friendly forecasting and anomaly detection
+on time series. It contains a variety of models, from classics such as ARIMA to
+deep neural networks. The forecasting models can all be used in the same way,
+using <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> functions, similar to scikit-learn.
+The library also makes it easy to backtest models,
 combine the predictions of several models, and take external data into account.
 Darts supports both univariate and multivariate time series and models.
 The ML-based models can be trained on potentially large datasets containing multiple time
 series, and some of the models offer a rich support for probabilistic forecasting.</p>
+<p>Darts also offers extensive anomaly detection capabilities.
+For instance, it is trivial to apply PyOD models on time series to obtain anomaly scores,
+or to wrap any of Darts forecasting or filtering models to obtain fully
+fledged anomaly detection models.</p>
 <section id="documentation">
 <h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
@@ -335,19 +340,61 @@ or without <a class="reference external" href="https://virtualenvwrapper.readthe
 </div>
 <div style="text-align:center;">
 <img src="https://github.com/unit8co/darts/raw/master/static/images/example.png" alt="darts forecast example" />
+</div><p>Load a multivariate series, trim it, keep 2 components, split train and validation sets:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">ETTh2Dataset</span>
+
+<span class="n">series</span> <span class="o">=</span> <span class="n">ETTh2Dataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()[:</span><span class="mi">10000</span><span class="p">][[</span><span class="s2">&quot;MUFL&quot;</span><span class="p">,</span> <span class="s2">&quot;LULL&quot;</span><span class="p">]]</span>
+<span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">split_before</span><span class="p">(</span><span class="mf">0.6</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Build a k-means anomaly scorer, train it on the train set
+and use it on the validation set to get anomaly scores:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.ad</span> <span class="kn">import</span> <span class="n">KMeansScorer</span>
+
+<span class="n">scorer</span> <span class="o">=</span> <span class="n">KMeansScorer</span><span class="p">(</span><span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">scorer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">anom_score</span> <span class="o">=</span> <span class="n">scorer</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Build a binary anomaly detector and train it over train scores,
+then use it over validation scores to get binary anomaly classification:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.ad</span> <span class="kn">import</span> <span class="n">QuantileDetector</span>
+
+<span class="n">detector</span> <span class="o">=</span> <span class="n">QuantileDetector</span><span class="p">(</span><span class="n">high_quantile</span><span class="o">=</span><span class="mf">0.99</span><span class="p">)</span>
+<span class="n">detector</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">scorer</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">train</span><span class="p">))</span>
+<span class="n">binary_anom</span> <span class="o">=</span> <span class="n">detector</span><span class="o">.</span><span class="n">detect</span><span class="p">(</span><span class="n">anom_score</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Plot (shifting and scaling some of the series
+to make everything appear on the same figure):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="p">(</span><span class="n">anom_score</span> <span class="o">/</span> <span class="mf">2.</span> <span class="o">-</span> <span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;computed anomaly score&quot;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;orangered&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="p">(</span><span class="n">binary_anom</span> <span class="o">*</span> <span class="mi">45</span> <span class="o">-</span> <span class="mi">150</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;detected binary anomaly&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+</pre></div>
+</div>
+<div style="text-align:center;">
+<img src="https://github.com/unit8co/darts/raw/master/static/images/example_ad.png" alt="darts anomaly detection example" />
 </div></section>
 <section id="features">
 <h2>Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p><strong>Forecasting Models:</strong> A large collection of forecasting models; from statistical models (such as
 ARIMA) to deep learning models (such as N-BEATS). See <a class="reference external" href="#forecasting-models">table of models below</a>.</p></li>
+<li><p><strong>Anomaly Detection</strong> The <code class="docutils literal notranslate"><span class="pre">darts.ad</span></code> module contains a collection of anomaly scorers,
+detectors and aggregators, which can all be combined to detect anomalies in time series.
+It is easy to wrap any of Darts forecasting or filtering models to build
+a fully fledged anomaly detection model that compares predictions with actuals.
+The <code class="docutils literal notranslate"><span class="pre">PyODScorer</span></code> makes it trivial to use PyOD detectors on time series.</p></li>
 <li><p><strong>Multivariate Support:</strong> <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can be multivariate - i.e., contain multiple time-varying
 dimensions instead of a single scalar value. Many models can consume and produce multivariate series.</p></li>
-<li><p><strong>Multiple series training:</strong> All machine learning based models (incl. all neural networks)
-support being trained on multiple (potentially multivariate) series. This can scale to large datasets.</p></li>
+<li><p><strong>Multiple series training (global models):</strong> All machine learning based models (incl. all neural networks)
+support being trained on multiple (potentially multivariate) series. This can scale to large datasets too.</p></li>
 <li><p><strong>Probabilistic Support:</strong> <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects can (optionally) represent stochastic
-time series; this can for instance be used to get confidence intervals, and many models support different flavours of probabilistic forecasting (such as estimating parametric distributions
-or quantiles).</p></li>
+time series; this can for instance be used to get confidence intervals, and many models support different
+flavours of probabilistic forecasting (such as estimating parametric distributions or quantiles).
+Some anomaly detection scorers are also able to exploit these predictive distributions.</p></li>
 <li><p><strong>Past and Future Covariates support:</strong> Many models in Darts support past-observed and/or future-known
 covariate (external data) time series as inputs for producing forecasts.</p></li>
 <li><p><strong>Static Covariates support:</strong> In addition to time-dependent data, <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can also contain
@@ -356,9 +403,9 @@ static data for each dimension, which can be exploited by some models.</p></li>
 These can make the forecasts add up in a way that respects the underlying hierarchy.</p></li>
 <li><p><strong>Regression Models:</strong> It is possible to plug-in any scikit-learn compatible model
 to obtain forecasts as functions of lagged values of the target series and covariates.</p></li>
-<li><p><strong>Explainability:</strong> Darts has the ability to <em>explain</em> forecasting models by using Shap values.</p></li>
+<li><p><strong>Explainability:</strong> Darts has the ability to <em>explain</em> some forecasting models using Shap values.</p></li>
 <li><p><strong>Data processing:</strong> Tools to easily apply (and revert) common transformations on
-time series data (scaling, filling missing values, boxcox, …)</p></li>
+time series data (scaling, filling missing values, differencing, boxcox, …)</p></li>
 <li><p><strong>Metrics:</strong> A variety of metrics for evaluating time series’ goodness of fit;
 from R2-scores to Mean Absolute Scaled Error.</p></li>
 <li><p><strong>Backtesting:</strong> Utilities for simulating historical forecasts, using moving time windows.</p></li>
@@ -368,7 +415,7 @@ supporting among other things custom callbacks, GPUs/TPUs training and custom tr
 and <code class="docutils literal notranslate"><span class="pre">MovingAverage</span></code>, which allow to filter time series, and in some cases obtain probabilistic
 inferences of the underlying states/values.</p></li>
 <li><p><strong>Datasets</strong> The <code class="docutils literal notranslate"><span class="pre">darts.datasets</span></code> submodule contains some popular time series datasets for rapid
-experimentation.</p></li>
+and reproducible experimentation.</p></li>
 </ul>
 </section>
 <section id="forecasting-models">
@@ -392,10 +439,10 @@ on bringing more models and features.</p>
 <th class="head"><p>Univariate</p></th>
 <th class="head"><p>Multivariate</p></th>
 <th class="head"><p>Probabilistic</p></th>
-<th class="head"><p>Multiple-series training</p></th>
-<th class="head"><p>Past-observed covariates support</p></th>
+<th class="head"><p>Multiple series (global)</p></th>
+<th class="head"><p>Past-observed covariates</p></th>
 <th class="head"><p>Future-known covariates</p></th>
-<th class="head"><p>Static covariates support</p></th>
+<th class="head"><p>Static covariates</p></th>
 <th class="head"><p>Reference</p></th>
 </tr>
 </thead>
@@ -527,7 +574,7 @@ on bringing more models and features.</p>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
-<td></td>
+<td><p>✅</p></td>
 <td></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">RandomForest</span></code></p></td>
@@ -537,7 +584,7 @@ on bringing more models and features.</p>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
-<td></td>
+<td><p>✅</p></td>
 <td></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code></p></td>
@@ -547,7 +594,7 @@ on bringing more models and features.</p>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
-<td></td>
+<td><p>✅</p></td>
 <td></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">LightGBMModel</span></code></p></td>
@@ -557,7 +604,7 @@ on bringing more models and features.</p>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
-<td></td>
+<td><p>✅</p></td>
 <td></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CatBoostModel</span></code></p></td>
@@ -567,10 +614,20 @@ on bringing more models and features.</p>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
-<td></td>
+<td><p>✅</p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">XGBModel</span></code></p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -580,7 +637,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/1704.04110">DeepAR paper</a></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code> (incl. LSTM and GRU)</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code> (incl. LSTM and GRU)</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -590,7 +647,7 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code></p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -600,7 +657,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/1905.10437">N-BEATS paper</a></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NHiTSModel</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">NHiTSModel</span></code></p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -610,7 +667,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/2201.12886">N-HiTS paper</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TCNModel</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TCNModel</span></code></p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -620,7 +677,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/1803.01271">TCN paper</a>, <a class="reference external" href="https://arxiv.org/abs/1906.04397">DeepTCN paper</a>, <a class="reference external" href="https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4">blog post</a></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TransformerModel</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TransformerModel</span></code></p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -630,7 +687,7 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> (Temporal Fusion Transformer)</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> (Temporal Fusion Transformer)</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -640,9 +697,29 @@ on bringing more models and features.</p>
 <td><p>✅</p></td>
 <td><p><a class="reference external" href="https://arxiv.org/pdf/1912.09363.pdf">TFT paper</a>, <a class="reference external" href="https://pytorch-forecasting.readthedocs.io/en/latest/models.html">PyTorch Forecasting</a></p></td>
 </tr>
-<tr class="row-even"><td><p>Naive Baselines</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DLinearModel</span></code></p></td>
 <td><p>✅</p></td>
-<td></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/pdf/2205.13504.pdf">DLinear paper</a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NLinearModel</span></code></p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/pdf/2205.13504.pdf">NLinear paper</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>Naive Baselines</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
 <td></td>
 <td></td>
 <td></td>

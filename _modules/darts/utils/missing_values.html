@@ -237,7 +237,7 @@
 
 
 <div class="viewcode-block" id="extract_subseries"><a class="viewcode-back" href="../../../generated_api/darts.utils.missing_values.html#darts.utils.missing_values.extract_subseries">[docs]</a><span class="k">def</span> <span class="nf">extract_subseries</span><span class="p">(</span>
-    <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">min_gap_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">min_gap_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Partitions the series into a sequence of sub-series by using significant gaps of missing values</span>
@@ -250,10 +250,18 @@
 <span class="sd">    min_gap_size</span>
 <span class="sd">        The minimum number of contiguous missing values to consider a gap as significant. Defaults to 1.</span>
 
+<span class="sd">    mode</span>
+<span class="sd">        Only for multivariate TimeSeries. The definition of a gap; presence of a NaN in any column (&quot;any&quot;)</span>
+<span class="sd">        or NaNs in all the columns (&quot;all&quot;) for a given timestamp. Defaults to &quot;all&quot;.</span>
+
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    subseries</span>
 <span class="sd">        A list of TimeSeries, sub-series without significant gaps of missing values</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    TimeSeries.gaps : return the gaps in the TimeSeries</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># Remove null values from the series extremes</span>
@@ -264,15 +272,19 @@
         <span class="k">return</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span>
 
     <span class="c1"># Get start/end times of sub-series without gaps of missing values</span>
-    <span class="n">gaps_df</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">gaps</span><span class="p">()</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;gap_size&gt;=</span><span class="si">{</span><span class="n">min_gap_size</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">start_times</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="o">.</span><span class="n">start_time</span><span class="p">()]</span> <span class="o">+</span> <span class="p">(</span><span class="n">gaps_df</span><span class="p">[</span><span class="s2">&quot;gap_end&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">freq</span><span class="p">)</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span>
-    <span class="n">end_times</span> <span class="o">=</span> <span class="p">(</span><span class="n">gaps_df</span><span class="p">[</span><span class="s2">&quot;gap_start&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">freq</span><span class="p">)</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="n">series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="n">freq</span><span class="p">]</span>
+    <span class="n">gaps_df</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">gaps</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">gaps_df</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">series</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">gaps_df</span> <span class="o">=</span> <span class="n">gaps_df</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;gap_size&gt;=</span><span class="si">{</span><span class="n">min_gap_size</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">start_times</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="o">.</span><span class="n">start_time</span><span class="p">()]</span> <span class="o">+</span> <span class="p">(</span><span class="n">gaps_df</span><span class="p">[</span><span class="s2">&quot;gap_end&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">freq</span><span class="p">)</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span>
+        <span class="n">end_times</span> <span class="o">=</span> <span class="p">(</span><span class="n">gaps_df</span><span class="p">[</span><span class="s2">&quot;gap_start&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">freq</span><span class="p">)</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="n">series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="n">freq</span><span class="p">]</span>
 
-    <span class="n">subseries</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">start_times</span><span class="p">,</span> <span class="n">end_times</span><span class="p">):</span>
-        <span class="n">subseries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">])</span>
+        <span class="n">subseries</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">start_times</span><span class="p">,</span> <span class="n">end_times</span><span class="p">):</span>
+            <span class="n">subseries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">])</span>
 
-    <span class="k">return</span> <span class="n">subseries</span></div>
+        <span class="k">return</span> <span class="n">subseries</span></div>
 
 
 <span class="k">def</span> <span class="nf">_const_fill</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">fill</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>

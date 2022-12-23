@@ -1,4 +1,0 @@
-
-.. automodule:: darts.utils.data.encoders
-   :members:
-   :undoc-members:

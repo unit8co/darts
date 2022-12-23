@@ -606,18 +606,18 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="o">%</span><span class="k">matplotlib</span> inline
+<span></span>%matplotlib inline
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pprint</span>
-<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
+import numpy as np
+import matplotlib.pyplot as plt
+from pprint import pprint
+from itertools import product
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">concatenate</span>
-<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AustralianTourismDataset</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">LinearRegressionModel</span><span class="p">,</span> <span class="n">Theta</span>
-<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">mae</span>
-<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">MinTReconciliator</span>
+from darts import TimeSeries, concatenate
+from darts.datasets import AustralianTourismDataset
+from darts.models import LinearRegressionModel, Theta
+from darts.metrics import mae
+from darts.dataprocessing.transformers import MinTReconciliator
 </pre></div>
 </div>
 </div>
@@ -629,7 +629,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">tourism_series</span> <span class="o">=</span> <span class="n">AustralianTourismDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span></span>tourism_series = AustralianTourismDataset().load()
 </pre></div>
 </div>
 </div>
@@ -647,7 +647,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">tourism_series</span><span class="p">[[</span><span class="s2">&quot;Total&quot;</span><span class="p">,</span> <span class="s2">&quot;NSW&quot;</span><span class="p">,</span> <span class="s2">&quot;NSW - bus&quot;</span><span class="p">,</span> <span class="s2">&quot;NSW - hol&quot;</span><span class="p">,</span> <span class="s2">&quot;NSW - bus - city&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span></span>tourism_series[[&quot;Total&quot;, &quot;NSW&quot;, &quot;NSW - bus&quot;, &quot;NSW - hol&quot;, &quot;NSW - bus - city&quot;]].plot()
 </pre></div>
 </div>
 </div>
@@ -667,11 +667,11 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">sum_city_noncity</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="n">tourism_series</span><span class="p">[</span><span class="s2">&quot;NSW - hol - city&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">tourism_series</span><span class="p">[</span><span class="s2">&quot;NSW - hol - noncity&quot;</span><span class="p">]</span>
-<span class="p">)</span>
-<span class="n">sum_city_noncity</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;NSW - hol, city+noncity&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;grey&quot;</span><span class="p">)</span>
-<span class="n">tourism_series</span><span class="p">[</span><span class="s2">&quot;NSW - hol&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;orange&quot;</span><span class="p">)</span>
+<span></span>sum_city_noncity = (
+    tourism_series[&quot;NSW - hol - city&quot;] + tourism_series[&quot;NSW - hol - noncity&quot;]
+)
+sum_city_noncity.plot(label=&quot;NSW - hol, city+noncity&quot;, lw=8, color=&quot;grey&quot;)
+tourism_series[&quot;NSW - hol&quot;].plot(color=&quot;orange&quot;)
 </pre></div>
 </div>
 </div>
@@ -688,17 +688,17 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">reasons</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Hol&quot;</span><span class="p">,</span> <span class="s2">&quot;VFR&quot;</span><span class="p">,</span> <span class="s2">&quot;Bus&quot;</span><span class="p">,</span> <span class="s2">&quot;Oth&quot;</span><span class="p">]</span>
-<span class="n">regions</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;NSW&quot;</span><span class="p">,</span> <span class="s2">&quot;VIC&quot;</span><span class="p">,</span> <span class="s2">&quot;QLD&quot;</span><span class="p">,</span> <span class="s2">&quot;SA&quot;</span><span class="p">,</span> <span class="s2">&quot;WA&quot;</span><span class="p">,</span> <span class="s2">&quot;TAS&quot;</span><span class="p">,</span> <span class="s2">&quot;NT&quot;</span><span class="p">]</span>
-<span class="n">city_labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;city&quot;</span><span class="p">,</span> <span class="s2">&quot;noncity&quot;</span><span class="p">]</span>
+<span></span>reasons = [&quot;Hol&quot;, &quot;VFR&quot;, &quot;Bus&quot;, &quot;Oth&quot;]
+regions = [&quot;NSW&quot;, &quot;VIC&quot;, &quot;QLD&quot;, &quot;SA&quot;, &quot;WA&quot;, &quot;TAS&quot;, &quot;NT&quot;]
+city_labels = [&quot;city&quot;, &quot;noncity&quot;]
 
-<span class="n">tourism_series</span><span class="p">[</span><span class="s2">&quot;Total&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;total&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;grey&quot;</span><span class="p">)</span>
-<span class="nb">sum</span><span class="p">([</span><span class="n">tourism_series</span><span class="p">[</span><span class="n">region</span><span class="p">]</span> <span class="k">for</span> <span class="n">region</span> <span class="ow">in</span> <span class="n">regions</span><span class="p">])</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;sum regions&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;orange&quot;</span>
-<span class="p">)</span>
-<span class="nb">sum</span><span class="p">([</span><span class="n">tourism_series</span><span class="p">[</span><span class="n">reason</span><span class="p">]</span> <span class="k">for</span> <span class="n">reason</span> <span class="ow">in</span> <span class="n">reasons</span><span class="p">])</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;sum reasons&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span>
-<span class="p">)</span>
+tourism_series[&quot;Total&quot;].plot(label=&quot;total&quot;, lw=12, color=&quot;grey&quot;)
+sum([tourism_series[region] for region in regions]).plot(
+    label=&quot;sum regions&quot;, lw=7, color=&quot;orange&quot;
+)
+sum([tourism_series[reason] for reason in reasons]).plot(
+    label=&quot;sum reasons&quot;, lw=3, color=&quot;blue&quot;
+)
 </pre></div>
 </div>
 </div>
@@ -728,25 +728,25 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">hierarchy</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+<span></span>hierarchy = dict()
 
-<span class="c1"># Fill in grouping by reason</span>
-<span class="k">for</span> <span class="n">reason</span> <span class="ow">in</span> <span class="n">reasons</span><span class="p">:</span>
-    <span class="n">hierarchy</span><span class="p">[</span><span class="n">reason</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Total&quot;</span><span class="p">]</span>
+# Fill in grouping by reason
+for reason in reasons:
+    hierarchy[reason] = [&quot;Total&quot;]
 
-<span class="c1"># Fill in grouping by region</span>
-<span class="k">for</span> <span class="n">region</span> <span class="ow">in</span> <span class="n">regions</span><span class="p">:</span>
-    <span class="n">hierarchy</span><span class="p">[</span><span class="n">region</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Total&quot;</span><span class="p">]</span>
+# Fill in grouping by region
+for region in regions:
+    hierarchy[region] = [&quot;Total&quot;]
 
-<span class="c1"># Fill in grouping by (region, reason)</span>
-<span class="k">for</span> <span class="n">region</span><span class="p">,</span> <span class="n">reason</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="n">regions</span><span class="p">,</span> <span class="n">reasons</span><span class="p">):</span>
-    <span class="n">hierarchy</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="n">reason</span><span class="o">.</span><span class="n">lower</span><span class="p">())]</span> <span class="o">=</span> <span class="p">[</span><span class="n">reason</span><span class="p">,</span> <span class="n">region</span><span class="p">]</span>
+# Fill in grouping by (region, reason)
+for region, reason in product(regions, reasons):
+    hierarchy[&quot;{} - {}&quot;.format(region, reason.lower())] = [reason, region]
 
-<span class="c1"># Fill in grouping by (region, reason, &lt;city&gt;)</span>
-<span class="k">for</span> <span class="n">region</span><span class="p">,</span> <span class="n">reason</span><span class="p">,</span> <span class="n">city</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="n">regions</span><span class="p">,</span> <span class="n">reasons</span><span class="p">,</span> <span class="n">city_labels</span><span class="p">):</span>
-    <span class="n">hierarchy</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="n">reason</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">city</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="n">reason</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
-    <span class="p">]</span>
+# Fill in grouping by (region, reason, &lt;city&gt;)
+for region, reason, city in product(regions, reasons, city_labels):
+    hierarchy[&quot;{} - {} - {}&quot;.format(region, reason.lower(), city)] = [
+        &quot;{} - {}&quot;.format(region, reason.lower())
+    ]
 </pre></div>
 </div>
 </div>
@@ -756,8 +756,8 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;Hol&quot;</span><span class="p">,</span> <span class="s2">&quot;NSW - hol&quot;</span><span class="p">,</span> <span class="s2">&quot;NSW - bus - city&quot;</span><span class="p">]:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">component</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">hierarchy</span><span class="p">[</span><span class="n">component</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span></span>for component in [&quot;Hol&quot;, &quot;NSW - hol&quot;, &quot;NSW - bus - city&quot;]:
+    print(f&quot;{component} -&gt; {hierarchy[component]}&quot;)
 </pre></div>
 </div>
 </div>
@@ -778,7 +778,7 @@ NSW - bus - city -&gt; [&#39;NSW - bus&#39;]
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">tourism_series</span> <span class="o">=</span> <span class="n">tourism_series</span><span class="o">.</span><span class="n">with_hierarchy</span><span class="p">(</span><span class="n">hierarchy</span><span class="p">)</span>
+<span></span>tourism_series = tourism_series.with_hierarchy(hierarchy)
 </pre></div>
 </div>
 </div>
@@ -791,7 +791,7 @@ NSW - bus - city -&gt; [&#39;NSW - bus&#39;]
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">tourism_series</span><span class="p">[:</span><span class="o">-</span><span class="mi">12</span><span class="p">],</span> <span class="n">tourism_series</span><span class="p">[</span><span class="o">-</span><span class="mi">12</span><span class="p">:]</span>
+<span></span>train, val = tourism_series[:-12], tourism_series[-12:]
 </pre></div>
 </div>
 </div>
@@ -801,9 +801,9 @@ NSW - bus - city -&gt; [&#39;NSW - bus&#39;]
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
-<span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+<span></span>model = LinearRegressionModel(lags=12)
+model.fit(train)
+pred = model.predict(n=len(val))
 </pre></div>
 </div>
 </div>
@@ -822,10 +822,10 @@ NSW - bus - city -&gt; [&#39;NSW - bus&#39;]
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">components_to_show</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Total&quot;</span><span class="p">,</span> <span class="s2">&quot;NSW&quot;</span><span class="p">,</span> <span class="s2">&quot;NSW - bus&quot;</span><span class="p">,</span> <span class="s2">&quot;NSW - hol&quot;</span><span class="p">,</span> <span class="s2">&quot;NSW - bus - city&quot;</span><span class="p">]</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
-<span class="n">tourism_series</span><span class="p">[</span><span class="n">components_to_show</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
-<span class="n">pred</span><span class="p">[</span><span class="n">components_to_show</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span></span>components_to_show = [&quot;Total&quot;, &quot;NSW&quot;, &quot;NSW - bus&quot;, &quot;NSW - hol&quot;, &quot;NSW - bus - city&quot;]
+plt.figure(figsize=(14, 8))
+tourism_series[components_to_show].plot(lw=5)
+pred[components_to_show].plot(lw=2)
 </pre></div>
 </div>
 </div>
@@ -842,40 +842,40 @@ NSW - bus - city -&gt; [&#39;NSW - bus&#39;]
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># we pre-generate some of the components&#39; names</span>
-<span class="n">regions_reasons_comps</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
-    <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()),</span> <span class="n">product</span><span class="p">(</span><span class="n">regions</span><span class="p">,</span> <span class="n">reasons</span><span class="p">))</span>
-<span class="p">)</span>
+<span></span># we pre-generate some of the components&#39; names
+regions_reasons_comps = list(
+    map(lambda t: &quot;{} - {}&quot;.format(t[0], t[1].lower()), product(regions, reasons))
+)
 
-<span class="n">regions_reasons_city_comps</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
-    <span class="nb">map</span><span class="p">(</span>
-        <span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span>
-        <span class="n">product</span><span class="p">(</span><span class="n">regions</span><span class="p">,</span> <span class="n">reasons</span><span class="p">,</span> <span class="n">city_labels</span><span class="p">),</span>
-    <span class="p">)</span>
-<span class="p">)</span>
-
-
-<span class="k">def</span> <span class="nf">measure_mae</span><span class="p">(</span><span class="n">pred</span><span class="p">):</span>
-    <span class="k">def</span> <span class="nf">print_mae_on_subset</span><span class="p">(</span><span class="n">subset</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-        <span class="nb">print</span><span class="p">(</span>
-            <span class="s2">&quot;mean MAE on </span><span class="si">{}</span><span class="s2">: </span><span class="si">{:.2f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                <span class="n">name</span><span class="p">,</span>
-                <span class="n">mae</span><span class="p">(</span>
-                    <span class="p">[</span><span class="n">pred</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">subset</span><span class="p">],</span>
-                    <span class="p">[</span><span class="n">val</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">subset</span><span class="p">],</span>
-                    <span class="n">inter_reduction</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span>
-                <span class="p">),</span>
-            <span class="p">)</span>
-        <span class="p">)</span>
-
-    <span class="n">print_mae_on_subset</span><span class="p">([</span><span class="s2">&quot;Total&quot;</span><span class="p">],</span> <span class="s2">&quot;total&quot;</span><span class="p">)</span>
-    <span class="n">print_mae_on_subset</span><span class="p">(</span><span class="n">reasons</span><span class="p">,</span> <span class="s2">&quot;reasons&quot;</span><span class="p">)</span>
-    <span class="n">print_mae_on_subset</span><span class="p">(</span><span class="n">regions</span><span class="p">,</span> <span class="s2">&quot;regions&quot;</span><span class="p">)</span>
-    <span class="n">print_mae_on_subset</span><span class="p">(</span><span class="n">regions_reasons_comps</span><span class="p">,</span> <span class="s2">&quot;(region, reason)&quot;</span><span class="p">)</span>
-    <span class="n">print_mae_on_subset</span><span class="p">(</span><span class="n">regions_reasons_city_comps</span><span class="p">,</span> <span class="s2">&quot;(region, reason, city)&quot;</span><span class="p">)</span>
+regions_reasons_city_comps = list(
+    map(
+        lambda t: &quot;{} - {} - {}&quot;.format(t[0], t[1].lower(), t[2]),
+        product(regions, reasons, city_labels),
+    )
+)
 
 
-<span class="n">measure_mae</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span>
+def measure_mae(pred):
+    def print_mae_on_subset(subset, name):
+        print(
+            &quot;mean MAE on {}: {:.2f}&quot;.format(
+                name,
+                mae(
+                    [pred[c] for c in subset],
+                    [val[c] for c in subset],
+                    inter_reduction=np.mean,
+                ),
+            )
+        )
+
+    print_mae_on_subset([&quot;Total&quot;], &quot;total&quot;)
+    print_mae_on_subset(reasons, &quot;reasons&quot;)
+    print_mae_on_subset(regions, &quot;regions&quot;)
+    print_mae_on_subset(regions_reasons_comps, &quot;(region, reason)&quot;)
+    print_mae_on_subset(regions_reasons_city_comps, &quot;(region, reason, city)&quot;)
+
+
+measure_mae(pred)
 </pre></div>
 </div>
 </div>
@@ -900,25 +900,25 @@ mean MAE on (region, reason, city): 189.69
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span> <span class="nf">plot_forecast_sums</span><span class="p">(</span><span class="n">pred_series</span><span class="p">):</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span></span>def plot_forecast_sums(pred_series):
+    plt.figure(figsize=(10, 5))
 
-    <span class="n">pred_series</span><span class="p">[</span><span class="s2">&quot;Total&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;total&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;grey&quot;</span><span class="p">)</span>
-    <span class="nb">sum</span><span class="p">([</span><span class="n">pred_series</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">regions</span><span class="p">])</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;sum of regions&quot;</span><span class="p">)</span>
-    <span class="nb">sum</span><span class="p">([</span><span class="n">pred_series</span><span class="p">[</span><span class="n">r</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">reasons</span><span class="p">])</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;sum of reasons&quot;</span><span class="p">)</span>
-    <span class="nb">sum</span><span class="p">([</span><span class="n">pred_series</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">regions_reasons_comps</span><span class="p">])</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-        <span class="n">label</span><span class="o">=</span><span class="s2">&quot;sum of (region, reason) series&quot;</span>
-    <span class="p">)</span>
-    <span class="nb">sum</span><span class="p">([</span><span class="n">pred_series</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">regions_reasons_city_comps</span><span class="p">])</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-        <span class="n">label</span><span class="o">=</span><span class="s2">&quot;sum of (region, reason, city) series&quot;</span>
-    <span class="p">)</span>
+    pred_series[&quot;Total&quot;].plot(label=&quot;total&quot;, lw=6, alpha=0.3, color=&quot;grey&quot;)
+    sum([pred_series[r] for r in regions]).plot(label=&quot;sum of regions&quot;)
+    sum([pred_series[r] for r in reasons]).plot(label=&quot;sum of reasons&quot;)
+    sum([pred_series[t] for t in regions_reasons_comps]).plot(
+        label=&quot;sum of (region, reason) series&quot;
+    )
+    sum([pred_series[t] for t in regions_reasons_city_comps]).plot(
+        label=&quot;sum of (region, reason, city) series&quot;
+    )
 
-    <span class="n">legend</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;best&quot;</span><span class="p">,</span> <span class="n">frameon</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-    <span class="n">frame</span> <span class="o">=</span> <span class="n">legend</span><span class="o">.</span><span class="n">get_frame</span><span class="p">()</span>
-    <span class="n">frame</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="s2">&quot;white&quot;</span><span class="p">)</span>
+    legend = plt.legend(loc=&quot;best&quot;, frameon=1)
+    frame = legend.get_frame()
+    frame.set_facecolor(&quot;white&quot;)
 
 
-<span class="n">plot_forecast_sums</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span>
+plot_forecast_sums(pred)
 </pre></div>
 </div>
 </div>
@@ -941,9 +941,9 @@ mean MAE on (region, reason, city): 189.69
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">reconciliator</span> <span class="o">=</span> <span class="n">MinTReconciliator</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;wls_val&quot;</span><span class="p">)</span>
-<span class="n">reconciliator</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
-<span class="n">reconcilied_preds</span> <span class="o">=</span> <span class="n">reconciliator</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span>
+<span></span>reconciliator = MinTReconciliator(method=&quot;wls_val&quot;)
+reconciliator.fit(train)
+reconcilied_preds = reconciliator.transform(pred)
 </pre></div>
 </div>
 </div>
@@ -953,7 +953,7 @@ mean MAE on (region, reason, city): 189.69
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">plot_forecast_sums</span><span class="p">(</span><span class="n">reconcilied_preds</span><span class="p">)</span>
+<span></span>plot_forecast_sums(reconcilied_preds)
 </pre></div>
 </div>
 </div>
@@ -970,7 +970,7 @@ mean MAE on (region, reason, city): 189.69
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">measure_mae</span><span class="p">(</span><span class="n">reconcilied_preds</span><span class="p">)</span>
+<span></span>measure_mae(reconcilied_preds)
 </pre></div>
 </div>
 </div>
@@ -996,13 +996,13 @@ mean MAE on (region, reason, city): 188.89
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">preds</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">tourism_series</span><span class="o">.</span><span class="n">components</span><span class="p">:</span>
-    <span class="n">model</span> <span class="o">=</span> <span class="n">Theta</span><span class="p">()</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">[</span><span class="n">component</span><span class="p">])</span>
-    <span class="n">preds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">)))</span>
+<span></span>preds = []
+for component in tourism_series.components:
+    model = Theta()
+    model.fit(train[component])
+    preds.append(model.predict(n=len(val)))
 
-<span class="n">pred</span> <span class="o">=</span> <span class="n">concatenate</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="s2">&quot;component&quot;</span><span class="p">)</span>
+pred = concatenate(preds, axis=&quot;component&quot;)
 </pre></div>
 </div>
 </div>
@@ -1025,10 +1025,10 @@ mean MAE on (region, reason, city): 188.89
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
-<span class="n">tourism_series</span><span class="p">[</span><span class="n">components_to_show</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
-<span class="n">pred</span><span class="p">[</span><span class="n">components_to_show</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-<span class="n">measure_mae</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span>
+<span></span>plt.figure(figsize=(14, 8))
+tourism_series[components_to_show].plot(lw=5)
+pred[components_to_show].plot(lw=2)
+measure_mae(pred)
 </pre></div>
 </div>
 </div>
@@ -1057,7 +1057,7 @@ mean MAE on (region, reason, city): 192.29
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">plot_forecast_sums</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span>
+<span></span>plot_forecast_sums(pred)
 </pre></div>
 </div>
 </div>
@@ -1074,12 +1074,12 @@ mean MAE on (region, reason, city): 192.29
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">reconciliator</span> <span class="o">=</span> <span class="n">MinTReconciliator</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;wls_val&quot;</span><span class="p">)</span>
-<span class="n">reconciliator</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
-<span class="n">reconcilied_preds</span> <span class="o">=</span> <span class="n">reconciliator</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span>
+<span></span>reconciliator = MinTReconciliator(method=&quot;wls_val&quot;)
+reconciliator.fit(train)
+reconcilied_preds = reconciliator.transform(pred)
 
-<span class="n">plot_forecast_sums</span><span class="p">(</span><span class="n">reconcilied_preds</span><span class="p">)</span>
-<span class="n">measure_mae</span><span class="p">(</span><span class="n">reconcilied_preds</span><span class="p">)</span>
+plot_forecast_sums(reconcilied_preds)
+measure_mae(reconcilied_preds)
 </pre></div>
 </div>
 </div>

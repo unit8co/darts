@@ -13,15 +13,17 @@
         darts.models.forecasting.block_rnn_model
         darts.models.forecasting.catboost_model
         darts.models.forecasting.croston
+        darts.models.forecasting.dlinear
         darts.models.forecasting.ensemble_model
         darts.models.forecasting.exponential_smoothing
         darts.models.forecasting.fft
         darts.models.forecasting.forecasting_model
-        darts.models.forecasting.gradient_boosted_model
         darts.models.forecasting.kalman_forecaster
+        darts.models.forecasting.lgbm
         darts.models.forecasting.linear_regression_model
         darts.models.forecasting.nbeats
         darts.models.forecasting.nhits
+        darts.models.forecasting.nlinear
         darts.models.forecasting.pl_forecasting_module
         darts.models.forecasting.prophet_model
         darts.models.forecasting.random_forest
@@ -38,3 +40,4 @@
         darts.models.forecasting.torch_forecasting_model
         darts.models.forecasting.transformer_model
         darts.models.forecasting.varima
+        darts.models.forecasting.xgboost

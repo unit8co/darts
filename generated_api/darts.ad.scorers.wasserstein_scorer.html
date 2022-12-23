@@ -1,0 +1,1217 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>WassersteinScorer &#8212; darts  documentation</title>
+    
+  <link href="../_static/css/theme.css" rel="stylesheet">
+  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Utils for Anomaly Detection" href="darts.ad.utils.html" />
+    <link rel="prev" title="&lt;no title&gt;" href="darts.ad.scorers.scorers.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../index.html">
+  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../README.html">
+  Home
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../userguide.html">
+  User Guide
+ </a>
+</li>
+
+<li class="toctree-l1 current active nav-item">
+ <a class="reference internal nav-link" href="darts.html">
+  API Reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../examples.html">
+  Examples
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    <ul class="current nav bd-sidenav">
+ <li class="toctree-l1 current active has-children">
+  <a class="reference internal" href="darts.ad.html">
+   Anomaly Detection
+  </a>
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <label for="toctree-checkbox-1">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="current">
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.ad.aggregators.html">
+     Anomaly Aggregators
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
+    <label for="toctree-checkbox-2">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.aggregators.and_aggregator.html">
+       AND Aggregator
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.aggregators.ensemble_sklearn_aggregator.html">
+       Ensemble scikit-learn aggregator
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.aggregators.or_aggregator.html">
+       OR Aggregator
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.ad.anomaly_model.html">
+     Anomaly Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
+    <label for="toctree-checkbox-3">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.anomaly_model.filtering_am.html">
+       Filtering Anomaly Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.anomaly_model.forecasting_am.html">
+       Forecasting Anomaly Model
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.ad.detectors.html">
+     Anomaly Detectors
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
+    <label for="toctree-checkbox-4">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.detectors.quantile_detector.html">
+       Quantile Detector
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.detectors.threshold_detector.html">
+       Threshold Detector
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 current active has-children">
+    <a class="reference internal" href="darts.ad.scorers.html">
+     Anomaly Scorers
+    </a>
+    <input checked="" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+    <label for="toctree-checkbox-5">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul class="current">
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.difference_scorer.html">
+       Difference Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.kmeans_scorer.html">
+       k-means Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_cauchy_scorer.html">
+       NLL Cauchy Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_exponential_scorer.html">
+       NLL Exponential Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_gamma_scorer.html">
+       NLL Gamma Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_gaussian_scorer.html">
+       NLL Gaussian Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_laplace_scorer.html">
+       NLL Laplace Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_poisson_scorer.html">
+       NLL Poisson Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.norm_scorer.html">
+       Norm Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
+       PyODScorer
+      </a>
+     </li>
+     <li class="toctree-l3 current active">
+      <a class="current reference internal" href="#">
+       WassersteinScorer
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.ad.utils.html">
+     Utils for Anomaly Detection
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.dataprocessing.html">
+   Data Processing
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+  <label for="toctree-checkbox-6">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.dataprocessing.encoders.html">
+     Time Axis Encoders
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
+    <label for="toctree-checkbox-7">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html">
+       Encoder Base Classes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.encoders.encoders.html">
+       Time Axes Encoders
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.dataprocessing.transformers.html">
+     Data Transformers
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
+    <label for="toctree-checkbox-8">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">
+       Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.boxcox.html">
+       Box-Cox Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
+       Fittable Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">
+       Invertible Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">
+       Mapper and InvertibleMapper
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.missing_values_filler.html">
+       Missing Values Filler
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.reconciliation.html">
+       Hierarchical Reconciliation
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.scaler.html">
+       Scaler
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.static_covariates_transformer.html">
+       Static Covariates Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.window_transformer.html">
+       Window Transformer
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.dataprocessing.pipeline.html">
+     Pipeline
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.datasets.html">
+   Datasets
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
+  <label for="toctree-checkbox-9">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="simple">
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.explainability.html">
+   Explainability
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
+  <label for="toctree-checkbox-10">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.explainability_result.html">
+     ExplainabilityResult
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.shap_explainer.html">
+     Shap Explainer for RegressionModels
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.metrics.html">
+   Metrics
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" type="checkbox"/>
+  <label for="toctree-checkbox-11">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.metrics.metrics.html">
+     Metrics
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.models.html">
+   Models
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" type="checkbox"/>
+  <label for="toctree-checkbox-12">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.models.filtering.html">
+     Filtering Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" type="checkbox"/>
+    <label for="toctree-checkbox-13">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.gaussian_process_filter.html">
+       Gaussian Processes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.kalman_filter.html">
+       Kalman Filter
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.moving_average.html">
+       Moving Average
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.models.forecasting.html">
+     Forecasting Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" type="checkbox"/>
+    <label for="toctree-checkbox-14">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.arima.html">
+       ARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.auto_arima.html">
+       AutoARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.baselines.html">
+       Baseline Models
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.block_rnn_model.html">
+       Block Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.catboost_model.html">
+       CatBoost model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.croston.html">
+       Croston method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.dlinear.html">
+       D-Linear
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.exponential_smoothing.html">
+       Exponential Smoothing
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.fft.html">
+       Fast Fourier Transform
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
+       Kalman Filter Forecaster
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.lgbm.html">
+       LightGBM Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
+       Linear Regression model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nbeats.html">
+       N-BEATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nhits.html">
+       N-HiTS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nlinear.html">
+       N-Linear
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
+       Facebook Prophet
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.random_forest.html">
+       Random Forest
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.regression_ensemble_model.html">
+       Regression ensemble model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.regression_model.html">
+       Regression Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
+       Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">
+       StatsForecastAutoARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_ets.html">
+       StatsForecastETS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tbats.html">
+       BATS and TBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tcn_model.html">
+       Temporal Convolutional Network
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tft_model.html">
+       Temporal Fusion Transformer (TFT)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.theta.html">
+       Theta Method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.transformer_model.html">
+       Transformer Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.varima.html">
+       VARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.xgboost.html">
+       XGBoost Model
+      </a>
+     </li>
+    </ul>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.utils.html">
+   Utils
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" type="checkbox"/>
+  <label for="toctree-checkbox-15">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.utils.data.html">
+     TimeSeries Datasets
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" type="checkbox"/>
+    <label for="toctree-checkbox-16">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.horizon_based_dataset.html">
+       Horizon-Based Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.inference_dataset.html">
+       Inference Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.sequential_dataset.html">
+       Sequential Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.shifted_dataset.html">
+       Shifted Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.training_dataset.html">
+       Training Datasets Base Classes
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.likelihood_models.html">
+     Likelihood Models
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.losses.html">
+     PyTorch Loss Functions
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.missing_values.html">
+     Utils for filling missing values
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.model_selection.html">
+     Model selection utilities
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.statistics.html">
+     Time Series Statistics
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.timeseries_generation.html">
+     Utils for time series generation
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.torch.html">
+     Utils for Pytorch and its usage
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.utils.html">
+     Additional util functions
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="darts.timeseries.html">
+   Timeseries
+  </a>
+ </li>
+</ul>
+
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+              
+              <div class="toc-item">
+                
+
+<nav id="bd-toc-nav">
+    
+</nav>
+              </div>
+              
+              <div class="toc-item">
+                
+              </div>
+              
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <span class="target" id="module-darts.ad.scorers.wasserstein_scorer"></span><section id="wassersteinscorer">
+<h1>WassersteinScorer<a class="headerlink" href="#wassersteinscorer" title="Permalink to this headline">¶</a></h1>
+<p>Wasserstein Scorer (distance function defined between probability distributions) <a class="reference internal" href="#rc9944064446a-1" id="id1">[1]</a>.
+The implementations is wrapped around <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wasserstein_distance.html">scipy.stats</a>.</p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="rc9944064446a-1"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Wasserstein_metric">https://en.wikipedia.org/wiki/Wasserstein_metric</a></p>
+</dd>
+</dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.ad.scorers.wasserstein_scorer.WassersteinScorer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.ad.scorers.wasserstein_scorer.</span></span><span class="sig-name descname"><span class="pre">WassersteinScorer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_wise</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diff_fn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'abs_diff'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/ad/scorers/wasserstein_scorer.html#WassersteinScorer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.ad.scorers.wasserstein_scorer.WassersteinScorer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.ad.scorers.scorers.html#darts.ad.scorers.scorers.FittableAnomalyScorer" title="darts.ad.scorers.scorers.FittableAnomalyScorer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.ad.scorers.scorers.FittableAnomalyScorer</span></code></a></p>
+<p>When calling <code class="docutils literal notranslate"><span class="pre">fit(series)</span></code>, a moving window is applied, which results in a set of vectors of size <cite>W</cite>,
+where <cite>W</cite> is the window size. These vectors are kept in memory, representing the training
+distribution. The <code class="docutils literal notranslate"><span class="pre">score(series)</span></code> function will apply the same moving window.
+The Wasserstein distance is computed between the training distribution and each vector,
+resulting in an anomaly score.</p>
+<p>Alternatively, the scorer has the functions <code class="docutils literal notranslate"><span class="pre">fit_from_prediction()</span></code> and <code class="docutils literal notranslate"><span class="pre">score_from_prediction()</span></code>.
+Both require two series (actual and prediction), and compute a “difference” series by applying the
+function <code class="docutils literal notranslate"><span class="pre">diff_fn</span></code> (default: absolute difference). The resulting series is then passed to the
+functions <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">score()</span></code>, respectively.</p>
+<p><cite>component_wise</cite> is a boolean parameter indicating how the model should behave with multivariate inputs
+series. If set to True, the model will treat each series dimension independently. If set to False, the model
+concatenates the dimensions in each windows of length <cite>W</cite> and computes a single score for all dimensions.</p>
+<p><strong>Training with</strong> <code class="docutils literal notranslate"><span class="pre">fit()</span></code>:</p>
+<p>The input can be a series (univariate or multivariate) or multiple series. The series will be partitioned
+into equal size subsequences. The subsequence will be of size <cite>W</cite> * <cite>D</cite>, with:</p>
+<ul class="simple">
+<li><p><cite>W</cite> being the size of the window given as a parameter <cite>window</cite></p></li>
+<li><p><cite>D</cite> being the dimension of the series (<cite>D</cite> = 1 if univariate or if <cite>component_wise</cite> is set to True)</p></li>
+</ul>
+<p>For a series of length <cite>N</cite>, (<cite>N</cite> - <cite>W</cite> + 1)/W subsequences will be generated. If a list of series is given
+of length L, each series will be partitioned into subsequences, and the results will be concatenated into
+an array of length L * number of subsequences of each series.</p>
+<p>The arrays will be kept in memory, representing the training data distribution.
+In practice, the series or list of series can for instance represent residuals than can be
+considered independent and identically distributed (iid).</p>
+<p>If <cite>component_wise</cite> is set to True, the algorithm will be applied to each dimension independently. For each
+dimension, a PyOD model will be trained.</p>
+<p><strong>Computing score with</strong> <code class="docutils literal notranslate"><span class="pre">score()</span></code>:</p>
+<p>The input can be a series (univariate or multivariate) or a sequence of series. The given series must have the
+same dimension <cite>D</cite> as the data used to train the PyOD model.</p>
+<p>For each series, if the series is multivariate of dimension <cite>D</cite>:</p>
+<ul class="simple">
+<li><p>if <cite>component_wise</cite> is set to False: it returns a univariate series (dimension=1). It represents
+the anomaly score of the entire series in the considered window at each timestamp.</p></li>
+<li><p>if <cite>component_wise</cite> is set to True: it returns a multivariate series of dimension <cite>D</cite>. Each dimension
+represents the anomaly score of the corresponding component of the input.</p></li>
+</ul>
+<p>If the series is univariate, it returns a univariate series regardless of the parameter
+<cite>component_wise</cite>.</p>
+<p>A window of size <cite>W</cite> is rolled on the series with a stride equal to 1. It is the same size window <cite>W</cite> used
+during the training phase.
+Each value in the score series thus represents how anomalous the sample of the <cite>W</cite> previous values is.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>window</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Size of the sliding window that represents the number of samples in the testing distribution to compare
+with the training distribution in the Wasserstein function</p></li>
+<li><p><strong>diff_fn</strong> – Optionally, reduced function to use if two series are given. It will transform the two series into one.
+This allows the WassersteinScorer to compute the Wasserstein distance on the original series or on its
+residuals (difference between the prediction and the original series).
+Must be one of “abs_diff” and “diff” (defined in <code class="docutils literal notranslate"><span class="pre">_diff_series()</span></code>).
+Default: “abs_diff”</p></li>
+<li><p><strong>component_wise</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Boolean value indicating if the score needs to be computed for each component independently (True)
+or by concatenating the component in the considered window to compute one score (False).
+Default: False</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.is_probabilistic" title="darts.ad.scorers.wasserstein_scorer.WassersteinScorer.is_probabilistic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_probabilistic</span></code></a></p></td>
+<td><p>Whether the scorer expects a probabilistic prediction for its first input.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.check_if_fit_called" title="darts.ad.scorers.wasserstein_scorer.WassersteinScorer.check_if_fit_called"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_if_fit_called</span></code></a>()</p></td>
+<td><p>Checks if the scorer has been fitted before calling its <cite>score()</cite> function.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.eval_accuracy" title="darts.ad.scorers.wasserstein_scorer.WassersteinScorer.eval_accuracy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval_accuracy</span></code></a>(actual_anomalies, series[, metric])</p></td>
+<td><p>Computes the anomaly score of the given time series, and returns the score of an agnostic threshold metric.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.eval_accuracy_from_prediction" title="darts.ad.scorers.wasserstein_scorer.WassersteinScorer.eval_accuracy_from_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eval_accuracy_from_prediction</span></code></a>(...[, metric])</p></td>
+<td><p>Computes the anomaly score between <cite>actual_series</cite> and <cite>pred_series</cite>, and returns the score of an agnostic threshold metric.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.fit" title="darts.ad.scorers.wasserstein_scorer.WassersteinScorer.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series)</p></td>
+<td><p>Fits the scorer on the given time series input.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.fit_from_prediction" title="darts.ad.scorers.wasserstein_scorer.WassersteinScorer.fit_from_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_from_prediction</span></code></a>(actual_series, pred_series)</p></td>
+<td><p>Fits the scorer on the two (sequence of) series.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.score" title="darts.ad.scorers.wasserstein_scorer.WassersteinScorer.score"><code class="xref py py-obj docutils literal notranslate"><span class="pre">score</span></code></a>(series)</p></td>
+<td><p>Computes the anomaly score on the given series.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.score_from_prediction" title="darts.ad.scorers.wasserstein_scorer.WassersteinScorer.score_from_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">score_from_prediction</span></code></a>(actual_series, pred_series)</p></td>
+<td><p>Computes the anomaly score on the two (sequence of) series.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.show_anomalies" title="darts.ad.scorers.wasserstein_scorer.WassersteinScorer.show_anomalies"><code class="xref py py-obj docutils literal notranslate"><span class="pre">show_anomalies</span></code></a>(series[, actual_anomalies, ...])</p></td>
+<td><p>Plot the results of the scorer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.show_anomalies_from_prediction" title="darts.ad.scorers.wasserstein_scorer.WassersteinScorer.show_anomalies_from_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">show_anomalies_from_prediction</span></code></a>(...[, ...])</p></td>
+<td><p>Plot the results of the scorer.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.ad.scorers.wasserstein_scorer.WassersteinScorer.check_if_fit_called">
+<span class="sig-name descname"><span class="pre">check_if_fit_called</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.check_if_fit_called" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if the scorer has been fitted before calling its <cite>score()</cite> function.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.ad.scorers.wasserstein_scorer.WassersteinScorer.eval_accuracy">
+<span class="sig-name descname"><span class="pre">eval_accuracy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_anomalies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'AUC_ROC'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.eval_accuracy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the anomaly score of the given time series, and returns the score
+of an agnostic threshold metric.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>actual_anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The ground truth of the anomalies (1 if it is an anomaly and 0 if not)</p></li>
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) series to detect anomalies from.</p></li>
+<li><p><strong>metric</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Optionally, metric function to use. Must be one of “AUC_ROC” and “AUC_PR”.
+Default: “AUC_ROC”</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl>
+<dt>Score of an agnostic threshold metric for the computed anomaly score</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">float</span></code> if <cite>series</cite> is a univariate series (dimension=1).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Sequence[float]</span></code></p>
+<blockquote>
+<div><ul class="simple">
+<li><p>if <cite>series</cite> is a multivariate series (dimension&gt;1), returns one</p></li>
+</ul>
+<p>value per dimension, or
+* if <cite>series</cite> is a sequence of univariate series, returns one value
+per series</p>
+</div></blockquote>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Sequence[Sequence[float]]]</span></code> if <cite>series</cite> is a sequence of multivariate</p></li>
+</ul>
+<p>series. Outer Sequence is over the sequence input and the inner Sequence
+is over the dimensions of each element in the sequence input.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Union[float, Sequence[float], Sequence[Sequence[float]]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.ad.scorers.wasserstein_scorer.WassersteinScorer.eval_accuracy_from_prediction">
+<span class="sig-name descname"><span class="pre">eval_accuracy_from_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_anomalies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'AUC_ROC'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.eval_accuracy_from_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the anomaly score between <cite>actual_series</cite> and <cite>pred_series</cite>, and returns the score
+of an agnostic threshold metric.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>actual_anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) ground truth of the anomalies (1 if it is an anomaly and 0 if not)</p></li>
+<li><p><strong>actual_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) actual series.</p></li>
+<li><p><strong>pred_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) predicted series.</p></li>
+<li><p><strong>metric</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Optionally, metric function to use. Must be one of “AUC_ROC” and “AUC_PR”.
+Default: “AUC_ROC”</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl>
+<dt>Score of an agnostic threshold metric for the computed anomaly score</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">float</span></code> if <cite>actual_series</cite> and <cite>actual_series</cite> are univariate series (dimension=1).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Sequence[float]</span></code></p>
+<blockquote>
+<div><ul class="simple">
+<li><p>if <cite>actual_series</cite> and <cite>actual_series</cite> are multivariate series (dimension&gt;1),</p></li>
+</ul>
+<p>returns one value per dimension, or
+* if <cite>actual_series</cite> and <cite>actual_series</cite> are sequences of univariate series,
+returns one value per series</p>
+</div></blockquote>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Sequence[Sequence[float]]]</span></code> if <cite>actual_series</cite> and <cite>actual_series</cite> are sequences</p></li>
+</ul>
+<p>of multivariate series. Outer Sequence is over the sequence input and the inner
+Sequence is over the dimensions of each element in the sequence input.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Union[float, Sequence[float], Sequence[Sequence[float]]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.ad.scorers.wasserstein_scorer.WassersteinScorer.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the scorer on the given time series input.</p>
+<p>If sequence of series is given, the scorer will be fitted on the concatenation of the sequence.</p>
+<p>The assumption is that the series <cite>series</cite> used for training are generally anomaly-free.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) series with no anomalies.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Fitted Scorer.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>self</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.ad.scorers.wasserstein_scorer.WassersteinScorer.fit_from_prediction">
+<span class="sig-name descname"><span class="pre">fit_from_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.fit_from_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the scorer on the two (sequence of) series.</p>
+<p>The function <code class="docutils literal notranslate"><span class="pre">diff_fn</span></code> passed as a parameter to the scorer, will transform <cite>pred_series</cite> and <cite>actual_series</cite>
+into one series. By default, <code class="docutils literal notranslate"><span class="pre">diff_fn</span></code> will compute the absolute difference (Default: “abs_diff”).
+If <cite>pred_series</cite> and <cite>actual_series</cite> are sequences, <code class="docutils literal notranslate"><span class="pre">diff_fn</span></code> will be applied to all pairwise elements
+of the sequences.</p>
+<p>The scorer will then be fitted on this (sequence of) series. If a sequence of series is given,
+the scorer will be fitted on the concatenation of the sequence.</p>
+<p>The scorer assumes that the (sequence of) actual_series is anomaly-free.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>actual_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) actual series.</p></li>
+<li><p><strong>pred_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) predicted series.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Fitted Scorer.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>self</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.ad.scorers.wasserstein_scorer.WassersteinScorer.is_probabilistic">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_probabilistic</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.is_probabilistic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Whether the scorer expects a probabilistic prediction for its first input.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.ad.scorers.wasserstein_scorer.WassersteinScorer.score">
+<span class="sig-name descname"><span class="pre">score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.score" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the anomaly score on the given series.</p>
+<p>If a sequence of series is given, the scorer will score each series independently
+and return an anomaly score for each series in the sequence.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) series to detect anomalies from.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(Sequence of) anomaly score time series</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, Sequence[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.ad.scorers.wasserstein_scorer.WassersteinScorer.score_from_prediction">
+<span class="sig-name descname"><span class="pre">score_from_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.score_from_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the anomaly score on the two (sequence of) series.</p>
+<p>The function <code class="docutils literal notranslate"><span class="pre">diff_fn</span></code> passed as a parameter to the scorer, will transform <cite>pred_series</cite> and <cite>actual_series</cite>
+into one “difference” series. By default, <code class="docutils literal notranslate"><span class="pre">diff_fn</span></code> will compute the absolute difference
+(Default: “abs_diff”).
+If actual_series and pred_series are sequences, <code class="docutils literal notranslate"><span class="pre">diff_fn</span></code> will be applied to all pairwise elements
+of the sequences.</p>
+<p>The scorer will then transform this series into an anomaly score. If a sequence of series is given,
+the scorer will score each series independently and return an anomaly score for each series in the sequence.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>actual_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) actual series.</p></li>
+<li><p><strong>pred_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) predicted series.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>(Sequence of) anomaly score time series</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, Sequence[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.ad.scorers.wasserstein_scorer.WassersteinScorer.show_anomalies">
+<span class="sig-name descname"><span class="pre">show_anomalies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actual_anomalies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scorer_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.show_anomalies" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the results of the scorer.</p>
+<p>Computes the score on the given series input. And plots the results.</p>
+<dl>
+<dt>The plot will be composed of the following:</dt><dd><ul class="simple">
+<li><p>the series itself.</p></li>
+<li><p>the anomaly score of the score.</p></li>
+<li><p>the actual anomalies, if given.</p></li>
+</ul>
+</dd>
+<dt>It is possible to:</dt><dd><ul class="simple">
+<li><p>add a title to the figure with the parameter <cite>title</cite></p></li>
+<li><p>give personalized name to the scorer with <cite>scorer_name</cite></p></li>
+<li><p>show the results of a metric for the anomaly score (AUC_ROC or AUC_PR),</p></li>
+</ul>
+<p>if the actual anomalies is provided.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The series to visualize anomalies from.</p></li>
+<li><p><strong>actual_anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – The ground truth of the anomalies (1 if it is an anomaly and 0 if not)</p></li>
+<li><p><strong>scorer_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Name of the scorer.</p></li>
+<li><p><strong>title</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Title of the figure</p></li>
+<li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, Scoring function to use. Must be one of “AUC_ROC” and “AUC_PR”.
+Default: “AUC_ROC”</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.ad.scorers.wasserstein_scorer.WassersteinScorer.show_anomalies_from_prediction">
+<span class="sig-name descname"><span class="pre">show_anomalies_from_prediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scorer_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actual_anomalies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.ad.scorers.wasserstein_scorer.WassersteinScorer.show_anomalies_from_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the results of the scorer.</p>
+<p>Computes the anomaly score on the two series. And plots the results.</p>
+<dl class="simple">
+<dt>The plot will be composed of the following:</dt><dd><ul class="simple">
+<li><p>the actual_series and the pred_series.</p></li>
+<li><p>the anomaly score of the scorer.</p></li>
+<li><p>the actual anomalies, if given.</p></li>
+</ul>
+</dd>
+<dt>It is possible to:</dt><dd><ul class="simple">
+<li><p>add a title to the figure with the parameter <cite>title</cite></p></li>
+<li><p>give personalized name to the scorer with <cite>scorer_name</cite></p></li>
+<li><p>show the results of a metric for the anomaly score (AUC_ROC or AUC_PR),
+if the actual anomalies is provided.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>actual_series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The actual series to visualize anomalies from.</p></li>
+<li><p><strong>pred_series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The predicted series of <cite>actual_series</cite>.</p></li>
+<li><p><strong>actual_anomalies</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – The ground truth of the anomalies (1 if it is an anomaly and 0 if not)</p></li>
+<li><p><strong>scorer_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Name of the scorer.</p></li>
+<li><p><strong>title</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Title of the figure</p></li>
+<li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, Scoring function to use. Must be one of “AUC_ROC” and “AUC_PR”.
+Default: “AUC_ROC”</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'> 
+    <a class='left-prev' id="prev-link" href="darts.ad.scorers.scorers.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">&lt;no title&gt;</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="darts.ad.utils.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Utils for Anomaly Detection</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

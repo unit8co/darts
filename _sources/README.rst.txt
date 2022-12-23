@@ -68,14 +68,20 @@ Time Series Made Easy in Python
    :alt: Join the chat at https://gitter.im/u8darts/darts
 
 
-**darts** is a Python library for easy manipulation and forecasting of time series.
-It contains a variety of models, from classics such as ARIMA to deep neural networks.
-The models can all be used in the same way, using ``fit()`` and ``predict()`` functions,
-similar to scikit-learn. The library also makes it easy to backtest models,
+**Darts** is a Python library for user-friendly forecasting and anomaly detection
+on time series. It contains a variety of models, from classics such as ARIMA to
+deep neural networks. The forecasting models can all be used in the same way,
+using ``fit()`` and ``predict()`` functions, similar to scikit-learn.
+The library also makes it easy to backtest models,
 combine the predictions of several models, and take external data into account. 
 Darts supports both univariate and multivariate time series and models. 
 The ML-based models can be trained on potentially large datasets containing multiple time
 series, and some of the models offer a rich support for probabilistic forecasting.
+
+Darts also offers extensive anomaly detection capabilities.
+For instance, it is trivial to apply PyOD models on time series to obtain anomaly scores,
+or to wrap any of Darts forecasting or filtering models to obtain fully
+fledged anomaly detection models.
 
 Documentation
 -------------
@@ -125,6 +131,9 @@ For more details you can refer to our
 Example Usage
 -------------
 
+Forecasting
+^^^^^^^^^^^
+
 Create a ``TimeSeries`` object from a Pandas DataFrame, and split it in train/validation series:
 
 .. code-block:: python
@@ -169,40 +178,130 @@ Plot the median, 5th and 95th percentiles:
    </div>
 
 
+Anomaly Detection
+^^^^^^^^^^^^^^^^^
+
+Load a multivariate series, trim it, keep 2 components, split train and validation sets:
+
+.. code-block:: python
+
+   from darts.datasets import ETTh2Dataset
+
+   series = ETTh2Dataset().load()[:10000][["MUFL", "LULL"]]
+   train, val = series.split_before(0.6)
+
+Build a k-means anomaly scorer, train it on the train set
+and use it on the validation set to get anomaly scores:
+
+.. code-block:: python
+
+   from darts.ad import KMeansScorer
+
+   scorer = KMeansScorer(k=2, window=5)
+   scorer.fit(train)
+   anom_score = scorer.score(val)
+
+Build a binary anomaly detector and train it over train scores,
+then use it over validation scores to get binary anomaly classification:
+
+.. code-block:: python
+
+   from darts.ad import QuantileDetector
+
+   detector = QuantileDetector(high_quantile=0.99)
+   detector.fit(scorer.score(train))
+   binary_anom = detector.detect(anom_score)
+
+Plot (shifting and scaling some of the series
+to make everything appear on the same figure):
+
+.. code-block:: python
+
+   import matplotlib.pyplot as plt
+
+   series.plot()
+   (anom_score / 2. - 100).plot(label="computed anomaly score", c="orangered", lw=3)
+   (binary_anom * 45 - 150).plot(label="detected binary anomaly", lw=4)
+
+
+.. raw:: html
+
+   <div style="text-align:center;">
+   <img src="https://github.com/unit8co/darts/raw/master/static/images/example_ad.png" alt="darts anomaly detection example" />
+   </div>
+
+
 Features
 --------
 
 
-* **Forecasting Models:** A large collection of forecasting models; from statistical models (such as
+* 
+  **Forecasting Models:** A large collection of forecasting models; from statistical models (such as
   ARIMA) to deep learning models (such as N-BEATS). See `table of models below <#forecasting-models>`_.
-* **Multivariate Support:** ``TimeSeries`` can be multivariate - i.e., contain multiple time-varying
+
+* 
+  **Anomaly Detection** The ``darts.ad`` module contains a collection of anomaly scorers,
+  detectors and aggregators, which can all be combined to detect anomalies in time series.
+  It is easy to wrap any of Darts forecasting or filtering models to build
+  a fully fledged anomaly detection model that compares predictions with actuals.
+  The ``PyODScorer`` makes it trivial to use PyOD detectors on time series.
+
+* 
+  **Multivariate Support:** ``TimeSeries`` can be multivariate - i.e., contain multiple time-varying
   dimensions instead of a single scalar value. Many models can consume and produce multivariate series.
-* **Multiple series training:** All machine learning based models (incl. all neural networks) 
-  support being trained on multiple (potentially multivariate) series. This can scale to large datasets.
-* **Probabilistic Support:** ``TimeSeries`` objects can (optionally) represent stochastic
-  time series; this can for instance be used to get confidence intervals, and many models support different flavours of probabilistic forecasting (such as estimating parametric distributions 
-  or quantiles).
-* **Past and Future Covariates support:** Many models in Darts support past-observed and/or future-known 
+
+* 
+  **Multiple series training (global models):** All machine learning based models (incl. all neural networks) 
+  support being trained on multiple (potentially multivariate) series. This can scale to large datasets too.
+
+* 
+  **Probabilistic Support:** ``TimeSeries`` objects can (optionally) represent stochastic
+  time series; this can for instance be used to get confidence intervals, and many models support different
+  flavours of probabilistic forecasting (such as estimating parametric distributions or quantiles).
+  Some anomaly detection scorers are also able to exploit these predictive distributions.
+
+* 
+  **Past and Future Covariates support:** Many models in Darts support past-observed and/or future-known 
   covariate (external data) time series as inputs for producing forecasts.
-* **Static Covariates support:** In addition to time-dependent data, ``TimeSeries`` can also contain
+
+* 
+  **Static Covariates support:** In addition to time-dependent data, ``TimeSeries`` can also contain
   static data for each dimension, which can be exploited by some models.
-* **Hierarchical Reconciliation:** Darts offers transformers to perform reconciliation.
+
+* 
+  **Hierarchical Reconciliation:** Darts offers transformers to perform reconciliation.
   These can make the forecasts add up in a way that respects the underlying hierarchy.
-* **Regression Models:** It is possible to plug-in any scikit-learn compatible model
+
+* 
+  **Regression Models:** It is possible to plug-in any scikit-learn compatible model
   to obtain forecasts as functions of lagged values of the target series and covariates.
-* **Explainability:** Darts has the ability to *explain* forecasting models by using Shap values.
-* **Data processing:** Tools to easily apply (and revert) common transformations on
-  time series data (scaling, filling missing values, boxcox, ...)
-* **Metrics:** A variety of metrics for evaluating time series' goodness of fit;
+
+* 
+  **Explainability:** Darts has the ability to *explain* some forecasting models using Shap values.
+
+* 
+  **Data processing:** Tools to easily apply (and revert) common transformations on
+  time series data (scaling, filling missing values, differencing, boxcox, ...)
+
+* 
+  **Metrics:** A variety of metrics for evaluating time series' goodness of fit;
   from R2-scores to Mean Absolute Scaled Error.
-* **Backtesting:** Utilities for simulating historical forecasts, using moving time windows.
-* **PyTorch Lightning Support:** All deep learning models are implemented using PyTorch Lightning,
+
+* 
+  **Backtesting:** Utilities for simulating historical forecasts, using moving time windows.
+
+* 
+  **PyTorch Lightning Support:** All deep learning models are implemented using PyTorch Lightning,
   supporting among other things custom callbacks, GPUs/TPUs training and custom trainers.
-* **Filtering Models:** Darts offers three filtering models: ``KalmanFilter``\ , ``GaussianProcessFilter``\ ,
+
+* 
+  **Filtering Models:** Darts offers three filtering models: ``KalmanFilter``\ , ``GaussianProcessFilter``\ ,
   and ``MovingAverage``\ , which allow to filter time series, and in some cases obtain probabilistic
   inferences of the underlying states/values.
-* **Datasets** The ``darts.datasets`` submodule contains some popular time series datasets for rapid
-  experimentation.
+
+* 
+  **Datasets** The ``darts.datasets`` submodule contains some popular time series datasets for rapid
+  and reproducible experimentation.
 
 Forecasting Models
 ------------------
@@ -217,10 +316,10 @@ on bringing more models and features.
      - Univariate
      - Multivariate
      - Probabilistic
-     - Multiple-series training
-     - Past-observed covariates support
+     - Multiple series (global)
+     - Past-observed covariates
      - Future-known covariates
-     - Static covariates support
+     - Static covariates
      - Reference
    * - ``ARIMA``
      - ✅
@@ -337,7 +436,7 @@ on bringing more models and features.
      - ✅
      - ✅
      - ✅
-     - 
+     - ✅
      - 
    * - ``RandomForest``
      - ✅
@@ -346,7 +445,7 @@ on bringing more models and features.
      - ✅
      - ✅
      - ✅
-     - 
+     - ✅
      - 
    * - ``LinearRegressionModel``
      - ✅
@@ -355,7 +454,7 @@ on bringing more models and features.
      - ✅
      - ✅
      - ✅
-     - 
+     - ✅
      - 
    * - ``LightGBMModel``
      - ✅
@@ -364,7 +463,7 @@ on bringing more models and features.
      - ✅
      - ✅
      - ✅
-     - 
+     - ✅
      - 
    * - ``CatBoostModel``
      - ✅
@@ -373,7 +472,16 @@ on bringing more models and features.
      - ✅
      - ✅
      - ✅
+     - ✅
      - 
+   * - ``XGBModel``
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
      - 
    * - ``RNNModel`` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version
      - ✅
@@ -438,9 +546,27 @@ on bringing more models and features.
      - ✅
      - ✅
      - `TFT paper <https://arxiv.org/pdf/1912.09363.pdf>`_\ , `PyTorch Forecasting <https://pytorch-forecasting.readthedocs.io/en/latest/models.html>`_
+   * - ``DLinearModel``
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - `DLinear paper <https://arxiv.org/pdf/2205.13504.pdf>`_
+   * - ``NLinearModel``
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - `NLinear paper <https://arxiv.org/pdf/2205.13504.pdf>`_
    * - Naive Baselines
      - ✅
-     - 
+     - ✅
      - 
      - 
      - 

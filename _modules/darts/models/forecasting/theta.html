@@ -177,7 +177,7 @@
 <span class="kn">import</span> <span class="nn">statsmodels.tsa.holtwinters</span> <span class="k">as</span> <span class="nn">hw</span>
 
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.forecasting_model</span> <span class="kn">import</span> <span class="n">ForecastingModel</span>
+<span class="kn">from</span> <span class="nn">darts.models.forecasting.forecasting_model</span> <span class="kn">import</span> <span class="n">LocalForecastingModel</span>
 <span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">darts.utils.statistics</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">check_seasonality</span><span class="p">,</span>
@@ -190,7 +190,7 @@
 <span class="n">ALPHA_START</span> <span class="o">=</span> <span class="mf">0.2</span>
 
 
-<div class="viewcode-block" id="Theta"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.Theta">[docs]</a><span class="k">class</span> <span class="nc">Theta</span><span class="p">(</span><span class="n">ForecastingModel</span><span class="p">):</span>
+<div class="viewcode-block" id="Theta"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.Theta">[docs]</a><span class="k">class</span> <span class="nc">Theta</span><span class="p">(</span><span class="n">LocalForecastingModel</span><span class="p">):</span>
     <span class="c1"># .. todo: Implement OTM: Optimized Theta Method (https://arxiv.org/pdf/1503.03529.pdf)</span>
     <span class="c1"># .. todo: Try with something different than SES? They do that in the paper.</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
@@ -251,6 +251,7 @@
 
 <div class="viewcode-block" id="Theta.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.Theta.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
         <span class="n">ts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span>
@@ -301,7 +302,9 @@
 
         <span class="k">return</span> <span class="bp">self</span></div>
 
-<div class="viewcode-block" id="Theta.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.Theta.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
+<div class="viewcode-block" id="Theta.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.Theta.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
 
         <span class="c1"># Forecast of the SES part.</span>
@@ -347,7 +350,7 @@
             <span class="k">return</span> <span class="mi">3</span></div>
 
 
-<div class="viewcode-block" id="FourTheta"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.FourTheta">[docs]</a><span class="k">class</span> <span class="nc">FourTheta</span><span class="p">(</span><span class="n">ForecastingModel</span><span class="p">):</span>
+<div class="viewcode-block" id="FourTheta"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.FourTheta">[docs]</a><span class="k">class</span> <span class="nc">FourTheta</span><span class="p">(</span><span class="n">LocalForecastingModel</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">theta</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
@@ -529,7 +532,9 @@
 
         <span class="k">return</span> <span class="bp">self</span></div>
 
-<div class="viewcode-block" id="FourTheta.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.FourTheta.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
+<div class="viewcode-block" id="FourTheta.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.FourTheta.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
 
         <span class="c1"># Forecast of the SES part.</span>
@@ -575,7 +580,7 @@
 <span class="sd">        using the fitted values on the training series `ts`.</span>
 
 
-<span class="sd">        Uses &#39;ForecastingModel.gridsearch&#39; with &#39;use_fitted_values=True&#39; and &#39;metric=metrics.mae`.</span>
+<span class="sd">        Uses &#39;LocalForecastingModel.gridsearch&#39; with &#39;use_fitted_values=True&#39; and &#39;metric=metrics.mae`.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>

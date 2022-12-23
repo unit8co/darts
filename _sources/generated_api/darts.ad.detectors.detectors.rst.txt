@@ -1,0 +1,4 @@
+
+.. automodule:: darts.ad.detectors.detectors
+   :members:
+   :undoc-members:

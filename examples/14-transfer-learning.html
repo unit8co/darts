@@ -726,9 +726,9 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="o">!</span>pip install <span class="nv">darts</span><span class="o">==</span><span class="m">0</span>.18.0 <span class="p">&amp;</span>&gt; /dev/null
-<span class="o">!</span>pip install <span class="nv">xarray</span><span class="o">==</span><span class="m">0</span>.18.2 <span class="p">&amp;</span>&gt; /dev/null  # required to <span class="nb">read</span> pickle files
-<span class="o">!</span>pip install <span class="nv">xlrd</span><span class="o">==</span><span class="m">2</span>.0.1 <span class="p">&amp;</span>&gt; /dev/null
+<span></span>!pip install darts==0.18.0 &amp;&gt; /dev/null
+!pip install xarray==0.18.2 &amp;&gt; /dev/null  # required to read pickle files
+!pip install xlrd==2.0.1 &amp;&gt; /dev/null
 </pre></div>
 </div>
 </div>
@@ -737,11 +737,11 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># Execute this cell once to download all three datasets</span>
-<span class="c1"># Some datasets are are in pickle for simplicity and speed.</span>
-<span class="o">!</span>curl -L https://github.com/unit8co/amld2022-forecasting-and-metalearning/blob/main/data/m3_dataset.xls<span class="se">\?</span>raw<span class="se">\=</span><span class="nb">true</span> -o m3_dataset.xls
-<span class="o">!</span>curl -L https://github.com/unit8co/amld2022-forecasting-and-metalearning/blob/main/data/passengers.pkl<span class="se">\?</span>raw<span class="se">\=</span><span class="nb">true</span> -o passengers.pkl
-<span class="o">!</span>curl -L https://github.com/unit8co/amld2022-forecasting-and-metalearning/blob/main/data/m4_monthly_scaled.pkl<span class="se">\?</span>raw<span class="se">\=</span><span class="nb">true</span> -o m4_monthly_scaled.pkl
+<span></span># Execute this cell once to download all three datasets
+# Some datasets are are in pickle for simplicity and speed.
+!curl -L https://github.com/unit8co/amld2022-forecasting-and-metalearning/blob/main/data/m3_dataset.xls\?raw\=true -o m3_dataset.xls
+!curl -L https://github.com/unit8co/amld2022-forecasting-and-metalearning/blob/main/data/passengers.pkl\?raw\=true -o passengers.pkl
+!curl -L https://github.com/unit8co/amld2022-forecasting-and-metalearning/blob/main/data/m4_monthly_scaled.pkl\?raw\=true -o m4_monthly_scaled.pkl
 </pre></div>
 </div>
 </div>
@@ -751,34 +751,34 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="o">%</span><span class="k">matplotlib</span> inline
+<span></span>%matplotlib inline
 
-<span class="kn">import</span> <span class="nn">warnings</span>
+import warnings
 
-<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+warnings.filterwarnings(&quot;ignore&quot;)
 
-<span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">time</span>
-<span class="kn">import</span> <span class="nn">random</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">pickle</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">tqdm.auto</span> <span class="kn">import</span> <span class="n">tqdm</span>
-<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
-<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
-<span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span>
-<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">MaxAbsScaler</span>
-<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">Ridge</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+import os
+import time
+import random
+import pandas as pd
+import pickle
+import numpy as np
+from tqdm.auto import tqdm
+from datetime import datetime
+from itertools import product
+import torch
+from torch import nn
+from typing import List, Tuple, Dict
+from sklearn.preprocessing import MaxAbsScaler
+from sklearn.linear_model import Ridge
+import matplotlib.pyplot as plt
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.utils.losses</span> <span class="kn">import</span> <span class="n">SmapeLoss</span>
-<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
-<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">smape</span>
-<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">SeasonalityMode</span><span class="p">,</span> <span class="n">TrendMode</span><span class="p">,</span> <span class="n">ModelMode</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="o">*</span>
+from darts import TimeSeries
+from darts.utils.losses import SmapeLoss
+from darts.dataprocessing.transformers import Scaler
+from darts.metrics import smape
+from darts.utils.utils import SeasonalityMode, TrendMode, ModelMode
+from darts.models import *
 </pre></div>
 </div>
 </div>
@@ -788,7 +788,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">HORIZON</span> <span class="o">=</span> <span class="mi">18</span>
+<span></span>HORIZON = 18
 </pre></div>
 </div>
 </div>
@@ -803,92 +803,92 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span> <span class="nf">load_m3</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;building M3 TimeSeries...&quot;</span><span class="p">)</span>
+<span></span>def load_m3() -&gt; Tuple[List[TimeSeries], List[TimeSeries]]:
+    print(&quot;building M3 TimeSeries...&quot;)
 
-    <span class="c1"># Read DataFrame</span>
-    <span class="n">df_m3</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_excel</span><span class="p">(</span><span class="s2">&quot;m3_dataset.xls&quot;</span><span class="p">,</span> <span class="s2">&quot;M3Month&quot;</span><span class="p">)</span>
+    # Read DataFrame
+    df_m3 = pd.read_excel(&quot;m3_dataset.xls&quot;, &quot;M3Month&quot;)
 
-    <span class="c1"># Build TimeSeries</span>
-    <span class="n">m3_series</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">df_m3</span><span class="o">.</span><span class="n">iterrows</span><span class="p">()):</span>
-        <span class="n">s</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">start_year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s2">&quot;Starting Year&quot;</span><span class="p">])</span>
-        <span class="n">start_month</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s2">&quot;Starting Month&quot;</span><span class="p">])</span>
-        <span class="n">values_series</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="mi">6</span><span class="p">:]</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">start_month</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">continue</span>
+    # Build TimeSeries
+    m3_series = []
+    for row in tqdm(df_m3.iterrows()):
+        s = row[1]
+        start_year = int(s[&quot;Starting Year&quot;])
+        start_month = int(s[&quot;Starting Month&quot;])
+        values_series = s[6:].dropna()
+        if start_month == 0:
+            continue
 
-        <span class="n">start_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="n">start_year</span><span class="p">,</span> <span class="n">month</span><span class="o">=</span><span class="n">start_month</span><span class="p">,</span> <span class="n">day</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">time_axis</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">periods</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">values_series</span><span class="p">),</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;M&quot;</span><span class="p">)</span>
-        <span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
-            <span class="n">time_axis</span><span class="p">,</span> <span class="n">values_series</span><span class="o">.</span><span class="n">values</span>
-        <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-        <span class="n">m3_series</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+        start_date = datetime(year=start_year, month=start_month, day=1)
+        time_axis = pd.date_range(start_date, periods=len(values_series), freq=&quot;M&quot;)
+        series = TimeSeries.from_times_and_values(
+            time_axis, values_series.values
+        ).astype(np.float32)
+        m3_series.append(series)
 
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">There are </span><span class="si">{}</span><span class="s2"> monthly series in the M3 dataset&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">m3_series</span><span class="p">)))</span>
+    print(&quot;\nThere are {} monthly series in the M3 dataset&quot;.format(len(m3_series)))
 
-    <span class="c1"># Split train/test</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;splitting train/test...&quot;</span><span class="p">)</span>
-    <span class="n">m3_train</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="p">[:</span><span class="o">-</span><span class="n">HORIZON</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m3_series</span><span class="p">]</span>
-    <span class="n">m3_test</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="o">-</span><span class="n">HORIZON</span><span class="p">:]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m3_series</span><span class="p">]</span>
+    # Split train/test
+    print(&quot;splitting train/test...&quot;)
+    m3_train = [s[:-HORIZON] for s in m3_series]
+    m3_test = [s[-HORIZON:] for s in m3_series]
 
-    <span class="c1"># Scale so that the largest value is 1</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;scaling...&quot;</span><span class="p">)</span>
-    <span class="n">scaler_m3</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">(</span><span class="n">scaler</span><span class="o">=</span><span class="n">MaxAbsScaler</span><span class="p">())</span>
-    <span class="n">m3_train_scaled</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaler_m3</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">m3_train</span><span class="p">)</span>
-    <span class="n">m3_test_scaled</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaler_m3</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">m3_test</span><span class="p">)</span>
+    # Scale so that the largest value is 1
+    print(&quot;scaling...&quot;)
+    scaler_m3 = Scaler(scaler=MaxAbsScaler())
+    m3_train_scaled: List[TimeSeries] = scaler_m3.fit_transform(m3_train)
+    m3_test_scaled: List[TimeSeries] = scaler_m3.transform(m3_test)
 
-    <span class="nb">print</span><span class="p">(</span>
-        <span class="s2">&quot;done. There are </span><span class="si">{}</span><span class="s2"> series, with average training length </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="nb">len</span><span class="p">(</span><span class="n">m3_train_scaled</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m3_train_scaled</span><span class="p">])</span>
-        <span class="p">)</span>
-    <span class="p">)</span>
-    <span class="k">return</span> <span class="n">m3_train_scaled</span><span class="p">,</span> <span class="n">m3_test_scaled</span>
-
-
-<span class="k">def</span> <span class="nf">load_air</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
-    <span class="c1"># load TimeSeries</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;loading air TimeSeries...&quot;</span><span class="p">)</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;passengers.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-        <span class="n">all_air_series</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
-
-    <span class="c1"># Split train/test</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;splitting train/test...&quot;</span><span class="p">)</span>
-    <span class="n">air_train</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="p">[:</span><span class="o">-</span><span class="n">HORIZON</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">all_air_series</span><span class="p">]</span>
-    <span class="n">air_test</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="o">-</span><span class="n">HORIZON</span><span class="p">:]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">all_air_series</span><span class="p">]</span>
-
-    <span class="c1"># Scale so that the largest value is 1</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;scaling series...&quot;</span><span class="p">)</span>
-    <span class="n">scaler_air</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">(</span><span class="n">scaler</span><span class="o">=</span><span class="n">MaxAbsScaler</span><span class="p">())</span>
-    <span class="n">air_train_scaled</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaler_air</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">air_train</span><span class="p">)</span>
-    <span class="n">air_test_scaled</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaler_air</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">air_test</span><span class="p">)</span>
-
-    <span class="nb">print</span><span class="p">(</span>
-        <span class="s2">&quot;done. There are </span><span class="si">{}</span><span class="s2"> series, with average training length </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="nb">len</span><span class="p">(</span><span class="n">air_train_scaled</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">air_train_scaled</span><span class="p">])</span>
-        <span class="p">)</span>
-    <span class="p">)</span>
-    <span class="k">return</span> <span class="n">air_train_scaled</span><span class="p">,</span> <span class="n">air_test_scaled</span>
+    print(
+        &quot;done. There are {} series, with average training length {}&quot;.format(
+            len(m3_train_scaled), np.mean([len(s) for s in m3_train_scaled])
+        )
+    )
+    return m3_train_scaled, m3_test_scaled
 
 
-<span class="k">def</span> <span class="nf">load_m4</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
-    <span class="c1"># load TimeSeries - the splitting and scaling has already been done</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;loading M4 TimeSeries...&quot;</span><span class="p">)</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;m4_monthly_scaled.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-        <span class="n">m4_series</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+def load_air() -&gt; Tuple[List[TimeSeries], List[TimeSeries]]:
+    # load TimeSeries
+    print(&quot;loading air TimeSeries...&quot;)
+    with open(&quot;passengers.pkl&quot;, &quot;rb&quot;) as f:
+        all_air_series = pickle.load(f)
 
-    <span class="c1"># filter and keep only series that contain at least 48 training points</span>
-    <span class="n">m4_series</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mi">48</span><span class="p">,</span> <span class="n">m4_series</span><span class="p">))</span>
+    # Split train/test
+    print(&quot;splitting train/test...&quot;)
+    air_train = [s[:-HORIZON] for s in all_air_series]
+    air_test = [s[-HORIZON:] for s in all_air_series]
 
-    <span class="n">m4_train_scaled</span><span class="p">,</span> <span class="n">m4_test_scaled</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">m4_series</span><span class="p">)</span>
+    # Scale so that the largest value is 1
+    print(&quot;scaling series...&quot;)
+    scaler_air = Scaler(scaler=MaxAbsScaler())
+    air_train_scaled: List[TimeSeries] = scaler_air.fit_transform(air_train)
+    air_test_scaled: List[TimeSeries] = scaler_air.transform(air_test)
 
-    <span class="nb">print</span><span class="p">(</span>
-        <span class="s2">&quot;done. There are </span><span class="si">{}</span><span class="s2"> series, with average training length </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="nb">len</span><span class="p">(</span><span class="n">m4_train_scaled</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m4_train_scaled</span><span class="p">])</span>
-        <span class="p">)</span>
-    <span class="p">)</span>
-    <span class="k">return</span> <span class="n">m4_train_scaled</span><span class="p">,</span> <span class="n">m4_test_scaled</span>
+    print(
+        &quot;done. There are {} series, with average training length {}&quot;.format(
+            len(air_train_scaled), np.mean([len(s) for s in air_train_scaled])
+        )
+    )
+    return air_train_scaled, air_test_scaled
+
+
+def load_m4() -&gt; Tuple[List[TimeSeries], List[TimeSeries]]:
+    # load TimeSeries - the splitting and scaling has already been done
+    print(&quot;loading M4 TimeSeries...&quot;)
+    with open(&quot;m4_monthly_scaled.pkl&quot;, &quot;rb&quot;) as f:
+        m4_series = pickle.load(f)
+
+    # filter and keep only series that contain at least 48 training points
+    m4_series = list(filter(lambda t: len(t[0]) &gt;= 48, m4_series))
+
+    m4_train_scaled, m4_test_scaled = zip(*m4_series)
+
+    print(
+        &quot;done. There are {} series, with average training length {}&quot;.format(
+            len(m4_train_scaled), np.mean([len(s) for s in m4_train_scaled])
+        )
+    )
+    return m4_train_scaled, m4_test_scaled
 </pre></div>
 </div>
 </div>
@@ -898,20 +898,20 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span> <span class="nf">eval_forecasts</span><span class="p">(</span>
-    <span class="n">pred_series</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">test_series</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span></span>def eval_forecasts(
+    pred_series: List[TimeSeries], test_series: List[TimeSeries]
+) -&gt; List[float]:
 
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;computing sMAPEs...&quot;</span><span class="p">)</span>
-    <span class="n">smapes</span> <span class="o">=</span> <span class="n">smape</span><span class="p">(</span><span class="n">test_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">smapes</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Count&quot;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;sMAPE&quot;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Median sMAPE: </span><span class="si">%.3f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">smapes</span><span class="p">))</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-    <span class="k">return</span> <span class="n">smapes</span>
+    print(&quot;computing sMAPEs...&quot;)
+    smapes = smape(test_series, pred_series)
+    plt.figure()
+    plt.hist(smapes, bins=50)
+    plt.ylabel(&quot;Count&quot;)
+    plt.xlabel(&quot;sMAPE&quot;)
+    plt.title(&quot;Median sMAPE: %.3f&quot; % np.median(smapes))
+    plt.show()
+    plt.close()
+    return smapes
 </pre></div>
 </div>
 </div>
@@ -928,7 +928,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">air_train</span><span class="p">,</span> <span class="n">air_test</span> <span class="o">=</span> <span class="n">load_air</span><span class="p">()</span>
+<span></span>air_train, air_test = load_air()
 </pre></div>
 </div>
 </div>
@@ -949,13 +949,13 @@ done. There are 301 series, with average training length 136.83388704318938
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">figure</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span></span>figure, ax = plt.subplots(3, 2, figsize=(10, 10), dpi=100)
 
-<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">250</span><span class="p">,</span> <span class="mi">300</span><span class="p">]):</span>
-    <span class="n">axis</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="mi">3</span><span class="p">,</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">2</span><span class="p">]</span>
-    <span class="n">air_train</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
-    <span class="n">axis</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">air_train</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">components</span><span class="p">)</span>
-    <span class="n">axis</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">);</span>
+for i, idx in enumerate([1, 20, 50, 100, 250, 300]):
+    axis = ax[i % 3, i % 2]
+    air_train[idx].plot(ax=axis)
+    axis.legend(air_train[idx].components)
+    axis.set_title(&quot;&quot;);
 </pre></div>
 </div>
 </div>
@@ -985,7 +985,7 @@ No handles with labels found to put in legend.
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="nb">min</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">air_train</span><span class="p">])</span>
+<span></span>min([len(s) for s in air_train])
 </pre></div>
 </div>
 </div>
@@ -1010,20 +1010,20 @@ No handles with labels found to put in legend.
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span> <span class="nf">eval_local_model</span><span class="p">(</span>
-    <span class="n">train_series</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">test_series</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">model_cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">]:</span>
-    <span class="n">preds</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-    <span class="k">for</span> <span class="n">series</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">train_series</span><span class="p">):</span>
-        <span class="n">model</span> <span class="o">=</span> <span class="n">model_cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
-        <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">HORIZON</span><span class="p">)</span>
-        <span class="n">preds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span>
-    <span class="n">elapsed_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+<span></span>def eval_local_model(
+    train_series: List[TimeSeries], test_series: List[TimeSeries], model_cls, **kwargs
+) -&gt; Tuple[List[float], float]:
+    preds = []
+    start_time = time.time()
+    for series in tqdm(train_series):
+        model = model_cls(**kwargs)
+        model.fit(series)
+        pred = model.predict(n=HORIZON)
+        preds.append(pred)
+    elapsed_time = time.time() - start_time
 
-    <span class="n">smapes</span> <span class="o">=</span> <span class="n">eval_forecasts</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">test_series</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">smapes</span><span class="p">,</span> <span class="n">elapsed_time</span>
+    smapes = eval_forecasts(preds, test_series)
+    return smapes, elapsed_time
 </pre></div>
 </div>
 </div>
@@ -1036,7 +1036,7 @@ No handles with labels found to put in legend.
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">naive1_smapes</span><span class="p">,</span> <span class="n">naive1_time</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span><span class="n">air_train</span><span class="p">,</span> <span class="n">air_test</span><span class="p">,</span> <span class="n">NaiveSeasonal</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span></span>naive1_smapes, naive1_time = eval_local_model(air_train, air_test, NaiveSeasonal, K=1)
 </pre></div>
 </div>
 </div>
@@ -1068,9 +1068,9 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">naive12_smapes</span><span class="p">,</span> <span class="n">naive12_time</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span>
-    <span class="n">air_train</span><span class="p">,</span> <span class="n">air_test</span><span class="p">,</span> <span class="n">NaiveSeasonal</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="mi">12</span>
-<span class="p">)</span>
+<span></span>naive12_smapes, naive12_time = eval_local_model(
+    air_train, air_test, NaiveSeasonal, K=12
+)
 </pre></div>
 </div>
 </div>
@@ -1101,7 +1101,7 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">ets_smapes</span><span class="p">,</span> <span class="n">ets_time</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span><span class="n">air_train</span><span class="p">,</span> <span class="n">air_test</span><span class="p">,</span> <span class="n">ExponentialSmoothing</span><span class="p">)</span>
+<span></span>ets_smapes, ets_time = eval_local_model(air_train, air_test, ExponentialSmoothing)
 </pre></div>
 </div>
 </div>
@@ -1132,7 +1132,7 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">theta_smapes</span><span class="p">,</span> <span class="n">theta_time</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span><span class="n">air_train</span><span class="p">,</span> <span class="n">air_test</span><span class="p">,</span> <span class="n">Theta</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">1.5</span><span class="p">)</span>
+<span></span>theta_smapes, theta_time = eval_local_model(air_train, air_test, Theta, theta=1.5)
 </pre></div>
 </div>
 </div>
@@ -1163,8 +1163,8 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>  <span class="c1"># ARIMA generates lots of warnings</span>
-<span class="n">arima_smapes</span><span class="p">,</span> <span class="n">arima_time</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span><span class="n">air_train</span><span class="p">,</span> <span class="n">air_test</span><span class="p">,</span> <span class="n">ARIMA</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span></span>warnings.filterwarnings(&quot;ignore&quot;)  # ARIMA generates lots of warnings
+arima_smapes, arima_time = eval_local_model(air_train, air_test, ARIMA, p=12, d=1, q=1)
 </pre></div>
 </div>
 </div>
@@ -1195,7 +1195,7 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">kf_smapes</span><span class="p">,</span> <span class="n">kf_time</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span><span class="n">air_train</span><span class="p">,</span> <span class="n">air_test</span><span class="p">,</span> <span class="n">KalmanForecaster</span><span class="p">,</span> <span class="n">dim_x</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+<span></span>kf_smapes, kf_time = eval_local_model(air_train, air_test, KalmanForecaster, dim_x=12)
 </pre></div>
 </div>
 </div>
@@ -1229,26 +1229,26 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span> <span class="nf">plot_models</span><span class="p">(</span><span class="n">method_to_elapsed_times</span><span class="p">,</span> <span class="n">method_to_smapes</span><span class="p">):</span>
-    <span class="n">shapes</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="s2">&quot;s&quot;</span><span class="p">,</span> <span class="s2">&quot;*&quot;</span><span class="p">]</span>
-    <span class="n">colors</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;tab:blue&quot;</span><span class="p">,</span> <span class="s2">&quot;tab:orange&quot;</span><span class="p">,</span> <span class="s2">&quot;tab:green&quot;</span><span class="p">,</span> <span class="s2">&quot;tab:red&quot;</span><span class="p">,</span> <span class="s2">&quot;tab:purple&quot;</span><span class="p">]</span>
-    <span class="n">styles</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">product</span><span class="p">(</span><span class="n">shapes</span><span class="p">,</span> <span class="n">colors</span><span class="p">))</span>
+<span></span>def plot_models(method_to_elapsed_times, method_to_smapes):
+    shapes = [&quot;o&quot;, &quot;s&quot;, &quot;*&quot;]
+    colors = [&quot;tab:blue&quot;, &quot;tab:orange&quot;, &quot;tab:green&quot;, &quot;tab:red&quot;, &quot;tab:purple&quot;]
+    styles = list(product(shapes, colors))
 
-    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">method</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">method_to_elapsed_times</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-        <span class="n">t</span> <span class="o">=</span> <span class="n">method_to_elapsed_times</span><span class="p">[</span><span class="n">method</span><span class="p">]</span>
-        <span class="n">s</span> <span class="o">=</span> <span class="n">styles</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">semilogx</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">t</span><span class="p">],</span>
-            <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">method_to_smapes</span><span class="p">[</span><span class="n">method</span><span class="p">])],</span>
-            <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-            <span class="n">color</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
-            <span class="n">label</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
-            <span class="n">markersize</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span>
-        <span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;elapsed time [s]&quot;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;median sMAPE over all series&quot;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mf">1.4</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span> <span class="n">frameon</span><span class="o">=</span><span class="kc">True</span><span class="p">);</span>
+    plt.figure(figsize=(6, 6), dpi=100)
+    for i, method in enumerate(method_to_elapsed_times.keys()):
+        t = method_to_elapsed_times[method]
+        s = styles[i]
+        plt.semilogx(
+            [t],
+            [np.median(method_to_smapes[method])],
+            s[0],
+            color=s[1],
+            label=method,
+            markersize=13,
+        )
+    plt.xlabel(&quot;elapsed time [s]&quot;)
+    plt.ylabel(&quot;median sMAPE over all series&quot;)
+    plt.legend(bbox_to_anchor=(1.4, 1.0), frameon=True);
 </pre></div>
 </div>
 </div>
@@ -1257,25 +1257,25 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">smapes</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;naive-last&quot;</span><span class="p">:</span> <span class="n">naive1_smapes</span><span class="p">,</span>
-    <span class="s2">&quot;naive-seasonal&quot;</span><span class="p">:</span> <span class="n">naive12_smapes</span><span class="p">,</span>
-    <span class="s2">&quot;Exponential Smoothing&quot;</span><span class="p">:</span> <span class="n">ets_smapes</span><span class="p">,</span>
-    <span class="s2">&quot;Theta&quot;</span><span class="p">:</span> <span class="n">theta_smapes</span><span class="p">,</span>
-    <span class="s2">&quot;ARIMA&quot;</span><span class="p">:</span> <span class="n">arima_smapes</span><span class="p">,</span>
-    <span class="s2">&quot;Kalman Filter&quot;</span><span class="p">:</span> <span class="n">kf_smapes</span><span class="p">,</span>
-<span class="p">}</span>
+<span></span>smapes = {
+    &quot;naive-last&quot;: naive1_smapes,
+    &quot;naive-seasonal&quot;: naive12_smapes,
+    &quot;Exponential Smoothing&quot;: ets_smapes,
+    &quot;Theta&quot;: theta_smapes,
+    &quot;ARIMA&quot;: arima_smapes,
+    &quot;Kalman Filter&quot;: kf_smapes,
+}
 
-<span class="n">elapsed_times</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;naive-last&quot;</span><span class="p">:</span> <span class="n">naive1_time</span><span class="p">,</span>
-    <span class="s2">&quot;naive-seasonal&quot;</span><span class="p">:</span> <span class="n">naive12_time</span><span class="p">,</span>
-    <span class="s2">&quot;Exponential Smoothing&quot;</span><span class="p">:</span> <span class="n">ets_time</span><span class="p">,</span>
-    <span class="s2">&quot;Theta&quot;</span><span class="p">:</span> <span class="n">theta_time</span><span class="p">,</span>
-    <span class="s2">&quot;ARIMA&quot;</span><span class="p">:</span> <span class="n">arima_time</span><span class="p">,</span>
-    <span class="s2">&quot;Kalman Filter&quot;</span><span class="p">:</span> <span class="n">kf_time</span><span class="p">,</span>
-<span class="p">}</span>
+elapsed_times = {
+    &quot;naive-last&quot;: naive1_time,
+    &quot;naive-seasonal&quot;: naive12_time,
+    &quot;Exponential Smoothing&quot;: ets_time,
+    &quot;Theta&quot;: theta_time,
+    &quot;ARIMA&quot;: arima_time,
+    &quot;Kalman Filter&quot;: kf_time,
+}
 
-<span class="n">plot_models</span><span class="p">(</span><span class="n">elapsed_times</span><span class="p">,</span> <span class="n">smapes</span><span class="p">)</span>
+plot_models(elapsed_times, smapes)
 </pre></div>
 </div>
 </div>
@@ -1306,20 +1306,20 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span> <span class="nf">eval_global_model</span><span class="p">(</span>
-    <span class="n">train_series</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">test_series</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">model_cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">]:</span>
+<span></span>def eval_global_model(
+    train_series: List[TimeSeries], test_series: List[TimeSeries], model_cls, **kwargs
+) -&gt; Tuple[List[float], float]:
 
-    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    start_time = time.time()
 
-    <span class="n">model</span> <span class="o">=</span> <span class="n">model_cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_series</span><span class="p">)</span>
-    <span class="n">preds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">HORIZON</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">train_series</span><span class="p">)</span>
+    model = model_cls(**kwargs)
+    model.fit(train_series)
+    preds = model.predict(n=HORIZON, series=train_series)
 
-    <span class="n">elapsed_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+    elapsed_time = time.time() - start_time
 
-    <span class="n">smapes</span> <span class="o">=</span> <span class="n">eval_forecasts</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">test_series</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">smapes</span><span class="p">,</span> <span class="n">elapsed_time</span>
+    smapes = eval_forecasts(preds, test_series)
+    return smapes, elapsed_time
 </pre></div>
 </div>
 </div>
@@ -1340,9 +1340,9 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">lr_smapes</span><span class="p">,</span> <span class="n">lr_time</span> <span class="o">=</span> <span class="n">eval_global_model</span><span class="p">(</span>
-    <span class="n">air_train</span><span class="p">,</span> <span class="n">air_test</span><span class="p">,</span> <span class="n">LinearRegressionModel</span><span class="p">,</span> <span class="n">lags</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span>
-<span class="p">)</span>
+<span></span>lr_smapes, lr_time = eval_global_model(
+    air_train, air_test, LinearRegressionModel, lags=30, output_chunk_length=1
+)
 </pre></div>
 </div>
 </div>
@@ -1366,9 +1366,9 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">lgbm_smapes</span><span class="p">,</span> <span class="n">lgbm_time</span> <span class="o">=</span> <span class="n">eval_global_model</span><span class="p">(</span>
-    <span class="n">air_train</span><span class="p">,</span> <span class="n">air_test</span><span class="p">,</span> <span class="n">LightGBMModel</span><span class="p">,</span> <span class="n">lags</span><span class="o">=</span><span class="mi">35</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="s2">&quot;mape&quot;</span>
-<span class="p">)</span>
+<span></span>lgbm_smapes, lgbm_time = eval_global_model(
+    air_train, air_test, LightGBMModel, lags=35, output_chunk_length=1, objective=&quot;mape&quot;
+)
 </pre></div>
 </div>
 </div>
@@ -1392,9 +1392,9 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">rf_smapes</span><span class="p">,</span> <span class="n">rf_time</span> <span class="o">=</span> <span class="n">eval_global_model</span><span class="p">(</span>
-    <span class="n">air_train</span><span class="p">,</span> <span class="n">air_test</span><span class="p">,</span> <span class="n">RandomForest</span><span class="p">,</span> <span class="n">lags</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span>
-<span class="p">)</span>
+<span></span>rf_smapes, rf_time = eval_global_model(
+    air_train, air_test, RandomForest, lags=30, output_chunk_length=1
+)
 </pre></div>
 </div>
 </div>
@@ -1423,24 +1423,24 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1">### Possible N-BEATS hyper-parameters</span>
+<span></span>### Possible N-BEATS hyper-parameters
 
-<span class="c1"># Slicing hyper-params:</span>
-<span class="n">IN_LEN</span> <span class="o">=</span> <span class="mi">30</span>
-<span class="n">OUT_LEN</span> <span class="o">=</span> <span class="mi">4</span>
+# Slicing hyper-params:
+IN_LEN = 30
+OUT_LEN = 4
 
-<span class="c1"># Architecture hyper-params:</span>
-<span class="n">NUM_STACKS</span> <span class="o">=</span> <span class="mi">20</span>
-<span class="n">NUM_BLOCKS</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="n">NUM_LAYERS</span> <span class="o">=</span> <span class="mi">2</span>
-<span class="n">LAYER_WIDTH</span> <span class="o">=</span> <span class="mi">136</span>
-<span class="n">COEFFS_DIM</span> <span class="o">=</span> <span class="mi">11</span>
+# Architecture hyper-params:
+NUM_STACKS = 20
+NUM_BLOCKS = 1
+NUM_LAYERS = 2
+LAYER_WIDTH = 136
+COEFFS_DIM = 11
 
-<span class="c1"># Training settings:</span>
-<span class="n">LR</span> <span class="o">=</span> <span class="mf">1e-3</span>
-<span class="n">BATCH_SIZE</span> <span class="o">=</span> <span class="mi">1024</span>
-<span class="n">MAX_SAMPLES_PER_TS</span> <span class="o">=</span> <span class="mi">10</span>
-<span class="n">NUM_EPOCHS</span> <span class="o">=</span> <span class="mi">10</span>
+# Training settings:
+LR = 1e-3
+BATCH_SIZE = 1024
+MAX_SAMPLES_PER_TS = 10
+NUM_EPOCHS = 10
 </pre></div>
 </div>
 </div>
@@ -1450,39 +1450,39 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># reproducibility</span>
-<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
-<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span></span># reproducibility
+np.random.seed(42)
+torch.manual_seed(42)
 
-<span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+start_time = time.time()
 
-<span class="n">nbeats_model_air</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span>
-    <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">IN_LEN</span><span class="p">,</span>
-    <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">OUT_LEN</span><span class="p">,</span>
-    <span class="n">num_stacks</span><span class="o">=</span><span class="n">NUM_STACKS</span><span class="p">,</span>
-    <span class="n">num_blocks</span><span class="o">=</span><span class="n">NUM_BLOCKS</span><span class="p">,</span>
-    <span class="n">num_layers</span><span class="o">=</span><span class="n">NUM_LAYERS</span><span class="p">,</span>
-    <span class="n">layer_widths</span><span class="o">=</span><span class="n">LAYER_WIDTH</span><span class="p">,</span>
-    <span class="n">expansion_coefficient_dim</span><span class="o">=</span><span class="n">COEFFS_DIM</span><span class="p">,</span>
-    <span class="n">loss_fn</span><span class="o">=</span><span class="n">SmapeLoss</span><span class="p">(),</span>
-    <span class="n">batch_size</span><span class="o">=</span><span class="n">BATCH_SIZE</span><span class="p">,</span>
-    <span class="n">optimizer_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="n">LR</span><span class="p">},</span>
-    <span class="c1"># remove this one if your notebook does run in a GPU environment:</span>
-    <span class="n">pl_trainer_kwargs</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;enable_progress_bar&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-        <span class="s2">&quot;accelerator&quot;</span><span class="p">:</span> <span class="s2">&quot;gpu&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;gpus&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
-        <span class="s2">&quot;auto_select_gpus&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="p">},</span>
-<span class="p">)</span>
+nbeats_model_air = NBEATSModel(
+    input_chunk_length=IN_LEN,
+    output_chunk_length=OUT_LEN,
+    num_stacks=NUM_STACKS,
+    num_blocks=NUM_BLOCKS,
+    num_layers=NUM_LAYERS,
+    layer_widths=LAYER_WIDTH,
+    expansion_coefficient_dim=COEFFS_DIM,
+    loss_fn=SmapeLoss(),
+    batch_size=BATCH_SIZE,
+    optimizer_kwargs={&quot;lr&quot;: LR},
+    # remove this one if your notebook does run in a GPU environment:
+    pl_trainer_kwargs={
+        &quot;enable_progress_bar&quot;: True,
+        &quot;accelerator&quot;: &quot;gpu&quot;,
+        &quot;gpus&quot;: -1,
+        &quot;auto_select_gpus&quot;: True,
+    },
+)
 
-<span class="n">nbeats_model_air</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">air_train</span><span class="p">,</span> <span class="n">num_loader_workers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="n">NUM_EPOCHS</span><span class="p">)</span>
+nbeats_model_air.fit(air_train, num_loader_workers=4, epochs=NUM_EPOCHS)
 
-<span class="c1"># get predictions</span>
-<span class="n">nb_preds</span> <span class="o">=</span> <span class="n">nbeats_model_air</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">air_train</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">HORIZON</span><span class="p">)</span>
-<span class="n">nbeats_elapsed_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+# get predictions
+nb_preds = nbeats_model_air.predict(series=air_train, n=HORIZON)
+nbeats_elapsed_time = time.time() - start_time
 
-<span class="n">nbeats_smapes</span> <span class="o">=</span> <span class="n">eval_forecasts</span><span class="p">(</span><span class="n">nb_preds</span><span class="p">,</span> <span class="n">air_test</span><span class="p">)</span>
+nbeats_smapes = eval_forecasts(nb_preds, air_test)
 </pre></div>
 </div>
 </div>
@@ -1552,27 +1552,27 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">smapes_2</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="o">**</span><span class="n">smapes</span><span class="p">,</span>
-    <span class="o">**</span><span class="p">{</span>
-        <span class="s2">&quot;Linear Regression&quot;</span><span class="p">:</span> <span class="n">lr_smapes</span><span class="p">,</span>
-        <span class="s2">&quot;LGBM&quot;</span><span class="p">:</span> <span class="n">lgbm_smapes</span><span class="p">,</span>
-        <span class="s2">&quot;Random Forest&quot;</span><span class="p">:</span> <span class="n">rf_smapes</span><span class="p">,</span>
-        <span class="s2">&quot;NBeats&quot;</span><span class="p">:</span> <span class="n">nbeats_smapes</span><span class="p">,</span>
-    <span class="p">},</span>
-<span class="p">}</span>
+<span></span>smapes_2 = {
+    **smapes,
+    **{
+        &quot;Linear Regression&quot;: lr_smapes,
+        &quot;LGBM&quot;: lgbm_smapes,
+        &quot;Random Forest&quot;: rf_smapes,
+        &quot;NBeats&quot;: nbeats_smapes,
+    },
+}
 
-<span class="n">elapsed_times_2</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="o">**</span><span class="n">elapsed_times</span><span class="p">,</span>
-    <span class="o">**</span><span class="p">{</span>
-        <span class="s2">&quot;Linear Regression&quot;</span><span class="p">:</span> <span class="n">lr_time</span><span class="p">,</span>
-        <span class="s2">&quot;LGBM&quot;</span><span class="p">:</span> <span class="n">lgbm_time</span><span class="p">,</span>
-        <span class="s2">&quot;Random Forest&quot;</span><span class="p">:</span> <span class="n">rf_time</span><span class="p">,</span>
-        <span class="s2">&quot;NBeats&quot;</span><span class="p">:</span> <span class="n">nbeats_elapsed_time</span><span class="p">,</span>
-    <span class="p">},</span>
-<span class="p">}</span>
+elapsed_times_2 = {
+    **elapsed_times,
+    **{
+        &quot;Linear Regression&quot;: lr_time,
+        &quot;LGBM&quot;: lgbm_time,
+        &quot;Random Forest&quot;: rf_time,
+        &quot;NBeats&quot;: nbeats_elapsed_time,
+    },
+}
 
-<span class="n">plot_models</span><span class="p">(</span><span class="n">elapsed_times_2</span><span class="p">,</span> <span class="n">smapes_2</span><span class="p">)</span>
+plot_models(elapsed_times_2, smapes_2)
 </pre></div>
 </div>
 </div>
@@ -1598,7 +1598,7 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">m4_train</span><span class="p">,</span> <span class="n">m4_test</span> <span class="o">=</span> <span class="n">load_m4</span><span class="p">()</span>
+<span></span>m4_train, m4_test = load_m4()
 </pre></div>
 </div>
 </div>
@@ -1619,24 +1619,24 @@ done. There are 47992 series, with average training length 216.32901316886148
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># Slicing hyper-params:</span>
-<span class="n">IN_LEN</span> <span class="o">=</span> <span class="mi">36</span>
-<span class="n">OUT_LEN</span> <span class="o">=</span> <span class="mi">4</span>
+<span></span># Slicing hyper-params:
+IN_LEN = 36
+OUT_LEN = 4
 
-<span class="c1"># Architecture hyper-params:</span>
-<span class="n">NUM_STACKS</span> <span class="o">=</span> <span class="mi">20</span>
-<span class="n">NUM_BLOCKS</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="n">NUM_LAYERS</span> <span class="o">=</span> <span class="mi">2</span>
-<span class="n">LAYER_WIDTH</span> <span class="o">=</span> <span class="mi">136</span>
-<span class="n">COEFFS_DIM</span> <span class="o">=</span> <span class="mi">11</span>
+# Architecture hyper-params:
+NUM_STACKS = 20
+NUM_BLOCKS = 1
+NUM_LAYERS = 2
+LAYER_WIDTH = 136
+COEFFS_DIM = 11
 
-<span class="c1"># Training settings:</span>
-<span class="n">LR</span> <span class="o">=</span> <span class="mf">1e-3</span>
-<span class="n">BATCH_SIZE</span> <span class="o">=</span> <span class="mi">1024</span>
-<span class="n">MAX_SAMPLES_PER_TS</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="mi">10</span>  <span class="c1"># &lt;-- new parameter, limiting the number of training samples per series</span>
-<span class="p">)</span>
-<span class="n">NUM_EPOCHS</span> <span class="o">=</span> <span class="mi">5</span>
+# Training settings:
+LR = 1e-3
+BATCH_SIZE = 1024
+MAX_SAMPLES_PER_TS = (
+    10  # &lt;-- new parameter, limiting the number of training samples per series
+)
+NUM_EPOCHS = 5
 </pre></div>
 </div>
 </div>
@@ -1645,36 +1645,36 @@ done. There are 47992 series, with average training length 216.32901316886148
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># reproducibility</span>
-<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
-<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span></span># reproducibility
+np.random.seed(42)
+torch.manual_seed(42)
 
-<span class="n">nbeats_model_m4</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span>
-    <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">IN_LEN</span><span class="p">,</span>
-    <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">OUT_LEN</span><span class="p">,</span>
-    <span class="n">batch_size</span><span class="o">=</span><span class="n">BATCH_SIZE</span><span class="p">,</span>
-    <span class="n">num_stacks</span><span class="o">=</span><span class="n">NUM_STACKS</span><span class="p">,</span>
-    <span class="n">num_blocks</span><span class="o">=</span><span class="n">NUM_BLOCKS</span><span class="p">,</span>
-    <span class="n">num_layers</span><span class="o">=</span><span class="n">NUM_LAYERS</span><span class="p">,</span>
-    <span class="n">layer_widths</span><span class="o">=</span><span class="n">LAYER_WIDTH</span><span class="p">,</span>
-    <span class="n">expansion_coefficient_dim</span><span class="o">=</span><span class="n">COEFFS_DIM</span><span class="p">,</span>
-    <span class="n">loss_fn</span><span class="o">=</span><span class="n">SmapeLoss</span><span class="p">(),</span>
-    <span class="n">optimizer_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="n">LR</span><span class="p">},</span>
-    <span class="n">pl_trainer_kwargs</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;enable_progress_bar&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-        <span class="s2">&quot;accelerator&quot;</span><span class="p">:</span> <span class="s2">&quot;gpu&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;gpus&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
-        <span class="s2">&quot;auto_select_gpus&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="p">},</span>
-<span class="p">)</span>
+nbeats_model_m4 = NBEATSModel(
+    input_chunk_length=IN_LEN,
+    output_chunk_length=OUT_LEN,
+    batch_size=BATCH_SIZE,
+    num_stacks=NUM_STACKS,
+    num_blocks=NUM_BLOCKS,
+    num_layers=NUM_LAYERS,
+    layer_widths=LAYER_WIDTH,
+    expansion_coefficient_dim=COEFFS_DIM,
+    loss_fn=SmapeLoss(),
+    optimizer_kwargs={&quot;lr&quot;: LR},
+    pl_trainer_kwargs={
+        &quot;enable_progress_bar&quot;: True,
+        &quot;accelerator&quot;: &quot;gpu&quot;,
+        &quot;gpus&quot;: -1,
+        &quot;auto_select_gpus&quot;: True,
+    },
+)
 
-<span class="c1"># Train</span>
-<span class="n">nbeats_model_m4</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
-    <span class="n">m4_train</span><span class="p">,</span>
-    <span class="n">num_loader_workers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
-    <span class="n">epochs</span><span class="o">=</span><span class="n">NUM_EPOCHS</span><span class="p">,</span>
-    <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">MAX_SAMPLES_PER_TS</span><span class="p">,</span>
-<span class="p">)</span>
+# Train
+nbeats_model_m4.fit(
+    m4_train,
+    num_loader_workers=4,
+    epochs=NUM_EPOCHS,
+    max_samples_per_ts=MAX_SAMPLES_PER_TS,
+)
 </pre></div>
 </div>
 </div>
@@ -1724,11 +1724,11 @@ LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-<span class="n">preds</span> <span class="o">=</span> <span class="n">nbeats_model_m4</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">air_train</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">HORIZON</span><span class="p">)</span>  <span class="c1"># get forecasts</span>
-<span class="n">nbeats_m4_elapsed_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+<span></span>start_time = time.time()
+preds = nbeats_model_m4.predict(series=air_train, n=HORIZON)  # get forecasts
+nbeats_m4_elapsed_time = time.time() - start_time
 
-<span class="n">nbeats_m4_smapes</span> <span class="o">=</span> <span class="n">eval_forecasts</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">air_test</span><span class="p">)</span>
+nbeats_m4_smapes = eval_forecasts(preds, air_test)
 </pre></div>
 </div>
 </div>
@@ -1766,14 +1766,14 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">smapes_3</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">smapes_2</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="s2">&quot;N-BEATS (M4-trained)&quot;</span><span class="p">:</span> <span class="n">nbeats_m4_smapes</span><span class="p">}}</span>
+<span></span>smapes_3 = {**smapes_2, **{&quot;N-BEATS (M4-trained)&quot;: nbeats_m4_smapes}}
 
-<span class="n">elapsed_times_3</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="o">**</span><span class="n">elapsed_times_2</span><span class="p">,</span>
-    <span class="o">**</span><span class="p">{</span><span class="s2">&quot;N-BEATS (M4-trained)&quot;</span><span class="p">:</span> <span class="n">nbeats_m4_elapsed_time</span><span class="p">},</span>
-<span class="p">}</span>
+elapsed_times_3 = {
+    **elapsed_times_2,
+    **{&quot;N-BEATS (M4-trained)&quot;: nbeats_m4_elapsed_time},
+}
 
-<span class="n">plot_models</span><span class="p">(</span><span class="n">elapsed_times_3</span><span class="p">,</span> <span class="n">smapes_3</span><span class="p">)</span>
+plot_models(elapsed_times_3, smapes_3)
 </pre></div>
 </div>
 </div>
@@ -1793,19 +1793,19 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">MonthlyMilkDataset</span>
+<span></span>from darts.datasets import MonthlyMilkDataset
 
-<span class="n">series</span> <span class="o">=</span> <span class="n">MonthlyMilkDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
-<span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="p">[:</span><span class="o">-</span><span class="mi">24</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">24</span><span class="p">:]</span>
+series = MonthlyMilkDataset().load().astype(np.float32)
+train, val = series[:-24], series[-24:]
 
-<span class="n">scaler</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">(</span><span class="n">scaler</span><span class="o">=</span><span class="n">MaxAbsScaler</span><span class="p">())</span>
-<span class="n">train</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
-<span class="n">val</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
-<span class="n">series</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
-<span class="n">pred</span> <span class="o">=</span> <span class="n">nbeats_model_m4</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">train</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
+scaler = Scaler(scaler=MaxAbsScaler())
+train = scaler.fit_transform(train)
+val = scaler.transform(val)
+series = scaler.transform(series)
+pred = nbeats_model_m4.predict(series=train, n=24)
 
-<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
-<span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;0-shot forecast&quot;</span><span class="p">)</span>
+series.plot(label=&quot;actual&quot;)
+pred.plot(label=&quot;0-shot forecast&quot;)
 </pre></div>
 </div>
 </div>
@@ -1839,16 +1839,16 @@ LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span></span>random.seed(42)
 
-<span class="n">lr_model_m4</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<span class="n">lr_model_m4</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">m4_train</span><span class="p">)</span>
+lr_model_m4 = LinearRegressionModel(lags=30, output_chunk_length=1)
+lr_model_m4.fit(m4_train)
 
-<span class="n">tic</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-<span class="n">preds</span> <span class="o">=</span> <span class="n">lr_model_m4</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">HORIZON</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">air_train</span><span class="p">)</span>
-<span class="n">lr_time_transfer</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">tic</span>
+tic = time.time()
+preds = lr_model_m4.predict(n=HORIZON, series=air_train)
+lr_time_transfer = time.time() - tic
 
-<span class="n">lr_smapes_transfer</span> <span class="o">=</span> <span class="n">eval_forecasts</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">air_test</span><span class="p">)</span>
+lr_smapes_transfer = eval_forecasts(preds, air_test)
 </pre></div>
 </div>
 </div>
@@ -1872,16 +1872,16 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span></span>random.seed(42)
 
-<span class="n">lgbm_model_m4</span> <span class="o">=</span> <span class="n">LightGBMModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="s2">&quot;mape&quot;</span><span class="p">)</span>
-<span class="n">lgbm_model_m4</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">m4_train</span><span class="p">)</span>
+lgbm_model_m4 = LightGBMModel(lags=30, output_chunk_length=1, objective=&quot;mape&quot;)
+lgbm_model_m4.fit(m4_train)
 
-<span class="n">tic</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-<span class="n">preds</span> <span class="o">=</span> <span class="n">lgbm_model_m4</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">HORIZON</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">air_train</span><span class="p">)</span>
-<span class="n">lgbm_time_transfer</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">tic</span>
+tic = time.time()
+preds = lgbm_model_m4.predict(n=HORIZON, series=air_train)
+lgbm_time_transfer = time.time() - tic
 
-<span class="n">lgbm_smapes_transfer</span> <span class="o">=</span> <span class="n">eval_forecasts</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">air_test</span><span class="p">)</span>
+lgbm_smapes_transfer = eval_forecasts(preds, air_test)
 </pre></div>
 </div>
 </div>
@@ -1906,23 +1906,23 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">smapes_4</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="o">**</span><span class="n">smapes_3</span><span class="p">,</span>
-    <span class="o">**</span><span class="p">{</span>
-        <span class="s2">&quot;Linear Reg (M4-trained)&quot;</span><span class="p">:</span> <span class="n">lr_smapes_transfer</span><span class="p">,</span>
-        <span class="s2">&quot;LGBM (M4-trained)&quot;</span><span class="p">:</span> <span class="n">lgbm_smapes_transfer</span><span class="p">,</span>
-    <span class="p">},</span>
-<span class="p">}</span>
+<span></span>smapes_4 = {
+    **smapes_3,
+    **{
+        &quot;Linear Reg (M4-trained)&quot;: lr_smapes_transfer,
+        &quot;LGBM (M4-trained)&quot;: lgbm_smapes_transfer,
+    },
+}
 
-<span class="n">elapsed_times_4</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="o">**</span><span class="n">elapsed_times_3</span><span class="p">,</span>
-    <span class="o">**</span><span class="p">{</span>
-        <span class="s2">&quot;Linear Reg (M4-trained)&quot;</span><span class="p">:</span> <span class="n">lr_time_transfer</span><span class="p">,</span>
-        <span class="s2">&quot;LGBM (M4-trained)&quot;</span><span class="p">:</span> <span class="n">lgbm_time_transfer</span><span class="p">,</span>
-    <span class="p">},</span>
-<span class="p">}</span>
+elapsed_times_4 = {
+    **elapsed_times_3,
+    **{
+        &quot;Linear Reg (M4-trained)&quot;: lr_time_transfer,
+        &quot;LGBM (M4-trained)&quot;: lgbm_time_transfer,
+    },
+}
 
-<span class="n">plot_models</span><span class="p">(</span><span class="n">elapsed_times_4</span><span class="p">,</span> <span class="n">smapes_4</span><span class="p">)</span>
+plot_models(elapsed_times_4, smapes_4)
 </pre></div>
 </div>
 </div>
@@ -1944,7 +1944,7 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">m3_train</span><span class="p">,</span> <span class="n">m3_test</span> <span class="o">=</span> <span class="n">load_m3</span><span class="p">()</span>
+<span></span>m3_train, m3_test = load_m3()
 </pre></div>
 </div>
 </div>
@@ -1979,9 +1979,9 @@ done. There are 1399 series, with average training length 100.30092923516797
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">naive1_smapes_m3</span><span class="p">,</span> <span class="n">naive1_time_m3</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span>
-    <span class="n">m3_train</span><span class="p">,</span> <span class="n">m3_test</span><span class="p">,</span> <span class="n">NaiveSeasonal</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="mi">1</span>
-<span class="p">)</span>
+<span></span>naive1_smapes_m3, naive1_time_m3 = eval_local_model(
+    m3_train, m3_test, NaiveSeasonal, K=1
+)
 </pre></div>
 </div>
 </div>
@@ -2011,9 +2011,9 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">naive12_smapes_m3</span><span class="p">,</span> <span class="n">naive12_time_m3</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span>
-    <span class="n">m3_train</span><span class="p">,</span> <span class="n">m3_test</span><span class="p">,</span> <span class="n">NaiveSeasonal</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="mi">12</span>
-<span class="p">)</span>
+<span></span>naive12_smapes_m3, naive12_time_m3 = eval_local_model(
+    m3_train, m3_test, NaiveSeasonal, K=12
+)
 </pre></div>
 </div>
 </div>
@@ -2043,7 +2043,7 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">ets_smapes_m3</span><span class="p">,</span> <span class="n">ets_time_m3</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span><span class="n">m3_train</span><span class="p">,</span> <span class="n">m3_test</span><span class="p">,</span> <span class="n">ExponentialSmoothing</span><span class="p">)</span>
+<span></span>ets_smapes_m3, ets_time_m3 = eval_local_model(m3_train, m3_test, ExponentialSmoothing)
 </pre></div>
 </div>
 </div>
@@ -2073,7 +2073,7 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">theta_smapes_m3</span><span class="p">,</span> <span class="n">theta_time_m3</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span><span class="n">m3_train</span><span class="p">,</span> <span class="n">m3_test</span><span class="p">,</span> <span class="n">Theta</span><span class="p">)</span>
+<span></span>theta_smapes_m3, theta_time_m3 = eval_local_model(m3_train, m3_test, Theta)
 </pre></div>
 </div>
 </div>
@@ -2103,12 +2103,12 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>  <span class="c1"># ARIMA generates lots of warnings</span>
+<span></span>warnings.filterwarnings(&quot;ignore&quot;)  # ARIMA generates lots of warnings
 
-<span class="c1"># Note: using q=1 here generates errors for some series, so we use q=0</span>
-<span class="n">arima_smapes_m3</span><span class="p">,</span> <span class="n">arima_time_m3</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span>
-    <span class="n">m3_train</span><span class="p">,</span> <span class="n">m3_test</span><span class="p">,</span> <span class="n">ARIMA</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="mi">0</span>
-<span class="p">)</span>
+# Note: using q=1 here generates errors for some series, so we use q=0
+arima_smapes_m3, arima_time_m3 = eval_local_model(
+    m3_train, m3_test, ARIMA, p=12, d=1, q=0
+)
 </pre></div>
 </div>
 </div>
@@ -2138,9 +2138,9 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">kf_smapes_m3</span><span class="p">,</span> <span class="n">kf_time_m3</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span>
-    <span class="n">m3_train</span><span class="p">,</span> <span class="n">m3_test</span><span class="p">,</span> <span class="n">KalmanForecaster</span><span class="p">,</span> <span class="n">dim_x</span><span class="o">=</span><span class="mi">12</span>
-<span class="p">)</span>
+<span></span>kf_smapes_m3, kf_time_m3 = eval_local_model(
+    m3_train, m3_test, KalmanForecaster, dim_x=12
+)
 </pre></div>
 </div>
 </div>
@@ -2170,9 +2170,9 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">lr_smapes_m3</span><span class="p">,</span> <span class="n">lr_time_m3</span> <span class="o">=</span> <span class="n">eval_global_model</span><span class="p">(</span>
-    <span class="n">m3_train</span><span class="p">,</span> <span class="n">m3_test</span><span class="p">,</span> <span class="n">LinearRegressionModel</span><span class="p">,</span> <span class="n">lags</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span>
-<span class="p">)</span>
+<span></span>lr_smapes_m3, lr_time_m3 = eval_global_model(
+    m3_train, m3_test, LinearRegressionModel, lags=30, output_chunk_length=1
+)
 </pre></div>
 </div>
 </div>
@@ -2196,9 +2196,9 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">lgbm_smapes_m3</span><span class="p">,</span> <span class="n">lgbm_time_m3</span> <span class="o">=</span> <span class="n">eval_global_model</span><span class="p">(</span>
-    <span class="n">m3_train</span><span class="p">,</span> <span class="n">m3_test</span><span class="p">,</span> <span class="n">LightGBMModel</span><span class="p">,</span> <span class="n">lags</span><span class="o">=</span><span class="mi">35</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="s2">&quot;mape&quot;</span>
-<span class="p">)</span>
+<span></span>lgbm_smapes_m3, lgbm_time_m3 = eval_global_model(
+    m3_train, m3_test, LightGBMModel, lags=35, output_chunk_length=1, objective=&quot;mape&quot;
+)
 </pre></div>
 </div>
 </div>
@@ -2222,13 +2222,13 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># Get forecasts with our pre-trained N-BEATS</span>
+<span></span># Get forecasts with our pre-trained N-BEATS
 
-<span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-<span class="n">preds</span> <span class="o">=</span> <span class="n">nbeats_model_m4</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">m3_train</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">HORIZON</span><span class="p">)</span>  <span class="c1"># get forecasts</span>
-<span class="n">nbeats_m4_elapsed_time_m3</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+start_time = time.time()
+preds = nbeats_model_m4.predict(series=m3_train, n=HORIZON)  # get forecasts
+nbeats_m4_elapsed_time_m3 = time.time() - start_time
 
-<span class="n">nbeats_m4_smapes_m3</span> <span class="o">=</span> <span class="n">eval_forecasts</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">m3_test</span><span class="p">)</span>
+nbeats_m4_smapes_m3 = eval_forecasts(preds, m3_test)
 </pre></div>
 </div>
 </div>
@@ -2266,13 +2266,13 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># Get forecasts with our pre-trained linear regression model</span>
+<span></span># Get forecasts with our pre-trained linear regression model
 
-<span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-<span class="n">preds</span> <span class="o">=</span> <span class="n">lr_model_m4</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">m3_train</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">HORIZON</span><span class="p">)</span>  <span class="c1"># get forecasts</span>
-<span class="n">lr_m4_elapsed_time_m3</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+start_time = time.time()
+preds = lr_model_m4.predict(series=m3_train, n=HORIZON)  # get forecasts
+lr_m4_elapsed_time_m3 = time.time() - start_time
 
-<span class="n">lr_m4_smapes_m3</span> <span class="o">=</span> <span class="n">eval_forecasts</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">m3_test</span><span class="p">)</span>
+lr_m4_smapes_m3 = eval_forecasts(preds, m3_test)
 </pre></div>
 </div>
 </div>
@@ -2296,13 +2296,13 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># Get forecasts with our pre-trained LightGBM model</span>
+<span></span># Get forecasts with our pre-trained LightGBM model
 
-<span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-<span class="n">preds</span> <span class="o">=</span> <span class="n">lgbm_model_m4</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">m3_train</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">HORIZON</span><span class="p">)</span>  <span class="c1"># get forecasts</span>
-<span class="n">lgbm_m4_elapsed_time_m3</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+start_time = time.time()
+preds = lgbm_model_m4.predict(series=m3_train, n=HORIZON)  # get forecasts
+lgbm_m4_elapsed_time_m3 = time.time() - start_time
 
-<span class="n">lgbm_m4_smapes_m3</span> <span class="o">=</span> <span class="n">eval_forecasts</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">m3_test</span><span class="p">)</span>
+lgbm_m4_smapes_m3 = eval_forecasts(preds, m3_test)
 </pre></div>
 </div>
 </div>
@@ -2326,35 +2326,35 @@ computing sMAPEs...
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">smapes_m3</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;naive-last&quot;</span><span class="p">:</span> <span class="n">naive1_smapes_m3</span><span class="p">,</span>
-    <span class="s2">&quot;naive-seasonal&quot;</span><span class="p">:</span> <span class="n">naive12_smapes_m3</span><span class="p">,</span>
-    <span class="s2">&quot;Exponential Smoothing&quot;</span><span class="p">:</span> <span class="n">ets_smapes_m3</span><span class="p">,</span>
-    <span class="s2">&quot;ARIMA&quot;</span><span class="p">:</span> <span class="n">arima_smapes_m3</span><span class="p">,</span>
-    <span class="s2">&quot;Theta&quot;</span><span class="p">:</span> <span class="n">theta_smapes_m3</span><span class="p">,</span>
-    <span class="s2">&quot;Kalman filter&quot;</span><span class="p">:</span> <span class="n">kf_smapes_m3</span><span class="p">,</span>
-    <span class="s2">&quot;Linear Regression&quot;</span><span class="p">:</span> <span class="n">lr_smapes_m3</span><span class="p">,</span>
-    <span class="s2">&quot;LGBM&quot;</span><span class="p">:</span> <span class="n">lgbm_smapes_m3</span><span class="p">,</span>
-    <span class="s2">&quot;N-BEATS (M4-trained)&quot;</span><span class="p">:</span> <span class="n">nbeats_m4_smapes_m3</span><span class="p">,</span>
-    <span class="s2">&quot;Linear Reg (M4-trained)&quot;</span><span class="p">:</span> <span class="n">lr_m4_smapes_m3</span><span class="p">,</span>
-    <span class="s2">&quot;LGBM (M4-trained)&quot;</span><span class="p">:</span> <span class="n">lgbm_m4_smapes_m3</span><span class="p">,</span>
-<span class="p">}</span>
+<span></span>smapes_m3 = {
+    &quot;naive-last&quot;: naive1_smapes_m3,
+    &quot;naive-seasonal&quot;: naive12_smapes_m3,
+    &quot;Exponential Smoothing&quot;: ets_smapes_m3,
+    &quot;ARIMA&quot;: arima_smapes_m3,
+    &quot;Theta&quot;: theta_smapes_m3,
+    &quot;Kalman filter&quot;: kf_smapes_m3,
+    &quot;Linear Regression&quot;: lr_smapes_m3,
+    &quot;LGBM&quot;: lgbm_smapes_m3,
+    &quot;N-BEATS (M4-trained)&quot;: nbeats_m4_smapes_m3,
+    &quot;Linear Reg (M4-trained)&quot;: lr_m4_smapes_m3,
+    &quot;LGBM (M4-trained)&quot;: lgbm_m4_smapes_m3,
+}
 
-<span class="n">times_m3</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;naive-last&quot;</span><span class="p">:</span> <span class="n">naive1_time_m3</span><span class="p">,</span>
-    <span class="s2">&quot;naive-seasonal&quot;</span><span class="p">:</span> <span class="n">naive12_time_m3</span><span class="p">,</span>
-    <span class="s2">&quot;Exponential Smoothing&quot;</span><span class="p">:</span> <span class="n">ets_time_m3</span><span class="p">,</span>
-    <span class="s2">&quot;ARIMA&quot;</span><span class="p">:</span> <span class="n">arima_time_m3</span><span class="p">,</span>
-    <span class="s2">&quot;Theta&quot;</span><span class="p">:</span> <span class="n">theta_time_m3</span><span class="p">,</span>
-    <span class="s2">&quot;Kalman filter&quot;</span><span class="p">:</span> <span class="n">kf_time_m3</span><span class="p">,</span>
-    <span class="s2">&quot;Linear Regression&quot;</span><span class="p">:</span> <span class="n">lr_time_m3</span><span class="p">,</span>
-    <span class="s2">&quot;LGBM&quot;</span><span class="p">:</span> <span class="n">lgbm_time_m3</span><span class="p">,</span>
-    <span class="s2">&quot;N-BEATS (M4-trained)&quot;</span><span class="p">:</span> <span class="n">nbeats_m4_elapsed_time_m3</span><span class="p">,</span>
-    <span class="s2">&quot;Linear Reg (M4-trained)&quot;</span><span class="p">:</span> <span class="n">lr_m4_elapsed_time_m3</span><span class="p">,</span>
-    <span class="s2">&quot;LGBM (M4-trained)&quot;</span><span class="p">:</span> <span class="n">lgbm_m4_elapsed_time_m3</span><span class="p">,</span>
-<span class="p">}</span>
+times_m3 = {
+    &quot;naive-last&quot;: naive1_time_m3,
+    &quot;naive-seasonal&quot;: naive12_time_m3,
+    &quot;Exponential Smoothing&quot;: ets_time_m3,
+    &quot;ARIMA&quot;: arima_time_m3,
+    &quot;Theta&quot;: theta_time_m3,
+    &quot;Kalman filter&quot;: kf_time_m3,
+    &quot;Linear Regression&quot;: lr_time_m3,
+    &quot;LGBM&quot;: lgbm_time_m3,
+    &quot;N-BEATS (M4-trained)&quot;: nbeats_m4_elapsed_time_m3,
+    &quot;Linear Reg (M4-trained)&quot;: lr_m4_elapsed_time_m3,
+    &quot;LGBM (M4-trained)&quot;: lgbm_m4_elapsed_time_m3,
+}
 
-<span class="n">plot_models</span><span class="p">(</span><span class="n">times_m3</span><span class="p">,</span> <span class="n">smapes_m3</span><span class="p">)</span>
+plot_models(times_m3, smapes_m3)
 </pre></div>
 </div>
 </div>

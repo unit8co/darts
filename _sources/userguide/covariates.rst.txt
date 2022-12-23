@@ -239,6 +239,14 @@ GFMs are broadly speaking "machine learning based" models, which denote PyTorch-
      - ✅
      - ✅
      - ✅ 
+   * - ``DLinearModel``
+     - ✅
+     - ✅
+     - ✅ 
+   * - ``NLinearModel``
+     - ✅
+     - ✅
+     - ✅ 
 
 
 **Table 1: Darts' forecasting models and their covariate support**

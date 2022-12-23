@@ -134,6 +134,16 @@ In turn, the advantage of having ``predict()`` providing forecasts for potential
 
 These models are shown with a "✅" under the ``Multiple-series training`` column on the `model list <https://github.com/unit8co/darts#forecasting-models>`_.
 
+You can also find out programatically, whether a model supports multiple series.
+
+.. code-block:: python
+
+   from darts.models import RegressionModel
+   from darts.models.forecasting.forecasting_model import GlobalForecastingModel
+
+   # when True, multiple time series are supported
+   supports_multi_ts = issubclass(RegressionModel, GlobalForecastingModel)
+
 `This article <https://medium.com/unit8-machine-learning-publication/training-forecasting-models-on-multiple-time-series-with-darts-dc4be70b1844>`_ provides more explanations about training models on multiple series.
 
 Support for Covariates
@@ -315,7 +325,7 @@ Monte Carlo Dropout can be combined with other likelihood estimation in Darts, w
 Probabilistic regression models
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Some regression models can also be configured to produce probabilistic forecasts too. At the time of writing, `LinearRegressionModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.linear_regression_model.html>`_ and `LightGBMModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.gradient_boosted_model.html>`_ support a ``likelihood`` argument. When set to ``"poisson"`` the model will fit a Poisson distribution, and when set to ``"quantile"`` the model will use the pinball loss to perform quantile regression (the quantiles themselves can be specified using the ``quantiles`` argument).
+Some regression models can also be configured to produce probabilistic forecasts too. At the time of writing, `LinearRegressionModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.linear_regression_model.html>`_\ , `LightGBMModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.lgbm.html>`_ and `XGBModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.xgboost.html>`_ support a ``likelihood`` argument. When set to ``"poisson"`` the model will fit a Poisson distribution, and when set to ``"quantile"`` the model will use the pinball loss to perform quantile regression (the quantiles themselves can be specified using the ``quantiles`` argument).
 
 Example:
 

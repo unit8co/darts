@@ -1,0 +1,4 @@
+
+.. automodule:: darts.ad.scorers.pyod_scorer
+   :members:
+   :undoc-members:

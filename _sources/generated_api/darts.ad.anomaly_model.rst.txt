@@ -1,0 +1,12 @@
+
+
+
+.. automodule:: darts.ad.anomaly_model
+
+    .. toctree::
+        :maxdepth: 1
+        
+        
+        darts.ad.anomaly_model.anomaly_model
+        darts.ad.anomaly_model.filtering_am
+        darts.ad.anomaly_model.forecasting_am

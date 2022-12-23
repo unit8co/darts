@@ -6,6 +6,7 @@
     .. toctree::
         :maxdepth: 1
         
+        darts.ad
         darts.dataprocessing
         darts.datasets
         darts.explainability

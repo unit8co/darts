@@ -1,0 +1,4 @@
+
+.. automodule:: darts.ad.aggregators.or_aggregator
+   :members:
+   :undoc-members:

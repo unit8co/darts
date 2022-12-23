@@ -357,12 +357,15 @@
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_reshape_in</span><span class="p">(</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">component_mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">component_mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">flatten</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Reshapes the series&#39; values to be fed in input to a transformer.</span>
-
-<span class="sd">        The output is a 2-D matrix where each column corresponds to a component (dimension)</span>
-<span class="sd">        of the series, and the columns&#39; values are the flattened values over all samples</span>
+        <span class="sd">&quot;&quot;&quot;Extracts specified components from series and reshapes these values into an appropriate input shape</span>
+<span class="sd">        for a transformer. If `flatten=True`, the output is a 2-D matrix where each row corresponds to a timestep,</span>
+<span class="sd">        each column corresponds to a component (dimension) of the series, and the columns&#39; values are the flattened</span>
+<span class="sd">        values over all samples. Conversely, if `flatten=False`, the output is a 3-D matrix (i.e. timesteps along</span>
+<span class="sd">        the zeroth axis, components along the first axis, and samples along the second axis).</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -371,6 +374,10 @@
 <span class="sd">        component_mask</span>
 <span class="sd">            Optionally, np.ndarray boolean mask of shape (n_components, 1) specifying which components to</span>
 <span class="sd">            extract from `series`.</span>
+<span class="sd">        flatten</span>
+<span class="sd">            Optionally, bool specifying whether the samples for each component extracted by `component_mask`</span>
+<span class="sd">            should be flattened into a single column.</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="n">component_mask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -389,20 +396,26 @@
 
         <span class="n">vals</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[:,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="p">:]</span>
 
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">vals</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">component_mask</span><span class="o">.</span><span class="n">sum</span><span class="p">())],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">flatten</span><span class="p">:</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">vals</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">component_mask</span><span class="o">.</span><span class="n">sum</span><span class="p">())],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">vals</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_reshape_out</span><span class="p">(</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
         <span class="n">vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
         <span class="n">component_mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">flatten</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Reshapes the 2-D matrix coming out of a transformer into a 3-D matrix suitable to build a TimeSeries.</span>
+        <span class="sd">&quot;&quot;&quot;Reshapes the 2-D or 3-D matrix coming out of a transformer into a 3-D matrix suitable to build a TimeSeries,</span>
+<span class="sd">        and adds back components previously removed by `component_mask` in `_reshape_in` method.</span>
 
-<span class="sd">        The output is a 3-D matrix, built by taking each column of the 2-D matrix (the flattened components)</span>
-<span class="sd">        and reshaping them to (len(series), n_samples), then stacking them on 2nd axis.</span>
+<span class="sd">        If `flatten=True`, the output is built by taking each column of the 2-D input matrix (the flattened components)</span>
+<span class="sd">        and reshaping them to (len(series), n_samples), then stacking them on 2nd axis. Conversely, if `flatten=False`,</span>
+<span class="sd">        the shape of the 3-D input matrix is left unchanged.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -413,6 +426,9 @@
 <span class="sd">        component_mask</span>
 <span class="sd">            Optionally, np.ndarray boolean mask of shape (n_components, 1) specifying which components were extracted</span>
 <span class="sd">            from `series`. If given, insert `vals` back into the columns of the original array.</span>
+<span class="sd">        flatten</span>
+<span class="sd">            Optionally, bool specifying whether `series` is a 2-D matrix. Should match value of `flatten` argument</span>
+<span class="sd">            provided to `_reshape_in` method.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">raise_if_not</span><span class="p">(</span>
@@ -424,10 +440,13 @@
         <span class="p">)</span>
 
         <span class="n">series_width</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">width</span> <span class="k">if</span> <span class="n">component_mask</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">component_mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
-        <span class="n">reshaped</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">vals</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">series</span><span class="o">.</span><span class="n">n_samples</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">series_width</span><span class="p">)],</span>
-            <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">flatten</span><span class="p">:</span>
+            <span class="n">reshaped</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">vals</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">series</span><span class="o">.</span><span class="n">n_samples</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">series_width</span><span class="p">)],</span>
+                <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">reshaped</span> <span class="o">=</span> <span class="n">vals</span>
 
         <span class="k">if</span> <span class="n">component_mask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">reshaped</span>

@@ -1,0 +1,4 @@
+
+.. automodule:: darts.ad.detectors.quantile_detector
+   :members:
+   :undoc-members:

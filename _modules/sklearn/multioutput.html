@@ -180,6 +180,7 @@
 <span class="c1"># Author: James Ashton Nichols &lt;james.ashton.nichols@gmail.com&gt;</span>
 <span class="c1">#</span>
 <span class="c1"># License: BSD 3 clause</span>
+<span class="kn">from</span> <span class="nn">numbers</span> <span class="kn">import</span> <span class="n">Integral</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">scipy.sparse</span> <span class="k">as</span> <span class="nn">sp</span>
@@ -189,11 +190,16 @@
 <span class="kn">from</span> <span class="nn">.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">clone</span><span class="p">,</span> <span class="n">MetaEstimatorMixin</span>
 <span class="kn">from</span> <span class="nn">.base</span> <span class="kn">import</span> <span class="n">RegressorMixin</span><span class="p">,</span> <span class="n">ClassifierMixin</span><span class="p">,</span> <span class="n">is_classifier</span>
 <span class="kn">from</span> <span class="nn">.model_selection</span> <span class="kn">import</span> <span class="n">cross_val_predict</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">check_random_state</span><span class="p">,</span> <span class="n">_print_elapsed_time</span>
 <span class="kn">from</span> <span class="nn">.utils.metaestimators</span> <span class="kn">import</span> <span class="n">available_if</span>
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">check_random_state</span>
-<span class="kn">from</span> <span class="nn">.utils.validation</span> <span class="kn">import</span> <span class="n">check_is_fitted</span><span class="p">,</span> <span class="n">has_fit_parameter</span><span class="p">,</span> <span class="n">_check_fit_params</span>
 <span class="kn">from</span> <span class="nn">.utils.multiclass</span> <span class="kn">import</span> <span class="n">check_classification_targets</span>
+<span class="kn">from</span> <span class="nn">.utils.validation</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">check_is_fitted</span><span class="p">,</span>
+    <span class="n">has_fit_parameter</span><span class="p">,</span>
+    <span class="n">_check_fit_params</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span> <span class="nn">.utils.fixes</span> <span class="kn">import</span> <span class="n">delayed</span>
+<span class="kn">from</span> <span class="nn">.utils._param_validation</span> <span class="kn">import</span> <span class="n">HasMethods</span><span class="p">,</span> <span class="n">StrOptions</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">&quot;MultiOutputRegressor&quot;</span><span class="p">,</span>
@@ -246,6 +252,12 @@
 
 
 <span class="k">class</span> <span class="nc">_MultiOutputEstimator</span><span class="p">(</span><span class="n">MetaEstimatorMixin</span><span class="p">,</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+
+    <span class="n">_parameter_constraints</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;estimator&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">HasMethods</span><span class="p">([</span><span class="s2">&quot;fit&quot;</span><span class="p">,</span> <span class="s2">&quot;predict&quot;</span><span class="p">])],</span>
+        <span class="s2">&quot;n_jobs&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">Integral</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span>
+    <span class="p">}</span>
+
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">estimator</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">estimator</span> <span class="o">=</span> <span class="n">estimator</span>
@@ -283,6 +295,10 @@
 <span class="sd">            Returns a fitted instance.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">first_time</span> <span class="o">=</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;estimators_&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">first_time</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_validate_params</span><span class="p">()</span>
+
         <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_data</span><span class="p">(</span><span class="n">X</span><span class="o">=</span><span class="s2">&quot;no_validation&quot;</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">multi_output</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">y</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
@@ -295,8 +311,6 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">estimator</span><span class="p">,</span> <span class="s2">&quot;sample_weight&quot;</span>
         <span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Underlying estimator does not support sample weights.&quot;</span><span class="p">)</span>
-
-        <span class="n">first_time</span> <span class="o">=</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;estimators_&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span> <span class="o">=</span> <span class="n">Parallel</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_jobs</span><span class="p">)(</span>
             <span class="n">delayed</span><span class="p">(</span><span class="n">_partial_fit_estimator</span><span class="p">)(</span>
@@ -344,6 +358,7 @@
 <span class="sd">        self : object</span>
 <span class="sd">            Returns a fitted instance.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_params</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimator</span><span class="p">,</span> <span class="s2">&quot;fit&quot;</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The base estimator should implement a fit method&quot;</span><span class="p">)</span>
@@ -512,8 +527,9 @@
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    estimator : estimator object</span>
-<span class="sd">        An estimator object implementing :term:`fit`, :term:`score` and</span>
-<span class="sd">        :term:`predict_proba`.</span>
+<span class="sd">        An estimator object implementing :term:`fit` and :term:`predict`.</span>
+<span class="sd">        A :term:`predict_proba` method will be exposed only if `estimator` implements</span>
+<span class="sd">        it.</span>
 
 <span class="sd">    n_jobs : int or None, optional (default=None)</span>
 <span class="sd">        The number of jobs to run in parallel.</span>
@@ -693,11 +709,28 @@
 
 
 <span class="k">class</span> <span class="nc">_BaseChain</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_estimator</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+
+    <span class="n">_parameter_constraints</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;base_estimator&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">HasMethods</span><span class="p">([</span><span class="s2">&quot;fit&quot;</span><span class="p">,</span> <span class="s2">&quot;predict&quot;</span><span class="p">])],</span>
+        <span class="s2">&quot;order&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;array-like&quot;</span><span class="p">,</span> <span class="n">StrOptions</span><span class="p">({</span><span class="s2">&quot;random&quot;</span><span class="p">}),</span> <span class="kc">None</span><span class="p">],</span>
+        <span class="s2">&quot;cv&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;cv_object&quot;</span><span class="p">,</span> <span class="n">StrOptions</span><span class="p">({</span><span class="s2">&quot;prefit&quot;</span><span class="p">})],</span>
+        <span class="s2">&quot;random_state&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;random_state&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;verbose&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;boolean&quot;</span><span class="p">],</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">base_estimator</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">base_estimator</span> <span class="o">=</span> <span class="n">base_estimator</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">order</span> <span class="o">=</span> <span class="n">order</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cv</span> <span class="o">=</span> <span class="n">cv</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">random_state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span>
+
+    <span class="k">def</span> <span class="nf">_log_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">estimator_idx</span><span class="p">,</span> <span class="n">n_estimators</span><span class="p">,</span> <span class="n">processing_msg</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">estimator_idx</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="n">n_estimators</span><span class="si">}</span><span class="s2">) </span><span class="si">{</span><span class="n">processing_msg</span><span class="si">}</span><span class="s2">&quot;</span>
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_params</span><span class="p">):</span>
@@ -757,8 +790,14 @@
         <span class="k">del</span> <span class="n">Y_pred_chain</span>
 
         <span class="k">for</span> <span class="n">chain_idx</span><span class="p">,</span> <span class="n">estimator</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span><span class="p">):</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log_message</span><span class="p">(</span>
+                <span class="n">estimator_idx</span><span class="o">=</span><span class="n">chain_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="n">n_estimators</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span><span class="p">),</span>
+                <span class="n">processing_msg</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Processing order </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">order_</span><span class="p">[</span><span class="n">chain_idx</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
             <span class="n">y</span> <span class="o">=</span> <span class="n">Y</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">order_</span><span class="p">[</span><span class="n">chain_idx</span><span class="p">]]</span>
-            <span class="n">estimator</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_aug</span><span class="p">[:,</span> <span class="p">:</span> <span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">chain_idx</span><span class="p">)],</span> <span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_params</span><span class="p">)</span>
+            <span class="k">with</span> <span class="n">_print_elapsed_time</span><span class="p">(</span><span class="s2">&quot;Chain&quot;</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
+                <span class="n">estimator</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_aug</span><span class="p">[:,</span> <span class="p">:</span> <span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">chain_idx</span><span class="p">)],</span> <span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_params</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cv</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">chain_idx</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">col_idx</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">chain_idx</span>
                 <span class="n">cv_result</span> <span class="o">=</span> <span class="n">cross_val_predict</span><span class="p">(</span>
@@ -857,6 +896,11 @@
 <span class="sd">        Pass an int for reproducible output across multiple function calls.</span>
 <span class="sd">        See :term:`Glossary &lt;random_state&gt;`.</span>
 
+<span class="sd">    verbose : bool, default=False</span>
+<span class="sd">        If True, chain progress is output as each model is completed.</span>
+
+<span class="sd">        .. versionadded:: 1.2</span>
+
 <span class="sd">    Attributes</span>
 <span class="sd">    ----------</span>
 <span class="sd">    classes_ : list</span>
@@ -932,6 +976,8 @@
 <span class="sd">        self : object</span>
 <span class="sd">            Class instance.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_params</span><span class="p">()</span>
+
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">classes_</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">estimator</span><span class="o">.</span><span class="n">classes_</span> <span class="k">for</span> <span class="n">chain_idx</span><span class="p">,</span> <span class="n">estimator</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span><span class="p">)</span>
@@ -1058,6 +1104,11 @@
 <span class="sd">        Pass an int for reproducible output across multiple function calls.</span>
 <span class="sd">        See :term:`Glossary &lt;random_state&gt;`.</span>
 
+<span class="sd">    verbose : bool, default=False</span>
+<span class="sd">        If True, chain progress is output as each model is completed.</span>
+
+<span class="sd">        .. versionadded:: 1.2</span>
+
 <span class="sd">    Attributes</span>
 <span class="sd">    ----------</span>
 <span class="sd">    estimators_ : list</span>
@@ -1119,6 +1170,8 @@
 <span class="sd">        self : object</span>
 <span class="sd">            Returns a fitted instance.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_params</span><span class="p">()</span>
+
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_params</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span>
 

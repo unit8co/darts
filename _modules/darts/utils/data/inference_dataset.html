@@ -643,7 +643,7 @@
             <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="c1"># This dataset is in charge of serving historic and future future covariates</span>
+        <span class="c1"># This dataset is in charge of serving historic and future covariates</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ds_future</span> <span class="o">=</span> <span class="n">DualCovariatesInferenceDataset</span><span class="p">(</span>
             <span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
             <span class="n">covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>

@@ -368,22 +368,12 @@
             <span class="n">foreground_past_covariates</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">foreground_past_covariates</span><span class="p">)</span>
             <span class="n">foreground_future_covariates</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">foreground_future_covariates</span><span class="p">)</span>
 
-            <span class="c1"># For encoding inference, in case we don&#39;t have past and future covariates,</span>
-            <span class="c1"># We need to provide the minimum elements for the foreground_series. If the foreground_series</span>
-            <span class="c1"># is a list of TimeSeries, we need to provide the minimum elements for each TimeSeries.</span>
-            <span class="n">foreground_series_start_encoder</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">foreground_series</span><span class="p">)):</span>
-                <span class="n">foreground_series_start_encoder</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="n">foreground_series</span><span class="p">[</span><span class="n">i</span><span class="p">][:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">min_train_series_length</span><span class="p">]</span>
-                <span class="p">)</span>
-
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">encoders</span><span class="o">.</span><span class="n">encoding_available</span><span class="p">:</span>
                 <span class="p">(</span>
                     <span class="n">foreground_past_covariates</span><span class="p">,</span>
                     <span class="n">foreground_future_covariates</span><span class="p">,</span>
-                <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">generate_predict_encodings</span><span class="p">(</span>
-                    <span class="n">n</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">foreground_series</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">min_train_series_length</span><span class="p">,</span>
-                    <span class="n">series</span><span class="o">=</span><span class="n">foreground_series_start_encoder</span><span class="p">,</span>
+                <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">generate_fit_encodings</span><span class="p">(</span>
+                    <span class="n">series</span><span class="o">=</span><span class="n">foreground_series</span><span class="p">,</span>
                     <span class="n">past_covariates</span><span class="o">=</span><span class="n">foreground_past_covariates</span><span class="p">,</span>
                     <span class="n">future_covariates</span><span class="o">=</span><span class="n">foreground_future_covariates</span><span class="p">,</span>
                 <span class="p">)</span>
@@ -544,8 +534,7 @@
             <span class="p">(</span>
                 <span class="n">foreground_past_covariates</span><span class="p">,</span>
                 <span class="n">foreground_future_covariates</span><span class="p">,</span>
-            <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">generate_predict_encodings</span><span class="p">(</span>
-                <span class="n">n</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">foreground_series</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">min_train_series_length</span><span class="p">,</span>
+            <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">generate_fit_encodings</span><span class="p">(</span>
                 <span class="n">series</span><span class="o">=</span><span class="n">foreground_series</span><span class="p">,</span>
                 <span class="n">past_covariates</span><span class="o">=</span><span class="n">foreground_past_covariates</span><span class="p">,</span>
                 <span class="n">future_covariates</span><span class="o">=</span><span class="n">foreground_future_covariates</span><span class="p">,</span>

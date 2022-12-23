@@ -266,8 +266,7 @@
                 <span class="p">(</span>
                     <span class="n">background_past_covariates</span><span class="p">,</span>
                     <span class="n">background_future_covariates</span><span class="p">,</span>
-                <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">generate_predict_encodings</span><span class="p">(</span>
-                    <span class="n">n</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">background_series</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">min_train_series_length</span><span class="p">,</span>
+                <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">generate_fit_encodings</span><span class="p">(</span>
                     <span class="n">series</span><span class="o">=</span><span class="n">background_series</span><span class="p">,</span>
                     <span class="n">past_covariates</span><span class="o">=</span><span class="n">background_past_covariates</span><span class="p">,</span>
                     <span class="n">future_covariates</span><span class="o">=</span><span class="n">background_future_covariates</span><span class="p">,</span>
@@ -277,16 +276,16 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">background_past_covariates</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">background_past_covariates</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">background_future_covariates</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">background_future_covariates</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">uses_past_covariates</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">supports_past_covariates</span><span class="p">:</span>
             <span class="n">raise_if</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">_expect_past_covariates</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">uses_past_covariates</span>
                 <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_past_covariates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span>
                 <span class="s2">&quot;A background past covariates is not provided, but the model needs past covariates.&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">uses_future_covariates</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">supports_future_covariates</span><span class="p">:</span>
             <span class="n">raise_if</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">_expect_future_covariates</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">uses_future_covariates</span>
                 <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_future_covariates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span>
                 <span class="s2">&quot;A background future covariates is not provided, but the model needs future covariates.&quot;</span><span class="p">,</span>
             <span class="p">)</span>

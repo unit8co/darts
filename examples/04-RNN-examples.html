@@ -601,10 +601,10 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># fix python path if working locally</span>
-<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
+<span></span># fix python path if working locally
+from utils import fix_pythonpath_if_working_locally
 
-<span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
+fix_pythonpath_if_working_locally()
 </pre></div>
 </div>
 </div>
@@ -613,9 +613,9 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
-<span class="o">%</span><span class="k">autoreload</span> 2
-<span class="o">%</span><span class="k">matplotlib</span> inline
+<span></span>%load_ext autoreload
+%autoreload 2
+%matplotlib inline
 </pre></div>
 </div>
 </div>
@@ -624,32 +624,32 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
-<span class="kn">import</span> <span class="nn">torch.optim</span> <span class="k">as</span> <span class="nn">optim</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">shutil</span>
-<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">MinMaxScaler</span>
-<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm_notebook</span> <span class="k">as</span> <span class="n">tqdm</span>
+<span></span>import torch
+import torch.nn as nn
+import torch.optim as optim
+import numpy as np
+import pandas as pd
+import shutil
+from sklearn.preprocessing import MinMaxScaler
+from tqdm import tqdm_notebook as tqdm
 
-<span class="kn">from</span> <span class="nn">torch.utils.tensorboard</span> <span class="kn">import</span> <span class="n">SummaryWriter</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+from tensorboardX import SummaryWriter
+import matplotlib.pyplot as plt
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span><span class="p">,</span> <span class="n">ExponentialSmoothing</span><span class="p">,</span> <span class="n">BlockRNNModel</span>
-<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">mape</span>
-<span class="kn">from</span> <span class="nn">darts.utils.statistics</span> <span class="kn">import</span> <span class="n">check_seasonality</span><span class="p">,</span> <span class="n">plot_acf</span>
-<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span><span class="p">,</span> <span class="n">SunspotsDataset</span>
-<span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="n">datetime_attribute_timeseries</span>
+from darts import TimeSeries
+from darts.dataprocessing.transformers import Scaler
+from darts.models import RNNModel, ExponentialSmoothing, BlockRNNModel
+from darts.metrics import mape
+from darts.utils.statistics import check_seasonality, plot_acf
+from darts.datasets import AirPassengersDataset, SunspotsDataset
+from darts.utils.timeseries_generation import datetime_attribute_timeseries
 
-<span class="kn">import</span> <span class="nn">warnings</span>
+import warnings
 
-<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
-<span class="kn">import</span> <span class="nn">logging</span>
+warnings.filterwarnings(&quot;ignore&quot;)
+import logging
 
-<span class="n">logging</span><span class="o">.</span><span class="n">disable</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
+logging.disable(logging.CRITICAL)
 </pre></div>
 </div>
 </div>
@@ -673,30 +673,30 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># Read data:</span>
-<span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span></span># Read data:
+series = AirPassengersDataset().load()
 
-<span class="c1"># Create training and validation sets:</span>
-<span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;19590101&quot;</span><span class="p">))</span>
+# Create training and validation sets:
+train, val = series.split_after(pd.Timestamp(&quot;19590101&quot;))
 
-<span class="c1"># Normalize the time series (note: we avoid fitting the transformer on the validation set)</span>
-<span class="n">transformer</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
-<span class="n">train_transformed</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
-<span class="n">val_transformed</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
-<span class="n">series_transformed</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+# Normalize the time series (note: we avoid fitting the transformer on the validation set)
+transformer = Scaler()
+train_transformed = transformer.fit_transform(train)
+val_transformed = transformer.transform(val)
+series_transformed = transformer.transform(series)
 
-<span class="c1"># create month and year covariate series</span>
-<span class="n">year_series</span> <span class="o">=</span> <span class="n">datetime_attribute_timeseries</span><span class="p">(</span>
-    <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="n">freq</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">freq_str</span><span class="p">,</span> <span class="n">periods</span><span class="o">=</span><span class="mi">1000</span><span class="p">),</span>
-    <span class="n">attribute</span><span class="o">=</span><span class="s2">&quot;year&quot;</span><span class="p">,</span>
-    <span class="n">one_hot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="n">year_series</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">year_series</span><span class="p">)</span>
-<span class="n">month_series</span> <span class="o">=</span> <span class="n">datetime_attribute_timeseries</span><span class="p">(</span>
-    <span class="n">year_series</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="s2">&quot;month&quot;</span><span class="p">,</span> <span class="n">one_hot</span><span class="o">=</span><span class="kc">True</span>
-<span class="p">)</span>
-<span class="n">covariates</span> <span class="o">=</span> <span class="n">year_series</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">month_series</span><span class="p">)</span>
-<span class="n">cov_train</span><span class="p">,</span> <span class="n">cov_val</span> <span class="o">=</span> <span class="n">covariates</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;19590101&quot;</span><span class="p">))</span>
+# create month and year covariate series
+year_series = datetime_attribute_timeseries(
+    pd.date_range(start=series.start_time(), freq=series.freq_str, periods=1000),
+    attribute=&quot;year&quot;,
+    one_hot=False,
+)
+year_series = Scaler().fit_transform(year_series)
+month_series = datetime_attribute_timeseries(
+    year_series, attribute=&quot;month&quot;, one_hot=True
+)
+covariates = year_series.stack(month_series)
+cov_train, cov_val = covariates.split_after(pd.Timestamp(&quot;19590101&quot;))
 </pre></div>
 </div>
 </div>
@@ -706,21 +706,21 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">my_model</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="p">(</span>
-    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;LSTM&quot;</span><span class="p">,</span>
-    <span class="n">hidden_dim</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
-    <span class="n">dropout</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-    <span class="n">batch_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
-    <span class="n">n_epochs</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
-    <span class="n">optimizer_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="mf">1e-3</span><span class="p">},</span>
-    <span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;Air_RNN&quot;</span><span class="p">,</span>
-    <span class="n">log_tensorboard</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
-    <span class="n">training_length</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
-    <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">14</span><span class="p">,</span>
-    <span class="n">force_reset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">save_checkpoints</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span>
+<span></span>my_model = RNNModel(
+    model=&quot;LSTM&quot;,
+    hidden_dim=20,
+    dropout=0,
+    batch_size=16,
+    n_epochs=300,
+    optimizer_kwargs={&quot;lr&quot;: 1e-3},
+    model_name=&quot;Air_RNN&quot;,
+    log_tensorboard=True,
+    random_state=42,
+    training_length=20,
+    input_chunk_length=14,
+    force_reset=True,
+    save_checkpoints=True,
+)
 </pre></div>
 </div>
 </div>
@@ -730,13 +730,13 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">my_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
-    <span class="n">train_transformed</span><span class="p">,</span>
-    <span class="n">future_covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span>
-    <span class="n">val_series</span><span class="o">=</span><span class="n">val_transformed</span><span class="p">,</span>
-    <span class="n">val_future_covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span>
-    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span>
+<span></span>my_model.fit(
+    train_transformed,
+    future_covariates=covariates,
+    val_series=val_transformed,
+    val_future_covariates=covariates,
+    verbose=True,
+)
 </pre></div>
 </div>
 </div>
@@ -762,16 +762,16 @@ Training loss: 0.0003, validation loss: 0.0021, best val loss: 0.0021
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span> <span class="nf">eval_model</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-    <span class="n">pred_series</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">26</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
-    <span class="n">series_transformed</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
-    <span class="n">pred_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;forecast&quot;</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;MAPE: </span><span class="si">{:.2f}</span><span class="s2">%&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">pred_series</span><span class="p">,</span> <span class="n">val_transformed</span><span class="p">)))</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span></span>def eval_model(model):
+    pred_series = model.predict(n=26, future_covariates=covariates)
+    plt.figure(figsize=(8, 5))
+    series_transformed.plot(label=&quot;actual&quot;)
+    pred_series.plot(label=&quot;forecast&quot;)
+    plt.title(&quot;MAPE: {:.2f}%&quot;.format(mape(pred_series, val_transformed)))
+    plt.legend()
 
 
-<span class="n">eval_model</span><span class="p">(</span><span class="n">my_model</span><span class="p">)</span>
+eval_model(my_model)
 </pre></div>
 </div>
 </div>
@@ -788,8 +788,8 @@ Training loss: 0.0003, validation loss: 0.0021, best val loss: 0.0021
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">best_model</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load_from_checkpoint</span><span class="p">(</span><span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;Air_RNN&quot;</span><span class="p">,</span> <span class="n">best</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">eval_model</span><span class="p">(</span><span class="n">best_model</span><span class="p">)</span>
+<span></span>best_model = RNNModel.load_from_checkpoint(model_name=&quot;Air_RNN&quot;, best=True)
+eval_model(best_model)
 </pre></div>
 </div>
 </div>
@@ -797,9 +797,10 @@ Training loss: 0.0003, validation loss: 0.0021, best val loss: 0.0021
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<div class="highlight"><pre>
-loading model_best_290.pth.tar
-</pre></div></div>
+<div class="admonition warning">
+<p>Data type cannot be displayed: application/vnd.code.notebook.stdout</p>
+</div>
+</div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -817,14 +818,14 @@ loading model_best_290.pth.tar
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">backtest_series</span> <span class="o">=</span> <span class="n">my_model</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
-    <span class="n">series_transformed</span><span class="p">,</span>
-    <span class="n">future_covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span>
-    <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;19590101&quot;</span><span class="p">),</span>
-    <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
-    <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span>
+<span></span>backtest_series = my_model.historical_forecasts(
+    series_transformed,
+    future_covariates=covariates,
+    start=pd.Timestamp(&quot;19590101&quot;),
+    forecast_horizon=6,
+    retrain=False,
+    verbose=True,
+)
 </pre></div>
 </div>
 </div>
@@ -839,19 +840,19 @@ loading model_best_290.pth.tar
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
-<span class="n">series_transformed</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
-<span class="n">backtest_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;backtest&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Backtest, starting Jan 1959, 6-months horizon&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span>
-    <span class="s2">&quot;MAPE: </span><span class="si">{:.2f}</span><span class="s2">%&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-        <span class="n">mape</span><span class="p">(</span>
-            <span class="n">transformer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">series_transformed</span><span class="p">),</span>
-            <span class="n">transformer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">backtest_series</span><span class="p">),</span>
-        <span class="p">)</span>
-    <span class="p">)</span>
-<span class="p">)</span>
+<span></span>plt.figure(figsize=(8, 5))
+series_transformed.plot(label=&quot;actual&quot;)
+backtest_series.plot(label=&quot;backtest&quot;)
+plt.legend()
+plt.title(&quot;Backtest, starting Jan 1959, 6-months horizon&quot;)
+print(
+    &quot;MAPE: {:.2f}%&quot;.format(
+        mape(
+            transformer.inverse_transform(series_transformed),
+            transformer.inverse_transform(backtest_series),
+        )
+    )
+)
 </pre></div>
 </div>
 </div>
@@ -880,10 +881,10 @@ MAPE: 2.43%
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">series_sunspot</span> <span class="o">=</span> <span class="n">SunspotsDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span></span>series_sunspot = SunspotsDataset().load()
 
-<span class="n">series_sunspot</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-<span class="n">check_seasonality</span><span class="p">(</span><span class="n">series_sunspot</span><span class="p">,</span> <span class="n">max_lag</span><span class="o">=</span><span class="mi">240</span><span class="p">)</span>
+series_sunspot.plot()
+check_seasonality(series_sunspot, max_lag=240)
 </pre></div>
 </div>
 </div>
@@ -908,7 +909,7 @@ MAPE: 2.43%
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">plot_acf</span><span class="p">(</span><span class="n">series_sunspot</span><span class="p">,</span> <span class="mi">125</span><span class="p">,</span> <span class="n">max_lag</span><span class="o">=</span><span class="mi">240</span><span class="p">)</span>  <span class="c1"># ~11 years seasonality</span>
+<span></span>plot_acf(series_sunspot, 125, max_lag=240)  # ~11 years seasonality
 </pre></div>
 </div>
 </div>
@@ -924,12 +925,12 @@ MAPE: 2.43%
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">train_sp</span><span class="p">,</span> <span class="n">val_sp</span> <span class="o">=</span> <span class="n">series_sunspot</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;19401001&quot;</span><span class="p">))</span>
+<span></span>train_sp, val_sp = series_sunspot.split_after(pd.Timestamp(&quot;19401001&quot;))
 
-<span class="n">transformer_sunspot</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
-<span class="n">train_sp_transformed</span> <span class="o">=</span> <span class="n">transformer_sunspot</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">train_sp</span><span class="p">)</span>
-<span class="n">val_sp_transformed</span> <span class="o">=</span> <span class="n">transformer_sunspot</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">val_sp</span><span class="p">)</span>
-<span class="n">series_sp_transformed</span> <span class="o">=</span> <span class="n">transformer_sunspot</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series_sunspot</span><span class="p">)</span>
+transformer_sunspot = Scaler()
+train_sp_transformed = transformer_sunspot.fit_transform(train_sp)
+val_sp_transformed = transformer_sunspot.transform(val_sp)
+series_sp_transformed = transformer_sunspot.transform(series_sunspot)
 </pre></div>
 </div>
 </div>
@@ -938,24 +939,24 @@ MAPE: 2.43%
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">my_model_sun</span> <span class="o">=</span> <span class="n">BlockRNNModel</span><span class="p">(</span>
-    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;GRU&quot;</span><span class="p">,</span>
-    <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">125</span><span class="p">,</span>
-    <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span>
-    <span class="n">hidden_dim</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
-    <span class="n">n_rnn_layers</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-    <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
-    <span class="n">n_epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
-    <span class="n">dropout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
-    <span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;sun_GRU&quot;</span><span class="p">,</span>
-    <span class="n">nr_epochs_val_period</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-    <span class="n">optimizer_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="mf">1e-3</span><span class="p">},</span>
-    <span class="n">log_tensorboard</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
-    <span class="n">force_reset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span>
+<span></span>my_model_sun = BlockRNNModel(
+    model=&quot;GRU&quot;,
+    input_chunk_length=125,
+    output_chunk_length=36,
+    hidden_dim=10,
+    n_rnn_layers=1,
+    batch_size=32,
+    n_epochs=100,
+    dropout=0.1,
+    model_name=&quot;sun_GRU&quot;,
+    nr_epochs_val_period=1,
+    optimizer_kwargs={&quot;lr&quot;: 1e-3},
+    log_tensorboard=True,
+    random_state=42,
+    force_reset=True,
+)
 
-<span class="n">my_model_sun</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_sp_transformed</span><span class="p">,</span> <span class="n">val_series</span><span class="o">=</span><span class="n">val_sp_transformed</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+my_model_sun.fit(train_sp_transformed, val_series=val_sp_transformed, verbose=True)
 </pre></div>
 </div>
 </div>
@@ -979,26 +980,26 @@ Training loss: 0.0087, validation loss: 0.0208, best val loss: 0.0208
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># Compute the backtest predictions with the two models</span>
-<span class="n">pred_series</span> <span class="o">=</span> <span class="n">my_model_sun</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
-    <span class="n">series_sp_transformed</span><span class="p">,</span>
-    <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;19401001&quot;</span><span class="p">),</span>
-    <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span>
-    <span class="n">stride</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
-    <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">last_points_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span>
+<span></span># Compute the backtest predictions with the two models
+pred_series = my_model_sun.historical_forecasts(
+    series_sp_transformed,
+    start=pd.Timestamp(&quot;19401001&quot;),
+    forecast_horizon=36,
+    stride=10,
+    retrain=False,
+    last_points_only=True,
+    verbose=True,
+)
 
-<span class="n">pred_series_ets</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">(</span><span class="n">seasonal_periods</span><span class="o">=</span><span class="mi">120</span><span class="p">)</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
-    <span class="n">series_sp_transformed</span><span class="p">,</span>
-    <span class="n">start</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;19401001&quot;</span><span class="p">),</span>
-    <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span>
-    <span class="n">stride</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
-    <span class="n">retrain</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">last_points_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span>
+pred_series_ets = ExponentialSmoothing(seasonal_periods=120).historical_forecasts(
+    series_sp_transformed,
+    start=pd.Timestamp(&quot;19401001&quot;),
+    forecast_horizon=36,
+    stride=10,
+    retrain=True,
+    last_points_only=True,
+    verbose=True,
+)
 </pre></div>
 </div>
 </div>
@@ -1019,12 +1020,12 @@ Training loss: 0.0087, validation loss: 0.0208, best val loss: 0.0208
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">val_sp_transformed</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
-<span class="n">pred_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;our RNN&quot;</span><span class="p">)</span>
-<span class="n">pred_series_ets</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;ETS&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;RNN MAPE:&quot;</span><span class="p">,</span> <span class="n">mape</span><span class="p">(</span><span class="n">pred_series</span><span class="p">,</span> <span class="n">val_sp_transformed</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ETS MAPE:&quot;</span><span class="p">,</span> <span class="n">mape</span><span class="p">(</span><span class="n">pred_series_ets</span><span class="p">,</span> <span class="n">val_sp_transformed</span><span class="p">))</span>
+<span></span>val_sp_transformed.plot(label=&quot;actual&quot;)
+pred_series.plot(label=&quot;our RNN&quot;)
+pred_series_ets.plot(label=&quot;ETS&quot;)
+plt.legend()
+print(&quot;RNN MAPE:&quot;, mape(pred_series, val_sp_transformed))
+print(&quot;ETS MAPE:&quot;, mape(pred_series_ets, val_sp_transformed))
 </pre></div>
 </div>
 </div>

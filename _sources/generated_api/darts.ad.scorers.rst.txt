@@ -1,0 +1,21 @@
+
+
+
+.. automodule:: darts.ad.scorers
+
+    .. toctree::
+        :maxdepth: 1
+        
+        
+        darts.ad.scorers.difference_scorer
+        darts.ad.scorers.kmeans_scorer
+        darts.ad.scorers.nll_cauchy_scorer
+        darts.ad.scorers.nll_exponential_scorer
+        darts.ad.scorers.nll_gamma_scorer
+        darts.ad.scorers.nll_gaussian_scorer
+        darts.ad.scorers.nll_laplace_scorer
+        darts.ad.scorers.nll_poisson_scorer
+        darts.ad.scorers.norm_scorer
+        darts.ad.scorers.pyod_scorer
+        darts.ad.scorers.scorers
+        darts.ad.scorers.wasserstein_scorer

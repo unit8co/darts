@@ -1,0 +1,13 @@
+
+
+
+.. automodule:: darts.ad.aggregators
+
+    .. toctree::
+        :maxdepth: 1
+        
+        
+        darts.ad.aggregators.aggregators
+        darts.ad.aggregators.and_aggregator
+        darts.ad.aggregators.ensemble_sklearn_aggregator
+        darts.ad.aggregators.or_aggregator

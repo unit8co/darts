@@ -1,4 +1,0 @@
-
-.. automodule:: darts.models.forecasting.gradient_boosted_model
-   :members:
-   :undoc-members:

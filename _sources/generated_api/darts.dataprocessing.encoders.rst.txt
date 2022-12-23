@@ -1,0 +1,11 @@
+
+
+
+.. automodule:: darts.dataprocessing.encoders
+
+    .. toctree::
+        :maxdepth: 1
+        
+        
+        darts.dataprocessing.encoders.encoder_base
+        darts.dataprocessing.encoders.encoders

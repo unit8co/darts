@@ -176,7 +176,7 @@
 
 <div class="viewcode-block" id="MovingAverage"><a class="viewcode-back" href="../../../../generated_api/darts.models.filtering.moving_average.html#darts.models.filtering.moving_average.MovingAverage">[docs]</a><span class="k">class</span> <span class="nc">MovingAverage</span><span class="p">(</span><span class="n">FilteringModel</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    A simple moving average filter. Works on deterministic series (made of 1 sample).</span>
+<span class="sd">    A simple moving average filter. Works on deterministic and stochastic series.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">centered</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
@@ -186,7 +186,7 @@
 <span class="sd">        window</span>
 <span class="sd">            The length of the window over which to average values</span>
 <span class="sd">        centered</span>
-<span class="sd">            Set the labels at the center of the window. If not set, the averaged values are lagging after the</span>
+<span class="sd">            Set the labels at the center of the window. If not set, the averaged values are lagging after</span>
 <span class="sd">            the original values.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
@@ -198,9 +198,6 @@
 <span class="sd">        Computes a moving average of this series&#39; values and returns a new TimeSeries.</span>
 <span class="sd">        The returned series has the same length and time axis as `series`. (Note that this might create border effects).</span>
 
-<span class="sd">        Behind the scenes the moving average is computed using :func:`pandas.DataFrame.rolling()` on the underlying</span>
-<span class="sd">        DataFrame.</span>
-
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        series</span>
@@ -211,16 +208,16 @@
 <span class="sd">        TimeSeries</span>
 <span class="sd">            A time series containing the average values</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">filtered_df</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">series</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-            <span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="p">,</span> <span class="n">min_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">centered</span><span class="p">)</span>
-            <span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-        <span class="p">)</span>
+        <span class="n">transformation</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;function&quot;</span><span class="p">:</span> <span class="s2">&quot;mean&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="s2">&quot;rolling&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;window&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="p">,</span>
+            <span class="s2">&quot;center&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">centered</span><span class="p">,</span>
+            <span class="s2">&quot;min_periods&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="p">}</span>
 
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span>
-            <span class="n">filtered_df</span><span class="p">,</span>
-            <span class="n">static_covariates</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">,</span>
-            <span class="n">hierarchy</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">hierarchy</span><span class="p">,</span>
+        <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">window_transform</span><span class="p">(</span>
+            <span class="n">transforms</span><span class="o">=</span><span class="n">transformation</span><span class="p">,</span> <span class="n">forecasting_safe</span><span class="o">=</span><span class="kc">False</span>
         <span class="p">)</span></div></div>
 </pre></div>
 

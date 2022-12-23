@@ -1,0 +1,4 @@
+
+.. automodule:: darts.ad.scorers.norm_scorer
+   :members:
+   :undoc-members:

@@ -9,6 +9,7 @@
         
         darts.dataprocessing.transformers.base_data_transformer
         darts.dataprocessing.transformers.boxcox
+        darts.dataprocessing.transformers.diff
         darts.dataprocessing.transformers.fittable_data_transformer
         darts.dataprocessing.transformers.invertible_data_transformer
         darts.dataprocessing.transformers.mappers
@@ -16,3 +17,4 @@
         darts.dataprocessing.transformers.reconciliation
         darts.dataprocessing.transformers.scaler
         darts.dataprocessing.transformers.static_covariates_transformer
+        darts.dataprocessing.transformers.window_transformer

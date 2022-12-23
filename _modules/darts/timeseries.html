@@ -189,7 +189,6 @@
 <span class="sd">    - Contain numeric types only</span>
 <span class="sd">    - Have distinct components/columns names</span>
 <span class="sd">    - Have a well defined frequency (for ``DateTimeIndex``)</span>
-<span class="sd">    - Be non-empty</span>
 <span class="sd">    - Have static covariates consistent with their components, or no static covariates</span>
 <span class="sd">    - Have a hierarchy consistent with their components, or no hierarchy</span>
 
@@ -199,10 +198,13 @@
 <span class="sd">``TimeSeries`` documentation for more information on covariates.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">import</span> <span class="nn">itertools</span>
 <span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">import</span> <span class="nn">re</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 <span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">signature</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -252,7 +254,6 @@
             <span class="s2">&quot;TimeSeries.from_times_and_values(), etc...).&quot;</span><span class="p">,</span>
             <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">xa</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;The time series array must not be empty.&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
         <span class="n">raise_if_not</span><span class="p">(</span>
             <span class="nb">len</span><span class="p">(</span><span class="n">xa</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">,</span>
             <span class="sa">f</span><span class="s2">&quot;TimeSeries require DataArray of dimensionality 3 (</span><span class="si">{</span><span class="n">DIMS</span><span class="si">}</span><span class="s2">).&quot;</span><span class="p">,</span>
@@ -820,7 +821,20 @@
                 <span class="s2">&quot;a DatetimeIndex, or with a RangeIndex.&quot;</span><span class="p">,</span>
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="n">time_index</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span>
+            <span class="c1"># BUGFIX : force time-index to be timezone naive as xarray doesn&#39;t support it</span>
+            <span class="c1"># pandas.DataFrame loses the tz information if it&#39;s not its index</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">)</span> <span class="ow">and</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">tz</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;The provided DatetimeIndex was associated with a timezone, which is currently not supported &quot;</span>
+                    <span class="s2">&quot;by xarray. To avoid unexpected behaviour, the tz information was removed. Consider calling &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;`ts.time_index.tz_localize(</span><span class="si">{</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">tz</span><span class="si">}</span><span class="s2">)` when exporting the results.&quot;</span>
+                    <span class="s2">&quot;To plot the series with the right time steps, consider setting the matplotlib.pyplot &quot;</span>
+                    <span class="s2">&quot;`rcParams[&#39;timezone&#39;]` parameter to automatically convert the time axis back to the &quot;</span>
+                    <span class="s2">&quot;original timezone.&quot;</span>
+                <span class="p">)</span>
+                <span class="n">time_index</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">tz_localize</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">time_index</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">time_index</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
             <span class="n">time_index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">time_col</span> <span class="k">if</span> <span class="n">time_col</span> <span class="k">else</span> <span class="n">DIMS</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -907,8 +921,11 @@
         <span class="n">static_cov_cols</span> <span class="o">=</span> <span class="n">group_cols</span> <span class="o">+</span> <span class="n">static_cols</span>
 
         <span class="c1"># split df by groups, and store group values and static values (static covariates)</span>
+        <span class="c1"># single elements group columns must be unpacked for same groupby() behavior across different pandas versions</span>
         <span class="n">splits</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">static_cov_vals</span><span class="p">,</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">group_cols</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">static_cov_vals</span><span class="p">,</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span>
+            <span class="n">group_cols</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">group_cols</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">group_cols</span>
+        <span class="p">):</span>
             <span class="n">static_cov_vals</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="p">(</span><span class="n">static_cov_vals</span><span class="p">,)</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">static_cov_vals</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span>
@@ -997,7 +1014,6 @@
 <span class="sd">        TimeSeries</span>
 <span class="sd">            A univariate and deterministic TimeSeries constructed from the inputs.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">pd_series</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span>
             <span class="n">df</span><span class="p">,</span>
@@ -1089,6 +1105,18 @@
             <span class="s2">&quot;the `times` argument must be a RangeIndex, or a DateTimeIndex. Use &quot;</span>
             <span class="s2">&quot;TimeSeries.from_values() if you want to use an automatic RangeIndex.&quot;</span><span class="p">,</span>
         <span class="p">)</span>
+
+        <span class="c1"># BUGFIX : force time-index to be timezone naive as xarray doesn&#39;t support it</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">)</span> <span class="ow">and</span> <span class="n">times</span><span class="o">.</span><span class="n">tz</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;The `times` argument was associated with a timezone, which is currently not supported &quot;</span>
+                <span class="s2">&quot;by xarray. To avoid unexpected behaviour, the tz information was removed. Consider calling &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;`ts.time_index.tz_localize(</span><span class="si">{</span><span class="n">times</span><span class="o">.</span><span class="n">tz</span><span class="si">}</span><span class="s2">)` when exporting the results.&quot;</span>
+                <span class="s2">&quot;To plot the series with the right time steps, consider setting the matplotlib.pyplot &quot;</span>
+                <span class="s2">&quot;`rcParams[&#39;timezone&#39;]` parameter to automatically convert the time axis back to the &quot;</span>
+                <span class="s2">&quot;original timezone.&quot;</span>
+            <span class="p">)</span>
+            <span class="n">times</span> <span class="o">=</span> <span class="n">times</span><span class="o">.</span><span class="n">tz_localize</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
 
         <span class="n">times_name</span> <span class="o">=</span> <span class="n">DIMS</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">times</span><span class="o">.</span><span class="n">name</span> <span class="k">else</span> <span class="n">times</span><span class="o">.</span><span class="n">name</span>
 
@@ -1444,6 +1472,7 @@
 <span class="sd">    Some asserts</span>
 <span class="sd">    =============</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="c1"># TODO: put at the bottom</span>
 
     <span class="k">def</span> <span class="nf">_assert_univariate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1549,12 +1578,14 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="TimeSeries.pd_dataframe"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.pd_dataframe">[docs]</a>    <span class="k">def</span> <span class="nf">pd_dataframe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<div class="viewcode-block" id="TimeSeries.pd_dataframe"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.pd_dataframe">[docs]</a>    <span class="k">def</span> <span class="nf">pd_dataframe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">suppress_warnings</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Return a Pandas DataFrame representation of this deterministic time series.</span>
+<span class="sd">        Return a Pandas DataFrame representation of this time series.</span>
 
 <span class="sd">        Each of the series components will appear as a column in the DataFrame.</span>
-<span class="sd">        Works only for deterministic series (i.e., made of 1 sample).</span>
+<span class="sd">        If the series is stochastic, the samples are returned as columns of the dataframe with column names</span>
+<span class="sd">        as &#39;component_s#&#39; (e.g. with two components and two samples:</span>
+<span class="sd">        &#39;comp0_s0&#39;, &#39;comp0_s1&#39; &#39;comp1_s0&#39; &#39;comp1_s1&#39;).</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1567,25 +1598,46 @@
 <span class="sd">            The Pandas DataFrame representation of this time series</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_deterministic</span><span class="p">:</span>
-            <span class="n">raise_log</span><span class="p">(</span>
-                <span class="ne">AssertionError</span><span class="p">(</span>
-                    <span class="s2">&quot;The pd_dataframe() method can only return DataFrames of deterministic &quot;</span>
-                    <span class="s2">&quot;time series, and this series is not deterministic (it contains several samples). &quot;</span>
-                    <span class="s2">&quot;Consider calling quantile_df() instead.&quot;</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">suppress_warnings</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="s2">&quot;You are transforming a stochastic TimeSeries (i.e., contains several samples). &quot;</span>
+                    <span class="s2">&quot;The resulting DataFrame is a 2D object with all samples on the columns. &quot;</span>
+                    <span class="s2">&quot;If this is not the expected behavior consider calling a function &quot;</span>
+                    <span class="s2">&quot;adapted to stochastic TimeSeries like quantile_df().&quot;</span>
                 <span class="p">)</span>
-            <span class="p">)</span>
-        <span class="k">if</span> <span class="n">copy</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
-                <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
-                <span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
-            <span class="p">)</span>
+
+            <span class="n">comp_name</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">)</span>
+            <span class="n">samples</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_samples</span><span class="p">)</span>
+            <span class="n">df_col_names</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="s2">&quot;_s&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">((</span><span class="n">comp_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">sample_id</span><span class="p">)))</span>
+                <span class="k">for</span> <span class="n">comp_name</span><span class="p">,</span> <span class="n">sample_id</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="n">comp_name</span><span class="p">,</span> <span class="n">samples</span><span class="p">)</span>
+            <span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">copy</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">(</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">DIMS</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+                    <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+                    <span class="n">columns</span><span class="o">=</span><span class="n">df_col_names</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">(</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">DIMS</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+                    <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="p">,</span>
+                    <span class="n">columns</span><span class="o">=</span><span class="n">df_col_names</span><span class="p">,</span>
+                <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-                <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="p">,</span>
-                <span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
-            <span class="p">)</span></div>
+            <span class="k">if</span> <span class="n">copy</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+                    <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+                    <span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+                    <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="p">,</span>
+                    <span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+                <span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.quantile_df"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.quantile_df">[docs]</a>    <span class="k">def</span> <span class="nf">quantile_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantile</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1659,7 +1711,7 @@
         <span class="p">)</span>
 
         <span class="c1"># component names</span>
-        <span class="n">cnames</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">comp</span><span class="si">}</span><span class="s2">_quantiles&quot;</span> <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">]</span>
+        <span class="n">cnames</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">comp</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">quantile</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">]</span>
 
         <span class="n">new_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
@@ -1701,8 +1753,13 @@
 <span class="sd">        pandas.DataFrame</span>
 <span class="sd">            The Pandas DataFrame containing the quantiles for each component.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># TODO: there might be a slightly more efficient way to do it for several quantiles at once with xarray...</span>
-        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">quantile_df</span><span class="p">(</span><span class="n">quantile</span><span class="p">)</span> <span class="k">for</span> <span class="n">quantile</span> <span class="ow">in</span> <span class="n">quantiles</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">quantile_timeseries</span><span class="p">(</span><span class="n">quantile</span><span class="p">)</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">quantile</span> <span class="ow">in</span> <span class="n">quantiles</span>
+            <span class="p">],</span>
+            <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.astype"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.astype">[docs]</a>    <span class="k">def</span> <span class="nf">astype</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -2024,15 +2081,21 @@
 <span class="sd">    =============</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="TimeSeries.gaps"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.gaps">[docs]</a>    <span class="k">def</span> <span class="nf">gaps</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<div class="viewcode-block" id="TimeSeries.gaps"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.gaps">[docs]</a>    <span class="k">def</span> <span class="nf">gaps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="s2">&quot;any&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        A function to compute and return gaps in the TimeSeries.</span>
-<span class="sd">        Works only on deterministic time series.</span>
+<span class="sd">        A function to compute and return gaps in the TimeSeries. Works only on deterministic time series (1 sample).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        mode</span>
+<span class="sd">            Only relevant for multivariate time series. The mode defines how gaps are defined. Set to</span>
+<span class="sd">            &#39;any&#39; if a NaN value in any columns should be considered as as gaps. &#39;all&#39; will only</span>
+<span class="sd">            consider periods where all columns&#39; values are NaN. Defaults to &#39;all&#39;.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        pd.DataFrame</span>
-<span class="sd">            A dataframe containing a row for every gap (rows with all-NaN values in underlying DataFrame)</span>
+<span class="sd">            A pandas.DataFrame containing a row for every gap (rows with all-NaN values in underlying DataFrame)</span>
 <span class="sd">            in this time series. The DataFrame contains three columns that include the start and end time stamps</span>
 <span class="sd">            of the gap and the integer length of the gap (in `self.freq` units if the series is indexed</span>
 <span class="sd">            by a DatetimeIndex).</span>
@@ -2040,7 +2103,17 @@
 
         <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span>
 
-        <span class="n">is_nan_series</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">:</span>
+            <span class="n">is_nan_series</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;any&quot;</span><span class="p">:</span>
+            <span class="n">is_nan_series</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Keyword mode accepts only &#39;any&#39; or &#39;all&#39;. Provided </span><span class="si">{</span><span class="n">mode</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="n">diff</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">is_nan_series</span><span class="o">.</span><span class="n">values</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">is_nan_series</span><span class="o">.</span><span class="n">index</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
         <span class="n">gap_starts</span> <span class="o">=</span> <span class="n">diff</span><span class="p">[</span><span class="n">diff</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">index</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span>
         <span class="n">gap_ends</span> <span class="o">=</span> <span class="n">diff</span><span class="p">[</span><span class="n">diff</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">index</span>
@@ -2050,21 +2123,25 @@
         <span class="k">if</span> <span class="n">is_nan_series</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">gap_ends</span> <span class="o">=</span> <span class="n">gap_ends</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gap_ends</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_time</span><span class="p">())</span>
 
-        <span class="n">gap_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
-        <span class="n">gap_df</span><span class="p">[</span><span class="s2">&quot;gap_start&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gap_starts</span>
-        <span class="n">gap_df</span><span class="p">[</span><span class="s2">&quot;gap_end&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gap_ends</span>
+        <span class="n">gap_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;gap_start&quot;</span><span class="p">,</span> <span class="s2">&quot;gap_end&quot;</span><span class="p">])</span>
 
-        <span class="k">def</span> <span class="nf">intvl</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">):</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_datetime_index</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_freq</span><span class="p">)</span><span class="o">.</span><span class="n">size</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">return</span> <span class="nb">int</span><span class="p">((</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">gap_starts</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">gap_df</span>
+        <span class="k">else</span><span class="p">:</span>
 
-        <span class="n">gap_df</span><span class="p">[</span><span class="s2">&quot;gap_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gap_df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
-            <span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">intvl</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">gap_start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">gap_end</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span>
-        <span class="p">)</span>
+            <span class="k">def</span> <span class="nf">intvl</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_datetime_index</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_freq</span><span class="p">)</span><span class="o">.</span><span class="n">size</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="nb">int</span><span class="p">((</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
 
-        <span class="k">return</span> <span class="n">gap_df</span></div>
+            <span class="n">gap_df</span><span class="p">[</span><span class="s2">&quot;gap_start&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gap_starts</span>
+            <span class="n">gap_df</span><span class="p">[</span><span class="s2">&quot;gap_end&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gap_ends</span>
+            <span class="n">gap_df</span><span class="p">[</span><span class="s2">&quot;gap_size&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gap_df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+                <span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">intvl</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">gap_start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">gap_end</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span>
+            <span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">gap_df</span></div>
 
 <div class="viewcode-block" id="TimeSeries.copy"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -2178,7 +2255,8 @@
         <span class="bp">self</span><span class="p">,</span> <span class="n">split_point</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">after</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="s2">&quot;TimeSeries&quot;</span><span class="p">,</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">]:</span>
 
-        <span class="n">point_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_index_at_point</span><span class="p">(</span><span class="n">split_point</span><span class="p">,</span> <span class="n">after</span><span class="p">)</span>
+        <span class="c1"># Get index with not after in order to avoid moving twice if split_point is not in self</span>
+        <span class="n">point_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_index_at_point</span><span class="p">(</span><span class="n">split_point</span><span class="p">,</span> <span class="ow">not</span> <span class="n">after</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="bp">self</span><span class="p">[:</span> <span class="n">point_index</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="n">after</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)],</span>
             <span class="bp">self</span><span class="p">[</span><span class="n">point_index</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="n">after</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span> <span class="p">:],</span>
@@ -2445,22 +2523,37 @@
             <span class="n">new_series</span><span class="p">,</span> <span class="n">static_covariates</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">static_covariates</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="TimeSeries.longest_contiguous_slice"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.longest_contiguous_slice">[docs]</a>    <span class="k">def</span> <span class="nf">longest_contiguous_slice</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_gap_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
+<div class="viewcode-block" id="TimeSeries.longest_contiguous_slice"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.longest_contiguous_slice">[docs]</a>    <span class="k">def</span> <span class="nf">longest_contiguous_slice</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">max_gap_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return the largest TimeSeries slice of this deterministic series that contains no gaps</span>
 <span class="sd">        (contiguous all-NaN values) larger than `max_gap_size`.</span>
 
 <span class="sd">        This method is only applicable to deterministic series (i.e., having 1 sample).</span>
 
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        max_gap_size</span>
+<span class="sd">            Indicate the maximum gap size that the TimeSerie can contain</span>
+<span class="sd">        mode</span>
+<span class="sd">            Only relevant for multivariate time series. The mode defines how gaps are defined. Set to</span>
+<span class="sd">            &#39;any&#39; if a NaN value in any columns should be considered as as gaps. &#39;all&#39; will only</span>
+<span class="sd">            consider periods where all columns&#39; values are NaN. Defaults to &#39;all&#39;.</span>
+
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        TimeSeries</span>
 <span class="sd">            a new series constituting the largest slice of the original with no or bounded gaps</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        TimeSeries.gaps : return the gaps in the TimeSeries</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="p">))</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">stripped_series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-        <span class="n">gaps</span> <span class="o">=</span> <span class="n">stripped_series</span><span class="o">.</span><span class="n">gaps</span><span class="p">()</span>
+        <span class="n">gaps</span> <span class="o">=</span> <span class="n">stripped_series</span><span class="o">.</span><span class="n">gaps</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
         <span class="n">relevant_gaps</span> <span class="o">=</span> <span class="n">gaps</span><span class="p">[</span><span class="n">gaps</span><span class="p">[</span><span class="s2">&quot;gap_size&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">max_gap_size</span><span class="p">]</span>
 
         <span class="n">curr_slice_start</span> <span class="o">=</span> <span class="n">stripped_series</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span>
@@ -2640,6 +2733,7 @@
 <span class="sd">        See Also</span>
 <span class="sd">        --------</span>
 <span class="sd">        TimeSeries.concatenate : concatenate another series along a given axis.</span>
+<span class="sd">        TimeSeries.prepend : prepend (i.e. add to the beginning) another series along the time axis.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">raise_if_not</span><span class="p">(</span>
             <span class="n">other</span><span class="o">.</span><span class="n">has_datetime_index</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_datetime_index</span><span class="p">,</span>
@@ -2680,10 +2774,6 @@
             <span class="n">attrs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">attrs</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="c1"># new_xa = xr.concat(objs=[self._xa, other_xa], dim=str(self._time_dim))</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_datetime_index</span><span class="p">:</span>
-            <span class="n">new_xa</span> <span class="o">=</span> <span class="n">new_xa</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">dims_or_levels</span><span class="o">=</span><span class="n">new_xa</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">from_xarray</span><span class="p">(</span>
             <span class="n">new_xa</span><span class="p">,</span> <span class="n">fill_missing_dates</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_freq_str</span>
         <span class="p">)</span></div>
@@ -2702,8 +2792,6 @@
 <span class="sd">        TimeSeries</span>
 <span class="sd">            A new TimeSeries with the new values appended</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="c1"># TODO test</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_datetime_index</span><span class="p">:</span>
             <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span>
                 <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="n">i</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)],</span>
@@ -2711,10 +2799,75 @@
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span>
-                <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">),</span> <span class="n">step</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">freq</span>
+                <span class="n">start</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span><span class="p">,</span>
+                <span class="n">stop</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span><span class="p">,</span>
+                <span class="n">step</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_freq</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+                <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">,</span>
+                <span class="n">times</span><span class="o">=</span><span class="n">idx</span><span class="p">,</span>
+                <span class="n">fill_missing_dates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">static_covariates</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="TimeSeries.prepend"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.prepend">[docs]</a>    <span class="k">def</span> <span class="nf">prepend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Prepends (i.e. adds to the beginning) another series to this series along the time axis.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        other</span>
+<span class="sd">            A second TimeSeries.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        TimeSeries</span>
+<span class="sd">            A new TimeSeries, obtained by appending the second TimeSeries to the first.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        Timeseries.append : append (i.e. add to the end) another series along the time axis.</span>
+<span class="sd">        TimeSeries.concatenate : concatenate another series along a given axis.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">raise_if_not</span><span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">),</span>
+            <span class="sa">f</span><span class="s2">&quot;`other` to prepend must be a </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> object.&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">other</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TimeSeries.prepend_values"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.prepend_values">[docs]</a>    <span class="k">def</span> <span class="nf">prepend_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Prepends (i.e. adds to the beginning) new values to current TimeSeries, extending its time index into the past.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        values</span>
+<span class="sd">            An array with the values to prepend to the start.</span>
+
+<span class="sd">        Return</span>
+<span class="sd">        ------</span>
+<span class="sd">        TimeSeries</span>
+<span class="sd">            A new TimeSeries with the new values prepended.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_datetime_index</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span> <span class="o">-</span> <span class="n">i</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+                <span class="p">],</span>
+                <span class="n">freq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_freq</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span>
+                <span class="n">step</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
             <span class="p">)</span>
 
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepend</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
                 <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">,</span>
                 <span class="n">times</span><span class="o">=</span><span class="n">idx</span><span class="p">,</span>
@@ -2881,7 +3034,7 @@
 <span class="sd">        Parameters</span>
 <span class="sd">        -------</span>
 <span class="sd">        col_names</span>
-<span class="sd">            String or list of strings corresponding the the columns to be dropped.</span>
+<span class="sd">            String or list of strings corresponding to the columns to be dropped.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -2993,7 +3146,8 @@
             <span class="n">tg</span><span class="o">.</span><span class="n">holidays_timeseries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">country_code</span><span class="p">,</span> <span class="n">prov</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
         <span class="p">)</span></div>
 
-<div class="viewcode-block" id="TimeSeries.resample"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.resample">[docs]</a>    <span class="k">def</span> <span class="nf">resample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">freq</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;pad&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
+<div class="viewcode-block" id="TimeSeries.resample"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.resample">[docs]</a>    <span class="k">def</span> <span class="nf">resample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">freq</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;pad&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
+
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Build a reindexed ``TimeSeries`` with a given frequency.</span>
 <span class="sd">        Provided method is used to fill holes in reindexed TimeSeries, by default &#39;pad&#39;.</span>
@@ -3009,13 +3163,47 @@
 <span class="sd">            &#39;pad&#39;: propagate last valid observation forward to next valid</span>
 
 <span class="sd">            &#39;backfill&#39;: use NEXT valid observation to fill.</span>
+<span class="sd">        kwargs</span>
+<span class="sd">            some keyword arguments for the `xarray.resample` method, notably `loffset` or `base` to indicate where</span>
+<span class="sd">            to start the resampling and avoid nan at the first value of the resampled TimeSeries</span>
+<span class="sd">            For more informations, see the `xarray resample() documentation</span>
+<span class="sd">            &lt;https://docs.xarray.dev/en/stable/generated/xarray.DataArray.resample.html&gt;`_.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; times = pd.date_range(start=pd.Timestamp(&quot;20200101233000&quot;), periods=6, freq=&quot;15T&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; pd_series = pd.Series(range(6), index=times)</span>
+<span class="sd">        &gt;&gt;&gt; ts = TimeSeries.from_series(pd_series)</span>
+<span class="sd">        &gt;&gt;&gt; print(ts.time_index)</span>
+<span class="sd">        DatetimeIndex([&#39;2020-01-01 23:30:00&#39;, &#39;2020-01-01 23:45:00&#39;,</span>
+<span class="sd">                       &#39;2020-01-02 00:00:00&#39;, &#39;2020-01-02 00:15:00&#39;,</span>
+<span class="sd">                       &#39;2020-01-02 00:30:00&#39;, &#39;2020-01-02 00:45:00&#39;],</span>
+<span class="sd">                       dtype=&#39;datetime64[ns]&#39;, name=&#39;time&#39;, freq=&#39;15T&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; resampled_nokwargs_ts = ts.resample(freq=&quot;1h&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; print(resampled_nokwargs_ts.time_index)</span>
+<span class="sd">        DatetimeIndex([&#39;2020-01-01 23:00:00&#39;, &#39;2020-01-02 00:00:00&#39;],</span>
+<span class="sd">                      dtype=&#39;datetime64[ns]&#39;, name=&#39;time&#39;, freq=&#39;H&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; print(resampled_nokwargs_ts.values())</span>
+<span class="sd">        [[nan]</span>
+<span class="sd">        [ 2.]]</span>
+<span class="sd">        &gt;&gt;&gt; resampled_ts = ts.resample(freq=&quot;1h&quot;, loffset=&quot;30T&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; print(resampled_ts.time_index)</span>
+<span class="sd">        DatetimeIndex([&#39;2020-01-01 23:30:00&#39;, &#39;2020-01-02 00:30:00&#39;],</span>
+<span class="sd">                      dtype=&#39;datetime64[ns]&#39;, name=&#39;time&#39;, freq=&#39;H&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; print(resampled_ts.values())</span>
+<span class="sd">        [[0.]</span>
+<span class="sd">        [4.]]</span>
+
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        TimeSeries</span>
 <span class="sd">            A reindexed TimeSeries with given frequency.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">resample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">resample</span><span class="p">({</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">:</span> <span class="n">freq</span><span class="p">})</span>
+        <span class="n">resample</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span>
+            <span class="n">indexer</span><span class="o">=</span><span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">:</span> <span class="n">freq</span><span class="p">},</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
 
         <span class="c1"># TODO: check</span>
         <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;pad&quot;</span><span class="p">:</span>
@@ -3105,7 +3293,6 @@
             <span class="n">new_xa</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="n">fn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
 
         <span class="k">elif</span> <span class="n">num_args</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>  <span class="c1"># map function uses timestamp f(timestamp, x)</span>
-
             <span class="c1"># go over shortest amount of iterations, either over time steps or components and samples</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_timesteps</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_samples</span><span class="p">:</span>
                 <span class="n">new_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">(</span>
@@ -3135,6 +3322,396 @@
             <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;fn must have either one or two arguments&quot;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TimeSeries.window_transform"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.window_transform">[docs]</a>    <span class="k">def</span> <span class="nf">window_transform</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">transforms</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Dict</span><span class="p">]],</span>
+        <span class="n">treat_na</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">forecasting_safe</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">keep_non_transformed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">include_current</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Applies a moving/rolling, expanding or exponentially weighted window transformation over this ``TimeSeries``.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        transforms</span>
+<span class="sd">            A dictionary or a list of dictionaries.</span>
+<span class="sd">            Each dictionary specifies a different window transform.</span>
+
+<span class="sd">            The dictionaries can contain the following keys:</span>
+
+<span class="sd">            :``&quot;function&quot;``: Mandatory. The name of one of the pandas builtin transformation functions,</span>
+<span class="sd">                            or a callable function that can be applied to the input series.</span>
+<span class="sd">                            Pandas&#39; functions can be found in the</span>
+<span class="sd">                            `documentation &lt;https://pandas.pydata.org/docs/reference/window.html&gt;`_.</span>
+
+<span class="sd">            :``&quot;mode&quot;``: Optional. The name of the pandas windowing mode on which the ``&quot;function&quot;`` is going to be</span>
+<span class="sd">                        applied. The options are &quot;rolling&quot;, &quot;expanding&quot; and &quot;ewm&quot;.</span>
+<span class="sd">                        If not provided, Darts defaults to &quot;expanding&quot;.</span>
+<span class="sd">                        User defined functions can use either &quot;rolling&quot; or &quot;expanding&quot; modes.</span>
+<span class="sd">                        More information on pandas windowing operations can be found in the `documentation</span>
+<span class="sd">                        &lt;https://pandas.pydata.org/pandas-docs/stable/user_guide/window.html&gt;`_.</span>
+
+<span class="sd">            :``&quot;components&quot;``: Optional. A string or list of strings specifying the TimeSeries components on which the</span>
+<span class="sd">                               transformation should be applied. If not specified, the transformation will be</span>
+<span class="sd">                               applied on all components.</span>
+
+<span class="sd">            All other dictionary items provided will be treated as keyword arguments for the windowing mode</span>
+<span class="sd">            (i.e., ``rolling/ewm/expanding``) or for the specific function</span>
+<span class="sd">            in that mode (i.e., ``pandas.DataFrame.rolling.mean/std/max/min...`` or</span>
+<span class="sd">            ``pandas.DataFrame.ewm.mean/std/sum``).</span>
+<span class="sd">            This allows for more flexibility in configuring the transformation, by providing for</span>
+<span class="sd">            example:</span>
+
+<span class="sd">            * :``&quot;window&quot;``: Size of the moving window for the &quot;rolling&quot; mode.</span>
+<span class="sd">                            If an integer, the fixed number of observations used for each window.</span>
+<span class="sd">                            If an offset, the time period of each window.</span>
+<span class="sd">            * :``&quot;min_periods&quot;``: The minimum number of observations in the window required to have a value (otherwise</span>
+<span class="sd">                NaN). Darts reuses pandas defaults of 1 for &quot;rolling&quot; and &quot;expanding&quot; modes and of 0 for &quot;ewm&quot; mode.</span>
+<span class="sd">            * :``&quot;win_type&quot;``: The type of weigthing to apply to the window elements.</span>
+<span class="sd">                If provided, it should be one of `scipy.signal.windows</span>
+<span class="sd">                &lt;https://docs.scipy.org/doc/scipy/reference/signal.windows.html#module-scipy.signal.windows&gt;`_.</span>
+<span class="sd">            * :``&quot;center&quot;``: ``True``/``False`` to set the observation at the current timestep at the center of the</span>
+<span class="sd">                window (when ``forecasting_safe`` is `True`, Darts enforces ``&quot;center&quot;`` to ``False``).</span>
+<span class="sd">            * :``&quot;closed&quot;``: ``&quot;right&quot;``/``&quot;left&quot;``/``&quot;both&quot;``/``&quot;neither&quot;`` to specify whether the right,</span>
+<span class="sd">                left or both ends of the window are included in the window, or neither of them.</span>
+<span class="sd">                Darts defaults to pandas default of ``&quot;right&quot;``.</span>
+
+<span class="sd">            More information on the available functions and their parameters can be found in the</span>
+<span class="sd">            `Pandas documentation &lt;https://pandas.pydata.org/docs/reference/window.html&gt;`_.</span>
+
+<span class="sd">            For user-provided functions, extra keyword arguments in the transformation dictionary are passed to the</span>
+<span class="sd">            user-defined function.</span>
+<span class="sd">            By default, Darts expects user-defined functions to receive numpy arrays as input.</span>
+<span class="sd">            This can be modified by adding item ``&quot;raw&quot;: False`` in the transformation dictionary.</span>
+<span class="sd">            It is expected that the function returns a single</span>
+<span class="sd">            value for each window. Other possible configurations can be found in the</span>
+<span class="sd">            `pandas.DataFrame.rolling().apply()</span>
+<span class="sd">            documentation &lt;https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.rolling.html&gt;`_</span>
+<span class="sd">            and `pandas.DataFrame.expanding().apply()</span>
+<span class="sd">            documentation &lt;https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.expanding.html&gt;`_.</span>
+
+<span class="sd">        treat_na</span>
+<span class="sd">            Specifies how to treat missing values that were added by the window transformations</span>
+<span class="sd">            at the beginning of the resulting TimeSeries. By default, Darts will leave NaNs in the resulting TimeSeries.</span>
+<span class="sd">            This parameter can be one of the following:</span>
+
+<span class="sd">            * :``&quot;dropna&quot;``: to truncate the TimeSeries and drop rows containing missing values.</span>
+<span class="sd">                If multiple columns contain different numbers of missing values, only the minimum number</span>
+<span class="sd">                of rows is dropped. This operation might reduce the length of the resulting TimeSeries.</span>
+
+<span class="sd">            * :``&quot;bfill&quot;`` or ``&quot;backfill&quot;``: to specify that NaNs should be filled with the last transformed</span>
+<span class="sd">                and valid observation. If the original TimeSeries starts with NaNs, those are kept.</span>
+<span class="sd">                When ``forecasting_safe`` is ``True``, this option returns an exception to avoid future observation</span>
+<span class="sd">                contaminating the past.</span>
+
+<span class="sd">            * :an integer or float: in which case NaNs will be filled with this value.</span>
+<span class="sd">                All columns will be filled with the same provided value.</span>
+
+<span class="sd">        forecasting_safe</span>
+<span class="sd">            If True, Darts enforces that the resulting TimeSeries is safe to be used in forecasting models as target</span>
+<span class="sd">            or as feature. The window transformation will not allow future values to be included in the computations</span>
+<span class="sd">            at their corresponding current timestep. Default is ``True``.</span>
+<span class="sd">            &quot;ewm&quot; and &quot;expanding&quot; modes are forecasting safe by default.</span>
+<span class="sd">            &quot;rolling&quot; mode is forecasting safe if ``&quot;center&quot;: False`` is guaranteed.</span>
+
+<span class="sd">        keep_non_transformed</span>
+<span class="sd">            ``False`` to return the transformed components only, ``True`` to return all original components along</span>
+<span class="sd">            the transformed ones. Default is ``False``.</span>
+
+<span class="sd">        include_current</span>
+<span class="sd">            ``True`` to include the current time step in the window, ``False`` to exclude it. Default is ``True``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        TimeSeries</span>
+<span class="sd">            Returns a new TimeSeries instance with the transformed components. If ``keep_non_transformed`` is ``True``,</span>
+<span class="sd">            the resulting TimeSeries will contain the original non-transformed components along the transformed ones.</span>
+<span class="sd">            If the input series is stochastic, all samples are identically transformed.</span>
+<span class="sd">            The naming convention for the transformed components is as follows:</span>
+<span class="sd">            [window_mode]_[function_name]_[window_size if provided]_[min_periods if not default]_[original_comp_name],</span>
+<span class="sd">            e.g., rolling_sum_3_comp_0 (i.e., window_mode= rolling, function_name = sum, window_size=3,</span>
+<span class="sd">            original_comp_name=comp_0) ;</span>
+<span class="sd">            ewm_mean_comp_1 (i.e., window_mode= ewm, function_name = mean, original_comp_name=comp_1);</span>
+<span class="sd">            expanding_sum_3_comp_2 (i.e., window_mode= expanding, function_name = sum, window_size=3,</span>
+<span class="sd">            original_comp_name=comp_2). For user-defined functions, function_name = udf.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">VALID_BFILL_NA</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;bfill&quot;</span><span class="p">,</span> <span class="s2">&quot;backfill&quot;</span><span class="p">}</span>
+        <span class="n">VALID_TREAT_NA</span> <span class="o">=</span> <span class="n">VALID_BFILL_NA</span><span class="o">.</span><span class="n">union</span><span class="p">({</span><span class="s2">&quot;dropna&quot;</span><span class="p">})</span>
+
+        <span class="n">PD_WINDOW_OPERATIONS</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;rolling&quot;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">rolling</span><span class="p">,</span>
+            <span class="s2">&quot;expanding&quot;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">expanding</span><span class="p">,</span>
+            <span class="s2">&quot;ewm&quot;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">ewm</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="c1"># helper function to read and format kwargs</span>
+        <span class="k">def</span> <span class="nf">_get_kwargs</span><span class="p">(</span><span class="n">transformation</span><span class="p">,</span> <span class="n">forecasting_safe</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Builds the kwargs dictionary for the transformation function.</span>
+
+<span class="sd">            Parameters</span>
+<span class="sd">            ----------</span>
+<span class="sd">            transformation</span>
+<span class="sd">                The transformation dictionary.</span>
+<span class="sd">            builtins</span>
+<span class="sd">                The built-in transformations read from the WindowTransformer class.</span>
+
+<span class="sd">            Returns</span>
+<span class="sd">            -------</span>
+<span class="sd">            dict, dict</span>
+<span class="sd">                The kwargs dictionaries for both the function group and the specific function.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+
+            <span class="c1"># take expanding as the default window operation if not specified, safer than rolling</span>
+            <span class="n">mode</span> <span class="o">=</span> <span class="n">transformation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mode&quot;</span><span class="p">,</span> <span class="s2">&quot;expanding&quot;</span><span class="p">)</span>
+
+            <span class="n">raise_if_not</span><span class="p">(</span>
+                <span class="n">mode</span> <span class="ow">in</span> <span class="n">PD_WINDOW_OPERATIONS</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span>
+                <span class="sa">f</span><span class="s2">&quot;Invalid window operation: &#39;</span><span class="si">{</span><span class="n">mode</span><span class="si">}</span><span class="s2">&#39;. Must be one of </span><span class="si">{</span><span class="n">PD_WINDOW_OPERATIONS</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">window_mode</span> <span class="o">=</span> <span class="n">PD_WINDOW_OPERATIONS</span><span class="p">[</span><span class="n">mode</span><span class="p">]</span>
+
+            <span class="c1"># minimum number of observations in window required to have a value (otherwise result in NaN)</span>
+            <span class="k">if</span> <span class="s2">&quot;min_periods&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">transformation</span><span class="p">:</span>
+                <span class="n">transformation</span><span class="p">[</span><span class="s2">&quot;min_periods&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;ewm&quot;</span> <span class="k">else</span> <span class="mi">1</span>
+
+            <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;rolling&quot;</span><span class="p">:</span>
+                <span class="c1"># pandas default for &#39;center&#39; is False, no need to set it explicitly</span>
+                <span class="k">if</span> <span class="s2">&quot;center&quot;</span> <span class="ow">in</span> <span class="n">transformation</span><span class="p">:</span>
+                    <span class="n">raise_if_not</span><span class="p">(</span>
+                        <span class="ow">not</span> <span class="p">(</span><span class="n">transformation</span><span class="p">[</span><span class="s2">&quot;center&quot;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">forecasting_safe</span><span class="p">),</span>
+                        <span class="s2">&quot;When `forecasting_safe` is True, `center` must be False.&quot;</span><span class="p">,</span>
+                        <span class="n">logger</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">transformation</span><span class="p">[</span><span class="s2">&quot;function&quot;</span><span class="p">],</span> <span class="n">Callable</span><span class="p">):</span>
+                <span class="n">fn</span> <span class="o">=</span> <span class="s2">&quot;apply&quot;</span>
+                <span class="n">udf</span> <span class="o">=</span> <span class="n">transformation</span><span class="p">[</span><span class="s2">&quot;function&quot;</span><span class="p">]</span>
+                <span class="c1"># make sure that we provide a numpy array to the user function, &quot;raw&quot;: True</span>
+                <span class="k">if</span> <span class="s2">&quot;raw&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">transformation</span><span class="p">:</span>
+                    <span class="n">transformation</span><span class="p">[</span><span class="s2">&quot;raw&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">transformation</span><span class="p">[</span><span class="s2">&quot;function&quot;</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">fn</span> <span class="o">=</span> <span class="n">transformation</span><span class="p">[</span><span class="s2">&quot;function&quot;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;Transformation function must be a string or a callable. &quot;</span>
+                        <span class="s2">&quot;String can be the name of any function available for pandas window. &quot;</span>
+                        <span class="s2">&quot;A list of those function can be found in the `documentation &quot;</span>
+                        <span class="s2">&quot;&lt;https://pandas.pydata.org/pandas-docs/stable/reference/window.html&gt;`.&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="n">available_keys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">transformation</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">-</span> <span class="p">{</span>
+                <span class="s2">&quot;function&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;group&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;components&quot;</span><span class="p">,</span>
+            <span class="p">}</span>
+
+            <span class="n">window_mode_expected_args</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">window_mode</span><span class="o">.</span><span class="vm">__code__</span><span class="o">.</span><span class="n">co_varnames</span><span class="p">)</span>
+            <span class="n">window_mode_available_keys</span> <span class="o">=</span> <span class="n">window_mode_expected_args</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span>
+                <span class="n">available_keys</span>
+            <span class="p">)</span>
+
+            <span class="n">window_mode_available_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">k</span><span class="p">:</span> <span class="n">v</span>
+                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">transformation</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">window_mode_available_keys</span>
+            <span class="p">}</span>
+
+            <span class="n">available_keys</span> <span class="o">-=</span> <span class="n">window_mode_available_keys</span>
+
+            <span class="n">function_expected_args</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span>
+                <span class="nb">getattr</span><span class="p">(</span>
+                    <span class="nb">getattr</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(),</span> <span class="n">window_mode</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)(</span>
+                        <span class="o">**</span><span class="n">window_mode_available_kwargs</span>
+                    <span class="p">),</span>
+                    <span class="n">fn</span><span class="p">,</span>
+                <span class="p">)</span><span class="o">.</span><span class="vm">__code__</span><span class="o">.</span><span class="n">co_varnames</span>
+            <span class="p">)</span>
+
+            <span class="n">function_available_keys</span> <span class="o">=</span> <span class="n">function_expected_args</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span>
+                <span class="nb">set</span><span class="p">(</span><span class="n">available_keys</span><span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="n">function_available_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">transformation</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">function_available_keys</span>
+            <span class="p">}</span>
+
+            <span class="n">available_keys</span> <span class="o">-=</span> <span class="n">function_available_keys</span>
+
+            <span class="n">udf_expected_args</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">udf</span><span class="o">.</span><span class="vm">__code__</span><span class="o">.</span><span class="n">co_varnames</span><span class="p">)</span> <span class="k">if</span> <span class="n">fn</span> <span class="o">==</span> <span class="s2">&quot;apply&quot;</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="n">udf_available_keys</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">udf_expected_args</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">available_keys</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">fn</span> <span class="o">==</span> <span class="s2">&quot;apply&quot;</span>
+                <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">)</span>
+
+            <span class="n">udf_kwargs</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">transformation</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">udf_available_keys</span><span class="p">}</span>
+                <span class="k">if</span> <span class="n">fn</span> <span class="o">==</span> <span class="s2">&quot;apply&quot;</span>
+                <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">)</span>
+
+            <span class="n">function_available_kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="p">{</span><span class="s2">&quot;func&quot;</span><span class="p">:</span> <span class="n">udf</span><span class="p">,</span> <span class="s2">&quot;kwargs&quot;</span><span class="p">:</span> <span class="n">udf_kwargs</span><span class="p">}</span> <span class="k">if</span> <span class="n">fn</span> <span class="o">==</span> <span class="s2">&quot;apply&quot;</span> <span class="k">else</span> <span class="p">{}</span>
+            <span class="p">)</span>
+
+            <span class="k">return</span> <span class="p">(</span><span class="n">window_mode</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">window_mode_available_kwargs</span><span class="p">),</span> <span class="p">(</span>
+                <span class="n">fn</span><span class="p">,</span>
+                <span class="n">function_available_kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># make sure we have a list in transforms</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">transforms</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">transforms</span> <span class="o">=</span> <span class="p">[</span><span class="n">transforms</span><span class="p">]</span>
+
+        <span class="n">raise_if_not</span><span class="p">(</span>
+            <span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">tr</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">transforms</span><span class="p">]),</span>
+            <span class="s2">&quot;`transforms` must be a non-empty dictionary or a non-empty list of dictionaries.&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># read series dataframe</span>
+        <span class="n">ts_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">suppress_warnings</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># store some original attributes of the series</span>
+        <span class="n">original_components</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span>
+        <span class="n">n_samples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_samples</span>
+        <span class="n">original_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span>
+
+        <span class="n">resulting_transformations</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+        <span class="n">new_columns</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">added_na</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># run through all transformations in transforms</span>
+        <span class="k">for</span> <span class="n">transformation</span> <span class="ow">in</span> <span class="n">transforms</span><span class="p">:</span>
+
+            <span class="k">if</span> <span class="s2">&quot;components&quot;</span> <span class="ow">in</span> <span class="n">transformation</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">transformation</span><span class="p">[</span><span class="s2">&quot;components&quot;</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="n">transformation</span><span class="p">[</span><span class="s2">&quot;components&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">transformation</span><span class="p">[</span><span class="s2">&quot;components&quot;</span><span class="p">]]</span>
+                <span class="n">comps_to_transform</span> <span class="o">=</span> <span class="n">transformation</span><span class="p">[</span><span class="s2">&quot;components&quot;</span><span class="p">]</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">comps_to_transform</span> <span class="o">=</span> <span class="n">original_components</span>
+
+            <span class="n">df_cols</span> <span class="o">=</span> <span class="n">ts_df</span><span class="o">.</span><span class="n">columns</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_deterministic</span><span class="p">:</span>
+                <span class="n">filter_df_columns</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">df_col</span>
+                    <span class="k">for</span> <span class="n">df_col</span> <span class="ow">in</span> <span class="n">df_cols</span>
+                    <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s2">&quot;_s.*$&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">df_col</span><span class="p">)</span> <span class="ow">in</span> <span class="n">comps_to_transform</span>
+                <span class="p">]</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">filter_df_columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">df_col</span> <span class="k">for</span> <span class="n">df_col</span> <span class="ow">in</span> <span class="n">comps_to_transform</span><span class="p">]</span>
+
+            <span class="p">(</span><span class="n">window_mode</span><span class="p">,</span> <span class="n">window_mode_kwargs</span><span class="p">),</span> <span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">function_kwargs</span><span class="p">)</span> <span class="o">=</span> <span class="n">_get_kwargs</span><span class="p">(</span>
+                <span class="n">transformation</span><span class="p">,</span> <span class="n">forecasting_safe</span>
+            <span class="p">)</span>
+
+            <span class="n">closed</span> <span class="o">=</span> <span class="n">transformation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;closed&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">include_current</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">window_mode</span> <span class="o">==</span> <span class="s2">&quot;rolling&quot;</span><span class="p">:</span>
+                    <span class="n">shifts</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">closed</span> <span class="o">==</span> <span class="s2">&quot;left&quot;</span> <span class="k">else</span> <span class="mi">1</span>  <span class="c1"># avoid shifting twice</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">shifts</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">shifts</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="n">resulting_transformations</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="n">resulting_transformations</span><span class="p">,</span>
+                    <span class="nb">getattr</span><span class="p">(</span>
+                        <span class="nb">getattr</span><span class="p">(</span><span class="n">ts_df</span><span class="p">[</span><span class="n">filter_df_columns</span><span class="p">],</span> <span class="n">window_mode</span><span class="p">)(</span>
+                            <span class="o">**</span><span class="n">window_mode_kwargs</span>
+                        <span class="p">),</span>
+                        <span class="n">fn</span><span class="p">,</span>
+                    <span class="p">)(</span><span class="o">**</span><span class="n">function_kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="n">periods</span><span class="o">=</span><span class="n">shifts</span><span class="p">),</span>
+                <span class="p">],</span>
+                <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">min_periods</span> <span class="o">=</span> <span class="n">transformation</span><span class="p">[</span><span class="s2">&quot;min_periods&quot;</span><span class="p">]</span>
+            <span class="c1"># set new columns names</span>
+            <span class="n">name_prefix</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">window_mode</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">fn</span> <span class="k">if</span> <span class="n">fn</span> <span class="o">!=</span> <span class="s1">&#39;apply&#39;</span> <span class="k">else</span> <span class="s1">&#39;udf&#39;</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">transformation</span><span class="p">[</span><span class="s1">&#39;window&#39;</span><span class="p">])</span> <span class="k">if</span> <span class="s1">&#39;window&#39;</span> <span class="ow">in</span> <span class="n">transformation</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">min_periods</span><span class="p">)</span> <span class="k">if</span> <span class="n">min_periods</span><span class="o">&gt;</span><span class="mi">1</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+            <span class="n">new_columns</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+                <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name_prefix</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">comp_name</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">comp_name</span> <span class="ow">in</span> <span class="n">comps_to_transform</span><span class="p">]</span>
+            <span class="p">)</span>
+
+            <span class="c1"># track how many NaN rows are added by each transformation on each transformed column</span>
+            <span class="c1"># NaNs would appear only if user changes &quot;min_periods&quot; to else than 1, if not,</span>
+            <span class="c1"># by default there should be no NaNs unless the original series starts with NaNs (those would be maintained)</span>
+            <span class="n">total_na</span> <span class="o">=</span> <span class="n">min_periods</span> <span class="o">+</span> <span class="n">shifts</span> <span class="o">+</span> <span class="p">(</span><span class="n">closed</span> <span class="o">==</span> <span class="s2">&quot;left&quot;</span><span class="p">)</span>
+            <span class="n">added_na</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="n">total_na</span> <span class="o">-</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">min_periods</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">total_na</span>
+                    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">filter_df_columns</span>
+                <span class="p">]</span>
+            <span class="p">)</span>
+
+        <span class="c1"># keep all original components</span>
+        <span class="k">if</span> <span class="n">keep_non_transformed</span><span class="p">:</span>
+            <span class="n">resulting_transformations</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">resulting_transformations</span><span class="p">,</span> <span class="n">ts_df</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span>
+            <span class="p">)</span>
+            <span class="n">new_columns</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">original_components</span><span class="p">)</span>
+
+        <span class="c1"># Treat NaNs that were introduced by the transformations only</span>
+        <span class="c1"># Default to leave NaNs</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">treat_na</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">raise_if_not</span><span class="p">(</span>
+                <span class="n">treat_na</span> <span class="ow">in</span> <span class="n">VALID_TREAT_NA</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;`treat_na` must be one of </span><span class="si">{</span><span class="n">VALID_TREAT_NA</span><span class="si">}</span><span class="s2"> or a scalar, but found </span><span class="si">{</span><span class="n">treat_na</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">raise_if_not</span><span class="p">(</span>
+                <span class="ow">not</span> <span class="p">(</span><span class="n">treat_na</span> <span class="ow">in</span> <span class="n">VALID_BFILL_NA</span> <span class="ow">and</span> <span class="n">forecasting_safe</span><span class="p">),</span>
+                <span class="s2">&quot;when `forecasting_safe` is True, back filling NaNs is not allowed as &quot;</span>
+                <span class="s2">&quot;it risks contaminating past time steps with future values.&quot;</span><span class="p">,</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">treat_na</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="ow">or</span> <span class="p">(</span><span class="n">treat_na</span> <span class="ow">in</span> <span class="n">VALID_BFILL_NA</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">added_na</span><span class="p">),</span> <span class="n">n_samples</span><span class="p">):</span>
+                <span class="n">s_idx</span> <span class="o">=</span> <span class="n">added_na</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">n_samples</span><span class="p">)][</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">treat_na</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">treat_na</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span>
+                    <span class="k">else</span> <span class="n">resulting_transformations</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">s_idx</span><span class="p">,</span> <span class="n">i</span> <span class="p">:</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">n_samples</span><span class="p">)]</span>
+                <span class="p">)</span>
+                <span class="n">resulting_transformations</span><span class="o">.</span><span class="n">values</span><span class="p">[:</span><span class="n">s_idx</span><span class="p">,</span> <span class="n">i</span> <span class="p">:</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">n_samples</span><span class="p">)]</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">elif</span> <span class="n">treat_na</span> <span class="o">==</span> <span class="s2">&quot;dropna&quot;</span><span class="p">:</span>
+            <span class="c1"># can only drop the NaN rows that are common among the columns</span>
+            <span class="n">drop_before_index</span> <span class="o">=</span> <span class="n">original_index</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">added_na</span><span class="p">)]</span>
+            <span class="n">resulting_transformations</span> <span class="o">=</span> <span class="n">resulting_transformations</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>
+                <span class="n">drop_before_index</span><span class="p">:</span>
+            <span class="p">]</span>
+
+        <span class="c1"># revert dataframe to TimeSeries</span>
+        <span class="n">new_index</span> <span class="o">=</span> <span class="n">original_index</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">resulting_transformations</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+        <span class="n">transformed_time_series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+            <span class="n">times</span><span class="o">=</span><span class="n">new_index</span><span class="p">,</span>
+            <span class="n">values</span><span class="o">=</span><span class="n">resulting_transformations</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">new_index</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_samples</span>
+            <span class="p">),</span>
+            <span class="n">columns</span><span class="o">=</span><span class="n">new_columns</span><span class="p">,</span>
+            <span class="n">static_covariates</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">,</span>
+            <span class="n">hierarchy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hierarchy</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">transformed_time_series</span></div>
 
 <div class="viewcode-block" id="TimeSeries.to_json"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.to_json">[docs]</a>    <span class="k">def</span> <span class="nf">to_json</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -3204,6 +3781,7 @@
         <span class="n">low_quantile</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span>
         <span class="n">high_quantile</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.95</span><span class="p">,</span>
         <span class="n">default_formatting</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">label</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
         <span class="o">*</span><span class="n">args</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
@@ -3230,6 +3808,9 @@
 <span class="sd">            interval is shown if `high_quantile` is None (default 0.95).</span>
 <span class="sd">        default_formatting</span>
 <span class="sd">            Whether or not to use the darts default scheme.</span>
+<span class="sd">        label</span>
+<span class="sd">            A prefix that will appear in front of each component of the TimeSeries or a list of string of</span>
+<span class="sd">            length the number of components in the plotted TimeSeries (default &quot;&quot;).</span>
 <span class="sd">        args</span>
 <span class="sd">            some positional arguments for the `plot()` method</span>
 <span class="sd">        kwargs</span>
@@ -3257,7 +3838,6 @@
             <span class="k">else</span> <span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;figure&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;figure&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">else</span> <span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">())</span>
         <span class="p">)</span>
         <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;figure&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fig</span>
-        <span class="n">label</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;label&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">lw</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">for</span> <span class="n">lw</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;lw&quot;</span><span class="p">,</span> <span class="s2">&quot;linewidth&quot;</span><span class="p">]):</span>
             <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;lw&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
@@ -3268,6 +3848,18 @@
                     <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span>
                 <span class="p">)</span>
             <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
+            <span class="n">raise_if_not</span><span class="p">(</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">label</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span>
+                <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="o">&gt;</span> <span class="mi">10</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">label</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">10</span><span class="p">),</span>
+                <span class="s2">&quot;The label argument should have the same length as the number of plotted components &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_components</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span><span class="si">}</span><span class="s2">), only </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">label</span><span class="p">)</span><span class="si">}</span><span class="s2"> labels were provided&quot;</span><span class="p">,</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">custom_labels</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">custom_labels</span> <span class="o">=</span> <span class="kc">False</span>
 
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">component</span><span class="p">[:</span><span class="mi">10</span><span class="p">]):</span>
             <span class="n">comp_name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
@@ -3289,15 +3881,27 @@
             <span class="n">alpha</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;alpha&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">else</span> <span class="kc">None</span>
             <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
 
-            <span class="n">label_to_use</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="p">(</span><span class="n">label</span> <span class="o">+</span> <span class="p">(</span><span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
-                <span class="k">if</span> <span class="n">label</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span>
-                <span class="k">else</span> <span class="s2">&quot;&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">comp_name</span><span class="p">)</span>
-            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">custom_labels</span><span class="p">:</span>
+                <span class="n">label_to_use</span> <span class="o">=</span> <span class="n">label</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">label_to_use</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="p">(</span><span class="n">label</span> <span class="o">+</span> <span class="p">(</span><span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+                    <span class="k">if</span> <span class="n">label</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span>
+                    <span class="k">else</span> <span class="s2">&quot;&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">comp_name</span><span class="p">)</span>
+                <span class="p">)</span>
             <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">label_to_use</span>
 
             <span class="k">if</span> <span class="n">central_series</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">p</span> <span class="o">=</span> <span class="n">central_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="c1"># empty TimeSeries</span>
+            <span class="k">elif</span> <span class="n">central_series</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">p</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                    <span class="p">[],</span>
+                    <span class="p">[],</span>
+                    <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">p</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
                     <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">()],</span>
@@ -4166,8 +4770,8 @@
     <span class="k">def</span> <span class="nf">__copy__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deep</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">__deepcopy__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+    <span class="k">def</span> <span class="nf">__deepcopy__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">memo</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="p">,</span> <span class="n">memo</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>

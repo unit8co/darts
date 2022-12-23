@@ -1,0 +1,4 @@
+
+.. automodule:: darts.ad.anomaly_model.forecasting_am
+   :members:
+   :undoc-members:

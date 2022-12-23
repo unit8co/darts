@@ -1,0 +1,14 @@
+
+
+
+.. automodule:: darts.ad
+
+    .. toctree::
+        :maxdepth: 1
+        
+        darts.ad.aggregators
+        darts.ad.anomaly_model
+        darts.ad.detectors
+        darts.ad.scorers
+        
+        darts.ad.utils

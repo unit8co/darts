@@ -1,0 +1,4 @@
+
+.. automodule:: darts.ad.scorers.nll_poisson_scorer
+   :members:
+   :undoc-members:

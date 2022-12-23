@@ -617,6 +617,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">x_cont_past</span><span class="p">,</span> <span class="n">x_cont_future</span><span class="p">,</span> <span class="n">x_static</span> <span class="o">=</span> <span class="n">x_in</span>
         <span class="n">dim_samples</span><span class="p">,</span> <span class="n">dim_time</span><span class="p">,</span> <span class="n">dim_variable</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span>
+        <span class="n">device</span> <span class="o">=</span> <span class="n">x_in</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">device</span>
 
         <span class="n">batch_size</span> <span class="o">=</span> <span class="n">x_cont_past</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">dim_samples</span><span class="p">]</span>
         <span class="n">encoder_length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span>
@@ -630,21 +631,21 @@
                     <span class="n">time_steps</span><span class="o">=</span><span class="n">time_steps</span><span class="p">,</span>
                     <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
                     <span class="n">dtype</span><span class="o">=</span><span class="n">x_cont_past</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
-                    <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
+                    <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">attention_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_attention_mask_future</span><span class="p">(</span>
                     <span class="n">encoder_length</span><span class="o">=</span><span class="n">encoder_length</span><span class="p">,</span>
                     <span class="n">decoder_length</span><span class="o">=</span><span class="n">decoder_length</span><span class="p">,</span>
                     <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
-                    <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
+                    <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_relative_index</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">relative_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_relative_index</span><span class="p">(</span>
                     <span class="n">encoder_length</span><span class="o">=</span><span class="n">encoder_length</span><span class="p">,</span>
                     <span class="n">decoder_length</span><span class="o">=</span><span class="n">decoder_length</span><span class="p">,</span>
                     <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
-                    <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
+                    <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
                     <span class="n">dtype</span><span class="o">=</span><span class="n">x_cont_past</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
                 <span class="p">)</span>
 
@@ -708,7 +709,7 @@
             <span class="n">static_embedding</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
                 <span class="p">(</span><span class="n">x_cont_past</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">),</span>
                 <span class="n">dtype</span><span class="o">=</span><span class="n">x_cont_past</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
-                <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
+                <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="n">static_context_expanded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expand_static_context</span><span class="p">(</span>
@@ -957,7 +958,7 @@
 <span class="sd">            will be used as index encoders. Additionally, a transformer such as Darts&#39; :class:`Scaler` can be added to</span>
 <span class="sd">            transform the generated covariates. This happens all under one hood and only needs to be specified at</span>
 <span class="sd">            model creation.</span>
-<span class="sd">            Read :meth:`SequentialEncoder &lt;darts.utils.data.encoders.SequentialEncoder&gt;` to find out more about</span>
+<span class="sd">            Read :meth:`SequentialEncoder &lt;darts.dataprocessing.encoders.SequentialEncoder&gt;` to find out more about</span>
 <span class="sd">            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:</span>
 
 <span class="sd">            .. highlight:: python</span>
@@ -1067,6 +1068,7 @@
 <span class="sd">            each tensor has shape (n_timesteps, n_variables)</span>
 <span class="sd">            - past/historic tensors have shape (input_chunk_length, n_variables)</span>
 <span class="sd">            - future tensors have shape (output_chunk_length, n_variables)</span>
+<span class="sd">            - static covariates have shape (component, static variable)</span>
 
 <span class="sd">        Darts Interpretation of pytorch-forecasting&#39;s TimeSeriesDataSet:</span>
 <span class="sd">            time_varying_knowns : future_covariates (including historic_future_covariates)</span>

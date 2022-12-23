@@ -1,0 +1,4 @@
+
+.. automodule:: darts.ad.aggregators.ensemble_sklearn_aggregator
+   :members:
+   :undoc-members:

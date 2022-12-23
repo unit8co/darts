@@ -615,10 +615,10 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># fix python path if working locally</span>
-<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
+<span></span># fix python path if working locally
+from utils import fix_pythonpath_if_working_locally
 
-<span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
+fix_pythonpath_if_working_locally()
 </pre></div>
 </div>
 </div>
@@ -627,26 +627,26 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
-<span class="o">%</span><span class="k">autoreload</span> 2
-<span class="o">%</span><span class="k">matplotlib</span> inline
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span></span>%load_ext autoreload
+%autoreload 2
+%matplotlib inline
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 
 
-<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">FFT</span><span class="p">,</span> <span class="n">AutoARIMA</span><span class="p">,</span> <span class="n">ExponentialSmoothing</span><span class="p">,</span> <span class="n">Theta</span>
-<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">mae</span>
-<span class="kn">from</span> <span class="nn">darts.utils.missing_values</span> <span class="kn">import</span> <span class="n">fill_missing_values</span>
-<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">TemperatureDataset</span><span class="p">,</span> <span class="n">AirPassengersDataset</span><span class="p">,</span> <span class="n">EnergyDataset</span>
+from darts import TimeSeries
+from darts.models import FFT, AutoARIMA, ExponentialSmoothing, Theta
+from darts.metrics import mae
+from darts.utils.missing_values import fill_missing_values
+from darts.datasets import TemperatureDataset, AirPassengersDataset, EnergyDataset
 
-<span class="kn">import</span> <span class="nn">warnings</span>
+import warnings
 
-<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
-<span class="kn">import</span> <span class="nn">logging</span>
+warnings.filterwarnings(&quot;ignore&quot;)
+import logging
 
-<span class="n">logging</span><span class="o">.</span><span class="n">disable</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
+logging.disable(logging.CRITICAL)
 </pre></div>
 </div>
 </div>
@@ -666,7 +666,7 @@ Importing plotly failed. Interactive plots will not work.
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">ts</span> <span class="o">=</span> <span class="n">TemperatureDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span></span>ts = TemperatureDataset().load()
 </pre></div>
 </div>
 </div>
@@ -678,9 +678,9 @@ Importing plotly failed. Interactive plots will not work.
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;19850701&quot;</span><span class="p">))</span>
-<span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
-<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;val&quot;</span><span class="p">)</span>
+<span></span>train, val = ts.split_after(pd.Timestamp(&quot;19850701&quot;))
+train.plot(label=&quot;train&quot;)
+val.plot(label=&quot;val&quot;)
 </pre></div>
 </div>
 </div>
@@ -699,9 +699,9 @@ Importing plotly failed. Interactive plots will not work.
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">FFT</span><span class="p">(</span><span class="n">required_matches</span><span class="o">=</span><span class="nb">set</span><span class="p">(),</span> <span class="n">nr_freqs_to_keep</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
-<span class="n">pred_val</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+<span></span>model = FFT(required_matches=set(), nr_freqs_to_keep=None)
+model.fit(train)
+pred_val = model.predict(len(val))
 </pre></div>
 </div>
 </div>
@@ -711,10 +711,10 @@ Importing plotly failed. Interactive plots will not work.
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
-<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;val&quot;</span><span class="p">)</span>
-<span class="n">pred_val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;prediction&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MAE:&quot;</span><span class="p">,</span> <span class="n">mae</span><span class="p">(</span><span class="n">pred_val</span><span class="p">,</span> <span class="n">val</span><span class="p">))</span>
+<span></span>train.plot(label=&quot;train&quot;)
+val.plot(label=&quot;val&quot;)
+pred_val.plot(label=&quot;prediction&quot;)
+print(&quot;MAE:&quot;, mae(pred_val, val))
 </pre></div>
 </div>
 </div>
@@ -743,9 +743,9 @@ model will attempt to automatically find the pd.Timestamp attributes that are re
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">FFT</span><span class="p">(</span><span class="n">nr_freqs_to_keep</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
-<span class="n">pred_val</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+<span></span>model = FFT(nr_freqs_to_keep=None)
+model.fit(train)
+pred_val = model.predict(len(val))
 </pre></div>
 </div>
 </div>
@@ -755,10 +755,10 @@ model will attempt to automatically find the pd.Timestamp attributes that are re
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
-<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;val&quot;</span><span class="p">)</span>
-<span class="n">pred_val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;predict&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MAE:&quot;</span><span class="p">,</span> <span class="n">mae</span><span class="p">(</span><span class="n">pred_val</span><span class="p">,</span> <span class="n">val</span><span class="p">))</span>
+<span></span>train.plot(label=&quot;train&quot;)
+val.plot(label=&quot;val&quot;)
+pred_val.plot(label=&quot;predict&quot;)
+print(&quot;MAE:&quot;, mae(pred_val, val))
 </pre></div>
 </div>
 </div>
@@ -787,9 +787,9 @@ MAE: 3.0995766932270916
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">FFT</span><span class="p">(</span><span class="n">nr_freqs_to_keep</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
-<span class="n">pred_val</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+<span></span>model = FFT(nr_freqs_to_keep=20)
+model.fit(train)
+pred_val = model.predict(len(val))
 </pre></div>
 </div>
 </div>
@@ -799,10 +799,10 @@ MAE: 3.0995766932270916
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
-<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;val&quot;</span><span class="p">)</span>
-<span class="n">pred_val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;predict&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MAE:&quot;</span><span class="p">,</span> <span class="n">mae</span><span class="p">(</span><span class="n">pred_val</span><span class="p">,</span> <span class="n">val</span><span class="p">))</span>
+<span></span>train.plot(label=&quot;train&quot;)
+val.plot(label=&quot;val&quot;)
+pred_val.plot(label=&quot;predict&quot;)
+print(&quot;MAE:&quot;, mae(pred_val, val))
 </pre></div>
 </div>
 </div>
@@ -830,10 +830,10 @@ MAE: 2.2941917142812893
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">ts_2</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
-<span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">ts_2</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;19551201&quot;</span><span class="p">))</span>
-<span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
-<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;val&quot;</span><span class="p">)</span>
+<span></span>ts_2 = AirPassengersDataset().load()
+train, val = ts_2.split_after(pd.Timestamp(&quot;19551201&quot;))
+train.plot(label=&quot;train&quot;)
+val.plot(label=&quot;val&quot;)
 </pre></div>
 </div>
 </div>
@@ -849,9 +849,9 @@ MAE: 2.2941917142812893
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">FFT</span><span class="p">()</span>
-<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
-<span class="n">pred_val</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+<span></span>model = FFT()
+model.fit(train)
+pred_val = model.predict(len(val))
 </pre></div>
 </div>
 </div>
@@ -861,9 +861,9 @@ MAE: 2.2941917142812893
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
-<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;val&quot;</span><span class="p">)</span>
-<span class="n">pred_val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;prediction&quot;</span><span class="p">)</span>
+<span></span>train.plot(label=&quot;train&quot;)
+val.plot(label=&quot;val&quot;)
+pred_val.plot(label=&quot;prediction&quot;)
 </pre></div>
 </div>
 </div>
@@ -880,9 +880,9 @@ MAE: 2.2941917142812893
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">FFT</span><span class="p">(</span><span class="n">trend</span><span class="o">=</span><span class="s2">&quot;poly&quot;</span><span class="p">)</span>
-<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
-<span class="n">pred_val</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+<span></span>model = FFT(trend=&quot;poly&quot;)
+model.fit(train)
+pred_val = model.predict(len(val))
 </pre></div>
 </div>
 </div>
@@ -892,9 +892,9 @@ MAE: 2.2941917142812893
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
-<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;val&quot;</span><span class="p">)</span>
-<span class="n">pred_val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;prediction&quot;</span><span class="p">)</span>
+<span></span>train.plot(label=&quot;train&quot;)
+val.plot(label=&quot;val&quot;)
+pred_val.plot(label=&quot;prediction&quot;)
 </pre></div>
 </div>
 </div>
@@ -913,12 +913,12 @@ MAE: 2.2941917142812893
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">ts_3</span> <span class="o">=</span> <span class="n">EnergyDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
-<span class="n">ts_3</span> <span class="o">=</span> <span class="n">fill_missing_values</span><span class="p">(</span><span class="n">ts_3</span><span class="p">,</span> <span class="s2">&quot;auto&quot;</span><span class="p">)</span>
-<span class="n">ts_3</span> <span class="o">=</span> <span class="n">ts_3</span><span class="p">[</span><span class="s2">&quot;generation nuclear&quot;</span><span class="p">]</span>
-<span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">ts_3</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;2017-07-01&quot;</span><span class="p">))</span>
-<span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
-<span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;val&quot;</span><span class="p">)</span>
+<span></span>ts_3 = EnergyDataset().load()
+ts_3 = fill_missing_values(ts_3, &quot;auto&quot;)
+ts_3 = ts_3[&quot;generation nuclear&quot;]
+train, val = ts_3.split_after(pd.Timestamp(&quot;2017-07-01&quot;))
+train.plot(label=&quot;train&quot;)
+val.plot(label=&quot;val&quot;)
 </pre></div>
 </div>
 </div>
@@ -936,12 +936,12 @@ other models!</p>
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="n">AutoARIMA</span><span class="p">(),</span> <span class="n">ExponentialSmoothing</span><span class="p">(),</span> <span class="n">Theta</span><span class="p">(),</span> <span class="n">FFT</span><span class="p">()]</span>
+<span></span>models = [AutoARIMA(), ExponentialSmoothing(), Theta(), FFT()]
 
-<span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">models</span><span class="p">:</span>
-    <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
-    <span class="n">pred_val</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
-    <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot; MAE: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">mae</span><span class="p">(</span><span class="n">pred_val</span><span class="p">,</span> <span class="n">val</span><span class="p">)))</span>
+for model in models:
+    model.fit(train)
+    pred_val = model.predict(len(val))
+    print(str(model) + &quot; MAE: &quot; + str(mae(pred_val, val)))
 </pre></div>
 </div>
 </div>

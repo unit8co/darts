@@ -657,10 +657,10 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># fix python path if working locally</span>
-<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
+<span></span># fix python path if working locally
+from utils import fix_pythonpath_if_working_locally
 
-<span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
+fix_pythonpath_if_working_locally()
 </pre></div>
 </div>
 </div>
@@ -669,21 +669,21 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
-<span class="o">%</span><span class="k">autoreload</span> 2
-<span class="o">%</span><span class="k">matplotlib</span> inline
+<span></span>%load_ext autoreload
+%autoreload 2
+%matplotlib inline
 
-<span class="kn">from</span> <span class="nn">darts.dataprocessing</span> <span class="kn">import</span> <span class="n">dtw</span>
-<span class="kn">from</span> <span class="nn">darts.utils</span> <span class="kn">import</span> <span class="n">timeseries_generation</span> <span class="k">as</span> <span class="n">tg</span>
-<span class="kn">from</span> <span class="nn">darts.utils.missing_values</span> <span class="kn">import</span> <span class="n">fill_missing_values</span>
-<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">SunspotsDataset</span>
-<span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">dtw_metric</span><span class="p">,</span> <span class="n">mae</span><span class="p">,</span> <span class="n">mape</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">MovingAverage</span>
-<span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="kn">import</span> <span class="n">argrelextrema</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+from darts.dataprocessing import dtw
+from darts.utils import timeseries_generation as tg
+from darts.utils.missing_values import fill_missing_values
+from darts.datasets import SunspotsDataset
+from darts.timeseries import TimeSeries
+from darts.metrics import dtw_metric, mae, mape
+from darts.models import MovingAverage
+from scipy.signal import argrelextrema
+import numpy as np
+import pandas as pd
+from matplotlib import pyplot as plt
 </pre></div>
 </div>
 </div>
@@ -692,21 +692,21 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">SMALL_SIZE</span> <span class="o">=</span> <span class="mi">30</span>
-<span class="n">MEDIUM_SIZE</span> <span class="o">=</span> <span class="mi">35</span>
-<span class="n">BIGGER_SIZE</span> <span class="o">=</span> <span class="mi">40</span>
-<span class="n">FIG_WIDTH</span> <span class="o">=</span> <span class="mi">20</span>
-<span class="n">FIG_SIZE</span> <span class="o">=</span> <span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span></span>SMALL_SIZE = 30
+MEDIUM_SIZE = 35
+BIGGER_SIZE = 40
+FIG_WIDTH = 20
+FIG_SIZE = (40, 10)
 
 
-<span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s2">&quot;font&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">SMALL_SIZE</span><span class="p">)</span>  <span class="c1"># controls default text sizes</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s2">&quot;axes&quot;</span><span class="p">,</span> <span class="n">titlesize</span><span class="o">=</span><span class="n">SMALL_SIZE</span><span class="p">)</span>  <span class="c1"># fontsize of the axes title</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s2">&quot;axes&quot;</span><span class="p">,</span> <span class="n">labelsize</span><span class="o">=</span><span class="n">MEDIUM_SIZE</span><span class="p">)</span>  <span class="c1"># fontsize of the x and y labels</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s2">&quot;xtick&quot;</span><span class="p">,</span> <span class="n">labelsize</span><span class="o">=</span><span class="n">SMALL_SIZE</span><span class="p">)</span>  <span class="c1"># fontsize of the tick labels</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s2">&quot;ytick&quot;</span><span class="p">,</span> <span class="n">labelsize</span><span class="o">=</span><span class="n">SMALL_SIZE</span><span class="p">)</span>  <span class="c1"># fontsize of the tick labels</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s2">&quot;legend&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">SMALL_SIZE</span><span class="p">)</span>  <span class="c1"># legend fontsize</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s2">&quot;figure&quot;</span><span class="p">,</span> <span class="n">titlesize</span><span class="o">=</span><span class="n">BIGGER_SIZE</span><span class="p">)</span>  <span class="c1"># fontsize of the figure title</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">rc</span><span class="p">(</span><span class="s2">&quot;figure&quot;</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="n">FIG_SIZE</span><span class="p">)</span>  <span class="c1"># size of the figure</span>
+plt.rc(&quot;font&quot;, size=SMALL_SIZE)  # controls default text sizes
+plt.rc(&quot;axes&quot;, titlesize=SMALL_SIZE)  # fontsize of the axes title
+plt.rc(&quot;axes&quot;, labelsize=MEDIUM_SIZE)  # fontsize of the x and y labels
+plt.rc(&quot;xtick&quot;, labelsize=SMALL_SIZE)  # fontsize of the tick labels
+plt.rc(&quot;ytick&quot;, labelsize=SMALL_SIZE)  # fontsize of the tick labels
+plt.rc(&quot;legend&quot;, fontsize=SMALL_SIZE)  # legend fontsize
+plt.rc(&quot;figure&quot;, titlesize=BIGGER_SIZE)  # fontsize of the figure title
+plt.rc(&quot;figure&quot;, figsize=FIG_SIZE)  # size of the figure
 </pre></div>
 </div>
 </div>
@@ -718,9 +718,9 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">ts</span> <span class="o">=</span> <span class="n">SunspotsDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
-<span class="n">ts</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="s2">&quot;y&quot;</span><span class="p">)</span>
-<span class="n">ts</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span></span>ts = SunspotsDataset().load()
+ts = ts.resample(freq=&quot;y&quot;)
+ts.plot()
 </pre></div>
 </div>
 </div>
@@ -740,12 +740,12 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">ts_smooth</span> <span class="o">=</span> <span class="n">MovingAverage</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span>
+<span></span>ts_smooth = MovingAverage(window=3).filter(ts)
 
-<span class="n">minimums</span> <span class="o">=</span> <span class="n">argrelextrema</span><span class="p">(</span><span class="n">ts_smooth</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">(),</span> <span class="n">np</span><span class="o">.</span><span class="n">greater</span><span class="p">)</span>
+minimums = argrelextrema(ts_smooth.univariate_values(), np.greater)
 
-<span class="n">periods</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">minimums</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-<span class="n">periods</span>
+periods = len(minimums[0])
+periods
 </pre></div>
 </div>
 </div>
@@ -767,13 +767,13 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">steps</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">periods</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)))</span>
-<span class="n">down</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-<span class="n">up</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">steps</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span></span>steps = int(np.ceil(len(ts) / (periods * 2)))
+down = np.linspace(0.5, -0.5, steps + 1)[:-1]
+up = np.linspace(-0.5, 0.5, steps + 1)[:-1]
 
-<span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">down</span><span class="p">,</span> <span class="n">up</span><span class="p">),</span> <span class="n">periods</span><span class="p">),</span> <span class="mf">0.5</span><span class="p">)</span>
+values = np.append(np.tile(np.append(down, up), periods), 0.5)
 
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)),</span> <span class="n">values</span><span class="p">)</span>
+plt.plot(np.arange(len(values)), values)
 </pre></div>
 </div>
 </div>
@@ -793,18 +793,18 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">m</span> <span class="o">=</span> <span class="mi">90</span>
-<span class="n">c</span> <span class="o">=</span> <span class="mi">55</span>
+<span></span>m = 90
+c = 55
 
-<span class="n">scaled_values</span> <span class="o">=</span> <span class="n">values</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="n">c</span>
+scaled_values = values * m + c
 
-<span class="n">time_range</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="n">periods</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">))</span>
-<span class="n">ts_shape_series</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">scaled_values</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">time_range</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Shape&quot;</span><span class="p">)</span>
+time_range = pd.date_range(start=ts.start_time(), freq=&quot;y&quot;, periods=len(values))
+ts_shape_series = pd.Series(scaled_values, index=time_range, name=&quot;Shape&quot;)
 
-<span class="n">ts_shape</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_series</span><span class="p">(</span><span class="n">ts_shape_series</span><span class="p">)</span>
-<span class="n">ts_shape</span> <span class="o">=</span> <span class="n">ts_shape</span><span class="o">.</span><span class="n">drop_after</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">end_time</span><span class="p">())</span>
-<span class="n">ts_shape</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-<span class="n">ts</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+ts_shape = TimeSeries.from_series(ts_shape_series)
+ts_shape = ts_shape.drop_after(ts.end_time())
+ts_shape.plot()
+ts.plot()
 </pre></div>
 </div>
 </div>
@@ -824,8 +824,8 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">original_mae</span> <span class="o">=</span> <span class="n">mae</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">ts_shape</span><span class="p">)</span>
-<span class="n">original_mae</span>
+<span></span>original_mae = mae(ts, ts_shape)
+original_mae
 </pre></div>
 </div>
 </div>
@@ -850,8 +850,8 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">exact_alignment</span> <span class="o">=</span> <span class="n">dtw</span><span class="o">.</span><span class="n">dtw</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">ts_shape</span><span class="p">)</span>
-<span class="n">exact_alignment</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">show_series</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span></span>exact_alignment = dtw.dtw(ts, ts_shape)
+exact_alignment.plot(show_series=True)
 </pre></div>
 </div>
 </div>
@@ -874,10 +874,10 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">multi_grid_radius</span> <span class="o">=</span> <span class="mi">10</span>
+<span></span>multi_grid_radius = 10
 
-<span class="n">multigrid_alignment</span> <span class="o">=</span> <span class="n">dtw</span><span class="o">.</span><span class="n">dtw</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">ts_shape</span><span class="p">,</span> <span class="n">multi_grid_radius</span><span class="o">=</span><span class="n">multi_grid_radius</span><span class="p">)</span>
-<span class="n">multigrid_alignment</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+multigrid_alignment = dtw.dtw(ts, ts_shape, multi_grid_radius=multi_grid_radius)
+multigrid_alignment.plot()
 </pre></div>
 </div>
 </div>
@@ -897,8 +897,8 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">sakoechiba_alignment</span> <span class="o">=</span> <span class="n">dtw</span><span class="o">.</span><span class="n">dtw</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">ts_shape</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">dtw</span><span class="o">.</span><span class="n">SakoeChiba</span><span class="p">(</span><span class="n">window_size</span><span class="o">=</span><span class="mi">10</span><span class="p">))</span>
-<span class="n">sakoechiba_alignment</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span></span>sakoechiba_alignment = dtw.dtw(ts, ts_shape, window=dtw.SakoeChiba(window_size=10))
+sakoechiba_alignment.plot()
 </pre></div>
 </div>
 </div>
@@ -918,8 +918,8 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">itakura_alignment</span> <span class="o">=</span> <span class="n">dtw</span><span class="o">.</span><span class="n">dtw</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">ts_shape</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">dtw</span><span class="o">.</span><span class="n">Itakura</span><span class="p">(</span><span class="n">max_slope</span><span class="o">=</span><span class="mf">1.5</span><span class="p">))</span>
-<span class="n">itakura_alignment</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span></span>itakura_alignment = dtw.dtw(ts, ts_shape, window=dtw.Itakura(max_slope=1.5))
+itakura_alignment.plot()
 </pre></div>
 </div>
 </div>
@@ -939,19 +939,19 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">alignments</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="n">exact_alignment</span><span class="p">,</span>
-    <span class="n">multigrid_alignment</span><span class="p">,</span>
-    <span class="n">sakoechiba_alignment</span><span class="p">,</span>
-    <span class="n">itakura_alignment</span><span class="p">,</span>
-<span class="p">]</span>
-<span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Exact (Optimal)&quot;</span><span class="p">,</span> <span class="s2">&quot;Multi-Grid&quot;</span><span class="p">,</span> <span class="s2">&quot;Sakoe-Chiba&quot;</span><span class="p">,</span> <span class="s2">&quot;Itakura&quot;</span><span class="p">]</span>
-<span class="n">distances</span> <span class="o">=</span> <span class="p">[</span><span class="n">align</span><span class="o">.</span><span class="n">distance</span><span class="p">()</span> <span class="k">for</span> <span class="n">align</span> <span class="ow">in</span> <span class="n">alignments</span><span class="p">]</span>
+<span></span>alignments = [
+    exact_alignment,
+    multigrid_alignment,
+    sakoechiba_alignment,
+    itakura_alignment,
+]
+names = [&quot;Exact (Optimal)&quot;, &quot;Multi-Grid&quot;, &quot;Sakoe-Chiba&quot;, &quot;Itakura&quot;]
+distances = [align.distance() for align in alignments]
 
-<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Absolute DTW Distance (Lower is Better)&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">distances</span><span class="p">)</span>
+plt.title(&quot;Absolute DTW Distance (Lower is Better)&quot;)
+plt.bar(names, distances)
 
-<span class="n">alignment</span> <span class="o">=</span> <span class="n">multigrid_alignment</span>
+alignment = multigrid_alignment
 </pre></div>
 </div>
 </div>
@@ -970,8 +970,8 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">alignment</span><span class="o">.</span><span class="n">plot_alignment</span><span class="p">(</span><span class="n">series2_y_offset</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Warp Alignment&quot;</span><span class="p">)</span>
+<span></span>alignment.plot_alignment(series2_y_offset=200)
+plt.gca().set_title(&quot;Warp Alignment&quot;)
 </pre></div>
 </div>
 </div>
@@ -990,10 +990,10 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">warped_ts</span><span class="p">,</span> <span class="n">warped_ts_shape</span> <span class="o">=</span> <span class="n">alignment</span><span class="o">.</span><span class="n">warped</span><span class="p">()</span>
+<span></span>warped_ts, warped_ts_shape = alignment.warped()
 
-<span class="n">warped_ts</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Warped Sunspots&quot;</span><span class="p">)</span>
-<span class="n">warped_ts_shape</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Warped Shape&quot;</span><span class="p">)</span>
+warped_ts.plot(label=&quot;Warped Sunspots&quot;)
+warped_ts_shape.plot(label=&quot;Warped Shape&quot;)
 </pre></div>
 </div>
 </div>
@@ -1014,10 +1014,10 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">warped_mae0</span> <span class="o">=</span> <span class="n">dtw_metric</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">ts_shape</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">mae</span><span class="p">,</span> <span class="n">multi_grid_radius</span><span class="o">=</span><span class="n">multi_grid_radius</span><span class="p">)</span>
-<span class="n">warped_mae1</span> <span class="o">=</span> <span class="n">mae</span><span class="p">(</span><span class="n">warped_ts</span><span class="p">,</span> <span class="n">warped_ts_shape</span><span class="p">)</span>
+<span></span>warped_mae0 = dtw_metric(ts, ts_shape, metric=mae, multi_grid_radius=multi_grid_radius)
+warped_mae1 = mae(warped_ts, warped_ts_shape)
 
-<span class="n">plt</span><span class="o">.</span><span class="n">bar</span><span class="p">([</span><span class="s2">&quot;Original&quot;</span><span class="p">,</span> <span class="s2">&quot;Warped&quot;</span><span class="p">,</span> <span class="s2">&quot;DTW Metric&quot;</span><span class="p">],</span> <span class="p">[</span><span class="n">original_mae</span><span class="p">,</span> <span class="n">warped_mae0</span><span class="p">,</span> <span class="n">warped_mae1</span><span class="p">])</span>
+plt.bar([&quot;Original&quot;, &quot;Warped&quot;, &quot;DTW Metric&quot;], [original_mae, warped_mae0, warped_mae1])
 </pre></div>
 </div>
 </div>
@@ -1042,40 +1042,40 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">THRESHOLD</span> <span class="o">=</span> <span class="mi">20</span>
-<span class="n">MATCH_MIN_LENGTH</span> <span class="o">=</span> <span class="mi">5</span>
+<span></span>THRESHOLD = 20
+MATCH_MIN_LENGTH = 5
 
-<span class="n">path</span> <span class="o">=</span> <span class="n">alignment</span><span class="o">.</span><span class="n">path</span><span class="p">()</span>
-<span class="n">path</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,))</span>
+path = alignment.path()
+path = path.reshape((-1,))
 
-<span class="n">warped_ts_values</span> <span class="o">=</span> <span class="n">warped_ts</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()</span>
-<span class="n">warped_ts_shape_values</span> <span class="o">=</span> <span class="n">warped_ts_shape</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()</span>
+warped_ts_values = warped_ts.univariate_values()
+warped_ts_shape_values = warped_ts_shape.univariate_values()
 
-<span class="n">within_threshold</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">warped_ts_values</span> <span class="o">-</span> <span class="n">warped_ts_shape_values</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">THRESHOLD</span>
-<span class="p">)</span>  <span class="c1"># Criterion 1</span>
-<span class="n">linear_match</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">path</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">])</span> <span class="o">==</span> <span class="mi">1</span>  <span class="c1"># Criterion 2</span>
+within_threshold = (
+    np.abs(warped_ts_values - warped_ts_shape_values) &lt; THRESHOLD
+)  # Criterion 1
+linear_match = np.diff(path[1::2]) == 1  # Criterion 2
 
-<span class="n">matches</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">within_threshold</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">linear_match</span><span class="p">))</span>
-<span class="k">if</span> <span class="ow">not</span> <span class="n">matches</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
-    <span class="n">matches</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">matches</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+matches = np.logical_and(within_threshold, np.append(True, linear_match))
+if not matches[-1]:
+    matches = np.append(matches, False)
 
-<span class="n">matched_ranges</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="n">match_begin</span> <span class="o">=</span> <span class="mi">0</span>
+matched_ranges = []
+match_begin = 0
 
-<span class="n">last_m</span> <span class="o">=</span> <span class="kc">False</span>
-<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">matches</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">last_m</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">m</span><span class="p">:</span>
-        <span class="n">match_end</span> <span class="o">=</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span>
-        <span class="n">match_len</span> <span class="o">=</span> <span class="n">match_end</span> <span class="o">-</span> <span class="n">match_begin</span>
+last_m = False
+for i, m in enumerate(matches):
+    if last_m and not m:
+        match_end = i - 1
+        match_len = match_end - match_begin
 
-        <span class="k">if</span> <span class="n">match_len</span> <span class="o">&gt;=</span> <span class="n">MATCH_MIN_LENGTH</span><span class="p">:</span>  <span class="c1"># Criterion 3</span>
-            <span class="n">matched_ranges</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span><span class="n">match_begin</span><span class="p">,</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">last_m</span> <span class="ow">and</span> <span class="n">m</span><span class="p">:</span>
-        <span class="n">match_begin</span> <span class="o">=</span> <span class="n">i</span>
-    <span class="n">last_m</span> <span class="o">=</span> <span class="n">m</span>
+        if match_len &gt;= MATCH_MIN_LENGTH:  # Criterion 3
+            matched_ranges.append(pd.RangeIndex(match_begin, i - 1))
+    if not last_m and m:
+        match_begin = i
+    last_m = m
 
-<span class="n">matched_ranges</span>
+matched_ranges
 </pre></div>
 </div>
 </div>
@@ -1105,13 +1105,13 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">warped_ts</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span></span>warped_ts.plot()
 
-<span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">matched_ranges</span><span class="p">:</span>
-    <span class="n">ts_shape_match</span> <span class="o">=</span> <span class="n">warped_ts_shape</span><span class="p">[</span><span class="n">r</span><span class="p">]</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">start</span><span class="p">)</span>
-    <span class="n">ts_shape_match</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">)</span>
+for r in matched_ranges:
+    ts_shape_match = warped_ts_shape[r].shift(r.start)
+    ts_shape_match.plot(color=&quot;red&quot;)
 
-<span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">get_legend</span><span class="p">()</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+plt.gca().get_legend().remove()
 </pre></div>
 </div>
 </div>

@@ -1,0 +1,4 @@
+
+.. automodule:: darts.ad.detectors.threshold_detector
+   :members:
+   :undoc-members:
