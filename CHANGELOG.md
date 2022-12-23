@@ -1,7 +1,8 @@
 
 # Changelog
 
-Darts is still in an early development phase, and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
+We do our best to avoid the introduction of breaking changes,
+but cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 [Full Changelog](https://github.com/unit8co/darts/compare/0.23.0...master)
