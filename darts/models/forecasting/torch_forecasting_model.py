@@ -21,6 +21,7 @@ import datetime
 import inspect
 import os
 import shutil
+import sys
 from abc import ABC, abstractmethod
 from glob import glob
 from typing import List, Optional, Sequence, Tuple, Union
@@ -35,7 +36,6 @@ from torch.utils.data import DataLoader
 
 from darts.logging import (
     get_logger,
-    raise_deprecation_warning,
     raise_if,
     raise_if_not,
     raise_log,
@@ -78,6 +78,10 @@ DEFAULT_DARTS_FOLDER = "darts_logs"
 CHECKPOINTS_FOLDER = "checkpoints"
 RUNS_FOLDER = "runs"
 INIT_MODEL_NAME = "_model.pth.tar"
+
+# pickling a TorchForecastingModel will not save below attributes: the keys specify the
+# attributes to be ignored, and the values are the default values getting assigned upon loading
+TFM_ATTRS_NO_PICKLE = {"model": None, "trainer": None}
 
 logger = get_logger(__name__)
 
@@ -214,8 +218,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
 
             For more info, see here:
-            https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
-            https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus
+            `trainer flags
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags>`_,
+            and `training on multiple gpus
+            <https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus>`_.
 
             With parameter ``"callbacks"`` you can add custom or PyTorch-Lightning built-in callbacks to Darts'
             :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.
@@ -250,8 +256,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         super().__init__(add_encoders=add_encoders)
         suppress_lightning_warnings(suppress_all=not show_warnings)
 
-        # We will fill these dynamically, upon first call of fit_from_dataset():
+        # model will get created in first call of fit_from_dataset()
         self.model: Optional[PLForecastingModule] = None
+        # to retrieve the PLForecastingModule upon loading, we store the module path, and class name
+        self._module_path = self.__module__
+        # class name will be set in fit_from_dataset()
+        self._module_name: Optional[str] = ""
+
         self.train_sample: Optional[Tuple] = None
         self.output_dim: Optional[int] = None
 
@@ -330,6 +341,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             self.trainer_params = dict(self.trainer_params, **pl_trainer_kwargs_copy)
 
         # pytorch lightning trainer will be created at training time
+        # keep a reference of the trainer, to avoid weak reference errors
         self.trainer: Optional[pl.Trainer] = None
         self.load_ckpt_path: Optional[str] = None
 
@@ -392,7 +404,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self._create_save_dirs()
 
         self.model = None
-        self.trainer = None
         self.train_sample = None
 
     def _init_model(self, trainer: Optional[pl.Trainer] = None) -> None:
@@ -406,6 +417,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # the tensors have shape (chunk_length, nr_dimensions)
         self.model = self._create_model(self.train_sample)
+        self._module_name = self.model.__class__.__name__
 
         precision = None
         dtype = self.train_sample[0].dtype
@@ -444,8 +456,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         trainer: Optional[pl.Trainer],
         verbose: Optional[bool] = None,
         epochs: int = 0,
-    ) -> None:
-        """Sets up the PyTorch-Lightning trainer for training or prediction."""
+    ) -> pl.Trainer:
+        """Sets up a PyTorch-Lightning trainer (if not already provided) for training or prediction."""
+        if trainer is not None:
+            return trainer
+
         trainer_params = {key: val for key, val in self.trainer_params.items()}
         if verbose is not None:
             trainer_params["enable_model_summary"] = (
@@ -453,17 +468,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
             trainer_params["enable_progress_bar"] = verbose
 
-        self.trainer = (
-            self._init_trainer(trainer_params=trainer_params, max_epochs=epochs)
-            if trainer is None
-            else trainer
-        )
+        return self._init_trainer(trainer_params=trainer_params, max_epochs=epochs)
 
     @staticmethod
     def _init_trainer(
         trainer_params: dict, max_epochs: Optional[int] = None
     ) -> pl.Trainer:
-        """Initializes the PyTorch-Lightning trainer for training or prediction from `trainer_params`."""
+        """Initializes a PyTorch-Lightning trainer for training or prediction from `trainer_params`."""
         trainer_params_copy = {param: val for param, val in trainer_params.items()}
         if max_epochs is not None:
             trainer_params_copy["max_epochs"] = max_epochs
@@ -649,6 +660,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
             )
+
+        if past_covariates is not None:
+            self._uses_past_covariates = True
+        if future_covariates is not None:
+            self._uses_future_covariates = True
 
         self._verify_past_future_covariates(
             past_covariates=past_covariates, future_covariates=future_covariates
@@ -877,7 +893,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         train_num_epochs = epochs if epochs > 0 else self.n_epochs
 
         # setup trainer
-        self._setup_trainer(trainer, verbose, train_num_epochs)
+        self.trainer = self._setup_trainer(trainer, verbose, train_num_epochs)
 
         # TODO: multiple training without loading from checkpoint is not trivial (I believe PyTorch-Lightning is still
         #  working on that, see https://github.com/PyTorchLightning/pytorch-lightning/issues/9636)
@@ -1170,11 +1186,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             collate_fn=self._batch_collate_fn,
         )
 
-        # Set mc_dropout rate
+        # set mc_dropout rate
         self.model.set_mc_dropout(mc_dropout)
 
-        # trainer is systematically re-instantiated to overwrite the fit parameters
-        self._setup_trainer(trainer=trainer, verbose=verbose, epochs=self.n_epochs)
+        # set up trainer. use user supplied trainer or create a new trainer from scratch
+        self.trainer = self._setup_trainer(
+            trainer=trainer, verbose=verbose, epochs=self.n_epochs
+        )
 
         # prediction output comes as nested list: list of predicted `TimeSeries` for each batch.
         predictions = self.trainer.predict(self.model, pred_loader)
@@ -1240,95 +1258,76 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Path under which to save the model at its current state. If no path is specified, the model is automatically
             saved under ``"{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pt"``. E.g., ``"RNNModel_2020-01-01_12:00:00.pt"``.
         """
-        # TODO: the parameters are saved twice currently, once with complete
-        # object, and once with PTL checkpointing.
-
         if path is None:
             # default path
             path = self._default_save_path() + ".pt"
 
-        # We save the whole object to keep track of everything
+        # save the TorchForecastingModel (does not save the PyTorch LightningModule, and Trainer)
         with open(path, "wb") as f_out:
             torch.save(self, f_out)
 
-        # In addition, we need to use PTL save_checkpoint() to properly save the trainer and model
+        # save the LightningModule checkpoint
         if self.trainer is not None:
             path_ptl_ckpt = path + ".ckpt"
             self.trainer.save_checkpoint(path_ptl_ckpt)
 
-    def save_model(self, path: str) -> None:
-        """
-        Saves the model under a given path.
-
-        Parameters
-        ----------
-        path
-            Path under which to save the model at its current state.
-
-        .. deprecated:: 0.21.0
-            `TorchForecastingModel.save_model()` is deprecated and will be removed in a future darts version.
-            Please use `TorchForecastingModel.save()` instead.
-        """
-
-        save_warning = (
-            "`TorchForecastingModel.save_model()` is deprecated and will be removed "
-            "in a future darts version. Please use `TorchForecastingModel.save()` instead."
-        )
-        raise_deprecation_warning(save_warning, logger)
-
-        self.save(path)
-
     @staticmethod
-    def load(path: str) -> "TorchForecastingModel":
+    def load(path: str, **kwargs) -> "TorchForecastingModel":
         """
         Loads a model from a given file path.
+
+        Example for loading a general save from :class:`RNNModel`:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from darts.models import RNNModel
+
+                model_loaded = RNNModel.load(path)
+            ..
+
+        Example for loading an :class:`RNNModel` to CPU that was saved on GPU:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from darts.models import RNNModel
+
+                model_loaded = RNNModel.load(path, map_location="cpu")
+                model_loaded.to_cpu()
+            ..
 
         Parameters
         ----------
         path
             Path from which to load the model. If no path was specified when saving the model, the automatically
             generated path ending with ".pt" has to be provided.
+        **kwargs
+            Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
+            such as ``map_location`` to load the model onto a different device than the one from which it was saved.
+            For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
+            common/lightning_module.html#load-from-checkpoint>`_.
         """
 
+        # load the base TorchForecastingModel (does not contain the actual PyTorch LightningModule)
         with open(path, "rb") as fin:
-            model = torch.load(fin)
+            model: TorchForecastingModel = torch.load(
+                fin, map_location=kwargs.get("map_location", None)
+            )
 
-        # If a PTL checkpoint was saved, we also need to load it:
+        # if a checkpoint was saved, we also load the PyTorch LightningModule from checkpoint
         path_ptl_ckpt = path + ".ckpt"
         if os.path.exists(path_ptl_ckpt):
-            model.model = model.model.__class__.load_from_checkpoint(path_ptl_ckpt)
-            model.trainer = None
-
-        return model
-
-    @staticmethod
-    def load_model(path: str) -> "TorchForecastingModel":
-        """
-        Loads a model from a given file path.
-
-        Parameters
-        ----------
-        path
-            Path from which to load the model.
-
-        .. deprecated:: 0.21.0
-            `TorchForecastingModel.load_model()` is deprecated and will be removed in a future darts version.
-            Please use `TorchForecastingModel.load()` instead.
-        """
-
-        load_warning = (
-            "`TorchForecastingModel.load_model()` is deprecated and will be removed "
-            "in a future darts version. Please use `TorchForecastingModel.load()` instead."
-        )
-        raise_deprecation_warning(load_warning, logger)
-
-        model = TorchForecastingModel.load(path)
-
+            model.model = model._load_from_checkpoint(path_ptl_ckpt, **kwargs)
         return model
 
     @staticmethod
     def load_from_checkpoint(
-        model_name: str, work_dir: str = None, file_name: str = None, best: bool = True
+        model_name: str,
+        work_dir: str = None,
+        file_name: str = None,
+        best: bool = True,
+        **kwargs,
     ) -> "TorchForecastingModel":
         """
         Load the model from automatically saved checkpoints under '{work_dir}/darts_logs/{model_name}/checkpoints/'.
@@ -1353,6 +1352,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         If ``file_name`` is not given, will try to restore the best checkpoint (if ``best`` is ``True``) or the most
         recent checkpoint (if ``best`` is ``False`` from '{work_dir}/darts_logs/{model_name}/checkpoints/'.
 
+        Example for loading an :class:`RNNModel` checkpoint to CPU that was saved on GPU:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from darts.models import RNNModel
+
+                model_loaded = RNNModel.load_from_checkpoint(model_name, best=True, map_location="cpu")
+                model_loaded.to_cpu()
+            ..
+
         Parameters
         ----------
         model_name
@@ -1364,6 +1374,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         best
             If set, will retrieve the best model (according to validation loss) instead of the most recent one. Only
             is ignored when ``file_name`` is given.
+        **kwargs
+            Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
+            such as ``map_location`` to load the model onto a different device than the one from which it was saved.
+            For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
+            common/lightning_module.html#load-from-checkpoint>`_.
+
 
         Returns
         -------
@@ -1377,17 +1393,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         checkpoint_dir = _get_checkpoint_folder(work_dir, model_name)
         model_dir = _get_runs_folder(work_dir, model_name)
 
-        # load base TorchForecastingModel saved at model creation
+        # load the base TorchForecastingModel (does not contain the actual PyTorch LightningModule)
         base_model_path = os.path.join(model_dir, INIT_MODEL_NAME)
         raise_if_not(
             os.path.exists(base_model_path),
             f"Could not find base model save file `{INIT_MODEL_NAME}` in {model_dir}.",
             logger,
         )
+        model = TorchForecastingModel.load(base_model_path, **kwargs)
 
-        model = TorchForecastingModel.load(base_model_path)
-
-        # load pytorch lightning module from checkpoint
+        # load PyTorch LightningModule from checkpoint
         # if file_name is None, find most recent file in savepath that is a checkpoint
         if file_name is None:
             file_name = _get_checkpoint_fname(work_dir, model_name, best=best)
@@ -1395,9 +1410,29 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         file_path = os.path.join(checkpoint_dir, file_name)
         logger.info(f"loading {file_name}")
 
-        model.model = model.model.__class__.load_from_checkpoint(file_path)
+        model.model = model._load_from_checkpoint(file_path, **kwargs)
         model.load_ckpt_path = file_path
         return model
+
+    def _load_from_checkpoint(self, file_path, **kwargs):
+        """Loads a checkpoint for the underlying :class:`PLForecastingModule` (PLM) model.
+        The PLM object is not stored when saving a :class:`TorchForecastingModel` (TFM) to avoid saving
+        the model twice. Instead, we recover the module class with the module path and class name stored
+        in the TFM object. With the recovered module class, we can load the checkpoint.
+        """
+        pl_module_cls = getattr(sys.modules[self._module_path], self._module_name)
+        return pl_module_cls.load_from_checkpoint(file_path, **kwargs)
+
+    def to_cpu(self):
+        """Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time :fun:`fit()` or
+        :func:`predict()` is called.
+        """
+        self.trainer_params["accelerator"] = "cpu"
+        self.trainer_params = {
+            k: v
+            for k, v in self.trainer_params.items()
+            if k not in ["devices", "auto_select_gpus"]
+        }
 
     @property
     def model_created(self) -> bool:
@@ -1437,6 +1472,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             if self.model_created
             else True  # all torch models can be probabilistic (via Dropout)
         )
+
+    def __getstate__(self):
+        # do not pickle the PyTorch LightningModule, and Trainer
+        return {k: v for k, v in self.__dict__.items() if k not in TFM_ATTRS_NO_PICKLE}
+
+    def __setstate__(self, d):
+        self.__dict__ = d
+        # upon loading the pickled object, add back the PyTorch LightningModule, and Trainer attribute with
+        # default values
+        for attr, default_val in TFM_ATTRS_NO_PICKLE.items():
+            setattr(self, attr, default_val)
 
 
 def _raise_if_wrong_type(obj, exp_type, msg="expected type {}, got: {}"):
@@ -1496,7 +1542,7 @@ def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
     """
     For models relying on MixedCovariates.
 
-    Parameters:
+    Parameters
     ----------
     train_sample
         (past_target, past_covariates, historic_future_covariates, future_covariates, future_target)
@@ -1553,7 +1599,7 @@ def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
 
 class PastCovariatesTorchModel(TorchForecastingModel, ABC):
 
-    uses_future_covariates = False
+    supports_future_covariates = False
 
     def _build_train_dataset(
         self,
@@ -1616,7 +1662,9 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         )
 
     @property
-    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
+    def _model_encoder_settings(
+        self,
+    ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
         input_chunk_length = self.input_chunk_length
         output_chunk_length = self.output_chunk_length
         takes_past_covariates = True
@@ -1626,12 +1674,24 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
             output_chunk_length,
             takes_past_covariates,
             takes_future_covariates,
+            None,
+            None,
+        )
+
+    @property
+    def extreme_lags(self):
+        return (
+            -self.input_chunk_length,
+            self.output_chunk_length,
+            -self.input_chunk_length if self.uses_past_covariates else None,
+            None,
+            None,
         )
 
 
 class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
 
-    uses_past_covariates = False
+    supports_past_covariates = False
 
     def _build_train_dataset(
         self,
@@ -1691,7 +1751,9 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
         )
 
     @property
-    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
+    def _model_encoder_settings(
+        self,
+    ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
         input_chunk_length = self.input_chunk_length
         output_chunk_length = self.output_chunk_length
         takes_past_covariates = False
@@ -1701,12 +1763,23 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             output_chunk_length,
             takes_past_covariates,
             takes_future_covariates,
+            None,
+            None,
+        )
+
+    @property
+    def extreme_lags(self):
+        return (
+            -self.input_chunk_length,
+            self.output_chunk_length,
+            None,
+            0 if self.uses_future_covariates else None,
+            self.output_chunk_length if self.uses_future_covariates else None,
         )
 
 
 class DualCovariatesTorchModel(TorchForecastingModel, ABC):
-
-    uses_past_covariates = False
+    supports_past_covariates = False
 
     def _build_train_dataset(
         self,
@@ -1754,12 +1827,14 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
     def _verify_past_future_covariates(self, past_covariates, future_covariates):
         raise_if_not(
             past_covariates is None,
-            "Some past_covariates have been provided to a PastCovariates model. These models "
+            "Some past_covariates have been provided to a DualCovariates Torch model. These models "
             "support only future_covariates.",
         )
 
     @property
-    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
+    def _model_encoder_settings(
+        self,
+    ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
         input_chunk_length = self.input_chunk_length
         output_chunk_length = self.output_chunk_length
         takes_past_covariates = False
@@ -1769,6 +1844,18 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
             output_chunk_length,
             takes_past_covariates,
             takes_future_covariates,
+            None,
+            None,
+        )
+
+    @property
+    def extreme_lags(self):
+        return (
+            -self.input_chunk_length,
+            self.output_chunk_length,
+            None,
+            -self.input_chunk_length if self.uses_future_covariates else None,
+            self.output_chunk_length if self.uses_future_covariates else None,
         )
 
 
@@ -1823,7 +1910,9 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         pass
 
     @property
-    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
+    def _model_encoder_settings(
+        self,
+    ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
         input_chunk_length = self.input_chunk_length
         output_chunk_length = self.output_chunk_length
         takes_past_covariates = True
@@ -1833,6 +1922,18 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
             output_chunk_length,
             takes_past_covariates,
             takes_future_covariates,
+            None,
+            None,
+        )
+
+    @property
+    def extreme_lags(self):
+        return (
+            -self.input_chunk_length,
+            self.output_chunk_length,
+            -self.input_chunk_length if self.uses_past_covariates else None,
+            -self.input_chunk_length if self.uses_future_covariates else None,
+            self.output_chunk_length if self.uses_future_covariates else None,
         )
 
 
@@ -1888,7 +1989,9 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         raise NotImplementedError()
 
     @property
-    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
+    def _model_encoder_settings(
+        self,
+    ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
         input_chunk_length = self.input_chunk_length
         output_chunk_length = self.output_chunk_length
         takes_past_covariates = True
@@ -1898,4 +2001,16 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
             output_chunk_length,
             takes_past_covariates,
             takes_future_covariates,
+            None,
+            None,
+        )
+
+    @property
+    def extreme_lags(self):
+        return (
+            -self.input_chunk_length,
+            self.output_chunk_length,
+            -self.input_chunk_length if self.uses_past_covariates else None,
+            0 if self.uses_future_covariates else None,
+            self.output_chunk_length if self.uses_future_covariates else None,
         )

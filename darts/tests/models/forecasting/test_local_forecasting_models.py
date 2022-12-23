@@ -1,3 +1,4 @@
+import copy
 import os
 import shutil
 import tempfile
@@ -6,6 +7,7 @@ from unittest.mock import Mock, patch
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts.datasets import AirPassengersDataset, IceCreamHeaterDataset
 from darts.logging import get_logger
@@ -22,6 +24,8 @@ from darts.models import (
     FourTheta,
     KalmanForecaster,
     LinearRegressionModel,
+    NaiveDrift,
+    NaiveMean,
     NaiveSeasonal,
     Prophet,
     RandomForest,
@@ -43,37 +47,39 @@ logger = get_logger(__name__)
 
 # (forecasting models, maximum error) tuples
 models = [
-    (ExponentialSmoothing(), 5.6),
-    (ARIMA(12, 2, 1), 10),
-    (ARIMA(1, 1, 1), 40),
-    (StatsForecastAutoARIMA(season_length=12), 4.8),
-    (StatsForecastETS(season_length=12, model="AAZ"), 4.0),
-    (Croston(version="classic"), 34),
-    (Croston(version="tsb", alpha_d=0.1, alpha_p=0.1), 34),
-    (Theta(), 11.3),
-    (Theta(1), 20.2),
-    (Theta(-1), 9.8),
-    (FourTheta(1), 20.2),
-    (FourTheta(-1), 9.8),
-    (FourTheta(trend_mode=TrendMode.EXPONENTIAL), 5.5),
-    (FourTheta(model_mode=ModelMode.MULTIPLICATIVE), 11.4),
-    (FourTheta(season_mode=SeasonalityMode.ADDITIVE), 14.2),
-    (FFT(trend="poly"), 11.4),
-    (NaiveSeasonal(), 32.4),
-    (KalmanForecaster(dim_x=3), 17.0),
-    (LinearRegressionModel(lags=12), 11.0),
-    (RandomForest(lags=12, n_estimators=5, max_depth=3), 17.0),
-    (Prophet(), 13.5),
-    (AutoARIMA(), 12.2),
-    (TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 8.0),
-    (BATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 10.0),
+    (ExponentialSmoothing(), 5.4),
+    (ARIMA(12, 2, 1), 5.2),
+    (ARIMA(1, 1, 1), 24),
+    (StatsForecastAutoARIMA(season_length=12), 4.6),
+    (StatsForecastETS(season_length=12, model="AAZ"), 4.1),
+    (Croston(version="classic"), 23),
+    (Croston(version="tsb", alpha_d=0.1, alpha_p=0.1), 23),
+    (Theta(), 11),
+    (Theta(1), 17),
+    (Theta(-1), 12),
+    (FourTheta(1), 17),
+    (FourTheta(-1), 12),
+    (FourTheta(trend_mode=TrendMode.EXPONENTIAL), 6.0),
+    (FourTheta(model_mode=ModelMode.MULTIPLICATIVE), 10),
+    (FourTheta(season_mode=SeasonalityMode.ADDITIVE), 12),
+    (FFT(trend="poly"), 13),
+    (KalmanForecaster(dim_x=3), 20),
+    (LinearRegressionModel(lags=12), 13),
+    (RandomForest(lags=12, n_estimators=5, max_depth=3), 14),
+    (Prophet(), 9.0),
+    (AutoARIMA(), 12),
+    (TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 8.5),
+    (BATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 11),
 ]
 
 # forecasting models with exogenous variables support
 multivariate_models = [
-    (VARIMA(1, 0, 0), 55.6),
-    (VARIMA(1, 1, 1), 57.0),
-    (KalmanForecaster(dim_x=30), 30.0),
+    (VARIMA(1, 0, 0), 32),
+    (VARIMA(1, 1, 1), 25),
+    (KalmanForecaster(dim_x=30), 16),
+    (NaiveSeasonal(), 32),
+    (NaiveMean(), 37),
+    (NaiveDrift(), 39),
 ]
 
 dual_models = [
@@ -82,6 +88,15 @@ dual_models = [
     StatsForecastETS(season_length=12),
     Prophet(),
     AutoARIMA(),
+]
+
+# test only a few models for encoder support reduce time
+encoder_support_models = [
+    VARIMA(1, 0, 0),
+    ARIMA(),
+    AutoARIMA(),
+    Prophet(),
+    KalmanForecaster(dim_x=30),
 ]
 
 
@@ -182,7 +197,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             np.random.seed(1)  # some models are probabilist...
             model.fit(self.ts_pass_train)
             prediction = model.predict(len(self.ts_pass_val))
-            current_mape = mape(prediction, self.ts_pass_val)
+            current_mape = mape(self.ts_pass_val, prediction)
             self.assertTrue(
                 current_mape < max_mape,
                 "{} model exceeded the maximum MAPE of {}. "
@@ -195,7 +210,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             np.random.seed(1)
             model.fit(self.ts_ice_heater_train)
             prediction = model.predict(len(self.ts_ice_heater_val))
-            current_mape = mape(prediction, self.ts_ice_heater_val)
+            current_mape = mape(self.ts_ice_heater_val, prediction)
             self.assertTrue(
                 current_mape < max_mape,
                 "{} model exceeded the maximum MAPE of {}. "
@@ -261,6 +276,47 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                     model.fit(target, future_covariates=target[:-1])
                 with self.assertRaises(ValueError):
                     model.fit(target[1:], future_covariates=target[:-1])
+
+    def test_encoders_support(self):
+        # test case with pd.DatetimeIndex
+        n = 3
+
+        target = self.ts_gaussian[:-3]
+        future_covariates = self.ts_gaussian
+
+        add_encoders = {"custom": {"future": [lambda x: x.dayofweek]}}
+
+        # test some models that do not support encoders
+        no_support_model_cls = [NaiveMean, Theta]
+        for model_cls in no_support_model_cls:
+            with pytest.raises(TypeError):
+                _ = model_cls(add_encoders=add_encoders)
+
+        # test some models that support encoders
+        for model_object in encoder_support_models:
+            series = (
+                target
+                if not isinstance(model_object, VARIMA)
+                else target.stack(target.map(np.log))
+            )
+            # test once with user supplied covariates, and once without
+            for fc in [future_covariates, None]:
+                model_params = {
+                    k: vals
+                    for k, vals in copy.deepcopy(model_object.model_params).items()
+                }
+                model_params["add_encoders"] = add_encoders
+                model = model_object.__class__(**model_params)
+
+                # Test models with user supplied covariates
+                model.fit(series, future_covariates=fc)
+
+                prediction = model.predict(n, future_covariates=fc)
+                self.assertTrue(len(prediction) == n)
+
+                if isinstance(model, TransferableFutureCovariatesLocalForecastingModel):
+                    prediction = model.predict(n, series=series, future_covariates=fc)
+                    self.assertTrue(len(prediction) == n)
 
     def test_dummy_series(self):
         values = np.random.uniform(low=-10, high=10, size=100)
@@ -406,7 +462,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             model: TransferableFutureCovariatesLocalForecastingModel = model_cls(
                 **kwargs
             )
-            model.backtest(series1, future_covariates=exog1, retrain=False)
+            model.backtest(series1, future_covariates=exog1, start=0.5, retrain=False)
 
     @patch("typing.Callable")
     def test_backtest_retrain(

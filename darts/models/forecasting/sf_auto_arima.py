@@ -15,7 +15,9 @@ from darts.models.forecasting.forecasting_model import (
 
 
 class StatsForecastAutoARIMA(FutureCovariatesLocalForecastingModel):
-    def __init__(self, *autoarima_args, **autoarima_kwargs):
+    def __init__(
+        self, *autoarima_args, add_encoders: Optional[dict] = None, **autoarima_kwargs
+    ):
         """Auto-ARIMA based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
 
@@ -35,6 +37,26 @@ class StatsForecastAutoARIMA(FutureCovariatesLocalForecastingModel):
             Positional arguments for ``statsforecasts.models.AutoARIMA``.
         autoarima_kwargs
             Keyword arguments for ``statsforecasts.models.AutoARIMA``.
+        add_encoders
+            A large number of future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
+            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'position': {'future': ['relative']},
+                    'custom': {'future': [lambda idx: (idx.year - 1950) / 50]},
+                    'transformer': Scaler()
+                }
+            ..
 
         Examples
         --------
@@ -45,7 +67,7 @@ class StatsForecastAutoARIMA(FutureCovariatesLocalForecastingModel):
         >>> model.fit(series[:-36])
         >>> pred = model.predict(36, num_samples=100)
         """
-        super().__init__()
+        super().__init__(add_encoders=add_encoders)
         self.model = SFAutoARIMA(*autoarima_args, **autoarima_kwargs)
 
     def __str__(self):
