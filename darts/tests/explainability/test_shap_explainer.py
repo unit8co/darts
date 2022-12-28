@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import shap
 import sklearn
-from dateutil.relativedelta import relativedelta
 from sklearn.preprocessing import MinMaxScaler
 
 from darts import TimeSeries
@@ -377,7 +376,7 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         model = LightGBMModel(
             lags=4,
             lags_past_covariates=[-1, -2, -3],
-            lags_future_covariates=[2],
+            lags_future_covariates=[-2],
             output_chunk_length=1,
         )
 
@@ -394,12 +393,9 @@ class ShapExplainerTestCase(DartsBaseTestClass):
                 horizon=1, component=component
             )
 
-            # The fut_cov_ts have the same length as the target_ts. Hence, if we pass lags_future_covariates this means
-            # that the last prediction can be made max(lags_future_covariates) time periods before the end of the
-            # series (in this case 2 time periods).
             self.assertEqual(
                 explanation.end_time(),
-                self.target_ts.end_time() - relativedelta(days=2),
+                self.target_ts.end_time(),
             )
 
     def test_explain_with_lags_future_covariates_series_extending_into_future(self):
@@ -414,7 +410,7 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         model = LightGBMModel(
             lags=4,
             lags_past_covariates=[-1, -2, -3],
-            lags_future_covariates=[2],
+            lags_future_covariates=[-2],
             output_chunk_length=1,
         )
 

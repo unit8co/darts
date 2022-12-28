@@ -23,6 +23,7 @@ from enum import Enum
 from typing import Dict, NewType, Optional, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import shap
 from numpy import integer
@@ -35,7 +36,7 @@ from darts.explainability.explainability import (
 )
 from darts.logging import get_logger, raise_if, raise_log
 from darts.models.forecasting.regression_model import RegressionModel
-from darts.utils.data.tabularization import _create_lagged_data
+from darts.utils.data.tabularization import create_lagged_prediction_data
 from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
@@ -676,16 +677,28 @@ class _RegressionShapExplainers:
         lags_past_covariates_list = self.model.lags.get("past")
         lags_future_covariates_list = self.model.lags.get("future")
 
-        X, _, indexes = _create_lagged_data(
-            target_series,
-            self.n,
-            past_covariates,
-            future_covariates,
-            lags_list,
-            lags_past_covariates_list,
-            lags_future_covariates_list,
-            is_training=False,
-        )
+        # ensure list of TimeSeries format
+        if isinstance(target_series, TimeSeries):
+            target_series = [target_series]
+            past_covariates = [past_covariates] if past_covariates else None
+            future_covariates = [future_covariates] if future_covariates else None
+        X, indexes = [], []
+        for i, target in enumerate(target_series):
+            X_i, indexes_i = create_lagged_prediction_data(
+                target_series=target,
+                past_covariates=past_covariates[i] if past_covariates else None,
+                future_covariates=future_covariates[i] if future_covariates else None,
+                lags=lags_list,
+                lags_past_covariates=lags_past_covariates_list
+                if past_covariates
+                else None,
+                lags_future_covariates=lags_future_covariates_list
+                if future_covariates
+                else None,
+            )
+            X.append(X_i[:, :, 0])
+            indexes.append(indexes_i)
+        X = np.concatenate(X, axis=0)
 
         if train:
             X = pd.DataFrame(X)

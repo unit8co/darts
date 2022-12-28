@@ -329,9 +329,11 @@ def create_lagged_data(
         `lags = [-3, -1]` will extract `target_series` values which are 3 timesteps and 1 timestep away from
         the current value).
     lags_past_covariates
-        Optionally, the lags of `past_covariates` to be used as features. Each lag value is assumed to be negative.
+        Optionally, the lags of `past_covariates` to be used as features. Each lag value is assumed to be less than
+        or equal to 0.
     lags_future_covariates
-        Optionally, the lags of `future_covariates` to be used as features. Each lag value is assumed to be negative.
+        Optionally, the lags of `future_covariates` to be used as features. Each lag value is assumed to be less than
+        or equal to 0.
     max_samples_per_ts
         Optionally, the maximum number of samples to be drawn for training/validation; only the most recent
         samples are kept. In theory, specifying a smaller `max_samples_per_ts` should reduce computation time,
@@ -469,9 +471,11 @@ def create_lagged_training_data(
         `lags = [-3, -1]` will extract `target_series` values which are 3 timesteps and 1 timestep away from
         the current value).
     lags_past_covariates
-        Optionally, the lags of `past_covariates` to be used as features. Each lag value is assumed to be negative.
+        Optionally, the lags of `past_covariates` to be used as features. Each lag value is assumed to be less than
+        or equal to 0.
     lags_future_covariates
-        Optionally, the lags of `future_covariates` to be used as features. Each lag value is assumed to be negative.
+        Optionally, the lags of `future_covariates` to be used as features. Each lag value is assumed to be less than
+        or equal to 0.
     max_samples_per_ts
         Optionally, the maximum number of samples to be drawn for training/validation; only the most recent
         samples are kept. In theory, specifying a smaller `max_samples_per_ts` should reduce computation time,
