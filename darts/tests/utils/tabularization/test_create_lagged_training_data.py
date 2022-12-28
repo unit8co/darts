@@ -18,11 +18,12 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
     Tests `create_lagged_training_data` function defined in `darts.utils.data.tabularization`.
     """
 
-    lag_combos = (
+    target_lag_combos = (
         {"vals": None, "max": None, "min": None},
         {"vals": [-1, -3], "max": 3, "min": 1},
         {"vals": [-1, -3], "max": 3, "min": 1},
     )
+    covariates_lag_combos = (*target_lag_combos, {"vals": [0, -2], "max": 2, "min": 0})
     output_chunk_length_combos = (1, 3)
     multi_models_combos = (False, True)
     max_samples_per_ts_combos = (1, 2, None)
@@ -156,9 +157,9 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             n_components=4, start_value=20, end_value=30, start=6, length=10, freq=2
         )
         param_combos = product(
-            self.lag_combos,
-            self.lag_combos,
-            self.lag_combos,
+            self.target_lag_combos,
+            self.covariates_lag_combos,
+            self.covariates_lag_combos,
             self.output_chunk_length_combos,
             self.multi_models_combos,
             self.max_samples_per_ts_combos,
@@ -210,6 +211,10 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             expected_y = self.get_labels(
                 target, feats_times, output_chunk_length, multi_models
             )
+            self.assertEqual(X.shape[0], len(feats_times))
+            self.assertEqual(y.shape[0], len(feats_times))
+            self.assertEqual(X.shape[0], len(times))
+            self.assertEqual(y.shape[0], len(times))
             self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
             self.assertTrue(np.allclose(expected_y, y[:, :, 0]))
             self.assertTrue(feats_times.equals(times))
@@ -240,9 +245,9 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             freq="2d",
         )
         param_combos = product(
-            self.lag_combos,
-            self.lag_combos,
-            self.lag_combos,
+            self.target_lag_combos,
+            self.covariates_lag_combos,
+            self.covariates_lag_combos,
             self.output_chunk_length_combos,
             self.multi_models_combos,
             self.max_samples_per_ts_combos,
@@ -294,6 +299,10 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             expected_y = self.get_labels(
                 target, feats_times, output_chunk_length, multi_models
             )
+            self.assertEqual(X.shape[0], len(feats_times))
+            self.assertEqual(y.shape[0], len(feats_times))
+            self.assertEqual(X.shape[0], len(times))
+            self.assertEqual(y.shape[0], len(times))
             self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
             self.assertTrue(np.allclose(expected_y, y[:, :, 0]))
             self.assertTrue(feats_times.equals(times))
@@ -309,9 +318,9 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             n_components=4, start_value=20, end_value=30, start=6, length=7, freq=3
         )
         param_combos = product(
-            self.lag_combos,
-            self.lag_combos,
-            self.lag_combos,
+            self.target_lag_combos,
+            self.covariates_lag_combos,
+            self.covariates_lag_combos,
             self.output_chunk_length_combos,
             self.multi_models_combos,
             self.max_samples_per_ts_combos,
@@ -363,6 +372,10 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             expected_y = self.get_labels(
                 target, feats_times, output_chunk_length, multi_models
             )
+            self.assertEqual(X.shape[0], len(feats_times))
+            self.assertEqual(y.shape[0], len(feats_times))
+            self.assertEqual(X.shape[0], len(times))
+            self.assertEqual(y.shape[0], len(times))
             self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
             self.assertTrue(np.allclose(expected_y, y[:, :, 0]))
             self.assertTrue(feats_times.equals(times))
@@ -393,9 +406,9 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             freq="3d",
         )
         param_combos = product(
-            self.lag_combos,
-            self.lag_combos,
-            self.lag_combos,
+            self.target_lag_combos,
+            self.covariates_lag_combos,
+            self.covariates_lag_combos,
             self.output_chunk_length_combos,
             self.multi_models_combos,
             self.max_samples_per_ts_combos,
@@ -447,6 +460,10 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             expected_y = self.get_labels(
                 target, feats_times, output_chunk_length, multi_models
             )
+            self.assertEqual(X.shape[0], len(feats_times))
+            self.assertEqual(y.shape[0], len(feats_times))
+            self.assertEqual(X.shape[0], len(times))
+            self.assertEqual(y.shape[0], len(times))
             self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
             self.assertTrue(np.allclose(expected_y, y[:, :, 0]))
             self.assertTrue(feats_times.equals(times))
@@ -556,6 +573,54 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
                 use_moving_windows=use_moving_windows,
             )
             self.assertTrue(np.allclose(np.zeros((1, 1, 1)), X))
+            self.assertTrue(np.allclose(np.ones((1, 1, 1)), y))
+            self.assertEqual(len(times), 1)
+            self.assertEqual(times[0], pd.Timestamp("1/2/2000"))
+
+    def test_lagged_training_data_zero_lags_range_idx(self):
+        target = linear_timeseries(start=0, length=2, start_value=0, end_value=1)
+        past = linear_timeseries(start=1, length=1, start_value=1, end_value=2)
+        future = linear_timeseries(start=1, length=1, start_value=2, end_value=3)
+        for (use_moving_windows, multi_models) in product([False, True], [False, True]):
+            X, y, times = create_lagged_training_data(
+                target,
+                output_chunk_length=1,
+                past_covariates=past,
+                future_covariates=future,
+                lags=[-1],
+                lags_past_covariates=[0],
+                lags_future_covariates=[0],
+                multi_models=multi_models,
+                use_moving_windows=use_moving_windows,
+            )
+            self.assertTrue(np.allclose(np.array([0.0, 1.0, 2.0]).reshape(1, 3, 1), X))
+            self.assertTrue(np.allclose(np.ones((1, 1, 1)), y))
+            self.assertEqual(len(times), 1)
+            self.assertEqual(times[0], 1)
+
+    def test_lagged_training_data_zero_lags_datetime_idx(self):
+        target = linear_timeseries(
+            start=pd.Timestamp("1/1/2000"), length=2, start_value=0, end_value=1
+        )
+        past = linear_timeseries(
+            start=pd.Timestamp("1/2/2000"), length=1, start_value=1, end_value=2
+        )
+        future = linear_timeseries(
+            start=pd.Timestamp("1/2/2000"), length=1, start_value=2, end_value=3
+        )
+        for (use_moving_windows, multi_models) in product([False, True], [False, True]):
+            X, y, times = create_lagged_training_data(
+                target,
+                output_chunk_length=1,
+                past_covariates=past,
+                future_covariates=future,
+                lags=[-1],
+                lags_past_covariates=[0],
+                lags_future_covariates=[0],
+                multi_models=multi_models,
+                use_moving_windows=use_moving_windows,
+            )
+            self.assertTrue(np.allclose(np.array([0.0, 1.0, 2.0]).reshape(1, 3, 1), X))
             self.assertTrue(np.allclose(np.ones((1, 1, 1)), y))
             self.assertEqual(len(times), 1)
             self.assertEqual(times[0], pd.Timestamp("1/2/2000"))
@@ -681,14 +746,14 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             str(e.exception),
         )
 
-    def test_lagged_training_data_non_negative_lags_error(self):
+    def test_lagged_training_data_invalid_lag_values_error(self):
         series = linear_timeseries(start=1, length=2, freq=1)
         with self.assertRaises(ValueError) as e:
             create_lagged_training_data(
                 target_series=series, output_chunk_length=1, lags=[0]
             )
         self.assertEqual(
-            ("`lags` must be a `Sequence` containing only negative `int` values."),
+            ("`lags` must be a `Sequence` containing only `int` values less than 0."),
             str(e.exception),
         )
         with self.assertRaises(ValueError) as e:
@@ -696,11 +761,11 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
                 target_series=series,
                 output_chunk_length=1,
                 past_covariates=series,
-                lags_past_covariates=[0],
+                lags_past_covariates=[1],
             )
         self.assertEqual(
             (
-                "`lags_past_covariates` must be a `Sequence` containing only negative `int` values."
+                "`lags_past_covariates` must be a `Sequence` containing only `int` values less than 1."
             ),
             str(e.exception),
         )
@@ -709,11 +774,11 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
                 target_series=series,
                 output_chunk_length=1,
                 future_covariates=series,
-                lags_future_covariates=[0],
+                lags_future_covariates=[1],
             )
         self.assertEqual(
             (
-                "`lags_future_covariates` must be a `Sequence` containing only negative `int` values."
+                "`lags_future_covariates` must be a `Sequence` containing only `int` values less than 1."
             ),
             str(e.exception),
         )

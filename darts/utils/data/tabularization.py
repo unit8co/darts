@@ -245,15 +245,23 @@ def create_lagged_data(
 
     """
     Creates the features array `X` and labels array `y` to train a lagged-variables regression model (e.g. an
-    `sklearn` model); the time index values of each observation is also returned. In order for the lagged features
-    of a series to be added to `X`, *both* that series and the corresponding lags must be specified; if a series is
-    specified without the corresponding lags, that series will be ignored and not added to `X`. Observations (i.e.
-    rows along the `0`th axis of `X` and `y`) are only created for those time points which are common to all of the
-    specified series. `X` and `y` arrays are constructed independently over the samples dimension (i.e. the second axis)
-    of each series.
+    `sklearn` model) when `is_training = True`; alternatively, creates the features array `X` to produce a series
+    of prediction from an already-trained regression model when `is_training = False`. In both cases, the time index
+    values of each generated observation is also returned.
 
     Notes
     -----
+    Instead of calling `create_lagged_data` directly, it is instead recommended that:
+        - `create_lagged_training_data` be called if one wishes to create the `X` and `y` arrays
+        to train a regression model.
+        - `create_lagged_prediction_data` be called if one wishes to create the `X` array required
+        to generate a prediction from an already-trained regression model.
+    This is because even though both of these functions are merely wrappers around `create_lagged_data`, their
+    call signatures are more easily interpreted than `create_lagged_data`. For example,
+    `create_lagged_prediction_data` does not accept `output_chunk_length` nor `multi_models` as inputs, since
+    these inputs are not used when constructing prediction data. Similarly, `create_lagged_prediction_data`
+    returns only `X` and `times` as outputs, as opposed to returning `y` as `None` along with `X` and `times`.
+
     The `X` array is constructed from the lagged values of up to three separate timeseries:
         1. The `target_series`, which contains the values we're trying to predict. A regression model that
         uses previous values
@@ -290,19 +298,25 @@ def create_lagged_data(
     The exact method used to construct `X` and `y` depends on whether all of the specified timeseries are
     of the same frequency or not:
         - If all specified timeseries are of the same frequency, `strided_moving_window` is used to extract
-        contiguous time blocks between time `t - max_lag` and `t`
-        - If all specified timeseries are *not* of the same frequency, `find_intersecting_times` is first used
+        contiguous time blocks from each timeseries; the lagged variables are then extracted from each window.
+        - If all specified timeseries are *not* of the same frequency, then `find_shared_times` is first used
         to find those times common to all three timeseries, after which the lagged features are extracted by
         offsetting the time indices of these common times by the requested lags.
     In cases where it can be validly applied, the 'moving window' method is expected to be faster than the
     'intersecting time' method.
 
+    In order for the lagged features of a series to be added to `X`, *both* that series and the corresponding lags
+    must be specified; if a series is specified without the corresponding lags, that series will be ignored and not
+    added to `X`. `X` and `y` arrays are constructed independently over the samples dimension (i.e. the second axis)
+    of each series.
+
     Parameters
     ----------
     target_series
-        The series for the regression model to predict.
+        Optionally, the series for the regression model to predict. Must be specified if `is_training = True`.
     output_chunk_length
-        The number of timesteps ahead into the future the regression model is to predict.
+        Optionally, the number of timesteps ahead into the future the regression model is to predict. Must
+        best specified if `is_training = True`.
     past_covariates
         Optionally, the past covariates series that the regression model will use as inputs. Unlike the
         `target_series`, `past_covariates` are *not* to be predicted by the regression model.
@@ -311,11 +325,13 @@ def create_lagged_data(
         use as inputs.
     lags
         Optionally, the lags of the target series to be used as (auto-regressive) features. If not specified,
-        auto-regressive features will *not* be added to `X`.
+        auto-regressive features will *not* be added to `X`. Each lag value is assumed to be negative (e.g.
+        `lags = [-3, -1]` will extract `target_series` values which are 3 timesteps and 1 timestep away from
+        the current value).
     lags_past_covariates
-        Optionally, the lags of `past_covariates` to be used as features.
+        Optionally, the lags of `past_covariates` to be used as features. Each lag value is assumed to be negative.
     lags_future_covariates
-        Optionally, the lags of `future_covariates` to be used as features.
+        Optionally, the lags of `future_covariates` to be used as features. Each lag value is assumed to be negative.
     max_samples_per_ts
         Optionally, the maximum number of samples to be drawn for training/validation; only the most recent
         samples are kept. In theory, specifying a smaller `max_samples_per_ts` should reduce computation time,
@@ -324,32 +340,48 @@ def create_lagged_data(
         Optionally, specifies whether the regression model predicts multiple timesteps into the future. If `True`,
         then the regression model is assumed to predict all of the timesteps from time `t` to `t+output_chunk_length`.
         If `False`, then the regression model is assumed to predict *only* the timestep at `t+output_chunk_length`.
+        This input is ignored if `is_training = False`.
     check_inputs
         Optionally, specifies that the `lags_*` and `series_*` inputs should be checked for validity. Caution should be
         exercised when setting `check_inputs = False`.
     use_moving_windows
-        Optionally, specifies that the 'moving window method' should be used to construct `X` and `y` if all of the
+        Optionally, specifies that the 'moving window' method should be used to construct `X` and `y` if all of the
         provided series are of the same frequency. If `use_moving_windows = False`, the 'time intersection' method
         will always be used, even when all of the provided series are of the same frequency. See Notes for further
         details.
+    is_training
+        Optionally, specifies whether the constructed lagged data are to be used for training a regression model
+        (i.e. `is_training = True`), or for generating predictions from an already-trained regression model (i.e.
+        `is_training = False`). If `is_training = True`, `target_series` and `output_chunk_length` must be specified,
+        the `multi_models` input is utilised, and a label array `y` is returned. Conversely, if `is_training = False`,
+        then `target_series` and `output_chunk_length` do not need to be specified, the `multi_models` input is ignored,
+        and the returned `y` value is `None`.
 
     Returns
     -------
     X
-        A `(n_observations, n_lagged_features, n_samples)`-shaped array of lagged features for training a
-        lagged-variables model.
+        The constructed features array, with shape `(n_observations, n_lagged_features, n_samples)`.
     y
-        If `multi_models = True`, a `(n_observations, output_chunk_length, n_samples)`-shaped array of lagged
-        labels for training a lagged-variables model. Othewise, a `(n_observations, 1, n_samples)`-shaped
-        array of lagged labels.
+        The constructed labels array; if `is_training = False`, `None` is returned in lieu of an array.
+        If an array is returned and `multi_models = True`, then `y` is a
+        `(n_observations, output_chunk_length, n_samples)`-shaped array; conversely, if `multi_models =  False`,
+        then `y` is a `(n_observations, 1, n_samples)`-shaped array.
     times
         The `time_index` of each observation in `X` and `y`.
 
     Raises
     ------
     ValueError
-        If there are no times shared by all of the specified series, or if no lags have been specified.
-    TypeError
+        If the specified time series do not share any times for which features (and labels if `is_training = True`) can
+        be constructed.
+    ValueError
+        If no lags are specified, or if any of the specified lag values are non-negative.
+    ValueError
+        If any of the series are too short to create features and/or labels for the requested lags and
+        `output_chunk_length` values.
+    ValueError
+        If `target_series` and/or `output_chunk_length` are *not* specified when `is_training = True`.
+    ValueError
         If the provided series do not share the same type of `time_index` (e.g. `target_series` uses a
         pd.RangeIndex, but `future_covariates` uses a `pd.DatetimeIndex`).
 
@@ -410,6 +442,77 @@ def create_lagged_training_data(
     check_inputs: bool = True,
     use_moving_windows: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray, pd.Index]:
+    """
+    Creates the features array `X` and labels array `y` to train a lagged-variables regression model (e.g. an
+    `sklearn` model); the time index values of each observation is also returned.
+
+    Notes
+    -----
+    This function is simply a wrapper around `create_lagged_data`; for further details on the structure of `X`, please
+    refer to `help(create_lagged_data)`.
+
+    Parameters
+    ----------
+    target_series
+        The series for the regression model to predict.
+    output_chunk_length
+        The number of timesteps ahead into the future the regression model is to predict.
+    past_covariates
+        Optionally, the past covariates series that the regression model will use as inputs. Unlike the
+        `target_series`, `past_covariates` are *not* to be predicted by the regression model.
+    future_covariates
+        Optionally, the future covariates (i.e. exogenous covariates) series that the regression model will
+        use as inputs.
+    lags
+        Optionally, the lags of the target series to be used as (auto-regressive) features. If not specified,
+        auto-regressive features will *not* be added to `X`. Each lag value is assumed to be negative (e.g.
+        `lags = [-3, -1]` will extract `target_series` values which are 3 timesteps and 1 timestep away from
+        the current value).
+    lags_past_covariates
+        Optionally, the lags of `past_covariates` to be used as features. Each lag value is assumed to be negative.
+    lags_future_covariates
+        Optionally, the lags of `future_covariates` to be used as features. Each lag value is assumed to be negative.
+    max_samples_per_ts
+        Optionally, the maximum number of samples to be drawn for training/validation; only the most recent
+        samples are kept. In theory, specifying a smaller `max_samples_per_ts` should reduce computation time,
+        especially in cases where many observations could be generated.
+    multi_models
+        Optionally, specifies whether the regression model predicts multiple timesteps into the future. If `True`,
+        then the regression model is assumed to predict all of the timesteps from time `t` to `t+output_chunk_length`.
+        If `False`, then the regression model is assumed to predict *only* the timestep at `t+output_chunk_length`.
+    check_inputs
+        Optionally, specifies that the `lags_*` and `series_*` inputs should be checked for validity. Caution should be
+        exercised when setting `check_inputs = False`.
+    use_moving_windows
+        Optionally, specifies that the 'moving window' method should be used to construct `X` and `y` if all of the
+        provided series are of the same frequency. If `use_moving_windows = False`, the 'time intersection' method
+        will always be used, even when all of the provided series are of the same frequency. See Notes for further
+        details.
+
+    Returns
+    -------
+    X
+        The constructed features array, with shape `(n_observations, n_lagged_features, n_samples)`.
+    y
+        The constructed labels array. If `multi_models = True`, then `y` is a
+        `(n_observations, output_chunk_length, n_samples)`-shaped array; conversely, if
+        `multi_models =  False`, then `y` is a `(n_observations, 1, n_samples)`-shaped array.
+    times
+        The `time_index` of each observation in `X` and `y`.
+
+    Raises
+    ------
+    ValueError
+        If the specified time series do not share any times for which features and labels can be constructed.
+    ValueError
+        If no lags are specified, or if any of the specified lag values are non-negative.
+    ValueError
+        If any of the series are too short to create features and labels for the requested lags and
+        `output_chunk_length` values.
+    ValueError
+        If the provided series do not share the same type of `time_index` (e.g. `target_series` uses a
+        pd.RangeIndex, but `future_covariates` uses a `pd.DatetimeIndex`).
+    """
     return create_lagged_data(
         target_series=target_series,
         past_covariates=past_covariates,
@@ -437,6 +540,66 @@ def create_lagged_prediction_data(
     check_inputs: bool = True,
     use_moving_windows: bool = True,
 ) -> Tuple[np.ndarray, pd.Index]:
+    """
+    Creates the features array `X` to produce a series of prediction from an already-trained regression model; the
+    time index values of each observation is also returned.
+
+    Notes
+    -----
+    This function is simply a wrapper around `create_lagged_data`; for further details on the structure of `X`, please
+    refer to `help(create_lagged_data)`.
+
+    Parameters
+    ----------
+    target_series
+        Optionally, the series for the regression model to predict.
+    past_covariates
+        Optionally, the past covariates series that the regression model will use as inputs. Unlike the
+        `target_series`, `past_covariates` are *not* to be predicted by the regression model.
+    future_covariates
+        Optionally, the future covariates (i.e. exogenous covariates) series that the regression model will
+        use as inputs.
+    lags
+        Optionally, the lags of the target series to be used as (auto-regressive) features. If not specified,
+        auto-regressive features will *not* be added to `X`. Each lag value is assumed to be negative (e.g.
+        `lags = [-3, -1]` will extract `target_series` values which are 3 timesteps and 1 timestep away from
+        the current value).
+    lags_past_covariates
+        Optionally, the lags of `past_covariates` to be used as features. Each lag value is assumed to be negative.
+    lags_future_covariates
+        Optionally, the lags of `future_covariates` to be used as features. Each lag value is assumed to be negative.
+    max_samples_per_ts
+        Optionally, the maximum number of samples to be drawn for training/validation; only the most recent
+        samples are kept. In theory, specifying a smaller `max_samples_per_ts` should reduce computation time,
+        especially in cases where many observations could be generated.
+    check_inputs
+        Optionally, specifies that the `lags_*` and `series_*` inputs should be checked for validity. Caution should be
+        exercised when setting `check_inputs = False`.
+    use_moving_windows
+        Optionally, specifies that the 'moving window' method should be used to construct `X` and `y` if all of the
+        provided series are of the same frequency. If `use_moving_windows = False`, the 'time intersection' method
+        will always be used, even when all of the provided series are of the same frequency. See Notes for further
+        details.
+
+    Returns
+    -------
+    X
+        The constructed features array, with shape `(n_observations, n_lagged_features, n_samples)`.
+    times
+        The `time_index` of each observation in `X`.
+
+    Raises
+    ------
+    ValueError
+        If the specified time series do not share any times for which features can be constructed.
+    ValueError
+        If no lags are specified, or if any of the specified lag values are non-negative.
+    ValueError
+        If any of the series are too short to create features for the requested lag values.
+    ValueError
+        If the provided series do not share the same type of `time_index` (e.g. `target_series` uses a
+        pd.RangeIndex, but `future_covariates` uses a `pd.DatetimeIndex`).
+    """
     X, _, times = create_lagged_data(
         target_series=target_series,
         past_covariates=past_covariates,
@@ -466,18 +629,17 @@ def _create_lagged_data_by_moving_window(
     is_training: bool,
 ) -> Tuple[np.ndarray, np.ndarray, pd.Index]:
     """
-    Helper function called by `_create_lagged_data` that computes `X`, `y`, and `times` by
-    first extracting 'moving window' slices of each series; the size of these windows is
-    `max_lag` when constructing `X`, where `max_lag` is the largest lag value specified
-    among all of the `lags*` inputs, and `output_chunk_length` (if `multi_models = True`)
-    or `1` (if `multi_models = False`) when constructing `y`. The `lags*` requested by the
-    user are extracted from the `X` windows. One formed, these windows are then reshaped
-    into the correct form. This approach is used if we *can* assume that the specified series
-    are all of the same frequency.
-
-    Notes
-    -----
-
+    Helper function called by `create_lagged_data` that computes `X`, `y`, and `times` by
+    extracting 'moving windows' from each series using the `strided_moving_window`
+    function. More specifically, to extract the features of a particular series for an
+    arbitrary time `t`, a 'window' between times `t - max_lag` and `t - min_lag` is
+    extracted, where `max_lag` and `min_lag` are the largest and smallest magnitude lags
+    requested for that particular series. After extracting this window, the requested lag
+    values between these two minimum and maximum lag values can be extracted. Similarly,
+    the labels for time `t` are formed simply by extracting a window between times `t`
+    and `t + output_chunk_length - 1` from the target series. In both cases, the extracted
+    windows can then be reshaped into the correct shape. This approach can only be used if
+    we *can* assume that the specified series are all of the same frequency.
     """
     feature_times, min_lags, max_lags = get_feature_times(
         target_series,
@@ -504,6 +666,7 @@ def _create_lagged_data_by_moving_window(
     )
     freq = _get_freqs(target_series, past_covariates, future_covariates)[0]
     if isinstance(time_bounds[0], int):
+        # `stop` is exclusive, so need `+ freq` to include end-point:
         times = pd.RangeIndex(
             start=time_bounds[0], stop=time_bounds[1] + freq, step=freq
         )
@@ -513,7 +676,9 @@ def _create_lagged_data_by_moving_window(
     if num_samples > max_samples_per_ts:
         times = times[-max_samples_per_ts:]
         num_samples = max_samples_per_ts
-    # Construct features:
+    # Time index of 'earliest' constructed observation:
+    start_time = times[0]
+    # Construct features array X:
     X = []
     for i, (series_i, lags_i, min_lag_i, max_lag_i) in enumerate(
         zip(
@@ -527,54 +692,79 @@ def _create_lagged_data_by_moving_window(
         is_target_series = is_training and (i == 0)
         if is_target_series or series_and_lags_specified:
             time_index_i = series_i.time_index
+            # If lags are sufficiently large, `series_i` may not contain all
+            # feature times. For example, if `lags_past_covariates = [-50]`,
+            # then we can construct features for time `51` using the value
+            # of `past_covariates` at time `1`, but `past_covariates` may
+            # only go up to time `30`. This does *not* occur when considering
+            # the target series, however, since this series must have values
+            # for all feature times - these values will become labels.
             time_idx_too_short = (not is_target_series) and (
-                time_index_i[-1] < times[-1]
+                time_index_i[-1] <= start_time
             )
+            # If `start_time` not included in `time_index_i`, can 'manually' calculate
+            # what its index *would* be if `time_index_i` were extended to include that time:
             if time_idx_too_short:
-                time_index_i = _extend_time_index(
-                    time_index_i, series_i.freq, new_end=times[-1]
+                start_time_idx = (
+                    len(time_index_i)
+                    - 1
+                    + (start_time - time_index_i[-1]) // series_i.freq
                 )
-            start_time_idx = np.searchsorted(time_index_i, times[0])
+            # If `start_time` *is* included in `time_index_i`, need to binary search `time_index_i`
+            # for its position:
+            else:
+                start_time_idx = np.searchsorted(time_index_i, start_time)
         if series_and_lags_specified:
-            window_start_idx = start_time_idx - min_lag_i
-            window_end_idx = window_start_idx + num_samples
+            # Windows taken between times `t - max_lag_i` and `t - min_lag_i`
             window_len = max_lag_i - min_lag_i + 1
+            first_window_start_idx = start_time_idx - max_lag_i
+            # Need `+ 1` since end index is exclusive in Python:
+            first_window_end_idx = start_time_idx - min_lag_i + 1
+            # Other windows are formed by sequentially shifting first window forward
+            # by 1 index position each time; to create `(num_samples - 1)` more windows
+            # in addition to the first window, need to take `(num_samples - 1)` values
+            # after `first_window_end_idx`:
             vals = series_i.all_values(copy=False)[
-                (window_start_idx - window_len + 1) : window_end_idx, :, :
+                first_window_start_idx : first_window_end_idx + num_samples - 1, :, :
             ]
             windows = strided_moving_window(
                 vals, window_len, stride=1, axis=0, check_inputs=False
             )
+            # Within each window, the `-1` indexed value (i.e. the value at the very end of
+            # the window) corresponds to time `t - min_lag_i`. The negative index of the time
+            # `t + lag_i` within this window (where `lag_i < 0` and `abs(lag_i) >= min_lag_i`)
+            # is, therefore, `-1 - (abs(lag_i) - min_lag_i)` = `lag_i + min_lag_i - 1`:
             lags_to_extract = np.array(lags_i, dtype=int) + min_lag_i - 1
             lagged_vals = _extract_lagged_vals_from_windows(windows, lags_to_extract)
             X.append(lagged_vals)
-        # Required for creating labels:
+        # Cache `start_time_idx` for label creation:
         if is_target_series:
             target_start_time_idx = start_time_idx
     X = np.concatenate(X, axis=1)
+    # Construct labels array `y`:
     if is_training:
-        if multi_models:
-            target_window_end_idx = target_start_time_idx + num_samples
-            # Need to include end point, so `+1`:
-            vals = target_series.all_values(copy=False)[
-                target_start_time_idx : target_window_end_idx + output_chunk_length - 1,
-                :,
-                :,
-            ]
-            windows = strided_moving_window(
-                vals,
-                window_len=output_chunk_length,
-                stride=1,
-                axis=0,
-                check_inputs=False,
-            )
-            y = _extract_lagged_vals_from_windows(windows)
-        else:
-            target_start_time_idx += output_chunk_length - 1
-            target_window_end_idx = target_start_time_idx + num_samples
-            y = target_series.all_values(copy=False)[
-                target_start_time_idx:target_window_end_idx, :, :
-            ]
+        # All values between times `t` and `t + output_chunk_length` used as labels:
+        # Window taken between times `t` and `t + output_chunk_length - 1`:
+        first_window_start_idx = target_start_time_idx
+        # Add `+ 1` since end index is exclusive in Python:
+        first_window_end_idx = target_start_time_idx + output_chunk_length
+        # To create `(num_samples - 1)` other windows in addition to first window,
+        # must take `(num_samples - 1)` values ahead of `first_window_end_idx`
+        vals = target_series.all_values(copy=False)[
+            first_window_start_idx : first_window_end_idx + num_samples - 1,
+            :,
+            :,
+        ]
+        windows = strided_moving_window(
+            vals,
+            window_len=output_chunk_length,
+            stride=1,
+            axis=0,
+            check_inputs=False,
+        )
+        lags_to_extract = None if multi_models else -np.ones((1,), dtype=int)
+        y = _extract_lagged_vals_from_windows(windows, lags_to_extract)
+        # Only values at times `t + output_chunk_length - 1` used as labels:
     else:
         y = None
     return X, y, times
@@ -587,14 +777,15 @@ def _extract_lagged_vals_from_windows(
     Helper function called by `_create_lagged_data_by_moving_window` that
     reshapes the `windows` formed by `strided_moving_window` from the
     shape `(num_windows, num_components, num_series, window_len)` to the
-    shape `(num_windows, num_components*window_len, num_series)`. This reshaping
+    shape `(num_windows, num_components * window_len, num_series)`. This reshaping
     is done such that the order of elements along axis 1 matches the pattern
     described in the docstring of `create_lagged_data`.
 
-    If `lags_to_extract` is specified, only the values within each extracted window
-    wi. For example, if `lags_to_extract = [-2]`, only the second-to-last values within
-    each window will be extracted. If `lags_to_extract` is not specified, all of the values
-    within each window is extracted.
+    If `lags_to_extract` is specified, then only those values within each window that
+    are indexed by `lags_to_extract` will be returned. In such cases, the shape of the returned
+    lagged values is `(num_windows, num_components * lags_to_extract.size, num_series)`. For example,
+    if `lags_to_extract = [-2]`, only the second-to-last values within each window will be extracted.
+    If `lags_to_extract` is not specified, all of the values within each window is extracted.
     """
     # windows.shape = (num_windows, num_components, num_samples, window_len):
     if lags_to_extract is not None:
@@ -621,11 +812,12 @@ def _create_lagged_data_by_intersecting_times(
 ) -> Tuple[np.ndarray, np.ndarray, Union[pd.RangeIndex, pd.DatetimeIndex]]:
     """
     Helper function called by `_create_lagged_data` that computes `X`, `y`, and `times` by
-    finding the time points that are shared by all specified series, offsetting the
-    index of these shared time points by the specified `lags` (for `X`) or
-    `output_chunk_length` (for `y`), and then finally accessing the feature or label
-    values in each timeseries by using the offset indexing arrays. This approach is used if
-    we *cannot* assume that the specified series are of the same frequency.
+    first finding the time points in each series that *could* be used to create features/labels,
+    and then finding which of these 'available' times is shared by all specified series. The lagged
+    values are then extracted by finding the index of each of these 'shared times' in each series,
+    and then offsetting this index by the requested lag value (if constructing `X`) or the requested
+    `output_chunk_length` (if constructing `y`). This approach is used if we *cannot* assume that the
+    specified series are of the same frequency.
     """
     feature_times, min_lags, _ = get_feature_times(
         target_series,
@@ -665,7 +857,7 @@ def _create_lagged_data_by_intersecting_times(
         if series_and_lags_specified or is_target_series:
             time_index_i = series_i.time_index
             time_idx_too_short = (not is_target_series) and (
-                time_index_i[-1] < shared_times[-1]
+                time_index_i[-1] <= shared_times[-1]
             )
             if time_idx_too_short:
                 time_index_i = _extend_time_index(
@@ -687,10 +879,10 @@ def _create_lagged_data_by_intersecting_times(
     X = np.concatenate(X, axis=1)
     if is_training:
         if multi_models:
-            # All points between time `t` and `t + output_chunk_length` are labels:
+            # All points between time `t` and `t + output_chunk_length - 1` are labels:
             idx_to_get = label_shared_time_idx + np.arange(output_chunk_length)
         else:
-            # Only point at time `t + output_chunk_length` is a label:
+            # Only point at time `t + output_chunk_length - 1` is a label:
             idx_to_get = label_shared_time_idx + output_chunk_length - 1
         # Before reshaping: lagged_vals.shape = (n_observations, num_lags, n_components, n_samples)
         lagged_vals = target_series.all_values(copy=False)[idx_to_get, :, :]
@@ -701,6 +893,7 @@ def _create_lagged_data_by_intersecting_times(
     return X, y, shared_times
 
 
+# For convenience, define following types for `get_feature_times`:
 FeatureTimes = Tuple[
     Union[pd.Index, None], Union[pd.Index, None], Union[pd.Index, None]
 ]
@@ -723,24 +916,25 @@ def get_feature_times(
     """
     Returns a tuple containing the times in `target_series`, the times in `past_covariates`, and the times in
     `future_covariates` that *could* be used to create features. More specifically, we note that:
-        1. Features cannot be created from times that have fewer than `-min(lags)` preceding values.
+        1. Features cannot be created for times that have fewer than `-min(lags)` preceding values.
         2. When creating training data, labels cannot be created for times points that have fewer than
         `(output_chunk_length - 1)` values ahead of them. Thus, there's no point creating features for these
         time points.
     `get_feature_times` returns all of the times in each series that satisfy:
-        - Only the first condition, if `is_training = False`,
-        - Both the first and the second condition, if `is_training = True`.
+        - Only the first condition if `is_training = False`,
+        - Both the first and the second condition if `is_training = True`.
     The returned tuple of times can then be passed to `get_shared_times` to compute the 'eligible time points'
     shared by all of the specified series.
 
     Notes
     -----
-    If `return_max_lags = True`, the largest lag value for each series is also returned as a tuple.
+    If `return_min_and_max_lags = True`, the smallest and largest lag value for each series is also returned
+    as a pair of tuples.
 
-    For those series which are either unspecified, a `None` value takes the place of that series' feature time
-    and maximum lag value.
+    For those series which are either unspecified, a `None` value takes the place of that series' feature time,
+    minimum lag values, and maximum lag value.
 
-    If `is_training = True`, then `target_series`, `multi_models`, and `output_chunk_length` must be provided.
+    If `is_training = True`, then `target_series` and `output_chunk_length` must be provided.
 
     Parameters
     ----------
@@ -768,7 +962,7 @@ def get_feature_times(
     check_inputs
         Optionally, specifies that the `lags_*` and `series_*` inputs should be checked for validity. Caution should be
         exercised when setting `check_inputs = False`.
-    return_max_lags
+    return_min_and_max_lags
         Optionally, specifies whether the largest magnitude lag value for each series should also be returned along with
         the 'eligible' feature times
 
@@ -778,6 +972,10 @@ def get_feature_times(
         A tuple containing all the 'eligible feature times' in `target_series`, in `past_covariates`, and in
         `future_covariates`, in that order. If a particular series-lag pair isn't fully specified, then a `None`
         will take the place of that series' eligible times.
+    min_lags
+        Optionally, a tuple containing the smallest lag value in `lags`, `lags_past_covariates`, and
+        `lags_future_covariates`, in that order. If a particular series-lag pair isn't fully specified, then a `None`
+        will take the place of that series' minimum lag values.
     max_lags
         Optionally, a tuple containing the largest lag value in `lags`, `lags_past_covariates`, and
         `lags_future_covariates`, in that order. If a particular series-lag pair isn't fully specified, then a `None`
@@ -861,16 +1059,16 @@ def get_shared_times(
     *series_or_times: Sequence[Union[TimeSeries, pd.Index, None]], sort: bool = True
 ) -> pd.Index:
     """
-    Returns the times found within all of the specified `TimeSeries` or time indexes (i.e. the intersection of all
+    Returns the times shared by all of the specified `TimeSeries` or time indexes (i.e. the intersection of all
     these times). If `sort = True`, then these shared times are sorted from earliest to latest. Any `TimeSeries` or
     time indices in `series_or_times` that aren't specified (i.e. are `None`) are simply ignored.
 
     Parameters
     ----------
     series_or_times
-        The `TimeSeries` and/or time indices that should 'intersected'/searched for shared times.
+        The `TimeSeries` and/or time indices that should 'intersected'.
     sort
-        Optionally, specifies that the returned should be sorted from earliest to latest.
+        Optionally, specifies that the returned shared times should be sorted from earliest to latest.
 
     Returns
     -------
@@ -882,7 +1080,6 @@ def get_shared_times(
     TypeError
         If the specified `TimeSeries` and/or time indices do not all share the same type of time index (i.e. must
         either be all `pd.DatetimeIndex` or all `pd.RangeIndex`).
-
     """
 
     # `sort = None` specifies to `pd.Index.intersection` that values should be sorted:
@@ -949,7 +1146,7 @@ def get_shared_times_bounds(
         Series 1: ------
         Series 2:    ------
         Series 3:  ------
-    Here, each `-` denotes as observation at a specific time. In this example, `find_time_overlap_bounds` will
+    Here, each `-` denotes an observation at a specific time. In this example, `find_time_overlap_bounds` will
     return the times at `LB` and `UB`:
                     LB
         Series 1: ---|---|
@@ -1092,7 +1289,13 @@ def strided_moving_window(
 #
 
 
-def _extend_time_index(time_index, freq, new_end):
+def _extend_time_index(
+    time_index: pd.Index, freq: Union[int, str], new_end: pd.Timestamp
+):
+    """
+    Extends a `time_index` of frequency `freq` such that it now ends at time `new_end`;
+    the fastest way to do this is actually to create a new time index from scratch.
+    """
     is_range_idx = isinstance(freq, int)
     if is_range_idx:
         time_index = pd.RangeIndex(start=time_index[0], stop=new_end + freq, step=freq)
@@ -1131,12 +1334,14 @@ def _check_lags(
     all_lags = [lags, lags_past_covariates, lags_future_covariates]
     suffixes = ["", "_past_covariates", "_future_covariates"]
     lags_is_none = []
-    for suffix, lags_i in zip(suffixes, all_lags):
+    for i, (suffix, lags_i) in enumerate(zip(suffixes, all_lags)):
         lags_is_none.append(lags_i is None)
         if not lags_is_none[-1]:
+            is_target = i == 0
+            max_lag = -1 if is_target else 0
             raise_if(
-                any((lag >= 0 or not isinstance(lag, int)) for lag in lags_i),
-                f"`lags{suffix}` must be a `Sequence` containing only negative `int` values.",
+                any((lag > max_lag or not isinstance(lag, int)) for lag in lags_i),
+                f"`lags{suffix}` must be a `Sequence` containing only `int` values less than {max_lag + 1}.",
             )
     raise_if(
         all(lags_is_none),

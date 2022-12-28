@@ -640,31 +640,31 @@ class GetFeatureTimesTestCase(DartsBaseTestClass):
             str(e.exception),
         )
 
-    def test_feature_times_non_negative_lags_error(self):
+    def test_feature_times_invalid_lag_values_error(self):
         series = linear_timeseries(start=1, length=2, freq=1)
         with self.assertRaises(ValueError) as e:
             get_feature_times(target_series=series, lags=[0], is_training=False)
         self.assertEqual(
-            ("`lags` must be a `Sequence` containing only negative `int` values."),
+            ("`lags` must be a `Sequence` containing only `int` values less than 0."),
             str(e.exception),
         )
         with self.assertRaises(ValueError) as e:
             get_feature_times(
-                past_covariates=series, lags_past_covariates=[0], is_training=False
+                past_covariates=series, lags_past_covariates=[1], is_training=False
             )
         self.assertEqual(
             (
-                "`lags_past_covariates` must be a `Sequence` containing only negative `int` values."
+                "`lags_past_covariates` must be a `Sequence` containing only `int` values less than 1."
             ),
             str(e.exception),
         )
         with self.assertRaises(ValueError) as e:
             get_feature_times(
-                future_covariates=series, lags_future_covariates=[0], is_training=False
+                future_covariates=series, lags_future_covariates=[1], is_training=False
             )
         self.assertEqual(
             (
-                "`lags_future_covariates` must be a `Sequence` containing only negative `int` values."
+                "`lags_future_covariates` must be a `Sequence` containing only `int` values less than 1."
             ),
             str(e.exception),
         )
