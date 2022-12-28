@@ -37,7 +37,10 @@ from sklearn.linear_model import LinearRegression
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
-from darts.utils.data.tabularization import _add_static_covariates, _create_lagged_data
+from darts.utils.data.tabularization import (
+    _add_static_covariates,
+    create_lagged_training_data,
+)
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import _check_quantiles, seq2series, series2seq
 
@@ -337,17 +340,34 @@ class RegressionModel(GlobalForecastingModel):
         lags_past_covariates = self.lags.get("past")
         lags_future_covariates = self.lags.get("future")
 
-        training_samples, training_labels, _ = _create_lagged_data(
-            target_series=target_series,
-            output_chunk_length=self.output_chunk_length,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            lags=lags,
-            lags_past_covariates=lags_past_covariates,
-            lags_future_covariates=lags_future_covariates,
-            max_samples_per_ts=max_samples_per_ts,
-            multi_models=self.multi_models,
-        )
+        # ensure list of TimeSeries format
+        if isinstance(target_series, TimeSeries):
+            target_series = [target_series]
+            past_covariates = [past_covariates] if past_covariates else None
+            future_covariates = [future_covariates] if future_covariates else None
+
+        training_samples, training_labels = [], []
+        for i, target in enumerate(target_series):
+            samples_i, labels_i, _ = create_lagged_training_data(
+                target_series=target,
+                output_chunk_length=self.output_chunk_length,
+                past_covariates=past_covariates[i] if past_covariates else None,
+                future_covariates=future_covariates[i] if future_covariates else None,
+                lags=lags,
+                lags_past_covariates=lags_past_covariates,
+                lags_future_covariates=lags_future_covariates,
+                max_samples_per_ts=max_samples_per_ts,
+                multi_models=self.multi_models,
+                check_inputs=False,
+            )
+            # Remove redundant sample axis:
+            samples_i = samples_i[:, :, 0]
+            labels_i = labels_i[:, :, 0]
+            training_samples.append(samples_i)
+            training_labels.append(labels_i)
+
+        training_samples = np.concatenate(training_samples, axis=0)
+        training_labels = np.concatenate(training_labels, axis=0)
 
         training_samples = _add_static_covariates(
             self.model, target_series, training_samples
@@ -369,7 +389,10 @@ class RegressionModel(GlobalForecastingModel):
         """
 
         training_samples, training_labels = self._create_lagged_data(
-            target_series, past_covariates, future_covariates, max_samples_per_ts
+            target_series,
+            past_covariates,
+            future_covariates,
+            max_samples_per_ts,
         )
 
         # if training_labels is of shape (n_samples, 1) flatten it to shape (n_samples,)
