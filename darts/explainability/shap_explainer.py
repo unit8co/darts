@@ -202,22 +202,12 @@ class ShapExplainer(ForecastingModelExplainer):
             foreground_past_covariates = series2seq(foreground_past_covariates)
             foreground_future_covariates = series2seq(foreground_future_covariates)
 
-            # For encoding inference, in case we don't have past and future covariates,
-            # We need to provide the minimum elements for the foreground_series. If the foreground_series
-            # is a list of TimeSeries, we need to provide the minimum elements for each TimeSeries.
-            foreground_series_start_encoder = []
-            for i in range(len(foreground_series)):
-                foreground_series_start_encoder.append(
-                    foreground_series[i][: self.model.min_train_series_length]
-                )
-
             if self.model.encoders.encoding_available:
                 (
                     foreground_past_covariates,
                     foreground_future_covariates,
-                ) = self.model.generate_predict_encodings(
-                    n=len(foreground_series) - self.model.min_train_series_length,
-                    series=foreground_series_start_encoder,
+                ) = self.model.generate_fit_encodings(
+                    series=foreground_series,
                     past_covariates=foreground_past_covariates,
                     future_covariates=foreground_future_covariates,
                 )
@@ -378,8 +368,7 @@ class ShapExplainer(ForecastingModelExplainer):
             (
                 foreground_past_covariates,
                 foreground_future_covariates,
-            ) = self.model.generate_predict_encodings(
-                n=len(foreground_series) - self.model.min_train_series_length,
+            ) = self.model.generate_fit_encodings(
                 series=foreground_series,
                 past_covariates=foreground_past_covariates,
                 future_covariates=foreground_future_covariates,

@@ -99,8 +99,7 @@ class ForecastingModelExplainer(ABC):
                 (
                     background_past_covariates,
                     background_future_covariates,
-                ) = self.model.generate_predict_encodings(
-                    n=len(background_series) - self.model.min_train_series_length,
+                ) = self.model.generate_fit_encodings(
                     series=background_series,
                     past_covariates=background_past_covariates,
                     future_covariates=background_future_covariates,
