@@ -295,6 +295,11 @@ def create_lagged_data(
     `target_series.n_components=2`):
         lag_+0_comp_1_target | lag_+0_comp_2_target | ... | lag_+3_comp_1_target | lag_+3_comp_2_target
 
+    The `lags` specified for the `target_series` must all be less than or equal to -1 (i.e. one can't use the value
+    of the target series at time `t` to predict the target series at the same time `t`). Conversely, the values in
+    `lags_past_covariates` and/or `lags_future_covariates` must be less than or equal to 0 (i.e. we *are* able to
+    use the value of `past_covariates`/`future_covariates` at time `t` to predict `target_series` at time `t`).
+
     The exact method used to construct `X` and `y` depends on whether all of the specified timeseries are
     of the same frequency or not:
         - If all specified timeseries are of the same frequency, `strided_moving_window` is used to extract
@@ -1268,12 +1273,18 @@ def strided_moving_window(
     .. [1] https://numpy.org/doc/stable/reference/generated/numpy.lib.stride_tricks.as_strided.html
     """
     if check_inputs:
-        raise_if(stride < 1, "`stride` must be positive.")
         raise_if(
-            window_len < 1,
-            "`window_len` must be positive.",
+            not isinstance(stride, int) or stride < 1,
+            "`stride` must be a positive `int`.",
         )
-        raise_if_not(axis < x.ndim, "`axis` must be less than `x.ndim`.")
+        raise_if(
+            not isinstance(window_len, int) or window_len < 1,
+            "`window_len` must be a positive `int`.",
+        )
+        raise_if(
+            not isinstance(axis, int) or axis > x.ndim - 1 or axis < -x.ndim,
+            "`axis` must be an `int` that is less than `x.ndim`.",
+        )
         raise_if(
             window_len > x.shape[axis],
             "`window_len` must be less than or equal to x.shape[axis].",

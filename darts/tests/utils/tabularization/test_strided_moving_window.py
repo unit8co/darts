@@ -14,65 +14,111 @@ class StridedMovingWindowTestCase(DartsBaseTestClass):
 
     def test_strided_moving_windows_extracted_windows(self):
         """
-        Checks that
+        Tests that each of the windows extracted by `strided_moving_windows`
+        is correct over a number of input parameter combinations.
+
+        This is achieved by looping over each extracted window, and checking that the
+        `i`th window corresponds to the the next `window_len` values found after
+        `i * stride` (i.e. the index position at which the `i`th window should begin).
         """
-        x_shape = (10, 8, 12)
-        x = np.arange(np.prod(x_shape)).reshape(*x_shape)
+        # Parameter combos to test:
         window_len_combos = (1, 2, 5)
         axis_combos = (0, 1, 2)
         stride_combos = (1, 2, 3)
+        # Create a 'dummy input' with linearly increasing values:
+        x_shape = (10, 8, 12)
+        x = np.arange(np.prod(x_shape)).reshape(*x_shape)
         for (axis, stride, window_len) in product(
             axis_combos, stride_combos, window_len_combos
         ):
             windows = strided_moving_window(x, window_len, stride, axis)
             # Iterate over extracted windows:
             for i in range(windows.shape[axis]):
-                # Take `i`th window:
+                # All of the extract windows are found along the `axis` dimension; shift
+                # `axis` so that it now appears as the final dimension and then extract
+                # `i`th window:
                 window = np.moveaxis(windows, axis, -1)[:, :, :, i]
-                # `i`th window should correspond to taking the first `window_len` values
-                # along `axis` in `x`, starting from the position `i*stride` (i.e. this is
-                # the window of length `window_len` that 'begins' `i` strides from the start
-                # of `axis`):
+                # `i`th window should begin at `i * stride`:
+                window_start_idx = i * stride
+                # Window should include next `window_len` values after window start;
+                # shift `axis` to last dimension then extract expected window:
                 expected = np.moveaxis(x, axis, -1)[
-                    :, :, i * stride + np.arange(window_len)
+                    :, :, window_start_idx : window_start_idx + window_len
                 ]
                 self.assertTrue(np.allclose(window, expected))
 
     def test_strided_moving_window_invalid_stride_error(self):
         """
-        Checks that appropriate `ValueError` is thrown when `stride` is set to
+        Checks that appropriate error is thrown when `stride` is set to
         a non-positive number and/or a non-`int` value.
         """
-        x = np.arange(10)
+        x = np.arange(1)
+        # `stride` isn't positive:
         with self.assertRaises(ValueError) as e:
             strided_moving_window(x, window_len=1, stride=0)
         self.assertEqual(
-            ("`stride` must be positive."),
+            ("`stride` must be a positive `int`."),
+            str(e.exception),
+        )
+        # `stride` is `float`, not `int`:
+        with self.assertRaises(ValueError) as e:
+            strided_moving_window(x, window_len=1, stride=1.1)
+        self.assertEqual(
+            ("`stride` must be a positive `int`."),
             str(e.exception),
         )
 
     def test_strided_moving_window_negative_window_len_error(self):
-        x = np.arange(10)
+        """
+        Checks that appropriate error is thrown when `wendow_len`
+        is set to a non-positive number and/or a non-`int` value.
+        """
+        x = np.arange(1)
+        # `window_len` isn't positive:
         with self.assertRaises(ValueError) as e:
             strided_moving_window(x, window_len=0, stride=1)
         self.assertEqual(
-            ("`window_len` must be positive."),
+            ("`window_len` must be a positive `int`."),
+            str(e.exception),
+        )
+        # `window_len` is `float`, not `int`:
+        with self.assertRaises(ValueError) as e:
+            strided_moving_window(x, window_len=1.1, stride=1)
+        self.assertEqual(
+            ("`window_len` must be a positive `int`."),
             str(e.exception),
         )
 
     def test_strided_moving_window_pass_invalid_axis_error(self):
-        x = np.arange(10)
+        """
+        Checks that appropriate error is thrown when `axis`
+        is set to a non-`int` value, or a value not less than
+        `x.ndim`.
+        """
+        x = np.arange(1)
+        # `axis` NOT an int:
+        with self.assertRaises(ValueError) as e:
+            strided_moving_window(x, window_len=1, stride=1, axis=0.1)
+        self.assertEqual(
+            ("`axis` must be an `int` that is less than `x.ndim`."),
+            str(e.exception),
+        )
+        # `axis` NOT < x.ndim:
         with self.assertRaises(ValueError) as e:
             strided_moving_window(x, window_len=1, stride=1, axis=1)
         self.assertEqual(
-            ("`axis` must be less than `x.ndim`."),
+            ("`axis` must be an `int` that is less than `x.ndim`."),
             str(e.exception),
         )
 
-    def test_strided_moving_window_window_too_large_error(self):
-        x = np.arange(10)
+    def test_strided_moving_window_window_len_too_large_error(self):
+        """
+        Checks that appropriate error is thrown when `window_len`
+        is set to a value larger than `x.shape[axis]`.
+        """
+        x = np.arange(1)
         with self.assertRaises(ValueError) as e:
-            strided_moving_window(x, window_len=11, stride=1)
+            strided_moving_window(x, window_len=2, stride=1)
         self.assertEqual(
             ("`window_len` must be less than or equal to x.shape[axis]."),
             str(e.exception),
