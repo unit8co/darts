@@ -37,7 +37,7 @@ import re
 from collections import defaultdict
 from copy import deepcopy
 from inspect import signature
-from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -47,6 +47,11 @@ from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
 
 from .logging import get_logger, raise_if, raise_if_not, raise_log
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 logger = get_logger(__name__)
 
