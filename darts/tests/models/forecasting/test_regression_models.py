@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import OneHotEncoder
 
 import darts
 from darts import TimeSeries
@@ -14,6 +15,7 @@ from darts.dataprocessing.encoders import (
     FutureCyclicEncoder,
     PastDatetimeAttributeEncoder,
 )
+from darts.dataprocessing.transformers import StaticCovariatesTransformer
 from darts.logging import get_logger
 from darts.metrics import mae, rmse
 from darts.models import (
@@ -638,6 +640,140 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     [44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0],
                 )
 
+    def test_static_covs_addition(self):
+
+        static_covs1 = pd.DataFrame(
+            data={
+                "cont": [0.1, 0.2, 0.3],
+                "cat": ["a", "b", "c"],  # should lead to 9 one-hot encoded columns
+            }
+        ).astype(dtype={"cat": "category"})
+
+        static_covs2 = pd.DataFrame(data={"cont": [0.1, 0.2, 0.3]})
+
+        # default transformer_num = MinMaxScaler()
+        scaler = StaticCovariatesTransformer(transformer_cat=OneHotEncoder())
+        ref_series = tg.linear_timeseries(length=10)
+        series1 = TimeSeries.from_times_and_values(
+            times=ref_series.time_index,
+            values=np.concatenate([ref_series.values()] * 3, axis=1),
+            columns=["comp1", "comp2", "comp3"],
+            static_covariates=static_covs1,
+        )
+        series1 = scaler.fit_transform(series1)
+
+        series2 = TimeSeries.from_times_and_values(
+            times=ref_series.time_index,
+            values=np.concatenate([ref_series.values() * 100] * 3, axis=1),
+            columns=["comp1", "comp2", "comp3"],
+            static_covariates=static_covs2,
+        )
+
+        series3 = TimeSeries.from_times_and_values(
+            times=ref_series.time_index,
+            values=np.concatenate([ref_series.values() * 200] * 3, axis=1),
+            columns=["comp1", "comp2", "comp3"],
+        )
+
+        series4 = TimeSeries.from_times_and_values(
+            times=ref_series.time_index,
+            values=np.concatenate([ref_series.values()] * 3, axis=1),
+            columns=["comp1", "comp2", "comp3"],
+        )
+
+        reg_model = RegressionModel(lags=1, output_chunk_length=1)
+        all_series = [series1, series2, series3]
+        max_samples = 5
+        all_series_width = series1.n_components
+        max_scovs_width = max(
+            s.static_covariates_values(copy=False).reshape(1, -1).shape[1]
+            for s in all_series
+            if s.has_static_covariates
+        )
+
+        # no static covs
+        features = reg_model._create_lagged_data(
+            series3, None, None, max_samples_per_ts=max_samples
+        )[0]
+        self.assertEqual(features.shape, (5, 3))
+
+        # static covs with different dims
+        features = reg_model._create_lagged_data(
+            all_series, None, None, max_samples_per_ts=max_samples
+        )[0]
+        self.assertEqual(
+            features.shape,
+            (max_samples * len(all_series), all_series_width + max_scovs_width),
+        )
+
+        # no static covs at prediction but static covs at training
+        reg_model.fit(all_series)
+        pred_features = reg_model._create_lagged_data(
+            series4, None, None, max_samples_per_ts=1
+        )[
+            0
+        ]  # simulates features prep at prediction time
+        self.assertEqual(pred_features.shape, (1, all_series_width + max_scovs_width))
+
+    def test_static_cov_accuracy(self):
+        # based on : https://unit8co.github.io/darts/examples/15-static-covariates.html
+
+        # given
+        period = 20
+        sine_series = tg.sine_timeseries(
+            length=4 * period,
+            value_frequency=1 / period,
+            column_name="smooth",
+            freq="h",
+        )
+
+        sine_vals = sine_series.values()
+        linear_vals = np.expand_dims(np.linspace(1, -1, num=19), -1)
+
+        sine_vals[21:40] = linear_vals
+        sine_vals[61:80] = linear_vals
+        irregular_series = TimeSeries.from_times_and_values(
+            values=sine_vals, times=sine_series.time_index, columns=["irregular"]
+        )
+
+        # no static covs
+        train_series_no_cov = [sine_series, irregular_series]
+
+        # categorical static covs
+        sine_series_st_cat = sine_series.with_static_covariates(
+            pd.DataFrame(data={"curve_type": ["smooth"]})
+        )
+        irregular_series_st_cat = irregular_series.with_static_covariates(
+            pd.DataFrame(data={"curve_type": ["non_smooth"]})
+        )
+        train_series_static_cov = [sine_series_st_cat, irregular_series_st_cat]
+
+        scaler = StaticCovariatesTransformer(transformer_cat=OneHotEncoder())
+        train_series_static_cov = scaler.fit_transform(train_series_static_cov)
+
+        # when
+        model_no_static_cov = RandomForest(lags=period // 2, bootstrap=False)
+        model_no_static_cov.fit(train_series_no_cov)
+        predict_series_no_cov = [series[:60] for series in train_series_no_cov]
+        pred_no_static_cov = model_no_static_cov.predict(
+            n=int(period / 2), series=predict_series_no_cov
+        )
+
+        model_static_cov = RandomForest(lags=period // 2, bootstrap=False)
+        model_static_cov.fit(train_series_static_cov)
+        predict_series_static_cov = [series[:60] for series in train_series_static_cov]
+        pred_static_cov = model_static_cov.predict(
+            n=int(period / 2), series=predict_series_static_cov
+        )
+
+        # then
+        for series, ps_no_st, ps_st_cat in zip(
+            train_series_static_cov, pred_no_static_cov, pred_static_cov
+        ):
+            rmses = [rmse(series, ps) for ps in [ps_no_st, ps_st_cat]]
+
+            self.assertLess(rmses[1], rmses[0])
+
     def test_models_runnability(self):
         train_y, test_y = self.sine_univariate1.split_before(0.7)
         multi_models_modes = [True, False]
@@ -1154,20 +1290,18 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 max_samples_per_ts=1,
             )
 
+            n = 10
             # output_chunk_length, required past_offset, required future_offset
-            test_cases_multi_models = [
-                (1, 0, 13),
-                (5, -4, 9),
-                (7, -2, 11),
-            ]
-
-            test_cases_one_shot = [
+            test_cases = [
                 (1, 0, 13),
                 (5, -4, 9),
                 (7, -6, 7),
+                (
+                    12,
+                    -9,
+                    4,
+                ),  # output_chunk_length > n -> covariate requirements are capped
             ]
-
-            test_cases = test_cases_multi_models if mode else test_cases_one_shot
 
             for (output_chunk_length, req_past_offset, req_future_offset) in test_cases:
                 model = RegressionModel(
@@ -1184,7 +1318,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
                 # check that given the required offsets no ValueError is raised
                 model.predict(
-                    10,
+                    n,
                     series=target_series[:-25],
                     past_covariates=past_covariates[: -25 + req_past_offset],
                     future_covariates=future_covariates[: -25 + req_future_offset],
@@ -1192,7 +1326,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 # check that one less past covariate time step causes ValueError
                 with self.assertRaises(ValueError):
                     model.predict(
-                        10,
+                        n,
                         series=target_series[:-25],
                         past_covariates=past_covariates[: -26 + req_past_offset],
                         future_covariates=future_covariates[: -25 + req_future_offset],
@@ -1200,7 +1334,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 # check that one less future covariate time step causes ValueError
                 with self.assertRaises(ValueError):
                     model.predict(
-                        10,
+                        n,
                         series=target_series[:-25],
                         past_covariates=past_covariates[: -25 + req_past_offset],
                         future_covariates=future_covariates[: -26 + req_future_offset],
@@ -1279,21 +1413,32 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     def test_encoders(self):
         max_past_lag = -4
         max_future_lag = 4
-        n_comp_past, n_comp_future = 2, 1
-        extend_past = np.random.randn(15, n_comp_past)
-        extend_future = np.random.randn(15, n_comp_future)
-        target_series = [ts[:10] for ts in self.target_series]
-        past_covs = [
-            covs[:10].append_values(extend_past) for covs in self.past_covariates
-        ]
-        future_covs = [
-            covs[:10].append_values(extend_future) for covs in self.future_covariates
-        ]
+        # target
+        t1 = tg.linear_timeseries(
+            start=pd.Timestamp("2000-01-01"), end=pd.Timestamp("2000-12-01"), freq="MS"
+        )
+        t2 = tg.linear_timeseries(
+            start=pd.Timestamp("2001-01-01"), end=pd.Timestamp("2001-12-01"), freq="MS"
+        )
+        ts = [t1, t2]
+
+        # past and future covariates longer than target
+        n_comp = 2
+        covs = TimeSeries.from_times_and_values(
+            tg.generate_index(
+                start=pd.Timestamp("1999-01-01"),
+                end=pd.Timestamp("2002-12-01"),
+                freq="MS",
+            ),
+            values=np.random.randn(48, n_comp),
+        )
+        pc = [covs, covs]
+        fc = [covs, covs]
         examples = ["past", "future", "mixed"]
         covariates_examples = {
-            "past": {"past_covariates": past_covs},
-            "future": {"future_covariates": future_covs},
-            "mixed": {"past_covariates": past_covs, "future_covariates": future_covs},
+            "past": {"past_covariates": pc},
+            "future": {"future_covariates": fc},
+            "mixed": {"past_covariates": pc, "future_covariates": fc},
         }
         encoder_examples = {
             "past": {"datetime_attribute": {"past": ["hour"]}},
@@ -1306,81 +1451,98 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
         multi_models_mode = [True, False]
         for mode in multi_models_mode:
-            for model_cls in [
-                RegressionModel,
-                LinearRegressionModel,
-                LightGBMModel,
-                XGBModel,
-            ]:
-                model_pc_valid0 = model_cls(
-                    lags=2, add_encoders=encoder_examples["past"], multi_models=mode
-                )
-                model_fc_valid0 = model_cls(
-                    lags=2, add_encoders=encoder_examples["future"], multi_models=mode
-                )
-                model_mixed_valid0 = model_cls(
-                    lags=2, add_encoders=encoder_examples["mixed"], multi_models=mode
-                )
-
-                # encoders will not generate covariates without lags
-                for model in [model_pc_valid0, model_fc_valid0, model_mixed_valid0]:
-                    model.fit(target_series)
-                    assert not model.encoders.encoding_available
-                    _ = model.predict(n=1, series=target_series)
-                    _ = model.predict(n=3, series=target_series)
-
-                model_pc_valid1 = model_cls(
-                    lags=2,
-                    lags_past_covariates=[max_past_lag, -1],
-                    add_encoders=encoder_examples["past"],
-                )
-                model_fc_valid1 = model_cls(
-                    lags=2,
-                    lags_future_covariates=[0, max_future_lag],
-                    add_encoders=encoder_examples["future"],
-                )
-                model_mixed_valid1 = model_cls(
-                    lags=2,
-                    lags_past_covariates=[max_past_lag, -1],
-                    lags_future_covariates=[0, max_future_lag],
-                    add_encoders=encoder_examples["mixed"],
-                )
-
-                for model, ex in zip(
-                    [model_pc_valid1, model_fc_valid1, model_mixed_valid1], examples
-                ):
-                    covariates = covariates_examples[ex]
-                    # don't pass covariates, let them be generated by encoders. Test single target series input
-                    model_copy = copy.deepcopy(model)
-                    model_copy.fit(target_series[0])
-                    assert model_copy.encoders.encoding_available
-                    self.helper_test_encoders_settings(model_copy, ex)
-
-                    _ = model_copy.predict(n=1, series=target_series)
-                    self.helper_compare_encoded_covs_with_ref(
-                        model_copy, target_series, covariates, n=1
+            for ocl in [1, 2]:
+                for model_cls in [
+                    RegressionModel,
+                    LinearRegressionModel,
+                    LightGBMModel,
+                    XGBModel,
+                ]:
+                    model_pc_valid0 = model_cls(
+                        lags=2,
+                        add_encoders=encoder_examples["past"],
+                        multi_models=mode,
+                        output_chunk_length=ocl,
+                    )
+                    model_fc_valid0 = model_cls(
+                        lags=2,
+                        add_encoders=encoder_examples["future"],
+                        multi_models=mode,
+                        output_chunk_length=ocl,
+                    )
+                    model_mixed_valid0 = model_cls(
+                        lags=2,
+                        add_encoders=encoder_examples["mixed"],
+                        multi_models=mode,
+                        output_chunk_length=ocl,
                     )
 
-                    _ = model_copy.predict(n=3, series=target_series)
-                    self.helper_compare_encoded_covs_with_ref(
-                        model_copy, target_series, covariates, n=3
+                    # encoders will not generate covariates without lags
+                    for model in [model_pc_valid0, model_fc_valid0, model_mixed_valid0]:
+                        model.fit(ts)
+                        assert not model.encoders.encoding_available
+                        _ = model.predict(n=1, series=ts)
+                        _ = model.predict(n=3, series=ts)
+
+                    model_pc_valid1 = model_cls(
+                        lags=2,
+                        lags_past_covariates=[max_past_lag, -1],
+                        add_encoders=encoder_examples["past"],
+                        multi_models=mode,
+                        output_chunk_length=ocl,
+                    )
+                    model_fc_valid1 = model_cls(
+                        lags=2,
+                        lags_future_covariates=[0, max_future_lag],
+                        add_encoders=encoder_examples["future"],
+                        multi_models=mode,
+                        output_chunk_length=ocl,
+                    )
+                    model_mixed_valid1 = model_cls(
+                        lags=2,
+                        lags_past_covariates=[max_past_lag, -1],
+                        lags_future_covariates=[0, max_future_lag],
+                        add_encoders=encoder_examples["mixed"],
+                        multi_models=mode,
+                        output_chunk_length=ocl,
                     )
 
-                    _ = model_copy.predict(n=8, series=target_series)
-                    self.helper_compare_encoded_covs_with_ref(
-                        model_copy, target_series, covariates, n=8
-                    )
+                    for model, ex in zip(
+                        [model_pc_valid1, model_fc_valid1, model_mixed_valid1], examples
+                    ):
+                        covariates = covariates_examples[ex]
+                        # don't pass covariates, let them be generated by encoders. Test single target series input
+                        model_copy = copy.deepcopy(model)
+                        model_copy.fit(ts[0])
+                        assert model_copy.encoders.encoding_available
+                        self.helper_test_encoders_settings(model_copy, ex)
+                        _ = model_copy.predict(n=1, series=ts)
+                        self.helper_compare_encoded_covs_with_ref(
+                            model_copy, ts, covariates, n=1, ocl=ocl, multi_model=mode
+                        )
 
-                    # manually pass covariates, let encoders add more
-                    model.fit(target_series, **covariates)
-                    assert model.encoders.encoding_available
-                    self.helper_test_encoders_settings(model, ex)
-                    _ = model.predict(n=1, series=target_series, **covariates)
-                    _ = model.predict(n=3, series=target_series, **covariates)
-                    _ = model.predict(n=8, series=target_series, **covariates)
+                        _ = model_copy.predict(n=3, series=ts)
+                        self.helper_compare_encoded_covs_with_ref(
+                            model_copy, ts, covariates, n=3, ocl=ocl, multi_model=mode
+                        )
+
+                        _ = model_copy.predict(n=8, series=ts)
+                        self.helper_compare_encoded_covs_with_ref(
+                            model_copy, ts, covariates, n=8, ocl=ocl, multi_model=mode
+                        )
+
+                        # manually pass covariates, let encoders add more
+                        model.fit(ts, **covariates)
+                        assert model.encoders.encoding_available
+                        self.helper_test_encoders_settings(model, ex)
+                        _ = model.predict(n=1, series=ts, **covariates)
+                        _ = model.predict(n=3, series=ts, **covariates)
+                        _ = model.predict(n=8, series=ts, **covariates)
 
     @staticmethod
-    def helper_compare_encoded_covs_with_ref(model, target_series, covariates, n):
+    def helper_compare_encoded_covs_with_ref(
+        model, ts, covariates, n, ocl, multi_model
+    ):
         """checks that covariates generated by encoders fulfill the requirements compared to some
         reference covariates:
         What has to match:
@@ -1389,47 +1551,56 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         - generated/encoded covariates at training time must have the same start time as reference
         - generated/encoded covariates at prediction time must have the same end time as reference
         """
+
+        def generate_expected_times(ts, n_predict=0) -> dict:
+            """generates expected start and end times for the corresponding covariates."""
+            freq = ts[0].freq
+
+            def to_ts(dt):
+                return pd.Timestamp(dt, freq=freq)
+
+            def train_start_end(start_base, end_base):
+                start = to_ts(start_base) - int(not multi_model) * (ocl - 1) * freq
+                if not n_predict:
+                    end = to_ts(end_base) - (ocl - 1) * freq
+                else:
+                    end = to_ts(end_base) + freq * max(n_predict - ocl, 0)
+                return start, end
+
+            if not n_predict:
+                # expected train start, and end
+                pc1_start, pc1_end = train_start_end("1999-11-01", "2000-11-01")
+                pc2_start, pc2_end = train_start_end("2000-11-01", "2001-11-01")
+                fc1_start, fc1_end = train_start_end("2000-03-01", "2001-04-01")
+                fc2_start, fc2_end = train_start_end("2001-03-01", "2002-04-01")
+            else:
+                # expected inference start, and end
+                pc1_start, pc1_end = train_start_end("2000-09-01", "2000-12-01")
+                pc2_start, pc2_end = train_start_end("2001-09-01", "2001-12-01")
+                fc1_start, fc1_end = train_start_end("2001-01-01", "2001-05-01")
+                fc2_start, fc2_end = train_start_end("2002-01-01", "2002-05-01")
+
+            times = {
+                "pc_start": [pc1_start, pc2_start],
+                "pc_end": [pc1_end, pc2_end],
+                "fc_start": [fc1_start, fc2_start],
+                "fc_end": [fc1_end, fc2_end],
+            }
+            return times
+
         covs_reference = (
             covariates.get("past_covariates"),
             covariates.get("future_covariates"),
         )
-        covs_generated_train = model.encoders.encode_train(target=target_series)
-        covs_generated_infer = model.encoders.encode_inference(
-            n=model._get_encoders_n(n), target=target_series
-        )
+        covs_generated_train = model.encoders.encode_train(target=ts)
+        covs_generated_infer = model.encoders.encode_inference(n=n, target=ts)
 
         refer_past, refer_future = covs_reference[0], covs_reference[1]
         train_past, train_future = covs_generated_train[0], covs_generated_train[1]
         infer_past, infer_future = covs_generated_infer[0], covs_generated_infer[1]
 
-        def generate_expected_times(model, target_series, n=0) -> dict:
-            """generates expected start and end times for the corresponding covariates."""
-            times = {"pc_start": [], "pc_end": [], "fc_start": [], "fc_end": []}
-            max_past_lag = abs(min(min(model.lags.get("past", [0])), 0))
-            max_future_lag = max(max(model.lags.get("future", [0])), 0)
-            for ts in target_series:
-                if not n:
-                    times["pc_start"].append(ts.start_time())
-                    times["pc_end"].append(ts.end_time())
-                    times["fc_start"].append(ts.start_time())
-                    times["fc_end"].append(ts.end_time())
-                else:
-                    # -1 as last step is inclusive
-                    times["pc_start"].append(
-                        ts.end_time() - ts.freq * (max_past_lag - 1)
-                    )
-                    times["pc_end"].append(ts.end_time() + ts.freq * (n - 1))
-                    times["fc_start"].append(
-                        ts.end_time() - ts.freq * (max_past_lag - 1)
-                    )
-                    times["fc_end"].append(
-                        ts.end_time() + ts.freq * (n + max_future_lag)
-                    )
-            return times
-
-        t_train = generate_expected_times(model, target_series)
-        t_infer = generate_expected_times(model, target_series, n=n)
-
+        t_train = generate_expected_times(ts)
+        t_infer = generate_expected_times(ts, n_predict=n)
         if train_past is None:
             assert infer_past is None and refer_past is None
         else:

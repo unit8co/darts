@@ -20,6 +20,7 @@ class FilteringModel(ABC):
 
     @abstractmethod
     def __init__(self):
+        self._expect_covariates = False
         pass
 
     @abstractmethod
