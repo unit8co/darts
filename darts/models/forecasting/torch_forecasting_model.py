@@ -17,7 +17,6 @@ This file contains several abstract classes:
       forecasting models.
 """
 
-import copy
 import datetime
 import inspect
 import os
@@ -462,7 +461,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if trainer is not None:
             return trainer
 
-        trainer_params = copy.deepcopy(self.trainer_params)
+        trainer_params = {key: val for key, val in self.trainer_params.items()}
         if verbose is not None:
             trainer_params["enable_model_summary"] = (
                 verbose if self.model.epochs_trained == 0 else False
@@ -476,11 +475,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         trainer_params: dict, max_epochs: Optional[int] = None
     ) -> pl.Trainer:
         """Initializes a PyTorch-Lightning trainer for training or prediction from `trainer_params`."""
-        trainer_params_copy = copy.deepcopy(trainer_params)
+        trainer_params_copy = {key: val for key, val in trainer_params.items()}
         if max_epochs is not None:
             trainer_params_copy["max_epochs"] = max_epochs
 
-        return pl.Trainer(**trainer_params_copy)
+        # prevent lightning from adding callbacks to the callbacks list in `self.trainer_params`
+        callbacks = trainer_params_copy.pop("callbacks", None)
+        return pl.Trainer(
+            callbacks=[cb for cb in callbacks] if callbacks is not None else callbacks,
+            **trainer_params_copy,
+        )
 
     @abstractmethod
     def _create_model(self, train_sample: Tuple[Tensor]) -> torch.nn.Module:
