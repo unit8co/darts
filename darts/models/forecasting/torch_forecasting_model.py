@@ -17,6 +17,7 @@ This file contains several abstract classes:
       forecasting models.
 """
 
+import copy
 import datetime
 import inspect
 import os
@@ -461,7 +462,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if trainer is not None:
             return trainer
 
-        trainer_params = {key: val for key, val in self.trainer_params.items()}
+        trainer_params = copy.deepcopy(self.trainer_params)
         if verbose is not None:
             trainer_params["enable_model_summary"] = (
                 verbose if self.model.epochs_trained == 0 else False
@@ -475,7 +476,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         trainer_params: dict, max_epochs: Optional[int] = None
     ) -> pl.Trainer:
         """Initializes a PyTorch-Lightning trainer for training or prediction from `trainer_params`."""
-        trainer_params_copy = {param: val for param, val in trainer_params.items()}
+        trainer_params_copy = copy.deepcopy(trainer_params)
         if max_epochs is not None:
             trainer_params_copy["max_epochs"] = max_epochs
 
