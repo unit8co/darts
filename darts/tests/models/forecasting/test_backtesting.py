@@ -225,6 +225,7 @@ class BacktestingTestCase(DartsBaseTestClass):
                     start=pd.Timestamp("20000125"),
                     forecast_horizon=3,
                     verbose=False,
+                    retrain=False,
                 )
 
             tcn_model = TCNModel(
