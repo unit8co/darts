@@ -169,11 +169,11 @@ def _add_static_covariates(
     model: ForecastingModel,
     features: np.array,
     target_series: Union[TimeSeries, Sequence[TimeSeries]],
-    min_target_lag,
-    output_chunk_length,
-    min_past_cov_lag,
-    min_future_cov_lag,
-    max_future_cov_lag,
+    min_target_lag: int,
+    output_chunk_length: int,
+    min_past_cov_lag: Optional[int] = None,
+    min_future_cov_lag: Optional[int] = None,
+    max_future_cov_lag: Optional[int] = None,
     past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     max_samples_per_ts: Optional[int] = None,
@@ -190,10 +190,20 @@ def _add_static_covariates(
     ----------
     model
         The regression model. Should be an instance of darts.models.RegressionModel.
-    series
-        The series to which the static covariates are attached.
     features
-        The features to which the static covariates are added.
+        The features' numpy array to which the static covariates will be added.
+    target_series
+        The target series from which to read the static covariates.
+    min_target_lag
+        The minimum past lag of the target series.
+    output_chunk_length
+        The model's output chunk length.
+    min_past_cov_lag
+        The minimum past lag of the past covariates.
+    min_future_cov_lag
+        The minimum past lag of the future covariates.
+    max_future_cov_lag
+        The maximum future lag of the future covariates.
     max_samples_per_ts
         Optionally, the maximum number of samples to be drawn for training or inference.
         It is set to 1 for inference (i.e., auto-regressively predict one step at a time, hence generate one
