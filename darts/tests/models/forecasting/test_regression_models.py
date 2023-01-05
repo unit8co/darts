@@ -32,6 +32,7 @@ from darts.utils import timeseries_generation as tg
 
 # from sklearn.multioutput import MultiOutputRegressor
 from darts.utils.multioutput import MultiOutputRegressor
+from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
 
@@ -640,6 +641,99 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     [44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0],
                 )
 
+    def helper_get_expected_shape_static_covs(
+        self,
+        reg_model,
+        target_series,
+        past_covs,
+        future_covs,
+        target_lag,
+        past_covs_lag,
+        future_covs_lag,
+    ):
+
+        target_series = series2seq(target_series)
+        past_covs = series2seq(past_covs)
+        future_covs = series2seq(future_covs)
+
+        max_scovs_width = max(
+            s.static_covariates_values(copy=False).reshape(1, -1).shape[1]
+            if s.has_static_covariates
+            else 0
+            for s in target_series
+        )
+
+        all_target_width = target_series[0].n_components
+        all_past_width = past_covs[0].n_components if past_covs is not None else 0
+        all_future_width = future_covs[0].n_components if future_covs is not None else 0
+
+        (
+            min_target_lag,
+            output_chunk_length,
+            min_past_cov_lag,
+            min_future_cov_lag,
+            max_future_cov_lag,
+        ) = reg_model.extreme_lags
+        max_past_lag = max(
+            [
+                abs(v)
+                for v in [min_target_lag, min_past_cov_lag, min_future_cov_lag]
+                if v is not None
+            ]
+        )
+
+        len_target_features = [
+            len(ts) - max_past_lag - (output_chunk_length - 1) for ts in target_series
+        ]
+        len_past_cov_features = (
+            [(len(ps) - max_past_lag) for ps in past_covs]
+            if past_covs is not None
+            else None
+        )
+        len_future_cov_features = (
+            [
+                (
+                    len(fs)
+                    - max_past_lag
+                    - (max_future_cov_lag if max_future_cov_lag is not None else 0)
+                )
+                for fs in future_covs
+            ]
+            if future_covs is not None
+            else None
+        )
+
+        features_len = [
+            min(
+                [
+                    len_target_features[idx],
+                    len_past_cov_features[idx]
+                    if len_past_cov_features is not None
+                    else float("inf"),
+                    len_future_cov_features[idx]
+                    if len_future_cov_features is not None
+                    else float("inf"),
+                ]
+            )
+            for idx in range(len(target_series))
+        ]
+
+        target_feature_width = all_target_width * len(target_lag) + max_scovs_width
+        past_cov_feature_width = (
+            (all_past_width * len(past_covs_lag)) if past_covs is not None else 0
+        )
+        future_cov_feature_width = (
+            (all_future_width * len(future_covs_lag)) if future_covs is not None else 0
+        )
+
+        expected_width = (
+            target_feature_width + past_cov_feature_width + future_cov_feature_width
+        )
+
+        expected_height = sum(features_len)
+
+        return expected_height, expected_width
+
     def test_static_covs_addition(self):
 
         static_covs1 = pd.DataFrame(
@@ -649,71 +743,176 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             }
         ).astype(dtype={"cat": "category"})
 
-        static_covs2 = pd.DataFrame(data={"cont": [0.1, 0.2, 0.3]})
+        static_covs2 = pd.DataFrame(data={"cont": [10, 20, 30]})
+        static_covs3 = pd.DataFrame(data={"cont": [100, 200, 300]})
 
         # default transformer_num = MinMaxScaler()
         scaler = StaticCovariatesTransformer(transformer_cat=OneHotEncoder())
-        ref_series = tg.linear_timeseries(length=10)
+        ref_series1 = tg.linear_timeseries(length=10)
+        ref_series2 = tg.linear_timeseries(length=17)
+        ref_series3 = tg.linear_timeseries(length=23)
+
         series1 = TimeSeries.from_times_and_values(
-            times=ref_series.time_index,
-            values=np.concatenate([ref_series.values()] * 3, axis=1),
+            times=ref_series1.time_index,
+            values=np.concatenate([ref_series1.values()] * 3, axis=1),
             columns=["comp1", "comp2", "comp3"],
             static_covariates=static_covs1,
         )
         series1 = scaler.fit_transform(series1)
 
         series2 = TimeSeries.from_times_and_values(
-            times=ref_series.time_index,
-            values=np.concatenate([ref_series.values() * 100] * 3, axis=1),
+            times=ref_series2.time_index,
+            values=np.concatenate([ref_series2.values() * 10] * 3, axis=1),
             columns=["comp1", "comp2", "comp3"],
             static_covariates=static_covs2,
         )
 
         series3 = TimeSeries.from_times_and_values(
-            times=ref_series.time_index,
-            values=np.concatenate([ref_series.values() * 200] * 3, axis=1),
+            times=ref_series3.time_index,
+            values=np.concatenate([ref_series3.values() * 30] * 3, axis=1),
+            columns=["comp1", "comp2", "comp3"],
+            static_covariates=static_covs3,
+        )
+
+        series_no_statics = TimeSeries.from_times_and_values(
+            times=ref_series1.time_index,
+            values=np.concatenate([ref_series1.values()] * 3, axis=1),
             columns=["comp1", "comp2", "comp3"],
         )
 
-        series4 = TimeSeries.from_times_and_values(
-            times=ref_series.time_index,
-            values=np.concatenate([ref_series.values()] * 3, axis=1),
-            columns=["comp1", "comp2", "comp3"],
+        # no static covs - one series
+        target_series = series_no_statics
+        past_covs = None
+        future_covs = None
+        target_lag = [-1]
+        past_covs_lag = None
+        future_covs_lag = None
+        output_chunk_length = 1
+
+        reg_model = RegressionModel(
+            lags=target_lag,
+            lags_past_covariates=past_covs_lag,
+            lags_future_covariates=future_covs_lag,
+            output_chunk_length=output_chunk_length,
         )
 
-        reg_model = RegressionModel(lags=1, output_chunk_length=1)
-        all_series = [series1, series2, series3]
-        max_samples = 5
-        all_series_width = series1.n_components
-        max_scovs_width = max(
-            s.static_covariates_values(copy=False).reshape(1, -1).shape[1]
-            for s in all_series
-            if s.has_static_covariates
+        expected_height, expected_width = self.helper_get_expected_shape_static_covs(
+            reg_model,
+            target_series,
+            past_covs,
+            future_covs,
+            target_lag,
+            past_covs_lag,
+            future_covs_lag,
         )
 
-        # no static covs
         features = reg_model._create_lagged_data(
-            series3, None, None, max_samples_per_ts=max_samples
+            target_series, past_covs, future_covs, max_samples_per_ts=None
         )[0]
-        self.assertEqual(features.shape, (5, 3))
+        self.assertEqual(features.shape, (expected_height, expected_width))
 
         # static covs with different dims
-        features = reg_model._create_lagged_data(
-            all_series, None, None, max_samples_per_ts=max_samples
-        )[0]
-        self.assertEqual(
-            features.shape,
-            (max_samples * len(all_series), all_series_width + max_scovs_width),
+        target_series = [series1, series2, series3]
+        past_covs = None
+        future_covs = None
+        target_lag = [-1]
+        past_covs_lag = None
+        future_covs_lag = None
+        output_chunk_length = 1
+
+        reg_model = RegressionModel(
+            lags=target_lag,
+            lags_past_covariates=past_covs_lag,
+            lags_future_covariates=future_covs_lag,
+            output_chunk_length=output_chunk_length,
         )
 
+        expected_height, expected_width = self.helper_get_expected_shape_static_covs(
+            reg_model,
+            target_series,
+            past_covs,
+            future_covs,
+            target_lag,
+            past_covs_lag,
+            future_covs_lag,
+        )
+
+        features = reg_model._create_lagged_data(
+            target_series, past_covs, future_covs, max_samples_per_ts=None
+        )[0]
+        self.assertEqual(features.shape, (expected_height, expected_width))
+
         # no static covs at prediction but static covs at training
-        reg_model.fit(all_series)
+        reg_model.fit(target_series)
         pred_features = reg_model._create_lagged_data(
-            series4, None, None, max_samples_per_ts=1
+            series_no_statics, past_covs, future_covs, max_samples_per_ts=1
         )[
             0
         ]  # simulates features prep at prediction time
-        self.assertEqual(pred_features.shape, (1, all_series_width + max_scovs_width))
+        self.assertEqual(pred_features.shape, (1, expected_width))
+
+        # different sizes of past and future covariates + different lenghts of target series
+        target_lag = [-2, -1]
+        past_covs_lag = [-3]
+        future_covs_lag = [-1, 3]
+        output_chunk_length = 4
+
+        target_series = [series1, series2, series3]
+        past_covs = [series2, series1, series3]
+        future_covs = [series3, series3, series1]
+
+        reg_model = RegressionModel(
+            lags=target_lag,
+            lags_past_covariates=past_covs_lag,
+            lags_future_covariates=future_covs_lag,
+            output_chunk_length=output_chunk_length,
+        )
+
+        expected_height, expected_width = self.helper_get_expected_shape_static_covs(
+            reg_model,
+            target_series,
+            past_covs,
+            future_covs,
+            target_lag,
+            past_covs_lag,
+            future_covs_lag,
+        )
+
+        features = reg_model._create_lagged_data(
+            target_series, past_covs, future_covs, max_samples_per_ts=None
+        )[0]
+        self.assertEqual(features.shape, (expected_height, expected_width))
+
+        # outptut_chunk_length < max_future_cov_lag and len(target_series) = len(future_covs)
+        target_lag = [-1]
+        past_covs_lag = None
+        future_covs_lag = [-1, 3]
+        output_chunk_length = 2
+
+        target_series = [series1, series2, series3]
+        past_covs = None
+        future_covs = [series1, series2, series3]
+
+        reg_model = RegressionModel(
+            lags=target_lag,
+            lags_past_covariates=past_covs_lag,
+            lags_future_covariates=future_covs_lag,
+            output_chunk_length=output_chunk_length,
+        )
+
+        expected_height, expected_width = self.helper_get_expected_shape_static_covs(
+            reg_model,
+            target_series,
+            past_covs,
+            future_covs,
+            target_lag,
+            past_covs_lag,
+            future_covs_lag,
+        )
+        features = reg_model._create_lagged_data(
+            target_series, past_covs, future_covs, max_samples_per_ts=None
+        )[0]
+        self.assertEqual(features.shape, (expected_height, expected_width))
 
     def test_static_cov_accuracy(self):
         # based on : https://unit8co.github.io/darts/examples/15-static-covariates.html
