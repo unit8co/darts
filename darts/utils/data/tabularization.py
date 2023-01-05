@@ -184,7 +184,8 @@ def _add_static_covariates(
     number of available static_covariates in any of the given series in the sequence.
     If no static covariates are provided for a given series, its corresponding features are padded with 0.
     Accounts for the case where the model is trained with series with static covariates and then used to predict
-    on series without static covariates by padding with 0 the static covariates of the series without static covariates.
+    on series without static covariates by padding with 0 the corresponding features of the series without
+    static covariates.
 
     Parameters
     ----------
