@@ -5,6 +5,7 @@ StatsForecastETS
 
 from typing import Optional
 
+import numpy as np
 from statsforecast.models import ETS
 
 from darts import TimeSeries
@@ -97,9 +98,18 @@ class StatsForecastETS(FutureCovariatesLocalForecastingModel):
         forecast_df = self.model.predict(
             h=n,
             X=future_covariates.values(copy=False) if future_covariates else None,
+            level=(68.27,),  # ask one std for the confidence interval
         )
 
-        return self._build_forecast_series(forecast_df["mean"])
+        mu = forecast_df["mean"]
+        if num_samples > 1:
+            std = forecast_df["hi-68.27"] - mu
+            samples = np.random.normal(loc=mu, scale=std, size=(num_samples, n)).T
+            samples = np.expand_dims(samples, axis=1)
+        else:
+            samples = mu
+
+        return self._build_forecast_series(samples)
 
     @property
     def min_train_series_length(self) -> int:
@@ -109,4 +119,4 @@ class StatsForecastETS(FutureCovariatesLocalForecastingModel):
         return True
 
     def _is_probabilistic(self) -> bool:
-        return False
+        return True
