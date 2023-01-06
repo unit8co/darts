@@ -9,6 +9,7 @@ import numpy as np
 from statsforecast.models import ETS
 
 from darts import TimeSeries
+from darts.models import LinearRegressionModel
 from darts.models.forecasting.forecasting_model import (
     FutureCovariatesLocalForecastingModel,
 )
@@ -81,9 +82,19 @@ class StatsForecastETS(FutureCovariatesLocalForecastingModel):
         super()._fit(series, future_covariates)
         self._assert_univariate(series)
         series = self.training_series
+
+        if future_covariates is not None:
+            linreg = LinearRegressionModel(lags_future_covariates=[0])
+            resids = linreg.residuals(
+                series, future_covariates=series.slice_intersect(future_covariates)
+            )
+            self._linreg = linreg
+            target = resids
+        else:
+            target = series
+
         self.model.fit(
-            series.values(copy=False).flatten(),
-            X=future_covariates.values(copy=False) if future_covariates else None,
+            target.values(copy=False).flatten(),
         )
         return self
 
@@ -97,11 +108,19 @@ class StatsForecastETS(FutureCovariatesLocalForecastingModel):
         super()._predict(n, future_covariates, num_samples)
         forecast_df = self.model.predict(
             h=n,
-            X=future_covariates.values(copy=False) if future_covariates else None,
             level=(68.27,),  # ask one std for the confidence interval
         )
 
-        mu = forecast_df["mean"]
+        if future_covariates is not None:
+            # TODO: match the future covariates to the index of the forecast
+            linreg_forecast = self._linreg.predict(
+                n, future_covariates=future_covariates
+            )
+            linreg_forecast_pd = linreg_forecast.pd_series()
+            mu = forecast_df["mean"] + linreg_forecast_pd
+        else:
+            mu = forecast_df["mean"]
+
         if num_samples > 1:
             std = forecast_df["hi-68.27"] - mu
             samples = np.random.normal(loc=mu, scale=std, size=(num_samples, n)).T
