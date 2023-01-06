@@ -161,7 +161,7 @@ def _create_lagged_data(
     # combine samples from all series
     X = np.concatenate(Xs, axis=0)
     y = np.concatenate(ys, axis=0)
-    print("end of feature prep:", X.shape)
+
     return X, y, Ts
 
 
