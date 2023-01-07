@@ -85,9 +85,14 @@ class StatsForecastETS(FutureCovariatesLocalForecastingModel):
 
         if future_covariates is not None:
             linreg = LinearRegressionModel(lags_future_covariates=[0])
-            resids = linreg.residuals(
-                series, future_covariates=series.slice_intersect(future_covariates)
+            linreg.fit(series, future_covariates=future_covariates)
+            fitted_values = linreg.model.predict(
+                X=future_covariates.slice_intersect(series).values()
             )
+            fitted_values_ts = TimeSeries.from_times_and_values(
+                times=series.time_index, values=fitted_values
+            )
+            resids = series - fitted_values_ts
             self._linreg = linreg
             target = resids
         else:
@@ -106,28 +111,28 @@ class StatsForecastETS(FutureCovariatesLocalForecastingModel):
         verbose: bool = False,
     ):
         super()._predict(n, future_covariates, num_samples)
-        forecast_df = self.model.predict(
+        forecast_dict = self.model.predict(
             h=n,
             level=(68.27,),  # ask one std for the confidence interval
         )
 
         if future_covariates is not None:
-            # TODO: match the future covariates to the index of the forecast
             linreg_forecast = self._linreg.predict(
                 n, future_covariates=future_covariates
             )
-            linreg_forecast_pd = linreg_forecast.pd_series()
-            mu = forecast_df["mean"] + linreg_forecast_pd
+            linreg_forecast_values = linreg_forecast.values().reshape(
+                n,
+            )
+            mu = forecast_dict["mean"] + linreg_forecast_values
         else:
-            mu = forecast_df["mean"]
+            mu = forecast_dict["mean"]
 
         if num_samples > 1:
-            std = forecast_df["hi-68.27"] - mu
+            std = forecast_dict["hi-68.27"] - forecast_dict["mean"]
             samples = np.random.normal(loc=mu, scale=std, size=(num_samples, n)).T
             samples = np.expand_dims(samples, axis=1)
         else:
             samples = mu
-
         return self._build_forecast_series(samples)
 
     @property
