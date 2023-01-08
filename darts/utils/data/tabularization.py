@@ -226,7 +226,7 @@ def _add_static_covariates(
     )
 
     # collect static covariates info
-    map = {"covs_width": [], "values": [], "reps": []}
+    scovs_map = {"covs_width": [], "values": [], "reps": []}
 
     for idx, ts in enumerate(target_series):
         len_target_features = len(ts) - max_past_lag - (output_chunk_length - 1)
@@ -255,23 +255,23 @@ def _add_static_covariates(
         if ts.static_covariates is not None:
             # reshape with order="F" to ensure that the covariates are read column wise
             scovs = ts.static_covariates_values(copy=False).reshape(1, -1, order="F")
-            map["covs_width"].append(scovs.shape[1])
-            map["values"].append(scovs)
-            map["reps"].append(
+            scovs_map["covs_width"].append(scovs.shape[1])
+            scovs_map["values"].append(scovs)
+            scovs_map["reps"].append(
                 max_samples_per_ts
                 if max_samples_per_ts is not None
                 else len_shortest_features
             )
         else:
-            map["covs_width"].append(0)
-            map["values"].append(np.array([]))
-            map["reps"].append(
+            scovs_map["covs_width"].append(0)
+            scovs_map["values"].append(np.array([]))
+            scovs_map["reps"].append(
                 max_samples_per_ts
                 if max_samples_per_ts is not None
                 else len_shortest_features
             )
 
-    max_width = max(map["covs_width"])
+    max_width = max(scovs_map["covs_width"])
 
     if max_width == 0:
         if (
@@ -293,13 +293,13 @@ def _add_static_covariates(
 
         # build static covariates array
         for i in range(len(target_series)):
-            pad_zeros = np.zeros((1, max_width - map["covs_width"][i]))
+            pad_zeros = np.zeros((1, max_width - scovs_map["covs_width"][i]))
             scovs = (
-                np.concatenate((map["values"][i], pad_zeros), axis=1)
-                if map["covs_width"][i] > 0
+                np.concatenate((scovs_map["values"][i], pad_zeros), axis=1)
+                if scovs_map["covs_width"][i] > 0
                 else pad_zeros
             )
-            static_covs.append(np.tile(scovs, reps=(map["reps"][i], 1)))
+            static_covs.append(np.tile(scovs, reps=(scovs_map["reps"][i], 1)))
         static_covs = np.concatenate(static_covs, axis=0)
 
         # concatenate static covariates to features
