@@ -217,6 +217,8 @@ def _add_static_covariates(
     past_covariates = series2seq(past_covariates)
     future_covariates = series2seq(future_covariates)
 
+    n_comps = target_series[0].n_components
+
     max_past_lag = max(
         [
             abs(v)
@@ -226,7 +228,7 @@ def _add_static_covariates(
     )
 
     # collect static covariates info
-    scovs_map = {"covs_width": [], "values": [], "reps": []}
+    scovs_map = {"covs_width": [], "df": [], "values": [], "reps": [], "names": set()}
 
     for idx, ts in enumerate(target_series):
         len_target_features = len(ts) - max_past_lag - (output_chunk_length - 1)
@@ -253,10 +255,10 @@ def _add_static_covariates(
         )
 
         if ts.static_covariates is not None:
-            # reshape with order="F" to ensure that the covariates are read column wise
-            scovs = ts.static_covariates_values(copy=False).reshape(1, -1, order="F")
-            scovs_map["covs_width"].append(scovs.shape[1])
-            scovs_map["values"].append(scovs)
+
+            scovs_map["names"].update(set(ts.static_covariates.columns))
+            scovs_map["covs_width"].append(len(ts.static_covariates.columns)*n_comps)
+            scovs_map["df"].append(ts.static_covariates)
             scovs_map["reps"].append(
                 max_samples_per_ts
                 if max_samples_per_ts is not None
@@ -264,7 +266,7 @@ def _add_static_covariates(
             )
         else:
             scovs_map["covs_width"].append(0)
-            scovs_map["values"].append(np.array([]))
+            scovs_map["df"].append(pd.DataFrame())
             scovs_map["reps"].append(
                 max_samples_per_ts
                 if max_samples_per_ts is not None
@@ -290,16 +292,19 @@ def _add_static_covariates(
     else:
         # at least one series in the sequence has static covariates
         static_covs = []
-
+        col_names = list(scovs_map["names"])
         # build static covariates array
         for i in range(len(target_series)):
-            pad_zeros = np.zeros((1, max_width - scovs_map["covs_width"][i]))
-            scovs = (
-                np.concatenate((scovs_map["values"][i], pad_zeros), axis=1)
-                if scovs_map["covs_width"][i] > 0
-                else pad_zeros
-            )
-            static_covs.append(np.tile(scovs, reps=(scovs_map["reps"][i], 1)))
+            df = scovs_map["df"][i]
+
+            if not df.empty:
+                df = df.reindex(col_names, axis=1, fill_value=0.0)
+                # reshape with order="F" to ensure that the covariates are read column wise
+                scovs = df.values.reshape(1, -1, order="F")
+                static_covs.append(np.tile(scovs, reps=(scovs_map["reps"][i], 1)))
+            else:
+                pad_zeros = np.zeros((1, len(col_names)*n_comps))
+                static_covs.append(np.tile(pad_zeros, reps=(scovs_map["reps"][i], 1)))
         static_covs = np.concatenate(static_covs, axis=0)
 
         # concatenate static covariates to features
