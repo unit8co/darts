@@ -89,8 +89,10 @@ except ModuleNotFoundError:
 
 try:
     from darts.models.forecasting.croston import Croston
-    from darts.models.forecasting.sf_auto_arima import StatsForecastAutoARIMA
-    from darts.models.forecasting.sf_ets import StatsForecastETS
+    from darts.models.forecasting.sf_models import (
+        StatsForecastAutoARIMA,
+        StatsForecastETS,
+    )
 except ImportError:
     logger.warning(
         "The statsforecast module could not be imported. "
