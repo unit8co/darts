@@ -228,7 +228,7 @@ def _add_static_covariates(
     )
 
     # collect static covariates info
-    scovs_map = {"covs_width": [], "df": [], "values": [], "reps": [], "names": set()}
+    scovs_map = {"covs_exist": False, "df": [], "reps": [], "names": set()}
 
     for idx, ts in enumerate(target_series):
         len_target_features = len(ts) - max_past_lag - (output_chunk_length - 1)
@@ -257,7 +257,7 @@ def _add_static_covariates(
         if ts.static_covariates is not None:
 
             scovs_map["names"].update(set(ts.static_covariates.columns))
-            scovs_map["covs_width"].append(len(ts.static_covariates.columns)*n_comps)
+            scovs_map["covs_exist"] = True
             scovs_map["df"].append(ts.static_covariates)
             scovs_map["reps"].append(
                 max_samples_per_ts
@@ -265,7 +265,6 @@ def _add_static_covariates(
                 else len_shortest_features
             )
         else:
-            scovs_map["covs_width"].append(0)
             scovs_map["df"].append(pd.DataFrame())
             scovs_map["reps"].append(
                 max_samples_per_ts
@@ -273,9 +272,7 @@ def _add_static_covariates(
                 else len_shortest_features
             )
 
-    max_width = max(scovs_map["covs_width"])
-
-    if max_width == 0:
+    if not scovs_map["covs_exist"]:
         if (
             hasattr(model, "n_features_in_")
             and model.n_features_in_ is not None
@@ -303,7 +300,7 @@ def _add_static_covariates(
                 scovs = df.values.reshape(1, -1, order="F")
                 static_covs.append(np.tile(scovs, reps=(scovs_map["reps"][i], 1)))
             else:
-                pad_zeros = np.zeros((1, len(col_names)*n_comps))
+                pad_zeros = np.zeros((1, len(col_names) * n_comps))
                 static_covs.append(np.tile(pad_zeros, reps=(scovs_map["reps"][i], 1)))
         static_covs = np.concatenate(static_covs, axis=0)
 

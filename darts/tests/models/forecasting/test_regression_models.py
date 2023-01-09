@@ -656,14 +656,16 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         past_covs = series2seq(past_covs)
         future_covs = series2seq(future_covs)
 
-        max_scovs_width = max(
-            s.static_covariates_values(copy=False).reshape(1, -1).shape[1]
-            if s.has_static_covariates
-            else 0
+        scovs_set = []
+        scovs_set = scovs_set.extend(
+            s.static_covariates.columns.values if s.has_static_covariates else [""]
             for s in target_series
         )
 
         all_target_width = target_series[0].n_components
+        scovs_width = (
+            len(set(scovs_set)) if scovs_set is not None else 0 * all_target_width
+        )
         all_past_width = past_covs[0].n_components if past_covs is not None else 0
         all_future_width = future_covs[0].n_components if future_covs is not None else 0
 
@@ -718,7 +720,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             for idx in range(len(target_series))
         ]
 
-        target_feature_width = all_target_width * len(target_lag) + max_scovs_width
+        target_feature_width = all_target_width * len(target_lag) + scovs_width
         past_cov_feature_width = (
             (all_past_width * len(past_covs_lag)) if past_covs is not None else 0
         )
@@ -738,13 +740,13 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
         static_covs1 = pd.DataFrame(
             data={
-                "cont": [0.1, 0.2, 0.3],
-                "cat": ["a", "b", "c"],  # should lead to 9 one-hot encoded columns
+                "cont1": [0.1, 0.2, 0.3],
+                "cat1": ["a", "b", "c"],  # should lead to 9 one-hot encoded columns
             }
-        ).astype(dtype={"cat": "category"})
+        ).astype(dtype={"cat1": "category"})
 
-        static_covs2 = pd.DataFrame(data={"cont": [10, 20, 30]})
-        static_covs3 = pd.DataFrame(data={"cont": [100, 200, 300]})
+        static_covs2 = pd.DataFrame(data={"cont2": [10, 20, 30]})
+        static_covs3 = pd.DataFrame(data={"cont3": [1, 2, 3]})
 
         # default transformer_num = MinMaxScaler()
         scaler = StaticCovariatesTransformer(transformer_cat=OneHotEncoder())
