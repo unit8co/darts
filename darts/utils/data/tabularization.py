@@ -295,7 +295,7 @@ def _add_static_covariates(
             df = scovs_map["df"][i]
 
             if not df.empty:
-                df = df.reindex(col_names, axis=1, fill_value=0.0)
+                df = df.reindex(col_names, axis=1, fill_value=0.0, copy=True)
                 # reshape with order="F" to ensure that the covariates are read column wise
                 scovs = df.values.reshape(1, -1, order="F")
                 static_covs.append(np.tile(scovs, reps=(scovs_map["reps"][i], 1)))
