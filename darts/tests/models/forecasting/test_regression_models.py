@@ -655,17 +655,15 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         target_series = series2seq(target_series)
         past_covs = series2seq(past_covs)
         future_covs = series2seq(future_covs)
-
         scovs_set = []
-        scovs_set = scovs_set.extend(
-            s.static_covariates.columns.values if s.has_static_covariates else [""]
-            for s in target_series
-        )
+        for s in target_series:
+            if s.has_static_covariates:
+                scovs_set.extend(s.static_covariates.columns.to_list())
 
         all_target_width = target_series[0].n_components
         scovs_width = (
-            len(set(scovs_set)) if scovs_set is not None else 0 * all_target_width
-        )
+            len(set(scovs_set)) if scovs_set is not None else 0
+        ) * all_target_width
         all_past_width = past_covs[0].n_components if past_covs is not None else 0
         all_future_width = future_covs[0].n_components if future_covs is not None else 0
 
