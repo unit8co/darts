@@ -940,29 +940,100 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
         # categorical static covs
         sine_series_st_cat = sine_series.with_static_covariates(
-            pd.DataFrame(data={"curve_type": ["smooth"]})
+            pd.DataFrame(data={"curve_type": [0]})
         )
         irregular_series_st_cat = irregular_series.with_static_covariates(
-            pd.DataFrame(data={"curve_type": ["non_smooth"]})
+            pd.DataFrame(data={"curve_type": [1]})
         )
         train_series_static_cov = [sine_series_st_cat, irregular_series_st_cat]
 
-        scaler = StaticCovariatesTransformer(transformer_cat=OneHotEncoder())
-        train_series_static_cov = scaler.fit_transform(train_series_static_cov)
-
         # when
+        fitting_series = [series[:60] for series in train_series_no_cov]
         model_no_static_cov = RandomForest(lags=period // 2, bootstrap=False)
-        model_no_static_cov.fit(train_series_no_cov)
-        predict_series_no_cov = [series[:60] for series in train_series_no_cov]
+        model_no_static_cov.fit(fitting_series)
         pred_no_static_cov = model_no_static_cov.predict(
-            n=int(period / 2), series=predict_series_no_cov
+            n=period, series=fitting_series
         )
 
+        fitting_series = [series[:60] for series in train_series_static_cov]
         model_static_cov = RandomForest(lags=period // 2, bootstrap=False)
-        model_static_cov.fit(train_series_static_cov)
-        predict_series_static_cov = [series[:60] for series in train_series_static_cov]
+        model_static_cov.fit(fitting_series)
+        pred_static_cov = model_static_cov.predict(n=period, series=fitting_series)
+
+        # then
+        for series, ps_no_st, ps_st_cat in zip(
+            train_series_static_cov, pred_no_static_cov, pred_static_cov
+        ):
+            rmses = [rmse(series, ps) for ps in [ps_no_st, ps_st_cat]]
+
+            self.assertLess(rmses[1], rmses[0])
+
+        # given series of different sizes in input
+        train_series_no_cov = [sine_series[period:], irregular_series]
+        train_series_static_cov = [sine_series_st_cat[period:], irregular_series_st_cat]
+
+        fitting_series = [
+            train_series_no_cov[0][: (60 - period)],
+            train_series_no_cov[1][:60],
+        ]
+        model_no_static_cov = RandomForest(lags=period // 2, bootstrap=False)
+        model_no_static_cov.fit(fitting_series)
+        pred_no_static_cov = model_no_static_cov.predict(
+            n=period, series=fitting_series
+        )
+
+        fitting_series = [
+            train_series_static_cov[0][: (60 - period)],
+            train_series_static_cov[1][:60],
+        ]
+        model_static_cov = RandomForest(lags=period // 2, bootstrap=False)
+        model_static_cov.fit(fitting_series)
+        pred_static_cov = model_static_cov.predict(n=period, series=fitting_series)
+
+        # then
+        for series, ps_no_st, ps_st_cat in zip(
+            train_series_static_cov, pred_no_static_cov, pred_static_cov
+        ):
+            rmses = [rmse(series, ps) for ps in [ps_no_st, ps_st_cat]]
+
+            self.assertLess(rmses[1], rmses[0])
+
+        # different series length and different number of static covs
+        # when
+        alpha = 0.5
+        linear_vals = np.expand_dims(np.linspace(1, -1, num=19) * alpha ** (0.5), -1)
+
+        sine_vals[21:40] = linear_vals
+        sine_vals[61:80] = linear_vals
+        irregular_series = TimeSeries.from_times_and_values(
+            values=sine_vals, times=sine_series.time_index, columns=["irregular"]
+        )
+
+        train_series_no_cov = [sine_series[period:], irregular_series]
+
+        irregular_series_st_cat = irregular_series.with_static_covariates(
+            pd.DataFrame(data={"alpha": [0.5]})
+        )
+        train_series_static_cov = [sine_series[period:], irregular_series_st_cat]
+
+        fitting_series = [
+            train_series_no_cov[0][: (60 - period)],
+            train_series_no_cov[1][:60],
+        ]
+        model_no_static_cov = RandomForest(lags=period // 2, bootstrap=False)
+        model_no_static_cov.fit(fitting_series)
+        pred_no_static_cov = model_no_static_cov.predict(
+            n=period, series=fitting_series
+        )
+
+        fitting_series = [
+            train_series_static_cov[0][: (60 - period)],
+            train_series_static_cov[1][:60],
+        ]
+        model_static_cov = RandomForest(lags=period // 2, bootstrap=False)
+        model_static_cov.fit(fitting_series)
         pred_static_cov = model_static_cov.predict(
-            n=int(period / 2), series=predict_series_static_cov
+            n=int(period / 2), series=fitting_series
         )
 
         # then
