@@ -11,6 +11,7 @@ list_NonFittableDetector = [ThresholdDetector(low_threshold=0.2)]
 
 list_FittableDetector = [QuantileDetector(low_quantile=0.2)]
 
+list_detector = list_NonFittableDetector + list_FittableDetector
 
 class ADDetectorsTestCase(DartsBaseTestClass):
 

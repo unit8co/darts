@@ -19,6 +19,7 @@ list_FittableAggregator = [
     EnsembleSklearnAggregator(model=GradientBoostingClassifier())
 ]
 
+list_Aggregator = list_NonFittableAggregator + list_FittableAggregator
 
 class ADAggregatorsTestCase(DartsBaseTestClass):
 
@@ -73,45 +74,27 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
         train._time_index, np_real_anomalies_3w
     )
 
-    def test_DetectNonFittableAggregator(self):
+    def test_return_type(self):
 
-        aggregator = OrAggregator()
+        for aggregator in list_Aggregator:
 
-        # Check return types
-        self.assertTrue(isinstance(aggregator.predict(self.mts_anomalies1), TimeSeries))
-        self.assertTrue(
-            isinstance(
-                aggregator.predict([self.mts_anomalies1]),
-                Sequence,
+            if aggregator.trainable:
+                aggregator.fit(self.real_anomalies, self.mts_anomalies1)
+
+            # Check return types
+            self.assertTrue(isinstance(aggregator.predict(self.mts_anomalies1), TimeSeries))
+            self.assertTrue(
+                isinstance(
+                    aggregator.predict([self.mts_anomalies1]),
+                    Sequence,
+                )
             )
-        )
-        self.assertTrue(
-            isinstance(
-                aggregator.predict([self.mts_anomalies1, self.mts_anomalies2]),
-                Sequence,
+            self.assertTrue(
+                isinstance(
+                    aggregator.predict([self.mts_anomalies1, self.mts_anomalies2]),
+                    Sequence,
+                )
             )
-        )
-
-    def test_DetectFittableAggregator(self):
-        aggregator = EnsembleSklearnAggregator(model=GradientBoostingClassifier())
-
-        # Check return types
-        aggregator.fit(self.real_anomalies, self.mts_anomalies1)
-
-        # Check return types
-        self.assertTrue(isinstance(aggregator.predict(self.mts_anomalies1), TimeSeries))
-        self.assertTrue(
-            isinstance(
-                aggregator.predict([self.mts_anomalies1]),
-                Sequence,
-            )
-        )
-        self.assertTrue(
-            isinstance(
-                aggregator.predict([self.mts_anomalies1, self.mts_anomalies2]),
-                Sequence,
-            )
-        )
 
     def test_eval_accuracy(self):
 
