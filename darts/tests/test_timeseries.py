@@ -397,6 +397,18 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             with test_case.assertRaises(ValueError):
                 test_series.split_before(value)
 
+        # Test split points between series indeces
+        times = pd.date_range("20130101", "20130120", freq="2D")
+        pd_series = pd.Series(range(10), index=times)
+        test_series2: TimeSeries = TimeSeries.from_series(pd_series)
+        split_date = pd.Timestamp("20130110")
+        seriesM, seriesN = test_series2.split_before(split_date)
+        seriesO, seriesP = test_series2.split_after(split_date)
+        test_case.assertLess(seriesM.end_time(), split_date)
+        test_case.assertGreaterEqual(seriesN.start_time(), split_date)
+        test_case.assertLessEqual(seriesO.end_time(), split_date)
+        test_case.assertGreater(seriesP.start_time(), split_date)
+
     @staticmethod
     def helper_test_drop(test_case, test_series: TimeSeries):
         seriesA = test_series.drop_after(pd.Timestamp("20130105"))
@@ -609,15 +621,53 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
     def test_append(self):
         TimeSeriesTestCase.helper_test_append(self, self.series1)
+        # Check `append` deals with `RangeIndex` series correctly:
+        series_1 = linear_timeseries(start=1, length=5, freq=2)
+        series_2 = linear_timeseries(start=11, length=2, freq=2)
+        appended = series_1.append(series_2)
+        expected_vals = np.concatenate(
+            [series_1.all_values(), series_2.all_values()], axis=0
+        )
+        expected_idx = pd.RangeIndex(start=1, stop=15, step=2)
+        self.assertTrue(np.allclose(appended.all_values(), expected_vals))
+        self.assertTrue(appended.time_index.equals(expected_idx))
 
     def test_append_values(self):
         TimeSeriesTestCase.helper_test_append_values(self, self.series1)
+        # Check `append_values` deals with `RangeIndex` series correctly:
+        series = linear_timeseries(start=1, length=5, freq=2)
+        appended = series.append_values(np.ones((2, 1, 1)))
+        expected_vals = np.concatenate(
+            [series.all_values(), np.ones((2, 1, 1))], axis=0
+        )
+        expected_idx = pd.RangeIndex(start=1, stop=15, step=2)
+        self.assertTrue(np.allclose(appended.all_values(), expected_vals))
+        self.assertTrue(appended.time_index.equals(expected_idx))
 
     def test_prepend(self):
         TimeSeriesTestCase.helper_test_prepend(self, self.series1)
+        # Check `prepend` deals with `RangeIndex` series correctly:
+        series_1 = linear_timeseries(start=1, length=5, freq=2)
+        series_2 = linear_timeseries(start=11, length=2, freq=2)
+        prepended = series_2.prepend(series_1)
+        expected_vals = np.concatenate(
+            [series_1.all_values(), series_2.all_values()], axis=0
+        )
+        expected_idx = pd.RangeIndex(start=1, stop=15, step=2)
+        self.assertTrue(np.allclose(prepended.all_values(), expected_vals))
+        self.assertTrue(prepended.time_index.equals(expected_idx))
 
     def test_prepend_values(self):
         TimeSeriesTestCase.helper_test_prepend_values(self, self.series1)
+        # Check `prepend_values` deals with `RangeIndex` series correctly:
+        series = linear_timeseries(start=1, length=5, freq=2)
+        prepended = series.prepend_values(np.ones((2, 1, 1)))
+        expected_vals = np.concatenate(
+            [np.ones((2, 1, 1)), series.all_values()], axis=0
+        )
+        expected_idx = pd.RangeIndex(start=-3, stop=11, step=2)
+        self.assertTrue(np.allclose(prepended.all_values(), expected_vals))
+        self.assertTrue(prepended.time_index.equals(expected_idx))
 
     def test_with_values(self):
         vals = np.random.rand(5, 10, 3)

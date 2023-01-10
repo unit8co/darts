@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import OneHotEncoder
 
 import darts
 from darts import TimeSeries
@@ -14,6 +15,7 @@ from darts.dataprocessing.encoders import (
     FutureCyclicEncoder,
     PastDatetimeAttributeEncoder,
 )
+from darts.dataprocessing.transformers import StaticCovariatesTransformer
 from darts.logging import get_logger
 from darts.metrics import mae, rmse
 from darts.models import (
@@ -22,6 +24,7 @@ from darts.models import (
     LinearRegressionModel,
     RandomForest,
     RegressionModel,
+    XGBModel,
 )
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.tests.base_test_class import DartsBaseTestClass
@@ -200,6 +203,16 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     PoissonLinearRegressionModel = partialclass(
         LinearRegressionModel, likelihood="poisson", random_state=42
     )
+    PoissonXGBModel = partialclass(
+        XGBModel,
+        likelihood="poisson",
+        random_state=42,
+    )
+    QuantileXGBModel = partialclass(
+        XGBModel,
+        likelihood="quantile",
+        random_state=42,
+    )
     # targets for poisson regression must be positive, so we exclude them for some tests
     models.extend(
         [
@@ -210,6 +223,8 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             PoissonLinearRegressionModel,
             PoissonCatBoostModel,
             NormalCatBoostModel,
+            PoissonXGBModel,
+            QuantileXGBModel,
         ]
     )
 
@@ -226,6 +241,8 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         0.4,  # PoissonLinearRegressionModel
         1e-01,  # PoissonCatBoostModel
         1e-05,  # NormalCatBoostModel
+        1e-01,  # PoissonXGBModel
+        0.5,  # QuantileXGBModel
     ]
     multivariate_accuracies = [
         0.3,
@@ -233,27 +250,31 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         1e-13,
         0.4,
         0.75,  # CatBoostModel
-        0.4,
-        0.8,
+        0.4,  # QuantileLightGBMModel
+        0.8,  # QuantileLinearRegressionModel
         1e-03,
         0.4,
         0.4,
         0.15,
         1e-05,
+        0.15,
+        0.4,
     ]
     multivariate_multiseries_accuracies = [
-        0.05,
-        1e-13,
-        1e-13,
-        0.05,
+        0.05,  # RandomForest
+        1e-13,  # LinearRegressionModel
+        1e-13,  # RegressionModel
+        0.05,  # LightGBMModel
         0.75,  # CatBoostModel
-        0.4,
-        0.8,
-        1e-03,
-        0.4,
-        0.4,
-        1e-01,
-        1e-03,
+        0.4,  # QuantileLightGBMModel
+        0.8,  # QuantileLinearRegressionModel
+        1e-03,  # QuantileCatBoostModel
+        0.4,  # PoissonLightGBMModel
+        0.4,  # PoissonLinearRegressionModel
+        1e-01,  # PoissonCatBoostModel
+        1e-03,  # NormalCatBoostModel
+        1e-01,  # PoissonXGBModel
+        0.4,  # QuantileXGBModel
     ]
 
     # dummy feature and target TimeSeries instances
@@ -619,6 +640,142 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     [44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0],
                 )
 
+    def test_static_covs_addition(self):
+
+        static_covs1 = pd.DataFrame(
+            data={
+                "cont": [0.1, 0.2, 0.3],
+                "cat": ["a", "b", "c"],  # should lead to 9 one-hot encoded columns
+            }
+        ).astype(dtype={"cat": "category"})
+
+        static_covs2 = pd.DataFrame(data={"cont": [0.1, 0.2, 0.3]})
+
+        # default transformer_num = MinMaxScaler()
+        scaler = StaticCovariatesTransformer(transformer_cat=OneHotEncoder())
+        ref_series = tg.linear_timeseries(length=10)
+        series1 = TimeSeries.from_times_and_values(
+            times=ref_series.time_index,
+            values=np.concatenate([ref_series.values()] * 3, axis=1),
+            columns=["comp1", "comp2", "comp3"],
+            static_covariates=static_covs1,
+        )
+        series1 = scaler.fit_transform(series1)
+
+        series2 = TimeSeries.from_times_and_values(
+            times=ref_series.time_index,
+            values=np.concatenate([ref_series.values() * 100] * 3, axis=1),
+            columns=["comp1", "comp2", "comp3"],
+            static_covariates=static_covs2,
+        )
+
+        series3 = TimeSeries.from_times_and_values(
+            times=ref_series.time_index,
+            values=np.concatenate([ref_series.values() * 200] * 3, axis=1),
+            columns=["comp1", "comp2", "comp3"],
+        )
+
+        series4 = TimeSeries.from_times_and_values(
+            times=ref_series.time_index,
+            values=np.concatenate([ref_series.values()] * 3, axis=1),
+            columns=["comp1", "comp2", "comp3"],
+        )
+
+        reg_model = RegressionModel(lags=1, output_chunk_length=1)
+        all_series = [series1, series2, series3]
+        max_samples = 5
+        all_series_width = series1.n_components
+        max_scovs_width = max(
+            [
+                s.static_covariates_values(copy=False).reshape(1, -1).shape[1]
+                for s in all_series
+                if s.has_static_covariates
+            ]
+        )
+
+        # no static covs
+        features = reg_model._create_lagged_data(
+            series3, None, None, max_samples_per_ts=max_samples
+        )[0]
+        self.assertEqual(features.shape, (5, 3))
+
+        # static covs with different dims
+        features = reg_model._create_lagged_data(
+            all_series, None, None, max_samples_per_ts=max_samples
+        )[0]
+        self.assertEqual(
+            features.shape,
+            (max_samples * len(all_series), all_series_width + max_scovs_width),
+        )
+
+        # no static covs at prediction but static covs at training
+        reg_model.fit(all_series)
+        pred_features = reg_model._create_lagged_data(
+            series4, None, None, max_samples_per_ts=1
+        )[
+            0
+        ]  # simulates features prep at prediction time
+        self.assertEqual(pred_features.shape, (1, all_series_width + max_scovs_width))
+
+    def test_static_cov_accuracy(self):
+        # based on : https://unit8co.github.io/darts/examples/15-static-covariates.html
+
+        # given
+        period = 20
+        sine_series = tg.sine_timeseries(
+            length=4 * period,
+            value_frequency=1 / period,
+            column_name="smooth",
+            freq="h",
+        )
+
+        sine_vals = sine_series.values()
+        linear_vals = np.expand_dims(np.linspace(1, -1, num=19), -1)
+
+        sine_vals[21:40] = linear_vals
+        sine_vals[61:80] = linear_vals
+        irregular_series = TimeSeries.from_times_and_values(
+            values=sine_vals, times=sine_series.time_index, columns=["irregular"]
+        )
+
+        # no static covs
+        train_series_no_cov = [sine_series, irregular_series]
+
+        # categorical static covs
+        sine_series_st_cat = sine_series.with_static_covariates(
+            pd.DataFrame(data={"curve_type": ["smooth"]})
+        )
+        irregular_series_st_cat = irregular_series.with_static_covariates(
+            pd.DataFrame(data={"curve_type": ["non_smooth"]})
+        )
+        train_series_static_cov = [sine_series_st_cat, irregular_series_st_cat]
+
+        scaler = StaticCovariatesTransformer(transformer_cat=OneHotEncoder())
+        train_series_static_cov = scaler.fit_transform(train_series_static_cov)
+
+        # when
+        model_no_static_cov = RandomForest(lags=period // 2, bootstrap=False)
+        model_no_static_cov.fit(train_series_no_cov)
+        predict_series_no_cov = [series[:60] for series in train_series_no_cov]
+        pred_no_static_cov = model_no_static_cov.predict(
+            n=int(period / 2), series=predict_series_no_cov
+        )
+
+        model_static_cov = RandomForest(lags=period // 2, bootstrap=False)
+        model_static_cov.fit(train_series_static_cov)
+        predict_series_static_cov = [series[:60] for series in train_series_static_cov]
+        pred_static_cov = model_static_cov.predict(
+            n=int(period / 2), series=predict_series_static_cov
+        )
+
+        # then
+        for series, ps_no_st, ps_st_cat in zip(
+            train_series_static_cov, pred_no_static_cov, pred_static_cov
+        ):
+            rmses = [rmse(series, ps) for ps in [ps_no_st, ps_st_cat]]
+
+            self.assertLess(rmses[1], rmses[0])
+
     def test_models_runnability(self):
         train_y, test_y = self.sine_univariate1.split_before(0.7)
         multi_models_modes = [True, False]
@@ -820,6 +977,13 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             self.assertEqual(
                 min_train_series_length_expected, model.min_train_series_length
             )
+            model = XGBModel(lags=[-4, -3, -2], multi_models=mode)
+            min_train_series_length_expected = (
+                -model.lags["target"][0] + model.output_chunk_length + 1
+            )
+            self.assertEqual(
+                min_train_series_length_expected, model.min_train_series_length
+            )
 
     def test_historical_forecast(self):
         mutli_models_modes = [True, False]
@@ -900,6 +1064,10 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             CatBoostModel(lags=lags, output_chunk_length=1, multi_models=False),
             CatBoostModel(lags=lags, output_chunk_length=2, multi_models=True),
             CatBoostModel(lags=lags, output_chunk_length=2, multi_models=False),
+            XGBModel(lags=lags, output_chunk_length=1, multi_models=True),
+            XGBModel(lags=lags, output_chunk_length=1, multi_models=False),
+            XGBModel(lags=lags, output_chunk_length=2, multi_models=True),
+            XGBModel(lags=lags, output_chunk_length=2, multi_models=False),
         ]
 
         train, val = self.sine_univariate1.split_after(0.6)
@@ -1176,9 +1344,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                         future_covariates=future_covariates[: -26 + req_future_offset],
                     )
 
-    @patch.object(
-        darts.models.forecasting.gradient_boosted_model.lgb.LGBMRegressor, "fit"
-    )
+    @patch.object(darts.models.forecasting.lgbm.lgb.LGBMRegressor, "fit")
     def test_gradient_boosted_model_with_eval_set(self, lgb_fit_patch):
         """Test whether these evaluation set parameters are passed to LGBRegressor"""
         model = LightGBMModel(lags=4, lags_past_covariates=2)
@@ -1191,9 +1357,23 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         )
 
         lgb_fit_patch.assert_called_once()
-
         assert lgb_fit_patch.call_args[1]["eval_set"] is not None
         assert lgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
+
+    @patch.object(darts.models.forecasting.xgboost.xgb.XGBRegressor, "fit")
+    def test_xgboost_with_eval_set(self, xgb_fit_patch):
+        model = XGBModel(lags=4, lags_past_covariates=2)
+        model.fit(
+            series=self.sine_univariate1,
+            past_covariates=self.sine_multivariate1,
+            val_series=self.sine_univariate1,
+            val_past_covariates=self.sine_multivariate1,
+            early_stopping_rounds=2,
+        )
+
+        xgb_fit_patch.assert_called_once()
+        assert xgb_fit_patch.call_args[1]["eval_set"] is not None
+        assert xgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
 
     def test_integer_indexed_series(self):
         values_target = np.random.rand(30)
@@ -1264,7 +1444,12 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
         multi_models_mode = [True, False]
         for mode in multi_models_mode:
-            for model_cls in [RegressionModel, LinearRegressionModel, LightGBMModel]:
+            for model_cls in [
+                RegressionModel,
+                LinearRegressionModel,
+                LightGBMModel,
+                XGBModel,
+            ]:
                 model_pc_valid0 = model_cls(
                     lags=2, add_encoders=encoder_examples["past"], multi_models=mode
                 )
@@ -1587,6 +1772,27 @@ class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):
                 "multi_models": True,
             },
             0.6,
+        ),
+        (
+            XGBModel,
+            {
+                "lags": 2,
+                "likelihood": "poisson",
+                "random_state": 42,
+                "multi_models": True,
+            },
+            0.6,
+        ),
+        (
+            XGBModel,
+            {
+                "lags": 2,
+                "likelihood": "quantile",
+                "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
+                "random_state": 42,
+                "multi_models": True,
+            },
+            0.4,
         ),
     ]
 

@@ -22,6 +22,8 @@ from darts.models import (
     FourTheta,
     KalmanForecaster,
     LinearRegressionModel,
+    NaiveDrift,
+    NaiveMean,
     NaiveSeasonal,
     Prophet,
     RandomForest,
@@ -43,37 +45,39 @@ logger = get_logger(__name__)
 
 # (forecasting models, maximum error) tuples
 models = [
-    (ExponentialSmoothing(), 5.6),
-    (ARIMA(12, 2, 1), 10),
-    (ARIMA(1, 1, 1), 40),
-    (StatsForecastAutoARIMA(season_length=12), 4.8),
-    (StatsForecastETS(season_length=12, model="AAZ"), 4.0),
-    (Croston(version="classic"), 34),
-    (Croston(version="tsb", alpha_d=0.1, alpha_p=0.1), 34),
-    (Theta(), 11.3),
-    (Theta(1), 20.2),
-    (Theta(-1), 9.8),
-    (FourTheta(1), 20.2),
-    (FourTheta(-1), 9.8),
-    (FourTheta(trend_mode=TrendMode.EXPONENTIAL), 5.5),
-    (FourTheta(model_mode=ModelMode.MULTIPLICATIVE), 11.4),
-    (FourTheta(season_mode=SeasonalityMode.ADDITIVE), 14.2),
-    (FFT(trend="poly"), 11.4),
-    (NaiveSeasonal(), 32.4),
-    (KalmanForecaster(dim_x=3), 17.0),
-    (LinearRegressionModel(lags=12), 11.0),
-    (RandomForest(lags=12, n_estimators=5, max_depth=3), 17.0),
-    (Prophet(), 13.5),
-    (AutoARIMA(), 12.2),
-    (TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 8.0),
-    (BATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 10.0),
+    (ExponentialSmoothing(), 5.4),
+    (ARIMA(12, 2, 1), 5.2),
+    (ARIMA(1, 1, 1), 24),
+    (StatsForecastAutoARIMA(season_length=12), 4.6),
+    (StatsForecastETS(season_length=12, model="AAZ"), 4.1),
+    (Croston(version="classic"), 23),
+    (Croston(version="tsb", alpha_d=0.1, alpha_p=0.1), 23),
+    (Theta(), 11),
+    (Theta(1), 17),
+    (Theta(-1), 12),
+    (FourTheta(1), 17),
+    (FourTheta(-1), 12),
+    (FourTheta(trend_mode=TrendMode.EXPONENTIAL), 6.0),
+    (FourTheta(model_mode=ModelMode.MULTIPLICATIVE), 10),
+    (FourTheta(season_mode=SeasonalityMode.ADDITIVE), 12),
+    (FFT(trend="poly"), 13),
+    (KalmanForecaster(dim_x=3), 20),
+    (LinearRegressionModel(lags=12), 13),
+    (RandomForest(lags=12, n_estimators=5, max_depth=3), 14),
+    (Prophet(), 9.0),
+    (AutoARIMA(), 12),
+    (TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 8.5),
+    (BATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 11),
 ]
 
 # forecasting models with exogenous variables support
 multivariate_models = [
-    (VARIMA(1, 0, 0), 55.6),
-    (VARIMA(1, 1, 1), 57.0),
-    (KalmanForecaster(dim_x=30), 30.0),
+    (VARIMA(1, 0, 0), 32),
+    (VARIMA(1, 1, 1), 25),
+    (KalmanForecaster(dim_x=30), 16),
+    (NaiveSeasonal(), 32),
+    (NaiveMean(), 37),
+    (NaiveDrift(), 39),
 ]
 
 dual_models = [
@@ -182,7 +186,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             np.random.seed(1)  # some models are probabilist...
             model.fit(self.ts_pass_train)
             prediction = model.predict(len(self.ts_pass_val))
-            current_mape = mape(prediction, self.ts_pass_val)
+            current_mape = mape(self.ts_pass_val, prediction)
             self.assertTrue(
                 current_mape < max_mape,
                 "{} model exceeded the maximum MAPE of {}. "
@@ -195,7 +199,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             np.random.seed(1)
             model.fit(self.ts_ice_heater_train)
             prediction = model.predict(len(self.ts_ice_heater_val))
-            current_mape = mape(prediction, self.ts_ice_heater_val)
+            current_mape = mape(self.ts_ice_heater_val, prediction)
             self.assertTrue(
                 current_mape < max_mape,
                 "{} model exceeded the maximum MAPE of {}. "

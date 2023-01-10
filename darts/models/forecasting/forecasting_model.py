@@ -263,11 +263,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def extreme_lags(
         self,
     ) -> Tuple[
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
     ]:
         """
         A 5-tuple containing in order:
@@ -316,7 +316,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return (-1, 1, None, None, None)
 
     @property
-    def training_sample_time_index_length(self) -> int:
+    def _training_sample_time_index_length(self) -> int:
         """
         Required time_index length for one training sample, for any model.
         """
@@ -338,7 +338,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         )
 
     @property
-    def predict_sample_time_index_length(self) -> int:
+    def _predict_sample_time_index_length(self) -> int:
         """
         Required time_index length for one predict sample, for any model.
          A predict sample is the minimum required set of series and covariates chunks to be able to predict
@@ -639,10 +639,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Whether to print progress
         Returns
         -------
-        TimeSeries or List[TimeSeries] (or Sequence[TimeSeries] or Sequence[List[TimeSeries]])
-            By default, a single (or a sequence of) ``TimeSeries`` instance created from the last point of
-            each individual forecast.
-            If `last_points_only` is set to False, a single (or a sequence of) list of the historical forecasts.
+        TimeSeries or List[TimeSeries] or List[List[TimeSeries]]
+            If `last_points_only` is set to True and a single series is provided in input,
+            a single ``TimeSeries`` is returned, which contains the the historical forecast
+            at the desired horizon.
+
+            A ``List[TimeSeries]`` is returned if either `series` is a ``Sequence`` of ``TimeSeries``,
+            or if `last_points_only` is set to False. A list of lists is returned if both conditions are met.
+            In this last case, the outer list is over the series provided in the input sequence,
+            and the inner lists contain the different historical forecasts.
         """
 
         # only GlobalForecastingModels support historical forecastings without retraining the model
@@ -668,7 +673,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
         elif (
             train_length is not None
-        ) and train_length < self.training_sample_time_index_length:
+        ) and train_length < self._training_sample_time_index_length:
             raise_log(
                 ValueError(
                     "train_length is too small for the training requirements of this model"
@@ -701,15 +706,22 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # If the model has never been fitted before using historical_forecasts,
         # we need to know if it uses past or future covariates. The only possible assumption is that
-        # the user is using the same covariates as he would in the fit method.
+        # the user is using the same covariates as they would in the fit method.
         if self._fit_called is False:
             if past_covariates is not None:
                 self._uses_past_covariates = True
             if future_covariates is not None:
                 self._uses_future_covariates = True
 
+        if len(series) == 1:
+            # Use tqdm on the outer loop only if there's more than one series to iterate over
+            # (otherwise use tqdm on the inner loop).
+            outer_iterator = series
+        else:
+            outer_iterator = _build_tqdm_iterator(series, verbose)
+
         forecasts_list = []
-        for idx, series_ in enumerate(series):
+        for idx, series_ in enumerate(outer_iterator):
 
             past_covariates_ = past_covariates[idx] if past_covariates else None
             future_covariates_ = future_covariates[idx] if future_covariates else None
@@ -728,9 +740,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             min_timestamp = (
                 historical_forecasts_time_index[0]
                 - (
-                    self.training_sample_time_index_length
+                    self._training_sample_time_index_length
                     if retrain
-                    else self.predict_sample_time_index_length
+                    else self._predict_sample_time_index_length
                 )
                 * series_.freq
             )
@@ -739,7 +751,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 raise_log(
                     ValueError(
                         "Given the provided model, series and covariates, there is no timestamps "
-                        " where we can make a prediction or train the model. "
+                        f" where we can make a prediction or train the model (series index: {idx}). "
                         "Please check the time indexes of the series and covariates."
                     ),
                     logger,
@@ -761,7 +773,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             historical_forecasts_time_index,
                             historical_forecasts_time_index[0]
                             + max(
-                                (train_length - self.training_sample_time_index_length),
+                                (
+                                    train_length
+                                    - self._training_sample_time_index_length
+                                ),
                                 0,
                             )
                             * series_.freq,
@@ -779,17 +794,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     # if retrain is False, fit hasn't been called yet and train_length None,
                     # it means that the entire backtesting will be based on a set of two training samples
                     # at the first step, so we warn the user.
-                    if (
+                    raise_if(
                         (not self._fit_called)
                         and (retrain is False)
-                        and (not train_length)
-                    ):
-                        logger.warning(
-                            "Model has not been fitted yet, `start` and train_length are not specified. "
-                            " The model is not retraining during the historical forecasts. Hence the "
-                            "the first and only training will be done on 2 samples which could lead to "
-                            "hazardous results."
-                        )
+                        and (not train_length),
+                        " The model has not been fitted yet, and `start` and train_length are not specified. "
+                        " The model is not retraining during the historical forecasts. Hence the "
+                        "the first and only training would be done on 2 samples.",
+                        logger,
+                    )
 
             # build the prediction times in advance (to be able to use tqdm)
             last_valid_pred_time = self._get_last_prediction_time(
@@ -802,9 +815,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 historical_forecasts_time_index, last_valid_pred_time
             )
 
-            iterator = _build_tqdm_iterator(
-                historical_forecasts_time_index[::stride], verbose
-            )
+            if len(series) == 1:
+                # Only use tqdm if there's no outer loop
+                iterator = _build_tqdm_iterator(
+                    historical_forecasts_time_index[::stride], verbose
+                )
+            else:
+                iterator = historical_forecasts_time_index[::stride]
 
             # Either store the whole forecasts or only the last points of each forecast, depending on last_points_only
             forecasts = []
@@ -997,9 +1014,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Whether to print progress
         Returns
         -------
-        float or List[float] (or Sequence[float] or Sequence[List[float]])
-            The (or a sequence of) error score, or the list (or a sequence of list) of individual error scores
-            if `reduction` is `None`
+        float or List[float] or List[List[float]]
+            The (sequence of) error score on a series, or list of list containing error scores for each
+            provided series and each sample.
         """
 
         forecasts = self.historical_forecasts(
@@ -2103,18 +2120,5 @@ class TransferableFutureCovariatesLocalForecastingModel(
         return True
 
     @property
-    def extreme_lags(
-        self,
-    ) -> Tuple[
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-    ]:
-        """
-        Returns a 5-tuple containing in order:
-        (minimum target lag, maximum target lag, min past covariate lag, min future covariate lag, max future covariate
-        lag).
-        """
+    def extreme_lags(self):
         return (-1, 1, None, 0, 0)

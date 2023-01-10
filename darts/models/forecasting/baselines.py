@@ -5,7 +5,7 @@ Baseline Models
 A collection of simple benchmark models for univariate series.
 """
 
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import List, Optional, Sequence, Union
 
 import numpy as np
 
@@ -41,7 +41,7 @@ class NaiveMean(LocalForecastingModel):
 
     def predict(self, n: int, num_samples: int = 1, verbose: bool = False):
         super().predict(n, num_samples)
-        forecast = np.tile(self.mean_val, (1, n))
+        forecast = np.tile(self.mean_val, (n, 1))
         return self._build_forecast_series(forecast)
 
 
@@ -86,15 +86,7 @@ class NaiveSeasonal(LocalForecastingModel):
         return self._build_forecast_series(forecast)
 
     @property
-    def extreme_lags(
-        self,
-    ) -> Tuple[
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-        Union[int, None],
-    ]:
+    def extreme_lags(self):
         return (-self.K, 1, None, None, None)
 
 
