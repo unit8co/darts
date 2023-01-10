@@ -13,6 +13,7 @@ list_FittableDetector = [QuantileDetector(low_quantile=0.2)]
 
 list_detector = list_NonFittableDetector + list_FittableDetector
 
+
 class ADDetectorsTestCase(DartsBaseTestClass):
 
     np.random.seed(42)

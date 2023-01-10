@@ -793,7 +793,6 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
                     actual_series=self.test, pred_series=self.probabilistic
                 )  # len(self.test)=100
 
-
     def diff_fn_parameter(self, scorer, **kwargs):
 
         # must be None, 'diff' or 'abs_diff'
@@ -827,7 +826,6 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         self.assertTrue(scorer.score(self.test).width == 1)
         scorer.fit(self.mts_train)
         self.assertTrue(scorer.score(self.mts_test).width == self.mts_test.width)
-
 
     def test_WassersteinScorer(self):
 
@@ -1529,8 +1527,13 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
                     actual_series=self.probabilistic, pred_series=self.train
                 )
 
-
-    def NLL_test(self, NLLscorer_to_test, distribution_arrays, deterministic_values, real_NLL_values):
+    def NLL_test(
+        self,
+        NLLscorer_to_test,
+        distribution_arrays,
+        deterministic_values,
+        real_NLL_values,
+    ):
 
         NLLscorer_w1 = NLLscorer_to_test(window=1)
         NLLscorer_w2 = NLLscorer_to_test(window=2)
@@ -1539,17 +1542,27 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # create timeseries
         distribution_series = TimeSeries.from_values(
-            distribution_arrays.reshape(2,2,-1)
+            distribution_arrays.reshape(2, 2, -1)
         )
-        actual_series = TimeSeries.from_values(np.array(deterministic_values).reshape(2,2,-1))
+        actual_series = TimeSeries.from_values(
+            np.array(deterministic_values).reshape(2, 2, -1)
+        )
 
         # univariate case
         # compute the NLL values witn score_from_prediction for scorer with window=1 and 2
         # t -> timestamp, c -> component and w -> window used in scorer
-        value_t1_c1_w1 = NLLscorer_w1.score_from_prediction(actual_series[0]["0"], distribution_series[0]["0"])
-        value_t2_c1_w1 = NLLscorer_w1.score_from_prediction(actual_series[1]["0"], distribution_series[1]["0"])
-        value_t1_2_c1_w1 = NLLscorer_w1.score_from_prediction(actual_series["0"], distribution_series["0"])
-        value_t1_2_c1_w2 = NLLscorer_w2.score_from_prediction(actual_series["0"], distribution_series["0"])
+        value_t1_c1_w1 = NLLscorer_w1.score_from_prediction(
+            actual_series[0]["0"], distribution_series[0]["0"]
+        )
+        value_t2_c1_w1 = NLLscorer_w1.score_from_prediction(
+            actual_series[1]["0"], distribution_series[1]["0"]
+        )
+        value_t1_2_c1_w1 = NLLscorer_w1.score_from_prediction(
+            actual_series["0"], distribution_series["0"]
+        )
+        value_t1_2_c1_w2 = NLLscorer_w2.score_from_prediction(
+            actual_series["0"], distribution_series["0"]
+        )
 
         # check length
         self.assertEqual(len(value_t1_2_c1_w1), 2)
@@ -1565,7 +1578,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             # This is approximate because our NLL scorer is fit from samples
             value_t1_2_c1_w1.all_values().reshape(-1),
             real_NLL_values[::2],
-            decimal=1
+            decimal=1,
         )
 
         # check if result is equal to avg of two values when window is equal to 2
@@ -1576,8 +1589,12 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # multivariate case
         # compute the NLL values witn score_from_prediction for scorer with window=1 and window=2
-        value_t1_2_c1_2_w1 = NLLscorer_w1.score_from_prediction(actual_series, distribution_series)
-        value_t1_2_c1_2_w2 = NLLscorer_w2.score_from_prediction(actual_series, distribution_series)
+        value_t1_2_c1_2_w1 = NLLscorer_w1.score_from_prediction(
+            actual_series, distribution_series
+        )
+        value_t1_2_c1_2_w2 = NLLscorer_w2.score_from_prediction(
+            actual_series, distribution_series
+        )
 
         # check length
         self.assertEqual(len(value_t1_2_c1_2_w1), 2)
@@ -1591,7 +1608,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             # This is approximate because our NLL scorer is fit from samples
             value_t1_2_c1_2_w1.all_values().reshape(-1),
             real_NLL_values,
-            decimal=1
+            decimal=1,
         )
 
         # check if result is equal to avg of two values when window is equal to 2
@@ -1600,17 +1617,17 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             value_t1_2_c1_w1.mean(axis=0).all_values().reshape(-1),
         )
 
-
     def test_GaussianNLLScorer(self):
 
         self.window_parameter(GaussianNLLScorer)
 
         np.random.seed(4)
         values = [3, 0.1, -2, 0.01]
-        distribution = np.array([np.random.normal(loc=0, scale=2, size=10000) for _ in range(len(values))])
+        distribution = np.array(
+            [np.random.normal(loc=0, scale=2, size=10000) for _ in range(len(values))]
+        )
         NLL_real_values = [-np.log(norm.pdf(value, loc=0, scale=2)) for value in values]
         self.NLL_test(GaussianNLLScorer, distribution, values, NLL_real_values)
-
 
     def test_LaplaceNLLScorer(self):
 
@@ -1618,10 +1635,13 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         np.random.seed(4)
         values = [3, 10, -2, 0.01]
-        distribution = np.array([np.random.laplace(loc=0, scale=2, size=10000) for _ in range(len(values))])
-        NLL_real_values = [-np.log(laplace.pdf(value, loc=0, scale=2)) for value in values]
+        distribution = np.array(
+            [np.random.laplace(loc=0, scale=2, size=10000) for _ in range(len(values))]
+        )
+        NLL_real_values = [
+            -np.log(laplace.pdf(value, loc=0, scale=2)) for value in values
+        ]
         self.NLL_test(LaplaceNLLScorer, distribution, values, NLL_real_values)
-
 
     def test_ExponentialNLLScorer(self):
 
@@ -1629,10 +1649,11 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         np.random.seed(4)
         values = [3, 0.1, 2, 0.01]
-        distribution = np.array([np.random.exponential(scale=2.0, size=10000) for _ in range(len(values))])
+        distribution = np.array(
+            [np.random.exponential(scale=2.0, size=10000) for _ in range(len(values))]
+        )
         NLL_real_values = [-np.log(expon.pdf(value, scale=2.0)) for value in values]
         self.NLL_test(ExponentialNLLScorer, distribution, values, NLL_real_values)
-
 
     def test_GammaNLLScorer(self):
 
@@ -1640,10 +1661,11 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         np.random.seed(4)
         values = [3, 0.1, 2, 0.5]
-        distribution = np.array([np.random.gamma(shape=2, scale=2, size=10000) for _ in range(len(values))])
+        distribution = np.array(
+            [np.random.gamma(shape=2, scale=2, size=10000) for _ in range(len(values))]
+        )
         NLL_real_values = [-np.log(gamma.pdf(value, 2, scale=2.0)) for value in values]
         self.NLL_test(GammaNLLScorer, distribution, values, NLL_real_values)
-
 
     def test_CauchyNLLScorer(self):
 
@@ -1651,7 +1673,9 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         np.random.seed(4)
         values = [3, 2, 0.5, 0.9]
-        distribution = np.array([np.random.standard_cauchy(size=10000) for _ in range(len(values))])
+        distribution = np.array(
+            [np.random.standard_cauchy(size=10000) for _ in range(len(values))]
+        )
         NLL_real_values = [-np.log(cauchy.pdf(value)) for value in values]
         self.NLL_test(CauchyNLLScorer, distribution, values, NLL_real_values)
 
@@ -1661,6 +1685,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         np.random.seed(4)
         values = [3, 2, 10, 1]
-        distribution = np.array([np.random.poisson(size=10000, lam=1) for _ in range(len(values))])
+        distribution = np.array(
+            [np.random.poisson(size=10000, lam=1) for _ in range(len(values))]
+        )
         NLL_real_values = [-np.log(poisson.pmf(value, mu=1)) for value in values]
         self.NLL_test(PoissonNLLScorer, distribution, values, NLL_real_values)

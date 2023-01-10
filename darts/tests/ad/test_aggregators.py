@@ -21,6 +21,7 @@ list_FittableAggregator = [
 
 list_Aggregator = list_NonFittableAggregator + list_FittableAggregator
 
+
 class ADAggregatorsTestCase(DartsBaseTestClass):
 
     np.random.seed(42)
@@ -82,7 +83,9 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
                 aggregator.fit(self.real_anomalies, self.mts_anomalies1)
 
             # Check return types
-            self.assertTrue(isinstance(aggregator.predict(self.mts_anomalies1), TimeSeries))
+            self.assertTrue(
+                isinstance(aggregator.predict(self.mts_anomalies1), TimeSeries)
+            )
             self.assertTrue(
                 isinstance(
                     aggregator.predict([self.mts_anomalies1]),
