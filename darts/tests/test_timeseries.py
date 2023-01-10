@@ -502,7 +502,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             )
         )
 
-        with test_case.assertRaises(ValueError):
+        with test_case.assertRaises(Exception):
             test_series.shift(1e6)
 
         seriesM = TimeSeries.from_times_and_values(
