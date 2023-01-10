@@ -118,7 +118,7 @@ def eval_accuracy_from_scores(
     _assert_same_length(list_actual_anomalies, list_anomaly_scores)
 
     if len(list_window) == 1:
-        list_window = list_window * len(actual_anomalies)
+        list_window = list_window * len(list_actual_anomalies)
     else:
         raise_if_not(
             len(list_window) == len(list_actual_anomalies),
@@ -225,7 +225,7 @@ def eval_accuracy_from_binary_prediction(
     _assert_same_length(list_actual_anomalies, list_binary_pred_anomalies)
 
     if len(list_window) == 1:
-        list_window = list_window * len(actual_anomalies)
+        list_window = list_window * len(list_actual_anomalies)
     else:
         raise_if_not(
             len(list_window) == len(list_actual_anomalies),
