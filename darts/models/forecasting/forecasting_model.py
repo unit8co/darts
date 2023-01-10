@@ -866,7 +866,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     else None,
                 ):
                     # avoid fitting the same model multiple times
-                    model = self if not self._fit_called else self.untrained_model()
+                    model = self.untrained_model()
                     model._fit_wrapper(
                         series=train_series,
                         past_covariates=past_covariates_,
