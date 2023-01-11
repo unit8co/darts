@@ -337,7 +337,13 @@ class RegressionModel(GlobalForecastingModel):
         )
 
         training_samples = _add_static_covariates(
-            self.model, target_series, training_samples
+            self,
+            training_samples,
+            target_series,
+            *self.extreme_lags,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            max_samples_per_ts=max_samples_per_ts,
         )
 
         return training_samples, training_labels
@@ -675,7 +681,15 @@ class RegressionModel(GlobalForecastingModel):
 
             # concatenate retrieved lags
             X = np.concatenate(np_X, axis=1)
-            X = _add_static_covariates(self.model, series, X)
+            X = _add_static_covariates(
+                self,
+                X,
+                series,
+                *self.extreme_lags,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                max_samples_per_ts=1,
+            )
 
             # X has shape (n_series * n_samples, n_regression_features)
             prediction = self._predict_and_sample(X, num_samples, **kwargs)
