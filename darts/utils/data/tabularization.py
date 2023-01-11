@@ -131,7 +131,6 @@ def _create_lagged_data(
         df_X = pd.concat(df_X, axis=1)
         df_y = pd.concat(df_y, axis=1)
         df_X_y = pd.concat([df_X, df_y], axis=1)
-
         if is_training:
             df_X_y = df_X_y.dropna()
         # We don't need to drop where y are none for inference, as we just care for X
@@ -162,6 +161,7 @@ def _create_lagged_data(
     # combine samples from all series
     X = np.concatenate(Xs, axis=0)
     y = np.concatenate(ys, axis=0)
+
     return X, y, Ts
 
 
