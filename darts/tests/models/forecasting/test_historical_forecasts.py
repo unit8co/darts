@@ -18,6 +18,7 @@ try:
         LightGBMModel,
         LinearRegressionModel,
         NBEATSModel,
+        NLinearModel,
         RNNModel,
         TCNModel,
         TFTModel,
@@ -160,6 +161,16 @@ if TORCH_AVAILABLE:
                 "lstm_layers": 1,
                 "num_attention_heads": 4,
                 "add_relative_index": True,
+                "n_epochs": NB_EPOCH,
+            },
+            (IN_LEN, OUT_LEN),
+            "MixedCovariates",
+        ),
+        (
+            NLinearModel,
+            {
+                "input_chunk_length": IN_LEN,
+                "output_chunk_length": OUT_LEN,
                 "n_epochs": NB_EPOCH,
             },
             (IN_LEN, OUT_LEN),
@@ -747,8 +758,8 @@ if TORCH_AVAILABLE:
             # Future covariates only
             for model_cls, kwargs, bounds, type in models_torch_cls_kwargs:
 
-                # RNN models don't have past_covariates
-                if type == "PastCovariates":
+                # todo case of DualCovariates (RNN)
+                if type == "PastCovariates" or type == "DualCovariates":
                     continue
 
                 model = model_cls(
@@ -773,4 +784,18 @@ if TORCH_AVAILABLE:
                 self.assertTrue(
                     len(forecasts) == 2,
                     f"Model {model_cls} did not return a list of historical forecasts",
+                )
+
+                self.assertTrue(
+                    len(forecasts[0]) == 72 - (bounds[0] + bounds[1] + 1) - 10 + 1 - 10,
+                    f"Model {model_cls} does not return the right number of historical forecasts in case "
+                    " of retrain=True and overlap_end=False and no past_covariates and future_covariates with different"
+                    " start",
+                )
+
+                self.assertTrue(
+                    len(forecasts[1]) == 72 - (bounds[0] + bounds[1] + 1) - 10 + 1 - 3,
+                    f"Model {model_cls} does not return the right number of historical forecasts in case "
+                    " of retrain=True and overlap_end=False and no past_covariates and future_covariates with different"
+                    " start",
                 )
