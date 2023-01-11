@@ -1528,7 +1528,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return model_params
 
     def untrained_model(self):
-        return self.__class__(**self.model_params)
+        return self.__class__(**copy.deepcopy(self.model_params))
 
     @property
     def model_params(self) -> dict:

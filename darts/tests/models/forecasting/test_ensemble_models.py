@@ -50,6 +50,13 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             NaiveEnsembleModel([model])
 
+        # an untrained ensemble model should also give untrained underlying models
+        model_ens = NaiveEnsembleModel([NaiveDrift()])
+        model_ens.fit(self.series1)
+        assert model_ens.models[0]._fit_called
+        new_model = model_ens.untrained_model()
+        assert not new_model.models[0]._fit_called
+
     def test_input_models_local_models(self):
         with self.assertRaises(ValueError):
             NaiveEnsembleModel([])
