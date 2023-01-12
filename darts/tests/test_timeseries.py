@@ -336,6 +336,14 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         test_case.assertEqual(seriesG.start_time(), pd.Timestamp("20130101"))
         test_case.assertEqual(seriesG.end_time(), pd.Timestamp("20130107"))
 
+        # test slice_n_points_after and slice_n_points_before with integer-indexed series
+        s = TimeSeries.from_times_and_values(pd.RangeIndex(6, 10), np.arange(16, 20))
+        sliced_idx = s.slice_n_points_after(7, 2).time_index
+        test_case.assertTrue(all(sliced_idx == pd.RangeIndex(7, 9)))
+
+        sliced_idx = s.slice_n_points_before(8, 2).time_index
+        test_case.assertTrue(all(sliced_idx == pd.RangeIndex(7, 9)))
+
         # integer indexed series, step = 1, timestamps not in series
         values = np.random.rand(30)
         idx = pd.RangeIndex(start=0, stop=30, step=1)
