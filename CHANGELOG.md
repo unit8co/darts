@@ -22,6 +22,8 @@ Patch release
 - Fix an issue with `historical_forecasts()` not working in some cases when `future_covariates`
   are provided and `start` is not specified. [#1481](https://github.com/unit8co/darts/pull/1481)
   by [Maxime Dumonal](https://github.com/dumjax).
+- Fix an issue with `slice_n_points` functions on integer indexes.
+  [#1482](https://github.com/unit8co/darts/pull/1482) by [Julien Herzen](https://github.com/hrzn).
 
 ## [0.23.0](https://github.com/unit8co/darts/tree/0.23.0) (2022-12-23)
 ### For users of the library:
