@@ -204,7 +204,7 @@
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
 <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 <span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">signature</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -214,6 +214,11 @@
 <span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">kurtosis</span><span class="p">,</span> <span class="n">skew</span>
 
 <span class="kn">from</span> <span class="nn">.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Literal</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -229,7 +234,7 @@
 
 <div class="viewcode-block" id="TimeSeries"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries">[docs]</a><span class="k">class</span> <span class="nc">TimeSeries</span><span class="p">:</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xa</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create a TimeSeries from a (well formed) DataArray.</span>
 <span class="sd">        It is recommended to use the factory methods to create TimeSeries instead.</span>
 
@@ -460,7 +465,7 @@
         <span class="c1"># Store static covariates and hierarchy in attributes (potentially storing None)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span> <span class="o">=</span> <span class="n">_xarray_with_attrs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="p">,</span> <span class="n">static_covariates</span><span class="p">,</span> <span class="n">hierarchy</span><span class="p">)</span>
 
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Factory Methods</span>
 <span class="sd">    ===============</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -473,7 +478,7 @@
         <span class="n">freq</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">fillna_value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a TimeSeries instance built from an xarray DataArray.</span>
 <span class="sd">        The dimensions of the DataArray have to be (time, component, sample), in this order. The time</span>
 <span class="sd">        dimension can have an arbitrary name, but component and sample must be named &quot;component&quot; and &quot;sample&quot;,</span>
@@ -594,7 +599,7 @@
         <span class="n">hierarchy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Build a deterministic TimeSeries instance built from a single CSV file.</span>
 <span class="sd">        One column can be used to represent the time (if not present, the time index will be a RangeIndex)</span>
 <span class="sd">        and a list of columns `value_cols` can be used to indicate the values for this time series.</span>
@@ -685,7 +690,7 @@
         <span class="n">static_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">hierarchy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Build a deterministic TimeSeries instance built from a selection of columns of a DataFrame.</span>
 <span class="sd">        One column (or the DataFrame index) has to represent the time,</span>
 <span class="sd">        and a list of columns `value_cols` has to represent the values for this time series.</span>
@@ -865,7 +870,7 @@
         <span class="n">freq</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">fillna_value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;TimeSeries&quot;</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;TimeSeries&quot;</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Build a list of TimeSeries instances grouped by a selection of columns from a DataFrame.</span>
 <span class="sd">        One column (or the DataFrame index) has to represent the time,</span>
 <span class="sd">        a list of columns `group_cols` must be used for extracting the individual TimeSeries by groups,</span>
@@ -983,7 +988,7 @@
         <span class="n">fillna_value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">static_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Build a univariate deterministic series from a pandas Series.</span>
 
 <span class="sd">        The series must contain an index that is</span>
@@ -1037,7 +1042,7 @@
         <span class="n">static_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">hierarchy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Build a series from a time index and value array.</span>
 
 <span class="sd">        Parameters</span>
@@ -1155,7 +1160,7 @@
         <span class="n">static_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">hierarchy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Build an integer-indexed series from an array of values.</span>
 <span class="sd">        The series will have an integer index (RangeIndex).</span>
 
@@ -1230,7 +1235,7 @@
         <span class="n">static_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">hierarchy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Build a series from the JSON String representation of a ``TimeSeries``</span>
 <span class="sd">        (produced using :func:`TimeSeries.to_json()`).</span>
 
@@ -1285,7 +1290,7 @@
 
 <div class="viewcode-block" id="TimeSeries.from_pickle"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.from_pickle">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_pickle</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Read a pickled ``TimeSeries``.</span>
 
 <span class="sd">        Parameters</span>
@@ -1309,14 +1314,14 @@
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fh</span><span class="p">)</span></div>
 
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Properties</span>
 <span class="sd">    ==========</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">static_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns the static covariates contained in the series as a pandas DataFrame.</span>
 <span class="sd">        The columns represent the static variables and the rows represent the components of the uni/multivariate</span>
 <span class="sd">        series.</span>
@@ -1325,7 +1330,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">hierarchy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The hierarchy of this TimeSeries, if any.</span>
 <span class="sd">        If set, the hierarchy is encoded as a dictionary, whose keys are individual components</span>
 <span class="sd">        and values are the set of parent(s) of these components in the hierarchy.</span>
@@ -1334,26 +1339,26 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">has_hierarchy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Whether this series is hierarchical or not.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether this series is hierarchical or not.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">hierarchy</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">top_level_component</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The top level component name of this series, or None if the series has no hierarchy.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_top_level_component</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">bottom_level_components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The bottom level component names of this series, or None if the series has no hierarchy.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bottom_level_components</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">top_level_series</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;TimeSeries&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The univariate series containing the single top-level component of this series,</span>
 <span class="sd">        or None if the series has no hierarchy.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1361,7 +1366,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">bottom_level_series</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="s2">&quot;TimeSeries&quot;</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The series containing the bottom-level components of this series in the same</span>
 <span class="sd">        order as they appear in the series, or None if the series has no hierarchy.</span>
 
@@ -1375,100 +1380,100 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">n_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Number of samples contained in the series.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Number of samples contained in the series.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">sample</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">n_components</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Number of components (dimensions) contained in the series.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Number of components (dimensions) contained in the series.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">component</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">width</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot; &quot;Width&quot; (= number of components) of the series.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; &quot;Width&quot; (= number of components) of the series.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">n_timesteps</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Number of time steps in the series.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Number of time steps in the series.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_deterministic</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Whether this series is deterministic.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether this series is deterministic.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_samples</span> <span class="o">==</span> <span class="mi">1</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_stochastic</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Whether this series is stochastic.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether this series is stochastic.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_deterministic</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_probabilistic</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Whether this series is stochastic (= probabilistic).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether this series is stochastic (= probabilistic).&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_stochastic</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_univariate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Whether this series is univariate.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether this series is univariate.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="o">==</span> <span class="mi">1</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">freq</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;The frequency of the series.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The frequency of the series.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">freq_str</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;The frequency string representation of the series.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The frequency string representation of the series.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_freq_str</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">dtype</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;The dtype of the series&#39; values.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The dtype of the series&#39; values.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">dtype</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">components</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;The names of the components, as a Pandas Index.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The names of the components, as a Pandas Index.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">columns</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;The names of the components, as a Pandas Index.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The names of the components, as a Pandas Index.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">time_index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;The time index of this time series.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The time index of this time series.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">time_dim</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;The name of the time dimension for this time series.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The name of the time dimension for this time series.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">has_datetime_index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Whether this series is indexed with a DatetimeIndex (otherwise it is indexed with an RangeIndex).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether this series is indexed with a DatetimeIndex (otherwise it is indexed with an RangeIndex).&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_datetime_index</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">has_range_index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Whether this series is indexed with an RangeIndex (otherwise it is indexed with a DatetimeIndex).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether this series is indexed with an RangeIndex (otherwise it is indexed with a DatetimeIndex).&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_datetime_index</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">has_static_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Whether this series contains static covariates.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether this series contains static covariates.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">duration</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;The duration of this time series (as a time delta or int).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The duration of this time series (as a time delta or int).&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Some asserts</span>
 <span class="sd">    =============</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -1532,13 +1537,13 @@
     <span class="k">def</span> <span class="nf">_get_last_timestamp_before</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ts</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">:</span>
         <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">t</span> <span class="o">&lt;=</span> <span class="n">ts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
 
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Export functions</span>
 <span class="sd">    ================</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="TimeSeries.data_array"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.data_array">[docs]</a>    <span class="k">def</span> <span class="nf">data_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return the ``xarray.DataArray`` representation underlying this series.</span>
 
 <span class="sd">        Parameters</span>
@@ -1554,7 +1559,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="n">copy</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span></div>
 
 <div class="viewcode-block" id="TimeSeries.pd_series"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.pd_series">[docs]</a>    <span class="k">def</span> <span class="nf">pd_series</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a Pandas Series representation of this univariate deterministic time series.</span>
 
 <span class="sd">        Works only for univariate series that are deterministic (i.e., made of 1 sample).</span>
@@ -1579,7 +1584,7 @@
             <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.pd_dataframe"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.pd_dataframe">[docs]</a>    <span class="k">def</span> <span class="nf">pd_dataframe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">suppress_warnings</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a Pandas DataFrame representation of this time series.</span>
 
 <span class="sd">        Each of the series components will appear as a column in the DataFrame.</span>
@@ -1640,7 +1645,7 @@
                 <span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.quantile_df"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.quantile_df">[docs]</a>    <span class="k">def</span> <span class="nf">quantile_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantile</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a Pandas DataFrame containing the single desired quantile of each component (over the samples).</span>
 
 <span class="sd">        Each of the series components will appear as a column in the DataFrame. The column will be named</span>
@@ -1679,7 +1684,7 @@
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.quantile_timeseries"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.quantile_timeseries">[docs]</a>    <span class="k">def</span> <span class="nf">quantile_timeseries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantile</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a deterministic ``TimeSeries`` containing the single desired quantile of each component</span>
 <span class="sd">        (over the samples) of this stochastic ``TimeSeries``.</span>
 
@@ -1731,7 +1736,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.quantiles_df"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.quantiles_df">[docs]</a>    <span class="k">def</span> <span class="nf">quantiles_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantiles</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a Pandas DataFrame containing the desired quantiles of each component (over the samples).</span>
 
 <span class="sd">        Each of the series components will appear as a column in the DataFrame. The column will be named</span>
@@ -1762,7 +1767,7 @@
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.astype"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.astype">[docs]</a>    <span class="k">def</span> <span class="nf">astype</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Converts this series to a new series with desired dtype.</span>
 
 <span class="sd">        Parameters</span>
@@ -1778,7 +1783,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="TimeSeries.start_time"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.start_time">[docs]</a>    <span class="k">def</span> <span class="nf">start_time</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Start time of the series.</span>
 
 <span class="sd">        Returns</span>
@@ -1790,7 +1795,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
 
 <div class="viewcode-block" id="TimeSeries.end_time"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.end_time">[docs]</a>    <span class="k">def</span> <span class="nf">end_time</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        End time of the series.</span>
 
 <span class="sd">        Returns</span>
@@ -1802,7 +1807,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
 
 <div class="viewcode-block" id="TimeSeries.first_value"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.first_value">[docs]</a>    <span class="k">def</span> <span class="nf">first_value</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        First value of this univariate series.</span>
 
 <span class="sd">        Returns</span>
@@ -1815,7 +1820,7 @@
         <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span></div>
 
 <div class="viewcode-block" id="TimeSeries.last_value"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.last_value">[docs]</a>    <span class="k">def</span> <span class="nf">last_value</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Last value of this univariate series.</span>
 
 <span class="sd">        Returns</span>
@@ -1828,7 +1833,7 @@
         <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span></div>
 
 <div class="viewcode-block" id="TimeSeries.first_values"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.first_values">[docs]</a>    <span class="k">def</span> <span class="nf">first_values</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        First values of this potentially multivariate series.</span>
 
 <span class="sd">        Returns</span>
@@ -1840,7 +1845,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="TimeSeries.last_values"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.last_values">[docs]</a>    <span class="k">def</span> <span class="nf">last_values</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Last values of this potentially multivariate series.</span>
 
 <span class="sd">        Returns</span>
@@ -1852,7 +1857,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="TimeSeries.values"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.values">[docs]</a>    <span class="k">def</span> <span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">copy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">sample</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a 2-D array of shape (time, component), containing this series&#39; values for one `sample`.</span>
 
 <span class="sd">        Parameters</span>
@@ -1880,7 +1885,7 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">values</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">sample</span><span class="p">]</span></div>
 
 <div class="viewcode-block" id="TimeSeries.random_component_values"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.random_component_values">[docs]</a>    <span class="k">def</span> <span class="nf">random_component_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">copy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a 2-D array of shape (time, component), containing the values for</span>
 <span class="sd">        one sample taken uniformly at random among this series&#39; samples.</span>
 
@@ -1902,7 +1907,7 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">values</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">sample</span><span class="p">]</span></div>
 
 <div class="viewcode-block" id="TimeSeries.all_values"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.all_values">[docs]</a>    <span class="k">def</span> <span class="nf">all_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">copy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a 3-D array of dimension (time, component, sample),</span>
 <span class="sd">        containing this series&#39; values for all samples.</span>
 
@@ -1923,7 +1928,7 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">values</span></div>
 
 <div class="viewcode-block" id="TimeSeries.univariate_values"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.univariate_values">[docs]</a>    <span class="k">def</span> <span class="nf">univariate_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">copy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">sample</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a 1-D Numpy array of shape (time,),</span>
 <span class="sd">        containing this univariate series&#39; values for one `sample`.</span>
 
@@ -1947,7 +1952,7 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">sample</span><span class="p">]</span><span class="o">.</span><span class="n">values</span></div>
 
 <div class="viewcode-block" id="TimeSeries.static_covariates_values"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.static_covariates_values">[docs]</a>    <span class="k">def</span> <span class="nf">static_covariates_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">copy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a 2-D array of dimension (component, static variable),</span>
 <span class="sd">        containing the static covariate values of the TimeSeries.</span>
 
@@ -1972,7 +1977,7 @@
 <div class="viewcode-block" id="TimeSeries.head"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.head">[docs]</a>    <span class="k">def</span> <span class="nf">head</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a TimeSeries containing the first `size` points.</span>
 
 <span class="sd">        Parameters</span>
@@ -1999,7 +2004,7 @@
 <div class="viewcode-block" id="TimeSeries.tail"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.tail">[docs]</a>    <span class="k">def</span> <span class="nf">tail</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return last `size` points of the series.</span>
 
 <span class="sd">        Parameters</span>
@@ -2031,7 +2036,7 @@
         <span class="n">ignore_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">drop_hierarchy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Concatenate another timeseries to the current one along given axis.</span>
 
 <span class="sd">        Parameters</span>
@@ -2076,13 +2081,13 @@
             <span class="n">drop_hierarchy</span><span class="o">=</span><span class="n">drop_hierarchy</span><span class="p">,</span>
         <span class="p">)</span></div>
 
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Other methods</span>
 <span class="sd">    =============</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="TimeSeries.gaps"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.gaps">[docs]</a>    <span class="k">def</span> <span class="nf">gaps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="s2">&quot;any&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A function to compute and return gaps in the TimeSeries. Works only on deterministic time series (1 sample).</span>
 
 <span class="sd">        Parameters</span>
@@ -2144,7 +2149,7 @@
             <span class="k">return</span> <span class="n">gap_df</span></div>
 
 <div class="viewcode-block" id="TimeSeries.copy"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Make a copy of this series.</span>
 
 <span class="sd">        Returns</span>
@@ -2159,7 +2164,7 @@
 <div class="viewcode-block" id="TimeSeries.get_index_at_point"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.get_index_at_point">[docs]</a>    <span class="k">def</span> <span class="nf">get_index_at_point</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">point</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">after</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Converts a point along the time axis index into an integer index ranging in (0, len(series)-1).</span>
 
 <span class="sd">        Parameters</span>
@@ -2234,7 +2239,7 @@
 <div class="viewcode-block" id="TimeSeries.get_timestamp_at_point"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.get_timestamp_at_point">[docs]</a>    <span class="k">def</span> <span class="nf">get_timestamp_at_point</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">point</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Converts a point into a pandas.Timestamp (if Datetime-indexed) or into an integer (if Int64-indexed).</span>
 
 <span class="sd">        Parameters</span>
@@ -2265,7 +2270,7 @@
 <div class="viewcode-block" id="TimeSeries.split_after"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.split_after">[docs]</a>    <span class="k">def</span> <span class="nf">split_after</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">split_point</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="s2">&quot;TimeSeries&quot;</span><span class="p">,</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Splits the series in two, after a provided `split_point`.</span>
 
 <span class="sd">        Parameters</span>
@@ -2288,7 +2293,7 @@
 <div class="viewcode-block" id="TimeSeries.split_before"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.split_before">[docs]</a>    <span class="k">def</span> <span class="nf">split_before</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">split_point</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="s2">&quot;TimeSeries&quot;</span><span class="p">,</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Splits the series in two, before a provided `split_point`.</span>
 
 <span class="sd">        Parameters</span>
@@ -2309,7 +2314,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_split_at</span><span class="p">(</span><span class="n">split_point</span><span class="p">,</span> <span class="n">after</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.drop_after"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.drop_after">[docs]</a>    <span class="k">def</span> <span class="nf">drop_after</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">split_point</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Drops everything after the provided time `split_point`, included.</span>
 <span class="sd">        The timestamp may not be in the series. If it is, the timestamp will be dropped.</span>
 
@@ -2326,7 +2331,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">split_before</span><span class="p">(</span><span class="n">split_point</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span></div>
 
 <div class="viewcode-block" id="TimeSeries.drop_before"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.drop_before">[docs]</a>    <span class="k">def</span> <span class="nf">drop_before</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">split_point</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Drops everything before the provided time `split_point`, included.</span>
 <span class="sd">        The timestamp may not be in the series. If it is, the timestamp will be dropped.</span>
 
@@ -2345,7 +2350,7 @@
 <div class="viewcode-block" id="TimeSeries.slice"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.slice">[docs]</a>    <span class="k">def</span> <span class="nf">slice</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">start_ts</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">end_ts</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a new TimeSeries, starting later than `start_ts` and ending before `end_ts`.</span>
 <span class="sd">        For series having DatetimeIndex, this is inclusive on both ends. For series having a RangeIndex,</span>
 <span class="sd">        `end_ts` is exclusive.</span>
@@ -2413,7 +2418,7 @@
 <div class="viewcode-block" id="TimeSeries.slice_n_points_after"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.slice_n_points_after">[docs]</a>    <span class="k">def</span> <span class="nf">slice_n_points_after</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">start_ts</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a new TimeSeries, starting a `start_ts` (inclusive) and having at most `n` points.</span>
 
 <span class="sd">        The provided timestamps will be included in the series.</span>
@@ -2434,7 +2439,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_raise_if_not_within</span><span class="p">(</span><span class="n">start_ts</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">start_ts</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)):</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">start_ts</span> <span class="p">:</span> <span class="n">start_ts</span> <span class="o">+</span> <span class="n">n</span><span class="p">]</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start_ts</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="n">start_ts</span> <span class="o">+</span> <span class="n">n</span><span class="p">)]</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">start_ts</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">):</span>
             <span class="c1"># get first timestamp greater or equal to start_ts</span>
             <span class="n">tss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_first_timestamp_after</span><span class="p">(</span><span class="n">start_ts</span><span class="p">)</span>
@@ -2448,7 +2453,7 @@
 <div class="viewcode-block" id="TimeSeries.slice_n_points_before"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.slice_n_points_before">[docs]</a>    <span class="k">def</span> <span class="nf">slice_n_points_before</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">end_ts</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a new TimeSeries, ending at `end_ts` (inclusive) and having at most `n` points.</span>
 
 <span class="sd">        The provided timestamps will be included in the series.</span>
@@ -2470,7 +2475,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_raise_if_not_within</span><span class="p">(</span><span class="n">end_ts</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">end_ts</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)):</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">end_ts</span> <span class="o">-</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:</span> <span class="n">end_ts</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">end_ts</span> <span class="o">-</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="n">end_ts</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">end_ts</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">):</span>
             <span class="c1"># get last timestamp smaller or equal to start_ts</span>
             <span class="n">tss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_last_timestamp_before</span><span class="p">(</span><span class="n">end_ts</span><span class="p">)</span>
@@ -2482,7 +2487,7 @@
             <span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.slice_intersect"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.slice_intersect">[docs]</a>    <span class="k">def</span> <span class="nf">slice_intersect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a ``TimeSeries`` slice of this series, where the time index has been intersected with the one</span>
 <span class="sd">        of the `other` series.</span>
 
@@ -2502,7 +2507,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">time_index</span><span class="p">]</span></div>
 
 <div class="viewcode-block" id="TimeSeries.strip"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.strip">[docs]</a>    <span class="k">def</span> <span class="nf">strip</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a ``TimeSeries`` slice of this deterministic time series, where NaN-only entries at the beginning</span>
 <span class="sd">        and the end of the series are removed. No entries after (and including) the first non-NaN entry and</span>
 <span class="sd">        before (and including) the last non-NaN entry are removed.</span>
@@ -2526,7 +2531,7 @@
 <div class="viewcode-block" id="TimeSeries.longest_contiguous_slice"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.longest_contiguous_slice">[docs]</a>    <span class="k">def</span> <span class="nf">longest_contiguous_slice</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">max_gap_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;all&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return the largest TimeSeries slice of this deterministic series that contains no gaps</span>
 <span class="sd">        (contiguous all-NaN values) larger than `max_gap_size`.</span>
 
@@ -2577,7 +2582,7 @@
         <span class="k">return</span> <span class="n">stripped_series</span><span class="p">[</span><span class="n">max_slice_start</span><span class="p">:</span><span class="n">max_slice_end</span><span class="p">]</span></div>
 
 <div class="viewcode-block" id="TimeSeries.rescale_with_value"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.rescale_with_value">[docs]</a>    <span class="k">def</span> <span class="nf">rescale_with_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value_at_first_step</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a new ``TimeSeries``, which is a multiple of this series such that</span>
 <span class="sd">        the first value is `value_at_first_step`.</span>
 <span class="sd">        (Note: numerical errors can appear with `value_at_first_step &gt; 1e+24`).</span>
@@ -2603,7 +2608,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_series</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.shift"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.shift">[docs]</a>    <span class="k">def</span> <span class="nf">shift</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Shifts the time axis of this TimeSeries by `n` time steps.</span>
 
 <span class="sd">        If :math:`n &gt; 0`, shifts in the future. If :math:`n &lt; 0`, shifts in the past.</span>
@@ -2653,7 +2658,7 @@
         <span class="n">periods</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">dropna</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a differenced time series. This is often used to make a time series stationary.</span>
 
 <span class="sd">        Parameters</span>
@@ -2699,7 +2704,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.has_same_time_as"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.has_same_time_as">[docs]</a>    <span class="k">def</span> <span class="nf">has_same_time_as</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Checks whether this series has the same time index as `other`.</span>
 
 <span class="sd">        Parameters</span>
@@ -2717,7 +2722,7 @@
         <span class="k">return</span> <span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">time_index</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="TimeSeries.append"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.append">[docs]</a>    <span class="k">def</span> <span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Appends another series to this series along the time axis.</span>
 
 <span class="sd">        Parameters</span>
@@ -2779,7 +2784,7 @@
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.append_values"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.append_values">[docs]</a>    <span class="k">def</span> <span class="nf">append_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Appends new values to current TimeSeries, extending its time index.</span>
 
 <span class="sd">        Parameters</span>
@@ -2813,7 +2818,7 @@
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.prepend"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.prepend">[docs]</a>    <span class="k">def</span> <span class="nf">prepend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Prepends (i.e. adds to the beginning) another series to this series along the time axis.</span>
 
 <span class="sd">        Parameters</span>
@@ -2838,7 +2843,7 @@
         <span class="k">return</span> <span class="n">other</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.prepend_values"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.prepend_values">[docs]</a>    <span class="k">def</span> <span class="nf">prepend_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Prepends (i.e. adds to the beginning) new values to current TimeSeries, extending its time index into the past.</span>
 
 <span class="sd">        Parameters</span>
@@ -2877,7 +2882,7 @@
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.with_values"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.with_values">[docs]</a>    <span class="k">def</span> <span class="nf">with_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a new ``TimeSeries`` similar to this one but with new specified values.</span>
 
 <span class="sd">        Parameters</span>
@@ -2911,7 +2916,7 @@
 <div class="viewcode-block" id="TimeSeries.with_static_covariates"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.with_static_covariates">[docs]</a>    <span class="k">def</span> <span class="nf">with_static_covariates</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]]</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Returns a new TimeSeries object with added static covariates.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a new TimeSeries object with added static covariates.</span>
 
 <span class="sd">        Static covariates contain data attached to the time series, but which are not varying with time.</span>
 
@@ -2966,7 +2971,7 @@
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.with_hierarchy"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.with_hierarchy">[docs]</a>    <span class="k">def</span> <span class="nf">with_hierarchy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hierarchy</span><span class="p">:</span> <span class="n">Dict</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Adds a hierarchy to the TimeSeries.</span>
 
 <span class="sd">        Parameters</span>
@@ -3006,7 +3011,7 @@
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.stack"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.stack">[docs]</a>    <span class="k">def</span> <span class="nf">stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Stacks another univariate or multivariate TimeSeries with the same time index on top of</span>
 <span class="sd">        the current one (along the component axis).</span>
 
@@ -3028,7 +3033,7 @@
         <span class="k">return</span> <span class="n">concatenate</span><span class="p">([</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.drop_columns"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.drop_columns">[docs]</a>    <span class="k">def</span> <span class="nf">drop_columns</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">col_names</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a new ``TimeSeries`` instance with dropped columns/components.</span>
 
 <span class="sd">        Parameters</span>
@@ -3054,7 +3059,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.univariate_component"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.univariate_component">[docs]</a>    <span class="k">def</span> <span class="nf">univariate_component</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Retrieve one of the components of the series</span>
 <span class="sd">        and return it as new univariate ``TimeSeries`` instance.</span>
 
@@ -3078,7 +3083,7 @@
 <div class="viewcode-block" id="TimeSeries.add_datetime_attribute"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.add_datetime_attribute">[docs]</a>    <span class="k">def</span> <span class="nf">add_datetime_attribute</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">attribute</span><span class="p">,</span> <span class="n">one_hot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">cyclic</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Build a new series with one (or more) additional component(s) that contain an attribute</span>
 <span class="sd">        of the time index of the series.</span>
 
@@ -3115,7 +3120,7 @@
 <div class="viewcode-block" id="TimeSeries.add_holidays"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.add_holidays">[docs]</a>    <span class="k">def</span> <span class="nf">add_holidays</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">country_code</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">prov</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Adds a binary univariate component to the current series that equals 1 at every index that</span>
 <span class="sd">        corresponds to selected country&#39;s holiday, and 0 otherwise.</span>
 
@@ -3148,7 +3153,7 @@
 
 <div class="viewcode-block" id="TimeSeries.resample"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.resample">[docs]</a>    <span class="k">def</span> <span class="nf">resample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">freq</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;pad&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
 
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Build a reindexed ``TimeSeries`` with a given frequency.</span>
 <span class="sd">        Provided method is used to fill holes in reindexed TimeSeries, by default &#39;pad&#39;.</span>
 
@@ -3215,7 +3220,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.is_within_range"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.is_within_range">[docs]</a>    <span class="k">def</span> <span class="nf">is_within_range</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ts</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Check whether a given timestamp or integer is within the time interval of this time series.</span>
 <span class="sd">        If a timestamp is provided, it does not need to be an element of the time index of the series.</span>
 
@@ -3238,7 +3243,7 @@
             <span class="n">Callable</span><span class="p">[[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">],</span>
         <span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>  <span class="c1"># noqa: E501</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Applies the function `fn` to the underlying NumPy array containing this series&#39; values.</span>
 
 <span class="sd">        Return a new TimeSeries instance. If `fn` takes 1 argument it is simply applied on the backing array</span>
@@ -3331,7 +3336,7 @@
         <span class="n">keep_non_transformed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">include_current</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Applies a moving/rolling, expanding or exponentially weighted window transformation over this ``TimeSeries``.</span>
 
 <span class="sd">        Parameters</span>
@@ -3449,7 +3454,7 @@
 
         <span class="c1"># helper function to read and format kwargs</span>
         <span class="k">def</span> <span class="nf">_get_kwargs</span><span class="p">(</span><span class="n">transformation</span><span class="p">,</span> <span class="n">forecasting_safe</span><span class="p">):</span>
-            <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            Builds the kwargs dictionary for the transformation function.</span>
 
 <span class="sd">            Parameters</span>
@@ -3639,9 +3644,9 @@
             <span class="n">min_periods</span> <span class="o">=</span> <span class="n">transformation</span><span class="p">[</span><span class="s2">&quot;min_periods&quot;</span><span class="p">]</span>
             <span class="c1"># set new columns names</span>
             <span class="n">name_prefix</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">window_mode</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">fn</span> <span class="k">if</span> <span class="n">fn</span> <span class="o">!=</span> <span class="s1">&#39;apply&#39;</span> <span class="k">else</span> <span class="s1">&#39;udf&#39;</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">transformation</span><span class="p">[</span><span class="s1">&#39;window&#39;</span><span class="p">])</span> <span class="k">if</span> <span class="s1">&#39;window&#39;</span> <span class="ow">in</span> <span class="n">transformation</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">min_periods</span><span class="p">)</span> <span class="k">if</span> <span class="n">min_periods</span><span class="o">&gt;</span><span class="mi">1</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">window_mode</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">fn</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">fn</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s1">&#39;apply&#39;</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;udf&#39;</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">transformation</span><span class="p">[</span><span class="s1">&#39;window&#39;</span><span class="p">])</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="s1">&#39;window&#39;</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">transformation</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;_&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">min_periods</span><span class="p">)</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">min_periods</span><span class="o">&gt;</span><span class="mi">1</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
 
             <span class="n">new_columns</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
@@ -3714,7 +3719,7 @@
         <span class="k">return</span> <span class="n">transformed_time_series</span></div>
 
 <div class="viewcode-block" id="TimeSeries.to_json"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.to_json">[docs]</a>    <span class="k">def</span> <span class="nf">to_json</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a JSON string representation of this deterministic series.</span>
 
 <span class="sd">        At the moment this function works only on deterministic time series (i.e., made of 1 sample).</span>
@@ -3732,7 +3737,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">to_json</span><span class="p">(</span><span class="n">orient</span><span class="o">=</span><span class="s2">&quot;split&quot;</span><span class="p">,</span> <span class="n">date_format</span><span class="o">=</span><span class="s2">&quot;iso&quot;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.to_csv"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.to_csv">[docs]</a>    <span class="k">def</span> <span class="nf">to_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Writes this deterministic series to a CSV file.</span>
 <span class="sd">        For a list of parameters, refer to the documentation of :func:`pandas.DataFrame.to_csv()` [1]_.</span>
 
@@ -3752,7 +3757,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.to_pickle"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.to_pickle">[docs]</a>    <span class="k">def</span> <span class="nf">to_pickle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">protocol</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">HIGHEST_PROTOCOL</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Save this series in pickle format.</span>
 
 <span class="sd">        Parameters</span>
@@ -3785,7 +3790,7 @@
         <span class="o">*</span><span class="n">args</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Plot the series.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot the series.</span>
 
 <span class="sd">        This is a wrapper method around :func:`xarray.DataArray.plot()`.</span>
 
@@ -3854,7 +3859,7 @@
                 <span class="nb">len</span><span class="p">(</span><span class="n">label</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span>
                 <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="o">&gt;</span> <span class="mi">10</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">label</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">10</span><span class="p">),</span>
                 <span class="s2">&quot;The label argument should have the same length as the number of plotted components &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_components</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span><span class="si">}</span><span class="s2">), only </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">label</span><span class="p">)</span><span class="si">}</span><span class="s2"> labels were provided&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_components</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="si">}</span><span class="s2">), only </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">label</span><span class="p">)</span><span class="si">}</span><span class="s2"> labels were provided&quot;</span><span class="p">,</span>
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">custom_labels</span> <span class="o">=</span> <span class="kc">True</span>
@@ -3948,7 +3953,7 @@
 <div class="viewcode-block" id="TimeSeries.with_columns_renamed"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.with_columns_renamed">[docs]</a>    <span class="k">def</span> <span class="nf">with_columns_renamed</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">col_names</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">],</span> <span class="n">col_names_new</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a new ``TimeSeries`` instance with new columns/components names. It also</span>
 <span class="sd">        adapts the names in the hierarchy, if any.</span>
 
@@ -4011,13 +4016,13 @@
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
 
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Simple statistic and aggregation functions. Calculate various statistics over the samples of stochastic time series</span>
 <span class="sd">    or aggregate over components/time for deterministic series.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">_get_agg_coords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_cname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Helper function to rename reduced axis. Returns a dictionary containing the new coordinates&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Helper function to rename reduced axis. Returns a dictionary containing the new coordinates&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># set time_index to first day</span>
             <span class="k">return</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">],</span> <span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">}</span>
         <span class="k">elif</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># rename components</span>
@@ -4026,7 +4031,7 @@
             <span class="k">return</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">}</span>
 
 <div class="viewcode-block" id="TimeSeries.mean"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.mean">[docs]</a>    <span class="k">def</span> <span class="nf">mean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a ``TimeSeries`` containing the mean calculated over the specified axis.</span>
 
 <span class="sd">        If we reduce over time (``axis=1``), the resulting ``TimeSeries`` will have length one and will use the first</span>
@@ -4059,7 +4064,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.median"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.median">[docs]</a>    <span class="k">def</span> <span class="nf">median</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a ``TimeSeries`` containing the median calculated over the specified axis.</span>
 
 <span class="sd">        If we reduce over time (``axis=1``), the resulting ``TimeSeries`` will have length one and will use the first</span>
@@ -4093,7 +4098,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.sum"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.sum">[docs]</a>    <span class="k">def</span> <span class="nf">sum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a ``TimeSeries`` containing the sum calculated over the specified axis.</span>
 
 <span class="sd">        If we reduce over time (``axis=1``), the resulting ``TimeSeries`` will have length one and will use the first</span>
@@ -4126,7 +4131,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.min"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.min">[docs]</a>    <span class="k">def</span> <span class="nf">min</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a ``TimeSeries`` containing the min calculated over the specified axis.</span>
 
 <span class="sd">        If we reduce over time (``axis=1``), the resulting ``TimeSeries`` will have length one and will use the first</span>
@@ -4159,7 +4164,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.max"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.max">[docs]</a>    <span class="k">def</span> <span class="nf">max</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a ``TimeSeries`` containing the max calculated over the specified axis.</span>
 
 <span class="sd">        If we reduce over time (``axis=1``), the resulting ``TimeSeries`` will have length one and will use the first</span>
@@ -4191,7 +4196,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.var"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.var">[docs]</a>    <span class="k">def</span> <span class="nf">var</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ddof</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a deterministic ``TimeSeries`` containing the variance of each component</span>
 <span class="sd">        (over the samples) of this stochastic ``TimeSeries``.</span>
 
@@ -4216,7 +4221,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.std"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.std">[docs]</a>    <span class="k">def</span> <span class="nf">std</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ddof</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a deterministic ``TimeSeries`` containing the standard deviation of each component</span>
 <span class="sd">        (over the samples) of this stochastic ``TimeSeries``.</span>
 
@@ -4241,7 +4246,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.skew"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.skew">[docs]</a>    <span class="k">def</span> <span class="nf">skew</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a deterministic ``TimeSeries`` containing the skew of each component</span>
 <span class="sd">        (over the samples) of this stochastic ``TimeSeries``.</span>
 
@@ -4265,7 +4270,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.kurtosis"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.kurtosis">[docs]</a>    <span class="k">def</span> <span class="nf">kurtosis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a deterministic ``TimeSeries`` containing the kurtosis of each component</span>
 <span class="sd">        (over the samples) of this stochastic ``TimeSeries``.</span>
 
@@ -4289,7 +4294,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.quantile"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.quantile">[docs]</a>    <span class="k">def</span> <span class="nf">quantile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantile</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a deterministic ``TimeSeries`` containing the single desired quantile of each component</span>
 <span class="sd">        (over the samples) of this stochastic ``TimeSeries``.</span>
 
@@ -4315,7 +4320,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">quantile_timeseries</span><span class="p">(</span><span class="n">quantile</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Dunder methods</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -4324,7 +4329,7 @@
         <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;TimeSeries&quot;</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">combine_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This is a helper function that allows us to combine this series with another one,</span>
 <span class="sd">        directly applying an operation on their underlying numpy arrays.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -4349,7 +4354,7 @@
     <span class="k">def</span> <span class="nf">_fill_missing_dates</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">xa</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">freq</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Return an xarray DataArray instance with missing dates inserted from an input xarray DataArray.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return an xarray DataArray instance with missing dates inserted from an input xarray DataArray.</span>
 <span class="sd">        The first dimension of the input DataArray `xa` has to be the time dimension.</span>
 
 <span class="sd">        This requires either a provided `freq` or the possibility to infer a unique frequency (see</span>
@@ -4425,7 +4430,7 @@
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_restore_xarray_from_frequency</span><span class="p">(</span><span class="n">xa</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">freq</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Return an xarray DataArray instance that is resampled from an input xarray DataArray `xa` with frequency</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return an xarray DataArray instance that is resampled from an input xarray DataArray `xa` with frequency</span>
 <span class="sd">        `freq`. `freq` should be the inferred or actual frequency of `xa`. All data from `xa` is maintained in the</span>
 <span class="sd">        output DataArray at the corresponding dates. Any missing dates from `xa` will be inserted into the returned</span>
 <span class="sd">        DataArray with np.nan values.</span>
@@ -4787,7 +4792,7 @@
             <span class="n">Any</span><span class="p">,</span>
         <span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TimeSeries&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Allow indexing on darts TimeSeries.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Allow indexing on darts TimeSeries.</span>
 
 <span class="sd">        The supported index types are the following base types as a single value, a list or a slice:</span>
 <span class="sd">        - pd.Timestamp -&gt; return a TimeSeries corresponding to the value(s) at the given timestamp(s).</span>
@@ -4977,7 +4982,7 @@
 
 
 <span class="k">def</span> <span class="nf">_xarray_with_attrs</span><span class="p">(</span><span class="n">xa_</span><span class="p">,</span> <span class="n">static_covariates</span><span class="p">,</span> <span class="n">hierarchy</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Return an DataArray instance with static covariates and hierarchy stored in the array&#39;s attributes.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return an DataArray instance with static covariates and hierarchy stored in the array&#39;s attributes.</span>
 <span class="sd">    Warning: This is an inplace operation (mutable) and should only be called from within TimeSeries construction</span>
 <span class="sd">    or to restore static covariates and hierarchy after operations in which they did not get transferred.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -4987,7 +4992,7 @@
 
 
 <span class="k">def</span> <span class="nf">_concat_static_covs</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="s2">&quot;TimeSeries&quot;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Concatenates static covariates along component dimension (rows of static covariates). For stacking or</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Concatenates static covariates along component dimension (rows of static covariates). For stacking or</span>
 <span class="sd">    concatenating TimeSeries along component dimension (axis=1).</span>
 
 <span class="sd">    Some context for stacking or concatenating two or more TimeSeries with static covariates:</span>
@@ -5046,7 +5051,7 @@
 
 
 <span class="k">def</span> <span class="nf">_concat_hierarchy</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="s2">&quot;TimeSeries&quot;</span><span class="p">]):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Used to concatenate the hierarchies of multiple TimeSeries, when concatenating series</span>
 <span class="sd">    along axis 1 (components). This simply merges the hierarchy dictionaries.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -5064,7 +5069,7 @@
     <span class="n">ignore_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">drop_hierarchy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Concatenates multiple ``TimeSeries`` along a given axis.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Concatenates multiple ``TimeSeries`` along a given axis.</span>
 
 <span class="sd">    ``axis`` can be an integer in (0, 1, 2) to denote (time, component, sample) or, alternatively,</span>
 <span class="sd">    a string denoting the corresponding dimension of the underlying ``DataArray``.</span>
@@ -5237,7 +5242,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

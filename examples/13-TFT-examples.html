@@ -657,10 +657,10 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span># fix python path if working locally
-from utils import fix_pythonpath_if_working_locally
+<span></span><span class="c1"># fix python path if working locally</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
 
-fix_pythonpath_if_working_locally()
+<span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -669,9 +669,9 @@ fix_pythonpath_if_working_locally()
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>%load_ext autoreload
-%autoreload 2
-%matplotlib inline
+<span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
+<span class="o">%</span><span class="k">autoreload</span> 2
+<span class="o">%</span><span class="k">matplotlib</span> inline
 </pre></div>
 </div>
 </div>
@@ -680,27 +680,27 @@ fix_pythonpath_if_working_locally()
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>import numpy as np
-import pandas as pd
-from tqdm import tqdm_notebook as tqdm
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm_notebook</span> <span class="k">as</span> <span class="n">tqdm</span>
 
-import matplotlib.pyplot as plt
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
-from darts import TimeSeries, concatenate
-from darts.dataprocessing.transformers import Scaler
-from darts.models import TFTModel
-from darts.metrics import mape
-from darts.utils.statistics import check_seasonality, plot_acf
-from darts.datasets import AirPassengersDataset, IceCreamHeaterDataset
-from darts.utils.timeseries_generation import datetime_attribute_timeseries
-from darts.utils.likelihood_models import QuantileRegression
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">concatenate</span>
+<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">TFTModel</span>
+<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">mape</span>
+<span class="kn">from</span> <span class="nn">darts.utils.statistics</span> <span class="kn">import</span> <span class="n">check_seasonality</span><span class="p">,</span> <span class="n">plot_acf</span>
+<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span><span class="p">,</span> <span class="n">IceCreamHeaterDataset</span>
+<span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="n">datetime_attribute_timeseries</span>
+<span class="kn">from</span> <span class="nn">darts.utils.likelihood_models</span> <span class="kn">import</span> <span class="n">QuantileRegression</span>
 
-import warnings
+<span class="kn">import</span> <span class="nn">warnings</span>
 
-warnings.filterwarnings(&quot;ignore&quot;)
-import logging
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">logging</span>
 
-logging.disable(logging.CRITICAL)
+<span class="n">logging</span><span class="o">.</span><span class="n">disable</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -757,13 +757,13 @@ model.predict(*args, **kwargs, num_samples=1)
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span># before starting, we define some constants
-num_samples = 200
+<span></span><span class="c1"># before starting, we define some constants</span>
+<span class="n">num_samples</span> <span class="o">=</span> <span class="mi">200</span>
 
-figsize = (9, 6)
-lowest_q, low_q, high_q, highest_q = 0.01, 0.1, 0.9, 0.99
-label_q_outer = f&quot;{int(lowest_q * 100)}-{int(highest_q * 100)}th percentiles&quot;
-label_q_inner = f&quot;{int(low_q * 100)}-{int(high_q * 100)}th percentiles&quot;
+<span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<span class="n">lowest_q</span><span class="p">,</span> <span class="n">low_q</span><span class="p">,</span> <span class="n">high_q</span><span class="p">,</span> <span class="n">highest_q</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.99</span>
+<span class="n">label_q_outer</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">lowest_q</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="p">)</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">highest_q</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="p">)</span><span class="si">}</span><span class="s2">th percentiles&quot;</span>
+<span class="n">label_q_inner</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">low_q</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="p">)</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">high_q</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="p">)</span><span class="si">}</span><span class="s2">th percentiles&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -780,42 +780,42 @@ label_q_inner = f&quot;{int(low_q * 100)}-{int(high_q * 100)}th percentiles&quot
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span># Read data
-series = AirPassengersDataset().load()
+<span></span><span class="c1"># Read data</span>
+<span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 
-# we convert monthly number of passengers to average daily number of passengers per month
-series = series / TimeSeries.from_series(series.time_index.days_in_month)
-series = series.astype(np.float32)
+<span class="c1"># we convert monthly number of passengers to average daily number of passengers per month</span>
+<span class="n">series</span> <span class="o">=</span> <span class="n">series</span> <span class="o">/</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_series</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="o">.</span><span class="n">days_in_month</span><span class="p">)</span>
+<span class="n">series</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
-# Create training and validation sets:
-training_cutoff = pd.Timestamp(&quot;19571201&quot;)
-train, val = series.split_after(training_cutoff)
+<span class="c1"># Create training and validation sets:</span>
+<span class="n">training_cutoff</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;19571201&quot;</span><span class="p">)</span>
+<span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">training_cutoff</span><span class="p">)</span>
 
-# Normalize the time series (note: we avoid fitting the transformer on the validation set)
-transformer = Scaler()
-train_transformed = transformer.fit_transform(train)
-val_transformed = transformer.transform(val)
-series_transformed = transformer.transform(series)
+<span class="c1"># Normalize the time series (note: we avoid fitting the transformer on the validation set)</span>
+<span class="n">transformer</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
+<span class="n">train_transformed</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">val_transformed</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+<span class="n">series_transformed</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
 
-# create year, month and integer index covariate series
-covariates = datetime_attribute_timeseries(series, attribute=&quot;year&quot;, one_hot=False)
-covariates = covariates.stack(
-    datetime_attribute_timeseries(series, attribute=&quot;month&quot;, one_hot=False)
-)
-covariates = covariates.stack(
-    TimeSeries.from_times_and_values(
-        times=series.time_index,
-        values=np.arange(len(series)),
-        columns=[&quot;linear_increase&quot;],
-    )
-)
-covariates = covariates.astype(np.float32)
+<span class="c1"># create year, month and integer index covariate series</span>
+<span class="n">covariates</span> <span class="o">=</span> <span class="n">datetime_attribute_timeseries</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="s2">&quot;year&quot;</span><span class="p">,</span> <span class="n">one_hot</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">covariates</span> <span class="o">=</span> <span class="n">covariates</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span>
+    <span class="n">datetime_attribute_timeseries</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="s2">&quot;month&quot;</span><span class="p">,</span> <span class="n">one_hot</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">covariates</span> <span class="o">=</span> <span class="n">covariates</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span>
+    <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+        <span class="n">times</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
+        <span class="n">values</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)),</span>
+        <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;linear_increase&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+<span class="n">covariates</span> <span class="o">=</span> <span class="n">covariates</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
-# transform covariates (note: we fit the transformer on train split and can then transform the entire covariates series)
-scaler_covs = Scaler()
-cov_train, cov_val = covariates.split_after(training_cutoff)
-scaler_covs.fit(cov_train)
-covariates_transformed = scaler_covs.transform(covariates)
+<span class="c1"># transform covariates (note: we fit the transformer on train split and can then transform the entire covariates series)</span>
+<span class="n">scaler_covs</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
+<span class="n">cov_train</span><span class="p">,</span> <span class="n">cov_val</span> <span class="o">=</span> <span class="n">covariates</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">training_cutoff</span><span class="p">)</span>
+<span class="n">scaler_covs</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">cov_train</span><span class="p">)</span>
+<span class="n">covariates_transformed</span> <span class="o">=</span> <span class="n">scaler_covs</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">covariates</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -829,45 +829,45 @@ covariates_transformed = scaler_covs.transform(covariates)
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span># default quantiles for QuantileRegression
-quantiles = [
-    0.01,
-    0.05,
-    0.1,
-    0.15,
-    0.2,
-    0.25,
-    0.3,
-    0.4,
-    0.5,
-    0.6,
-    0.7,
-    0.75,
-    0.8,
-    0.85,
-    0.9,
-    0.95,
-    0.99,
-]
-input_chunk_length = 24
-forecast_horizon = 12
-my_model = TFTModel(
-    input_chunk_length=input_chunk_length,
-    output_chunk_length=forecast_horizon,
-    hidden_size=64,
-    lstm_layers=1,
-    num_attention_heads=4,
-    dropout=0.1,
-    batch_size=16,
-    n_epochs=300,
-    add_relative_index=False,
-    add_encoders=None,
-    likelihood=QuantileRegression(
-        quantiles=quantiles
-    ),  # QuantileRegression is set per default
-    # loss_fn=MSELoss(),
-    random_state=42,
-)
+<span></span><span class="c1"># default quantiles for QuantileRegression</span>
+<span class="n">quantiles</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="mf">0.01</span><span class="p">,</span>
+    <span class="mf">0.05</span><span class="p">,</span>
+    <span class="mf">0.1</span><span class="p">,</span>
+    <span class="mf">0.15</span><span class="p">,</span>
+    <span class="mf">0.2</span><span class="p">,</span>
+    <span class="mf">0.25</span><span class="p">,</span>
+    <span class="mf">0.3</span><span class="p">,</span>
+    <span class="mf">0.4</span><span class="p">,</span>
+    <span class="mf">0.5</span><span class="p">,</span>
+    <span class="mf">0.6</span><span class="p">,</span>
+    <span class="mf">0.7</span><span class="p">,</span>
+    <span class="mf">0.75</span><span class="p">,</span>
+    <span class="mf">0.8</span><span class="p">,</span>
+    <span class="mf">0.85</span><span class="p">,</span>
+    <span class="mf">0.9</span><span class="p">,</span>
+    <span class="mf">0.95</span><span class="p">,</span>
+    <span class="mf">0.99</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="n">input_chunk_length</span> <span class="o">=</span> <span class="mi">24</span>
+<span class="n">forecast_horizon</span> <span class="o">=</span> <span class="mi">12</span>
+<span class="n">my_model</span> <span class="o">=</span> <span class="n">TFTModel</span><span class="p">(</span>
+    <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+    <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
+    <span class="n">hidden_size</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
+    <span class="n">lstm_layers</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">num_attention_heads</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">dropout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+    <span class="n">n_epochs</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+    <span class="n">add_relative_index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">add_encoders</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">likelihood</span><span class="o">=</span><span class="n">QuantileRegression</span><span class="p">(</span>
+        <span class="n">quantiles</span><span class="o">=</span><span class="n">quantiles</span>
+    <span class="p">),</span>  <span class="c1"># QuantileRegression is set per default</span>
+    <span class="c1"># loss_fn=MSELoss(),</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -880,7 +880,7 @@ my_model = TFTModel(
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>my_model.fit(train_transformed, future_covariates=covariates_transformed, verbose=True)
+<span></span><span class="n">my_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_transformed</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">covariates_transformed</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -907,24 +907,24 @@ Training loss: 0.0549
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>def eval_model(model, n, actual_series, val_series):
-    pred_series = model.predict(n=n, num_samples=num_samples)
+<span></span><span class="k">def</span> <span class="nf">eval_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">actual_series</span><span class="p">,</span> <span class="n">val_series</span><span class="p">):</span>
+    <span class="n">pred_series</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">)</span>
 
-    # plot actual series
-    plt.figure(figsize=figsize)
-    actual_series[: pred_series.end_time()].plot(label=&quot;actual&quot;)
+    <span class="c1"># plot actual series</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+    <span class="n">actual_series</span><span class="p">[:</span> <span class="n">pred_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
 
-    # plot prediction with quantile ranges
-    pred_series.plot(
-        low_quantile=lowest_q, high_quantile=highest_q, label=label_q_outer
-    )
-    pred_series.plot(low_quantile=low_q, high_quantile=high_q, label=label_q_inner)
+    <span class="c1"># plot prediction with quantile ranges</span>
+    <span class="n">pred_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+        <span class="n">low_quantile</span><span class="o">=</span><span class="n">lowest_q</span><span class="p">,</span> <span class="n">high_quantile</span><span class="o">=</span><span class="n">highest_q</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label_q_outer</span>
+    <span class="p">)</span>
+    <span class="n">pred_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">low_quantile</span><span class="o">=</span><span class="n">low_q</span><span class="p">,</span> <span class="n">high_quantile</span><span class="o">=</span><span class="n">high_q</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label_q_inner</span><span class="p">)</span>
 
-    plt.title(&quot;MAPE: {:.2f}%&quot;.format(mape(val_series, pred_series)))
-    plt.legend()
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;MAPE: </span><span class="si">{:.2f}</span><span class="s2">%&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">val_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">)))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 
 
-eval_model(my_model, 24, series_transformed, val_transformed)
+<span class="n">eval_model</span><span class="p">(</span><span class="n">my_model</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="n">series_transformed</span><span class="p">,</span> <span class="n">val_transformed</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -944,17 +944,17 @@ eval_model(my_model, 24, series_transformed, val_transformed)
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>backtest_series = my_model.historical_forecasts(
-    series_transformed,
-    future_covariates=covariates_transformed,
-    start=train.end_time() + train.freq,
-    num_samples=num_samples,
-    forecast_horizon=forecast_horizon,
-    stride=forecast_horizon,
-    last_points_only=False,
-    retrain=False,
-    verbose=True,
-)
+<span></span><span class="n">backtest_series</span> <span class="o">=</span> <span class="n">my_model</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
+    <span class="n">series_transformed</span><span class="p">,</span>
+    <span class="n">future_covariates</span><span class="o">=</span><span class="n">covariates_transformed</span><span class="p">,</span>
+    <span class="n">start</span><span class="o">=</span><span class="n">train</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="n">train</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
+    <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
+    <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
+    <span class="n">stride</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
+    <span class="n">last_points_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -969,32 +969,32 @@ eval_model(my_model, 24, series_transformed, val_transformed)
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>def eval_backtest(backtest_series, actual_series, horizon, start, transformer):
-    plt.figure(figsize=figsize)
-    actual_series.plot(label=&quot;actual&quot;)
-    backtest_series.plot(
-        low_quantile=lowest_q, high_quantile=highest_q, label=label_q_outer
-    )
-    backtest_series.plot(low_quantile=low_q, high_quantile=high_q, label=label_q_inner)
-    plt.legend()
-    plt.title(f&quot;Backtest, starting {start}, {horizon}-months horizon&quot;)
-    print(
-        &quot;MAPE: {:.2f}%&quot;.format(
-            mape(
-                transformer.inverse_transform(actual_series),
-                transformer.inverse_transform(backtest_series),
-            )
-        )
-    )
+<span></span><span class="k">def</span> <span class="nf">eval_backtest</span><span class="p">(</span><span class="n">backtest_series</span><span class="p">,</span> <span class="n">actual_series</span><span class="p">,</span> <span class="n">horizon</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">transformer</span><span class="p">):</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+    <span class="n">actual_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
+    <span class="n">backtest_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+        <span class="n">low_quantile</span><span class="o">=</span><span class="n">lowest_q</span><span class="p">,</span> <span class="n">high_quantile</span><span class="o">=</span><span class="n">highest_q</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label_q_outer</span>
+    <span class="p">)</span>
+    <span class="n">backtest_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">low_quantile</span><span class="o">=</span><span class="n">low_q</span><span class="p">,</span> <span class="n">high_quantile</span><span class="o">=</span><span class="n">high_q</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label_q_inner</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Backtest, starting </span><span class="si">{</span><span class="n">start</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">horizon</span><span class="si">}</span><span class="s2">-months horizon&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="s2">&quot;MAPE: </span><span class="si">{:.2f}</span><span class="s2">%&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">mape</span><span class="p">(</span>
+                <span class="n">transformer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">actual_series</span><span class="p">),</span>
+                <span class="n">transformer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">backtest_series</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
 
 
-eval_backtest(
-    backtest_series=concatenate(backtest_series),
-    actual_series=series_transformed,
-    horizon=forecast_horizon,
-    start=training_cutoff,
-    transformer=transformer,
-)
+<span class="n">eval_backtest</span><span class="p">(</span>
+    <span class="n">backtest_series</span><span class="o">=</span><span class="n">concatenate</span><span class="p">(</span><span class="n">backtest_series</span><span class="p">),</span>
+    <span class="n">actual_series</span><span class="o">=</span><span class="n">series_transformed</span><span class="p">,</span>
+    <span class="n">horizon</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
+    <span class="n">start</span><span class="o">=</span><span class="n">training_cutoff</span><span class="p">,</span>
+    <span class="n">transformer</span><span class="o">=</span><span class="n">transformer</span><span class="p">,</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1023,16 +1023,16 @@ MAPE: 5.24%
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>series_ice_heater = IceCreamHeaterDataset().load()
+<span></span><span class="n">series_ice_heater</span> <span class="o">=</span> <span class="n">IceCreamHeaterDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 
-plt.figure(figsize=figsize)
-series_ice_heater.plot()
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+<span class="n">series_ice_heater</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 
-print(check_seasonality(series_ice_heater[&quot;ice cream&quot;], max_lag=36))
-print(check_seasonality(series_ice_heater[&quot;heater&quot;], max_lag=36))
+<span class="nb">print</span><span class="p">(</span><span class="n">check_seasonality</span><span class="p">(</span><span class="n">series_ice_heater</span><span class="p">[</span><span class="s2">&quot;ice cream&quot;</span><span class="p">],</span> <span class="n">max_lag</span><span class="o">=</span><span class="mi">36</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">check_seasonality</span><span class="p">(</span><span class="n">series_ice_heater</span><span class="p">[</span><span class="s2">&quot;heater&quot;</span><span class="p">],</span> <span class="n">max_lag</span><span class="o">=</span><span class="mi">36</span><span class="p">))</span>
 
-plt.figure(figsize=figsize)
-plot_acf(series_ice_heater[&quot;ice cream&quot;], 12, max_lag=36)  # ~1 year seasonality
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+<span class="n">plot_acf</span><span class="p">(</span><span class="n">series_ice_heater</span><span class="p">[</span><span class="s2">&quot;ice cream&quot;</span><span class="p">],</span> <span class="mi">12</span><span class="p">,</span> <span class="n">max_lag</span><span class="o">=</span><span class="mi">36</span><span class="p">)</span>  <span class="c1"># ~1 year seasonality</span>
 </pre></div>
 </div>
 </div>
@@ -1076,34 +1076,34 @@ plot_acf(series_ice_heater[&quot;ice cream&quot;], 12, max_lag=36)  # ~1 year se
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span># convert monthly sales to average daily sales per month
-converted_series = []
-for col in [&quot;ice cream&quot;, &quot;heater&quot;]:
-    converted_series.append(
-        series_ice_heater[col]
-        / TimeSeries.from_series(series_ice_heater.time_index.days_in_month)
-    )
-converted_series = concatenate(converted_series, axis=1)
-converted_series = converted_series[pd.Timestamp(&quot;20100101&quot;) :]
+<span></span><span class="c1"># convert monthly sales to average daily sales per month</span>
+<span class="n">converted_series</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ice cream&quot;</span><span class="p">,</span> <span class="s2">&quot;heater&quot;</span><span class="p">]:</span>
+    <span class="n">converted_series</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">series_ice_heater</span><span class="p">[</span><span class="n">col</span><span class="p">]</span>
+        <span class="o">/</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_series</span><span class="p">(</span><span class="n">series_ice_heater</span><span class="o">.</span><span class="n">time_index</span><span class="o">.</span><span class="n">days_in_month</span><span class="p">)</span>
+    <span class="p">)</span>
+<span class="n">converted_series</span> <span class="o">=</span> <span class="n">concatenate</span><span class="p">(</span><span class="n">converted_series</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">converted_series</span> <span class="o">=</span> <span class="n">converted_series</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;20100101&quot;</span><span class="p">)</span> <span class="p">:]</span>
 
-# define train/validation cutoff time
-forecast_horizon_ice = 12
-training_cutoff_ice = converted_series.time_index[-(2 * forecast_horizon_ice)]
+<span class="c1"># define train/validation cutoff time</span>
+<span class="n">forecast_horizon_ice</span> <span class="o">=</span> <span class="mi">12</span>
+<span class="n">training_cutoff_ice</span> <span class="o">=</span> <span class="n">converted_series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="o">-</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">forecast_horizon_ice</span><span class="p">)]</span>
 
-# use ice cream sales as target, create train and validation sets and transform data
-series_ice = converted_series[&quot;ice cream&quot;]
-train_ice, val_ice = series_ice.split_before(training_cutoff_ice)
-transformer_ice = Scaler()
-train_ice_transformed = transformer_ice.fit_transform(train_ice)
-val_ice_transformed = transformer_ice.transform(val_ice)
-series_ice_transformed = transformer_ice.transform(series_ice)
+<span class="c1"># use ice cream sales as target, create train and validation sets and transform data</span>
+<span class="n">series_ice</span> <span class="o">=</span> <span class="n">converted_series</span><span class="p">[</span><span class="s2">&quot;ice cream&quot;</span><span class="p">]</span>
+<span class="n">train_ice</span><span class="p">,</span> <span class="n">val_ice</span> <span class="o">=</span> <span class="n">series_ice</span><span class="o">.</span><span class="n">split_before</span><span class="p">(</span><span class="n">training_cutoff_ice</span><span class="p">)</span>
+<span class="n">transformer_ice</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
+<span class="n">train_ice_transformed</span> <span class="o">=</span> <span class="n">transformer_ice</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">train_ice</span><span class="p">)</span>
+<span class="n">val_ice_transformed</span> <span class="o">=</span> <span class="n">transformer_ice</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">val_ice</span><span class="p">)</span>
+<span class="n">series_ice_transformed</span> <span class="o">=</span> <span class="n">transformer_ice</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series_ice</span><span class="p">)</span>
 
-# use heater sales as past covariates and transform data
-covariates_heat = converted_series[&quot;heater&quot;]
-cov_heat_train, cov_heat_val = covariates_heat.split_before(training_cutoff_ice)
-transformer_heat = Scaler()
-transformer_heat.fit(cov_heat_train)
-covariates_heat_transformed = transformer_heat.transform(covariates_heat)
+<span class="c1"># use heater sales as past covariates and transform data</span>
+<span class="n">covariates_heat</span> <span class="o">=</span> <span class="n">converted_series</span><span class="p">[</span><span class="s2">&quot;heater&quot;</span><span class="p">]</span>
+<span class="n">cov_heat_train</span><span class="p">,</span> <span class="n">cov_heat_val</span> <span class="o">=</span> <span class="n">covariates_heat</span><span class="o">.</span><span class="n">split_before</span><span class="p">(</span><span class="n">training_cutoff_ice</span><span class="p">)</span>
+<span class="n">transformer_heat</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
+<span class="n">transformer_heat</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">cov_heat_train</span><span class="p">)</span>
+<span class="n">covariates_heat_transformed</span> <span class="o">=</span> <span class="n">transformer_heat</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">covariates_heat</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1121,28 +1121,28 @@ covariates_heat_transformed = transformer_heat.transform(covariates_heat)
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span># use the last 3 years as past input data
-input_chunk_length_ice = 36
+<span></span><span class="c1"># use the last 3 years as past input data</span>
+<span class="n">input_chunk_length_ice</span> <span class="o">=</span> <span class="mi">36</span>
 
-# use `add_encoders` as we don&#39;t have future covariates
-my_model_ice = TFTModel(
-    input_chunk_length=input_chunk_length_ice,
-    output_chunk_length=forecast_horizon_ice,
-    hidden_size=32,
-    lstm_layers=1,
-    batch_size=16,
-    n_epochs=300,
-    dropout=0.1,
-    add_encoders={&quot;cyclic&quot;: {&quot;future&quot;: [&quot;month&quot;]}},
-    add_relative_index=False,
-    optimizer_kwargs={&quot;lr&quot;: 1e-3},
-    random_state=42,
-)
+<span class="c1"># use `add_encoders` as we don&#39;t have future covariates</span>
+<span class="n">my_model_ice</span> <span class="o">=</span> <span class="n">TFTModel</span><span class="p">(</span>
+    <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length_ice</span><span class="p">,</span>
+    <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">forecast_horizon_ice</span><span class="p">,</span>
+    <span class="n">hidden_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+    <span class="n">lstm_layers</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+    <span class="n">n_epochs</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+    <span class="n">dropout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+    <span class="n">add_encoders</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;cyclic&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;future&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;month&quot;</span><span class="p">]}},</span>
+    <span class="n">add_relative_index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">optimizer_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="mf">1e-3</span><span class="p">},</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
+<span class="p">)</span>
 
-# fit the model with past covariates
-my_model_ice.fit(
-    train_ice_transformed, past_covariates=covariates_heat_transformed, verbose=True
-)
+<span class="c1"># fit the model with past covariates</span>
+<span class="n">my_model_ice</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+    <span class="n">train_ice_transformed</span><span class="p">,</span> <span class="n">past_covariates</span><span class="o">=</span><span class="n">covariates_heat_transformed</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1169,15 +1169,15 @@ Training loss: 0.1257
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>n = 24
-eval_model(
-    model=my_model_ice,
-    n=n,
-    actual_series=series_ice_transformed[
-        train_ice.end_time() - (2 * n - 1) * train_ice.freq :
-    ],
-    val_series=val_ice_transformed,
-)
+<span></span><span class="n">n</span> <span class="o">=</span> <span class="mi">24</span>
+<span class="n">eval_model</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">my_model_ice</span><span class="p">,</span>
+    <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+    <span class="n">actual_series</span><span class="o">=</span><span class="n">series_ice_transformed</span><span class="p">[</span>
+        <span class="n">train_ice</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">-</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">train_ice</span><span class="o">.</span><span class="n">freq</span> <span class="p">:</span>
+    <span class="p">],</span>
+    <span class="n">val_series</span><span class="o">=</span><span class="n">val_ice_transformed</span><span class="p">,</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1197,25 +1197,25 @@ eval_model(
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span># Compute the backtest predictions with the two models
-last_points_only = False
-backtest_series_ice = my_model_ice.historical_forecasts(
-    series_ice_transformed,
-    num_samples=num_samples,
-    start=training_cutoff_ice,
-    forecast_horizon=forecast_horizon_ice,
-    stride=1 if last_points_only else forecast_horizon_ice,
-    retrain=False,
-    last_points_only=last_points_only,
-    overlap_end=True,
-    verbose=True,
-)
+<span></span><span class="c1"># Compute the backtest predictions with the two models</span>
+<span class="n">last_points_only</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">backtest_series_ice</span> <span class="o">=</span> <span class="n">my_model_ice</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
+    <span class="n">series_ice_transformed</span><span class="p">,</span>
+    <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
+    <span class="n">start</span><span class="o">=</span><span class="n">training_cutoff_ice</span><span class="p">,</span>
+    <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">forecast_horizon_ice</span><span class="p">,</span>
+    <span class="n">stride</span><span class="o">=</span><span class="mi">1</span> <span class="k">if</span> <span class="n">last_points_only</span> <span class="k">else</span> <span class="n">forecast_horizon_ice</span><span class="p">,</span>
+    <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">last_points_only</span><span class="o">=</span><span class="n">last_points_only</span><span class="p">,</span>
+    <span class="n">overlap_end</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
 
-backtest_series_ice = (
-    concatenate(backtest_series_ice)
-    if isinstance(backtest_series_ice, list)
-    else backtest_series_ice
-)
+<span class="n">backtest_series_ice</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">concatenate</span><span class="p">(</span><span class="n">backtest_series_ice</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">backtest_series_ice</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
+    <span class="k">else</span> <span class="n">backtest_series_ice</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1230,15 +1230,15 @@ backtest_series_ice = (
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>eval_backtest(
-    backtest_series=backtest_series_ice,
-    actual_series=series_ice_transformed[
-        train_ice.start_time() - 2 * forecast_horizon_ice * train_ice.freq :
-    ],
-    horizon=forecast_horizon_ice,
-    start=training_cutoff_ice,
-    transformer=transformer_ice,
-)
+<span></span><span class="n">eval_backtest</span><span class="p">(</span>
+    <span class="n">backtest_series</span><span class="o">=</span><span class="n">backtest_series_ice</span><span class="p">,</span>
+    <span class="n">actual_series</span><span class="o">=</span><span class="n">series_ice_transformed</span><span class="p">[</span>
+        <span class="n">train_ice</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">forecast_horizon_ice</span> <span class="o">*</span> <span class="n">train_ice</span><span class="o">.</span><span class="n">freq</span> <span class="p">:</span>
+    <span class="p">],</span>
+    <span class="n">horizon</span><span class="o">=</span><span class="n">forecast_horizon_ice</span><span class="p">,</span>
+    <span class="n">start</span><span class="o">=</span><span class="n">training_cutoff_ice</span><span class="p">,</span>
+    <span class="n">transformer</span><span class="o">=</span><span class="n">transformer_ice</span><span class="p">,</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1295,7 +1295,7 @@ MAPE: 4.26%
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

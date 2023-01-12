@@ -254,13 +254,13 @@
 
 <div class="viewcode-block" id="Likelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood">[docs]</a><span class="k">class</span> <span class="nc">Likelihood</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Abstract class for a likelihood model.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">prior_strength</span> <span class="o">=</span> <span class="n">prior_strength</span>
 
 <div class="viewcode-block" id="Likelihood.compute_loss"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood.compute_loss">[docs]</a>    <span class="k">def</span> <span class="nf">compute_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Computes a loss from a `model_output`, which represents the parameters of a given probability</span>
 <span class="sd">        distribution for every ground truth value in `target`, and the `target` itself.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -291,7 +291,7 @@
         <span class="k">return</span> <span class="n">loss</span></div>
 
     <span class="k">def</span> <span class="nf">_nllloss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params_out</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This is the basic way to compute the NLL loss. It can be overwritten by likelihoods for which</span>
 <span class="sd">        PyTorch proposes a numerically better NLL loss.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -300,7 +300,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">_prior_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Has to be overwritten by the Likelihood objects supporting specifying a prior distribution on the</span>
 <span class="sd">        outputs. If it returns None, no prior will be used and the model will be trained with plain maximum likelihood.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -308,14 +308,14 @@
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">_distr_from_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">distributions</span><span class="o">.</span><span class="n">Distribution</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns a torch distribution built with the specified params</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span>
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns the distribution parameters, obtained from the raw model outputs</span>
 <span class="sd">        (e.g. applies softplus or sigmoids to get parameters in the expected domains).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -323,7 +323,7 @@
 
 <div class="viewcode-block" id="Likelihood.sample"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood.sample">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Samples a prediction from the probability distributions defined by the specific likelihood model</span>
 <span class="sd">        and the parameters given in `model_output`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -332,7 +332,7 @@
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">num_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns the number of parameters that define the probability distribution for one single</span>
 <span class="sd">        target value.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -343,7 +343,7 @@
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">prior_mu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_sigma</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">beta_nll</span><span class="o">=</span><span class="mf">0.0</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Univariate Gaussian distribution.</span>
 
 <span class="sd">        https://en.wikipedia.org/wiki/Normal_distribution</span>
@@ -423,7 +423,7 @@
 
 <div class="viewcode-block" id="PoissonLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.PoissonLikelihood">[docs]</a><span class="k">class</span> <span class="nc">PoissonLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_lambda</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Poisson distribution. Can typically be used to model event counts during time intervals, when the events</span>
 <span class="sd">        happen independently of the time since the last event.</span>
 
@@ -474,7 +474,7 @@
 
 <div class="viewcode-block" id="NegativeBinomialLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.NegativeBinomialLikelihood">[docs]</a><span class="k">class</span> <span class="nc">NegativeBinomialLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Negative Binomial distribution.</span>
 
 <span class="sd">        https://en.wikipedia.org/wiki/Negative_binomial_distribution</span>
@@ -525,7 +525,7 @@
 
 <div class="viewcode-block" id="BernoulliLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.BernoulliLikelihood">[docs]</a><span class="k">class</span> <span class="nc">BernoulliLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Bernoulli distribution.</span>
 
 <span class="sd">        https://en.wikipedia.org/wiki/Bernoulli_distribution</span>
@@ -570,7 +570,7 @@
 
 <div class="viewcode-block" id="BetaLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.BetaLikelihood">[docs]</a><span class="k">class</span> <span class="nc">BetaLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_alpha</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_beta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Beta distribution.</span>
 
 <span class="sd">        https://en.wikipedia.org/wiki/Beta_distribution</span>
@@ -621,7 +621,7 @@
 
 <div class="viewcode-block" id="CauchyLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.CauchyLikelihood">[docs]</a><span class="k">class</span> <span class="nc">CauchyLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_xzero</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Cauchy Distribution.</span>
 
 <span class="sd">        https://en.wikipedia.org/wiki/Cauchy_distribution</span>
@@ -679,7 +679,7 @@
 
 <div class="viewcode-block" id="ContinuousBernoulliLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.ContinuousBernoulliLikelihood">[docs]</a><span class="k">class</span> <span class="nc">ContinuousBernoulliLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_lambda</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Continuous Bernoulli distribution.</span>
 
 <span class="sd">        https://en.wikipedia.org/wiki/Continuous_Bernoulli_distribution</span>
@@ -725,7 +725,7 @@
 
 <div class="viewcode-block" id="DirichletLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.DirichletLikelihood">[docs]</a><span class="k">class</span> <span class="nc">DirichletLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_alphas</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Dirichlet distribution.</span>
 
 <span class="sd">        https://en.wikipedia.org/wiki/Dirichlet_distribution</span>
@@ -773,7 +773,7 @@
 
 <div class="viewcode-block" id="ExponentialLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.ExponentialLikelihood">[docs]</a><span class="k">class</span> <span class="nc">ExponentialLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_lambda</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Exponential distribution.</span>
 
 <span class="sd">        https://en.wikipedia.org/wiki/Exponential_distribution</span>
@@ -818,7 +818,7 @@
 
 <div class="viewcode-block" id="GammaLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.GammaLikelihood">[docs]</a><span class="k">class</span> <span class="nc">GammaLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_alpha</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_beta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Gamma distribution.</span>
 
 <span class="sd">        https://en.wikipedia.org/wiki/Gamma_distribution</span>
@@ -868,7 +868,7 @@
 
 <div class="viewcode-block" id="GeometricLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.GeometricLikelihood">[docs]</a><span class="k">class</span> <span class="nc">GeometricLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Geometric distribution.</span>
 
 <span class="sd">        https://en.wikipedia.org/wiki/Geometric_distribution</span>
@@ -913,7 +913,7 @@
 
 <div class="viewcode-block" id="GumbelLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.GumbelLikelihood">[docs]</a><span class="k">class</span> <span class="nc">GumbelLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_mu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_beta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Gumbel distribution.</span>
 
 <span class="sd">        https://en.wikipedia.org/wiki/Gumbel_distribution</span>
@@ -962,7 +962,7 @@
 
 <div class="viewcode-block" id="HalfNormalLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.HalfNormalLikelihood">[docs]</a><span class="k">class</span> <span class="nc">HalfNormalLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_sigma</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Half-normal distribution.</span>
 
 <span class="sd">        https://en.wikipedia.org/wiki/Half-normal_distribution</span>
@@ -1007,7 +1007,7 @@
 
 <div class="viewcode-block" id="LaplaceLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.LaplaceLikelihood">[docs]</a><span class="k">class</span> <span class="nc">LaplaceLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_mu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_b</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Laplace distribution.</span>
 
 <span class="sd">        https://en.wikipedia.org/wiki/Laplace_distribution</span>
@@ -1056,7 +1056,7 @@
 
 <div class="viewcode-block" id="LogNormalLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.LogNormalLikelihood">[docs]</a><span class="k">class</span> <span class="nc">LogNormalLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_mu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_sigma</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Log-normal distribution.</span>
 
 <span class="sd">        https://en.wikipedia.org/wiki/Log-normal_distribution</span>
@@ -1105,7 +1105,7 @@
 
 <div class="viewcode-block" id="WeibullLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.WeibullLikelihood">[docs]</a><span class="k">class</span> <span class="nc">WeibullLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Weibull distribution.</span>
 
 <span class="sd">        https://en.wikipedia.org/wiki/Weibull_distribution</span>
@@ -1149,7 +1149,7 @@
 
 <div class="viewcode-block" id="QuantileRegression"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression">[docs]</a><span class="k">class</span> <span class="nc">QuantileRegression</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantiles</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The &quot;likelihood&quot; corresponding to quantile regression.</span>
 <span class="sd">        It uses the Quantile Loss Metric for custom quantiles centered around q=0.5.</span>
 
@@ -1191,7 +1191,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">quantiles_tensor</span> <span class="o">=</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="QuantileRegression.sample"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression.sample">[docs]</a>    <span class="k">def</span> <span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Sample uniformly between [0, 1] (for each batch example) and return the linear interpolation between the fitted</span>
 <span class="sd">        quantiles closest to the sampled value.</span>
 
@@ -1254,7 +1254,7 @@
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">)</span>
 
 <div class="viewcode-block" id="QuantileRegression.compute_loss"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression.compute_loss">[docs]</a>    <span class="k">def</span> <span class="nf">compute_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        We are re-defining a custom loss (which is not a likelihood loss) compared to Likelihood</span>
 
 <span class="sd">        Parameters</span>
@@ -1386,7 +1386,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

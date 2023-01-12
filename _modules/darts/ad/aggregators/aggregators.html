@@ -193,19 +193,19 @@
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;returns the name of the aggregator&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;returns the name of the aggregator&quot;&quot;&quot;</span>
         <span class="k">pass</span>
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">_predict_core</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;returns the aggregated results&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;returns the aggregated results&quot;&quot;&quot;</span>
         <span class="k">pass</span>
 
 <div class="viewcode-block" id="Aggregator.predict"><a class="viewcode-back" href="../../../../generated_api/darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.Aggregator.predict">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Aggregates the (sequence of) multivariate binary series given as</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Aggregates the (sequence of) multivariate binary series given as</span>
 <span class="sd">        input into a (sequence of) univariate binary series.</span>
 
 <span class="sd">        Parameters</span>
@@ -221,7 +221,7 @@
         <span class="k">pass</span></div>
 
     <span class="k">def</span> <span class="nf">_check_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Checks for input if:</span>
 <span class="sd">            - it is a (sequence of) multivariate series (width&gt;1)</span>
 <span class="sd">            - (sequence of) series must be:</span>
@@ -267,7 +267,7 @@
         <span class="n">window</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;recall&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Aggregates the (sequence of) multivariate series given as input into one (sequence of)</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Aggregates the (sequence of) multivariate series given as input into one (sequence of)</span>
 <span class="sd">        series and evaluates the results against true anomalies.</span>
 
 <span class="sd">        Parameters</span>
@@ -333,7 +333,7 @@
 <div class="viewcode-block" id="NonFittableAggregator.predict"><a class="viewcode-back" href="../../../../generated_api/darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.NonFittableAggregator.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Aggregates the (sequence of) multivariate binary series given as</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Aggregates the (sequence of) multivariate binary series given as</span>
 <span class="sd">        input into a (sequence of) univariate binary series.</span>
 
 <span class="sd">        Parameters</span>
@@ -367,7 +367,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">False</span>
 
     <span class="k">def</span> <span class="nf">_assert_fit_called</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Checks if the Aggregator has been fitted before calling its `score()` function.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the Aggregator has been fitted before calling its `score()` function.&quot;&quot;&quot;</span>
 
         <span class="n">raise_if_not</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span><span class="p">,</span>
@@ -379,7 +379,7 @@
         <span class="n">actual_anomalies</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Fit the aggregators on the (sequence of) multivariate binary series.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fit the aggregators on the (sequence of) multivariate binary series.</span>
 
 <span class="sd">        If a list of series is given, they must have the same number of components.</span>
 
@@ -438,7 +438,7 @@
 <div class="viewcode-block" id="FittableAggregator.predict"><a class="viewcode-back" href="../../../../generated_api/darts.ad.aggregators.aggregators.html#darts.ad.aggregators.aggregators.FittableAggregator.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Aggregates the (sequence of) multivariate binary series given as</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Aggregates the (sequence of) multivariate binary series given as</span>
 <span class="sd">        input into a (sequence of) univariate binary series.</span>
 
 <span class="sd">        Parameters</span>
@@ -486,7 +486,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

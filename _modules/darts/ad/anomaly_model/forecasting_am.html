@@ -197,7 +197,7 @@
         <span class="n">model</span><span class="p">:</span> <span class="n">ForecastingModel</span><span class="p">,</span>
         <span class="n">scorer</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">AnomalyScorer</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">AnomalyScorer</span><span class="p">]],</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Forecasting-based Anomaly Detection Model</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Forecasting-based Anomaly Detection Model</span>
 
 <span class="sd">        The forecasting model may or may not be already fitted. The underlying assumption is that `model`</span>
 <span class="sd">        should be able to accurately forecast the series in the absence of anomalies. For this reason,</span>
@@ -239,7 +239,7 @@
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="o">**</span><span class="n">model_fit_kwargs</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Fit the underlying forecasting model (if applicable) and the fittable scorers, if any.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fit the underlying forecasting model (if applicable) and the fittable scorers, if any.</span>
 
 <span class="sd">        Train the model (if not already fitted and ``allow_model_training`` is set to True) and the</span>
 <span class="sd">        scorer(s) (if fittable) on the given time series.</span>
@@ -385,7 +385,7 @@
         <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
         <span class="n">name_covariates</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Convert `covariates` into Sequence, if not already, and checks if their length is equal to the one of `series`.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert `covariates` into Sequence, if not already, and checks if their length is equal to the one of `series`.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -431,7 +431,7 @@
         <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Plot the results of the anomaly model.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot the results of the anomaly model.</span>
 
 <span class="sd">        Computes the score on the given series input and shows the different anomaly scores with respect to time.</span>
 
@@ -526,7 +526,7 @@
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">return_model_prediction</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
-        <span class="sd">&quot;&quot;&quot;Compute anomaly score(s) for the given series.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute anomaly score(s) for the given series.</span>
 
 <span class="sd">        Predicts the given target time series with the forecasting model, and applies the scorer(s)</span>
 <span class="sd">        on the prediction and the target input time series. Outputs the anomaly score of the given</span>
@@ -645,7 +645,7 @@
     <span class="k">def</span> <span class="nf">_check_window_size</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">start</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Checks if the parameters `window` of the scorers are smaller than the maximum window size allowed.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the parameters `window` of the scorers are smaller than the maximum window size allowed.</span>
 <span class="sd">        The maximum size allowed is equal to the output length of the .historical_forecast() applied on `series`.</span>
 <span class="sd">        It is defined by the parameter `start` and the series’ length.</span>
 
@@ -680,7 +680,7 @@
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
 
-        <span class="sd">&quot;&quot;&quot;Compute the historical forecasts that would have been obtained by this model on the `series`.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the historical forecasts that would have been obtained by this model on the `series`.</span>
 
 <span class="sd">        `retrain` is set to False if possible (this is not supported by all models). If set to True, it will always</span>
 <span class="sd">        re-train the model on the entire available history,</span>
@@ -754,7 +754,7 @@
         <span class="n">Sequence</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span>
         <span class="n">Sequence</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]],</span>
     <span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Compute the accuracy of the anomaly scores computed by the model.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the accuracy of the anomaly scores computed by the model.</span>
 
 <span class="sd">        Predicts the `series` with the forecasting model, and applies the</span>
 <span class="sd">        scorer(s) on the predicted time series and the given target time series. Returns the</span>
@@ -857,7 +857,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

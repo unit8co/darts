@@ -686,48 +686,48 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span># fix python path if working locally
-from utils import fix_pythonpath_if_working_locally
+<span></span><span class="c1"># fix python path if working locally</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
 
-fix_pythonpath_if_working_locally()
+<span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
 
-import pandas as pd
-import numpy as np
-import torch
-import matplotlib.pyplot as plt
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
-from darts import TimeSeries
-from darts.utils.timeseries_generation import (
-    gaussian_timeseries,
-    linear_timeseries,
-    sine_timeseries,
-)
-from darts.models import (
-    RNNModel,
-    TCNModel,
-    TransformerModel,
-    NBEATSModel,
-    BlockRNNModel,
-    VARIMA,
-)
-from darts.metrics import mape, smape, mae
-from darts.dataprocessing.transformers import Scaler
-from darts.utils.timeseries_generation import datetime_attribute_timeseries
-from darts.datasets import AirPassengersDataset, MonthlyMilkDataset, ElectricityDataset
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">gaussian_timeseries</span><span class="p">,</span>
+    <span class="n">linear_timeseries</span><span class="p">,</span>
+    <span class="n">sine_timeseries</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">RNNModel</span><span class="p">,</span>
+    <span class="n">TCNModel</span><span class="p">,</span>
+    <span class="n">TransformerModel</span><span class="p">,</span>
+    <span class="n">NBEATSModel</span><span class="p">,</span>
+    <span class="n">BlockRNNModel</span><span class="p">,</span>
+    <span class="n">VARIMA</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">mape</span><span class="p">,</span> <span class="n">smape</span><span class="p">,</span> <span class="n">mae</span>
+<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
+<span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="n">datetime_attribute_timeseries</span>
+<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span><span class="p">,</span> <span class="n">MonthlyMilkDataset</span><span class="p">,</span> <span class="n">ElectricityDataset</span>
 
-import logging
+<span class="kn">import</span> <span class="nn">logging</span>
 
-logging.disable(logging.CRITICAL)
+<span class="n">logging</span><span class="o">.</span><span class="n">disable</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
 
-import warnings
+<span class="kn">import</span> <span class="nn">warnings</span>
 
-warnings.filterwarnings(&quot;ignore&quot;)
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
 
-%matplotlib inline
+<span class="o">%</span><span class="k">matplotlib</span> inline
 
-# for reproducibility
-torch.manual_seed(1)
-np.random.seed(1)
+<span class="c1"># for reproducibility</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -739,12 +739,12 @@ np.random.seed(1)
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>series_air = AirPassengersDataset().load()
-series_milk = MonthlyMilkDataset().load()
+<span></span><span class="n">series_air</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span class="n">series_milk</span> <span class="o">=</span> <span class="n">MonthlyMilkDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 
-series_air.plot(label=&quot;Number of air passengers&quot;)
-series_milk.plot(label=&quot;Pounds of milk produced per cow&quot;)
-plt.legend();
+<span class="n">series_air</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Number of air passengers&quot;</span><span class="p">)</span>
+<span class="n">series_milk</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Pounds of milk produced per cow&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
 </pre></div>
 </div>
 </div>
@@ -764,13 +764,13 @@ plt.legend();
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>scaler_air, scaler_milk = Scaler(), Scaler()
-series_air_scaled = scaler_air.fit_transform(series_air)
-series_milk_scaled = scaler_milk.fit_transform(series_milk)
+<span></span><span class="n">scaler_air</span><span class="p">,</span> <span class="n">scaler_milk</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">(),</span> <span class="n">Scaler</span><span class="p">()</span>
+<span class="n">series_air_scaled</span> <span class="o">=</span> <span class="n">scaler_air</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">series_air</span><span class="p">)</span>
+<span class="n">series_milk_scaled</span> <span class="o">=</span> <span class="n">scaler_milk</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">series_milk</span><span class="p">)</span>
 
-series_air_scaled.plot(label=&quot;air&quot;)
-series_milk_scaled.plot(label=&quot;milk&quot;)
-plt.legend();
+<span class="n">series_air_scaled</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;air&quot;</span><span class="p">)</span>
+<span class="n">series_milk_scaled</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;milk&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
 </pre></div>
 </div>
 </div>
@@ -790,8 +790,8 @@ plt.legend();
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>train_air, val_air = series_air_scaled[:-36], series_air_scaled[-36:]
-train_milk, val_milk = series_milk_scaled[:-36], series_milk_scaled[-36:]
+<span></span><span class="n">train_air</span><span class="p">,</span> <span class="n">val_air</span> <span class="o">=</span> <span class="n">series_air_scaled</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span> <span class="n">series_air_scaled</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:]</span>
+<span class="n">train_milk</span><span class="p">,</span> <span class="n">val_milk</span> <span class="o">=</span> <span class="n">series_milk_scaled</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span> <span class="n">series_milk_scaled</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:]</span>
 </pre></div>
 </div>
 </div>
@@ -839,9 +839,9 @@ are used it requires these covariates to be known for long enough in advance.</p
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>model_air = NBEATSModel(
-    input_chunk_length=24, output_chunk_length=12, n_epochs=200, random_state=0
-)
+<span></span><span class="n">model_air</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span>
+    <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -851,7 +851,7 @@ are used it requires these covariates to be known for long enough in advance.</p
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>model_air.fit(train_air, verbose=True);
+<span></span><span class="n">model_air</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_air</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -868,12 +868,12 @@ but all of this is done transparently behind the scenes.</p>
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>pred = model_air.predict(n=36)
+<span></span><span class="n">pred</span> <span class="o">=</span> <span class="n">model_air</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">)</span>
 
-series_air_scaled.plot(label=&quot;actual&quot;)
-pred.plot(label=&quot;forecast&quot;)
-plt.legend()
-print(&quot;MAPE = {:.2f}%&quot;.format(mape(series_air_scaled, pred)))
+<span class="n">series_air_scaled</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
+<span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;forecast&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MAPE = </span><span class="si">{:.2f}</span><span class="s2">%&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">series_air_scaled</span><span class="p">,</span> <span class="n">pred</span><span class="p">)))</span>
 </pre></div>
 </div>
 </div>
@@ -929,9 +929,9 @@ forecasting models.</p>
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>model_air_milk = NBEATSModel(
-    input_chunk_length=24, output_chunk_length=12, n_epochs=100, random_state=0
-)
+<span></span><span class="n">model_air_milk</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span>
+    <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -941,7 +941,7 @@ forecasting models.</p>
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>model_air_milk.fit([train_air, train_milk], verbose=True);
+<span></span><span class="n">model_air_milk</span><span class="o">.</span><span class="n">fit</span><span class="p">([</span><span class="n">train_air</span><span class="p">,</span> <span class="n">train_milk</span><span class="p">],</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -962,12 +962,12 @@ forecasting models.</p>
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>pred = model_air_milk.predict(n=36, series=train_air)
+<span></span><span class="n">pred</span> <span class="o">=</span> <span class="n">model_air_milk</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">train_air</span><span class="p">)</span>
 
-series_air_scaled.plot(label=&quot;actual&quot;)
-pred.plot(label=&quot;forecast&quot;)
-plt.legend()
-print(&quot;MAPE = {:.2f}%&quot;.format(mape(series_air_scaled, pred)))
+<span class="n">series_air_scaled</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
+<span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;forecast&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MAPE = </span><span class="si">{:.2f}</span><span class="s2">%&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">series_air_scaled</span><span class="p">,</span> <span class="n">pred</span><span class="p">)))</span>
 </pre></div>
 </div>
 </div>
@@ -1001,12 +1001,12 @@ MAPE = 7.58%
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>any_series = sine_timeseries(length=50, freq=&quot;M&quot;)
-pred = model_air_milk.predict(n=36, series=any_series)
+<span></span><span class="n">any_series</span> <span class="o">=</span> <span class="n">sine_timeseries</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;M&quot;</span><span class="p">)</span>
+<span class="n">pred</span> <span class="o">=</span> <span class="n">model_air_milk</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">any_series</span><span class="p">)</span>
 
-any_series.plot(label=&#39;&quot;any series, really&quot;&#39;)
-pred.plot(label=&quot;forecast&quot;)
-plt.legend();
+<span class="n">any_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;&quot;any series, really&quot;&#39;</span><span class="p">)</span>
+<span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;forecast&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
 </pre></div>
 </div>
 </div>
@@ -1030,10 +1030,10 @@ plt.legend();
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>pred_list = model_air_milk.predict(n=36, series=[train_air, train_milk])
-for series, label in zip(pred_list, [&quot;air passengers&quot;, &quot;milk production&quot;]):
-    series.plot(label=f&quot;forecast {label}&quot;)
-plt.legend();
+<span></span><span class="n">pred_list</span> <span class="o">=</span> <span class="n">model_air_milk</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="p">[</span><span class="n">train_air</span><span class="p">,</span> <span class="n">train_milk</span><span class="p">])</span>
+<span class="k">for</span> <span class="n">series</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pred_list</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;air passengers&quot;</span><span class="p">,</span> <span class="s2">&quot;milk production&quot;</span><span class="p">]):</span>
+    <span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;forecast </span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
 </pre></div>
 </div>
 </div>
@@ -1063,39 +1063,39 @@ plt.legend();
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span># build year and month series:
-air_year = datetime_attribute_timeseries(series_air_scaled, attribute=&quot;year&quot;)
-air_month = datetime_attribute_timeseries(series_air_scaled, attribute=&quot;month&quot;)
+<span></span><span class="c1"># build year and month series:</span>
+<span class="n">air_year</span> <span class="o">=</span> <span class="n">datetime_attribute_timeseries</span><span class="p">(</span><span class="n">series_air_scaled</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="s2">&quot;year&quot;</span><span class="p">)</span>
+<span class="n">air_month</span> <span class="o">=</span> <span class="n">datetime_attribute_timeseries</span><span class="p">(</span><span class="n">series_air_scaled</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="s2">&quot;month&quot;</span><span class="p">)</span>
 
-milk_year = datetime_attribute_timeseries(series_milk_scaled, attribute=&quot;year&quot;)
-milk_month = datetime_attribute_timeseries(series_milk_scaled, attribute=&quot;month&quot;)
+<span class="n">milk_year</span> <span class="o">=</span> <span class="n">datetime_attribute_timeseries</span><span class="p">(</span><span class="n">series_milk_scaled</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="s2">&quot;year&quot;</span><span class="p">)</span>
+<span class="n">milk_month</span> <span class="o">=</span> <span class="n">datetime_attribute_timeseries</span><span class="p">(</span><span class="n">series_milk_scaled</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="s2">&quot;month&quot;</span><span class="p">)</span>
 
-# stack year and month to obtain series of 2 dimensions (year and month):
-air_covariates = air_year.stack(air_month)
-milk_covariates = milk_year.stack(milk_month)
+<span class="c1"># stack year and month to obtain series of 2 dimensions (year and month):</span>
+<span class="n">air_covariates</span> <span class="o">=</span> <span class="n">air_year</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">air_month</span><span class="p">)</span>
+<span class="n">milk_covariates</span> <span class="o">=</span> <span class="n">milk_year</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">milk_month</span><span class="p">)</span>
 
-# scale them between 0 and 1:
-scaler_dt_air = Scaler()
-air_covariates = scaler_dt_air.fit_transform(air_covariates)
+<span class="c1"># scale them between 0 and 1:</span>
+<span class="n">scaler_dt_air</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
+<span class="n">air_covariates</span> <span class="o">=</span> <span class="n">scaler_dt_air</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">air_covariates</span><span class="p">)</span>
 
-scaler_dt_milk = Scaler()
-milk_covariates = scaler_dt_milk.fit_transform(milk_covariates)
+<span class="n">scaler_dt_milk</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
+<span class="n">milk_covariates</span> <span class="o">=</span> <span class="n">scaler_dt_milk</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">milk_covariates</span><span class="p">)</span>
 
-# split in train/validation sets:
-air_train_covariates, air_val_covariates = air_covariates[:-36], air_covariates[-36:]
-milk_train_covariates, milk_val_covariates = (
-    milk_covariates[:-36],
-    milk_covariates[-36:],
-)
+<span class="c1"># split in train/validation sets:</span>
+<span class="n">air_train_covariates</span><span class="p">,</span> <span class="n">air_val_covariates</span> <span class="o">=</span> <span class="n">air_covariates</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span> <span class="n">air_covariates</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:]</span>
+<span class="n">milk_train_covariates</span><span class="p">,</span> <span class="n">milk_val_covariates</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">milk_covariates</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span>
+    <span class="n">milk_covariates</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:],</span>
+<span class="p">)</span>
 
-# plot the covariates:
-plt.figure()
-air_covariates.plot()
-plt.title(&quot;Air traffic covariates (year and month)&quot;)
+<span class="c1"># plot the covariates:</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">air_covariates</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Air traffic covariates (year and month)&quot;</span><span class="p">)</span>
 
-plt.figure()
-milk_covariates.plot()
-plt.title(&quot;Milk production covariates (year and month)&quot;);
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">milk_covariates</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Milk production covariates (year and month)&quot;</span><span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -1126,13 +1126,13 @@ plt.title(&quot;Milk production covariates (year and month)&quot;);
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>model_pastcov = BlockRNNModel(
-    model=&quot;LSTM&quot;,
-    input_chunk_length=24,
-    output_chunk_length=12,
-    n_epochs=100,
-    random_state=0,
-)
+<span></span><span class="n">model_pastcov</span> <span class="o">=</span> <span class="n">BlockRNNModel</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;LSTM&quot;</span><span class="p">,</span>
+    <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
+    <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+    <span class="n">n_epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1142,11 +1142,11 @@ plt.title(&quot;Milk production covariates (year and month)&quot;);
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>model_pastcov.fit(
-    series=[train_air, train_milk],
-    past_covariates=[air_train_covariates, milk_train_covariates],
-    verbose=False,
-);
+<span></span><span class="n">model_pastcov</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+    <span class="n">series</span><span class="o">=</span><span class="p">[</span><span class="n">train_air</span><span class="p">,</span> <span class="n">train_milk</span><span class="p">],</span>
+    <span class="n">past_covariates</span><span class="o">=</span><span class="p">[</span><span class="n">air_train_covariates</span><span class="p">,</span> <span class="n">milk_train_covariates</span><span class="p">],</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -1156,22 +1156,22 @@ plt.title(&quot;Milk production covariates (year and month)&quot;);
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>model_futcov = RNNModel(
-    model=&quot;LSTM&quot;,
-    hidden_dim=20,
-    batch_size=8,
-    n_epochs=100,
-    random_state=0,
-    training_length=36,
-    input_chunk_length=24,
-    force_reset=True,
-)
+<span></span><span class="n">model_futcov</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;LSTM&quot;</span><span class="p">,</span>
+    <span class="n">hidden_dim</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">n_epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">training_length</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span>
+    <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
+    <span class="n">force_reset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
 
-model_futcov.fit(
-    series=[train_air, train_milk],
-    future_covariates=[air_train_covariates, milk_train_covariates],
-    verbose=False,
-);
+<span class="n">model_futcov</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+    <span class="n">series</span><span class="o">=</span><span class="p">[</span><span class="n">train_air</span><span class="p">,</span> <span class="n">train_milk</span><span class="p">],</span>
+    <span class="n">future_covariates</span><span class="o">=</span><span class="p">[</span><span class="n">air_train_covariates</span><span class="p">,</span> <span class="n">milk_train_covariates</span><span class="p">],</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -1184,11 +1184,11 @@ model_futcov.fit(
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>pred_cov = model_pastcov.predict(n=36, series=train_air, past_covariates=air_covariates)
+<span></span><span class="n">pred_cov</span> <span class="o">=</span> <span class="n">model_pastcov</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">train_air</span><span class="p">,</span> <span class="n">past_covariates</span><span class="o">=</span><span class="n">air_covariates</span><span class="p">)</span>
 
-series_air_scaled.plot(label=&quot;actual&quot;)
-pred_cov.plot(label=&quot;forecast&quot;)
-plt.legend();
+<span class="n">series_air_scaled</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
+<span class="n">pred_cov</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;forecast&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
 </pre></div>
 </div>
 </div>
@@ -1206,13 +1206,13 @@ plt.legend();
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>pred_cov = model_futcov.predict(
-    n=36, series=train_air, future_covariates=air_covariates
-)
+<span></span><span class="n">pred_cov</span> <span class="o">=</span> <span class="n">model_futcov</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+    <span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">train_air</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">air_covariates</span>
+<span class="p">)</span>
 
-series_air_scaled.plot(label=&quot;actual&quot;)
-pred_cov.plot(label=&quot;forecast&quot;)
-plt.legend();
+<span class="n">series_air_scaled</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
+<span class="n">pred_cov</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;forecast&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
 </pre></div>
 </div>
 </div>
@@ -1232,35 +1232,35 @@ plt.legend();
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>backtest_pastcov = model_pastcov.historical_forecasts(
-    series_air_scaled,
-    past_covariates=air_covariates,
-    start=0.6,
-    forecast_horizon=12,
-    stride=1,
-    retrain=False,
-)
+<span></span><span class="n">backtest_pastcov</span> <span class="o">=</span> <span class="n">model_pastcov</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
+    <span class="n">series_air_scaled</span><span class="p">,</span>
+    <span class="n">past_covariates</span><span class="o">=</span><span class="n">air_covariates</span><span class="p">,</span>
+    <span class="n">start</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>
+    <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+    <span class="n">stride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
 
-print(
-    &quot;MAPE (BlockRNNModel with past covariates) = {:.2f}%&quot;.format(
-        mape(series_air_scaled, backtest_pastcov)
-    )
-)
+<span class="nb">print</span><span class="p">(</span>
+    <span class="s2">&quot;MAPE (BlockRNNModel with past covariates) = </span><span class="si">{:.2f}</span><span class="s2">%&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">mape</span><span class="p">(</span><span class="n">series_air_scaled</span><span class="p">,</span> <span class="n">backtest_pastcov</span><span class="p">)</span>
+    <span class="p">)</span>
+<span class="p">)</span>
 
-backtest_futcov = model_futcov.historical_forecasts(
-    series_air_scaled,
-    future_covariates=air_covariates,
-    start=0.6,
-    forecast_horizon=12,
-    stride=1,
-    retrain=False,
-)
+<span class="n">backtest_futcov</span> <span class="o">=</span> <span class="n">model_futcov</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
+    <span class="n">series_air_scaled</span><span class="p">,</span>
+    <span class="n">future_covariates</span><span class="o">=</span><span class="n">air_covariates</span><span class="p">,</span>
+    <span class="n">start</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>
+    <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+    <span class="n">stride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
 
-print(
-    &quot;MAPE (RNNModel with future covariates) = {:.2f}%&quot;.format(
-        mape(series_air_scaled, backtest_futcov)
-    )
-)
+<span class="nb">print</span><span class="p">(</span>
+    <span class="s2">&quot;MAPE (RNNModel with future covariates) = </span><span class="si">{:.2f}</span><span class="s2">%&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">mape</span><span class="p">(</span><span class="n">series_air_scaled</span><span class="p">,</span> <span class="n">backtest_futcov</span><span class="p">)</span>
+    <span class="p">)</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1279,14 +1279,14 @@ MAPE (RNNModel with future covariates) = 15.21%
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>fig, axs = plt.subplots(1, 2, figsize=(14, 6))
-series_air_scaled.plot(label=&quot;actual&quot;, ax=axs[0])
-backtest_pastcov.plot(label=&quot;forecast BlockRNN&quot;, ax=axs[0])
-axs[0].legend()
-series_air_scaled.plot(label=&quot;actual&quot;, ax=axs[1])
-backtest_futcov.plot(label=&quot;forecast RNN&quot;, ax=axs[1], color=&quot;darkviolet&quot;)
-axs[1].legend()
-plt.show()
+<span></span><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">series_air_scaled</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">backtest_pastcov</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;forecast BlockRNN&quot;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">series_air_scaled</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">backtest_futcov</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;forecast RNN&quot;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;darkviolet&quot;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -1315,7 +1315,7 @@ have a sufficient span, otherwise Darts will complain.</p>
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>multi_serie_elec = ElectricityDataset().load()
+<span></span><span class="n">multi_serie_elec</span> <span class="o">=</span> <span class="n">ElectricityDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -1325,13 +1325,13 @@ have a sufficient span, otherwise Darts will complain.</p>
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span># retaining only three components in different ranges
-retained_components = [&quot;MT_002&quot;, &quot;MT_008&quot;, &quot;MT_009&quot;]
-multi_serie_elec = multi_serie_elec[retained_components]
-# resampling the multivariate time serie
-multi_serie_elec = multi_serie_elec.resample(freq=&quot;1H&quot;)
-# keep the values for the last 5 days
-multi_serie_elec = multi_serie_elec[-168:]
+<span></span><span class="c1"># retaining only three components in different ranges</span>
+<span class="n">retained_components</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;MT_002&quot;</span><span class="p">,</span> <span class="s2">&quot;MT_008&quot;</span><span class="p">,</span> <span class="s2">&quot;MT_009&quot;</span><span class="p">]</span>
+<span class="n">multi_serie_elec</span> <span class="o">=</span> <span class="n">multi_serie_elec</span><span class="p">[</span><span class="n">retained_components</span><span class="p">]</span>
+<span class="c1"># resampling the multivariate time serie</span>
+<span class="n">multi_serie_elec</span> <span class="o">=</span> <span class="n">multi_serie_elec</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="s2">&quot;1H&quot;</span><span class="p">)</span>
+<span class="c1"># keep the values for the last 5 days</span>
+<span class="n">multi_serie_elec</span> <span class="o">=</span> <span class="n">multi_serie_elec</span><span class="p">[</span><span class="o">-</span><span class="mi">168</span><span class="p">:]</span>
 </pre></div>
 </div>
 </div>
@@ -1340,8 +1340,8 @@ multi_serie_elec = multi_serie_elec[-168:]
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>multi_serie_elec.plot()
-plt.show()
+<span></span><span class="n">multi_serie_elec</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -1362,20 +1362,20 @@ plt.show()
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span># split in train/validation sets
-training_set, validation_set = multi_serie_elec[:-24], multi_serie_elec[-24:]
+<span></span><span class="c1"># split in train/validation sets</span>
+<span class="n">training_set</span><span class="p">,</span> <span class="n">validation_set</span> <span class="o">=</span> <span class="n">multi_serie_elec</span><span class="p">[:</span><span class="o">-</span><span class="mi">24</span><span class="p">],</span> <span class="n">multi_serie_elec</span><span class="p">[</span><span class="o">-</span><span class="mi">24</span><span class="p">:]</span>
 
-# define a scaler, by default, normalize each component between 0 and 1
-scaler_dataset = Scaler()
-# scaler is fit on training set only to avoid leakage
-training_scaled = scaler_dataset.fit_transform(training_set)
-validation_scaled = scaler_dataset.transform(validation_set)
+<span class="c1"># define a scaler, by default, normalize each component between 0 and 1</span>
+<span class="n">scaler_dataset</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
+<span class="c1"># scaler is fit on training set only to avoid leakage</span>
+<span class="n">training_scaled</span> <span class="o">=</span> <span class="n">scaler_dataset</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">training_set</span><span class="p">)</span>
+<span class="n">validation_scaled</span> <span class="o">=</span> <span class="n">scaler_dataset</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">validation_set</span><span class="p">)</span>
 
 
-def fit_and_pred(model, training, validation):
-    model.fit(training)
-    forecast = model.predict(len(validation))
-    return forecast
+<span class="k">def</span> <span class="nf">fit_and_pred</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">training</span><span class="p">,</span> <span class="n">validation</span><span class="p">):</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">training</span><span class="p">)</span>
+    <span class="n">forecast</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">validation</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">forecast</span>
 </pre></div>
 </div>
 </div>
@@ -1385,24 +1385,24 @@ def fit_and_pred(model, training, validation):
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>model_VARIMA = VARIMA(p=12, d=0, q=0, trend=&quot;n&quot;)
+<span></span><span class="n">model_VARIMA</span> <span class="o">=</span> <span class="n">VARIMA</span><span class="p">(</span><span class="n">p</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">trend</span><span class="o">=</span><span class="s2">&quot;n&quot;</span><span class="p">)</span>
 
-model_GRU = RNNModel(
-    input_chunk_length=24,
-    model=&quot;LSTM&quot;,
-    hidden_dim=25,
-    n_rnn_layers=3,
-    training_length=36,
-    n_epochs=200,
-)
+<span class="n">model_GRU</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="p">(</span>
+    <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;LSTM&quot;</span><span class="p">,</span>
+    <span class="n">hidden_dim</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span>
+    <span class="n">n_rnn_layers</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">training_length</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span>
+    <span class="n">n_epochs</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+<span class="p">)</span>
 
-# training and prediction with the VARIMA model
-forecast_VARIMA = fit_and_pred(model_VARIMA, training_scaled, validation_scaled)
-print(&quot;MAE (VARIMA) = {:.2f}&quot;.format(mae(validation_scaled, forecast_VARIMA)))
+<span class="c1"># training and prediction with the VARIMA model</span>
+<span class="n">forecast_VARIMA</span> <span class="o">=</span> <span class="n">fit_and_pred</span><span class="p">(</span><span class="n">model_VARIMA</span><span class="p">,</span> <span class="n">training_scaled</span><span class="p">,</span> <span class="n">validation_scaled</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MAE (VARIMA) = </span><span class="si">{:.2f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mae</span><span class="p">(</span><span class="n">validation_scaled</span><span class="p">,</span> <span class="n">forecast_VARIMA</span><span class="p">)))</span>
 
-# training and prediction with the RNN model
-forecast_RNN = fit_and_pred(model_GRU, training_scaled, validation_scaled)
-print(&quot;MAE (RNN) = {:.2f}&quot;.format(mae(validation_scaled, forecast_RNN)))
+<span class="c1"># training and prediction with the RNN model</span>
+<span class="n">forecast_RNN</span> <span class="o">=</span> <span class="n">fit_and_pred</span><span class="p">(</span><span class="n">model_GRU</span><span class="p">,</span> <span class="n">training_scaled</span><span class="p">,</span> <span class="n">validation_scaled</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MAE (RNN) = </span><span class="si">{:.2f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mae</span><span class="p">(</span><span class="n">validation_scaled</span><span class="p">,</span> <span class="n">forecast_RNN</span><span class="p">)))</span>
 </pre></div>
 </div>
 </div>
@@ -1440,22 +1440,22 @@ MAE (RNN) = 0.10
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>forecast_VARIMA = scaler_dataset.inverse_transform(forecast_VARIMA)
-forecast_RNN = scaler_dataset.inverse_transform(forecast_RNN)
+<span></span><span class="n">forecast_VARIMA</span> <span class="o">=</span> <span class="n">scaler_dataset</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">forecast_VARIMA</span><span class="p">)</span>
+<span class="n">forecast_RNN</span> <span class="o">=</span> <span class="n">scaler_dataset</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">forecast_RNN</span><span class="p">)</span>
 
-labels = [f&quot;forecast {component}&quot; for component in retained_components]
-fig, axs = plt.subplots(1, 2, figsize=(14, 6))
-validation_set.plot(ax=axs[0])
-forecast_VARIMA.plot(label=labels, ax=axs[0])
-axs[0].set_ylim(0, 500)
-axs[0].set_title(&quot;VARIMA model forecast&quot;)
-axs[0].legend(loc=&quot;upper left&quot;)
-validation_set.plot(ax=axs[1])
-forecast_RNN.plot(label=labels, ax=axs[1])
-axs[1].set_ylim(0, 500)
-axs[1].set_title(&quot;RNN model forecast&quot;)
-axs[1].legend(loc=&quot;upper left&quot;)
-plt.show()
+<span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;forecast </span><span class="si">{</span><span class="n">component</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">retained_components</span><span class="p">]</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">validation_set</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">forecast_VARIMA</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;VARIMA model forecast&quot;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;upper left&quot;</span><span class="p">)</span>
+<span class="n">validation_set</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">forecast_RNN</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;RNN model forecast&quot;</span><span class="p">)</span>
+<span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;upper left&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -1509,7 +1509,7 @@ plt.show()
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

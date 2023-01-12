@@ -586,16 +586,16 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>%reload_ext autoreload
-%autoreload 2
-%matplotlib inline
+<span></span><span class="o">%</span><span class="k">reload_ext</span> autoreload
+<span class="o">%</span><span class="k">autoreload</span> 2
+<span class="o">%</span><span class="k">matplotlib</span> inline
 
-import numpy as np
-import matplotlib.pyplot as plt
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
-from darts import TimeSeries
-from darts.models import KalmanFilter
-from darts.utils import timeseries_generation as tg
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">KalmanFilter</span>
+<span class="kn">from</span> <span class="nn">darts.utils</span> <span class="kn">import</span> <span class="n">timeseries_generation</span> <span class="k">as</span> <span class="n">tg</span>
 </pre></div>
 </div>
 </div>
@@ -607,26 +607,26 @@ from darts.utils import timeseries_generation as tg
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>NOISE_DISTANCE = 0.1
-SAMPLE_SIZE = 200
-np.random.seed(42)
+<span></span><span class="n">NOISE_DISTANCE</span> <span class="o">=</span> <span class="mf">0.1</span>
+<span class="n">SAMPLE_SIZE</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
 
-# Prepare the input
-u = TimeSeries.from_values(np.heaviside(np.linspace(-5, 10, SAMPLE_SIZE), 0))
+<span class="c1"># Prepare the input</span>
+<span class="n">u</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">heaviside</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">SAMPLE_SIZE</span><span class="p">),</span> <span class="mi">0</span><span class="p">))</span>
 
-# Prepare the output
-y = u * TimeSeries.from_values(1 - np.exp(-np.linspace(-5, 10, SAMPLE_SIZE)))
+<span class="c1"># Prepare the output</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">u</span> <span class="o">*</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">SAMPLE_SIZE</span><span class="p">)))</span>
 
-# Add white noise to obtain the observations
-noise = tg.gaussian_timeseries(length=SAMPLE_SIZE, std=NOISE_DISTANCE)
-y_noise = y + noise
+<span class="c1"># Add white noise to obtain the observations</span>
+<span class="n">noise</span> <span class="o">=</span> <span class="n">tg</span><span class="o">.</span><span class="n">gaussian_timeseries</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="n">SAMPLE_SIZE</span><span class="p">,</span> <span class="n">std</span><span class="o">=</span><span class="n">NOISE_DISTANCE</span><span class="p">)</span>
+<span class="n">y_noise</span> <span class="o">=</span> <span class="n">y</span> <span class="o">+</span> <span class="n">noise</span>
 
-plt.figure(figsize=[12, 8])
-u.plot(label=&quot;Input&quot;)
-y.plot(color=&quot;gray&quot;, label=&quot;Output&quot;)
-y_noise.plot(color=&quot;red&quot;, label=&quot;Noisy observations&quot;)
-plt.legend()
-plt.show()
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">[</span><span class="mi">12</span><span class="p">,</span> <span class="mi">8</span><span class="p">])</span>
+<span class="n">u</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Input&quot;</span><span class="p">)</span>
+<span class="n">y</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Output&quot;</span><span class="p">)</span>
+<span class="n">y_noise</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Noisy observations&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -646,16 +646,16 @@ plt.show()
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>kf = KalmanFilter(dim_x=1)
-kf.fit(y_noise, u)
-y_filtered = kf.filter(y_noise, u)
+<span></span><span class="n">kf</span> <span class="o">=</span> <span class="n">KalmanFilter</span><span class="p">(</span><span class="n">dim_x</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">kf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">y_noise</span><span class="p">,</span> <span class="n">u</span><span class="p">)</span>
+<span class="n">y_filtered</span> <span class="o">=</span> <span class="n">kf</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">y_noise</span><span class="p">,</span> <span class="n">u</span><span class="p">)</span>
 
-plt.figure(figsize=[12, 8])
-u.plot(label=&quot;Input&quot;)
-y.plot(color=&quot;gray&quot;, label=&quot;Output&quot;)
-y_noise.plot(color=&quot;red&quot;, label=&quot;Noisy observations&quot;)
-y_filtered.plot(color=&quot;blue&quot;, label=&quot;Filtered observations&quot;)
-plt.legend()
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">[</span><span class="mi">12</span><span class="p">,</span> <span class="mi">8</span><span class="p">])</span>
+<span class="n">u</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Input&quot;</span><span class="p">)</span>
+<span class="n">y</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Output&quot;</span><span class="p">)</span>
+<span class="n">y_noise</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Noisy observations&quot;</span><span class="p">)</span>
+<span class="n">y_filtered</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Filtered observations&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -681,14 +681,14 @@ plt.legend()
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>y_filtered = kf.filter(y_noise, u, num_samples=1000)
+<span></span><span class="n">y_filtered</span> <span class="o">=</span> <span class="n">kf</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">y_noise</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
 
-plt.figure(figsize=[12, 8])
-u.plot(label=&quot;Input&quot;)
-y.plot(color=&quot;gray&quot;, label=&quot;Output&quot;)
-y_noise.plot(color=&quot;red&quot;, label=&quot;Noisy observations&quot;)
-y_filtered.plot(color=&quot;blue&quot;, label=&quot;Filtered observations&quot;)
-plt.legend()
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">[</span><span class="mi">12</span><span class="p">,</span> <span class="mi">8</span><span class="p">])</span>
+<span class="n">u</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Input&quot;</span><span class="p">)</span>
+<span class="n">y</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Output&quot;</span><span class="p">)</span>
+<span class="n">y_noise</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Noisy observations&quot;</span><span class="p">)</span>
+<span class="n">y_filtered</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Filtered observations&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -717,26 +717,26 @@ plt.legend()
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>NOISE_DISTANCE = 0.5
-SAMPLE_SIZE = 10000
-RESIZE_NOISE = 150
+<span></span><span class="n">NOISE_DISTANCE</span> <span class="o">=</span> <span class="mf">0.5</span>
+<span class="n">SAMPLE_SIZE</span> <span class="o">=</span> <span class="mi">10000</span>
+<span class="n">RESIZE_NOISE</span> <span class="o">=</span> <span class="mi">150</span>
 
-# Prepare the drawing
-theta = np.radians(np.linspace(360 * 15, 0, SAMPLE_SIZE))
-r = theta**2
-x_2 = r * np.cos(theta)
-y_2 = r * np.sin(theta)
+<span class="c1"># Prepare the drawing</span>
+<span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">360</span> <span class="o">*</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">SAMPLE_SIZE</span><span class="p">))</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">theta</span><span class="o">**</span><span class="mi">2</span>
+<span class="n">x_2</span> <span class="o">=</span> <span class="n">r</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+<span class="n">y_2</span> <span class="o">=</span> <span class="n">r</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
 
-# add white noise (gaussian noise, can be mapped from the random distribution using rand**3)
-# and resize to RESIZE_NOISE
-x_2_noise = x_2 + (np.random.normal(0, NOISE_DISTANCE, SAMPLE_SIZE) ** 3) * RESIZE_NOISE
-y_2_noise = y_2 + (np.random.normal(0, NOISE_DISTANCE, SAMPLE_SIZE) ** 3) * RESIZE_NOISE
+<span class="c1"># add white noise (gaussian noise, can be mapped from the random distribution using rand**3)</span>
+<span class="c1"># and resize to RESIZE_NOISE</span>
+<span class="n">x_2_noise</span> <span class="o">=</span> <span class="n">x_2</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">NOISE_DISTANCE</span><span class="p">,</span> <span class="n">SAMPLE_SIZE</span><span class="p">)</span> <span class="o">**</span> <span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="n">RESIZE_NOISE</span>
+<span class="n">y_2_noise</span> <span class="o">=</span> <span class="n">y_2</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">NOISE_DISTANCE</span><span class="p">,</span> <span class="n">SAMPLE_SIZE</span><span class="p">)</span> <span class="o">**</span> <span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="n">RESIZE_NOISE</span>
 
-plt.figure(figsize=[20, 20])
-plt.plot(x_2_noise, y_2_noise, color=&quot;red&quot;, label=&quot;Noisy spiral drawing.&quot;)
-plt.plot(x_2, y_2, label=&quot;Original spiral drawing.&quot;)
-plt.legend()
-plt.show()
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">[</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_2_noise</span><span class="p">,</span> <span class="n">y_2_noise</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Noisy spiral drawing.&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_2</span><span class="p">,</span> <span class="n">y_2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Original spiral drawing.&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -754,20 +754,20 @@ plt.show()
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>kf = KalmanFilter(dim_x=2)
-ts = TimeSeries.from_values(x_2_noise).stack(TimeSeries.from_values(y_2_noise))
-kf.fit(ts, num_block_rows=50)
+<span></span><span class="n">kf</span> <span class="o">=</span> <span class="n">KalmanFilter</span><span class="p">(</span><span class="n">dim_x</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">ts</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span><span class="n">x_2_noise</span><span class="p">)</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span><span class="n">y_2_noise</span><span class="p">))</span>
+<span class="n">kf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">num_block_rows</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
 
-filtered_ts = kf.filter(ts).values()
-filtered_x = filtered_ts[:, 0]
-filtered_y = filtered_ts[:, 1]
+<span class="n">filtered_ts</span> <span class="o">=</span> <span class="n">kf</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+<span class="n">filtered_x</span> <span class="o">=</span> <span class="n">filtered_ts</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+<span class="n">filtered_y</span> <span class="o">=</span> <span class="n">filtered_ts</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
 
-plt.figure(figsize=[20, 20])
-plt.plot(x_2_noise, y_2_noise, color=&quot;red&quot;, label=&quot;Noisy spiral drawing.&quot;)
-plt.plot(
-    filtered_x, filtered_y, color=&quot;blue&quot;, linewidth=2, label=&quot;Filtered spiral drawing.&quot;
-)
-plt.legend()
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">[</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_2_noise</span><span class="p">,</span> <span class="n">y_2_noise</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Noisy spiral drawing.&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">filtered_x</span><span class="p">,</span> <span class="n">filtered_y</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Filtered spiral drawing.&quot;</span>
+<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -824,7 +824,7 @@ plt.legend()
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

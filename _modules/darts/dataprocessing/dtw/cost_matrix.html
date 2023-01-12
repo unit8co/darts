@@ -178,7 +178,7 @@
 
 
 <div class="viewcode-block" id="CostMatrix"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.cost_matrix.html#darts.dataprocessing.dtw.cost_matrix.CostMatrix">[docs]</a><span class="k">class</span> <span class="nc">CostMatrix</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    (n+1) x (m+1) Matrix</span>
 <span class="sd">    Cell (i,j) corresponds to minimum total cost/distance of matching elements (i-1, j-1) in series1 and series2.</span>
 
@@ -206,7 +206,7 @@
 
 <div class="viewcode-block" id="CostMatrix.to_dense"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.cost_matrix.html#darts.dataprocessing.dtw.cost_matrix.CostMatrix.to_dense">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">to_dense</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        Dense n x m numpy array, where empty cells are set to np.inf</span>
@@ -215,7 +215,7 @@
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_from_window</span><span class="p">(</span><span class="n">window</span><span class="p">:</span> <span class="n">Window</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Creates a cost matrix from a window.</span>
 <span class="sd">        Depending on the density of the active cells in the window,</span>
 <span class="sd">        will select either a dense or sparse storage representation.</span>
@@ -344,7 +344,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

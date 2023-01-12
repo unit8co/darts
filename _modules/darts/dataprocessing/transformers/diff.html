@@ -187,7 +187,7 @@
         <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Differencing data transformer.</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Differencing data transformer.</span>
 
 <span class="sd">        Differencing is typically applied to a time series to make it stationary; see [1]_ for further details.</span>
 <span class="sd">        The transformation is applied independently over each dimension (component) and sample of the time series.</span>
@@ -284,7 +284,7 @@
         <span class="n">raise_if</span><span class="p">(</span>
             <span class="n">series</span><span class="o">.</span><span class="n">n_timesteps</span> <span class="o">&lt;=</span> <span class="n">lags_sum</span><span class="p">,</span>
             <span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Series requires at least </span><span class="si">{</span><span class="n">lags_sum</span> <span class="o">+</span> <span class="mi">1</span><span class="si">}</span><span class="s2"> timesteps &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Series requires at least </span><span class="si">{</span><span class="n">lags_sum</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2"> timesteps &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;to difference with lags </span><span class="si">{</span><span class="n">lags</span><span class="si">}</span><span class="s2">; series only has &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">series</span><span class="o">.</span><span class="n">n_timesteps</span><span class="si">}</span><span class="s2"> timesteps.&quot;</span>
             <span class="p">),</span>
@@ -425,7 +425,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

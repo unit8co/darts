@@ -639,10 +639,10 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span># fix python path if working locally
-from utils import fix_pythonpath_if_working_locally
+<span></span><span class="c1"># fix python path if working locally</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
 
-fix_pythonpath_if_working_locally()
+<span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -651,9 +651,9 @@ fix_pythonpath_if_working_locally()
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>%load_ext autoreload
-%autoreload 2
-%matplotlib inline
+<span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
+<span class="o">%</span><span class="k">autoreload</span> 2
+<span class="o">%</span><span class="k">matplotlib</span> inline
 </pre></div>
 </div>
 </div>
@@ -662,18 +662,18 @@ fix_pythonpath_if_working_locally()
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
-from darts import TimeSeries
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 
-import warnings
+<span class="kn">import</span> <span class="nn">warnings</span>
 
-warnings.filterwarnings(&quot;ignore&quot;)
-import logging
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">logging</span>
 
-logging.disable(logging.CRITICAL)
+<span class="n">logging</span><span class="o">.</span><span class="n">disable</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -695,13 +695,13 @@ logging.disable(logging.CRITICAL)
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>np.random.seed(0)
-series = TimeSeries.from_times_and_values(
-    times=pd.date_range(start=&quot;2020-01-01&quot;, periods=10, freq=&quot;h&quot;),
-    values=np.random.random((10, 3)),
-    columns=[&quot;comp1&quot;, &quot;comp2&quot;, &quot;comp3&quot;],
-)
-series.plot()
+<span></span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+    <span class="n">times</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="s2">&quot;2020-01-01&quot;</span><span class="p">,</span> <span class="n">periods</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;h&quot;</span><span class="p">),</span>
+    <span class="n">values</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="mi">10</span><span class="p">,</span> <span class="mi">3</span><span class="p">)),</span>
+    <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;comp1&quot;</span><span class="p">,</span> <span class="s2">&quot;comp2&quot;</span><span class="p">,</span> <span class="s2">&quot;comp3&quot;</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -724,13 +724,13 @@ series.plot()
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span># arbitrary continuous and categorical static covariates (single row)
-static_covs_single = pd.DataFrame(data={&quot;cont&quot;: [0], &quot;cat&quot;: [&quot;a&quot;]})
-print(static_covs_single)
+<span></span><span class="c1"># arbitrary continuous and categorical static covariates (single row)</span>
+<span class="n">static_covs_single</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;cont&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;cat&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">]})</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">static_covs_single</span><span class="p">)</span>
 
-# multivariate static covariates (multiple components). note that the number of rows matches the number of components of `series`
-static_covs_multi = pd.DataFrame(data={&quot;cont&quot;: [0, 2, 1], &quot;cat&quot;: [&quot;a&quot;, &quot;c&quot;, &quot;b&quot;]})
-print(static_covs_multi)
+<span class="c1"># multivariate static covariates (multiple components). note that the number of rows matches the number of components of `series`</span>
+<span class="n">static_covs_multi</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;cont&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;cat&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">]})</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">static_covs_multi</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -760,15 +760,15 @@ print(static_covs_multi)
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>assert series.static_covariates is None
+<span></span><span class="k">assert</span> <span class="n">series</span><span class="o">.</span><span class="n">static_covariates</span> <span class="ow">is</span> <span class="kc">None</span>
 
-series_single = series.with_static_covariates(static_covs_single)
-print(&quot;Single row static covarites with multivariate `series`&quot;)
-print(series_single.static_covariates)
+<span class="n">series_single</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">with_static_covariates</span><span class="p">(</span><span class="n">static_covs_single</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Single row static covarites with multivariate `series`&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">series_single</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">)</span>
 
-series_multi = series.with_static_covariates(static_covs_multi)
-print(&quot;\nMulti row static covarites with multivariate `series`&quot;)
-print(series_multi.static_covariates)
+<span class="n">series_multi</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">with_static_covariates</span><span class="p">(</span><span class="n">static_covs_multi</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Multi row static covarites with multivariate `series`&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">series_multi</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -798,13 +798,13 @@ comp3               1.0   b
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span># add arbitrary continuous and categorical static covariates
-series = TimeSeries.from_values(
-    values=np.random.random((10, 3)),
-    columns=[&quot;comp1&quot;, &quot;comp2&quot;, &quot;comp3&quot;],
-    static_covariates=static_covs_multi,
-)
-print(series.static_covariates)
+<span></span><span class="c1"># add arbitrary continuous and categorical static covariates</span>
+<span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span>
+    <span class="n">values</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="mi">10</span><span class="p">,</span> <span class="mi">3</span><span class="p">)),</span>
+    <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;comp1&quot;</span><span class="p">,</span> <span class="s2">&quot;comp2&quot;</span><span class="p">,</span> <span class="s2">&quot;comp3&quot;</span><span class="p">],</span>
+    <span class="n">static_covariates</span><span class="o">=</span><span class="n">static_covs_multi</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -829,18 +829,18 @@ comp3               1.0   b
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>first_series = series.with_static_covariates(
-    pd.DataFrame(data={&quot;ID&quot;: [&quot;SERIES1&quot;], &quot;var1&quot;: [0.5]})
-)
-second_series = series.with_static_covariates(
-    pd.DataFrame(data={&quot;ID&quot;: [&quot;SERIES2&quot;], &quot;var1&quot;: [0.75]})
-)
+<span></span><span class="n">first_series</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">with_static_covariates</span><span class="p">(</span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;ID&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;SERIES1&quot;</span><span class="p">],</span> <span class="s2">&quot;var1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">]})</span>
+<span class="p">)</span>
+<span class="n">second_series</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">with_static_covariates</span><span class="p">(</span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;ID&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;SERIES2&quot;</span><span class="p">],</span> <span class="s2">&quot;var1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.75</span><span class="p">]})</span>
+<span class="p">)</span>
 
-print(&quot;Valid static covariates for multiple series&quot;)
-print(first_series.static_covariates)
-print(second_series.static_covariates)
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Valid static covariates for multiple series&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">first_series</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">second_series</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">)</span>
 
-series_multi = [first_series, second_series]
+<span class="n">series_multi</span> <span class="o">=</span> <span class="p">[</span><span class="n">first_series</span><span class="p">,</span> <span class="n">second_series</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -867,46 +867,46 @@ the individual series. Additional columns can be used as static covariates with 
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span># generate an DataFrame example
-df = pd.DataFrame(
-    data={
-        &quot;dates&quot;: [
-            &quot;2020-01-01&quot;,
-            &quot;2020-01-02&quot;,
-            &quot;2020-01-03&quot;,
-            &quot;2020-01-01&quot;,
-            &quot;2020-01-02&quot;,
-            &quot;2020-01-03&quot;,
-        ],
-        &quot;comp1&quot;: np.random.random((6,)),
-        &quot;comp2&quot;: np.random.random((6,)),
-        &quot;comp3&quot;: np.random.random((6,)),
-        &quot;ID&quot;: [&quot;SERIES1&quot;, &quot;SERIES1&quot;, &quot;SERIES1&quot;, &quot;SERIES2&quot;, &quot;SERIES2&quot;, &quot;SERIES2&quot;],
-        &quot;var1&quot;: [0.5, 0.5, 0.5, 0.75, 0.75, 0.75],
-    }
-)
-print(&quot;Input DataFrame&quot;)
-print(df)
+<span></span><span class="c1"># generate an DataFrame example</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+    <span class="n">data</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;dates&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">&quot;2020-01-01&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;2020-01-02&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;2020-01-03&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;2020-01-01&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;2020-01-02&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;2020-01-03&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+        <span class="s2">&quot;comp1&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="mi">6</span><span class="p">,)),</span>
+        <span class="s2">&quot;comp2&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="mi">6</span><span class="p">,)),</span>
+        <span class="s2">&quot;comp3&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="mi">6</span><span class="p">,)),</span>
+        <span class="s2">&quot;ID&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;SERIES1&quot;</span><span class="p">,</span> <span class="s2">&quot;SERIES1&quot;</span><span class="p">,</span> <span class="s2">&quot;SERIES1&quot;</span><span class="p">,</span> <span class="s2">&quot;SERIES2&quot;</span><span class="p">,</span> <span class="s2">&quot;SERIES2&quot;</span><span class="p">,</span> <span class="s2">&quot;SERIES2&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;var1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">],</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Input DataFrame&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
 
-series_multi = TimeSeries.from_group_dataframe(
-    df,
-    time_col=&quot;dates&quot;,
-    group_cols=&quot;ID&quot;,  # individual time series are extracted by grouping `df` by `group_cols`
-    static_cols=[
-        &quot;var1&quot;
-    ],  # also extract these additional columns as static covariates (without grouping)
-    value_cols=[
-        &quot;comp1&quot;,
-        &quot;comp2&quot;,
-        &quot;comp3&quot;,
-    ],  # optionally, specify the time varying columns
-)
+<span class="n">series_multi</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_group_dataframe</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">,</span>
+    <span class="n">time_col</span><span class="o">=</span><span class="s2">&quot;dates&quot;</span><span class="p">,</span>
+    <span class="n">group_cols</span><span class="o">=</span><span class="s2">&quot;ID&quot;</span><span class="p">,</span>  <span class="c1"># individual time series are extracted by grouping `df` by `group_cols`</span>
+    <span class="n">static_cols</span><span class="o">=</span><span class="p">[</span>
+        <span class="s2">&quot;var1&quot;</span>
+    <span class="p">],</span>  <span class="c1"># also extract these additional columns as static covariates (without grouping)</span>
+    <span class="n">value_cols</span><span class="o">=</span><span class="p">[</span>
+        <span class="s2">&quot;comp1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;comp2&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;comp3&quot;</span><span class="p">,</span>
+    <span class="p">],</span>  <span class="c1"># optionally, specify the time varying columns</span>
+<span class="p">)</span>
 
-print(f&quot;\n{len(series_multi)} series were extracted from the input DataFrame&quot;)
-for i, ts in enumerate(series_multi):
-    print(f&quot;Static covariates of series {i}&quot;)
-    print(ts.static_covariates)
-    ts[&quot;comp1&quot;].plot(label=f&quot;comp1_series_{i}&quot;)
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">series_multi</span><span class="p">)</span><span class="si">}</span><span class="s2"> series were extracted from the input DataFrame&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ts</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">series_multi</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Static covariates of series </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">)</span>
+    <span class="n">ts</span><span class="p">[</span><span class="s2">&quot;comp1&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;comp1_series_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -951,17 +951,17 @@ global_components  SERIES2  0.75
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>from darts.dataprocessing.transformers import StaticCovariatesTransformer
+<span></span><span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">StaticCovariatesTransformer</span>
 
-transformer = StaticCovariatesTransformer()
-series_transformed = transformer.fit_transform(series_multi)
+<span class="n">transformer</span> <span class="o">=</span> <span class="n">StaticCovariatesTransformer</span><span class="p">()</span>
+<span class="n">series_transformed</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">series_multi</span><span class="p">)</span>
 
-for i, (ts, ts_scaled) in enumerate(zip(series_multi, series_transformed)):
-    print(f&quot;Original series {i}&quot;)
-    print(ts.static_covariates)
-    print(f&quot;Transformed series {i}&quot;)
-    print(ts_scaled.static_covariates)
-    print(&quot;&quot;)
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">ts_scaled</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">series_multi</span><span class="p">,</span> <span class="n">series_transformed</span><span class="p">)):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Original series </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Transformed series </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">ts_scaled</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -995,16 +995,16 @@ global_components  1.0   1.0
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from pytorch_lightning.callbacks import TQDMProgressBar
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">pytorch_lightning.callbacks</span> <span class="kn">import</span> <span class="n">TQDMProgressBar</span>
 
-from darts import TimeSeries
-from darts.models import TFTModel
-from darts.utils import timeseries_generation as tg
-from darts.dataprocessing.transformers import StaticCovariatesTransformer
-from darts.metrics import rmse
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">TFTModel</span>
+<span class="kn">from</span> <span class="nn">darts.utils</span> <span class="kn">import</span> <span class="n">timeseries_generation</span> <span class="k">as</span> <span class="n">tg</span>
+<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">StaticCovariatesTransformer</span>
+<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">rmse</span>
 </pre></div>
 </div>
 </div>
@@ -1016,21 +1016,21 @@ from darts.metrics import rmse
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>period = 20
-sine_series = tg.sine_timeseries(
-    length=4 * period, value_frequency=1 / period, column_name=&quot;smooth&quot;, freq=&quot;h&quot;
-)
+<span></span><span class="n">period</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="n">sine_series</span> <span class="o">=</span> <span class="n">tg</span><span class="o">.</span><span class="n">sine_timeseries</span><span class="p">(</span>
+    <span class="n">length</span><span class="o">=</span><span class="mi">4</span> <span class="o">*</span> <span class="n">period</span><span class="p">,</span> <span class="n">value_frequency</span><span class="o">=</span><span class="mi">1</span> <span class="o">/</span> <span class="n">period</span><span class="p">,</span> <span class="n">column_name</span><span class="o">=</span><span class="s2">&quot;smooth&quot;</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;h&quot;</span>
+<span class="p">)</span>
 
-sine_vals = sine_series.values()
-linear_vals = np.expand_dims(np.linspace(1, -1, num=19), -1)
+<span class="n">sine_vals</span> <span class="o">=</span> <span class="n">sine_series</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+<span class="n">linear_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">19</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 
-sine_vals[21:40] = linear_vals
-sine_vals[61:80] = linear_vals
-irregular_series = TimeSeries.from_times_and_values(
-    values=sine_vals, times=sine_series.time_index, columns=[&quot;irregular&quot;]
-)
-sine_series.plot()
-irregular_series.plot()
+<span class="n">sine_vals</span><span class="p">[</span><span class="mi">21</span><span class="p">:</span><span class="mi">40</span><span class="p">]</span> <span class="o">=</span> <span class="n">linear_vals</span>
+<span class="n">sine_vals</span><span class="p">[</span><span class="mi">61</span><span class="p">:</span><span class="mi">80</span><span class="p">]</span> <span class="o">=</span> <span class="n">linear_vals</span>
+<span class="n">irregular_series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+    <span class="n">values</span><span class="o">=</span><span class="n">sine_vals</span><span class="p">,</span> <span class="n">times</span><span class="o">=</span><span class="n">sine_series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;irregular&quot;</span><span class="p">]</span>
+<span class="p">)</span>
+<span class="n">sine_series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">irregular_series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -1056,31 +1056,31 @@ irregular_series.plot()
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>def test_case(model, train_series, predict_series):
-    &quot;&quot;&quot;helper function which performs model training, prediction and plotting&quot;&quot;&quot;
-    model.fit(train_series)
-    preds = model.predict(n=int(period / 2), num_samples=250, series=predict_series)
-    for ts, ps in zip(train_series, preds):
-        ts.plot()
-        ps.plot()
-        plt.show()
-    return preds
+<span></span><span class="k">def</span> <span class="nf">test_case</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">train_series</span><span class="p">,</span> <span class="n">predict_series</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;helper function which performs model training, prediction and plotting&quot;&quot;&quot;</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_series</span><span class="p">)</span>
+    <span class="n">preds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">period</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">250</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">predict_series</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">ts</span><span class="p">,</span> <span class="n">ps</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">train_series</span><span class="p">,</span> <span class="n">preds</span><span class="p">):</span>
+        <span class="n">ts</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+        <span class="n">ps</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">preds</span>
 
 
-def get_model_params():
-    &quot;&quot;&quot;helper function that generates model parameters with a new Progress Bar object&quot;&quot;&quot;
-    return {
-        &quot;input_chunk_length&quot;: int(period / 2),
-        &quot;output_chunk_length&quot;: int(period / 2),
-        &quot;add_encoders&quot;: {
-            &quot;datetime_attribute&quot;: {&quot;future&quot;: [&quot;hour&quot;]}
-        },  # TFTModel requires future input, with this we won&#39;t have to supply any future_covariates
-        &quot;random_state&quot;: 42,
-        &quot;n_epochs&quot;: 150,
-        &quot;pl_trainer_kwargs&quot;: {
-            &quot;callbacks&quot;: [TQDMProgressBar(refresh_rate=4)],
-        },
-    }
+<span class="k">def</span> <span class="nf">get_model_params</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;helper function that generates model parameters with a new Progress Bar object&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;input_chunk_length&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">period</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
+        <span class="s2">&quot;output_chunk_length&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">period</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span>
+        <span class="s2">&quot;add_encoders&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;datetime_attribute&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;future&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;hour&quot;</span><span class="p">]}</span>
+        <span class="p">},</span>  <span class="c1"># TFTModel requires future input, with this we won&#39;t have to supply any future_covariates</span>
+        <span class="s2">&quot;random_state&quot;</span><span class="p">:</span> <span class="mi">42</span><span class="p">,</span>
+        <span class="s2">&quot;n_epochs&quot;</span><span class="p">:</span> <span class="mi">150</span><span class="p">,</span>
+        <span class="s2">&quot;pl_trainer_kwargs&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;callbacks&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">TQDMProgressBar</span><span class="p">(</span><span class="n">refresh_rate</span><span class="o">=</span><span class="mi">4</span><span class="p">)],</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -1094,16 +1094,16 @@ def get_model_params():
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>train_series = [sine_series, irregular_series]
-for series in train_series:
-    assert not series.has_static_covariates
+<span></span><span class="n">train_series</span> <span class="o">=</span> <span class="p">[</span><span class="n">sine_series</span><span class="p">,</span> <span class="n">irregular_series</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">series</span> <span class="ow">in</span> <span class="n">train_series</span><span class="p">:</span>
+    <span class="k">assert</span> <span class="ow">not</span> <span class="n">series</span><span class="o">.</span><span class="n">has_static_covariates</span>
 
-model = TFTModel(**get_model_params())
-preds = test_case(
-    model,
-    train_series,
-    predict_series=[series[:60] for series in train_series],
-)
+<span class="n">model</span> <span class="o">=</span> <span class="n">TFTModel</span><span class="p">(</span><span class="o">**</span><span class="n">get_model_params</span><span class="p">())</span>
+<span class="n">preds</span> <span class="o">=</span> <span class="n">test_case</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">,</span>
+    <span class="n">train_series</span><span class="p">,</span>
+    <span class="n">predict_series</span><span class="o">=</span><span class="p">[</span><span class="n">series</span><span class="p">[:</span><span class="mi">60</span><span class="p">]</span> <span class="k">for</span> <span class="n">series</span> <span class="ow">in</span> <span class="n">train_series</span><span class="p">],</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1144,23 +1144,23 @@ preds = test_case(
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>sine_series_st_bin = sine_series.with_static_covariates(
-    pd.DataFrame(data={&quot;curve_type&quot;: [1]})
-)
-irregular_series_st_bin = irregular_series.with_static_covariates(
-    pd.DataFrame(data={&quot;curve_type&quot;: [0]})
-)
+<span></span><span class="n">sine_series_st_bin</span> <span class="o">=</span> <span class="n">sine_series</span><span class="o">.</span><span class="n">with_static_covariates</span><span class="p">(</span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;curve_type&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">]})</span>
+<span class="p">)</span>
+<span class="n">irregular_series_st_bin</span> <span class="o">=</span> <span class="n">irregular_series</span><span class="o">.</span><span class="n">with_static_covariates</span><span class="p">(</span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;curve_type&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]})</span>
+<span class="p">)</span>
 
-train_series = [sine_series_st_bin, irregular_series_st_bin]
-for series in train_series:
-    print(series.static_covariates)
+<span class="n">train_series</span> <span class="o">=</span> <span class="p">[</span><span class="n">sine_series_st_bin</span><span class="p">,</span> <span class="n">irregular_series_st_bin</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">series</span> <span class="ow">in</span> <span class="n">train_series</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">)</span>
 
-model = TFTModel(**get_model_params())
-preds_st_bin = test_case(
-    model,
-    train_series,
-    predict_series=[series[:60] for series in train_series],
-)
+<span class="n">model</span> <span class="o">=</span> <span class="n">TFTModel</span><span class="p">(</span><span class="o">**</span><span class="n">get_model_params</span><span class="p">())</span>
+<span class="n">preds_st_bin</span> <span class="o">=</span> <span class="n">test_case</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">,</span>
+    <span class="n">train_series</span><span class="p">,</span>
+    <span class="n">predict_series</span><span class="o">=</span><span class="p">[</span><span class="n">series</span><span class="p">[:</span><span class="mi">60</span><span class="p">]</span> <span class="k">for</span> <span class="n">series</span> <span class="ow">in</span> <span class="n">train_series</span><span class="p">],</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1214,22 +1214,22 @@ irregular                 0.0
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>sine_series_st_cat = sine_series.with_static_covariates(
-    pd.DataFrame(data={&quot;curve_type&quot;: [&quot;smooth&quot;]})
-)
-irregular_series_st_cat = irregular_series.with_static_covariates(
-    pd.DataFrame(data={&quot;curve_type&quot;: [&quot;non_smooth&quot;]})
-)
+<span></span><span class="n">sine_series_st_cat</span> <span class="o">=</span> <span class="n">sine_series</span><span class="o">.</span><span class="n">with_static_covariates</span><span class="p">(</span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;curve_type&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;smooth&quot;</span><span class="p">]})</span>
+<span class="p">)</span>
+<span class="n">irregular_series_st_cat</span> <span class="o">=</span> <span class="n">irregular_series</span><span class="o">.</span><span class="n">with_static_covariates</span><span class="p">(</span>
+    <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;curve_type&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;non_smooth&quot;</span><span class="p">]})</span>
+<span class="p">)</span>
 
-train_series = [sine_series_st_cat, irregular_series_st_cat]
-print(&quot;Static covariates before encoding:&quot;)
-print(train_series[0].static_covariates)
+<span class="n">train_series</span> <span class="o">=</span> <span class="p">[</span><span class="n">sine_series_st_cat</span><span class="p">,</span> <span class="n">irregular_series_st_cat</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Static covariates before encoding:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">train_series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">)</span>
 
-# use StaticCovariatesTransformer to encode categorical static covariates into numeric data
-scaler = StaticCovariatesTransformer()
-train_series = scaler.fit_transform(train_series)
-print(&quot;\nStatic covariates after encoding:&quot;)
-print(train_series[0].static_covariates)
+<span class="c1"># use StaticCovariatesTransformer to encode categorical static covariates into numeric data</span>
+<span class="n">scaler</span> <span class="o">=</span> <span class="n">StaticCovariatesTransformer</span><span class="p">()</span>
+<span class="n">train_series</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">train_series</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Static covariates after encoding:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">train_series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1255,18 +1255,18 @@ smooth                    1.0
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>n_categories = 2  # &quot;smooth&quot; and &quot;non_smooth&quot;
-embedding_size = 2  # embed the categorical variable into a numeric vector of size 2
-categorical_embedding_sizes = {&quot;curve_type&quot;: (n_categories, embedding_size)}
+<span></span><span class="n">n_categories</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1"># &quot;smooth&quot; and &quot;non_smooth&quot;</span>
+<span class="n">embedding_size</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1"># embed the categorical variable into a numeric vector of size 2</span>
+<span class="n">categorical_embedding_sizes</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;curve_type&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">n_categories</span><span class="p">,</span> <span class="n">embedding_size</span><span class="p">)}</span>
 
-model = TFTModel(
-    categorical_embedding_sizes=categorical_embedding_sizes, **get_model_params()
-)
-preds_st_cat = test_case(
-    model,
-    train_series,
-    predict_series=[series[:60] for series in train_series],
-)
+<span class="n">model</span> <span class="o">=</span> <span class="n">TFTModel</span><span class="p">(</span>
+    <span class="n">categorical_embedding_sizes</span><span class="o">=</span><span class="n">categorical_embedding_sizes</span><span class="p">,</span> <span class="o">**</span><span class="n">get_model_params</span><span class="p">()</span>
+<span class="p">)</span>
+<span class="n">preds_st_cat</span> <span class="o">=</span> <span class="n">test_case</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">,</span>
+    <span class="n">train_series</span><span class="p">,</span>
+    <span class="n">predict_series</span><span class="o">=</span><span class="p">[</span><span class="n">series</span><span class="p">[:</span><span class="mi">60</span><span class="p">]</span> <span class="k">for</span> <span class="n">series</span> <span class="ow">in</span> <span class="n">train_series</span><span class="p">],</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1302,26 +1302,26 @@ preds_st_cat = test_case(
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>for series, ps_no_st, ps_st_bin, ps_st_cat in zip(
-    train_series, preds, preds_st_bin, preds_st_cat
-):
-    series[-40:].plot(label=&quot;target&quot;)
-    ps_no_st.quantile(0.5).plot(label=&quot;no static covs&quot;)
-    ps_st_bin.quantile(0.5).plot(label=&quot;binary static covs&quot;)
-    ps_st_cat.quantile(0.5).plot(label=&quot;categorical static covs&quot;)
-    plt.show()
-    print(&quot;Metric&quot;)
-    print(
-        pd.DataFrame(
-            {
-                name: [rmse(series, ps)]
-                for name, ps in zip(
-                    [&quot;no st&quot;, &quot;bin st&quot;, &quot;cat st&quot;], [ps_no_st, ps_st_bin, ps_st_cat]
-                )
-            },
-            index=[&quot;RMSE&quot;],
-        )
-    )
+<span></span><span class="k">for</span> <span class="n">series</span><span class="p">,</span> <span class="n">ps_no_st</span><span class="p">,</span> <span class="n">ps_st_bin</span><span class="p">,</span> <span class="n">ps_st_cat</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+    <span class="n">train_series</span><span class="p">,</span> <span class="n">preds</span><span class="p">,</span> <span class="n">preds_st_bin</span><span class="p">,</span> <span class="n">preds_st_cat</span>
+<span class="p">):</span>
+    <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">40</span><span class="p">:]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;target&quot;</span><span class="p">)</span>
+    <span class="n">ps_no_st</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;no static covs&quot;</span><span class="p">)</span>
+    <span class="n">ps_st_bin</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;binary static covs&quot;</span><span class="p">)</span>
+    <span class="n">ps_st_cat</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;categorical static covs&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Metric&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="n">name</span><span class="p">:</span> <span class="p">[</span><span class="n">rmse</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">ps</span><span class="p">)]</span>
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">ps</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                    <span class="p">[</span><span class="s2">&quot;no st&quot;</span><span class="p">,</span> <span class="s2">&quot;bin st&quot;</span><span class="p">,</span> <span class="s2">&quot;cat st&quot;</span><span class="p">],</span> <span class="p">[</span><span class="n">ps_no_st</span><span class="p">,</span> <span class="n">ps_st_bin</span><span class="p">,</span> <span class="n">ps_st_cat</span><span class="p">]</span>
+                <span class="p">)</span>
+            <span class="p">},</span>
+            <span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;RMSE&quot;</span><span class="p">],</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1398,7 +1398,7 @@ RMSE  0.302874  0.152379  0.128684
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

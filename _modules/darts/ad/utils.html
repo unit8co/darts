@@ -200,7 +200,7 @@
 
 
 <span class="k">def</span> <span class="nf">_assert_binary</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">name_series</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Checks if series is a binary timeseries (1 and 0)&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if series is a binary timeseries (1 and 0)&quot;</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -225,7 +225,7 @@
     <span class="n">window</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;AUC_ROC&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]:</span>
-    <span class="sd">&quot;&quot;&quot;Scores the results against true anomalies.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Scores the results against true anomalies.</span>
 
 <span class="sd">    `actual_anomalies` and `anomaly_score` must have the same shape.</span>
 <span class="sd">    `actual_anomalies` must be binary and have values belonging to the two classes (0 and 1).</span>
@@ -319,7 +319,7 @@
     <span class="n">window</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;recall&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]:</span>
-    <span class="sd">&quot;&quot;&quot;Score the results against true anomalies.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Score the results against true anomalies.</span>
 
 <span class="sd">    checks that `pred_anomalies` and `actual_anomalies` are the same:</span>
 <span class="sd">        - type,</span>
@@ -428,7 +428,7 @@
     <span class="n">metric_fn</span><span class="p">,</span>
     <span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
-    <span class="sd">&quot;&quot;&quot;Internal function for:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Internal function for:</span>
 <span class="sd">        - ``eval_accuracy_from_binary_prediction()``</span>
 <span class="sd">        - ``eval_accuracy_from_scores()``</span>
 
@@ -509,7 +509,7 @@
     <span class="n">series_1</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
     <span class="n">series_2</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;Returns the sub-series of series_1 and of series_2 that share the same time index.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the sub-series of series_1 and of series_2 that share the same time index.</span>
 <span class="sd">    (Intersection in time of the two time series)</span>
 
 <span class="sd">    Parameters</span>
@@ -534,7 +534,7 @@
 
 
 <span class="k">def</span> <span class="nf">_assert_timeseries</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Checks if given input is of type Darts TimeSeries&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if given input is of type Darts TimeSeries&quot;&quot;&quot;</span>
 
     <span class="n">raise_if_not</span><span class="p">(</span>
         <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">),</span>
@@ -548,7 +548,7 @@
     <span class="n">series_1</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
     <span class="n">series_2</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Performs sanity check on the two given inputs</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Performs sanity check on the two given inputs</span>
 
 <span class="sd">    Checks if the two inputs:</span>
 <span class="sd">        - type is Darts Timeseries</span>
@@ -581,7 +581,7 @@
 
 
 <span class="k">def</span> <span class="nf">_max_pooling</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Slides a window of size `window` along the input series, and replaces the value of the</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Slides a window of size `window` along the input series, and replaces the value of the</span>
 <span class="sd">    input time series by the maximum of the values contained in the window.</span>
 
 <span class="sd">    The binary time series output represents if there is an anomaly (=1) or not (=0) in the past</span>
@@ -632,7 +632,7 @@
 
 
 <span class="k">def</span> <span class="nf">_to_list</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;If not already, it converts the input into a sequence</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;If not already, it converts the input into a sequence</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -651,7 +651,7 @@
     <span class="n">list_series_1</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
     <span class="n">list_series_2</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Checks if the two sequences contain the same number of TimeSeries.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if the two sequences contain the same number of TimeSeries.&quot;&quot;&quot;</span>
 
     <span class="n">raise_if_not</span><span class="p">(</span>
         <span class="nb">len</span><span class="p">(</span><span class="n">list_series_1</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">list_series_2</span><span class="p">),</span>
@@ -670,7 +670,7 @@
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Plot the results generated by an anomaly model.</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot the results generated by an anomaly model.</span>
 
 <span class="sd">    The plot will be composed of the following:</span>
 <span class="sd">        - the series itself with the output of the model (if given)</span>
@@ -933,7 +933,7 @@
 
 
 <span class="k">def</span> <span class="nf">_plot_series</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">ax_id</span><span class="p">,</span> <span class="n">linewidth</span><span class="p">,</span> <span class="n">label_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Internal function called by ``show_anomalies_from_scores()``</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Internal function called by ``show_anomalies_from_scores()``</span>
 
 <span class="sd">    Plot the series on the given axes ax_id.</span>
 
@@ -992,7 +992,7 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
+    &copy; Copyright 2020 - 2023, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     

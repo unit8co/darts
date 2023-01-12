@@ -39,8 +39,8 @@ Time Series Made Easy in Python
    :alt: GitHub Release Date
 
 
-.. image:: https://img.shields.io/github/workflow/status/unit8co/darts/darts%20release%20workflow/master
-   :target: https://img.shields.io/github/workflow/status/unit8co/darts/darts%20release%20workflow/master
+.. image:: https://img.shields.io/github/actions/workflow/status/unit8co/darts/release.yml?branch=master
+   :target: https://img.shields.io/github/actions/workflow/status/unit8co/darts/release.yml?branch=master
    :alt: GitHub Workflow Status
 
 
