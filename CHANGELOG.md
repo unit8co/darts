@@ -7,7 +7,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 [Full Changelog](https://github.com/unit8co/darts/compare/0.23.1...master)
 
-## [0.23.1](https://github.com/unit8co/darts/tree/0.23.1) (2022-12-23)
+## [0.23.1](https://github.com/unit8co/darts/tree/0.23.1) (2023-01-12)
 Patch release
 
 **Fixed**
