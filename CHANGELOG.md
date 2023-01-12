@@ -5,7 +5,25 @@ We do our best to avoid the introduction of breaking changes,
 but cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
-[Full Changelog](https://github.com/unit8co/darts/compare/0.23.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.23.1...master)
+
+## [0.23.1](https://github.com/unit8co/darts/tree/0.23.1) (2023-01-12)
+Patch release
+
+**Fixed**
+- Fix an issue in `TimeSeries` which made it incompatible with Python 3.7.
+  [#1449](https://github.com/unit8co/darts/pull/1449) by [Dennis Bader](https://github.com/dennisbader).
+- Fix an issue with static covariates when series have variable lengths with `RegressionModel`s.
+  [#1469](https://github.com/unit8co/darts/pull/1469) by [Eliane Maalouf](https://github.com/eliane-maalouf).
+- Fix an issue with PyTorch Lightning trainer handling.
+  [#1459](https://github.com/unit8co/darts/pull/1459) by [Dennis Bader](https://github.com/dennisbader).
+- Fix an issue with `historical_forecasts()` retraining PyTorch models iteratively instead of from scratch.
+  [#1465](https://github.com/unit8co/darts/pull/1465) by [Dennis Bader](https://github.com/dennisbader).
+- Fix an issue with `historical_forecasts()` not working in some cases when `future_covariates`
+  are provided and `start` is not specified. [#1481](https://github.com/unit8co/darts/pull/1481)
+  by [Maxime Dumonal](https://github.com/dumjax).
+- Fix an issue with `slice_n_points` functions on integer indexes.
+  [#1482](https://github.com/unit8co/darts/pull/1482) by [Julien Herzen](https://github.com/hrzn).
 
 ## [0.23.0](https://github.com/unit8co/darts/tree/0.23.0) (2022-12-23)
 ### For users of the library:
