@@ -18,6 +18,7 @@ try:
         LightGBMModel,
         LinearRegressionModel,
         NBEATSModel,
+        NLinearModel,
         RNNModel,
         TCNModel,
         TFTModel,
@@ -84,6 +85,7 @@ if TORCH_AVAILABLE:
             },
             # Min of lags needed and max of lags needed
             (IN_LEN, OUT_LEN),
+            "PastCovariates",
         ),
         (
             RNNModel,
@@ -96,6 +98,7 @@ if TORCH_AVAILABLE:
             },
             # autoregressive model
             (IN_LEN, 1),
+            "DualCovariates",
         ),
         (
             RNNModel,
@@ -106,6 +109,7 @@ if TORCH_AVAILABLE:
                 "likelihood": GaussianLikelihood(),
             },
             (IN_LEN, 1),
+            "DualCovariates",
         ),
         (
             TCNModel,
@@ -116,6 +120,7 @@ if TORCH_AVAILABLE:
                 "batch_size": 32,
             },
             (IN_LEN, OUT_LEN),
+            "PastCovariates",
         ),
         (
             TransformerModel,
@@ -131,6 +136,7 @@ if TORCH_AVAILABLE:
                 "n_epochs": NB_EPOCH,
             },
             (IN_LEN, OUT_LEN),
+            "PastCovariates",
         ),
         (
             NBEATSModel,
@@ -144,6 +150,7 @@ if TORCH_AVAILABLE:
                 "n_epochs": NB_EPOCH,
             },
             (IN_LEN, OUT_LEN),
+            "PastCovariates",
         ),
         (
             TFTModel,
@@ -157,6 +164,17 @@ if TORCH_AVAILABLE:
                 "n_epochs": NB_EPOCH,
             },
             (IN_LEN, OUT_LEN),
+            "MixedCovariates",
+        ),
+        (
+            NLinearModel,
+            {
+                "input_chunk_length": IN_LEN,
+                "output_chunk_length": OUT_LEN,
+                "n_epochs": NB_EPOCH,
+            },
+            (IN_LEN, OUT_LEN),
+            "MixedCovariates",
         ),
     ]
 
@@ -457,7 +475,7 @@ if TORCH_AVAILABLE:
         )
         def test_torch_auto_start_multiple_no_cov(self):
 
-            for model_cls, kwargs, bounds in models_torch_cls_kwargs:
+            for model_cls, kwargs, bounds, _ in models_torch_cls_kwargs:
                 model = model_cls(
                     random_state=0,
                     **kwargs,
@@ -624,11 +642,10 @@ if TORCH_AVAILABLE:
         )
         def test_torch_auto_start_with_cov(self):
 
-            # # Torch models
-            for model_cls, kwargs, bounds in models_torch_cls_kwargs:
+            # Past covariates only
+            for model_cls, kwargs, bounds, type in models_torch_cls_kwargs:
 
-                # RNN models don't have past_covariates
-                if model_cls.__name__ == "RNNModel":
+                if type == "DualCovariates":
                     continue
 
                 model = model_cls(
@@ -637,7 +654,7 @@ if TORCH_AVAILABLE:
                 )
                 model.fit(self.ts_pass_train, self.ts_past_cov_train)
 
-                # Only past covariate
+                # same start
                 forecasts = model.historical_forecasts(
                     series=[self.ts_pass_val, self.ts_pass_val],
                     past_covariates=[
@@ -665,8 +682,9 @@ if TORCH_AVAILABLE:
                     random_state=0,
                     **kwargs,
                 )
-                model.fit(self.ts_pass_train, self.ts_past_cov_train)
+                model.fit(self.ts_pass_train, past_covariates=self.ts_past_cov_train)
 
+                # start before, after
                 forecasts = model.historical_forecasts(
                     series=[self.ts_pass_val, self.ts_pass_val],
                     past_covariates=[
@@ -692,10 +710,10 @@ if TORCH_AVAILABLE:
                     " of retrain=True and overlap_end=False and past_covariates starting before.",
                 )
 
-            for model_cls, kwargs, bounds in models_torch_cls_kwargs:
+            # Past and future covariates
+            for model_cls, kwargs, bounds, type in models_torch_cls_kwargs:
 
-                # no PastCovariates models
-                if not model_cls.__name__ == "TFTModel":
+                if not type == "MixedCovariates":
                     continue
 
                 model = model_cls(
@@ -703,7 +721,9 @@ if TORCH_AVAILABLE:
                     **kwargs,
                 )
                 model.fit(
-                    self.ts_pass_train, self.ts_past_cov_train, self.ts_fut_cov_train
+                    self.ts_pass_train,
+                    past_covariates=self.ts_past_cov_train,
+                    future_covariates=self.ts_fut_cov_train,
                 )
 
                 forecasts = model.historical_forecasts(
@@ -733,4 +753,49 @@ if TORCH_AVAILABLE:
                     len(forecasts[1]) == 72 - (bounds[0] + bounds[1] + 1) - 10 + 1 - 3,
                     f"Model {model_cls} does not return the right number of historical forecasts in case "
                     " of retrain=True and overlap_end=False and past_covariates with different start",
+                )
+
+            # Future covariates only
+            for model_cls, kwargs, bounds, type in models_torch_cls_kwargs:
+
+                # todo case of DualCovariates (RNN)
+                if type == "PastCovariates" or type == "DualCovariates":
+                    continue
+
+                model = model_cls(
+                    random_state=0,
+                    **kwargs,
+                )
+                model.fit(self.ts_pass_train, future_covariates=self.ts_fut_cov_train)
+
+                # Only fut covariate
+                forecasts = model.historical_forecasts(
+                    series=[self.ts_pass_val, self.ts_pass_val],
+                    future_covariates=[
+                        self.ts_fut_cov_valid_aft_start,
+                        self.ts_fut_cov_valid_bef_start,
+                    ],
+                    forecast_horizon=10,
+                    stride=1,
+                    retrain=True,
+                    overlap_end=False,
+                )
+
+                self.assertTrue(
+                    len(forecasts) == 2,
+                    f"Model {model_cls} did not return a list of historical forecasts",
+                )
+
+                self.assertTrue(
+                    len(forecasts[0]) == 72 - (bounds[0] + bounds[1] + 1) - 10 + 1 - 10,
+                    f"Model {model_cls} does not return the right number of historical forecasts in case "
+                    " of retrain=True and overlap_end=False and no past_covariates and future_covariates with different"
+                    " start",
+                )
+
+                self.assertTrue(
+                    len(forecasts[1]) == 72 - (bounds[0] + bounds[1] + 1) - 10 + 1 - 3,
+                    f"Model {model_cls} does not return the right number of historical forecasts in case "
+                    " of retrain=True and overlap_end=False and no past_covariates and future_covariates with different"
+                    " start",
                 )
