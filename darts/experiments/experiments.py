@@ -2,8 +2,9 @@
     This file contains the basic structures to define, run and backup benchmarking experiments
 """
 
-import datetime
+from datetime import datetime
 import inspect
+import random
 import os
 import shutil
 from abc import ABC, abstractmethod
@@ -18,6 +19,15 @@ from pytorch_lightning.callbacks import Callback, EarlyStopping
 from typing import Callable
 from darts import TimeSeries
 import numpy as np
+import pickle
+import ray
+from ray import tune, air
+from ray.tune.search.optuna import OptunaSearch
+from ray.tune.integration.pytorch_lightning import TuneReportCallback
+from ray.tune.schedulers import ASHAScheduler
+from ray.air import session
+import matplotlib.pyplot as plt
+
 
 import optuna
 from optuna.integration import PyTorchLightningPruningCallback
@@ -47,7 +57,7 @@ from darts.datasets import (
 logger = get_logger(__name__)
 
 DEFAULT_RADNOM_SEED = 42
-DEFAULT_EXP_ROOT = "./experiment_runs/"
+DEFAULT_EXP_ROOT = "experiment_runs"
 
 DATASETS = [ETTh1Dataset, ETTh2Dataset, ETTm1Dataset, ETTm2Dataset, ElectricityDataset, TrafficDataset, WeatherDataset,
     ILINetDataset, ExchangeRateDataset]
@@ -91,16 +101,21 @@ class BaseExperiment():
                  experiment_name: Optional[str] = None, dataset: Union[TimeSeries, Sequence[TimeSeries]] = None):
         super().__init__()
 
-        self.experiment_root = experiment_root if experiment_root is not None else DEFAULT_EXP_ROOT
+        self.experiment_root = experiment_root if experiment_root is not None else os.path.join(os.getcwd(), DEFAULT_EXP_ROOT)
         self.random_state = random_state if random_state is not None else DEFAULT_RADNOM_SEED
         self.dataset = dataset
+
+        #Fix random states
+        #https://pytorch.org/docs/stable/notes/randomness.html
+        random.seed(self.random_state)
+        torch.manual_seed(self.random_state)
+        np.random.seed(self.random_state)
+        torch.use_deterministic_algorithms(True)
 
         #check if experiment_dir exists and create it if not
         if not os.path.exists(self.experiment_root):
             os.makedirs(self.experiment_root)
 
-        #store experiment start time
-        self.start_exp_time = datetime.datetime.now()
 
         self.experiment_name = experiment_name
 
@@ -156,6 +171,7 @@ class BaseExperiment():
             val = [s[-(2 * val_len):-val_len] for s in dataset]
             test = [s[-val_len:] for s in dataset]
             self.val_len = val_len
+            self.test_len = val_len
         else:
             all_splits = [list(s.split_after(split)) for s in dataset]
             train = [split[0] for split in all_splits]
@@ -165,15 +181,14 @@ class BaseExperiment():
             val = [s[0] for s in vals]
             self.split = split
             self.val_len = len(val[0])
+            self.test_len = self.val_len
 
         self.orig_train = train
         self.orig_val = val
         self.test = test
 
-        self.train = train
-        self.val = val
-
-        return self
+        self.train = train # used when data is transformed
+        self.val = val # used when data is transformed
 
     def _preprocess_data(self, transformers: List[dict], transform_val: bool = False):
         """
@@ -202,20 +217,21 @@ class BaseExperiment():
 
         # save the transformers
         self.transformers_pipeline = transformers_pipeline
-        return self
 
-    def _postprocess_predictions(self, model, predictions, test = False):
+
+    def _postprocess_predictions(self, key, predictions, test = False):
         """
         Post-process the predictions.
         """
 
         if self.transformers_pipeline is not None and self.transformers_pipeline.invertible():
+            transformed = self.transformers_pipeline.inverse_transform(predictions)
             if not test:
-                self.val_predictions[model] = self.transformers_pipeline.inverse_transform(predictions)
+                self.val_predictions[key] = transformed
             else:
-                self.test_predictions[model] = self.transformers_pipeline.inverse_transform(predictions)
+                self.test_predictions[key] = transformed
 
-        return self
+        return transformed
 
     def _explore_data(self):
         """
@@ -252,13 +268,22 @@ class BaseExperiment():
         pass
 
     # validate model
-    def _compute_validation_stats(self, ground_truth, predictions, metric):
+    def _compute_metric(self, ground_truth, predictions, metric=smape, reduction = np.mean):
         """
         Validate the model.
         """
-        metric_eval = metric(ground_truth, predictions, n_jobs = -1, verbose = self.verbose)
+        if metric == "mase":
+            metric_evals = metric(ground_truth, predictions, self.train, n_jobs=-1, verbose=True)
+        else:
+            metric_evals = metric(ground_truth, predictions, n_jobs=-1, verbose=True)
 
-        return np.mean(metric_eval)
+
+        metric_evals_reduced = reduction(metric_evals) if metric_evals != np.nan else float("inf")
+        metric_evals_reduced = metric_evals_reduced if metric_evals_reduced != np.nan else float("inf")
+
+        _std = np.std(metric_evals) if reduction == np.mean else None
+
+        return metric_evals_reduced, _std
 
     # test model
     def _test_model(self):
@@ -268,10 +293,8 @@ class BaseExperiment():
         pass
 
     def _backup_exp(self):
-        """
-        Backup the experiment.
-        """
-        pass
+        with open(f"{self.experiment_dir}/full_{self.experiment_name}_bkp.pkl", 'wb') as f:
+            pickle.dump(self, f)
 
 class StatsExperiment(BaseExperiment):
     """
@@ -352,9 +375,8 @@ def TransformerModelBuilder(self):
 def NHiTSModelBuilder(self):
     pass
 
-def TCNModelBuilder(experiment, in_len, out_len, kernel_size, num_filters, weight_norm, dilation_base,
-dropout, lr, encoders = None, likelihood=None, callbacks = None):
-    torch.manual_seed(experiment.random_state)
+def TCNModelBuilder(in_len, out_len, kernel_size, num_filters, weight_norm, dilation_base,
+dropout, lr, experiment, metric, encoders = None, likelihood=None, callbacks = None, work_dir = None):
 
     early_stopper = EarlyStopping("val_loss", min_delta=0.001, patience=3, verbose=True)
     if callbacks is None:
@@ -370,10 +392,10 @@ dropout, lr, encoders = None, likelihood=None, callbacks = None):
             "auto_select_gpus": True,
             "callbacks": callbacks,
         }
-        num_workers = 4
+        #num_workers = 4
     else:
         pl_trainer_kwargs = {"callbacks": callbacks}
-        num_workers = 0
+        #num_workers = 0
 
     # build the model
     model = TCNModel(
@@ -391,24 +413,21 @@ dropout, lr, encoders = None, likelihood=None, callbacks = None):
         add_encoders=encoders,
         likelihood=likelihood,
         pl_trainer_kwargs=pl_trainer_kwargs,
-        model_name="tcn_model",
+        model_name=TCNModel.__name__,
         force_reset=True,
         save_checkpoints=True,
+        work_dir = os.path.join(os.getcwd()) if work_dir is None else work_dir
     )
-    train = experiment.train
-    val = experiment.val
-    # train the model
-    model.fit(
-        series=train,
-        val_series=val,
-        max_samples_per_ts=experiment.MAX_SAMPLES_PER_TS,
-        num_loader_workers=num_workers,
-    )
-
-    # reload best model over course of training
-    model = TCNModel.load_from_checkpoint("tcn_model")
 
     return model
+
+MODEL_BUILDERS = {DLinearModel.__name__: DLinearModelBuilder,
+                      NLinearModel.__name__: NLinearModelBuilder,
+                      NBEATSModel.__name__: NBEATSModelBuilder,
+                      TFTModel.__name__: TFTModelBuilder,
+                      TransformerModel.__name__: TransformerModelBuilder,
+                      NHiTSModel.__name__: NHiTSModelBuilder,
+                      TCNModel.__name__: TCNModelBuilder}
 
 class DLExperiment(BaseExperiment):
     """
@@ -416,7 +435,6 @@ class DLExperiment(BaseExperiment):
     """
 
     MODELS = [DLinearModel, NLinearModel, NBEATSModel, TFTModel, TransformerModel, NHiTSModel, TCNModel]
-    NAME = "DL_Experiments"
 
     # parameters shared by all models
     BATCH_SIZE = 32#1024
@@ -428,7 +446,14 @@ class DLExperiment(BaseExperiment):
                  experiment_name: Optional[str] = None, dataset: Optional[str] = None,
                  models: Optional[List[str]] = None, verbose: Optional[bool] = False,
                  metrics: Optional[List[Callable]] = None,):
-        experiment_name = experiment_name if experiment_name is not None else self.NAME
+
+        # store experiment start time
+        self.start_exp_time = datetime.now()
+
+        if experiment_name is None:
+            experiment_name = f"DL_Experiments_{self.start_exp_time.strftime('%Y-%m-%d')}_pid{os.getpid()}"
+
+        experiment_name = experiment_name
 
         super().__init__(experiment_root, random_state, experiment_name, dataset = dataset)
 
@@ -437,22 +462,88 @@ class DLExperiment(BaseExperiment):
         self.metrics = metrics if metrics is not None else METRICS
 
 
+    @staticmethod
+    def _val_loss_objective(config, model_cl, experiment):
 
-    MODEL_BUILDERS = {DLinearModel: DLinearModelBuilder,
-                      NLinearModel: NLinearModelBuilder,
-                      NBEATSModel: NBEATSModelBuilder,
-                      TFTModel: TFTModelBuilder,
-                      TransformerModel: TransformerModelBuilder,
-                      NHiTSModel: NHiTSModelBuilder,
-                      TCNModel: TCNModelBuilder}
+        metrics = {"val_metric":"val_loss"}
 
-    def _preprocess_data(self, transformers: List[dict], transform_val: bool = True):
-        super()._preprocess_data(transformers, transform_val)
-        return self
+        callbacks = [TuneReportCallback(metrics, on="validation_end")]
 
-    def _define_optuna_objective(self, params_dict, model_cl, metric):
+        model = MODEL_BUILDERS[model_cl](**config, callbacks=callbacks, experiment = experiment)
+
+        # train the model
+        model.fit(
+            series=experiment.train,
+            val_series=experiment.val,
+            max_samples_per_ts=experiment.MAX_SAMPLES_PER_TS
+        )
+
+    @staticmethod
+    def _val_metric_objective(config, model_cl, experiment, metric, reduction = np.mean):
+
+        model = MODEL_BUILDERS[model_cl.__name__](**config, experiment=experiment)
+
+        # train the model
+        model.fit(
+            series=experiment.train,
+            val_series=experiment.val,
+            max_samples_per_ts=experiment.MAX_SAMPLES_PER_TS
+        )
+
+        # use best model for subsequent evaluation
+        model = model_cl.load_from_checkpoint(model_cl.__name__, work_dir = os.getcwd(), best = True)
+
+        preds = model.predict(series=experiment.train, n=experiment.val_len)
+
+        metric_evals,_ = experiment._compute_metric(experiment.val, preds, metric, reduction=reduction)
+
+        session.report({"val_metric":metric_evals})
+
+    @staticmethod
+    def tune_hyperparameters(experiment, params_space, model_cl, eval_mode = "val_metric_eval", metric = None,
+                             reduction = None, sampler = None, num_samples=-1,
+                            max_concurrent_trials = 1, time_budget_s = 60, scheduler = None,
+                            scheduler_kwargs = None, min_max_mode = "min"):
+
+        if eval_mode == "val_metric_eval":
+            objective = DLExperiment._val_metric_objective
+            objective_with_params = tune.with_parameters(objective, model_cl=model_cl, experiment=experiment,
+                                                         metric = metric if metric is not None else smape,
+                                                         reduction = reduction if reduction is not None else np.mean)
+        elif eval_mode == "val_loss":
+            objective = DLExperiment._val_loss_objective
+            objective_with_params = tune.with_parameters(objective, model_cl=model_cl, experiment=experiment)
+
+        if scheduler is None:
+            scheduler_kwargs = {}
+            scheduler_kwargs["max_t"] = experiment.MAX_N_EPOCHS
+            scheduler_kwargs["grace_period"] = 1
+            scheduler_kwargs["reduction_factor"] = 2
+
+            scheduler = ASHAScheduler(**scheduler_kwargs)
+
+        tuner = tune.Tuner(
+            objective_with_params,
+            tune_config = tune.TuneConfig(
+                metric = "val_metric" if sampler is None else None,
+                mode = min_max_mode if sampler is None else None,
+                search_alg = sampler,
+                scheduler = scheduler,
+                num_samples = num_samples,
+                max_concurrent_trials = max_concurrent_trials,
+                time_budget_s = time_budget_s,
+                reuse_actors = True,
+            ),
+            run_config = air.RunConfig(local_dir = experiment.experiment_dir, name = f"{model_cl.__name__}_tuner"),
+            param_space = params_space,
+        )
+        results = tuner.fit()
+
+        return results
+
+    def OLD_define_objective(self, params_dict, model_cl, metric):
         """
-        Define the objective function for optuna.
+        Define the Ray tune objective function.
 
         Parameters
         ----------
@@ -493,7 +584,7 @@ class DLExperiment(BaseExperiment):
             # predict the model
             val_predictions = model.predict(n = self.val_len)
 
-            val_predictions = self._postprocess_predictions(model_cl, val_predictions, test = False)
+            val_predictions = self._postprocess_predictions(model_cl.__name__, val_predictions, test = False)
 
             val = self.val
             # compute the validation stats
@@ -508,10 +599,10 @@ class DLExperiment(BaseExperiment):
 
         return objective
 
-    def _optimize_hyperparameters(self, objective_fn, n_trials = None, timeout = 7200, direction = "minimize",
+    def OLD_optimize_hyperparameters(self, objective_fn, n_trials = None, timeout = 7200, direction = "minimize",
                                   load_if_exists = True):
         """
-        Optimize hyper-parameters with optuna
+        Optimize hyper-parameters with Ray tune.
 
         Parameters
         ----------
@@ -529,25 +620,91 @@ class DLExperiment(BaseExperiment):
 
         return best_prams
 
-    def _postprocess_predictions(self, model, predictions, test):
-        super()._postprocess_predictions(model=model, predictions=predictions, test=test)
-        return self
 
-    def run(self, dataset, hyperparams, transformers: List[dict], transform_val: bool = True):
+    def run(self, dataset, params_space, scheduler = None, sampler = None, transformers: List[dict] = None, transform_val: bool = True):
         super().run()
 
         self._get_data()
-        self._preprocess_data(transformers, transform_val)
-        for model_cl in self.models_cls:
-            for metric in self.metrics:
-                optuna_objective = self._define_optuna_objective(hyperparams, model_cl, metric)
-                best_params = self._optimize_hyperparameters(optuna_objective)
-                best_model = self.MODEL_BUILDERS[model_cl](**best_params) # returns a fitted model
-                test_predictions = best_model.predict(series = self.val, n = self.val_len)
-                test_predictions = self._postprocess_predictions(model_cl, test_predictions, test = True)
-                self.test_predictions[model_cl] = test_predictions
-                self.test_stats[f"{model_cl.__class__.__name__}_{metric}"] = self._compute_validation_stats(self.test, test_predictions, metric)
-                self._backup_exp(dataset, model_cl, metric, best_params)
 
-    def _backup_exp(self):
-        pass
+        if transformers is not None:
+            self._preprocess_data(transformers, transform_val)
+
+        for model_cl in self.models_cls:
+            model_name = model_cl.__name__
+            for metric in self.metrics:
+                metric_name = metric.__name__
+
+                print(f"Running {model_name} with metric {metric_name}")
+                work_dir = os.path.join(os.getcwd(), f"{self.experiment_dir}/{metric_name}/{model_name}")
+                os.makedirs(work_dir, exist_ok=True)
+                print(f"Final model checkpoints directory: {work_dir}")
+
+                params_space[model_name]["metric"] = metric_name
+                best_params = self.tune_hyperparameters(experiment= self, params_space=params_space[model_name],
+                                                        model_cl=model_cl, scheduler=scheduler, sampler=sampler,
+                                                        metric=metric).get_best_result().config
+
+                best_model = MODEL_BUILDERS[model_name](**best_params, work_dir=work_dir, experiment=self)
+
+                # train the model
+                best_model.fit(
+                    series=self.train,
+                    val_series=self.val,
+                    max_samples_per_ts=self.MAX_SAMPLES_PER_TS
+                )
+
+                # use best model for subsequent evaluation
+                best_model = model_cl.load_from_checkpoint(model_name, work_dir=work_dir, best=True)
+                test_predictions = best_model.predict(series = self.val, n = self.test_len)
+                self.test_predictions[f"{model_name}_{metric_name}"] = test_predictions
+                test_predictions = self._postprocess_predictions(f"{model_name}_{metric_name}",
+                                                                 test_predictions, test = True)
+                self.test_stats[f"{model_name}_{metric_name}"] = self._compute_metric(self.test, test_predictions, metric)
+
+        self.end_exp_time = datetime.now()
+        self._backup_exp()
+
+    def check_exp_outputs(self, models, metrics, max_series_to_plot = 5, plot_series = False, comp = 0):
+        if metrics is None:
+            metrics = self.metrics
+
+        if models is None:
+            models = self.models_cls
+
+        if isinstance(comp, int) and comp < len(self.train[0].columns):
+            comp = self.orig_train[0].columns[comp]
+        elif isinstance(comp, str):
+            comp = comp
+        else:
+            comp = self.orig_train[0].columns[0]
+
+        for model_cl in models:
+            model_name = model_cl.__name__
+            for metric in metrics:
+                metric_name = metric.__name__
+
+                if plot_series:
+                    if len(self.test) < max_series_to_plot:
+                        max_series_to_plot = len(self.test)
+
+                    idx_vec = np.random.randint(0, len(self.test), max_series_to_plot)
+
+                    for idx in idx_vec:
+                        plt.figure(figsize=(15, 5))
+                        self.orig_val[idx][comp][-self.val_len:].plot()
+                        self.test[idx][comp].plot(label="actual")
+                        self.test_predictions[f"{model_name}_{metric_name}"][idx][comp].plot(label="forecast")
+                        plt.title(f"{self.dataset.__name__}_{model_name}_{metric_name}")
+                        plt.show()
+                        plt.close()
+
+
+
+
+
+
+
+
+
+
+
