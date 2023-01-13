@@ -2272,7 +2272,7 @@ class TimeSeries:
         self._raise_if_not_within(start_ts)
 
         if isinstance(start_ts, (int, np.int64)):
-            return self[start_ts : start_ts + n]
+            return self[pd.RangeIndex(start=start_ts, stop=start_ts + n)]
         elif isinstance(start_ts, pd.Timestamp):
             # get first timestamp greater or equal to start_ts
             tss = self._get_first_timestamp_after(start_ts)
@@ -2308,7 +2308,7 @@ class TimeSeries:
         self._raise_if_not_within(end_ts)
 
         if isinstance(end_ts, (int, np.int64)):
-            return self[end_ts - n + 1 : end_ts + 1]
+            return self[pd.RangeIndex(start=end_ts - n + 1, stop=end_ts + 1)]
         elif isinstance(end_ts, pd.Timestamp):
             # get last timestamp smaller or equal to start_ts
             tss = self._get_last_timestamp_before(end_ts)
