@@ -1,6 +1,7 @@
 import copy
 import functools
 import math
+from typing import Sequence, Union
 from unittest.mock import patch
 
 import numpy as np
@@ -29,6 +30,7 @@ from darts.models import (
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
+from darts.utils.data.tabularization import create_lagged_training_data
 
 # from sklearn.multioutput import MultiOutputRegressor
 from darts.utils.multioutput import MultiOutputRegressor
@@ -641,100 +643,65 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     [44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0],
                 )
 
+    @staticmethod
     def helper_get_expected_shape_static_covs(
-        self,
-        reg_model,
-        target_series,
-        past_covs,
-        future_covs,
-        target_lag,
-        past_covs_lag,
-        future_covs_lag,
+        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        output_chunk_length: int,
+        past_covs: Union[TimeSeries, Sequence[TimeSeries]],
+        future_covs: Union[TimeSeries, Sequence[TimeSeries]],
+        target_lag: Sequence[int],
+        past_covs_lag: Sequence[int],
+        future_covs_lag: Sequence[int],
     ):
+        """
+        Computes the expected shape of the features matrix returned by
+        `RegressionModel._create_lagged_data` when the series inputs
+        (may) contain static covariates.
 
+        The expected shape is computed by:
+            1. Using `create_lagged_training_data` to assemble the feature matrix of
+            each timeseries (without static covariates).
+            2. The `expected_height` is the total number of rows contained across all of the
+            assembled feature matrices.
+            3. The `expected_height` is the number of columns in any one of the assembled
+            feature matrices, plus the number of columns contributed by the static covariates.
+            4. Each static covariate contributes either 1 additional column (if the covariate
+            is a single value), or `n_component` columns (if the covariate contains multiple values)
+        """
         target_series = series2seq(target_series)
         past_covs = series2seq(past_covs)
         future_covs = series2seq(future_covs)
-        scovs_set = []
-        for s in target_series:
-            if s.has_static_covariates:
-                scovs_set.extend(s.static_covariates.columns.to_list())
-
-        all_target_width = target_series[0].n_components
-        scovs_width = (
-            len(set(scovs_set)) if scovs_set is not None else 0
-        ) * all_target_width
-        all_past_width = past_covs[0].n_components if past_covs is not None else 0
-        all_future_width = future_covs[0].n_components if future_covs is not None else 0
-
-        (
-            min_target_lag,
-            output_chunk_length,
-            min_past_cov_lag,
-            min_future_cov_lag,
-            max_future_cov_lag,
-        ) = reg_model.extreme_lags
-        max_past_lag = max(
-            [
-                abs(v)
-                for v in [min_target_lag, min_past_cov_lag, min_future_cov_lag]
-                if v is not None
-            ]
-        )
-
-        len_target_features = [
-            len(ts) - max_past_lag - (output_chunk_length - 1) for ts in target_series
-        ]
-        len_past_cov_features = (
-            [(len(ps) - max_past_lag) for ps in past_covs]
-            if past_covs is not None
-            else None
-        )
-        len_future_cov_features = (
-            [
-                (
-                    len(fs)
-                    - max_past_lag
-                    - (max_future_cov_lag if max_future_cov_lag is not None else 0)
-                )
-                for fs in future_covs
-            ]
-            if future_covs is not None
-            else None
-        )
-
-        features_len = [
-            min(
-                [
-                    len_target_features[idx],
-                    len_past_cov_features[idx]
-                    if len_past_cov_features is not None
-                    else float("inf"),
-                    len_future_cov_features[idx]
-                    if len_future_cov_features is not None
-                    else float("inf"),
-                ]
+        X_blocks = []
+        for i, target in enumerate(target_series):
+            X_i, _, _ = create_lagged_training_data(
+                target,
+                output_chunk_length,
+                past_covs[i] if past_covs else None,
+                future_covs[i] if future_covs else None,
+                target_lag,
+                past_covs_lag if past_covs else None,
+                future_covs_lag if future_covs else None,
             )
-            for idx in range(len(target_series))
-        ]
-
-        target_feature_width = all_target_width * len(target_lag) + scovs_width
-        past_cov_feature_width = (
-            (all_past_width * len(past_covs_lag)) if past_covs is not None else 0
-        )
-        future_cov_feature_width = (
-            (all_future_width * len(future_covs_lag)) if future_covs is not None else 0
-        )
-
-        expected_width = (
-            target_feature_width + past_cov_feature_width + future_cov_feature_width
-        )
-
-        expected_height = sum(features_len)
-
+            X_blocks.append(X_i)
+        expected_height = sum(X.shape[0] for X in X_blocks)
+        scovs_widths = {}
+        for s in target_series:
+            covs_i = s.static_covariates.items() if s.has_static_covariates else []
+            for name, vals in covs_i:
+                scovs_widths[name] = vals.size
+        scovs_width = sum(scovs_widths.values())
+        width_wo_static_covs = X_blocks[0].shape[1]
+        expected_width = width_wo_static_covs + scovs_width
         return expected_height, expected_width
 
-    def test_static_covs_addition(self):
+    def test_static_cov_appended(self):
+        """
+        Tests that static covariates are correctly appended as columns to the training
+        feature matrix constructed by `RegressionModel`. More specifically, the shape
+        of the features matrix returned by `RegressionModel._create_lagged_data` is
+        compared with the expected shape computed by `helper_get_expected_shape_static_covs`;
+        this comparison is done for a variety of scenarios.
+        """
 
         static_covs1 = pd.DataFrame(
             data={
@@ -745,6 +712,12 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
         static_covs2 = pd.DataFrame(data={"cont2": [10, 20, 30]})
         static_covs3 = pd.DataFrame(data={"cont3": [1, 2, 3]})
+        static_covs4 = pd.DataFrame(
+            data={
+                "cont4": [0.1],
+                "cat4": ["a"],
+            }
+        ).astype(dtype={"cat4": "category"})
 
         # default transformer_num = MinMaxScaler()
         scaler = StaticCovariatesTransformer(transformer_cat=OneHotEncoder())
@@ -774,6 +747,15 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             static_covariates=static_covs3,
         )
 
+        series4 = TimeSeries.from_times_and_values(
+            times=ref_series3.time_index,
+            values=np.concatenate([ref_series3.values() * 20] * 3, axis=1),
+            columns=["comp1", "comp2", "comp3"],
+            static_covariates=static_covs4,
+        )
+
+        series4 = scaler.fit_transform(series4)
+
         series_no_statics = TimeSeries.from_times_and_values(
             times=ref_series1.time_index,
             values=np.concatenate([ref_series1.values()] * 3, axis=1),
@@ -797,8 +779,8 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         )
 
         expected_height, expected_width = self.helper_get_expected_shape_static_covs(
-            reg_model,
             target_series,
+            output_chunk_length,
             past_covs,
             future_covs,
             target_lag,
@@ -828,8 +810,8 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         )
 
         expected_height, expected_width = self.helper_get_expected_shape_static_covs(
-            reg_model,
             target_series,
+            output_chunk_length,
             past_covs,
             future_covs,
             target_lag,
@@ -852,14 +834,13 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         self.assertEqual(pred_features.shape, (1, expected_width))
 
         # different sizes of past and future covariates + different lenghts of target series
-        target_lag = [-2, -1]
-        past_covs_lag = [-3]
-        future_covs_lag = [-1, 3]
-        output_chunk_length = 4
-
         target_series = [series1, series2, series3]
         past_covs = [series2, series1, series3]
         future_covs = [series3, series3, series1]
+        target_lag = [-2, -1]
+        past_covs_lag = [-3]
+        future_covs_lag = [-1, -3]
+        output_chunk_length = 4
 
         reg_model = RegressionModel(
             lags=target_lag,
@@ -869,8 +850,8 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         )
 
         expected_height, expected_width = self.helper_get_expected_shape_static_covs(
-            reg_model,
             target_series,
+            output_chunk_length,
             past_covs,
             future_covs,
             target_lag,
@@ -884,14 +865,13 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         self.assertEqual(features.shape, (expected_height, expected_width))
 
         # outptut_chunk_length < max_future_cov_lag and len(target_series) = len(future_covs)
-        target_lag = [-1]
-        past_covs_lag = None
-        future_covs_lag = [-1, 3]
-        output_chunk_length = 2
-
         target_series = [series1, series2, series3]
         past_covs = None
         future_covs = [series1, series2, series3]
+        target_lag = [-1]
+        past_covs_lag = None
+        future_covs_lag = [-1, -3]
+        output_chunk_length = 2
 
         reg_model = RegressionModel(
             lags=target_lag,
@@ -901,21 +881,90 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         )
 
         expected_height, expected_width = self.helper_get_expected_shape_static_covs(
-            reg_model,
             target_series,
+            output_chunk_length,
             past_covs,
             future_covs,
             target_lag,
             past_covs_lag,
             future_covs_lag,
         )
+
+        features = reg_model._create_lagged_data(
+            target_series, past_covs, future_covs, max_samples_per_ts=None
+        )[0]
+        self.assertEqual(features.shape, (expected_height, expected_width))
+
+        # single dimensional static covs - should only add single column:
+        target_series = series4
+        past_covs = None
+        future_covs = None
+        target_lag = [-1]
+        past_covs_lag = None
+        future_covs_lag = None
+        output_chunk_length = 1
+
+        reg_model = RegressionModel(
+            lags=target_lag,
+            lags_past_covariates=past_covs_lag,
+            lags_future_covariates=future_covs_lag,
+            output_chunk_length=output_chunk_length,
+        )
+
+        expected_height, expected_width = self.helper_get_expected_shape_static_covs(
+            target_series,
+            output_chunk_length,
+            past_covs,
+            future_covs,
+            target_lag,
+            past_covs_lag,
+            future_covs_lag,
+        )
+
+        features = reg_model._create_lagged_data(
+            target_series, past_covs, future_covs, max_samples_per_ts=None
+        )[0]
+        self.assertEqual(features.shape, (expected_height, expected_width))
+
+        # single dimensional static covs (i.e. `series4`) alongside
+        # multidimensional static covs (i.e. `series5`)
+        target_series = [series1, series4]
+        past_covs = None
+        future_covs = None
+        target_lag = [-1]
+        past_covs_lag = None
+        future_covs_lag = None
+        output_chunk_length = 1
+
+        reg_model = RegressionModel(
+            lags=target_lag,
+            lags_past_covariates=past_covs_lag,
+            lags_future_covariates=future_covs_lag,
+            output_chunk_length=output_chunk_length,
+        )
+
+        expected_height, expected_width = self.helper_get_expected_shape_static_covs(
+            target_series,
+            output_chunk_length,
+            past_covs,
+            future_covs,
+            target_lag,
+            past_covs_lag,
+            future_covs_lag,
+        )
+
         features = reg_model._create_lagged_data(
             target_series, past_covs, future_covs, max_samples_per_ts=None
         )[0]
         self.assertEqual(features.shape, (expected_height, expected_width))
 
     def test_static_cov_accuracy(self):
-        # based on : https://unit8co.github.io/darts/examples/15-static-covariates.html
+        """
+        Tests that `RandomForest` regression model reproduces same behaviour as
+        `examples/15-static-covariates.ipynb` notebook; see this notebook for
+        futher details. Notebook is also hosted online at:
+        https://unit8co.github.io/darts/examples/15-static-covariates.html
+        """
 
         # given
         period = 20
@@ -965,7 +1014,6 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             train_series_static_cov, pred_no_static_cov, pred_static_cov
         ):
             rmses = [rmse(series, ps) for ps in [ps_no_st, ps_st_cat]]
-
             self.assertLess(rmses[1], rmses[0])
 
         # given series of different sizes in input
@@ -995,7 +1043,6 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             train_series_static_cov, pred_no_static_cov, pred_static_cov
         ):
             rmses = [rmse(series, ps) for ps in [ps_no_st, ps_st_cat]]
-
             self.assertLess(rmses[1], rmses[0])
 
         # different series length and different number of static covs
@@ -1020,7 +1067,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             train_series_no_cov[0][: (60 - period)],
             train_series_no_cov[1][:60],
         ]
-        model_no_static_cov = RandomForest(lags=period // 2, bootstrap=False)
+        model_no_static_cov = RandomForest(lags=period // 2, bootstrap=True)
         model_no_static_cov.fit(fitting_series)
         pred_no_static_cov = model_no_static_cov.predict(
             n=period, series=fitting_series
@@ -1041,7 +1088,6 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             train_series_static_cov, pred_no_static_cov, pred_static_cov
         ):
             rmses = [rmse(series, ps) for ps in [ps_no_st, ps_st_cat]]
-
             self.assertLess(rmses[1], rmses[0])
 
     def test_models_runnability(self):

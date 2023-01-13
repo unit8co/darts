@@ -31,14 +31,10 @@ from collections import OrderedDict
 from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
-import pandas as pd
 from sklearn.linear_model import LinearRegression
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
-from darts.models.forecasting.forecasting_model import (
-    ForecastingModel,
-    GlobalForecastingModel,
-)
+from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
 from darts.utils.data.tabularization import create_lagged_training_data
 from darts.utils.multioutput import MultiOutputRegressor
@@ -354,160 +350,102 @@ class RegressionModel(GlobalForecastingModel):
             training_samples.append(samples_i)
             training_labels.append(labels_i)
 
+        training_samples = self._add_static_covariates(
+            training_samples,
+            target_series,
+        )
+
         training_samples = np.concatenate(training_samples, axis=0)
         training_labels = np.concatenate(training_labels, axis=0)
 
-        training_samples = self._add_static_covariates(
-            self,
-            training_samples,
-            target_series,
-            *self.extreme_lags,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            max_samples_per_ts=max_samples_per_ts,
-        )
-
         return training_samples, training_labels
 
-    @staticmethod
     def _add_static_covariates(
-        model: ForecastingModel,
-        features: np.array,
+        self,
+        features: Union[np.array, Sequence[np.array]],
         target_series: Union[TimeSeries, Sequence[TimeSeries]],
-        min_target_lag: int,
-        output_chunk_length: int,
-        min_past_cov_lag: Optional[int] = None,
-        min_future_cov_lag: Optional[int] = None,
-        max_future_cov_lag: Optional[int] = None,
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        max_samples_per_ts: Optional[int] = None,
-    ):
+    ) -> Union[np.array, Sequence[np.array]]:
         """
         Add static covariates to the features' table for RegressionModels.
         Accounts for series with potentially different static covariates by padding with 0 to accomodate for the maximum
         number of available static_covariates in any of the given series in the sequence.
+
         If no static covariates are provided for a given series, its corresponding features are padded with 0.
         Accounts for the case where the model is trained with series with static covariates and then used to predict
         on series without static covariates by padding with 0 the corresponding features of the series without
         static covariates.
+
         Parameters
         ----------
-        model
-            The regression model. Should be an instance of darts.models.RegressionModel.
         features
-            The features' numpy array to which the static covariates will be added.
+            The features' numpy array(s) to which the static covariates will be added. Can either be a lone feature
+            matrix or a `Sequence` of feature matrices; in the latter case, static covariates will be appended to
+            each feature matrix in this `Sequence`.
         target_series
             The target series from which to read the static covariates.
-        min_target_lag
-            The minimum past lag of the target series.
-        output_chunk_length
-            The model's output chunk length.
-        min_past_cov_lag
-            The minimum past lag of the past covariates.
-        min_future_cov_lag
-            The minimum past lag of the future covariates.
-        max_future_cov_lag
-            The maximum future lag of the future covariates.
-        max_samples_per_ts
-            Optionally, the maximum number of samples to be drawn for training or inference.
-            It is set to 1 for inference (i.e., auto-regressively predict one step at a time, hence generate one
-            feature vector at a time).
+
+        Returns
+        -------
+        features
+            The features' array(s) with appended static covariates columns. If the `features` input was passed as a
+            `Sequence` of `np.array`s, then a `Sequence` is also returned; if `features` was passed as an `np.array`,
+            a `np.array` is returned.
         """
 
-        model = model.model
-
+        input_not_list = not isinstance(features, Sequence)
+        if input_not_list:
+            features = [features]
         target_series = series2seq(target_series)
-        past_covariates = series2seq(past_covariates)
-        future_covariates = series2seq(future_covariates)
-
-        n_comps = target_series[0].n_components
-
-        max_past_lag = max(
-            abs(v)
-            for v in [min_target_lag, min_past_cov_lag, min_future_cov_lag]
-            if v is not None
-        )
-
         # collect static covariates info
-        scovs_map = {"covs_exist": False, "df": [], "reps": [], "names": set()}
-
-        for idx, ts in enumerate(target_series):
-            len_target_features = len(ts) - max_past_lag - (output_chunk_length - 1)
-            len_past_cov_features = (
-                (len(past_covariates[idx]) - max_past_lag)
-                if past_covariates is not None
-                else None
-            )
-            len_future_cov_features = (
-                (len(future_covariates[idx]) - max_past_lag - max_future_cov_lag)
-                if future_covariates is not None
-                else None
-            )
-            len_shortest_features = min(
-                v
-                for v in [
-                    len_target_features,
-                    len_past_cov_features,
-                    len_future_cov_features,
-                ]
-                if v is not None
-            )
-
-            if ts.static_covariates is not None:
-
-                scovs_map["names"].update(set(ts.static_covariates.columns))
+        scovs_map = {
+            "covs_exist": False,
+            "vals": [],  # Stores values of static cov arrays in each timeseries
+            "sizes": {},  # Stores sizes of static cov arrays in each timeseries
+        }
+        for ts in target_series:
+            if ts.has_static_covariates:
                 scovs_map["covs_exist"] = True
-                scovs_map["df"].append(ts.static_covariates)
-                scovs_map["reps"].append(
-                    max_samples_per_ts
-                    if max_samples_per_ts is not None
-                    else len_shortest_features
-                )
+                # Each static covariate either adds 1 extra columns or
+                # `n_component` extra columns:
+                vals_i = {}
+                for name, row in ts.static_covariates.items():
+                    vals_i[name] = row
+                    scovs_map["sizes"][name] = row.size
+                scovs_map["vals"].append(vals_i)
             else:
-                scovs_map["df"].append(pd.DataFrame())
-                scovs_map["reps"].append(
-                    max_samples_per_ts
-                    if max_samples_per_ts is not None
-                    else len_shortest_features
-                )
+                scovs_map["vals"].append(None)
 
-        if not scovs_map["covs_exist"]:
-            if (
-                hasattr(model, "n_features_in_")
-                and model.n_features_in_ is not None
-                and model.n_features_in_ > features.shape[1]
-            ):
-                # for when series in prediction do not have static covariates but some of the training series did
-                pad_zeros = np.zeros((1, model.n_features_in_ - features.shape[1]))
-                return np.concatenate(
-                    [features, np.tile(pad_zeros, reps=(features.shape[0], 1))], axis=1
-                )
-            else:
-                return features
-
-        else:
-            # at least one series in the sequence has static covariates
-            static_covs = []
-            col_names = list(scovs_map["names"])
-            # build static covariates array
-            for i in range(len(target_series)):
-                df = scovs_map["df"][i]
-
-                if not df.empty:
-                    df = df.reindex(col_names, axis=1, fill_value=0.0, copy=True)
-                    # reshape with order="F" to ensure that the covariates are read column wise
-                    scovs = df.values.reshape(1, -1, order="F")
-                    static_covs.append(np.tile(scovs, reps=(scovs_map["reps"][i], 1)))
-                else:
-                    pad_zeros = np.zeros((1, len(col_names) * n_comps))
-                    static_covs.append(
-                        np.tile(pad_zeros, reps=(scovs_map["reps"][i], 1))
+        if (
+            not scovs_map["covs_exist"]
+            and hasattr(self.model, "n_features_in_")
+            and (self.model.n_features_in_ is not None)
+            and (self.model.n_features_in_ > features[0].shape[1])
+        ):
+            # for when series in prediction do not have static covariates but some of the training series did
+            num_static_components = self.model.n_features_in_ - features[0].shape[1]
+            for i, features_i in enumerate(features):
+                padding = np.zeros((features_i.shape[0], num_static_components))
+                features[i] = np.hstack([features_i, padding])
+        elif scovs_map["covs_exist"]:
+            for i, features_i in enumerate(features):
+                vals = scovs_map["vals"][i]
+                scov_width = sum(scovs_map["sizes"].values())
+                if vals:
+                    scov_arrays = []
+                    for name, size in scovs_map["sizes"].items():
+                        scov_arrays.append(
+                            vals[name] if name in vals else np.zeros((size,))
+                        )
+                    scov_array = np.concatenate(scov_arrays)
+                    scovs = np.broadcast_to(
+                        scov_array, (features_i.shape[0], scov_width)
                     )
-            static_covs = np.concatenate(static_covs, axis=0)
-
-            # concatenate static covariates to features
-            return np.concatenate([features, static_covs], axis=1)
+                else:
+                    scovs = np.zeros((features_i.shape[0], scov_width))
+                features[i] = np.hstack([features_i, scovs])
+        if input_not_list:
+            features = features[0]
+        return features
 
     def _fit_model(
         self,
@@ -845,15 +783,12 @@ class RegressionModel(GlobalForecastingModel):
 
             # concatenate retrieved lags
             X = np.concatenate(np_X, axis=1)
-            X = self._add_static_covariates(
-                self,
-                X,
-                series,
-                *self.extreme_lags,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                max_samples_per_ts=1,
-            )
+            # Need to split up `X` into sub-blocks corresponding to
+            # each timeseries in `series` so that static covariates
+            # can be added to each block:
+            X_blocks = np.split(X, len(series), axis=0)
+            X_blocks = self._add_static_covariates(X_blocks, series)
+            X = np.concatenate(X_blocks, axis=0)
 
             # X has shape (n_series * n_samples, n_regression_features)
             prediction = self._predict_and_sample(X, num_samples, **kwargs)
