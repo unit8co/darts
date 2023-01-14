@@ -663,7 +663,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             each timeseries (without static covariates).
             2. The `expected_height` is the total number of rows contained across all of the
             assembled feature matrices.
-            3. The `expected_height` is the number of columns in any one of the assembled
+            3. The `expected_width` is the number of columns in any one of the assembled
             feature matrices, plus the number of columns contributed by the static covariates.
             4. Each static covariate contributes either 1 additional column (if the covariate
             is a single value), or `n_component` columns (if the covariate contains multiple values)
