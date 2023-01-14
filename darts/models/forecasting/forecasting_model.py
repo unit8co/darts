@@ -363,15 +363,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             max_future_cov_lag,
         ) = self.extreme_lags
 
-        return (
-            max_future_cov_lag
-            if max_future_cov_lag
-            else 0
-            - min(
-                min_target_lag if min_target_lag else 0,
-                min_past_cov_lag if min_past_cov_lag else 0,
-                min_future_cov_lag if min_future_cov_lag else 0,
-            )
+        return (max_future_cov_lag if max_future_cov_lag else 0) - min(
+            min_target_lag if min_target_lag else 0,
+            min_past_cov_lag if min_past_cov_lag else 0,
+            min_future_cov_lag if min_future_cov_lag else 0,
         )
 
     def _get_historical_forecastable_time_index(
@@ -696,10 +691,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             retrain_func = _retrain_wrapper(
                 lambda counter: counter % int(retrain) == 0 if retrain else False
             )
-
         elif isinstance(retrain, Callable):
             retrain_func = _retrain_wrapper(retrain)
-
         else:
             raise_log(
                 ValueError(
@@ -707,6 +700,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ),
                 logger,
             )
+
         retrain_func_signature = tuple(
             inspect.signature(retrain_func).parameters.keys()
         )
@@ -733,7 +727,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         forecasts_list = []
         for idx, series_ in enumerate(outer_iterator):
-
             past_covariates_ = past_covariates[idx] if past_covariates else None
             future_covariates_ = future_covariates[idx] if future_covariates else None
 
@@ -770,15 +763,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             # prepare the start parameter -> pd.Timestamp
             if start is not None:
-
                 historical_forecasts_time_index = drop_before_index(
                     historical_forecasts_time_index,
                     series_.get_timestamp_at_point(start),
                 )
-
             else:
                 if (retrain is not False) or (not self._fit_called):
-
                     if train_length:
                         historical_forecasts_time_index = drop_before_index(
                             historical_forecasts_time_index,
@@ -809,9 +799,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         (not self._fit_called)
                         and (retrain is False)
                         and (not train_length),
-                        " The model has not been fitted yet, and `start` and train_length are not specified. "
-                        " The model is not retraining during the historical forecasts. Hence the "
-                        "the first and only training would be done on 2 samples.",
+                        "The model has not been fitted yet, and `start` and train_length are not specified. "
+                        "The model is not retraining during the historical forecasts. Hence the "
+                        "first and only training would be done on 2 samples.",
                         logger,
                     )
 
@@ -842,7 +832,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             # iterate and forecast
             for _counter, pred_time in enumerate(iterator):
-
                 # build the training series
                 if min_timestamp > series_.time_index[0]:
                     train_series = series_.drop_before(
@@ -871,13 +860,17 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     if future_covariates_
                     else None,
                 ):
-                    self._fit_wrapper(
+                    # avoid fitting the same model multiple times
+                    model = self.untrained_model()
+                    model._fit_wrapper(
                         series=train_series,
                         past_covariates=past_covariates_,
                         future_covariates=future_covariates_,
                     )
+                else:
+                    model = self
 
-                forecast = self._predict_wrapper(
+                forecast = model._predict_wrapper(
                     n=forecast_horizon,
                     series=train_series,
                     past_covariates=past_covariates_,
@@ -906,7 +899,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         hierarchy=series_.hierarchy,
                     )
                 )
-
             else:
                 forecasts_list.append(forecasts)
 
@@ -1531,7 +1523,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return model_params
 
     def untrained_model(self):
-        return self.__class__(**self.model_params)
+        return self.__class__(**copy.deepcopy(self.model_params))
 
     @property
     def model_params(self) -> dict:
