@@ -839,7 +839,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         future_covs = [series3, series3, series1]
         target_lag = [-2, -1]
         past_covs_lag = [-3]
-        future_covs_lag = [-1, -3]
+        future_covs_lag = [-1, 3]
         output_chunk_length = 4
 
         reg_model = RegressionModel(
@@ -870,7 +870,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         future_covs = [series1, series2, series3]
         target_lag = [-1]
         past_covs_lag = None
-        future_covs_lag = [-1, -3]
+        future_covs_lag = [-1, 3]
         output_chunk_length = 2
 
         reg_model = RegressionModel(

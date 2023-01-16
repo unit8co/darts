@@ -27,7 +27,6 @@ def create_lagged_data(
     use_moving_windows: bool = True,
     is_training: bool = True,
 ) -> Tuple[np.ndarray, np.ndarray, pd.Index]:
-
     """
     Creates the features array `X` and labels array `y` to train a lagged-variables regression model (e.g. an
     `sklearn` model) when `is_training = True`; alternatively, creates the features array `X` to produce a series
@@ -49,16 +48,12 @@ def create_lagged_data(
 
     The `X` array is constructed from the lagged values of up to three separate timeseries:
         1. The `target_series`, which contains the values we're trying to predict. A regression model that
-        uses previous values
-        of the target its predicting is referred to as *auto-regressive*; please refer to [1]_ for further
-        details
-        about auto-regressive timeseries models.
+        uses previous values of the target its predicting is referred to as *auto-regressive*; please refer to
+        [1]_ for further details about auto-regressive timeseries models.
         2. The past covariates series, which contains values that are *not* known into the future. Unlike
-        the target series, however,
-        past covariates are *not* to be predicted by the regression model.
+        the target series, however, past covariates are *not* to be predicted by the regression model.
         3. The future covariates (AKA 'exogenous' covariates) series, which contains values that are known
-        into the future, even beyond
-        the data in `target_series` and `past_covariates`.
+        into the future, even beyond the data in `target_series` and `past_covariates`.
     See [2]_ for a more detailed discussion about target, past, and future covariates. Conversely, `y` is
     comprised only of the lagged values of `target_series`.
 
@@ -119,11 +114,13 @@ def create_lagged_data(
         `lags = [-3, -1]` will extract `target_series` values which are 3 timesteps and 1 timestep away from
         the current value).
     lags_past_covariates
-        Optionally, the lags of `past_covariates` to be used as features. Each lag value is assumed to be less than
-        or equal to 0.
+        Optionally, the lags of `past_covariates` to be used as features. Like `lags`, each lag value is assumed to
+        be less than or equal to -1.
     lags_future_covariates
-        Optionally, the lags of `future_covariates` to be used as features. Each lag value is assumed to be less than
-        or equal to 0.
+        Optionally, the lags of `future_covariates` to be used as features. Unlike `lags` and
+        `lags_past_covariates`, `lags_future_covariates` values can be positive (i.e. use values *after* time `t`
+        to predict target at time `t`), zero (i.e. use values *at* time `t` to predict target at time `t`), and/or
+        negative (i.e. use values *before* time `t` to predict target at time `t`).
     max_samples_per_ts
         Optionally, the maximum number of samples to be drawn for training/validation; only the most recent
         samples are kept. In theory, specifying a smaller `max_samples_per_ts` should reduce computation time,
@@ -262,11 +259,13 @@ def create_lagged_training_data(
         `lags = [-3, -1]` will extract `target_series` values which are 3 timesteps and 1 timestep away from
         the current value).
     lags_past_covariates
-        Optionally, the lags of `past_covariates` to be used as features. Each lag value is assumed to be less than
-        or equal to 0.
+        Optionally, the lags of `past_covariates` to be used as features. Like `lags`, each lag value is assumed to
+        be less than or equal to -1.
     lags_future_covariates
-        Optionally, the lags of `future_covariates` to be used as features. Each lag value is assumed to be less than
-        or equal to 0.
+        Optionally, the lags of `future_covariates` to be used as features. Unlike `lags` and `lags_past_covariates`,
+        `lags_future_covariates` values can be positive (i.e. use values *after* time `t` to predict target at
+        time `t`), zero (i.e. use values *at* time `t` to predict target at time `t`), and/or negative (i.e. use values
+        *before* time `t` to predict target at time `t`).
     max_samples_per_ts
         Optionally, the maximum number of samples to be drawn for training/validation; only the most recent
         samples are kept. In theory, specifying a smaller `max_samples_per_ts` should reduce computation time,
@@ -361,9 +360,13 @@ def create_lagged_prediction_data(
         `lags = [-3, -1]` will extract `target_series` values which are 3 timesteps and 1 timestep away from
         the current value).
     lags_past_covariates
-        Optionally, the lags of `past_covariates` to be used as features. Each lag value is assumed to be negative.
+        Optionally, the lags of `past_covariates` to be used as features. Like `lags`, each lag value is assumed to
+        be less than or equal to -1.
     lags_future_covariates
-        Optionally, the lags of `future_covariates` to be used as features. Each lag value is assumed to be negative.
+        Optionally, the lags of `future_covariates` to be used as features. Unlike `lags` and `lags_past_covariates`,
+        `lags_future_covariates` values can be positive (i.e. use values *after* time `t` to predict target at
+        time `t`), zero (i.e. use values *at* time `t` to predict target at time `t`), and/or negative (i.e. use
+        values *before* time `t` to predict target at time `t`).
     max_samples_per_ts
         Optionally, the maximum number of samples to be drawn for training/validation; only the most recent
         samples are kept. In theory, specifying a smaller `max_samples_per_ts` should reduce computation time,
@@ -496,17 +499,16 @@ def _create_lagged_data_by_moving_window(
             # only go up to time `30`. This does *not* occur when considering
             # the target series, however, since this series must have values
             # for all feature times - these values will become labels.
-            time_idx_too_short = (not is_target_series) and (
-                time_index_i[-1] <= start_time
-            )
             # If `start_time` not included in `time_index_i`, can 'manually' calculate
             # what its index *would* be if `time_index_i` were extended to include that time:
-            if time_idx_too_short:
+            if not is_target_series and (time_index_i[-1] <= start_time):
                 start_time_idx = (
                     len(time_index_i)
                     - 1
                     + (start_time - time_index_i[-1]) // series_i.freq
                 )
+            elif not is_target_series and (time_index_i[0] >= start_time):
+                start_time_idx = max_lag_i
             # If `start_time` *is* included in `time_index_i`, need to binary search `time_index_i`
             # for its position:
             else:
@@ -515,8 +517,7 @@ def _create_lagged_data_by_moving_window(
             # Windows taken between times `t - max_lag_i` and `t - min_lag_i`
             window_len = max_lag_i - min_lag_i + 1
             first_window_start_idx = start_time_idx - max_lag_i
-            # Need `+ 1` since end index is exclusive in Python:
-            first_window_end_idx = start_time_idx - min_lag_i + 1
+            first_window_end_idx = first_window_start_idx + window_len
             # Other windows are formed by sequentially shifting first window forward
             # by 1 index position each time; to create `(num_samples - 1)` more windows
             # in addition to the first window, need to take `(num_samples - 1)` values
@@ -529,8 +530,7 @@ def _create_lagged_data_by_moving_window(
             )
             # Within each window, the `-1` indexed value (i.e. the value at the very end of
             # the window) corresponds to time `t - min_lag_i`. The negative index of the time
-            # `t + lag_i` within this window (where `lag_i < 0` and `abs(lag_i) >= min_lag_i`)
-            # is, therefore, `-1 - (abs(lag_i) - min_lag_i)` = `lag_i + min_lag_i - 1`:
+            # `t + lag_i` within this window is, therefore, `-1 + lag_i + min_lag_i`:
             lags_to_extract = np.array(lags_i, dtype=int) + min_lag_i - 1
             lagged_vals = _extract_lagged_vals_from_windows(windows, lags_to_extract)
             X.append(lagged_vals)
@@ -653,14 +653,29 @@ def _create_lagged_data_by_intersecting_times(
         is_target_series = is_training and (i == 0)
         if series_and_lags_specified or is_target_series:
             time_index_i = series_i.time_index
-            time_idx_too_short = (not is_target_series) and (
-                time_index_i[-1] <= shared_times[-1]
+            add_to_start = (not is_target_series) and (
+                time_index_i[0] > shared_times[0]
             )
-            if time_idx_too_short:
-                time_index_i = _extend_time_index(
-                    time_index_i, series_i.freq, new_end=shared_times[-1]
+            add_to_end = (not is_target_series) and (
+                time_index_i[-1] < shared_times[-1]
+            )
+            if add_to_start or add_to_end:
+                new_start = shared_times[0] if add_to_start else None
+                new_end = shared_times[-1] if add_to_end else None
+                num_prepended = (
+                    (time_index_i[0] - shared_times[0]) // series_i.freq
+                    if add_to_start
+                    else 0
                 )
-            shared_time_idx = np.searchsorted(time_index_i, shared_times).reshape(-1, 1)
+                time_index_i = _extend_time_index(
+                    time_index_i, series_i.freq, new_start=new_start, new_end=new_end
+                )
+            else:
+                num_prepended = 0
+            shared_time_idx = (
+                np.searchsorted(time_index_i, shared_times).reshape(-1, 1)
+                - num_prepended
+            )
         if series_and_lags_specified:
             idx_to_get = shared_time_idx + np.array(lags_i, dtype=int)
             # Before reshaping: lagged_vals.shape = (n_observations, num_lags, n_components, n_samples)
@@ -712,26 +727,81 @@ def get_feature_times(
 ) -> Union[FeatureTimes, Tuple[FeatureTimes, MinLags, MaxLags]]:
     """
     Returns a tuple containing the times in `target_series`, the times in `past_covariates`, and the times in
-    `future_covariates` that *could* be used to create features. More specifically, we note that:
-        1. Features cannot be created for times that have fewer than `-min(lags)` preceding values.
-        2. When creating training data, labels cannot be created for times points that have fewer than
-        `(output_chunk_length - 1)` values ahead of them. Thus, there's no point creating features for these
-        time points.
-    `get_feature_times` returns all of the times in each series that satisfy:
-        - Only the first condition if `is_training = False`,
-        - Both the first and the second condition if `is_training = True`.
-    The returned tuple of times can then be passed to `get_shared_times` to compute the 'eligible time points'
-    shared by all of the specified series.
+    `future_covariates` that *could* be used to create features. The returned tuple of times can then be passed
+    to `get_shared_times` to compute the 'eligible time points' shared by all of the specified series.
 
     Notes
     -----
-    If `return_min_and_max_lags = True`, the smallest and largest lag value for each series is also returned
-    as a pair of tuples.
+    For the purposes of extracting feature times from each series, we define the `min_lag` and `max_lag` of
+    each series to be:
+            `min_lag = -max(lags_*)`,
+            `max_lag = -min(lags_*)`
+    where `lags_*` denotes either `lags`, `lags_past_covariates`, or `lags_future_covariates`.
 
-    For those series which are either unspecified, a `None` value takes the place of that series' feature time,
-    minimum lag values, and maximum lag value.
+    For both `lags` and `lags_past_covariates`, `min_lag` and `max_lag` are guaranteed to be positive values,
+    since the values in `lags` and `lags_past_covariates` must all be negative. For these two series then,
+    `min_lag` and `max_lag` represent the smallest and largest magnitude lags requested by the user. For example:
+            `lags = [-3, -2, -1] -> min_lag = 1, max_lag = 3`
 
-    If `is_training = True`, then `target_series` and `output_chunk_length` must be provided.
+    The values contained in `lags_future_covariates`, on the other hand, can be negative, zero, or positive; this
+    means that there are three cases to consider:
+        1. Both `min_lag` and `max_lag` are positive, which means that all the values in `lags_future_covariates`
+        are negative. In this case, `min_lag` and `max_lag` correspond to the to the smallest and largest
+        lag magnitudes respectively. For example:
+                `lags_future_covariates = [-3, -2, -1] -> min_lag = 1, max_lag = 3`
+        2. `min_lag` is non-positive (i.e. zero or negative), but `max_lag` is positive, which means that
+        `lags_future_covariates` contains both negative and non-negative (i.e. zero or positive) lag values.
+        In this case, `abs(min_lag)` corresponds to the magnitude of the largest *non-negative* lag value in
+        `lags_future_covariates`, whilst `max_lag` corresponds to the largest *negative* lag value in
+        `lags_future_covariates`. For example:
+                `lags_future_covariates = [-2, -1, 0, 1, 3] -> min_lag = -3, max_lag = 2`
+        3. Both `min_lag` and `max_lag` are non-positive, which means that `lags_future_covariates` contains
+        only non-negative lag values. In this case, `abs(min_lag)` and `abs(max_lag)`, rather confusingly,
+        correspond to the largest and smallest lag magnitudes respectively. For example:
+                `lags_future_covariates = [1, 2, 3] -> min_lag = -3, max_lag = -1`
+    In all three cases, we have `min_lag <= max_lag`. As a direct consequence:
+        1. `min_lag > 0` is a sufficient condition for `min_lag` and `max_lag` both being positive (i.e. Case 1).
+        2. `max_lag <= 0` is a sufficient condition for `min_lag` and `max_lag` both being non-positive (i.e. Case 2).
+
+    To extract feature times from a `target_series` when `is_training = True`, the following steps are performed:
+        1. The first `max_lag` times of the series are excluded; these times have too few preceeding values to
+        construct features from.
+        2. The last `output_chunk_length - 1` times are excluded; these times have too few succeeding times
+        to construct labels from.
+
+    To extract feature times from a `target_series` when `is_training = False`, the following steps are performed:
+        1. An additional `min_lag` times are appended to the end of the series; although these times are not contained
+        in the original series, we're able to construct features for them since we only need the values of the series
+        from time `t - max_lag` to `t - min_lag` to construct a feature for time `t`.
+        2. The first `max_lag` times of the series are then excluded; these times have too few preceeding values to
+        construct features from.
+    The exact same procedure is performed to extract the feature times from a `past_covariates` series.
+
+    To extract feature times from `future_covariates`, we perform the following steps:
+        1. Depending on the signs of `min_lag` and `max_lag`, additional times are either prepended or appended
+        to the original series. More specifically:
+            a) If `min_lag` and `max_lag` are both positive (i.e. `min_lag > 0`), then an additional `min_lag` times
+            are appended to the end of the series; as previously mentioned, we only need values up to time `t - min_lag`
+            to construct a feature for time `t`.
+            b) If `min_lag` and `max_lag` are both non-positive (i.e. `max_lag < 0`), then an additional `abs(max_lag)`
+            times are prepended to the start of the series; this is because we only need to know the values of the
+            series *after* time `t + abs(max_lag)` to construct a feature for time `t` when we're only extracting
+            positive lags from `future_covariates`.
+            c) If `min_lag` is non-positive and `max_lag` is positive, then *no additional times* are added to the
+            series, since constructing a feature for time `t` requires knowing values from time `t - max_lag` to
+            time `t + abs(min_lag)`; in other words, we need to have access to time `t` itself.
+        2. If `min_lag < 0`, the last `abs(min_lag)` times are excluded, since these values have fewer
+        than `abs(min_lag)` values after them, which means we're unable to construct features for these times.
+        3. If `max_lag > 0`, the first `max_lag` times are excluded, since these values have fewer than `max_lag` values
+        before them, which means we're unable to construct features for these times.
+
+    Some additional behaviours to note about the `get_feature_times` function are:
+        1. If `return_min_and_max_lags = True`, the smallest and largest lag value for each
+        series is also returned as a pair of tuples.
+        2. For those series which are either unspecified, a `None` value takes the place of
+        that series' feature time, minimum lag values, and maximum lag value.
+        3. If `is_training = True`, then `target_series` and `output_chunk_length` must
+        be provided.
 
     Parameters
     ----------
@@ -824,14 +894,34 @@ def get_feature_times(
         max_lag_i = -min(lags_i) if lags_specified else None
         min_lag_i = -max(lags_i) if lags_specified else None
         if is_label_series:
+            # Exclude last `output_chunk_length - 1` times:
             end_idx = -output_chunk_length + 1 if output_chunk_length > 1 else None
             times_i = times_i[:end_idx]
         elif series_specified and lags_specified:
-            new_end = times_i[-1] + series_i.freq * min_lag_i
-            times_i = _extend_time_index(times_i, series_i.freq, new_end)
+            # Prepend times to start of series - see Step 1a for extracting
+            # feature times from `future_covariates` in `Notes`:
+            new_start = (
+                times_i[0] + series_i.freq * max_lag_i if max_lag_i < 0 else None
+            )
+            # Append times to end of series - see Step 1b for extracting features
+            # times from `future_covariates`, or Step 1 for extracting features
+            # from `target_series`/`past_covariates` in `Notes`:
+            new_end = times_i[-1] + series_i.freq * min_lag_i if min_lag_i > 0 else None
+            times_i = _extend_time_index(
+                times_i, series_i.freq, new_start=new_start, new_end=new_end
+            )
         if series_specified and lags_specified:
-            times_i = times_i[max_lag_i:]
+            # Exclude last `abs(min_lag)` times - see Step 2 for extracting feature
+            # times from `future_covariates` in `Notes`:
+            if min_lag_i < 0:
+                times_i = times_i[:min_lag_i]
+            # Exclude first `max_lag` times - see Step 3 for extracting feature times
+            # from `future_covariates`, or Step 2 in extracting feature times from
+            # `target_series`/`past_covariates` in `Notes`:
+            if max_lag_i > 0:
+                times_i = times_i[max_lag_i:]
         elif (not is_label_series) and (series_specified ^ lags_specified):
+            # Warn user that series/lags input will be ignored:
             times_i = max_lag_i = None
             lags_name = "lags" if name_i == "target_series" else f"lags_{name_i}"
             specified = lags_name if lags_specified else name_i
@@ -840,6 +930,7 @@ def get_feature_times(
                 f"`{specified}` was specified without accompanying `{unspecified}` and, thus, will be ignored."
             )
         feature_times.append(times_i)
+        # Note `max_lag_i` and `min_lag_i` if requested:
         if series_specified and lags_specified:
             min_lags.append(min_lag_i)
             max_lags.append(max_lag_i)
@@ -1095,17 +1186,24 @@ def strided_moving_window(
 
 
 def _extend_time_index(
-    time_index: pd.Index, freq: Union[int, str], new_end: pd.Timestamp
+    time_index: pd.Index,
+    freq: Union[int, str],
+    new_start: Optional[pd.Timestamp] = None,
+    new_end: Optional[pd.Timestamp] = None,
 ):
     """
     Extends a `time_index` of frequency `freq` such that it now ends at time `new_end`;
     the fastest way to do this is actually to create a new time index from scratch.
     """
     is_range_idx = isinstance(freq, int)
+    if new_start is None:
+        new_start = time_index[0]
+    if new_end is None:
+        new_end = time_index[-1]
     if is_range_idx:
-        time_index = pd.RangeIndex(start=time_index[0], stop=new_end + freq, step=freq)
+        time_index = pd.RangeIndex(start=new_start, stop=new_end + freq, step=freq)
     else:
-        time_index = pd.date_range(start=time_index[0], end=new_end, freq=freq)
+        time_index = pd.date_range(start=new_start, end=new_end, freq=freq)
     return time_index
 
 
@@ -1142,8 +1240,8 @@ def _check_lags(
     for i, (suffix, lags_i) in enumerate(zip(suffixes, all_lags)):
         lags_is_none.append(lags_i is None)
         if not lags_is_none[-1]:
-            is_target = i == 0
-            max_lag = -1 if is_target else 0
+            is_target_or_past = i < 2
+            max_lag = -1 if is_target_or_past else inf
             raise_if(
                 any((lag > max_lag or not isinstance(lag, int)) for lag in lags_i),
                 f"`lags{suffix}` must be a `Sequence` containing only `int` values less than {max_lag + 1}.",

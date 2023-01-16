@@ -7,13 +7,13 @@ import pandas as pd
 
 from darts import TimeSeries
 from darts import concatenate as darts_concatenate
+from darts.logging import get_logger, raise_if_not, raise_log
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.data.tabularization import create_lagged_prediction_data
 from darts.utils.timeseries_generation import linear_timeseries
 
 
 class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
-
     """
     Tests `create_lagged_prediction_data` function defined in `darts.utils.data.tabularization`. There
     are broadly two 'groups' of tests defined in this module:
@@ -33,21 +33,8 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
     """
 
     #
-    #   Generated Cases Tests
+    #   Helper Functions for Generated Test Cases
     #
-
-    # Input parameter combinations used to generate test cases:
-    max_samples_per_ts_combos = (1, 2, None)
-    # Lag dicts store `'vals'` passed to functions, in addition to max and min
-    # lag values; latter two are used to generate 'correct answer' to each test;
-    # `None` lag values indicate that series should not be used as feature:
-    target_lag_combos = (
-        {"vals": None, "max": None, "min": None},
-        {"vals": [-1, -3], "max": 3, "min": 1},
-        {"vals": [-3, -1], "max": 3, "min": 1},
-    )
-    # `past_covariates` and `future_covariates` lags can include `0`:
-    covariates_lag_combos = (*target_lag_combos, {"vals": [0, -2], "max": 2, "min": 0})
 
     @staticmethod
     def create_multivariate_linear_timeseries(
@@ -78,40 +65,166 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
     ) -> pd.Index:
         """
         Helper function that returns the times shared by all of the specified series that can be used
-        to create prediction features. This is performed by excluding those time points in each series that
-        have fewer than `max_lag` timepoint preceeding them, where `max_lag` is the largest lag value requested
-        for that series, since features cannot be constructed for these times. A series is considered to be
-        'specified' if its corresponding lag (e.g. `lags` for `target`, or `lags_future` for `future`) is not
-        `None`. If requested, the last `max_samples_per_ts` times are taken.
+        to create features and labels. This is performed by using the helper functions
+        `get_feature_times_target_or_past` and `get_feature_times_future` (both defined below) to extract
+        the feature times from the target series, past covariates, and future covariates respectively, and
+        then intersecting these features times with one another. A series is considered to be 'specified'
+        if its corresponding lag (e.g. `lags` for `target`, or `lags_future` for `future`) is not `None`.
+        If requested, the last `max_samples_per_ts` times are taken.
+
+        This function is basically a simplified implementation of `get_feature_times` in `tabularization.py`
+        that only works for `is_training = False`.
         """
         # `times` is initialized inside loop:
         times = None
         all_series = [target, past, future]
         all_lags = [lags, lags_past, lags_future]
-        for series_i, lags_i in zip(all_series, all_lags):
+        for i, (series_i, lags_i) in enumerate(zip(all_series, all_lags)):
             # If `lags` not specified, ignore series:
-            if lags_i["vals"] is not None:
-                times_i = series_i.time_index
-                # To create lagged features for time `t`, we only need to have series values
-                # from times `t - max_lag` to `t - min_lag`; hence, we need to include
-                # next `min_lag` times after the final time as potential feature times:
-                times_i = times_i.union(
-                    [
-                        times_i[-1] + i * series_i.freq
-                        for i in range(1, lags_i["min"] + 1)
-                    ]
-                )
-                # Exclude first `max_lag` times:
-                times_i = times_i[lags_i["max"] :]
+            lags_specified = lags_i is not None
+            is_target_or_past = i < 2
+            if lags_specified:
+                if is_target_or_past:
+                    times_i = CreateLaggedPredictionDataTestCase.get_feature_times_target_or_past(
+                        series_i, lags_i
+                    )
+                else:
+                    times_i = (
+                        CreateLaggedPredictionDataTestCase.get_feature_times_future(
+                            series_i, lags_i
+                        )
+                    )
+            else:
+                times_i = None
+            if times_i is not None:
                 # Initialise `times` if this is first specified series:
                 if times is None:
                     times = times_i
                 # Intersect `times` with `times_i` if `times` already initialized:
                 else:
                     times = times.intersection(times_i)
-        # If requested, take only the latest `max_samples_per_ts` samples:
-        if max_samples_per_ts is not None:
+        # Take most recent `max_samples_per_ts` samples if requested:
+        if (max_samples_per_ts is not None) and (len(times) > max_samples_per_ts):
             times = times[-max_samples_per_ts:]
+        return times
+
+    @staticmethod
+    def get_feature_times_target_or_past(
+        series: TimeSeries,
+        lags: Sequence[int],
+    ) -> pd.Index:
+        """
+        Helper function called by `get_feature_times` that extracts all of the times within `target_series`
+        *or* `past_covariates` that can be used to create features; because we can assume all of the values
+        in `lags` are negative for `target_series` and `past_covariates`, the feature time extract process is
+        the same for these series when constructing prediction data.
+
+        More specifically, we can create features for times within `serues` that have at least `max_lag = -min(lags)`
+        values preceeding them, since these preceeding values are required to construct a feature vector for that time.
+        Since the first `max_lag` times do not fulfill this condition, they are exluded.
+
+        Because we're create features for predicting here, we don't need to worry about whether we can produce
+        labels corresponding each time.
+
+        Importantly, features can be constructed for times that occur after the end of `series`: this is because:
+            1. We don't need to have all the `series` values up to time `t` to construct a feature for this time;
+            instead, we only need to have the values from time `t - min_lag` to `t - max_lag`, where
+            `min_lag = -max(lags)` and `max_lag = -min(lags)`. In other words, the latest feature we can create
+            for `series` occurs at `series.end_time() + min_lag * series.freq`.
+            2. We don't need to use the values of `series` to construct labels when we're creating prediction data,
+            so we're able to create a feature for time `t` without having to worry about whether we can construct
+            a corresponding label for this time.
+        """
+        times = series.time_index
+        min_lag = -max(lags)
+        times = times.union(
+            [times[-1] + i * series.freq for i in range(1, min_lag + 1)]
+        )
+        max_lag = -min(lags)
+        times = times[max_lag:]
+        return times
+
+    @staticmethod
+    def get_feature_times_future(
+        future_covariates: TimeSeries,
+        future_covariates_lags: Sequence[int],
+    ) -> pd.Index:
+        """
+        Helper function called by `get_feature_times` that extracts all of the times within
+        `future_covariates` that can be used to create features.
+
+        Unlike the lag values for `target_series` and `past_covariates`, the values in
+        `future_covariates_lags` can be negative, zero, or positive. This means that
+        `min_lag = -max(future_covariates_lags)` and `max_lag = -min(future_covariates_lags)`
+        are *not* guaranteed to be positive here: they could be negative (corresponding to
+        a positive value in `future_covariates_lags`), zero, or positive (corresponding to
+        a negative value in `future_covariates_lags`). With that being said, the relationship
+        `min_lag <= max_lag` always holds.
+
+        Consequently, we need to consider three scenarios when finding feature times
+        for `future_covariates`:
+            1. Both `min_lag` and `max_lag` are positive, which indicates that all of
+            the lag values in `future_covariates_lags` are negative (i.e. only values before
+            time `t` are used to create a feature from time `t`). In this case, `min_lag`
+            and `max_lag` correspond to the smallest magnitude and largest magnitude *negative*
+            lags in `future_covariates_lags` respectively. This means we *can* create features for
+            times that extend beyond the end of `future_covariates`; additionally, we're unable
+            to create features for the first `min_lag` times (see docstring for `get_feature_times_past`).
+            2. Both `min_lag` and `max_lag` are non-positive. In this case, `abs(min_lag)` and `abs(max_lag)`
+            correspond to the largest and smallest magnitude lags in `future_covariates_lags` respectively;
+            note that, somewhat confusingly, `abs(max_lag) <= abs(min_lag)` here. This means that we *can* create f
+            features for times that occur before the start of `future_covariates`; the reasoning for this is
+            basically the inverse of Case 1 (i.e. we only need to know the values from times `t + abs(max_lag)`
+            to `t + abs(min_lag)` to create a feature for time `t`). Additionally, we're unable to create features
+            for the last `abs(min_lag)` times in the series, since these times do not have `abs(min_lag)` values
+            after them.
+            3. `min_lag` is non-positive (i.e. zero or negative), but `max_lag` is positive. In this case,
+            `abs(min_lag)` is the magnitude of the largest *non-negative* lag value in `future_covariates_lags`
+            and `max_lag` is the largest *negative* lag value in `future_covariates_lags`. This means that we
+            *cannot* create features for times that occur before the start of `future_covariates`, nor for
+            times that occur after the end of `future_covariates`; this is because we must have access to
+            both times before *and* after time `t` to create a feature for this time, which clearly can't
+            be acieved for times extending before the start or after the end of the series. Moreover,
+            we must exclude the first `max_lag` times and the last `abs(min_lag)` times, since these
+            times do not have enough values before or after them respectively.
+        """
+        times = future_covariates.time_index
+        min_lag = -max(future_covariates_lags)
+        max_lag = -min(future_covariates_lags)
+        # Case 1:
+        if (min_lag > 0) and (max_lag > 0):
+            # Can create features for times extending after the end of `future_covariates`:
+            times = times.union(
+                [times[-1] + i * future_covariates.freq for i in range(1, min_lag + 1)]
+            )
+            # Can't create features for first `max_lag` times in series:
+            times = times[max_lag:]
+        # Case 2:
+        elif (min_lag <= 0) and (max_lag <= 0):
+            # Can create features for times before the start of `future_covariates`:
+            times = times.union(
+                [
+                    times[0] - i * future_covariates.freq
+                    for i in range(1, abs(max_lag) + 1)
+                ]
+            )
+            # Can't create features for last `abs(min_lag)` times in series:
+            times = times[:min_lag] if min_lag != 0 else times
+        # Case 3:
+        elif (min_lag <= 0) and (max_lag > 0):
+            # Can't create features for last `abs(min_lag)` times in series:
+            times = times[:min_lag] if min_lag != 0 else times
+            # Can't create features for first `max_lag` times in series:
+            times = times[max_lag:]
+        # Unexpected case:
+        else:
+            error_msg = (
+                "Unexpected `future_covariates_lags` case encountered: "
+                "`min_lag` is positive, but `max_lag` is negative. "
+                f"Caused by `future_covariates_lags = {future_covariates_lags}`."
+            )
+            error = ValueError(error_msg)
+            raise_log(error, get_logger(__name__))
         return times
 
     @staticmethod
@@ -122,10 +235,9 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
         Helper function that creates the lagged features 'block' of a specific
         `series` (i.e. either `target_series`, `past_covariates`, or `future_covariates`);
         the feature matrix `X` is formed by concatenating the blocks of all of the specified
-        series along the components axis. Please refer to the `create_lagged_features` docstring
-        for further  details about the structure of the `X` feature matrix.
-
-        If `lags` is `None`, then `None` will be returned in lieu of an array.
+        series along the components axis. If `lags` is `None`, then `None` will be returned in
+        lieu of an array. Please refer to the `create_lagged_features` docstring for further
+        details about the structure of the `X` feature matrix.
 
         The returned `X_block` is constructed by looping over each time in `feature_times`,
         finding the index position of that time in the series, and then for each lag value in
@@ -134,16 +246,31 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
 
         Unlike the implementation found in `darts.utils.data.tabularization`, this function doesn't
         use any 'vectorisation' tricks, which makes it slower to run, but more easily interpretable.
+
+        Some of the times in `feature_times` may occur before the start *or* after the end of `series`;
+        see the docstrings of `get_feature_times_past` and `get_feature_times_future` for why this is the
+        case. Because of this, we need to prepend or append these 'extended times' to `series.time_index`
+        before searching for the index of each time in the series. Even though the integer indices of the
+        'extended times' won't be contained within the original `series`, offsetting these found indices
+        by the requested lag value should 'bring us back' to a time within the original, unextended `series`.
+        However, if we've prepended times to `series.time_index`, we have to note that all of the indices will
+        be 'bumped up' by the number of values we've prepended, even after offsetting by a lag value. For example,
+        if we extended `series.time_index` by prepending two values to the start, the integer index of the first
+        actual value in `series` will occur at an index of `2` instead of `0`. To 'undo' this, we must subtract off
+        the number of prepended value from the lag-offseted indices before retrieving values from `series`.
         """
         if lags is None:
             X_block = None
         else:
             series_times = series.time_index
-            # Some of the times in `feature_times` may occur after the end of `series_times`
-            # (see `get_feature_times_single_series` for further details). In such cases,
-            # we need to extend `series_times` up until the latest time in `feature_times`:
-            if series_times[-1] < feature_times[-1]:
-                is_range_idx = isinstance(series_times[0], int)
+            is_range_idx = isinstance(series_times[0], int)
+            # If series ends before last time in `feature_times`:
+            add_to_end = series_times[-1] < feature_times[-1]
+            # If series starts after first time in `feature_times`:
+            add_to_start = series_times[0] > feature_times[0]
+            # Either add to start *OR* add to end, we can't have both (see `get_feature_times_future`):
+            if add_to_end:
+                num_prepended = 0
                 if is_range_idx:
                     # `+ 1` since `stop` index is exclusive:
                     series_times = pd.RangeIndex(
@@ -155,6 +282,21 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                     series_times = pd.date_range(
                         start=series_times[0], end=feature_times[-1], freq=series.freq
                     )
+            elif add_to_start:
+                num_prepended = (series_times[0] - feature_times[0]) // series.freq
+                if is_range_idx:
+                    # `+ 1` since `stop` index is exclusive:
+                    series_times = pd.RangeIndex(
+                        start=feature_times[0],
+                        stop=series_times[-1] + 1,
+                        step=series.freq,
+                    )
+                else:
+                    series_times = pd.date_range(
+                        start=feature_times[0], end=series_times[-1], freq=series.freq
+                    )
+            else:
+                num_prepended = 0
             array_vals = series.all_values(copy=False)[:, :, 0]
             X_block = []
             for time in feature_times:
@@ -164,6 +306,12 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 for lag in lags:
                     # Offet by particular lag value:
                     idx_to_get = time_idx + lag
+                    # Account for prepended values:
+                    idx_to_get -= num_prepended
+                    raise_if_not(
+                        idx_to_get >= 0,
+                        f"Unexpected case encountered: `time_idx + lag - num_prepended = {idx_to_get} < 0`.",
+                    )
                     # Extract all components at this lagged time:
                     X_row.append(array_vals[idx_to_get, :].reshape(-1))
                 # Concatenate together all lagged values into a single row:
@@ -172,6 +320,15 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
             # Concatenate all rows (i.e. observations) together into a block:
             X_block = np.stack(X_block, axis=0)
         return X_block
+
+    #
+    #   Generated Test Cases
+    #
+
+    # Input parameter combinations used to generate test cases:
+    max_samples_per_ts_combos = (1, 2, None)
+    target_lag_combos = past_lag_combos = (None, [-1, -3], [-3, -1])
+    future_lag_combos = (*target_lag_combos, [0], [2, 1], [-1, 1], [0, 2])
 
     def test_lagged_prediction_data_equal_freq_range_index(self):
         """
@@ -199,26 +356,25 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
             n_components=4, start_value=20, end_value=30, start=6, end=26, freq=3
         )
         # Conduct test for each input parameter combo:
-        param_combos = product(
+        for (lags, lags_past, lags_future, max_samples_per_ts) in product(
             self.target_lag_combos,
-            self.covariates_lag_combos,
-            self.covariates_lag_combos,
+            self.past_lag_combos,
+            self.future_lag_combos,
             self.max_samples_per_ts_combos,
-        )
-        for (lags, lags_past, lags_future, max_samples_per_ts) in param_combos:
-            all_lags = (lags["vals"], lags_past["vals"], lags_future["vals"])
+        ):
+            all_lags = (lags, lags_past, lags_future)
             # Skip test where all lags are `None` - can't assemble features
             # for this single combo of input params:
             lags_is_none = [x is None for x in all_lags]
             if all(lags_is_none):
                 continue
             X, times = create_lagged_prediction_data(
-                target_series=target if lags["vals"] else None,
-                past_covariates=past if lags_past["vals"] else None,
-                future_covariates=future if lags_future["vals"] else None,
-                lags=lags["vals"],
-                lags_past_covariates=lags_past["vals"],
-                lags_future_covariates=lags_future["vals"],
+                target_series=target if lags else None,
+                past_covariates=past if lags_past else None,
+                future_covariates=future if lags_future else None,
+                lags=lags,
+                lags_past_covariates=lags_past,
+                lags_future_covariates=lags_future,
                 max_samples_per_ts=max_samples_per_ts,
                 use_moving_windows=True,
             )
@@ -233,9 +389,9 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
             )
             # Construct `X` by constructing each block, then concatenate these
             # blocks together along component axis:
-            X_target = self.construct_X_block(target, feats_times, lags["vals"])
-            X_past = self.construct_X_block(past, feats_times, lags_past["vals"])
-            X_future = self.construct_X_block(future, feats_times, lags_future["vals"])
+            X_target = self.construct_X_block(target, feats_times, lags)
+            X_past = self.construct_X_block(past, feats_times, lags_past)
+            X_future = self.construct_X_block(future, feats_times, lags_future)
             all_X = (X_target, X_past, X_future)
             to_concat = [X for X in all_X if X is not None]
             expected_X = np.concatenate(to_concat, axis=1)
@@ -287,26 +443,25 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
             freq="2d",
         )
         # Conduct test for each input parameter combo:
-        param_combos = product(
+        for (lags, lags_past, lags_future, max_samples_per_ts) in product(
             self.target_lag_combos,
-            self.covariates_lag_combos,
-            self.covariates_lag_combos,
+            self.past_lag_combos,
+            self.future_lag_combos,
             self.max_samples_per_ts_combos,
-        )
-        for (lags, lags_past, lags_future, max_samples_per_ts) in param_combos:
-            all_lags = (lags["vals"], lags_past["vals"], lags_future["vals"])
+        ):
+            all_lags = (lags, lags_past, lags_future)
             # Skip test where all lags are `None` - can't assemble features
             # for this single combo of input params:
             lags_is_none = [x is None for x in all_lags]
             if all(lags_is_none):
                 continue
             X, times = create_lagged_prediction_data(
-                target_series=target if lags["vals"] else None,
-                past_covariates=past if lags_past["vals"] else None,
-                future_covariates=future if lags_future["vals"] else None,
-                lags=lags["vals"],
-                lags_past_covariates=lags_past["vals"],
-                lags_future_covariates=lags_future["vals"],
+                target_series=target if lags else None,
+                past_covariates=past if lags_past else None,
+                future_covariates=future if lags_future else None,
+                lags=lags,
+                lags_past_covariates=lags_past,
+                lags_future_covariates=lags_future,
                 max_samples_per_ts=max_samples_per_ts,
                 use_moving_windows=True,
             )
@@ -321,9 +476,9 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
             )
             # Construct `X` by constructing each block, then concatenate these
             # blocks together along component axis:
-            X_target = self.construct_X_block(target, feats_times, lags["vals"])
-            X_past = self.construct_X_block(past, feats_times, lags_past["vals"])
-            X_future = self.construct_X_block(future, feats_times, lags_future["vals"])
+            X_target = self.construct_X_block(target, feats_times, lags)
+            X_past = self.construct_X_block(past, feats_times, lags_past)
+            X_future = self.construct_X_block(future, feats_times, lags_future)
             all_X = (X_target, X_past, X_future)
             to_concat = [X for X in all_X if X is not None]
             expected_X = np.concatenate(to_concat, axis=1)
@@ -360,26 +515,25 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
             n_components=4, start_value=20, end_value=30, start=6, end=26, freq=3
         )
         # Conduct test for each input parameter combo:
-        param_combos = product(
+        for (lags, lags_past, lags_future, max_samples_per_ts) in product(
             self.target_lag_combos,
-            self.covariates_lag_combos,
-            self.covariates_lag_combos,
+            self.past_lag_combos,
+            self.future_lag_combos,
             self.max_samples_per_ts_combos,
-        )
-        for (lags, lags_past, lags_future, max_samples_per_ts) in param_combos:
-            all_lags = (lags["vals"], lags_past["vals"], lags_future["vals"])
+        ):
+            all_lags = (lags, lags_past, lags_future)
             # Skip test where all lags are `None` - can't assemble features
             # for this single combo of input params:
             lags_is_none = [x is None for x in all_lags]
             if all(lags_is_none):
                 continue
             X, times = create_lagged_prediction_data(
-                target_series=target if lags["vals"] else None,
-                past_covariates=past if lags_past["vals"] else None,
-                future_covariates=future if lags_future["vals"] else None,
-                lags=lags["vals"],
-                lags_past_covariates=lags_past["vals"],
-                lags_future_covariates=lags_future["vals"],
+                target_series=target if lags else None,
+                past_covariates=past if lags_past else None,
+                future_covariates=future if lags_future else None,
+                lags=lags,
+                lags_past_covariates=lags_past,
+                lags_future_covariates=lags_future,
                 max_samples_per_ts=max_samples_per_ts,
                 use_moving_windows=True,
             )
@@ -394,9 +548,9 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
             )
             # Construct `X` by constructing each block, then concatenate these
             # blocks together along component axis:
-            X_target = self.construct_X_block(target, feats_times, lags["vals"])
-            X_past = self.construct_X_block(past, feats_times, lags_past["vals"])
-            X_future = self.construct_X_block(future, feats_times, lags_future["vals"])
+            X_target = self.construct_X_block(target, feats_times, lags)
+            X_past = self.construct_X_block(past, feats_times, lags_past)
+            X_future = self.construct_X_block(future, feats_times, lags_future)
             all_X = (X_target, X_past, X_future)
             to_concat = [X for X in all_X if X is not None]
             expected_X = np.concatenate(to_concat, axis=1)
@@ -419,6 +573,78 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
         This particular test uses timeseries with datetime time indices of unequal
         frequencies. Since all of the timeseries are *not* of the same frequency,
         the implementation of the 'time intersection' method is being tested here.
+        """
+        # Define datetime index timeseries - each has different number of components,
+        # different start times, different lengths, different values, and of
+        # different frequencies:
+        target = self.create_multivariate_linear_timeseries(
+            n_components=2, start_value=0, end_value=10, start=2, end=20, freq=1
+        )
+        past = self.create_multivariate_linear_timeseries(
+            n_components=3, start_value=10, end_value=20, start=4, end=23, freq=2
+        )
+        future = self.create_multivariate_linear_timeseries(
+            n_components=4, start_value=20, end_value=30, start=6, end=26, freq=3
+        )
+        # Conduct test for each input parameter combo:
+        for (lags, lags_past, lags_future, max_samples_per_ts) in product(
+            self.target_lag_combos,
+            self.past_lag_combos,
+            self.future_lag_combos,
+            self.max_samples_per_ts_combos,
+        ):
+            all_lags = (lags, lags_past, lags_future)
+            # Skip test where all lags are `None` - can't assemble features
+            # for this single combo of input params:
+            lags_is_none = [x is None for x in all_lags]
+            if all(lags_is_none):
+                continue
+            X, times = create_lagged_prediction_data(
+                target_series=target if lags else None,
+                past_covariates=past if lags_past else None,
+                future_covariates=future if lags_future else None,
+                lags=lags,
+                lags_past_covariates=lags_past,
+                lags_future_covariates=lags_future,
+                max_samples_per_ts=max_samples_per_ts,
+                use_moving_windows=True,
+            )
+            feats_times = self.get_feature_times(
+                target,
+                past,
+                future,
+                lags,
+                lags_past,
+                lags_future,
+                max_samples_per_ts,
+            )
+            # Construct `X` by constructing each block, then concatenate these
+            # blocks together along component axis:
+            X_target = self.construct_X_block(target, feats_times, lags)
+            X_past = self.construct_X_block(past, feats_times, lags_past)
+            X_future = self.construct_X_block(future, feats_times, lags_future)
+            all_X = (X_target, X_past, X_future)
+            to_concat = [X for X in all_X if X is not None]
+            expected_X = np.concatenate(to_concat, axis=1)
+            # Number of observations should match number of feature times:
+            self.assertEqual(X.shape[0], len(feats_times))
+            self.assertEqual(X.shape[0], len(times))
+            # Check that outputs match:
+            self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
+            self.assertTrue(feats_times.equals(times))
+
+    def test_lagged_prediction_data_method_consistency_range_index(self):
+        """
+        Tests that `create_lagged_prediction_data` produces the same result
+        when `use_moving_windows = False` and when `use_moving_windows = True`
+        for all of the parameter combinations used in the 'generated' test cases.
+
+        Obviously, if both the 'Moving Window Method' and the 'Time Intersection'
+        are both wrong in the same way, this test won't reveal any bugs. With this
+        being said, if this test fails, something is definitely wrong in either
+        one or both of the implemented methods.
+
+        This particular test uses range index timeseries.
         """
         # Define datetime index timeseries - each has different number of components,
         # different start times, different lengths, different values, and of
@@ -448,56 +674,210 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
             freq="2d",
         )
         # Conduct test for each input parameter combo:
-        param_combos = product(
+        for (lags, lags_past, lags_future, max_samples_per_ts) in product(
             self.target_lag_combos,
-            self.covariates_lag_combos,
-            self.covariates_lag_combos,
+            self.past_lag_combos,
+            self.future_lag_combos,
             self.max_samples_per_ts_combos,
-        )
-        for (lags, lags_past, lags_future, max_samples_per_ts) in param_combos:
-            all_lags = (lags["vals"], lags_past["vals"], lags_future["vals"])
+        ):
+            all_lags = (lags, lags_past, lags_future)
             # Skip test where all lags are `None` - can't assemble features
             # for this single combo of input params:
             lags_is_none = [x is None for x in all_lags]
             if all(lags_is_none):
                 continue
-            X, times = create_lagged_prediction_data(
-                target_series=target if lags["vals"] else None,
-                past_covariates=past if lags_past["vals"] else None,
-                future_covariates=future if lags_future["vals"] else None,
-                lags=lags["vals"],
-                lags_past_covariates=lags_past["vals"],
-                lags_future_covariates=lags_future["vals"],
+            # Using moving window method:
+            X_mw, times_mw = create_lagged_prediction_data(
+                target_series=target if lags else None,
+                past_covariates=past if lags_past else None,
+                future_covariates=future if lags_future else None,
+                lags=lags,
+                lags_past_covariates=lags_past,
+                lags_future_covariates=lags_future,
                 max_samples_per_ts=max_samples_per_ts,
                 use_moving_windows=True,
             )
-            feats_times = self.get_feature_times(
-                target,
-                past,
-                future,
-                lags,
-                lags_past,
-                lags_future,
-                max_samples_per_ts,
+            # Using time intersection method:
+            X_ti, times_ti = create_lagged_prediction_data(
+                target_series=target if lags else None,
+                past_covariates=past if lags_past else None,
+                future_covariates=future if lags_future else None,
+                lags=lags,
+                lags_past_covariates=lags_past,
+                lags_future_covariates=lags_future,
+                max_samples_per_ts=max_samples_per_ts,
+                use_moving_windows=False,
             )
-            # Construct `X` by constructing each block, then concatenate these
-            # blocks together along component axis:
-            X_target = self.construct_X_block(target, feats_times, lags["vals"])
-            X_past = self.construct_X_block(past, feats_times, lags_past["vals"])
-            X_future = self.construct_X_block(future, feats_times, lags_future["vals"])
-            all_X = (X_target, X_past, X_future)
-            to_concat = [X for X in all_X if X is not None]
-            expected_X = np.concatenate(to_concat, axis=1)
-            # Number of observations should match number of feature times:
-            self.assertEqual(X.shape[0], len(feats_times))
-            self.assertEqual(X.shape[0], len(times))
-            # Check that outputs match:
-            self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
-            self.assertTrue(feats_times.equals(times))
+            self.assertTrue(np.allclose(X_mw, X_ti))
+            self.assertTrue(times_mw.equals(times_ti))
+
+    def test_lagged_prediction_data_method_consistency_datetime_index(self):
+        """
+        Tests that `create_lagged_prediction_data` produces the same result
+        when `use_moving_windows = False` and when `use_moving_windows = True`
+        for all of the parameter combinations used in the 'generated' test cases.
+
+        Obviously, if both the 'Moving Window Method' and the 'Time Intersection'
+        are both wrong in the same way, this test won't reveal any bugs. With this
+        being said, if this test fails, something is definitely wrong in either
+        one or both of the implemented methods.
+
+        This particular test uses datetime index timeseries.
+        """
+        # Define datetime index timeseries - each has different number of components,
+        # different start times, different lengths, different values, and of
+        # different frequencies:
+        target = self.create_multivariate_linear_timeseries(
+            n_components=2,
+            start_value=0,
+            end_value=10,
+            start=pd.Timestamp("1/2/2000"),
+            end=pd.Timestamp("1/16/2000"),
+            freq="2d",
+        )
+        past = self.create_multivariate_linear_timeseries(
+            n_components=3,
+            start_value=10,
+            end_value=20,
+            start=pd.Timestamp("1/4/2000"),
+            end=pd.Timestamp("1/18/2000"),
+            freq="2d",
+        )
+        future = self.create_multivariate_linear_timeseries(
+            n_components=4,
+            start_value=20,
+            end_value=30,
+            start=pd.Timestamp("1/6/2000"),
+            end=pd.Timestamp("1/20/2000"),
+            freq="2d",
+        )
+        # Conduct test for each input parameter combo:
+        for (lags, lags_past, lags_future, max_samples_per_ts) in product(
+            self.target_lag_combos,
+            self.past_lag_combos,
+            self.future_lag_combos,
+            self.max_samples_per_ts_combos,
+        ):
+            all_lags = (lags, lags_past, lags_future)
+            # Skip test where all lags are `None` - can't assemble features
+            # for this single combo of input params:
+            lags_is_none = [x is None for x in all_lags]
+            if all(lags_is_none):
+                continue
+            # Using moving window method:
+            X_mw, times_mw = create_lagged_prediction_data(
+                target_series=target if lags else None,
+                past_covariates=past if lags_past else None,
+                future_covariates=future if lags_future else None,
+                lags=lags,
+                lags_past_covariates=lags_past,
+                lags_future_covariates=lags_future,
+                max_samples_per_ts=max_samples_per_ts,
+                use_moving_windows=True,
+            )
+            # Using time intersection method:
+            X_ti, times_ti = create_lagged_prediction_data(
+                target_series=target if lags else None,
+                past_covariates=past if lags_past else None,
+                future_covariates=future if lags_future else None,
+                lags=lags,
+                lags_past_covariates=lags_past,
+                lags_future_covariates=lags_future,
+                max_samples_per_ts=max_samples_per_ts,
+                use_moving_windows=False,
+            )
+            self.assertTrue(np.allclose(X_mw, X_ti))
+            self.assertTrue(times_mw.equals(times_ti))
 
     #
     #   Specified Cases Tests
     #
+
+    def test_lagged_prediction_data_single_lag_single_component_same_series_range_idx(
+        self,
+    ):
+        """
+        Tests that `create_lagged_prediction_data` correctly produces `X` and `times`
+        when all the `series` inputs are identical, and all the `lags` inputs consist
+        of a single value. In this situation, the expected `X` value can be found by
+        concatenating three different slices of the same time series. This particular
+        test uses a time series with a range index.
+        """
+        series = linear_timeseries(start=0, length=15)
+        lags = [-1]
+        past_lags = [-3]
+        future_lags = [2]
+        # Can't create features for first 3 times (because `past_lags`) and last
+        # two times (because `future_lags`):
+        expected_times = series.time_index[3:-2]
+        # Offset `3:-2` by `-1` lag:
+        expected_X_target = series.all_values(copy=False)[2:-3, :, 0]
+        # Offset `3:-2` by `-3` lag -> gives `0:-5`:
+        expected_X_past = series.all_values(copy=False)[:-5, :, 0]
+        # Offset `3:-2` by `+2` lag -> gives `5:None`:
+        expected_X_future = series.all_values(copy=False)[5:, :, 0]
+        expected_X = np.concatenate(
+            [expected_X_target, expected_X_past, expected_X_future], axis=1
+        )
+        for use_moving_windows in (False, True):
+            X, times = create_lagged_prediction_data(
+                target_series=series,
+                past_covariates=series,
+                future_covariates=series,
+                lags=lags,
+                lags_past_covariates=past_lags,
+                lags_future_covariates=future_lags,
+                use_moving_windows=use_moving_windows,
+            )
+            # Number of observations should match number of feature times:
+            self.assertEqual(X.shape[0], len(expected_times))
+            self.assertEqual(X.shape[0], len(times))
+            # Check that outputs match:
+            self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
+            self.assertTrue(expected_times.equals(times))
+
+    def test_lagged_prediction_data_single_lag_single_component_same_series_datetime_idx(
+        self,
+    ):
+        """
+        Tests that `create_lagged_prediction_data` correctly produces `X` and `times`
+        when all the `series` inputs are identical, and all the `lags` inputs consist
+        of a single value. In this situation, the expected `X` value can be found by
+        concatenating three different slices of the same time series. This particular
+        test uses a time series with a datetime index.
+        """
+        series = linear_timeseries(start=pd.Timestamp("1/1/2000"), length=15)
+        lags = [-1]
+        past_lags = [-3]
+        future_lags = [2]
+        # Can't create features for first 3 times (because `past_lags`) and last
+        # two times (because `future_lags`):
+        expected_times = series.time_index[3:-2]
+        # Offset `3:-2` by `-1` lag:
+        expected_X_target = series.all_values(copy=False)[2:-3, :, 0]
+        # Offset `3:-2` by `-3` lag -> gives `0:-5`
+        expected_X_past = series.all_values(copy=False)[:-5, :, 0]
+        # Offset `3:-2` by `+2` lag -> gives `5:None`:
+        expected_X_future = series.all_values(copy=False)[5:, :, 0]
+        expected_X = np.concatenate(
+            [expected_X_target, expected_X_past, expected_X_future], axis=1
+        )
+        for use_moving_windows in (False, True):
+            X, times = create_lagged_prediction_data(
+                target_series=series,
+                past_covariates=series,
+                future_covariates=series,
+                lags=lags,
+                lags_past_covariates=past_lags,
+                lags_future_covariates=future_lags,
+                use_moving_windows=use_moving_windows,
+            )
+            # Number of observations should match number of feature times:
+            self.assertEqual(X.shape[0], len(expected_times))
+            self.assertEqual(X.shape[0], len(times))
+            # Check that outputs match:
+            self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
+            self.assertTrue(expected_times.equals(times))
 
     def test_lagged_prediction_data_extend_past_and_future_covariates_range_idx(self):
         """
@@ -505,12 +885,12 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
         can be created for a time that is *not* contained in `target_series`, `past_covariates`
         and/or `future_covariates`. This particular test checks this behaviour by using
         range index timeseries.
+
+        More specifically, we define the series and lags such that a prediction feature
+        can be generated for time `target.end_time() + target.freq`, even though this time
+        isn't contained in any of the define series.
         """
-        # Define series and lags such that a prediction feature can be generated
-        # for time `target.end_time() + target.freq`, but so that this time isn't contained
-        # in none of the define series. Even so, the specified lags are sufficiently
-        # large here so that the series timeseries don't need to have values going up
-        # to `target.end_time() + target.freq`:
+        # Can create feature for time `t = 9`, but this time isn't in any of the three series:
         target = linear_timeseries(start=0, end=9, start_value=1, end_value=2)
         lags = [-1]
         past = linear_timeseries(start=0, end=8, start_value=2, end_value=3)
@@ -551,12 +931,12 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
         can be created for a time that is *not* contained in `target_series`, `past_covariates`
         and/or `future_covariates`. This particular test checks this behaviour by using
         datetime index timeseries.
+
+        More specifically, we define the series and lags such that a prediction feature
+        can be generated for time `target.end_time() + target.freq`, even though this time
+        isn't contained in any of the define series.
         """
-        # Define series and lags such that a prediction feature can be generated
-        # for time `target.end_time() + target.freq`, but so that this time isn't contained
-        # in none of the define series. Even so, the specified lags are sufficiently
-        # large here so that the series timeseries don't need to have values going up
-        # to `target.end_time() + target.freq`:
+        # Can create feature for time `t = '1/10/2000'`, but this time isn't in any of the three series:
         target = linear_timeseries(
             start=pd.Timestamp("1/1/2000"),
             end=pd.Timestamp("1/10/2000"),
@@ -651,42 +1031,104 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
     def test_lagged_prediction_data_zero_lags_range_idx(self):
         """
         Tests that `create_lagged_prediction_data` correctly handles case when
-        `0` is included in `lags_past_covariates` and `lags_future_covariates`
-        (i.e. when we're using the values of `past_covariates` and
+        `0` is included in `lags_future_covariates` (i.e. when we're using the values
         `future_covariates` at time `t` to predict the value of `target_series` at
         that same time point). This particular test checks this behaviour by using
         range index timeseries.
         """
-        # Define `past` and `future` so their only value occurs at the same time as
+        # Define `future` so that only value occurs at the same time as
         # the only possible label that can be extracted from `target_series`; the
         # only possible feature that can be created using these series utilises
-        # the values of `past` and `future` at the same time as the label (i.e. a lag
+        # the value of `future` at the same time as the label (i.e. a lag
         # of `0` away from the only feature time):
-        target = linear_timeseries(start=0, length=2, start_value=0, end_value=1)
-        past = linear_timeseries(start=1, length=1, start_value=1, end_value=2)
-        future = linear_timeseries(start=1, length=1, start_value=2, end_value=3)
-        # X comprises of first value of `target` (i.e. 0) and only values in `past` and `future`:
-        expected_X = np.array([0.0, 1.0, 2.0]).reshape(1, 3, 1)
-        # Check correctness for 'moving windows' and 'time intersection' methods:
+        target = linear_timeseries(start=0, length=1, start_value=0, end_value=1)
+        future = linear_timeseries(start=1, length=1, start_value=1, end_value=2)
+        # X comprises of first value of `target` (i.e. 0) and only value in `future`:
+        expected_X = np.array([0.0, 1.0]).reshape(1, 2, 1)
+        # Check correctness for 'moving windows' and 'time intersection' methods, as
+        # well as for different `multi_models` values:
         for use_moving_windows in (False, True):
             X, times = create_lagged_prediction_data(
                 target,
-                past_covariates=past,
                 future_covariates=future,
                 lags=[-1],
-                lags_past_covariates=[0],
                 lags_future_covariates=[0],
                 use_moving_windows=use_moving_windows,
             )
             self.assertTrue(np.allclose(expected_X, X))
             self.assertEqual(len(times), 1)
-            self.assertEqual(times[0], target.end_time())
+            self.assertEqual(times[0], future.start_time())
 
     def test_lagged_prediction_data_zero_lags_datetime_idx(self):
         """
         Tests that `create_lagged_prediction_data` correctly handles case when
-        `0` is included in `lags_past_covariates` and `lags_future_covariates`
-        (i.e. when we're using the values of `past_covariates` and
+        `0` is included in `lags_future_covariates` (i.e. when we're using the values
+        `future_covariates` at time `t` to predict the value of `target_series` at
+        that same time point). This particular test checks this behaviour by using
+        datetime index timeseries.
+        """
+        # Define `future` so that only value occurs at the same time as
+        # the only possible label that can be extracted from `target_series`; the
+        # only possible feature that can be created using these series utilises
+        # the value of `future` at the same time as the label (i.e. a lag
+        # of `0` away from the only feature time):
+        target = linear_timeseries(
+            start=pd.Timestamp("1/1/2000"), length=1, start_value=0, end_value=1
+        )
+        future = linear_timeseries(
+            start=pd.Timestamp("1/2/2000"), length=1, start_value=1, end_value=2
+        )
+        # X comprises of first value of `target` (i.e. 0) and only value in `future`:
+        expected_X = np.array([0.0, 1.0]).reshape(1, 2, 1)
+        # Check correctness for 'moving windows' and 'time intersection' methods, as
+        # well as for different `multi_models` values:
+        for use_moving_windows in (False, True):
+            X, times = create_lagged_prediction_data(
+                target,
+                future_covariates=future,
+                lags=[-1],
+                lags_future_covariates=[0],
+                use_moving_windows=use_moving_windows,
+            )
+            self.assertTrue(np.allclose(expected_X, X))
+            self.assertEqual(len(times), 1)
+            self.assertEqual(times[0], future.start_time())
+
+    def test_lagged_prediction_data_positive_lags_range_idx(self):
+        """
+        Tests that `create_lagged_prediction_data` correctly handles case when
+        `0` is included in `lags_future_covariates` (i.e. when we're using the values
+        `future_covariates` at time `t` to predict the value of `target_series` at
+        that same time point). This particular test checks this behaviour by using
+        datetime index timeseries.
+        """
+        # Define `future` so that only value occurs one timestep *after*
+        # the only possible label that can be extracted from `target_series`; the
+        # only possible feature that can be created using these series utilises
+        # the value of `future` one timestep after the time of the label (i.e. a lag
+        # of `1` away from the only feature time):
+        target = linear_timeseries(start=0, length=1, start_value=0, end_value=1)
+        future = linear_timeseries(start=2, length=1, start_value=1, end_value=2)
+        # X comprises of first value of `target` (i.e. 0) and only value in `future`:
+        expected_X = np.array([0.0, 1.0]).reshape(1, 2, 1)
+        # Check correctness for 'moving windows' and 'time intersection' methods, as
+        # well as for different `multi_models` values:
+        for use_moving_windows in (False, True):
+            X, times = create_lagged_prediction_data(
+                target,
+                future_covariates=future,
+                lags=[-1],
+                lags_future_covariates=[1],
+                use_moving_windows=use_moving_windows,
+            )
+            self.assertTrue(np.allclose(expected_X, X))
+            self.assertEqual(len(times), 1)
+            self.assertEqual(times[0], target.end_time() + target.freq)
+
+    def test_lagged_prediction_data_positive_lags_datetime_idx(self):
+        """
+        Tests that `create_lagged_prediction_data` correctly handles case when
+        `0` is included in `lags_future_covariates` (i.e. when we're using the values
         `future_covariates` at time `t` to predict the value of `target_series` at
         that same time point). This particular test checks this behaviour by using
         datetime index timeseries.
@@ -697,30 +1139,26 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
         # the values of `past` and `future` at the same time as the label (i.e. a lag
         # of `0` away from the only feature time):
         target = linear_timeseries(
-            start=pd.Timestamp("1/1/2000"), length=2, start_value=0, end_value=1
-        )
-        past = linear_timeseries(
-            start=pd.Timestamp("1/2/2000"), length=1, start_value=1, end_value=2
+            start=pd.Timestamp("1/1/2000"), length=1, start_value=0, end_value=1
         )
         future = linear_timeseries(
-            start=pd.Timestamp("1/2/2000"), length=1, start_value=2, end_value=3
+            start=pd.Timestamp("1/3/2000"), length=1, start_value=1, end_value=2
         )
-        # X comprises of first value of `target` (i.e. 0) and only values in `past` and `future`:
-        expected_X = np.array([0.0, 1.0, 2.0]).reshape(1, 3, 1)
-        # Check correctness for 'moving windows' and 'time intersection' methods:
+        # X comprises of first value of `target` (i.e. 0) and only value in `future`:
+        expected_X = np.array([0.0, 1.0]).reshape(1, 2, 1)
+        # Check correctness for 'moving windows' and 'time intersection' methods, as
+        # well as for different `multi_models` values:
         for use_moving_windows in (False, True):
             X, times = create_lagged_prediction_data(
                 target,
-                past_covariates=past,
                 future_covariates=future,
                 lags=[-1],
-                lags_past_covariates=[0],
-                lags_future_covariates=[0],
+                lags_future_covariates=[1],
                 use_moving_windows=use_moving_windows,
             )
             self.assertTrue(np.allclose(expected_X, X))
             self.assertEqual(len(times), 1)
-            self.assertEqual(times[0], target.end_time())
+            self.assertEqual(times[0], target.end_time() + target.freq)
 
     def test_lagged_prediction_data_no_shared_times_error(self):
         """
@@ -849,7 +1287,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
             any value greater than `0`, an error should be thrown (i.e. we
             shouldn't be predicting the past using the future).
         """
-        series = linear_timeseries(start=1, length=2, freq=1)
+        series = linear_timeseries(start=1, length=3, freq=1)
         # Check error thrown by 'moving windows' method and by 'time intersection' method:
         for use_moving_windows in (False, True):
             # Test invalid `lags` values:
@@ -868,30 +1306,21 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
             # Test invalid `lags_past_covariates` values:
             with self.assertRaises(ValueError) as e:
                 create_lagged_prediction_data(
-                    target_series=series,
                     past_covariates=series,
-                    lags_past_covariates=[1],
+                    lags_past_covariates=[0],
                     use_moving_windows=use_moving_windows,
                 )
             self.assertEqual(
                 (
-                    "`lags_past_covariates` must be a `Sequence` containing only `int` values less than 1."
+                    "`lags_past_covariates` must be a `Sequence` containing only `int` values less than 0."
                 ),
                 str(e.exception),
             )
-            # Test invalid `lags_future_covariates` values:
-            with self.assertRaises(ValueError) as e:
-                create_lagged_prediction_data(
-                    target_series=series,
-                    future_covariates=series,
-                    lags_future_covariates=[1],
-                    use_moving_windows=use_moving_windows,
-                )
-            self.assertEqual(
-                (
-                    "`lags_future_covariates` must be a `Sequence` containing only `int` values less than 1."
-                ),
-                str(e.exception),
+            # This should *not* throw an error:
+            create_lagged_prediction_data(
+                future_covariates=series,
+                lags_future_covariates=[-1, 0, 1],
+                use_moving_windows=use_moving_windows,
             )
 
     def test_lagged_prediction_data_unspecified_lag_or_series_warning(self):
