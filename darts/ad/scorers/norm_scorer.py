@@ -66,8 +66,8 @@ class NormScorer(NonFittableAnomalyScorer):
         pred_series: TimeSeries,
     ) -> TimeSeries:
 
-        self._assert_deterministic(actual_series, "actual_series")
-        self._assert_deterministic(pred_series, "pred_series")
+        actual_series = self._assert_deterministic(actual_series, "actual_series")
+        pred_series = self._assert_deterministic(pred_series, "pred_series")
 
         diff = actual_series - pred_series
 

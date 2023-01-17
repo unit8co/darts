@@ -625,12 +625,6 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         scorer = Norm(component_wise=True)
-        # always expects a deterministic input
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(self.train, self.probabilistic)
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(self.probabilistic, self.train)
-
         # univariate case (equivalent to abs diff)
         self.assertEqual(
             scorer.score_from_prediction(self.test, self.test + 1)
