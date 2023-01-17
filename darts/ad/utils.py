@@ -698,9 +698,11 @@ def show_anomalies_from_scores(
 
             dict_input[idx] = {"series_score": score, "window": w, "name_id": idx}
 
-        for index, elem in enumerate(sorted(dict_input.items(), key=lambda x: x[1]["window"])):
+        for index, elem in enumerate(
+            sorted(dict_input.items(), key=lambda x: x[1]["window"])
+        ):
 
-            if index==0:
+            if index == 0:
                 current_window = elem[1]["window"]
                 index_ax = index_ax + 1
 
