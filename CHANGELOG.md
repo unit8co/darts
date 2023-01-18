@@ -76,8 +76,6 @@ Patch release
   are not required anymore (if not installed the corresponding models will not be available)
   [#1360](https://github.com/unit8co/darts/pull/1360) by [Antoine Madrona](https://github.com/madtoinou).
 - Removed `IPython` as a dependency. [#1331](https://github.com/unit8co/darts/pull/1331) by [Erik Hasse](https://github.com/erik-hasse)
-- New models: `DLinearModel` and `NLinearModel` as proposed in [this paper](https://arxiv.org/pdf/2205.13504.pdf). [#1139](https://github.com/unit8co/darts/pull/1139) by [Julien Herzen](https://github.com/hrzn) and [Greg DeVos](https://github.com/gdevos010).
-- 🔴 Improvements to `TorchForecastingModels`: Load models directly to CPU that were trained on GPU. Save file size reduced. Improved PyTorch Lightning Trainer handling fixing several minor issues. Removed deprecated methods `load_model` and `save_model` [#1371](https://github.com/unit8co/darts/pull/1371) by [Dennis Bader](https://github.com/dennisbader).
 - Allow the creation of empty `TimeSeries` [#1359](https://github.com/unit8co/darts/pull/1359)
   by [Antoine Madrona](https://github.com/madtoinou).
 
