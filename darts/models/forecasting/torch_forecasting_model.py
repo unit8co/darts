@@ -177,6 +177,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
             :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
             :func:`save()` and loaded using :func:`load()`. Default: ``False``.
+        save_only_last_checkpoint
+            Work in a way similar to save_checkpoint, except it save only the last checkpoint and does not rise warning
+            if the model is trained without validation set.
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
