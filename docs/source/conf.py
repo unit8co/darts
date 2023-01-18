@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath("../../.."))
 project = "darts"
 copyright = f"2020 - {datetime.now().year}, Unit8 SA (Apache 2.0 License)"
 author = "Unit8 SA"
-version = "0.22.0"
+version = "0.23.1"
 
 
 # -- General configuration ---------------------------------------------------
@@ -52,10 +52,10 @@ autodoc_default_options = {
     + "TransferableFutureCovariatesLocalForecastingModel,GlobalForecastingModel,TorchForecastingModel,"
     + "PastCovariatesTorchModel,FutureCovariatesTorchModel,DualCovariatesTorchModel,MixedCovariatesTorchModel,"
     + "SplitCovariatesTorchModel,TorchParametricProbabilisticForecastingModel,"
-    + "min_train_series_length,uses_future_covariates,uses_past_covariates,"
+    + "min_train_series_length,"
     + "untrained_model,first_prediction_index,future_covariate_series,past_covariate_series,"
     + "initialize_encoders,register_datapipe_as_function,register_function,functions,"
-    + "SplitTimeSeriesSequence,randint",
+    + "SplitTimeSeriesSequence,randint,AnomalyModel",
 }
 
 # In order to also have the docstrings of __init__() methods included

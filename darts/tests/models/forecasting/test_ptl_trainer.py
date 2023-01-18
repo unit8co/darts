@@ -151,7 +151,9 @@ if TORCH_AVAILABLE:
 
             # check if callbacks were added
             self.assertEqual(len(model.trainer_params["callbacks"]), 2)
-            model.fit(self.series, epochs=2)
+            model.fit(self.series, epochs=2, verbose=True)
+            # check that lightning did not mutate callbacks (verbosity adds a progress bar callback)
+            self.assertEqual(len(model.trainer_params["callbacks"]), 2)
 
             self.assertEqual(my_counter_0.counter, model.epochs_trained)
             self.assertEqual(my_counter_2.counter, model.epochs_trained + 2)

@@ -1,3 +1,4 @@
+import copy
 import os
 import shutil
 import tempfile
@@ -6,6 +7,7 @@ from unittest.mock import Mock, patch
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts.datasets import AirPassengersDataset, IceCreamHeaterDataset
 from darts.logging import get_logger
@@ -86,6 +88,15 @@ dual_models = [
     StatsForecastETS(season_length=12),
     Prophet(),
     AutoARIMA(),
+]
+
+# test only a few models for encoder support reduce time
+encoder_support_models = [
+    VARIMA(1, 0, 0),
+    ARIMA(),
+    AutoARIMA(),
+    Prophet(),
+    KalmanForecaster(dim_x=30),
 ]
 
 
@@ -266,6 +277,47 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                 with self.assertRaises(ValueError):
                     model.fit(target[1:], future_covariates=target[:-1])
 
+    def test_encoders_support(self):
+        # test case with pd.DatetimeIndex
+        n = 3
+
+        target = self.ts_gaussian[:-3]
+        future_covariates = self.ts_gaussian
+
+        add_encoders = {"custom": {"future": [lambda x: x.dayofweek]}}
+
+        # test some models that do not support encoders
+        no_support_model_cls = [NaiveMean, Theta]
+        for model_cls in no_support_model_cls:
+            with pytest.raises(TypeError):
+                _ = model_cls(add_encoders=add_encoders)
+
+        # test some models that support encoders
+        for model_object in encoder_support_models:
+            series = (
+                target
+                if not isinstance(model_object, VARIMA)
+                else target.stack(target.map(np.log))
+            )
+            # test once with user supplied covariates, and once without
+            for fc in [future_covariates, None]:
+                model_params = {
+                    k: vals
+                    for k, vals in copy.deepcopy(model_object.model_params).items()
+                }
+                model_params["add_encoders"] = add_encoders
+                model = model_object.__class__(**model_params)
+
+                # Test models with user supplied covariates
+                model.fit(series, future_covariates=fc)
+
+                prediction = model.predict(n, future_covariates=fc)
+                self.assertTrue(len(prediction) == n)
+
+                if isinstance(model, TransferableFutureCovariatesLocalForecastingModel):
+                    prediction = model.predict(n, series=series, future_covariates=fc)
+                    self.assertTrue(len(prediction) == n)
+
     def test_dummy_series(self):
         values = np.random.uniform(low=-10, high=10, size=100)
         ts = TimeSeries.from_dataframe(pd.DataFrame({"V1": values}))
@@ -410,7 +462,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             model: TransferableFutureCovariatesLocalForecastingModel = model_cls(
                 **kwargs
             )
-            model.backtest(series1, future_covariates=exog1, retrain=False)
+            model.backtest(series1, future_covariates=exog1, start=0.5, retrain=False)
 
     @patch("typing.Callable")
     def test_backtest_retrain(
