@@ -74,7 +74,8 @@ if TORCH_AVAILABLE:
                 n_epochs=1,
                 model_name="unittest-model-lstm",
                 work_dir=self.temp_work_dir,
-                save_checkpoints=True,
+                save_checkpoints=False,
+                save_only_last_checkpoint=True,
                 force_reset=True,
             )
             model2.fit(self.series)

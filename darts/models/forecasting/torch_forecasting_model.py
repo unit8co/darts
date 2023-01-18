@@ -129,6 +129,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         nr_epochs_val_period: int = 1,
         force_reset: bool = False,
         save_checkpoints: bool = False,
+        save_only_last_checkpoint: bool = False,
         add_encoders: Optional[dict] = None,
         random_state: Optional[int] = None,
         pl_trainer_kwargs: Optional[dict] = None,
@@ -279,6 +280,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # setup model save dirs
         self.save_checkpoints = save_checkpoints
+        self.save_only_last_checkpoint = save_only_last_checkpoint
         checkpoints_folder = _get_checkpoint_folder(self.work_dir, self.model_name)
         log_folder = _get_logs_folder(self.work_dir, self.model_name)
         checkpoint_exists = (
@@ -287,7 +289,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         # setup model save dirs
-        if checkpoint_exists and save_checkpoints:
+        if checkpoint_exists and (save_checkpoints or save_only_last_checkpoint):
             raise_if_not(
                 force_reset,
                 f"Some model data already exists for `model_name` '{self.model_name}'. Either load model to continue "
@@ -296,19 +298,28 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 logger,
             )
             self.reset_model()
-        elif save_checkpoints:
+        elif save_checkpoints or save_only_last_checkpoint:
             self._create_save_dirs()
         else:
             pass
 
         # save best epoch on val_loss and last epoch under 'darts_logs/model_name/checkpoints/'
-        if save_checkpoints:
+
+        if save_only_last_checkpoint:
+            checkpoint_callback = pl.callbacks.ModelCheckpoint(
+                dirpath=checkpoints_folder,
+                save_last=False,
+                monitor=None,
+                filename="last-{epoch}",
+            )
+        elif save_checkpoints:
             checkpoint_callback = pl.callbacks.ModelCheckpoint(
                 dirpath=checkpoints_folder,
                 save_last=True,
                 monitor="val_loss",
                 filename="best-{epoch}-{val_loss:.2f}",
             )
+
             checkpoint_callback.CHECKPOINT_NAME_LAST = "last-{epoch}"
         else:
             checkpoint_callback = None
@@ -325,7 +336,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             "logger": model_logger,
             "max_epochs": n_epochs,
             "check_val_every_n_epoch": nr_epochs_val_period,
-            "enable_checkpointing": save_checkpoints,
+            "enable_checkpointing": save_checkpoints or save_only_last_checkpoint,
             "callbacks": [cb for cb in [checkpoint_callback] if cb is not None],
         }
 
@@ -444,7 +455,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.trainer_params["precision"] = precision
 
         # we need to save the initialized TorchForecastingModel as PyTorch-Lightning only saves module checkpoints
-        if self.save_checkpoints:
+        if self.save_checkpoints or self.save_only_last_checkpoint:
             self.save(
                 os.path.join(
                     _get_runs_folder(self.work_dir, self.model_name), INIT_MODEL_NAME
