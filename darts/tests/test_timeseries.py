@@ -121,8 +121,18 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         # getting index for idx should return i s.t., series[i].time == idx
         self.assertEqual(series.get_index_at_point(100), 50)
 
+        # getting index outside of the index range should raise an exception
+        with self.assertRaises(IndexError):
+            series[100]
+
         # slicing should act the same irrespective of the initial time stamp
         np.testing.assert_equal(series[10:20].values().flatten(), values[10:20])
+
+        # slicing outside of the range should return an empty ts
+        self.assertEqual(len(series[100:105]), 0)
+
+        # slicing with an index overlap should return the ts subset
+        self.assertEqual(len(series[95:105]), 5)
 
         # drop_after should act on the timestamp
         np.testing.assert_equal(series.drop_after(20).values().flatten(), values[:10])
@@ -134,6 +144,24 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         # getting index for idx should return i s.t., series[i].time == idx
         self.assertEqual(series.get_index_at_point(16), 3)
+
+    def test_datetime_indexing(self):
+        # checking that the DatetimeIndex slicing is behaving as described in
+        # https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html
+
+        # getting index outside of the index range should raise an exception
+        with self.assertRaises(KeyError):
+            self.series1[pd.Timestamp("20130111")]
+
+        # slicing outside of the range should return an empty ts
+        self.assertEqual(
+            len(self.series1[pd.Timestamp("20130111") : pd.Timestamp("20130115")]), 0
+        )
+
+        # slicing with an index overlap should return the ts subset (start and end included)
+        self.assertEqual(
+            len(self.series1[pd.Timestamp("20130105") : pd.Timestamp("20130110")]), 6
+        )
 
     def test_univariate_component(self):
         series = TimeSeries.from_values(np.array([10, 20, 30])).with_columns_renamed(

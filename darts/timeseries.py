@@ -188,26 +188,29 @@ class TimeSeries:
             # reset freq inside the xarray index (see bug of sortby() above).
             self._xa.get_index(self._time_dim).freq = self._freq
 
-            # We have to check manually if the index is complete. Another way could be to rely
-            # on `inferred_freq` being present, but this fails for series of length < 3.
+            # We have to check manually if the index is complete for non-empty series. Another way could
+            # be to rely on `inferred_freq` being present, but this fails for series of length < 3.
+            if len(self._time_index) > 0:
 
-            is_index_complete = (
-                len(
-                    pd.date_range(
-                        self._time_index.min(), self._time_index.max(), freq=self._freq
-                    ).difference(self._time_index)
+                is_index_complete = (
+                    len(
+                        pd.date_range(
+                            self._time_index.min(),
+                            self._time_index.max(),
+                            freq=self._freq,
+                        ).difference(self._time_index)
+                    )
+                    == 0
                 )
-                == 0
-            )
 
-            raise_if_not(
-                is_index_complete,
-                "Not all timestamps seem to be present in the time index. Does "
-                "the series contain holes? If you are using a factory method, "
-                "try specifying `fill_missing_dates=True` "
-                "or specify the `freq` parameter.",
-                logger,
-            )
+                raise_if_not(
+                    is_index_complete,
+                    "Not all timestamps seem to be present in the time index. Does "
+                    "the series contain holes? If you are using a factory method, "
+                    "try specifying `fill_missing_dates=True` "
+                    "or specify the `freq` parameter.",
+                    logger,
+                )
         else:
             self._freq = self._time_index.step
             self._freq_str = None
