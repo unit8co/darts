@@ -1,5 +1,5 @@
 """
-    This file contains the basic structures to define, run and backup benchmarking experiments
+    This file contains the basic structures to define, run and backup benchmark experiments
 """
 
 from datetime import datetime
@@ -20,22 +20,13 @@ from typing import Callable
 from darts import TimeSeries
 import numpy as np
 import pickle
-import ray
 from ray import tune, air
 from ray.tune.search.optuna import OptunaSearch
 from ray.tune.integration.pytorch_lightning import TuneReportCallback
 from ray.tune.schedulers import ASHAScheduler
 from ray.air import session
 import matplotlib.pyplot as plt
-
-
 import optuna
-from optuna.integration import PyTorchLightningPruningCallback
-from optuna.visualization import (
-    plot_optimization_history,
-    plot_contour,
-    plot_param_importances,
-)
 
 from darts.logging import (
     get_logger,
@@ -63,6 +54,27 @@ DATASETS = [ETTh1Dataset, ETTh2Dataset, ETTm1Dataset, ETTm2Dataset, ElectricityD
     ILINetDataset, ExchangeRateDataset]
 
 METRICS = [mse, mae, smape, rmse, mape]
+
+class BenchmarckStudy():
+    """
+    Per dataset study, where we read all models (statistics models, ML and DL models) pre-run experiments.
+    """
+    stats_experiment_results = None
+    ml_experiment_results = None
+    dl_experiment_resutls = None
+
+    def __init__(self, dataset, experiments_location):
+        # get location of all experiments, open folders and read results into objects
+        pass
+    def plot_metric_vs_models(self):
+        pass
+
+    def plot_training_time_vs_models(self):
+        pass
+
+    def plot_inference_time_vs_models(self):
+        pass
+
 
 class BaseExperiment():
     """
@@ -94,7 +106,10 @@ class BaseExperiment():
     transformed_val = None #bool
     val_predictions = {} #dict with keys as model names and values as timeseries predictions
     test_predictions = {} #dict with keys as model names and values as timeseries predictions
-    test_stats = {}
+    test_stats = {} #dict with keys as model names and values as evaluation metric values
+    models_train_time = {} #dict with keys as model names and values as training time values
+    models_inference_time = {} #dict with keys as model names and values as inference time values
+    models_best_params = {}
     verbose = None
 
     def __init__(self, experiment_root:Optional[str] = None, random_state: Optional[int] = None,
@@ -134,7 +149,7 @@ class BaseExperiment():
             print(f"Root directory {self.experiment_root} already exists")
 
         try:
-            self.experiment_dir = os.path.join(self.experiment_root, experiment_name)
+            self.experiment_dir = os.path.join(self.experiment_root, f"{self.experiment_name}_seed_{self.random_state}")
             os.mkdir(self.experiment_dir)
             print(f"Experiment directory {self.experiment_dir} created")
         except:
@@ -272,16 +287,15 @@ class BaseExperiment():
         """
         Validate the model.
         """
-        if metric == "mase":
+        if metric.__name__ == "mase":
             metric_evals = metric(ground_truth, predictions, self.train, n_jobs=-1, verbose=True)
         else:
             metric_evals = metric(ground_truth, predictions, n_jobs=-1, verbose=True)
 
-
         metric_evals_reduced = reduction(metric_evals) if metric_evals != np.nan else float("inf")
         metric_evals_reduced = metric_evals_reduced if metric_evals_reduced != np.nan else float("inf")
 
-        _std = np.std(metric_evals) if reduction == np.mean else None
+        _std = np.std(metric_evals) if reduction == np.mean else None # over multiple series
 
         return metric_evals_reduced, _std
 
@@ -295,6 +309,43 @@ class BaseExperiment():
     def _backup_exp(self):
         with open(f"{self.experiment_dir}/full_{self.experiment_name}_bkp.pkl", 'wb') as f:
             pickle.dump(self, f)
+
+    def check_exp_outputs(self, models, metrics, max_series_to_plot = 5, plot_series = False, comp = 0):
+        if metrics is None:
+            metrics = self.metrics
+
+        if models is None:
+            models = self.models_cls
+
+        if isinstance(comp, int) and comp < len(self.train[0].columns):
+            comp = self.orig_train[0].columns[comp]
+        elif isinstance(comp, str):
+            comp = comp
+        else:
+            comp = self.orig_train[0].columns[0]
+
+        for model_cl in models:
+            model_name = model_cl.__name__
+            for metric in metrics:
+                metric_name = metric.__name__
+
+                print(f"{model_name} {metric_name}: {self.test_stats[f'{model_name}_{metric_name}']}")
+
+                if plot_series:
+                    if len(self.test) < max_series_to_plot:
+                        max_series_to_plot = len(self.test)
+
+                    idx_vec = np.random.randint(0, len(self.test), max_series_to_plot)
+
+                    for idx in idx_vec:
+                        plt.figure(figsize=(15, 5))
+                        self.orig_val[idx][comp][-self.val_len:].plot()
+                        self.test[idx][comp].plot(label="actual")
+                        selector = f"{model_name}_{metric_name}"
+                        self.test_predictions[selector][idx][comp].plot(label="forecast")
+                        plt.title(f"{self.dataset.__name__}_{model_name}_{metric_name}_{comp}")
+                        plt.show()
+                        plt.close()
 
 class StatsExperiment(BaseExperiment):
     """
@@ -376,7 +427,7 @@ def NHiTSModelBuilder(self):
     pass
 
 def TCNModelBuilder(in_len, out_len, kernel_size, num_filters, weight_norm, dilation_base,
-dropout, lr, experiment, metric, encoders = None, likelihood=None, callbacks = None, work_dir = None):
+dropout, lr, experiment, encoders = None, likelihood=None, callbacks = None, work_dir = None):
 
     early_stopper = EarlyStopping("val_loss", min_delta=0.001, patience=3, verbose=True)
     if callbacks is None:
@@ -437,8 +488,8 @@ class DLExperiment(BaseExperiment):
     MODELS = [DLinearModel, NLinearModel, NBEATSModel, TFTModel, TransformerModel, NHiTSModel, TCNModel]
 
     # parameters shared by all models
-    BATCH_SIZE = 32#1024
-    MAX_N_EPOCHS = 3#30
+    BATCH_SIZE = 1024
+    MAX_N_EPOCHS = 30
     NR_EPOCHS_VAL_PERIOD = 1
     MAX_SAMPLES_PER_TS = 1000
 
@@ -505,15 +556,17 @@ class DLExperiment(BaseExperiment):
                             max_concurrent_trials = 1, time_budget_s = 60, scheduler = None,
                             scheduler_kwargs = None, min_max_mode = "min"):
 
+        metric = metric if metric is not None else smape
         if eval_mode == "val_metric_eval":
             objective = DLExperiment._val_metric_objective
             objective_with_params = tune.with_parameters(objective, model_cl=model_cl, experiment=experiment,
-                                                         metric = metric if metric is not None else smape,
+                                                         metric = metric,
                                                          reduction = reduction if reduction is not None else np.mean)
         elif eval_mode == "val_loss":
             objective = DLExperiment._val_loss_objective
             objective_with_params = tune.with_parameters(objective, model_cl=model_cl, experiment=experiment)
 
+        """
         if scheduler is None:
             scheduler_kwargs = {}
             scheduler_kwargs["max_t"] = experiment.MAX_N_EPOCHS
@@ -521,6 +574,9 @@ class DLExperiment(BaseExperiment):
             scheduler_kwargs["reduction_factor"] = 2
 
             scheduler = ASHAScheduler(**scheduler_kwargs)
+        else:
+            scheduler = scheduler(**scheduler_kwargs)
+        """
 
         tuner = tune.Tuner(
             objective_with_params,
@@ -534,7 +590,7 @@ class DLExperiment(BaseExperiment):
                 time_budget_s = time_budget_s,
                 reuse_actors = True,
             ),
-            run_config = air.RunConfig(local_dir = experiment.experiment_dir, name = f"{model_cl.__name__}_tuner"),
+            run_config = air.RunConfig(local_dir = experiment.experiment_dir, name = f"{model_cl.__name__}_tuner_{metric.__name__}"),
             param_space = params_space,
         )
         results = tuner.fit()
@@ -621,13 +677,17 @@ class DLExperiment(BaseExperiment):
         return best_prams
 
 
-    def run(self, dataset, params_space, scheduler = None, sampler = None, transformers: List[dict] = None, transform_val: bool = True):
+    def run(self, params_space, transformers: List[dict] = None,
+            transform_val: bool = True, **tuner_kwargs):
         super().run()
 
         self._get_data()
 
         if transformers is not None:
             self._preprocess_data(transformers, transform_val)
+
+        scheduler = tuner_kwargs.get("scheduler")
+        sampler = tuner_kwargs.get("sampler")
 
         for model_cl in self.models_cls:
             model_name = model_cl.__name__
@@ -639,23 +699,34 @@ class DLExperiment(BaseExperiment):
                 os.makedirs(work_dir, exist_ok=True)
                 print(f"Final model checkpoints directory: {work_dir}")
 
-                params_space[model_name]["metric"] = metric_name
-                best_params = self.tune_hyperparameters(experiment= self, params_space=params_space[model_name],
+
+                tuner_results = self.tune_hyperparameters(experiment= self, params_space=params_space[model_name],
                                                         model_cl=model_cl, scheduler=scheduler, sampler=sampler,
-                                                        metric=metric).get_best_result().config
+                                                        metric=metric)
+                best_params = tuner_results.get_best_result(metric = "val_metric", mode = "min").config
+
+                self.models_best_params[f"{model_name}_{metric_name}"] = best_params
 
                 best_model = MODEL_BUILDERS[model_name](**best_params, work_dir=work_dir, experiment=self)
 
+                time_start = datetime.now()
                 # train the model
                 best_model.fit(
                     series=self.train,
                     val_series=self.val,
                     max_samples_per_ts=self.MAX_SAMPLES_PER_TS
                 )
+                time_end = datetime.now()
+                self.models_train_time[f"{model_name}_{metric_name}"] = (time_end - time_start).total_seconds()
 
                 # use best model for subsequent evaluation
                 best_model = model_cl.load_from_checkpoint(model_name, work_dir=work_dir, best=True)
+
+                time_start = datetime.now()
                 test_predictions = best_model.predict(series = self.val, n = self.test_len)
+                time_end = datetime.now()
+                self.models_inference_time[f"{model_name}_{metric_name}"] = (time_end - time_start).total_seconds()
+
                 self.test_predictions[f"{model_name}_{metric_name}"] = test_predictions
                 test_predictions = self._postprocess_predictions(f"{model_name}_{metric_name}",
                                                                  test_predictions, test = True)
@@ -664,39 +735,7 @@ class DLExperiment(BaseExperiment):
         self.end_exp_time = datetime.now()
         self._backup_exp()
 
-    def check_exp_outputs(self, models, metrics, max_series_to_plot = 5, plot_series = False, comp = 0):
-        if metrics is None:
-            metrics = self.metrics
 
-        if models is None:
-            models = self.models_cls
-
-        if isinstance(comp, int) and comp < len(self.train[0].columns):
-            comp = self.orig_train[0].columns[comp]
-        elif isinstance(comp, str):
-            comp = comp
-        else:
-            comp = self.orig_train[0].columns[0]
-
-        for model_cl in models:
-            model_name = model_cl.__name__
-            for metric in metrics:
-                metric_name = metric.__name__
-
-                if plot_series:
-                    if len(self.test) < max_series_to_plot:
-                        max_series_to_plot = len(self.test)
-
-                    idx_vec = np.random.randint(0, len(self.test), max_series_to_plot)
-
-                    for idx in idx_vec:
-                        plt.figure(figsize=(15, 5))
-                        self.orig_val[idx][comp][-self.val_len:].plot()
-                        self.test[idx][comp].plot(label="actual")
-                        self.test_predictions[f"{model_name}_{metric_name}"][idx][comp].plot(label="forecast")
-                        plt.title(f"{self.dataset.__name__}_{model_name}_{metric_name}")
-                        plt.show()
-                        plt.close()
 
 
 
