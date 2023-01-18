@@ -24,12 +24,15 @@ from darts.models.forecasting.varima import VARIMA
 
 try:
     from darts.models.forecasting.block_rnn_model import BlockRNNModel
+    from darts.models.forecasting.dlinear import DLinearModel
     from darts.models.forecasting.nbeats import NBEATSModel
     from darts.models.forecasting.nhits import NHiTSModel
+    from darts.models.forecasting.nlinear import NLinearModel
     from darts.models.forecasting.rnn_model import RNNModel
     from darts.models.forecasting.tcn_model import TCNModel
     from darts.models.forecasting.tft_model import TFTModel
     from darts.models.forecasting.transformer_model import TransformerModel
+
 
 except ModuleNotFoundError:
     logger.warning(
@@ -39,7 +42,7 @@ except ModuleNotFoundError:
     )
 
 try:
-    from darts.models.forecasting.gradient_boosted_model import LightGBMModel
+    from darts.models.forecasting.lgbm import LightGBMModel
 except ModuleNotFoundError:
     logger.warning(
         "Support for LightGBM not available. "
@@ -110,6 +113,19 @@ except ImportError:
         usable = False
 
     Croston = NotImportedCroston()
+
+try:
+    from darts.models.forecasting.xgboost import XGBModel
+except ImportError:
+    logger.warning(
+        "The xgboost module could not be imported. "
+        "To enable support for XGBoost model, install the xgboost package."
+    )
+
+    class NotImportedXGBModel:
+        usable = False
+
+    XGBModel = NotImportedXGBModel()
 
 from darts.models.filtering.gaussian_process_filter import GaussianProcessFilter
 from darts.models.filtering.kalman_filter import KalmanFilter

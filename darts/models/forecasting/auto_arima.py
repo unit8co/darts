@@ -17,7 +17,9 @@ logger = get_logger(__name__)
 
 
 class AutoARIMA(FutureCovariatesLocalForecastingModel):
-    def __init__(self, *autoarima_args, **autoarima_kwargs):
+    def __init__(
+        self, *autoarima_args, add_encoders: Optional[dict] = None, **autoarima_kwargs
+    ):
         """Auto-ARIMA
 
         This implementation is a thin wrapper around `pmdarima AutoARIMA model
@@ -40,8 +42,28 @@ class AutoARIMA(FutureCovariatesLocalForecastingModel):
             Positional arguments for the pmdarima.AutoARIMA model
         autoarima_kwargs
             Keyword arguments for the pmdarima.AutoARIMA model
+        add_encoders
+            A large number of future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
+            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'position': {'future': ['relative']},
+                    'custom': {'future': [lambda idx: (idx.year - 1950) / 50]},
+                    'transformer': Scaler()
+                }
+            ..
         """
-        super().__init__()
+        super().__init__(add_encoders=add_encoders)
         self.model = PmdAutoARIMA(*autoarima_args, **autoarima_kwargs)
         self.trend = self.model.trend
 
@@ -50,6 +72,7 @@ class AutoARIMA(FutureCovariatesLocalForecastingModel):
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         super()._fit(series, future_covariates)
+        self._assert_univariate(series)
         series = self.training_series
         self.model.fit(
             series.values(), X=future_covariates.values() if future_covariates else None
@@ -61,6 +84,7 @@ class AutoARIMA(FutureCovariatesLocalForecastingModel):
         n: int,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        verbose: bool = False,
     ):
         super()._predict(n, future_covariates, num_samples)
         forecast = self.model.predict(

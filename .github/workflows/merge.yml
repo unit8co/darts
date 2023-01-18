@@ -12,10 +12,10 @@ jobs:
       - name: "1. Clone repository"
         uses: actions/checkout@v2
 
-      - name: "2. Set up Python 3.9"
+      - name: "2. Set up Python 3.10"
         uses: actions/setup-python@v1
         with:
-          python-version: '3.9'
+          python-version: '3.10'
 
         # downloading gradle multiple times in parallel can yield to connection errors
       - name: "3. Cache gradle distribution"
@@ -39,7 +39,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest]
-        python-version: ['3.8', '3.9', '3.10']
+        python-version: ['3.7', '3.10']
         flavour: ['core', 'torch', 'all']
 
     steps:

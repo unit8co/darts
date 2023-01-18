@@ -148,6 +148,7 @@ class EnsembleModel(GlobalForecastingModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
+        verbose: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
 
         super().predict(
@@ -156,6 +157,7 @@ class EnsembleModel(GlobalForecastingModel):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             num_samples=num_samples,
+            verbose=verbose,
         )
 
         predictions = self._make_multiple_predictions(
@@ -194,3 +196,6 @@ class EnsembleModel(GlobalForecastingModel):
     @property
     def min_train_series_length(self) -> int:
         return max(model.min_train_series_length for model in self.models)
+
+    def _is_probabilistic(self) -> bool:
+        return all([model._is_probabilistic() for model in self.models])

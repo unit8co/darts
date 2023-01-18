@@ -1,13 +1,99 @@
 
 # Changelog
 
-Darts is still in an early development phase, and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
+We do our best to avoid the introduction of breaking changes,
+but cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
-- Fixed edge case in ShapExplainer for regression models where covariates series > target series [#1310](https://https://github.com/unit8co/darts/pull/1310) by [Rijk van der Meulen](https://github.com/rijkvandermeulen)
-- Removed `IPython` as a dependency. [#1331](https://github.com/unit8co/darts/pull/1331) by [Erik Hasse](https://github.com/erik-hasse)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.23.1...master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.22.0...master)
+## [0.23.1](https://github.com/unit8co/darts/tree/0.23.1) (2023-01-12)
+Patch release
+
+**Fixed**
+- Fix an issue in `TimeSeries` which made it incompatible with Python 3.7.
+  [#1449](https://github.com/unit8co/darts/pull/1449) by [Dennis Bader](https://github.com/dennisbader).
+- Fix an issue with static covariates when series have variable lengths with `RegressionModel`s.
+  [#1469](https://github.com/unit8co/darts/pull/1469) by [Eliane Maalouf](https://github.com/eliane-maalouf).
+- Fix an issue with PyTorch Lightning trainer handling.
+  [#1459](https://github.com/unit8co/darts/pull/1459) by [Dennis Bader](https://github.com/dennisbader).
+- Fix an issue with `historical_forecasts()` retraining PyTorch models iteratively instead of from scratch.
+  [#1465](https://github.com/unit8co/darts/pull/1465) by [Dennis Bader](https://github.com/dennisbader).
+- Fix an issue with `historical_forecasts()` not working in some cases when `future_covariates`
+  are provided and `start` is not specified. [#1481](https://github.com/unit8co/darts/pull/1481)
+  by [Maxime Dumonal](https://github.com/dumjax).
+- Fix an issue with `slice_n_points` functions on integer indexes.
+  [#1482](https://github.com/unit8co/darts/pull/1482) by [Julien Herzen](https://github.com/hrzn).
+
+## [0.23.0](https://github.com/unit8co/darts/tree/0.23.0) (2022-12-23)
+### For users of the library:
+
+**Improved**
+- 🚀🚀🚀 Brand new Darts module dedicated to anomaly detection on time series: `darts.ad`.
+  More info on the API doc page: https://unit8co.github.io/darts/generated_api/darts.ad.html.
+  [#1256](https://github.com/unit8co/darts/pull/1256) by [Julien Adda](https://github.com/julien12234)
+  and [Julien Herzen](https://github.com/hrzn).
+- New forecasting models: `DLinearModel` and `NLinearModel` as proposed in [this paper](https://arxiv.org/pdf/2205.13504.pdf).
+  [#1139](https://github.com/unit8co/darts/pull/1139)  by [Julien Herzen](https://github.com/hrzn) and [Greg DeVos](https://github.com/gdevos010).
+- New forecasting model: `XGBModel` implementing XGBoost.
+  [#1405](https://github.com/unit8co/darts/pull/1405) by [Julien Herzen](https://github.com/hrzn).
+- New `multi_models` option for all `RegressionModel`s: when set to False, uses only a single underlying
+  estimator for multi-step forecasting, which can drastically increase computational efficiency.
+  [#1291](https://github.com/unit8co/darts/pull/1291) by [Eliane Maalouf](https://github.com/eliane-maalouf).
+- All `RegressionModel`s (incl. LightGBM, Catboost, XGBoost, Random Forest, ...)
+  now support static covariates.
+  [#1412](https://github.com/unit8co/darts/pull/1412) by [Eliane Maalouf](https://github.com/eliane-maalouf).
+- `historical_forecasts()` and `backtest()` now work on multiple series, too.
+  [#1318](https://github.com/unit8co/darts/pull/1318) by [Maxime Dumonal](https://github.com/dumjax).
+- New window transformation capabilities: `TimeSeries.window_transform()` and
+  a new `WindowTransformer` which allow to easily create window features.
+  [#1269](https://github.com/unit8co/darts/pull/1269) by [Eliane Maalouf](https://github.com/eliane-maalouf).
+- 🔴 Improvements to `TorchForecastingModels`: Load models directly to CPU that were trained on GPU. Save file size reduced.
+  Improved PyTorch Lightning Trainer handling fixing several minor issues.
+  Removed deprecated methods `load_model` and `save_model`
+  [#1371](https://github.com/unit8co/darts/pull/1371) by [Dennis Bader](https://github.com/dennisbader).
+- Improvements to encoders: Added support for encoders to all models with covariate support through `add_encoders` at model creation.
+  Encoders now generate the correct minimum required covariate time spans for all models.
+  [#1338](https://github.com/unit8co/darts/pull/1338) by [Dennis Bader](https://github.com/dennisbader).
+- New datasets available in `darts.datasets` (`ILINetDataset`, `ExchangeRateDataset`, `TrafficDataset`, `WeatherDataset`)
+  [#1298](https://github.com/unit8co/darts/pull/1298) by [Kamil Wierciak](https://github.com/FEJTWOW).
+  [#1291](https://github.com/unit8co/darts/pull/1291) by [Eliane Maalouf](https://github.com/eliane-maalouf).
+- New `Diff` transformer, which can difference and "undifference" series
+  [#1380](https://github.com/unit8co/darts/pull/1380) by [Matt Bilton](https://github.com/mabilton).
+- Improvements to KalmanForecaster: The model now accepts different TimeSeries for prediction than the ones used to fit the model.
+  [#1338](https://github.com/unit8co/darts/pull/1338) by [Dennis Bader](https://github.com/dennisbader).
+- Backtest functions can now accept a list of metric functions [#1333](https://github.com/unit8co/darts/pull/1333)
+  by [Antoine Madrona](https://github.com/madtoinou).
+- Extension of baseline models to work on multivariate series
+  [#1373](https://github.com/unit8co/darts/pull/1373) by [Błażej Nowicki](https://github.com/BlazejNowicki).
+- Improvement to `TimeSeries.gaps()` [#1265](https://github.com/unit8co/darts/pull/1265) by
+  [Antoine Madrona](https://github.com/madtoinou).
+- Speedup of `TimeSeries.quantile_timeseries()` method
+  [#1351](https://github.com/unit8co/darts/pull/1351) by [@tranquilitysmile](https://github.com/tranquilitysmile).
+- Some dependencies which can be hard to install (LightGBM, Catboost, XGBoost, Prophet, Statsforecast)
+  are not required anymore (if not installed the corresponding models will not be available)
+  [#1360](https://github.com/unit8co/darts/pull/1360) by [Antoine Madrona](https://github.com/madtoinou).
+- Removed `IPython` as a dependency. [#1331](https://github.com/unit8co/darts/pull/1331) by [Erik Hasse](https://github.com/erik-hasse)
+- Allow the creation of empty `TimeSeries` [#1359](https://github.com/unit8co/darts/pull/1359)
+  by [Antoine Madrona](https://github.com/madtoinou).
+
+
+
+**Fixed**
+- Fixed edge case in ShapExplainer for regression models where covariates series > target series
+  [#1310](https://https://github.com/unit8co/darts/pull/1310) by [Rijk van der Meulen](https://github.com/rijkvandermeulen)
+- Fixed a bug in `TimeSeries.resample()` [#1350](https://github.com/unit8co/darts/pull/1350)
+  by [Antoine Madrona](https://github.com/madtoinou).
+- Fixed splitting methods when split point is not in the series
+  [#1415](https://github.com/unit8co/darts/pull/1415) by [@DavidKleindienst](https://github.com/DavidKleindienst)
+- Fixed issues with `append_values()` and `prepend_values()` not correctly extending `RangeIndex`es
+  [#1435](https://github.com/unit8co/darts/pull/1435) by [Matt Bilton](https://github.com/mabilton).
+- Fixed some issues with time zones [#1343](https://github.com/unit8co/darts/pull/1343)
+  by [Antoine Madrona](https://github.com/madtoinou).
+- Fixed some issues when using a single target series with `RegressionEnsembleModel`
+  [#1357](https://github.com/unit8co/darts/pull/1357) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed treatment of stochastic models in ensemble models
+  [#1423](https://github.com/unit8co/darts/pull/1423) by [Eliane Maalouf](https://github.com/eliane-maalouf).
 
 
 ## [0.22.0](https://github.com/unit8co/darts/tree/0.22.0) (2022-10-04)

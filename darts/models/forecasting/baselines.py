@@ -35,12 +35,13 @@ class NaiveMean(LocalForecastingModel):
 
     def fit(self, series: TimeSeries):
         super().fit(series)
-        self.mean_val = np.mean(series.univariate_values())
+
+        self.mean_val = np.mean(series.values(copy=False), axis=0)
         return self
 
-    def predict(self, n: int, num_samples: int = 1):
+    def predict(self, n: int, num_samples: int = 1, verbose: bool = False):
         super().predict(n, num_samples)
-        forecast = np.array([self.mean_val for _ in range(n)])
+        forecast = np.tile(self.mean_val, (n, 1))
         return self._build_forecast_series(forecast)
 
 
@@ -70,18 +71,23 @@ class NaiveSeasonal(LocalForecastingModel):
 
     def fit(self, series: TimeSeries):
         super().fit(series)
+
         raise_if_not(
             len(series) >= self.K,
             f"The time series requires at least K={self.K} points",
             logger,
         )
-        self.last_k_vals = series.univariate_values()[-self.K :]
+        self.last_k_vals = series.values(copy=False)[-self.K :, :]
         return self
 
-    def predict(self, n: int, num_samples: int = 1):
+    def predict(self, n: int, num_samples: int = 1, verbose: bool = False):
         super().predict(n, num_samples)
-        forecast = np.array([self.last_k_vals[i % self.K] for i in range(n)])
+        forecast = np.array([self.last_k_vals[i % self.K, :] for i in range(n)])
         return self._build_forecast_series(forecast)
+
+    @property
+    def extreme_lags(self):
+        return (-self.K, 1, None, None, None)
 
 
 class NaiveDrift(LocalForecastingModel):
@@ -100,14 +106,16 @@ class NaiveDrift(LocalForecastingModel):
 
     def fit(self, series: TimeSeries):
         super().fit(series)
+        assert series.n_samples == 1, "This model expects deterministic time series"
+
         series = self.training_series
         return self
 
-    def predict(self, n: int, num_samples: int = 1):
+    def predict(self, n: int, num_samples: int = 1, verbose: bool = False):
         super().predict(n, num_samples)
         first, last = (
-            self.training_series.first_value(),
-            self.training_series.last_value(),
+            self.training_series.first_values(),
+            self.training_series.last_values(),
         )
         slope = (last - first) / (len(self.training_series) - 1)
         last_value = last + slope * n
@@ -141,9 +149,9 @@ class NaiveEnsembleModel(EnsembleModel):
         for model in self.models:
             if self.is_global_ensemble:
                 kwargs = dict(series=series)
-                if model.uses_past_covariates:
+                if model.supports_past_covariates:
                     kwargs["past_covariates"] = past_covariates
-                if model.uses_future_covariates:
+                if model.supports_future_covariates:
                     kwargs["future_covariates"] = future_covariates
                 model.fit(**kwargs)
             else:

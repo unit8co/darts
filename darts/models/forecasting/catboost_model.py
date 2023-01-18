@@ -2,8 +2,11 @@
 CatBoost model
 --------------
 
-This is a wrapper that enables using the CatBoost regressor as model
+CatBoost based regression model.
+
+This implementation comes with the ability to produce probabilistic forecasts.
 """
+
 from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
@@ -75,6 +78,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             allowing sampling at prediction time. When set to 'gaussian', the model will use CatBoost's
             'RMSEWithUncertainty' loss function. When using this loss function, CatBoost returns a mean
             and variance couple, which capture data (aleatoric) uncertainty.
+            This will overwrite any `objective` parameter.
         quantiles
             Fit the model to these quantiles if the `likelihood` is set to `quantile`.
         random_state

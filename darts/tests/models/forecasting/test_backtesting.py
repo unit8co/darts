@@ -4,6 +4,7 @@ from itertools import product
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.logging import get_logger
@@ -198,8 +199,8 @@ class BacktestingTestCase(DartsBaseTestClass):
             )
 
         # univariate model + multivariate series
-        with self.assertRaises(AssertionError):
-            NaiveDrift().backtest(
+        with self.assertRaises(ValueError):
+            FFT().backtest(
                 linear_series_multi, start=pd.Timestamp("20000201"), forecast_horizon=3
             )
 
@@ -219,12 +220,28 @@ class BacktestingTestCase(DartsBaseTestClass):
             self.assertEqual(pred.end_time(), linear_series.end_time())
 
             # multivariate model + multivariate series
-            with self.assertRaises(ValueError):
+            # historical forecasts doesn't overwrite model object -> we can use different input dimensions
+            tcn_model.backtest(
+                linear_series_multi,
+                start=pd.Timestamp("20000125"),
+                forecast_horizon=3,
+                verbose=False,
+                retrain=False,
+            )
+
+            # univariate model
+            tcn_model = TCNModel(
+                input_chunk_length=12, output_chunk_length=1, batch_size=1, n_epochs=1
+            )
+            tcn_model.fit(linear_series, verbose=False)
+            # univariate fitted model + multivariate series
+            with pytest.raises(ValueError):
                 tcn_model.backtest(
                     linear_series_multi,
                     start=pd.Timestamp("20000125"),
                     forecast_horizon=3,
                     verbose=False,
+                    retrain=False,
                 )
 
             tcn_model = TCNModel(
@@ -321,7 +338,7 @@ class BacktestingTestCase(DartsBaseTestClass):
 
         # Using RandomForest's start default value
         score = RandomForest(lags=12, random_state=0).backtest(
-            series=target, forecast_horizon=3, metric=r2_score
+            series=target, forecast_horizon=3, start=0.5, metric=r2_score
         )
         self.assertGreater(score, 0.95)
 
