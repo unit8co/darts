@@ -1226,49 +1226,54 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         )
 
         def _evaluate_combination(param_combination) -> float:
-            param_combination_dict = dict(
-                list(zip(parameters.keys(), param_combination))
-            )
-            if param_combination_dict.get("model_name", None):
-                current_time = time.strftime("%Y-%m-%d_%H.%M.%S.%f", time.localtime())
-                param_combination_dict[
-                    "model_name"
-                ] = f"{current_time}_{param_combination_dict['model_name']}"
+            try:
+                param_combination_dict = dict(
+                    list(zip(parameters.keys(), param_combination))
+                )
+                if param_combination_dict.get("model_name", None):
+                    current_time = time.strftime("%Y-%m-%d_%H.%M.%S.%f", time.localtime())
+                    param_combination_dict[
+                        "model_name"
+                    ] = f"{current_time}_{param_combination_dict['model_name']}"
 
-            model = model_class(**param_combination_dict)
-            if use_fitted_values:  # fitted value mode
-                model._fit_wrapper(series, past_covariates, future_covariates)
-                fitted_values = TimeSeries.from_times_and_values(
-                    series.time_index, model.fitted_values
-                )
-                error = metric(series, fitted_values)
-            elif val_series is None:  # expanding window mode
-                error = model.backtest(
-                    series=series,
-                    past_covariates=past_covariates,
-                    future_covariates=future_covariates,
-                    num_samples=1,
-                    start=start,
-                    forecast_horizon=forecast_horizon,
-                    stride=stride,
-                    metric=metric,
-                    reduction=reduction,
-                    last_points_only=last_points_only,
-                    verbose=verbose,
-                )
-            else:  # split mode
-                model._fit_wrapper(series, past_covariates, future_covariates)
-                pred = model._predict_wrapper(
-                    len(val_series),
-                    series,
-                    past_covariates,
-                    future_covariates,
-                    num_samples=1,
-                    verbose=verbose,
-                )
-                error = metric(val_series, pred)
+                model = model_class(**param_combination_dict)
+                if use_fitted_values:  # fitted value mode
+                    model._fit_wrapper(series, past_covariates, future_covariates)
+                    fitted_values = TimeSeries.from_times_and_values(
+                        series.time_index, model.fitted_values
+                    )
+                    error = metric(series, fitted_values)
+                elif val_series is None:  # expanding window mode
+                    error = model.backtest(
+                        series=series,
+                        past_covariates=past_covariates,
+                        future_covariates=future_covariates,
+                        num_samples=1,
+                        start=start,
+                        forecast_horizon=forecast_horizon,
+                        stride=stride,
+                        metric=metric,
+                        reduction=reduction,
+                        last_points_only=last_points_only,
+                        verbose=verbose,
+                    )
+                else:  # split mode
+                    model._fit_wrapper(series, past_covariates, future_covariates)
+                    pred = model._predict_wrapper(
+                        len(val_series),
+                        series,
+                        past_covariates,
+                        future_covariates,
+                        num_samples=1,
+                        verbose=verbose,
+                    )
+                    error = metric(val_series, pred)
 
-            return float(error)
+                return float(error)
+            except Exception as e:
+                error = np.inf
+                
+            return error
 
         errors: List[float] = _parallel_apply(
             iterator, _evaluate_combination, n_jobs, {}, {}
