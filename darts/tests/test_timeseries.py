@@ -117,7 +117,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         self.assertEqual(len(series[120:125]), 0)
         self.assertEqual(series[120:125], series.slice(120, 125))
 
-        # slicing with an index overlap should return the ts subset
+        # slicing with a partial index overlap should return the ts subset
         self.assertEqual(len(series[95:105]), 5)
         # adding the 10 values index shift to compare the same values
         self.assertEqual(series[95:105], series.slice(105, 115))
@@ -174,13 +174,13 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             self.series1.slice(pd.Timestamp("20130111"), pd.Timestamp("20130115")),
         )
 
-        # slicing with an index overlap should return the ts subset (start and end included)
+        # slicing with an partial index overlap should return the ts subset (start and end included)
         self.assertEqual(
-            len(self.series1[pd.Timestamp("20130105") : pd.Timestamp("20130110")]), 6
+            len(self.series1[pd.Timestamp("20130105") : pd.Timestamp("20130112")]), 6
         )
         self.assertEqual(
-            self.series1[pd.Timestamp("20130111") : pd.Timestamp("20130115")],
-            self.series1.slice(pd.Timestamp("20130111"), pd.Timestamp("20130115")),
+            self.series1[pd.Timestamp("20130105") : pd.Timestamp("20130112")],
+            self.series1.slice(pd.Timestamp("20130105"), pd.Timestamp("20130112")),
         )
 
     def test_univariate_component(self):
