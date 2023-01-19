@@ -775,9 +775,10 @@ class RegressionModel(GlobalForecastingModel):
 
             # concatenate retrieved lags
             X = np.concatenate(np_X, axis=1)
-            # Need to split up `X` into sub-blocks corresponding to
-            # each timeseries in `series` so that static covariates
-            # can be added to each block:
+            # Need to split up `X` into three equally-sized sub-blocks
+            # corresponding to each timeseries in `series`, so that
+            # static covariates can be added to each block; valid since
+            # each block contains same number of observations:
             X_blocks = np.split(X, len(series), axis=0)
             X_blocks = self._add_static_covariates(X_blocks, series)
             X = np.concatenate(X_blocks, axis=0)
