@@ -441,7 +441,7 @@ def _create_lagged_data_by_moving_window(
     windows can then be reshaped into the correct shape. This approach can only be used if
     we *can* assume that the specified series are all of the same frequency.
     """
-    feature_times, min_lags, max_lags = get_feature_times(
+    feature_times, min_lags, max_lags = _get_feature_times(
         target_series,
         past_covariates,
         future_covariates,
@@ -616,7 +616,7 @@ def _create_lagged_data_by_intersecting_times(
     `output_chunk_length` (if constructing `y`). This approach is used if we *cannot* assume that the
     specified series are of the same frequency.
     """
-    feature_times, min_lags, _ = get_feature_times(
+    feature_times, min_lags, _ = _get_feature_times(
         target_series,
         past_covariates,
         future_covariates,
@@ -705,7 +705,7 @@ def _create_lagged_data_by_intersecting_times(
     return X, y, shared_times
 
 
-# For convenience, define following types for `get_feature_times`:
+# For convenience, define following types for `_get_feature_times`:
 FeatureTimes = Tuple[
     Union[pd.Index, None], Union[pd.Index, None], Union[pd.Index, None]
 ]
@@ -713,7 +713,7 @@ MinLags = Tuple[Union[int, None], Union[int, None], Union[int, None]]
 MaxLags = Tuple[Union[int, None], Union[int, None], Union[int, None]]
 
 
-def get_feature_times(
+def _get_feature_times(
     target_series: Optional[TimeSeries] = None,
     past_covariates: Optional[TimeSeries] = None,
     future_covariates: Optional[TimeSeries] = None,
@@ -795,7 +795,7 @@ def get_feature_times(
         3. If `max_lag > 0`, the first `max_lag` times are excluded, since these values have fewer than `max_lag` values
         before them, which means we're unable to construct features for these times.
 
-    Some additional behaviours to note about the `get_feature_times` function are:
+    Some additional behaviours to note about the `_get_feature_times` function are:
         1. If `return_min_and_max_lags = True`, the smallest and largest lag value for each
         series is also returned as a pair of tuples.
         2. For those series which are either unspecified, a `None` value takes the place of
