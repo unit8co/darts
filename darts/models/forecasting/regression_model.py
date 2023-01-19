@@ -419,9 +419,9 @@ class RegressionModel(GlobalForecastingModel):
                 padding = np.zeros((features_i.shape[0], num_static_components))
                 features[i] = np.hstack([features_i, padding])
         elif scovs_map["covs_exist"]:
+            scov_width = sum(scovs_map["sizes"].values())
             for i, features_i in enumerate(features):
                 vals = scovs_map["vals"][i]
-                scov_width = sum(scovs_map["sizes"].values())
                 if vals:
                     scov_arrays = []
                     for name, size in scovs_map["sizes"].items():
