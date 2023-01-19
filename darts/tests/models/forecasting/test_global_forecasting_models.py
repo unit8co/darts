@@ -550,12 +550,18 @@ if TORCH_AVAILABLE:
                 epochs = 3
 
                 model.fit(multiple_ts, epochs=epochs)
-                init_trainer.assert_called_with(max_epochs=epochs, trainer_params=ANY)
+                init_trainer.assert_called_with(
+                    max_epochs=model._get_max_number_of_epochs(epochs),
+                    trainer_params=ANY,
+                )
 
                 model.total_epochs = epochs
                 # continue training
                 model.fit(multiple_ts, epochs=epochs)
-                init_trainer.assert_called_with(max_epochs=epochs, trainer_params=ANY)
+                init_trainer.assert_called_with(
+                    max_epochs=model._get_max_number_of_epochs(epochs),
+                    trainer_params=ANY,
+                )
 
         @patch(
             "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._init_trainer"
@@ -575,11 +581,17 @@ if TORCH_AVAILABLE:
                 epochs = 3
 
                 model.fit_from_dataset(train_dataset, epochs=epochs)
-                init_trainer.assert_called_with(max_epochs=epochs, trainer_params=ANY)
+                init_trainer.assert_called_with(
+                    max_epochs=model._get_max_number_of_epochs(epochs),
+                    trainer_params=ANY,
+                )
 
                 # continue training
                 model.fit_from_dataset(train_dataset, epochs=epochs)
-                init_trainer.assert_called_with(max_epochs=epochs, trainer_params=ANY)
+                init_trainer.assert_called_with(
+                    max_epochs=model._get_max_number_of_epochs(epochs),
+                    trainer_params=ANY,
+                )
 
         def test_predit_after_fit_from_dataset(self):
             model_cls, kwargs, _ = models_cls_kwargs_errs[0]

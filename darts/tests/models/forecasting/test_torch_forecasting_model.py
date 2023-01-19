@@ -290,6 +290,31 @@ if TORCH_AVAILABLE:
             model1.fit(self.series, epochs=15)
             self.assertEqual(15, model1.epochs_trained)
 
+        def test_resume_training_from_checkpoint(self):
+            model = RNNModel(
+                12,
+                "RNN",
+                10,
+                10,
+                n_epochs=10,
+                work_dir=self.temp_work_dir,
+                save_checkpoints=True,
+                model_name="test_rnn",
+                force_reset=True,
+            )
+
+            model.fit(self.series)
+            self.assertEqual(10, model.epochs_trained)
+
+            model_from_checkpoint = RNNModel.load_from_checkpoint(
+                "test_rnn", work_dir=self.temp_work_dir, best=False
+            )
+            # epochs_trained is reset to 0 when loading from checkpoint
+            self.assertEqual(0, model_from_checkpoint.epochs_trained)
+
+            model_from_checkpoint.fit(self.series, epochs=5)
+            self.assertEqual(15, model_from_checkpoint.epochs_trained)
+
         def test_optimizers(self):
 
             optimizers = [

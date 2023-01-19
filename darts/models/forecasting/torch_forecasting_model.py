@@ -894,6 +894,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
         )
 
+        # We need to set the number of epochs to train for, based on the number of epochs already trained for
+        # (if any), and the number of epochs to train for in this call (if any).
         train_num_epochs = self._get_max_number_of_epochs(epochs)
 
         # setup trainer
@@ -943,8 +945,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def _get_max_number_of_epochs(self, extra_epochs_to_train: int) -> int:
         """
-        Returns the maximum number of epochs the model can be trained for. This is the sum of the number of epochs the
-        model has already trained + the number of epochs the model is trained for in this call to fit().
+        Returns the maximum number of epochs the model can be trained for. This number will be used to set the
+        `max_epochs` parameter of the PyTorch Lightning trainer.
 
         There are three cases:
         1. The model has not been trained yet and `load_ckpt_path` is None. In this case, the maximum number of epochs
