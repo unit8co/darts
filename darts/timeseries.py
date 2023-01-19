@@ -705,7 +705,7 @@ class TimeSeries:
         fill_missing_dates: Optional[bool] = False,
         freq: Optional[str] = None,
         fillna_value: Optional[float] = None,
-    ) -> Union["TimeSeries", List["TimeSeries"]]:
+    ) -> List["TimeSeries"]:
         """
         Build a list of TimeSeries instances grouped by a selection of columns from a DataFrame.
         One column (or the DataFrame index) has to represent the time,
@@ -749,7 +749,7 @@ class TimeSeries:
 
         Returns
         -------
-        TimeSeries
+        List[TimeSeries]
             A list containing a univariate or multivariate deterministic TimeSeries per group in the DataFrame.
         """
         group_cols = [group_cols] if not isinstance(group_cols, list) else group_cols
