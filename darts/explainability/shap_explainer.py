@@ -675,6 +675,8 @@ class _RegressionShapExplainers:
             if future_covariates
             else None,
         )
+        # Remove sample axis:
+        X = X[:, :, 0]
 
         if train:
             X = pd.DataFrame(X)
