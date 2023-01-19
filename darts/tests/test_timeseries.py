@@ -138,12 +138,13 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         np.testing.assert_equal(series[10:20].values().flatten(), values[10:20])
 
         # slicing outside of the range should return an empty ts
-        self.assertEqual(len(series[210:220]), 0)
-        self.assertEqual(series[210:220], series.slice(210, 220))
+        self.assertEqual(len(series[105:110]), 0)
+        # multiply the slice start and end values by 2 to compare the same values
+        self.assertEqual(series[105:110], series.slice(210, 220))
 
         # slicing with an index overlap should return the ts subset
         self.assertEqual(len(series[95:105]), 5)
-        # multiply the slice start and end arguments by 2 to compare the same values
+        # multiply the slice start and end values by 2 to compare the same values
         self.assertEqual(series[95:105], series.slice(190, 210))
 
         # drop_after should act on the timestamp
