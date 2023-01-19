@@ -24,7 +24,7 @@ import shutil
 import sys
 from abc import ABC, abstractmethod
 from glob import glob
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -914,6 +914,151 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # Train model
         self._train(train_loader, val_loader)
         return self
+
+    @random_method
+    def fit_from_checkpoint(
+        self,
+        additional_epochs: int = 0,
+        best: bool = False,
+        force_reset: bool = False,
+        model_name: str = None,
+        optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
+        optimizer_kwargs: Optional[Dict] = None,
+        lr_scheduler_cls: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
+        lr_scheduler_kwargs: Optional[Dict] = None,
+        trainer_params: Optional[Dict] = None,
+        **kwargs,
+    ):
+        file_name = _get_checkpoint_fname(self.work_dir, self.model_name, best=best)
+
+        self = self.load_from_checkpoint(
+            model_name=self.model_name,
+            work_dir=self.work_dir,
+            file_name=file_name,
+            best=best,
+        )
+
+        # update the attributes depending on the model name
+        if isinstance(model_name, str):
+            self.model_name = model_name
+            self.model_params["model_name"] = model_name
+
+        # checkpoint path
+        checkpoints_folder = _get_checkpoint_folder(self.work_dir, self.model_name)
+        checkpoint_exists = (
+            os.path.exists(checkpoints_folder)
+            and len(glob(os.path.join(checkpoints_folder, "*"))) > 0
+        )
+        if checkpoint_exists and self.save_checkpoints:
+            raise_if_not(
+                force_reset,
+                f"Some model data already exists for `model_name` '{self.model_name}'. Either load model to continue "
+                f"training or change `model_name` to save the fine-tuned weights in another folder.",
+                logger,
+            )
+            self.reset_model()
+        elif self.save_checkpoints:
+            self._create_save_dirs()
+        else:
+            pass
+
+        # TODO: avoid user warning about dirpath change
+        checkpoint_callback = pl.callbacks.ModelCheckpoint(
+            dirpath=checkpoints_folder,
+            save_last=True,
+            monitor="val_loss",
+            filename="best-{epoch}-{val_loss:.2f}",
+        )
+        checkpoint_callback.CHECKPOINT_NAME_LAST = "last-{epoch}"
+
+        # logger instance
+        tb_logger = pl_loggers.TensorBoardLogger(
+            save_dir="darts_logs/", name=self.model_name, version="logs"
+        )
+        self.logger = tb_logger
+        self.trainer_params["logger"] = tb_logger
+
+        # update trainer
+        old_trainer_params = self.trainer_params.copy()
+        new_max_epochs = old_trainer_params["max_epochs"] + additional_epochs
+        if trainer_params is not None:
+            for trainer_param in trainer_params.keys():
+                self.trainer_params[trainer_param] = trainer_params[trainer_param]
+
+            # special parameter handling
+            if "callbacks" in trainer_params.keys() and len(
+                trainer_params["callbacks"] > 0
+            ):
+                self.trainer_params["callbacks"] = [
+                    checkpoint_callback
+                ] + trainer_params["callbacks"]
+            else:
+                self.trainer_params["callbacks"] = [checkpoint_callback]
+
+            if "max_epochs" in trainer_params.keys():
+                if additional_epochs != 0:
+                    raise_if(
+                        trainer_params["max_epochs"] != new_max_epochs,
+                        "The number of epochs to retrain the model for was defined in"
+                        " both the `trainer_params` and `additional_epochs` arguments"
+                        f" with differents values ({trainer_params['max_epochs']} and"
+                        f" {old_trainer_params['max_epochs']} + {additional_epochs})",
+                        logger,
+                    )
+                else:
+                    new_max_epochs = trainer_params["max_epochs"]
+        raise_if(
+            new_max_epochs <= old_trainer_params["max_epochs"],
+            "The number of epochs to retrain passed in `trainer_params['max_epochs']`"
+            " or `additional_epochs`is smaller or equal to the number of epochs used"
+            " to train the model",
+            logger,
+        )
+        self.trainer_params["max_epochs"] = new_max_epochs
+
+        # update optimizer
+        if optimizer_cls == self.model.optimizer_cls:
+            # using same optimizer, possibly different parameters
+            if optimizer_kwargs is not None:
+                self.model.optimizer_kwargs.update(optimizer_kwargs)
+        else:
+            # using different optimizer
+            self.model.optimizer_cls = optimizer_cls
+            self.model.optimizer_kwargs = (
+                dict() if optimizer_kwargs is None else optimizer_kwargs
+            )
+        self.model_params["optimizer_scheduler_cls"] = self.model.optimizer_cls
+        self.model_params["optimizer_kwargs"] = self.model.optimizer_kwargs
+        self.pl_module_params["optimizer_cls"] = self.model.optimizer_cls
+        self.pl_module_params["optimizer_kwargs"] = self.model.optimizer_kwargs
+
+        # update scheduler
+        if lr_scheduler_cls == self.model.lr_scheduler_cls:
+            if lr_scheduler_kwargs is not None:
+                self.model.lr_scheduler_kwargs.update(lr_scheduler_kwargs)
+        else:
+            self.model.lr_scheduler_cls = lr_scheduler_cls
+            self.model.lr_scheduler_kwargs = (
+                dict() if lr_scheduler_kwargs is None else lr_scheduler_kwargs
+            )
+        self.model_params["lr_scheduler_cls"] = self.model.lr_scheduler_cls
+        self.model_params["lr_scheduler_kwargs"] = self.model.lr_scheduler_kwargs
+        self.pl_module_params["lr_scheduler_cls"] = self.model.lr_scheduler_cls
+        self.pl_module_params["lr_scheduler_kwargs"] = self.model.lr_scheduler_kwargs
+
+        new_trainer = self._init_trainer(
+            self.trainer_params, self.trainer_params["max_epochs"]
+        )
+        self.trainer = new_trainer
+        self.model.trainer = new_trainer
+        self.trainer.strategy.setup_optimizers(new_trainer)
+
+        self.model.setup("fit")
+
+        # fit(..., trainer=new_trainer) calls _setup_trainer, returning the new_trainer directly
+        # passing trainer = None would call _setup_trainer and _init_trainer, creating a new trainer
+        # from the self.trainer_params dictionnary and assign it to the self.trainer attribute
+        self.fit(**kwargs, trainer=new_trainer)
 
     def _train(
         self, train_loader: DataLoader, val_loader: Optional[DataLoader]
