@@ -2239,6 +2239,11 @@ class TimeSeries:
                 if start_ts not in self._time_index
                 else start_ts
             )
+            if effective_start_ts < start_ts:
+                # if the requested start_ts is smaller than the start argument,
+                # we have to increase it to be consistent with the docstring
+                effective_start_ts += self.freq
+
             effective_end_ts = (
                 min(self._time_index, key=lambda t: abs(t - end_ts))
                 if end_ts not in self._time_index

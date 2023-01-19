@@ -113,6 +113,15 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         # getting index for idx should return i s.t., series[i].time == idx
         self.assertEqual(series.get_index_at_point(101), 91)
 
+        # slicing outside of the index range should return an empty ts
+        self.assertEqual(len(series[120:125]), 0)
+        self.assertEqual(series[120:125], series.slice(120, 125))
+
+        # slicing with an index overlap should return the ts subset
+        self.assertEqual(len(series[95:105]), 5)
+        # adding the 10 values index shift to compare the same values
+        self.assertEqual(series[95:105], series.slice(105, 115))
+
         # check integer indexing features when series index starts at 0 with a step > 1
         values = np.random.random(100)
         times = pd.RangeIndex(0, 200, step=2)
@@ -129,10 +138,13 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         np.testing.assert_equal(series[10:20].values().flatten(), values[10:20])
 
         # slicing outside of the range should return an empty ts
-        self.assertEqual(len(series[100:105]), 0)
+        self.assertEqual(len(series[210:220]), 0)
+        self.assertEqual(series[210:220], series.slice(210, 220))
 
         # slicing with an index overlap should return the ts subset
         self.assertEqual(len(series[95:105]), 5)
+        # multiply the slice start and end arguments by 2 to compare the same values
+        self.assertEqual(series[95:105], series.slice(190, 210))
 
         # drop_after should act on the timestamp
         np.testing.assert_equal(series.drop_after(20).values().flatten(), values[:10])
@@ -157,10 +169,18 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         self.assertEqual(
             len(self.series1[pd.Timestamp("20130111") : pd.Timestamp("20130115")]), 0
         )
+        self.assertEqual(
+            self.series1[pd.Timestamp("20130111") : pd.Timestamp("20130115")],
+            self.series1.slice(pd.Timestamp("20130111"), pd.Timestamp("20130115")),
+        )
 
         # slicing with an index overlap should return the ts subset (start and end included)
         self.assertEqual(
             len(self.series1[pd.Timestamp("20130105") : pd.Timestamp("20130110")]), 6
+        )
+        self.assertEqual(
+            self.series1[pd.Timestamp("20130111") : pd.Timestamp("20130115")],
+            self.series1.slice(pd.Timestamp("20130111"), pd.Timestamp("20130115")),
         )
 
     def test_univariate_component(self):
@@ -390,7 +410,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         idx = pd.RangeIndex(start=0, stop=60, step=2)
         ts = TimeSeries.from_times_and_values(idx, values)
         slice_vals = ts.slice(11, 31).values(copy=False).flatten()
-        np.testing.assert_equal(slice_vals, values[5:15])
+        np.testing.assert_equal(slice_vals, values[6:15])
 
         slice_ts = ts.slice(40, 60)
         test_case.assertEqual(ts.end_time(), slice_ts.end_time())
