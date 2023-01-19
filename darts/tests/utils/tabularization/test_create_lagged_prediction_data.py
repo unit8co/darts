@@ -397,10 +397,10 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
             expected_X = np.concatenate(to_concat, axis=1)
             # Number of observations should match number of feature times:
             self.assertEqual(X.shape[0], len(feats_times))
-            self.assertEqual(X.shape[0], len(times))
+            self.assertEqual(X.shape[0], len(times[0]))
             # Check that outputs match:
             self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
-            self.assertTrue(feats_times.equals(times))
+            self.assertTrue(feats_times.equals(times[0]))
 
     def test_lagged_prediction_data_equal_freq_datetime_index(self):
         """
@@ -484,10 +484,10 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
             expected_X = np.concatenate(to_concat, axis=1)
             # Number of observations should match number of feature times:
             self.assertEqual(X.shape[0], len(feats_times))
-            self.assertEqual(X.shape[0], len(times))
+            self.assertEqual(X.shape[0], len(times[0]))
             # Check that outputs match:
             self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
-            self.assertTrue(feats_times.equals(times))
+            self.assertTrue(feats_times.equals(times[0]))
 
     def test_lagged_prediction_data_unequal_freq_range_index(self):
         """
@@ -556,10 +556,10 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
             expected_X = np.concatenate(to_concat, axis=1)
             # Number of observations should match number of feature times:
             self.assertEqual(X.shape[0], len(feats_times))
-            self.assertEqual(X.shape[0], len(times))
+            self.assertEqual(X.shape[0], len(times[0]))
             # Check that outputs match:
             self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
-            self.assertTrue(feats_times.equals(times))
+            self.assertTrue(feats_times.equals(times[0]))
 
     def test_lagged_prediction_data_unequal_freq_datetime_index(self):
         """
@@ -628,10 +628,10 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
             expected_X = np.concatenate(to_concat, axis=1)
             # Number of observations should match number of feature times:
             self.assertEqual(X.shape[0], len(feats_times))
-            self.assertEqual(X.shape[0], len(times))
+            self.assertEqual(X.shape[0], len(times[0]))
             # Check that outputs match:
             self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
-            self.assertTrue(feats_times.equals(times))
+            self.assertTrue(feats_times.equals(times[0]))
 
     def test_lagged_prediction_data_method_consistency_range_index(self):
         """
@@ -709,7 +709,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 use_moving_windows=False,
             )
             self.assertTrue(np.allclose(X_mw, X_ti))
-            self.assertTrue(times_mw.equals(times_ti))
+            self.assertTrue(times_mw[0].equals(times_ti[0]))
 
     def test_lagged_prediction_data_method_consistency_datetime_index(self):
         """
@@ -787,7 +787,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 use_moving_windows=False,
             )
             self.assertTrue(np.allclose(X_mw, X_ti))
-            self.assertTrue(times_mw.equals(times_ti))
+            self.assertTrue(times_mw[0].equals(times_ti[0]))
 
     #
     #   Specified Cases Tests
@@ -831,10 +831,10 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
             )
             # Number of observations should match number of feature times:
             self.assertEqual(X.shape[0], len(expected_times))
-            self.assertEqual(X.shape[0], len(times))
+            self.assertEqual(X.shape[0], len(times[0]))
             # Check that outputs match:
             self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
-            self.assertTrue(expected_times.equals(times))
+            self.assertTrue(expected_times.equals(times[0]))
 
     def test_lagged_prediction_data_single_lag_single_component_same_series_datetime_idx(
         self,
@@ -874,10 +874,10 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
             )
             # Number of observations should match number of feature times:
             self.assertEqual(X.shape[0], len(expected_times))
-            self.assertEqual(X.shape[0], len(times))
+            self.assertEqual(X.shape[0], len(times[0]))
             # Check that outputs match:
             self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
-            self.assertTrue(expected_times.equals(times))
+            self.assertTrue(expected_times.equals(times[0]))
 
     def test_lagged_prediction_data_extend_past_and_future_covariates_range_idx(self):
         """
@@ -920,7 +920,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 max_samples_per_ts=max_samples_per_ts,
                 use_moving_windows=use_moving_windows,
             )
-            self.assertEqual(times[0], target.end_time() + target.freq)
+            self.assertEqual(times[0][0], target.end_time() + target.freq)
             self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
 
     def test_lagged_prediction_data_extend_past_and_future_covariates_datetime_idx(
@@ -981,7 +981,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 max_samples_per_ts=max_samples_per_ts,
                 use_moving_windows=use_moving_windows,
             )
-            self.assertEqual(times[0], target.end_time() + target.freq)
+            self.assertEqual(times[0][0], target.end_time() + target.freq)
             self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
 
     def test_lagged_prediction_data_single_point_range_idx(self):
@@ -1025,8 +1025,8 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
             self.assertTrue(np.allclose(expected_X, X))
             # Should only have one sample, generated for
             # `t = target.end_time() + lag * target.freq`:
-            self.assertEqual(len(times), 1)
-            self.assertEqual(times[0], target.end_time() + lag * target.freq)
+            self.assertEqual(len(times[0]), 1)
+            self.assertEqual(times[0][0], target.end_time() + lag * target.freq)
 
     def test_lagged_prediction_data_zero_lags_range_idx(self):
         """
@@ -1056,8 +1056,8 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 use_moving_windows=use_moving_windows,
             )
             self.assertTrue(np.allclose(expected_X, X))
-            self.assertEqual(len(times), 1)
-            self.assertEqual(times[0], future.start_time())
+            self.assertEqual(len(times[0]), 1)
+            self.assertEqual(times[0][0], future.start_time())
 
     def test_lagged_prediction_data_zero_lags_datetime_idx(self):
         """
@@ -1091,8 +1091,8 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 use_moving_windows=use_moving_windows,
             )
             self.assertTrue(np.allclose(expected_X, X))
-            self.assertEqual(len(times), 1)
-            self.assertEqual(times[0], future.start_time())
+            self.assertEqual(len(times[0]), 1)
+            self.assertEqual(times[0][0], future.start_time())
 
     def test_lagged_prediction_data_positive_lags_range_idx(self):
         """
@@ -1122,8 +1122,8 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 use_moving_windows=use_moving_windows,
             )
             self.assertTrue(np.allclose(expected_X, X))
-            self.assertEqual(len(times), 1)
-            self.assertEqual(times[0], target.end_time() + target.freq)
+            self.assertEqual(len(times[0]), 1)
+            self.assertEqual(times[0][0], target.end_time() + target.freq)
 
     def test_lagged_prediction_data_positive_lags_datetime_idx(self):
         """
@@ -1157,8 +1157,82 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 use_moving_windows=use_moving_windows,
             )
             self.assertTrue(np.allclose(expected_X, X))
-            self.assertEqual(len(times), 1)
-            self.assertEqual(times[0], target.end_time() + target.freq)
+            self.assertEqual(len(times[0]), 1)
+            self.assertEqual(times[0][0], target.end_time() + target.freq)
+
+    def test_lagged_prediction_data_sequence_inputs(self):
+        """
+        Tests that `create_lagged_prediction_data` correctly handles being
+        passed a sequence of `TimeSeries` inputs, as opposed to individual
+        `TimeSeries`.
+        """
+        # Define two simple tabularization problems:
+        target_1 = past_1 = future_1 = linear_timeseries(start=0, end=5)
+        target_2 = past_2 = future_2 = linear_timeseries(start=6, end=11)
+        lags = lags_past = lags_future = [-1]
+        # Expected solution:
+        expected_X_1 = np.concatenate(3 * [target_1.all_values(copy=False)], axis=1)
+        expected_X_2 = np.concatenate(3 * [target_2.all_values(copy=False)], axis=1)
+        expected_X = np.concatenate([expected_X_1, expected_X_2], axis=0)
+        # Need to account for fact that we can create feature for last time in series:
+        expected_times_1 = target_1.append_values([0]).time_index[1:]
+        expected_times_2 = target_2.append_values([0]).time_index[1:]
+        # Check when `concatenate = True`:
+        X, times = create_lagged_prediction_data(
+            target_series=(target_1, target_2),
+            past_covariates=(past_1, past_2),
+            future_covariates=(future_1, future_2),
+            lags=lags,
+            lags_past_covariates=lags_past,
+            lags_future_covariates=lags_future,
+        )
+        self.assertTrue(np.allclose(X, expected_X))
+        self.assertEqual(len(times), 2)
+        self.assertTrue(times[0].equals(expected_times_1))
+        self.assertTrue(times[1].equals(expected_times_2))
+        # Check when `concatenate = False`:
+        X, times = create_lagged_prediction_data(
+            target_series=(target_1, target_2),
+            past_covariates=(past_1, past_2),
+            future_covariates=(future_1, future_2),
+            lags=lags,
+            lags_past_covariates=lags_past,
+            lags_future_covariates=lags_future,
+            concatenate=False,
+        )
+        self.assertEqual(len(X), 2)
+        self.assertTrue(np.allclose(X[0], expected_X_1))
+        self.assertTrue(np.allclose(X[1], expected_X_2))
+        self.assertEqual(len(times), 2)
+        self.assertTrue(times[0].equals(expected_times_1))
+        self.assertTrue(times[1].equals(expected_times_2))
+
+    def test_lagged_prediction_data_stochastic_series(self):
+        """
+        Tests that `create_lagged_prediction_data` is correctly vectorised
+        over the sample axes of the input `TimeSeries`.
+        """
+        # Define two simple tabularization problems:
+        target_1 = past_1 = future_1 = linear_timeseries(start=0, end=5)
+        target_2 = past_2 = future_2 = 2 * target_1
+        target = target_1.concatenate(target_2, axis=2)
+        past = past_1.concatenate(past_2, axis=2)
+        future = future_1.concatenate(future_2, axis=2)
+        lags = lags_past = lags_future = [-1]
+        # Expected solution:
+        expected_X = np.concatenate(3 * [target.all_values(copy=False)], axis=1)
+        # Need to account for fact that we can create feature for last time in series:
+        expected_times = target_1.append_values([0]).time_index[1:]
+        X, times = create_lagged_prediction_data(
+            target_series=target,
+            past_covariates=past,
+            future_covariates=future,
+            lags=lags,
+            lags_past_covariates=lags_past,
+            lags_future_covariates=lags_future,
+        )
+        self.assertTrue(np.allclose(X, expected_X))
+        self.assertTrue(times[0].equals(expected_times))
 
     def test_lagged_prediction_data_no_shared_times_error(self):
         """

@@ -481,12 +481,12 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             # Number of observations should match number of feature times:
             self.assertEqual(X.shape[0], len(feats_times))
             self.assertEqual(y.shape[0], len(feats_times))
-            self.assertEqual(X.shape[0], len(times))
-            self.assertEqual(y.shape[0], len(times))
+            self.assertEqual(X.shape[0], len(times[0]))
+            self.assertEqual(y.shape[0], len(times[0]))
             # Check that outputs match:
             self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
             self.assertTrue(np.allclose(expected_y, y[:, :, 0]))
-            self.assertTrue(feats_times.equals(times))
+            self.assertTrue(feats_times.equals(times[0]))
 
     def test_lagged_training_data_equal_freq_datetime_index(self):
         """
@@ -587,12 +587,12 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             # Number of observations should match number of feature times:
             self.assertEqual(X.shape[0], len(feats_times))
             self.assertEqual(y.shape[0], len(feats_times))
-            self.assertEqual(X.shape[0], len(times))
-            self.assertEqual(y.shape[0], len(times))
+            self.assertEqual(X.shape[0], len(times[0]))
+            self.assertEqual(y.shape[0], len(times[0]))
             # Check that outputs match:
             self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
             self.assertTrue(np.allclose(expected_y, y[:, :, 0]))
-            self.assertTrue(feats_times.equals(times))
+            self.assertTrue(feats_times.equals(times[0]))
 
     def test_lagged_training_data_unequal_freq_range_index(self):
         """
@@ -678,12 +678,12 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             # Number of observations should match number of feature times:
             self.assertEqual(X.shape[0], len(feats_times))
             self.assertEqual(y.shape[0], len(feats_times))
-            self.assertEqual(X.shape[0], len(times))
-            self.assertEqual(y.shape[0], len(times))
+            self.assertEqual(X.shape[0], len(times[0]))
+            self.assertEqual(y.shape[0], len(times[0]))
             # Check that outputs match:
             self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
             self.assertTrue(np.allclose(expected_y, y[:, :, 0]))
-            self.assertTrue(feats_times.equals(times))
+            self.assertTrue(feats_times.equals(times[0]))
 
     def test_lagged_training_data_unequal_freq_datetime_index(self):
         """
@@ -784,12 +784,12 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             # Number of observations should match number of feature times:
             self.assertEqual(X.shape[0], len(feats_times))
             self.assertEqual(y.shape[0], len(feats_times))
-            self.assertEqual(X.shape[0], len(times))
-            self.assertEqual(y.shape[0], len(times))
+            self.assertEqual(X.shape[0], len(times[0]))
+            self.assertEqual(y.shape[0], len(times[0]))
             # Check that outputs match:
             self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
             self.assertTrue(np.allclose(expected_y, y[:, :, 0]))
-            self.assertTrue(feats_times.equals(times))
+            self.assertTrue(feats_times.equals(times[0]))
 
     def test_lagged_training_data_method_consistency_range_index(self):
         """
@@ -866,7 +866,7 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             )
             self.assertTrue(np.allclose(X_mw, X_ti))
             self.assertTrue(np.allclose(y_mw, y_ti))
-            self.assertTrue(times_mw.equals(times_ti))
+            self.assertTrue(times_mw[0].equals(times_ti[0]))
 
     def test_lagged_training_data_method_consistency_datetime_index(self):
         """
@@ -958,7 +958,7 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             )
             self.assertTrue(np.allclose(X_mw, X_ti))
             self.assertTrue(np.allclose(y_mw, y_ti))
-            self.assertTrue(times_mw.equals(times_ti))
+            self.assertTrue(times_mw[0].equals(times_ti[0]))
 
     #
     #   Specified Cases Tests
@@ -1006,13 +1006,13 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             )
             # Number of observations should match number of feature times:
             self.assertEqual(X.shape[0], len(expected_times))
-            self.assertEqual(X.shape[0], len(times))
+            self.assertEqual(X.shape[0], len(times[0]))
             self.assertEqual(y.shape[0], len(expected_times))
-            self.assertEqual(y.shape[0], len(times))
+            self.assertEqual(y.shape[0], len(times[0]))
             # Check that outputs match:
             self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
             self.assertTrue(np.allclose(expected_y, y[:, :, 0]))
-            self.assertTrue(expected_times.equals(times))
+            self.assertTrue(expected_times.equals(times[0]))
 
     def test_lagged_training_data_single_lag_single_component_same_series_datetime_idx(
         self,
@@ -1056,13 +1056,13 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             )
             # Number of observations should match number of feature times:
             self.assertEqual(X.shape[0], len(expected_times))
-            self.assertEqual(X.shape[0], len(times))
+            self.assertEqual(X.shape[0], len(times[0]))
             self.assertEqual(y.shape[0], len(expected_times))
-            self.assertEqual(y.shape[0], len(times))
+            self.assertEqual(y.shape[0], len(times[0]))
             # Check that outputs match:
             self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
             self.assertTrue(np.allclose(expected_y, y[:, :, 0]))
-            self.assertTrue(expected_times.equals(times))
+            self.assertTrue(expected_times.equals(times[0]))
 
     def test_lagged_training_data_extend_past_and_future_covariates_range_idx(self):
         """
@@ -1110,7 +1110,7 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
                 max_samples_per_ts=max_samples_per_ts,
                 use_moving_windows=use_moving_windows,
             )
-            self.assertEqual(times[0], target.end_time())
+            self.assertEqual(times[0][0], target.end_time())
             self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
             self.assertTrue(np.allclose(expected_y, y[:, :, 0]))
 
@@ -1175,7 +1175,7 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
                 max_samples_per_ts=max_samples_per_ts,
                 use_moving_windows=use_moving_windows,
             )
-            self.assertEqual(times[0], target.end_time())
+            self.assertEqual(times[0][0], target.end_time())
             self.assertTrue(np.allclose(expected_X, X[:, :, 0]))
             self.assertTrue(np.allclose(expected_y, y[:, :, 0]))
 
@@ -1205,8 +1205,8 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             self.assertTrue(np.allclose(expected_X, X))
             self.assertTrue(np.allclose(expected_y, y))
             # Should only have one sample, generated for `t = target.end_time()`:
-            self.assertEqual(len(times), 1)
-            self.assertEqual(times[0], target.end_time())
+            self.assertEqual(len(times[0]), 1)
+            self.assertEqual(times[0][0], target.end_time())
 
     def test_lagged_training_data_single_point_datetime_idx(self):
         """
@@ -1236,8 +1236,8 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             self.assertTrue(np.allclose(expected_X, X))
             self.assertTrue(np.allclose(expected_y, y))
             # Should only have one sample, generated for `t = target.end_time()`:
-            self.assertEqual(len(times), 1)
-            self.assertEqual(times[0], target.end_time())
+            self.assertEqual(len(times[0]), 1)
+            self.assertEqual(times[0][0], target.end_time())
 
     def test_lagged_training_data_zero_lags_range_idx(self):
         """
@@ -1273,8 +1273,8 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             )
             self.assertTrue(np.allclose(expected_X, X))
             self.assertTrue(np.allclose(expected_y, y))
-            self.assertEqual(len(times), 1)
-            self.assertEqual(times[0], target.end_time())
+            self.assertEqual(len(times[0]), 1)
+            self.assertEqual(times[0][0], target.end_time())
 
     def test_lagged_training_data_zero_lags_datetime_idx(self):
         """
@@ -1312,8 +1312,8 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             )
             self.assertTrue(np.allclose(expected_X, X))
             self.assertTrue(np.allclose(expected_y, y))
-            self.assertEqual(len(times), 1)
-            self.assertEqual(times[0], target.end_time())
+            self.assertEqual(len(times[0]), 1)
+            self.assertEqual(times[0][0], target.end_time())
 
     def test_lagged_training_data_positive_lags_range_idx(self):
         """
@@ -1349,8 +1349,8 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             )
             self.assertTrue(np.allclose(expected_X, X))
             self.assertTrue(np.allclose(expected_y, y))
-            self.assertEqual(len(times), 1)
-            self.assertEqual(times[0], target.end_time())
+            self.assertEqual(len(times[0]), 1)
+            self.assertEqual(times[0][0], target.end_time())
 
     def test_lagged_training_data_positive_lags_datetime_idx(self):
         """
@@ -1388,8 +1388,100 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
             )
             self.assertTrue(np.allclose(expected_X, X))
             self.assertTrue(np.allclose(expected_y, y))
-            self.assertEqual(len(times), 1)
-            self.assertEqual(times[0], target.end_time())
+            self.assertEqual(len(times[0]), 1)
+            self.assertEqual(times[0][0], target.end_time())
+
+    def test_lagged_training_data_sequence_inputs(self):
+        """
+        Tests that `create_lagged_training_data` correctly handles being
+        passed a sequence of `TimeSeries` inputs, as opposed to individual
+        `TimeSeries`.
+        """
+        # Define two simple tabularization problems:
+        target_1 = past_1 = future_1 = linear_timeseries(start=0, end=5)
+        target_2 = past_2 = future_2 = linear_timeseries(start=6, end=11)
+        lags = lags_past = lags_future = [-1]
+        output_chunk_length = 1
+        # Expected solution:
+        expected_X_1 = np.concatenate(
+            3 * [target_1.all_values(copy=False)[:-1, :, :]], axis=1
+        )
+        expected_X_2 = np.concatenate(
+            3 * [target_2.all_values(copy=False)[:-1, :, :]], axis=1
+        )
+        expected_X = np.concatenate([expected_X_1, expected_X_2], axis=0)
+        expected_y_1 = target_1.all_values(copy=False)[1:, :, :]
+        expected_y_2 = target_2.all_values(copy=False)[1:, :, :]
+        expected_y = np.concatenate([expected_y_1, expected_y_2], axis=0)
+        expected_times_1 = target_1.time_index[1:]
+        expected_times_2 = target_2.time_index[1:]
+        # Check when `concatenate = True`:
+        X, y, times = create_lagged_training_data(
+            (target_1, target_2),
+            output_chunk_length=output_chunk_length,
+            past_covariates=(past_1, past_2),
+            future_covariates=(future_1, future_2),
+            lags=lags,
+            lags_past_covariates=lags_past,
+            lags_future_covariates=lags_future,
+        )
+        self.assertTrue(np.allclose(X, expected_X))
+        self.assertTrue(np.allclose(y, expected_y))
+        self.assertEqual(len(times), 2)
+        self.assertTrue(times[0].equals(expected_times_1))
+        self.assertTrue(times[1].equals(expected_times_2))
+        # Check when `concatenate = False`:
+        X, y, times = create_lagged_training_data(
+            (target_1, target_2),
+            output_chunk_length=output_chunk_length,
+            past_covariates=(past_1, past_2),
+            future_covariates=(future_1, future_2),
+            lags=lags,
+            lags_past_covariates=lags_past,
+            lags_future_covariates=lags_future,
+            concatenate=False,
+        )
+        self.assertEqual(len(X), 2)
+        self.assertEqual(len(y), 2)
+        self.assertTrue(np.allclose(X[0], expected_X_1))
+        self.assertTrue(np.allclose(X[1], expected_X_2))
+        self.assertTrue(np.allclose(y[0], expected_y_1))
+        self.assertTrue(np.allclose(y[1], expected_y_2))
+        self.assertEqual(len(times), 2)
+        self.assertTrue(times[0].equals(expected_times_1))
+        self.assertTrue(times[1].equals(expected_times_2))
+
+    def test_lagged_training_data_stochastic_series(self):
+        """
+        Tests that `create_lagged_training_data` is correctly vectorised
+        over the sample axes of the input `TimeSeries`.
+        """
+        # Define two simple tabularization problems:
+        target_1 = past_1 = future_1 = linear_timeseries(start=0, end=5)
+        target_2 = past_2 = future_2 = 2 * target_1
+        target = target_1.concatenate(target_2, axis=2)
+        past = past_1.concatenate(past_2, axis=2)
+        future = future_1.concatenate(future_2, axis=2)
+        lags = lags_past = lags_future = [-1]
+        output_chunk_length = 1
+        # Expected solution:
+        expected_X = np.concatenate(
+            3 * [target.all_values(copy=False)[:-1, :, :]], axis=1
+        )
+        expected_y = target.all_values(copy=False)[1:, :, :]
+        expected_times = target.time_index[1:]
+        X, y, times = create_lagged_training_data(
+            target,
+            output_chunk_length=output_chunk_length,
+            past_covariates=past,
+            future_covariates=future,
+            lags=lags,
+            lags_past_covariates=lags_past,
+            lags_future_covariates=lags_future,
+        )
+        self.assertTrue(np.allclose(X, expected_X))
+        self.assertTrue(np.allclose(y, expected_y))
+        self.assertTrue(times[0].equals(expected_times))
 
     def test_lagged_training_data_no_shared_times_error(self):
         """

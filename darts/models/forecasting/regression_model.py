@@ -324,39 +324,31 @@ class RegressionModel(GlobalForecastingModel):
         lags_past_covariates = self.lags.get("past")
         lags_future_covariates = self.lags.get("future")
 
-        # ensure list of TimeSeries format
-        if isinstance(target_series, TimeSeries):
-            target_series = [target_series]
-            past_covariates = [past_covariates] if past_covariates else None
-            future_covariates = [future_covariates] if future_covariates else None
+        features, labels, _ = create_lagged_training_data(
+            target_series=target_series,
+            output_chunk_length=self.output_chunk_length,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            lags=lags,
+            lags_past_covariates=lags_past_covariates,
+            lags_future_covariates=lags_future_covariates,
+            max_samples_per_ts=max_samples_per_ts,
+            multi_models=self.multi_models,
+            check_inputs=False,
+            concatenate=False,
+        )
 
-        training_samples, training_labels = [], []
-        for i, target in enumerate(target_series):
-            samples_i, labels_i, _ = create_lagged_training_data(
-                target_series=target,
-                output_chunk_length=self.output_chunk_length,
-                past_covariates=past_covariates[i] if past_covariates else None,
-                future_covariates=future_covariates[i] if future_covariates else None,
-                lags=lags,
-                lags_past_covariates=lags_past_covariates,
-                lags_future_covariates=lags_future_covariates,
-                max_samples_per_ts=max_samples_per_ts,
-                multi_models=self.multi_models,
-                check_inputs=False,
-            )
-            # Remove redundant sample axis:
-            samples_i = samples_i[:, :, 0]
-            labels_i = labels_i[:, :, 0]
-            training_samples.append(samples_i)
-            training_labels.append(labels_i)
+        for i, (X_i, y_i) in enumerate(zip(features, labels)):
+            features[i] = X_i[:, :, 0]
+            labels[i] = y_i[:, :, 0]
 
-        training_samples = self._add_static_covariates(
-            training_samples,
+        features = self._add_static_covariates(
+            features,
             target_series,
         )
 
-        training_samples = np.concatenate(training_samples, axis=0)
-        training_labels = np.concatenate(training_labels, axis=0)
+        training_samples = np.concatenate(features, axis=0)
+        training_labels = np.concatenate(labels, axis=0)
 
         return training_samples, training_labels
 

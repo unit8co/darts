@@ -9,14 +9,17 @@ from numpy.lib.stride_tricks import as_strided
 
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.timeseries import TimeSeries
+from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
 
+ArrayOrArraySequence = Union[np.ndarray, Sequence[np.ndarray]]
+
 
 def create_lagged_data(
-    target_series: Optional[TimeSeries] = None,
-    past_covariates: Optional[TimeSeries] = None,
-    future_covariates: Optional[TimeSeries] = None,
+    target_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+    past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+    future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     lags: Optional[Sequence[int]] = None,
     lags_past_covariates: Optional[Sequence[int]] = None,
     lags_future_covariates: Optional[Sequence[int]] = None,
@@ -26,12 +29,13 @@ def create_lagged_data(
     check_inputs: bool = True,
     use_moving_windows: bool = True,
     is_training: bool = True,
-) -> Tuple[np.ndarray, np.ndarray, pd.Index]:
+    concatenate: bool = True,
+) -> Tuple[ArrayOrArraySequence, Union[None, ArrayOrArraySequence], Sequence[pd.Index]]:
     """
     Creates the features array `X` and labels array `y` to train a lagged-variables regression model (e.g. an
     `sklearn` model) when `is_training = True`; alternatively, creates the features array `X` to produce a series
-    of prediction from an already-trained regression model when `is_training = False`. In both cases, the time index
-    values of each generated observation is also returned.
+    of prediction from an already-trained regression model when `is_training = False`. In both cases, a list of time
+    indices corresponding to each generated observation is also returned.
 
     Notes
     -----
@@ -88,26 +92,47 @@ def create_lagged_data(
         to find those times common to all three timeseries, after which the lagged features are extracted by
         offsetting the time indices of these common times by the requested lags.
     In cases where it can be validly applied, the 'moving window' method is expected to be faster than the
-    'intersecting time' method.
+    'intersecting time' method. However, in exceptional cases where only a small number of lags are being
+    extracted, but the difference between the lag values is large (e.g. `lags = [-1, -1000]`), the 'moving
+    window' method is expected to consume significantly more memory, since it extracts all of the series values
+    between the maximum and minimum lags as 'windows', before actually extracting the specific requested lag values.
 
     In order for the lagged features of a series to be added to `X`, *both* that series and the corresponding lags
     must be specified; if a series is specified without the corresponding lags, that series will be ignored and not
     added to `X`. `X` and `y` arrays are constructed independently over the samples dimension (i.e. the second axis)
     of each series.
 
+    If the provided series are stochastic (i.e. `series.n_components > 1`), then an `X` and `y` array will be
+    constructed for each sample; the arrays corresponding to each sample are concatenated togather along the `2`nd
+    axis of `X` and `y`. In other words, `create_lagged_data` is vectorised over the sample axis of the `target_series`,
+    `past_covariates`, and `future_covariates` inputs. Importantly, if stochastic series are provided, each series must
+    have the same number of samples, otherwise an error will be thrown.
+
+    Each series input (i.e. `target_series`, `past_covariates`, and `future_covariates`) can be specified either as
+    a single `TimeSeries`, or as a `Sequence` of `TimeSeries`; the specified series must all be of the same type,
+    however (i.e. either all `TimeSeries` or all `Sequence[TimeSeries]`). If `Sequence[TimeSeries]` are specified,
+    then a feature matrix `X` and labels array `y` will be constructed using the corresponding `TimeSeries` in
+    each `Sequence` (i.e. the first `TimeSeries` in each `Sequence` are used to create an `X` and `y`, then
+    the second `TimeSeries` in each `Sequence` are used to create an `X` and `y`, etc.). If `concatenate = True`,
+    these `X`'s and `y`'s will be concatenated along the `0`th axis; otherwise, a list of `X` and `y` array will
+    be returned. Note that `times` is always returned as a `Sequence[pd.Index]`, however, even when
+    `concatenate = True`.
+
     Parameters
     ----------
     target_series
         Optionally, the series for the regression model to predict. Must be specified if `is_training = True`.
+        Can be specified as either a `TimeSeries` or as a `Sequence[TimeSeries]`.
     output_chunk_length
         Optionally, the number of timesteps ahead into the future the regression model is to predict. Must
         best specified if `is_training = True`.
     past_covariates
         Optionally, the past covariates series that the regression model will use as inputs. Unlike the
-        `target_series`, `past_covariates` are *not* to be predicted by the regression model.
+        `target_series`, `past_covariates` are *not* to be predicted by the regression model. Can be
+        specified as either a `TimeSeries` or as a `Sequence[TimeSeries]`.
     future_covariates
         Optionally, the future covariates (i.e. exogenous covariates) series that the regression model will
-        use as inputs.
+        use as inputs. Can be specified as either a `TimeSeries` or as a `Sequence[TimeSeries]`.
     lags
         Optionally, the lags of the target series to be used as (auto-regressive) features. If not specified,
         auto-regressive features will *not* be added to `X`. Each lag value is assumed to be negative (e.g.
@@ -137,7 +162,8 @@ def create_lagged_data(
     use_moving_windows
         Optionally, specifies that the 'moving window' method should be used to construct `X` and `y` if all of the
         provided series are of the same frequency. If `use_moving_windows = False`, the 'time intersection' method
-        will always be used, even when all of the provided series are of the same frequency. See Notes for further
+        will always be used, even when all of the provided series are of the same frequency. In general, setting
+        to `True` results in faster tabularization at the potential cost of higher memory usage. See Notes for further
         details.
     is_training
         Optionally, specifies whether the constructed lagged data are to be used for training a regression model
@@ -146,18 +172,33 @@ def create_lagged_data(
         the `multi_models` input is utilised, and a label array `y` is returned. Conversely, if `is_training = False`,
         then `target_series` and `output_chunk_length` do not need to be specified, the `multi_models` input is ignored,
         and the returned `y` value is `None`.
+    concatenate
+        Optionally, specifies that `X` and `y` should both be returned as single `np.ndarray`s, instead of as
+        a `Sequence[np.ndarray]`. If each series input is specified as a `Sequence[TimeSeries]` and
+        `concatenate = False`, `X` and `y` will be lists whose `i`th element corresponds to the feature matrix or label
+        array formed by the `i`th `TimeSeries` in each `Sequence[TimeSeries]` input. Conversely, if `concatenate = True`
+        when `Sequence[TimeSeries]` are provided, then `X` and `y` will be arrays created by concatenating all of the
+        feature/label arrays formed by each `TimeSeries` along the `0`th axis. Note that `times` is still returned as
+        `Sequence[pd.Index]`, even when `concatenate = True`.
 
     Returns
     -------
     X
-        The constructed features array, with shape `(n_observations, n_lagged_features, n_samples)`.
+        The constructed features array(s), with shape `(n_observations, n_lagged_features, n_samples)`.
+        If the series inputs were specified as `Sequence[TimeSeries]` and `concatenate = False`, then `X`
+        is returned as a `Sequence[np.array]`; otherwise, `X` is returned as a single `np.array`.
     y
-        The constructed labels array; if `is_training = False`, `None` is returned in lieu of an array.
-        If an array is returned and `multi_models = True`, then `y` is a
-        `(n_observations, output_chunk_length, n_samples)`-shaped array; conversely, if `multi_models =  False`,
-        then `y` is a `(n_observations, 1, n_samples)`-shaped array.
+        The constructed labels array. If `multi_models = True`, then `y` is a
+        `(n_observations, output_chunk_length, n_samples)`-shaped array; conversely, if
+        `multi_models =  False`, then `y` is a `(n_observations, 1, n_samples)`-shaped array.
+        If the series inputs were specified as `Sequence[TimeSeries]` and `concatenate = False`, then `y`
+        is returned as a `Sequence[np.array]`; otherwise, `y` is returned as a single `np.array`.
     times
-        The `time_index` of each observation in `X` and `y`.
+        The `time_index` of each observation in `X` and `y`, returned as a `Sequence` of `pd.Index`es.
+        If the series inputs were specified as `Sequence[TimeSeries]`, then the `i`th list element
+        gives the times of those observations formed using the `i`th `TimeSeries` object in each
+        `Sequence`. Otherwise, if the series inputs were specified as `TimeSeries`, the only
+        element is the times of those observations formed from the lone `TimeSeries` inputs.
 
     Raises
     ------
@@ -184,46 +225,74 @@ def create_lagged_data(
         is_training and (target_series is None),
         "Must specify `target_series` if `is_training = True`.",
     )
+
+    # ensure list of TimeSeries format
+    target_series = series2seq(target_series)
+    past_covariates = series2seq(past_covariates)
+    future_covariates = series2seq(future_covariates)
+    seq_ts_lens = [
+        len(seq_ts)
+        for seq_ts in (target_series, past_covariates, future_covariates)
+        if seq_ts is not None
+    ]
+    seq_ts_lens = set(seq_ts_lens)
+    raise_if(
+        len(seq_ts_lens) > 1,
+        "Must specify the same number of `TimeSeries` for each series input.",
+    )
     if max_samples_per_ts is None:
         max_samples_per_ts = inf
-    if use_moving_windows and _all_equal_freq(
-        target_series, past_covariates, future_covariates
-    ):
-        X, y, times = _create_lagged_data_by_moving_window(
-            target_series,
-            output_chunk_length,
-            past_covariates,
-            future_covariates,
-            lags,
-            lags_past_covariates,
-            lags_future_covariates,
-            max_samples_per_ts,
-            multi_models,
-            check_inputs,
-            is_training,
-        )
-    else:
-        X, y, times = _create_lagged_data_by_intersecting_times(
-            target_series,
-            output_chunk_length,
-            past_covariates,
-            future_covariates,
-            lags,
-            lags_past_covariates,
-            lags_future_covariates,
-            max_samples_per_ts,
-            multi_models,
-            check_inputs,
-            is_training,
-        )
+    X, y, times = [], [], []
+    for i in range(max(seq_ts_lens)):
+        target_i = target_series[i] if target_series else None
+        past_i = past_covariates[i] if past_covariates else None
+        future_i = future_covariates[i] if future_covariates else None
+        if use_moving_windows and _all_equal_freq(target_i, past_i, future_i):
+            X_i, y_i, times_i = _create_lagged_data_by_moving_window(
+                target_i,
+                output_chunk_length,
+                past_i,
+                future_i,
+                lags,
+                lags_past_covariates,
+                lags_future_covariates,
+                max_samples_per_ts,
+                multi_models,
+                check_inputs,
+                is_training,
+            )
+        else:
+            X_i, y_i, times_i = _create_lagged_data_by_intersecting_times(
+                target_i,
+                output_chunk_length,
+                past_i,
+                future_i,
+                lags,
+                lags_past_covariates,
+                lags_future_covariates,
+                max_samples_per_ts,
+                multi_models,
+                check_inputs,
+                is_training,
+            )
+        X.append(X_i)
+        y.append(y_i)
+        times.append(times_i)
+
+    if concatenate:
+        X = np.concatenate(X, axis=0)
+    if not is_training:
+        y = None
+    elif concatenate:
+        y = np.concatenate(y, axis=0)
     return X, y, times
 
 
 def create_lagged_training_data(
-    target_series: TimeSeries,
+    target_series: Union[TimeSeries, Sequence[TimeSeries]],
     output_chunk_length: int,
-    past_covariates: Optional[TimeSeries] = None,
-    future_covariates: Optional[TimeSeries] = None,
+    past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+    future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     lags: Optional[Sequence[int]] = None,
     lags_past_covariates: Optional[Sequence[int]] = None,
     lags_future_covariates: Optional[Sequence[int]] = None,
@@ -231,7 +300,8 @@ def create_lagged_training_data(
     multi_models: bool = True,
     check_inputs: bool = True,
     use_moving_windows: bool = True,
-) -> Tuple[np.ndarray, np.ndarray, pd.Index]:
+    concatenate: bool = True,
+) -> Tuple[ArrayOrArraySequence, Union[None, ArrayOrArraySequence], Sequence[pd.Index]]:
     """
     Creates the features array `X` and labels array `y` to train a lagged-variables regression model (e.g. an
     `sklearn` model); the time index values of each observation is also returned.
@@ -281,19 +351,36 @@ def create_lagged_training_data(
     use_moving_windows
         Optionally, specifies that the 'moving window' method should be used to construct `X` and `y` if all of the
         provided series are of the same frequency. If `use_moving_windows = False`, the 'time intersection' method
-        will always be used, even when all of the provided series are of the same frequency. See Notes for further
+        will always be used, even when all of the provided series are of the same frequency. In general, setting
+        to `True` results in faster tabularization at the potential cost of higher memory usage. See Notes for further
         details.
+    concatenate
+        Optionally, specifies that `X` and `y` should both be returned as single `np.ndarray`s, instead of as
+        a `Sequence[np.ndarray]`. If each series input is specified as a `Sequence[TimeSeries]` and
+        `concatenate = False`, `X` and `y` will be lists whose `i`th element corresponds to the feature matrix or label
+        array formed by the `i`th `TimeSeries` in each `Sequence[TimeSeries]` input. Conversely, if `concatenate = True`
+        when `Sequence[TimeSeries]` are provided, then `X` and `y` will be arrays created by concatenating all of the
+        feature/label arrays formed by each `TimeSeries` along the `0`th axis. Note that `times` is still returned as
+        `Sequence[pd.Index]`, even when `concatenate = True`.
 
     Returns
     -------
     X
-        The constructed features array, with shape `(n_observations, n_lagged_features, n_samples)`.
+        The constructed features array(s), with shape `(n_observations, n_lagged_features, n_samples)`.
+        If the series inputs were specified as `Sequence[TimeSeries]` and `concatenate = False`, then `X`
+        is returned as a `Sequence[np.array]`; otherwise, `X` is returned as a single `np.array`.
     y
         The constructed labels array. If `multi_models = True`, then `y` is a
         `(n_observations, output_chunk_length, n_samples)`-shaped array; conversely, if
         `multi_models =  False`, then `y` is a `(n_observations, 1, n_samples)`-shaped array.
+        If the series inputs were specified as `Sequence[TimeSeries]` and `concatenate = False`, then `y`
+        is returned as a `Sequence[np.array]`; otherwise, `y` is returned as a single `np.array`.
     times
-        The `time_index` of each observation in `X` and `y`.
+        The `time_index` of each observation in `X` and `y`, returned as a `Sequence` of `pd.Index`es.
+        If the series inputs were specified as `Sequence[TimeSeries]`, then the `i`th list element
+        gives the times of those observations formed using the `i`th `TimeSeries` object in each
+        `Sequence`. Otherwise, if the series inputs were specified as `TimeSeries`, the only
+        element is the times of those observations formed from the lone `TimeSeries` inputs.
 
     Raises
     ------
@@ -321,20 +408,22 @@ def create_lagged_training_data(
         check_inputs=check_inputs,
         use_moving_windows=use_moving_windows,
         is_training=True,
+        concatenate=concatenate,
     )
 
 
 def create_lagged_prediction_data(
-    target_series: Optional[TimeSeries] = None,
-    past_covariates: Optional[TimeSeries] = None,
-    future_covariates: Optional[TimeSeries] = None,
+    target_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+    past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+    future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     lags: Optional[Sequence[int]] = None,
     lags_past_covariates: Optional[Sequence[int]] = None,
     lags_future_covariates: Optional[Sequence[int]] = None,
     max_samples_per_ts: Optional[int] = None,
     check_inputs: bool = True,
     use_moving_windows: bool = True,
-) -> Tuple[np.ndarray, pd.Index]:
+    concatenate: bool = True,
+) -> Tuple[ArrayOrArraySequence, Union[None, ArrayOrArraySequence], Sequence[pd.Index]]:
     """
     Creates the features array `X` to produce a series of prediction from an already-trained regression model; the
     time index values of each observation is also returned.
@@ -378,15 +467,30 @@ def create_lagged_prediction_data(
     use_moving_windows
         Optionally, specifies that the 'moving window' method should be used to construct `X` and `y` if all of the
         provided series are of the same frequency. If `use_moving_windows = False`, the 'time intersection' method
-        will always be used, even when all of the provided series are of the same frequency. See Notes for further
+        will always be used, even when all of the provided series are of the same frequency. In general, setting
+        to `True` results in faster tabularization at the potential cost of higher memory usage. See Notes for further
         details.
+    concatenate
+        Optionally, specifies that `X` should be returned as a single `np.ndarray`, instead of as a
+        `Sequence[np.ndarray]`. If each series input is specified as a `Sequence[TimeSeries]` and `concatenate = False`,
+        `X` will be a list whose `i`th element corresponds to the feature matrix or label array formed by the `i`th
+        `TimeSeries` in each `Sequence[TimeSeries]` input. Conversely, if `concatenate = True` when
+        `Sequence[TimeSeries]` are provided, then `X` will be an array created by concatenating all of the feature
+        arrays formed by each `TimeSeries` along the `0`th axis. Note that `times` is still returned as
+        `Sequence[pd.Index]`, even when `concatenate = True`.
 
     Returns
     -------
     X
-        The constructed features array, with shape `(n_observations, n_lagged_features, n_samples)`.
+        The constructed features array(s), with shape `(n_observations, n_lagged_features, n_samples)`.
+        If the series inputs were specified as `Sequence[TimeSeries]` and `concatenate = False`, then `X`
+        is returned as a `Sequence[np.array]`; otherwise, `X` is returned as a single `np.array`.
     times
-        The `time_index` of each observation in `X`.
+        The `time_index` of each observation in `X` and `y`, returned as a `Sequence` of `pd.Index`es.
+        If the series inputs were specified as `Sequence[TimeSeries]`, then the `i`th list element
+        gives the times of those observations formed using the `i`th `TimeSeries` object in each
+        `Sequence`. Otherwise, if the series inputs were specified as `TimeSeries`, the only
+        element is the times of those observations formed from the lone `TimeSeries` inputs.
 
     Raises
     ------
@@ -411,6 +515,7 @@ def create_lagged_prediction_data(
         check_inputs=check_inputs,
         use_moving_windows=use_moving_windows,
         is_training=False,
+        concatenate=concatenate,
     )
     return X, times
 

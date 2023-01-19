@@ -23,7 +23,6 @@ from enum import Enum
 from typing import Dict, NewType, Optional, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import shap
 from numpy import integer
@@ -666,28 +665,16 @@ class _RegressionShapExplainers:
         lags_past_covariates_list = self.model.lags.get("past")
         lags_future_covariates_list = self.model.lags.get("future")
 
-        # ensure list of TimeSeries format
-        if isinstance(target_series, TimeSeries):
-            target_series = [target_series]
-            past_covariates = [past_covariates] if past_covariates else None
-            future_covariates = [future_covariates] if future_covariates else None
-        X, indexes = [], []
-        for i, target in enumerate(target_series):
-            X_i, indexes_i = create_lagged_prediction_data(
-                target_series=target,
-                past_covariates=past_covariates[i] if past_covariates else None,
-                future_covariates=future_covariates[i] if future_covariates else None,
-                lags=lags_list,
-                lags_past_covariates=lags_past_covariates_list
-                if past_covariates
-                else None,
-                lags_future_covariates=lags_future_covariates_list
-                if future_covariates
-                else None,
-            )
-            X.append(X_i[:, :, 0])
-            indexes.append(indexes_i)
-        X = np.concatenate(X, axis=0)
+        X, indexes = create_lagged_prediction_data(
+            target_series=target_series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            lags=lags_list,
+            lags_past_covariates=lags_past_covariates_list if past_covariates else None,
+            lags_future_covariates=lags_future_covariates_list
+            if future_covariates
+            else None,
+        )
 
         if train:
             X = pd.DataFrame(X)
