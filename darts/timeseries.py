@@ -37,7 +37,7 @@ import re
 from collections import defaultdict
 from copy import deepcopy
 from inspect import signature
-from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -47,6 +47,11 @@ from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
 
 from .logging import get_logger, raise_if, raise_if_not, raise_log
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 logger = get_logger(__name__)
 
@@ -697,7 +702,7 @@ class TimeSeries:
         fill_missing_dates: Optional[bool] = False,
         freq: Optional[str] = None,
         fillna_value: Optional[float] = None,
-    ) -> Union["TimeSeries", List["TimeSeries"]]:
+    ) -> List["TimeSeries"]:
         """
         Build a list of TimeSeries instances grouped by a selection of columns from a DataFrame.
         One column (or the DataFrame index) has to represent the time,
@@ -741,7 +746,7 @@ class TimeSeries:
 
         Returns
         -------
-        TimeSeries
+        List[TimeSeries]
             A list containing a univariate or multivariate deterministic TimeSeries per group in the DataFrame.
         """
         group_cols = [group_cols] if not isinstance(group_cols, list) else group_cols
@@ -2267,7 +2272,7 @@ class TimeSeries:
         self._raise_if_not_within(start_ts)
 
         if isinstance(start_ts, (int, np.int64)):
-            return self[start_ts : start_ts + n]
+            return self[pd.RangeIndex(start=start_ts, stop=start_ts + n)]
         elif isinstance(start_ts, pd.Timestamp):
             # get first timestamp greater or equal to start_ts
             tss = self._get_first_timestamp_after(start_ts)
@@ -2303,7 +2308,7 @@ class TimeSeries:
         self._raise_if_not_within(end_ts)
 
         if isinstance(end_ts, (int, np.int64)):
-            return self[end_ts - n + 1 : end_ts + 1]
+            return self[pd.RangeIndex(start=end_ts - n + 1, stop=end_ts + 1)]
         elif isinstance(end_ts, pd.Timestamp):
             # get last timestamp smaller or equal to start_ts
             tss = self._get_last_timestamp_before(end_ts)

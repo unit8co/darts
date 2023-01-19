@@ -32,6 +32,7 @@ from darts.utils import timeseries_generation as tg
 
 # from sklearn.multioutput import MultiOutputRegressor
 from darts.utils.multioutput import MultiOutputRegressor
+from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
 
@@ -640,80 +641,278 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     [44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0],
                 )
 
+    def helper_get_expected_shape_static_covs(
+        self,
+        reg_model,
+        target_series,
+        past_covs,
+        future_covs,
+        target_lag,
+        past_covs_lag,
+        future_covs_lag,
+    ):
+
+        target_series = series2seq(target_series)
+        past_covs = series2seq(past_covs)
+        future_covs = series2seq(future_covs)
+        scovs_set = []
+        for s in target_series:
+            if s.has_static_covariates:
+                scovs_set.extend(s.static_covariates.columns.to_list())
+
+        all_target_width = target_series[0].n_components
+        scovs_width = (
+            len(set(scovs_set)) if scovs_set is not None else 0
+        ) * all_target_width
+        all_past_width = past_covs[0].n_components if past_covs is not None else 0
+        all_future_width = future_covs[0].n_components if future_covs is not None else 0
+
+        (
+            min_target_lag,
+            output_chunk_length,
+            min_past_cov_lag,
+            min_future_cov_lag,
+            max_future_cov_lag,
+        ) = reg_model.extreme_lags
+        max_past_lag = max(
+            [
+                abs(v)
+                for v in [min_target_lag, min_past_cov_lag, min_future_cov_lag]
+                if v is not None
+            ]
+        )
+
+        len_target_features = [
+            len(ts) - max_past_lag - (output_chunk_length - 1) for ts in target_series
+        ]
+        len_past_cov_features = (
+            [(len(ps) - max_past_lag) for ps in past_covs]
+            if past_covs is not None
+            else None
+        )
+        len_future_cov_features = (
+            [
+                (
+                    len(fs)
+                    - max_past_lag
+                    - (max_future_cov_lag if max_future_cov_lag is not None else 0)
+                )
+                for fs in future_covs
+            ]
+            if future_covs is not None
+            else None
+        )
+
+        features_len = [
+            min(
+                [
+                    len_target_features[idx],
+                    len_past_cov_features[idx]
+                    if len_past_cov_features is not None
+                    else float("inf"),
+                    len_future_cov_features[idx]
+                    if len_future_cov_features is not None
+                    else float("inf"),
+                ]
+            )
+            for idx in range(len(target_series))
+        ]
+
+        target_feature_width = all_target_width * len(target_lag) + scovs_width
+        past_cov_feature_width = (
+            (all_past_width * len(past_covs_lag)) if past_covs is not None else 0
+        )
+        future_cov_feature_width = (
+            (all_future_width * len(future_covs_lag)) if future_covs is not None else 0
+        )
+
+        expected_width = (
+            target_feature_width + past_cov_feature_width + future_cov_feature_width
+        )
+
+        expected_height = sum(features_len)
+
+        return expected_height, expected_width
+
     def test_static_covs_addition(self):
 
         static_covs1 = pd.DataFrame(
             data={
-                "cont": [0.1, 0.2, 0.3],
-                "cat": ["a", "b", "c"],  # should lead to 9 one-hot encoded columns
+                "cont1": [0.1, 0.2, 0.3],
+                "cat1": ["a", "b", "c"],  # should lead to 9 one-hot encoded columns
             }
-        ).astype(dtype={"cat": "category"})
+        ).astype(dtype={"cat1": "category"})
 
-        static_covs2 = pd.DataFrame(data={"cont": [0.1, 0.2, 0.3]})
+        static_covs2 = pd.DataFrame(data={"cont2": [10, 20, 30]})
+        static_covs3 = pd.DataFrame(data={"cont3": [1, 2, 3]})
 
         # default transformer_num = MinMaxScaler()
         scaler = StaticCovariatesTransformer(transformer_cat=OneHotEncoder())
-        ref_series = tg.linear_timeseries(length=10)
+        ref_series1 = tg.linear_timeseries(length=10)
+        ref_series2 = tg.linear_timeseries(length=17)
+        ref_series3 = tg.linear_timeseries(length=23)
+
         series1 = TimeSeries.from_times_and_values(
-            times=ref_series.time_index,
-            values=np.concatenate([ref_series.values()] * 3, axis=1),
+            times=ref_series1.time_index,
+            values=np.concatenate([ref_series1.values()] * 3, axis=1),
             columns=["comp1", "comp2", "comp3"],
             static_covariates=static_covs1,
         )
         series1 = scaler.fit_transform(series1)
 
         series2 = TimeSeries.from_times_and_values(
-            times=ref_series.time_index,
-            values=np.concatenate([ref_series.values() * 100] * 3, axis=1),
+            times=ref_series2.time_index,
+            values=np.concatenate([ref_series2.values() * 10] * 3, axis=1),
             columns=["comp1", "comp2", "comp3"],
             static_covariates=static_covs2,
         )
 
         series3 = TimeSeries.from_times_and_values(
-            times=ref_series.time_index,
-            values=np.concatenate([ref_series.values() * 200] * 3, axis=1),
+            times=ref_series3.time_index,
+            values=np.concatenate([ref_series3.values() * 30] * 3, axis=1),
+            columns=["comp1", "comp2", "comp3"],
+            static_covariates=static_covs3,
+        )
+
+        series_no_statics = TimeSeries.from_times_and_values(
+            times=ref_series1.time_index,
+            values=np.concatenate([ref_series1.values()] * 3, axis=1),
             columns=["comp1", "comp2", "comp3"],
         )
 
-        series4 = TimeSeries.from_times_and_values(
-            times=ref_series.time_index,
-            values=np.concatenate([ref_series.values()] * 3, axis=1),
-            columns=["comp1", "comp2", "comp3"],
+        # no static covs - one series
+        target_series = series_no_statics
+        past_covs = None
+        future_covs = None
+        target_lag = [-1]
+        past_covs_lag = None
+        future_covs_lag = None
+        output_chunk_length = 1
+
+        reg_model = RegressionModel(
+            lags=target_lag,
+            lags_past_covariates=past_covs_lag,
+            lags_future_covariates=future_covs_lag,
+            output_chunk_length=output_chunk_length,
         )
 
-        reg_model = RegressionModel(lags=1, output_chunk_length=1)
-        all_series = [series1, series2, series3]
-        max_samples = 5
-        all_series_width = series1.n_components
-        max_scovs_width = max(
-            s.static_covariates_values(copy=False).reshape(1, -1).shape[1]
-            for s in all_series
-            if s.has_static_covariates
+        expected_height, expected_width = self.helper_get_expected_shape_static_covs(
+            reg_model,
+            target_series,
+            past_covs,
+            future_covs,
+            target_lag,
+            past_covs_lag,
+            future_covs_lag,
         )
 
-        # no static covs
         features = reg_model._create_lagged_data(
-            series3, None, None, max_samples_per_ts=max_samples
+            target_series, past_covs, future_covs, max_samples_per_ts=None
         )[0]
-        self.assertEqual(features.shape, (5, 3))
+        self.assertEqual(features.shape, (expected_height, expected_width))
 
         # static covs with different dims
-        features = reg_model._create_lagged_data(
-            all_series, None, None, max_samples_per_ts=max_samples
-        )[0]
-        self.assertEqual(
-            features.shape,
-            (max_samples * len(all_series), all_series_width + max_scovs_width),
+        target_series = [series1, series2, series3]
+        past_covs = None
+        future_covs = None
+        target_lag = [-1]
+        past_covs_lag = None
+        future_covs_lag = None
+        output_chunk_length = 1
+
+        reg_model = RegressionModel(
+            lags=target_lag,
+            lags_past_covariates=past_covs_lag,
+            lags_future_covariates=future_covs_lag,
+            output_chunk_length=output_chunk_length,
         )
 
+        expected_height, expected_width = self.helper_get_expected_shape_static_covs(
+            reg_model,
+            target_series,
+            past_covs,
+            future_covs,
+            target_lag,
+            past_covs_lag,
+            future_covs_lag,
+        )
+
+        features = reg_model._create_lagged_data(
+            target_series, past_covs, future_covs, max_samples_per_ts=None
+        )[0]
+        self.assertEqual(features.shape, (expected_height, expected_width))
+
         # no static covs at prediction but static covs at training
-        reg_model.fit(all_series)
+        reg_model.fit(target_series)
         pred_features = reg_model._create_lagged_data(
-            series4, None, None, max_samples_per_ts=1
+            series_no_statics, past_covs, future_covs, max_samples_per_ts=1
         )[
             0
         ]  # simulates features prep at prediction time
-        self.assertEqual(pred_features.shape, (1, all_series_width + max_scovs_width))
+        self.assertEqual(pred_features.shape, (1, expected_width))
+
+        # different sizes of past and future covariates + different lenghts of target series
+        target_lag = [-2, -1]
+        past_covs_lag = [-3]
+        future_covs_lag = [-1, 3]
+        output_chunk_length = 4
+
+        target_series = [series1, series2, series3]
+        past_covs = [series2, series1, series3]
+        future_covs = [series3, series3, series1]
+
+        reg_model = RegressionModel(
+            lags=target_lag,
+            lags_past_covariates=past_covs_lag,
+            lags_future_covariates=future_covs_lag,
+            output_chunk_length=output_chunk_length,
+        )
+
+        expected_height, expected_width = self.helper_get_expected_shape_static_covs(
+            reg_model,
+            target_series,
+            past_covs,
+            future_covs,
+            target_lag,
+            past_covs_lag,
+            future_covs_lag,
+        )
+
+        features = reg_model._create_lagged_data(
+            target_series, past_covs, future_covs, max_samples_per_ts=None
+        )[0]
+        self.assertEqual(features.shape, (expected_height, expected_width))
+
+        # outptut_chunk_length < max_future_cov_lag and len(target_series) = len(future_covs)
+        target_lag = [-1]
+        past_covs_lag = None
+        future_covs_lag = [-1, 3]
+        output_chunk_length = 2
+
+        target_series = [series1, series2, series3]
+        past_covs = None
+        future_covs = [series1, series2, series3]
+
+        reg_model = RegressionModel(
+            lags=target_lag,
+            lags_past_covariates=past_covs_lag,
+            lags_future_covariates=future_covs_lag,
+            output_chunk_length=output_chunk_length,
+        )
+
+        expected_height, expected_width = self.helper_get_expected_shape_static_covs(
+            reg_model,
+            target_series,
+            past_covs,
+            future_covs,
+            target_lag,
+            past_covs_lag,
+            future_covs_lag,
+        )
+        features = reg_model._create_lagged_data(
+            target_series, past_covs, future_covs, max_samples_per_ts=None
+        )[0]
+        self.assertEqual(features.shape, (expected_height, expected_width))
 
     def test_static_cov_accuracy(self):
         # based on : https://unit8co.github.io/darts/examples/15-static-covariates.html
@@ -741,29 +940,100 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
         # categorical static covs
         sine_series_st_cat = sine_series.with_static_covariates(
-            pd.DataFrame(data={"curve_type": ["smooth"]})
+            pd.DataFrame(data={"curve_type": [0]})
         )
         irregular_series_st_cat = irregular_series.with_static_covariates(
-            pd.DataFrame(data={"curve_type": ["non_smooth"]})
+            pd.DataFrame(data={"curve_type": [1]})
         )
         train_series_static_cov = [sine_series_st_cat, irregular_series_st_cat]
 
-        scaler = StaticCovariatesTransformer(transformer_cat=OneHotEncoder())
-        train_series_static_cov = scaler.fit_transform(train_series_static_cov)
-
         # when
+        fitting_series = [series[:60] for series in train_series_no_cov]
         model_no_static_cov = RandomForest(lags=period // 2, bootstrap=False)
-        model_no_static_cov.fit(train_series_no_cov)
-        predict_series_no_cov = [series[:60] for series in train_series_no_cov]
+        model_no_static_cov.fit(fitting_series)
         pred_no_static_cov = model_no_static_cov.predict(
-            n=int(period / 2), series=predict_series_no_cov
+            n=period, series=fitting_series
         )
 
+        fitting_series = [series[:60] for series in train_series_static_cov]
         model_static_cov = RandomForest(lags=period // 2, bootstrap=False)
-        model_static_cov.fit(train_series_static_cov)
-        predict_series_static_cov = [series[:60] for series in train_series_static_cov]
+        model_static_cov.fit(fitting_series)
+        pred_static_cov = model_static_cov.predict(n=period, series=fitting_series)
+
+        # then
+        for series, ps_no_st, ps_st_cat in zip(
+            train_series_static_cov, pred_no_static_cov, pred_static_cov
+        ):
+            rmses = [rmse(series, ps) for ps in [ps_no_st, ps_st_cat]]
+
+            self.assertLess(rmses[1], rmses[0])
+
+        # given series of different sizes in input
+        train_series_no_cov = [sine_series[period:], irregular_series]
+        train_series_static_cov = [sine_series_st_cat[period:], irregular_series_st_cat]
+
+        fitting_series = [
+            train_series_no_cov[0][: (60 - period)],
+            train_series_no_cov[1][:60],
+        ]
+        model_no_static_cov = RandomForest(lags=period // 2, bootstrap=False)
+        model_no_static_cov.fit(fitting_series)
+        pred_no_static_cov = model_no_static_cov.predict(
+            n=period, series=fitting_series
+        )
+
+        fitting_series = [
+            train_series_static_cov[0][: (60 - period)],
+            train_series_static_cov[1][:60],
+        ]
+        model_static_cov = RandomForest(lags=period // 2, bootstrap=False)
+        model_static_cov.fit(fitting_series)
+        pred_static_cov = model_static_cov.predict(n=period, series=fitting_series)
+
+        # then
+        for series, ps_no_st, ps_st_cat in zip(
+            train_series_static_cov, pred_no_static_cov, pred_static_cov
+        ):
+            rmses = [rmse(series, ps) for ps in [ps_no_st, ps_st_cat]]
+
+            self.assertLess(rmses[1], rmses[0])
+
+        # different series length and different number of static covs
+        # when
+        alpha = 0.5
+        linear_vals = np.expand_dims(np.linspace(1, -1, num=19) * alpha ** (0.5), -1)
+
+        sine_vals[21:40] = linear_vals
+        sine_vals[61:80] = linear_vals
+        irregular_series = TimeSeries.from_times_and_values(
+            values=sine_vals, times=sine_series.time_index, columns=["irregular"]
+        )
+
+        train_series_no_cov = [sine_series[period:], irregular_series]
+
+        irregular_series_st_cat = irregular_series.with_static_covariates(
+            pd.DataFrame(data={"alpha": [0.5]})
+        )
+        train_series_static_cov = [sine_series[period:], irregular_series_st_cat]
+
+        fitting_series = [
+            train_series_no_cov[0][: (60 - period)],
+            train_series_no_cov[1][:60],
+        ]
+        model_no_static_cov = RandomForest(lags=period // 2, bootstrap=False)
+        model_no_static_cov.fit(fitting_series)
+        pred_no_static_cov = model_no_static_cov.predict(
+            n=period, series=fitting_series
+        )
+
+        fitting_series = [
+            train_series_static_cov[0][: (60 - period)],
+            train_series_static_cov[1][:60],
+        ]
+        model_static_cov = RandomForest(lags=period // 2, bootstrap=False)
+        model_static_cov.fit(fitting_series)
         pred_static_cov = model_static_cov.predict(
-            n=int(period / 2), series=predict_series_static_cov
+            n=int(period / 2), series=fitting_series
         )
 
         # then
