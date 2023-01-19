@@ -150,7 +150,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
             -1
         ]  # By convention target is always the last element returned by datasets
         loss = self._compute_loss(output, target)
-        self.log("train_loss", loss, batch_size=train_batch[0].shape[0], prog_bar=True, rank_zero_only=True)
+        self.log("train_loss", loss, batch_size=train_batch[0].shape[0], prog_bar=True, sync_dist=True)
         self._calculate_metrics(output, target, self.train_metrics)
         return loss
 
@@ -159,7 +159,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         output = self._produce_train_output(val_batch[:-1])
         target = val_batch[-1]
         loss = self._compute_loss(output, target)
-        self.log("val_loss", loss, batch_size=val_batch[0].shape[0], prog_bar=True, rank_zero_only=True)
+        self.log("val_loss", loss, batch_size=val_batch[0].shape[0], prog_bar=True, sync_dist=True)
         self._calculate_metrics(output, target, self.val_metrics)
         return loss
 
