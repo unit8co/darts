@@ -1067,7 +1067,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             train_series_no_cov[0][: (60 - period)],
             train_series_no_cov[1][:60],
         ]
-        model_no_static_cov = RandomForest(lags=period // 2, bootstrap=True)
+        model_no_static_cov = RandomForest(lags=period // 2, bootstrap=False)
         model_no_static_cov.fit(fitting_series)
         pred_no_static_cov = model_no_static_cov.predict(
             n=period, series=fitting_series
