@@ -334,7 +334,7 @@ class FutureCovariatesIndexGenerator(CovariatesIndexGenerator):
         #     target index; always True for all models except RegressionModels.
         # case 3
         #     covariate lags were given and (shift_start <= 0 or shift_end <= 0): historic part of future covariates.
-        #     if shift_end < there will only be the historic part of future covariates.
+        #     if shift_end < 0 there will only be the historic part of future covariates.
         #     If shift_start <= 0 and abs(shift_start - 1) > input_chunk_length: we need to add indices before the
         #     beginning of the target series; can only be True for RegressionModels.
         # case 4
@@ -818,8 +818,12 @@ def _generate_train_idx(target, steps_ahead_start, steps_ahead_end) -> Supported
     )
 
     # if `steps_ahead_start >= 0` or `steps_ahead_end <= 0` we must extract a slice of the target series index
-    center_start = None if steps_ahead_start < 0 else steps_ahead_start
-    center_end = None if steps_ahead_end > 0 else steps_ahead_end
+    center_start = steps_ahead_start if steps_ahead_start >= 0 else None
+    center_end = (
+        steps_ahead_end
+        if steps_ahead_end is not None and steps_ahead_end <= 0
+        else None
+    )
     idx_center = target.time_index[center_start:center_end]
 
     # case 3
@@ -829,7 +833,7 @@ def _generate_train_idx(target, steps_ahead_start, steps_ahead_end) -> Supported
             length=abs(steps_ahead_end),
             freq=target.freq,
         )
-        if steps_ahead_end > 0
+        if steps_ahead_end is not None and steps_ahead_end > 0
         else target.time_index.__class__([])
     )
 
