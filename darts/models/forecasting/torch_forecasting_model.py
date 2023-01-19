@@ -894,8 +894,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
         )
 
-        # if user wants to train the model for more epochs, ignore the n_epochs parameter
-        train_num_epochs = epochs if epochs > 0 else self.n_epochs
+        train_num_epochs = self._get_max_number_of_epochs(epochs)
 
         # setup trainer
         self.trainer = self._setup_trainer(trainer, verbose, train_num_epochs)
@@ -913,6 +912,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # Train model
         self._train(train_loader, val_loader)
+
         return self
 
     def _train(
@@ -940,6 +940,32 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             val_dataloaders=val_loader,
             ckpt_path=ckpt_path,
         )
+
+    def _get_max_number_of_epochs(self, extra_epochs_to_train: int) -> int:
+        """
+        Returns the maximum number of epochs the model can be trained for. This is the sum of the number of epochs the
+        model has already trained + the number of epochs the model is trained for in this call to fit().
+
+        There are three cases:
+        1. The model has not been trained yet and `load_ckpt_path` is None. In this case, the maximum number of epochs
+            is the maximum of the number of (additional) epochs passed to the fit() call and the n_epochs with which
+            the model was initialized.
+        2. We are continuing training from a checkpoint. In this case, the maximum number of epochs is the number of
+            epochs passed to the fit() call + the number of epochs the model has already trained + 1. The +1 is because
+            the epoch counter starts at 0.
+        3. We are training a model that has already been trained. In this case, the maximum number of epochs is the
+            number of epochs passed to the fit() call + the number of epochs the model has already trained.
+        """
+        if self.epochs_trained == 0 and not self.load_ckpt_path:
+            train_num_epochs = max(extra_epochs_to_train, self.n_epochs)
+        elif self.epochs_trained == 0 and self.load_ckpt_path:
+            train_num_epochs = (
+                extra_epochs_to_train + torch.load(self.load_ckpt_path)["epoch"] + 1
+            )
+        else:
+            train_num_epochs = extra_epochs_to_train + self.epochs_trained
+
+        return train_num_epochs
 
     @random_method
     def predict(

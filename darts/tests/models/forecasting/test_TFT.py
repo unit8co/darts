@@ -390,3 +390,31 @@ if TORCH_AVAILABLE:
                     norm_type="invalid",
                 )
                 model4.fit(series, epochs=1)
+
+        def test_resume_training_from_checkpoint(self):
+            target_multi = concatenate(
+                [tg.sine_timeseries(length=10, freq="h")] * 2, axis=1
+            )
+
+            target_multi = target_multi.with_static_covariates(
+                pd.DataFrame(
+                    [[0.0, 1.0, 0, 2], [2.0, 3.0, 1, 3]],
+                    columns=["st1", "st2", "cat1", "cat2"],
+                )
+            )
+
+            model = TFTModel(
+                input_chunk_length=3,
+                output_chunk_length=4,
+                add_encoders={"cyclic": {"future": "hour"}},
+                categorical_embedding_sizes={"cat1": 2, "cat2": (2, 2)},
+                save_checkpoints=True,
+                n_epochs=2,
+                model_name="tft_test",
+                force_reset=True,
+            )
+            model.fit(target_multi, verbose=False)
+            mod = TFTModel.load_from_checkpoint("tft_test", best=False)
+            mod.fit(target_multi, verbose=False, epochs=5)
+
+            self.assertEqual(mod._get_max_number_of_epochs(1), 8)  # 2 + 5 + 1
