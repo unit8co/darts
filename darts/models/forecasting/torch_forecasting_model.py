@@ -925,10 +925,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         file_name: str = None,
         best: bool = False,
         save_inplace: bool = False,
+        force_reset: bool = False,
         optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
         optimizer_kwargs: Optional[Dict] = None,
         lr_scheduler_cls: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
         lr_scheduler_kwargs: Optional[Dict] = None,
+        **kwargs,
     ):
         # call _get_checkpoint_fname if file_name is None
         # TODO: support for load_from_checkpoint kwargs
@@ -937,6 +939,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             work_dir=work_dir,
             file_name=file_name,
             best=best,
+            **kwargs,
         )
 
         if new_model_name is None:
@@ -954,15 +957,24 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             os.path.exists(checkpoints_folder)
             and len(glob(os.path.join(checkpoints_folder, "*"))) > 0
         )
+        raise_if(
+            save_inplace and force_reset,
+            "For safety reasons, `save_inplace` and `force_reset` cannot be both True to prevent "
+            " deletion of the loaded checkpoint.",
+            logger,
+        )
         if checkpoint_exists and model.save_checkpoints:
-            raise_if_not(
-                save_inplace,
-                f"Some model data already exists for `model_name` '{model.model_name}'. Either provide a"
-                f" `new_model_name` to save the checkpoints in a new folder or set `save_inplace`"
-                f" to True to save them in the existing folder (calling `fit` on the loaded model"
-                f" will likely overwrite the loaded checkpoint).",
-                logger,
-            )
+            if force_reset:
+                model.reset_model()
+            else:
+                raise_if_not(
+                    save_inplace,
+                    f"Some model data already exists for `model_name` '{model.model_name}'. Either provide a"
+                    f" `new_model_name` to save the checkpoints in a new folder or set `save_inplace`"
+                    f" to True to save them in the existing folder (calling `fit` on the loaded model"
+                    f" will likely overwrite the loaded checkpoint).",
+                    logger,
+                )
         elif model.save_checkpoints:
             model._create_save_dirs()
         else:
