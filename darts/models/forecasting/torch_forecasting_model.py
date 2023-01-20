@@ -968,14 +968,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         else:
             pass
 
-        # save the initialized TorchForecastingModel as PyTorch-Lightning only saves module checkpoints
-        # to allow finetuning of a fine-tuned model...
-        model.save(
-            os.path.join(
-                _get_runs_folder(model.work_dir, model.model_name), INIT_MODEL_NAME
-            )
-        )
-
         # TODO: avoid user warning about dirpath change
         checkpoint_callback = pl.callbacks.ModelCheckpoint(
             dirpath=checkpoints_folder,
@@ -1053,6 +1045,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         model.model_params["lr_scheduler_kwargs"] = model.model.lr_scheduler_kwargs
         model.pl_module_params["lr_scheduler_cls"] = model.model.lr_scheduler_cls
         model.pl_module_params["lr_scheduler_kwargs"] = model.model.lr_scheduler_kwargs
+
+        # save the initialized TorchForecastingModel as PyTorch-Lightning only saves module checkpoints
+        # to allow finetuning of a fine-tuned model...
+        model.save(
+            os.path.join(
+                _get_runs_folder(model.work_dir, model.model_name), INIT_MODEL_NAME
+            )
+        )
 
         new_trainer = model._init_trainer(
             model.trainer_params, model.trainer_params["max_epochs"]
