@@ -915,13 +915,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self._train(train_loader, val_loader)
         return self
 
-    @random_method
+    @staticmethod
     def fit_from_checkpoint(
-        self,
+        old_model_name: str,
+        new_model_name: str,
+        work_dir: str = None,
+        file_name: str = None,
         additional_epochs: int = 0,
         best: bool = False,
         force_reset: bool = False,
-        model_name: str = None,
+        logger: bool = False,
         optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
         optimizer_kwargs: Optional[Dict] = None,
         lr_scheduler_cls: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
@@ -929,38 +932,49 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         trainer_params: Optional[Dict] = None,
         **kwargs,
     ):
-        file_name = _get_checkpoint_fname(self.work_dir, self.model_name, best=best)
-
-        self = self.load_from_checkpoint(
-            model_name=self.model_name,
-            work_dir=self.work_dir,
+        # call _get_checkpoint_fname if file_name is None
+        # TODO: support for load_from_checkpoint kwargs
+        model = TorchForecastingModel.load_from_checkpoint(
+            model_name=old_model_name,
+            work_dir=work_dir,
             file_name=file_name,
             best=best,
         )
 
         # update the attributes depending on the model name
-        if isinstance(model_name, str):
-            self.model_name = model_name
-            self.model_params["model_name"] = model_name
+        model.model_name = new_model_name
+        model.model_params["model_name"] = new_model_name
+        if work_dir is not None and work_dir != model.work_dir:
+            model.work_dir = work_dir
 
         # checkpoint path
-        checkpoints_folder = _get_checkpoint_folder(self.work_dir, self.model_name)
+        checkpoints_folder = _get_checkpoint_folder(model.work_dir, model.model_name)
         checkpoint_exists = (
             os.path.exists(checkpoints_folder)
             and len(glob(os.path.join(checkpoints_folder, "*"))) > 0
         )
-        if checkpoint_exists and self.save_checkpoints:
+        if checkpoint_exists and model.save_checkpoints:
             raise_if_not(
                 force_reset,
-                f"Some model data already exists for `model_name` '{self.model_name}'. Either load model to continue "
+                f"Some model data already exists for `model_name` '{model.model_name}'. Either load model to continue "
                 f"training or change `model_name` to save the fine-tuned weights in another folder.",
                 logger,
             )
-            self.reset_model()
-        elif self.save_checkpoints:
-            self._create_save_dirs()
+            model.reset_model()
+        elif model.save_checkpoints:
+            model._create_save_dirs()
         else:
             pass
+
+        # save the initialized TorchForecastingModel as PyTorch-Lightning only saves module checkpoints
+        # to allow finetuning of a fine-tuned model...
+        model.save(
+            os.path.join(
+                _get_runs_folder(model.work_dir, model.model_name), INIT_MODEL_NAME
+            )
+        )
+
+        print()
 
         # TODO: avoid user warning about dirpath change
         checkpoint_callback = pl.callbacks.ModelCheckpoint(
@@ -972,28 +986,32 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         checkpoint_callback.CHECKPOINT_NAME_LAST = "last-{epoch}"
 
         # logger instance
-        tb_logger = pl_loggers.TensorBoardLogger(
-            save_dir="darts_logs/", name=self.model_name, version="logs"
-        )
-        self.logger = tb_logger
-        self.trainer_params["logger"] = tb_logger
+        if logger or model.logger:
+            tb_logger = pl_loggers.TensorBoardLogger(
+                save_dir=model.work_dir, name=model.model_name, version="logs"
+            )
+            model.logger = tb_logger
+            model.trainer_params["logger"] = tb_logger
+        else:
+            model.logger = False
+            model.trainer_params["logger"] = False
 
         # update trainer
-        old_trainer_params = self.trainer_params.copy()
+        old_trainer_params = model.trainer_params.copy()
         new_max_epochs = old_trainer_params["max_epochs"] + additional_epochs
         if trainer_params is not None:
             for trainer_param in trainer_params.keys():
-                self.trainer_params[trainer_param] = trainer_params[trainer_param]
+                model.trainer_params[trainer_param] = trainer_params[trainer_param]
 
             # special parameter handling
             if "callbacks" in trainer_params.keys() and len(
                 trainer_params["callbacks"] > 0
             ):
-                self.trainer_params["callbacks"] = [
+                model.trainer_params["callbacks"] = [
                     checkpoint_callback
                 ] + trainer_params["callbacks"]
             else:
-                self.trainer_params["callbacks"] = [checkpoint_callback]
+                model.trainer_params["callbacks"] = [checkpoint_callback]
 
             if "max_epochs" in trainer_params.keys():
                 if additional_epochs != 0:
@@ -1014,51 +1032,53 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             " to train the model",
             logger,
         )
-        self.trainer_params["max_epochs"] = new_max_epochs
+        model.n_epochs = new_max_epochs
+        model.model_params["n_epochs"] = new_max_epochs
+        model.trainer_params["max_epochs"] = new_max_epochs
 
         # update optimizer
-        if optimizer_cls == self.model.optimizer_cls:
-            # using same optimizer, possibly different parameters
+        if optimizer_cls == model.model.optimizer_cls:
             if optimizer_kwargs is not None:
-                self.model.optimizer_kwargs.update(optimizer_kwargs)
+                model.model.optimizer_kwargs.update(optimizer_kwargs)
         else:
             # using different optimizer
-            self.model.optimizer_cls = optimizer_cls
-            self.model.optimizer_kwargs = (
+            model.model.optimizer_cls = optimizer_cls
+            model.model.optimizer_kwargs = (
                 dict() if optimizer_kwargs is None else optimizer_kwargs
             )
-        self.model_params["optimizer_scheduler_cls"] = self.model.optimizer_cls
-        self.model_params["optimizer_kwargs"] = self.model.optimizer_kwargs
-        self.pl_module_params["optimizer_cls"] = self.model.optimizer_cls
-        self.pl_module_params["optimizer_kwargs"] = self.model.optimizer_kwargs
+        model.model_params["optimizer_scheduler_cls"] = model.model.optimizer_cls
+        model.model_params["optimizer_kwargs"] = model.model.optimizer_kwargs
+        model.pl_module_params["optimizer_cls"] = model.model.optimizer_cls
+        model.pl_module_params["optimizer_kwargs"] = model.model.optimizer_kwargs
 
         # update scheduler
-        if lr_scheduler_cls == self.model.lr_scheduler_cls:
+        if lr_scheduler_cls == model.model.lr_scheduler_cls:
             if lr_scheduler_kwargs is not None:
-                self.model.lr_scheduler_kwargs.update(lr_scheduler_kwargs)
+                model.model.lr_scheduler_kwargs.update(lr_scheduler_kwargs)
         else:
-            self.model.lr_scheduler_cls = lr_scheduler_cls
-            self.model.lr_scheduler_kwargs = (
+            model.model.lr_scheduler_cls = lr_scheduler_cls
+            model.model.lr_scheduler_kwargs = (
                 dict() if lr_scheduler_kwargs is None else lr_scheduler_kwargs
             )
-        self.model_params["lr_scheduler_cls"] = self.model.lr_scheduler_cls
-        self.model_params["lr_scheduler_kwargs"] = self.model.lr_scheduler_kwargs
-        self.pl_module_params["lr_scheduler_cls"] = self.model.lr_scheduler_cls
-        self.pl_module_params["lr_scheduler_kwargs"] = self.model.lr_scheduler_kwargs
+        model.model_params["lr_scheduler_cls"] = model.model.lr_scheduler_cls
+        model.model_params["lr_scheduler_kwargs"] = model.model.lr_scheduler_kwargs
+        model.pl_module_params["lr_scheduler_cls"] = model.model.lr_scheduler_cls
+        model.pl_module_params["lr_scheduler_kwargs"] = model.model.lr_scheduler_kwargs
 
-        new_trainer = self._init_trainer(
-            self.trainer_params, self.trainer_params["max_epochs"]
+        new_trainer = model._init_trainer(
+            model.trainer_params, model.trainer_params["max_epochs"]
         )
-        self.trainer = new_trainer
-        self.model.trainer = new_trainer
-        self.trainer.strategy.setup_optimizers(new_trainer)
+        model.trainer = new_trainer
+        model.model.trainer = new_trainer
+        model.trainer.strategy.setup_optimizers(new_trainer)
 
-        self.model.setup("fit")
+        model.model.setup("fit")
 
         # fit(..., trainer=new_trainer) calls _setup_trainer, returning the new_trainer directly
         # passing trainer = None would call _setup_trainer and _init_trainer, creating a new trainer
         # from the self.trainer_params dictionnary and assign it to the self.trainer attribute
-        self.fit(**kwargs, trainer=new_trainer)
+        model.fit(**kwargs, trainer=new_trainer)
+        return model
 
     def _train(
         self, train_loader: DataLoader, val_loader: Optional[DataLoader]
