@@ -129,7 +129,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         nr_epochs_val_period: int = 1,
         force_reset: bool = False,
         save_checkpoints: bool = False,
-        save_only_last_checkpoint: bool = False,
         add_encoders: Optional[dict] = None,
         random_state: Optional[int] = None,
         pl_trainer_kwargs: Optional[dict] = None,
@@ -177,9 +176,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
             :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
             :func:`save()` and loaded using :func:`load()`. Default: ``False``.
-        save_only_last_checkpoint
-            Work in a way similar to save_checkpoint, except it save only the last checkpoint and does not rise warning
-            if the model is trained without validation set.
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -283,7 +279,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # setup model save dirs
         self.save_checkpoints = save_checkpoints
-        self.save_only_last_checkpoint = save_only_last_checkpoint
         checkpoints_folder = _get_checkpoint_folder(self.work_dir, self.model_name)
         log_folder = _get_logs_folder(self.work_dir, self.model_name)
         checkpoint_exists = (
@@ -292,7 +287,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         # setup model save dirs
-        if checkpoint_exists and (save_checkpoints or save_only_last_checkpoint):
+        if checkpoint_exists and save_checkpoints:
             raise_if_not(
                 force_reset,
                 f"Some model data already exists for `model_name` '{self.model_name}'. Either load model to continue "
@@ -301,21 +296,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 logger,
             )
             self.reset_model()
-        elif save_checkpoints or save_only_last_checkpoint:
+        elif save_checkpoints:
             self._create_save_dirs()
         else:
             pass
 
         # save best epoch on val_loss and last epoch under 'darts_logs/model_name/checkpoints/'
-
-        if save_only_last_checkpoint:
-            checkpoint_callback = pl.callbacks.ModelCheckpoint(
-                dirpath=checkpoints_folder,
-                save_last=False,
-                monitor=None,
-                filename="last-{epoch}",
-            )
-        elif save_checkpoints:
+        if save_checkpoints:
             checkpoint_callback = pl.callbacks.ModelCheckpoint(
                 dirpath=checkpoints_folder,
                 save_last=True,
@@ -339,7 +326,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             "logger": model_logger,
             "max_epochs": n_epochs,
             "check_val_every_n_epoch": nr_epochs_val_period,
-            "enable_checkpointing": save_checkpoints or save_only_last_checkpoint,
+            "enable_checkpointing": save_checkpoints,
             "callbacks": [cb for cb in [checkpoint_callback] if cb is not None],
         }
 
@@ -458,7 +445,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.trainer_params["precision"] = precision
 
         # we need to save the initialized TorchForecastingModel as PyTorch-Lightning only saves module checkpoints
-        if self.save_checkpoints or self.save_only_last_checkpoint:
+        if self.save_checkpoints:
             self.save(
                 os.path.join(
                     _get_runs_folder(self.work_dir, self.model_name), INIT_MODEL_NAME
