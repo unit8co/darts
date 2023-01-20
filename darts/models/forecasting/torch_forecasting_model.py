@@ -916,21 +916,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return self
 
     @staticmethod
-    def fit_from_checkpoint(
+    def setup_finetuning(
         old_model_name: str,
-        new_model_name: str,
+        new_model_name: str = None,
         work_dir: str = None,
         file_name: str = None,
         additional_epochs: int = 0,
         best: bool = False,
-        force_reset: bool = False,
-        logger: bool = False,
+        save_inplace: bool = False,
         optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
         optimizer_kwargs: Optional[Dict] = None,
         lr_scheduler_cls: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
         lr_scheduler_kwargs: Optional[Dict] = None,
         trainer_params: Optional[Dict] = None,
-        **kwargs,
     ):
         # call _get_checkpoint_fname if file_name is None
         # TODO: support for load_from_checkpoint kwargs
@@ -941,9 +939,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             best=best,
         )
 
-        # update the attributes depending on the model name
-        model.model_name = new_model_name
-        model.model_params["model_name"] = new_model_name
+        if new_model_name is None:
+            model.model_name = old_model_name
+        else:
+            model.model_name = new_model_name
+        model.model_params["model_name"] = model.model_name
+
         if work_dir is not None and work_dir != model.work_dir:
             model.work_dir = work_dir
 
@@ -955,12 +956,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
         if checkpoint_exists and model.save_checkpoints:
             raise_if_not(
-                force_reset,
-                f"Some model data already exists for `model_name` '{model.model_name}'. Either load model to continue "
-                f"training or change `model_name` to save the fine-tuned weights in another folder.",
+                save_inplace,
+                f"Some model data already exists for `model_name` '{model.model_name}'. Either provide a"
+                f" `new_model_name` to save the checkpoints in a new folder or set `save_inplace`"
+                f" to True to save them in the existing folder (calling `fit` on the loaded model"
+                f" will likely overwrite the loaded checkpoint).",
                 logger,
             )
-            model.reset_model()
         elif model.save_checkpoints:
             model._create_save_dirs()
         else:
@@ -984,17 +986,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             filename="best-{epoch}-{val_loss:.2f}",
         )
         checkpoint_callback.CHECKPOINT_NAME_LAST = "last-{epoch}"
-
-        # logger instance
-        if logger or model.logger:
-            tb_logger = pl_loggers.TensorBoardLogger(
-                save_dir=model.work_dir, name=model.model_name, version="logs"
-            )
-            model.logger = tb_logger
-            model.trainer_params["logger"] = tb_logger
-        else:
-            model.logger = False
-            model.trainer_params["logger"] = False
 
         # update trainer
         old_trainer_params = model.trainer_params.copy()
@@ -1073,11 +1064,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         model.trainer.strategy.setup_optimizers(new_trainer)
 
         model.model.setup("fit")
-
-        # fit(..., trainer=new_trainer) calls _setup_trainer, returning the new_trainer directly
-        # passing trainer = None would call _setup_trainer and _init_trainer, creating a new trainer
-        # from the self.trainer_params dictionnary and assign it to the self.trainer attribute
-        model.fit(**kwargs, trainer=new_trainer)
         return model
 
     def _train(
