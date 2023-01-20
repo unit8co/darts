@@ -290,6 +290,165 @@ if TORCH_AVAILABLE:
             model1.fit(self.series, epochs=15)
             self.assertEqual(15, model1.epochs_trained)
 
+        def test_setup_finetuning(self):
+            original_model_name = "original"
+            fintuned_model_name = "fintuned"
+            # original model, checkpoints are saved
+            model1 = RNNModel(
+                12,
+                "RNN",
+                10,
+                10,
+                n_epochs=2,
+                work_dir=self.temp_work_dir,
+                save_checkpoints=True,
+                model_name=original_model_name,
+            )
+            model1.fit(self.series)
+            self.assertEqual(2, model1.epochs_trained)
+
+            # load last checkpoint of original model, train it for 2 additional epochs
+            model_ft = RNNModel.setup_finetuning(
+                old_model_name=original_model_name,
+                new_model_name=fintuned_model_name,
+                work_dir=self.temp_work_dir,
+                additional_epochs=2,
+            )
+            model_ft.fit(self.series)
+            self.assertEqual(4, model_ft.epochs_trained)
+
+            # load last checkpoint of original model, train it for 4 additional epochs
+            model_ft = RNNModel.setup_finetuning(
+                old_model_name=original_model_name,
+                new_model_name=fintuned_model_name,
+                work_dir=self.temp_work_dir,
+                trainer_params={"max_epochs": 6},
+                force_reset=True,
+            )
+            model_ft.fit(self.series)
+            self.assertEqual(6, model_ft.epochs_trained)
+
+            # load last checkpoint of fine-tuned model, train it for 2 additional epochs
+            model_ft = RNNModel.setup_finetuning(
+                old_model_name=fintuned_model_name,
+                new_model_name=fintuned_model_name + "_twice",
+                work_dir=self.temp_work_dir,
+                additional_epochs=2,
+            )
+            model_ft.fit(self.series)
+            self.assertEqual(8, model_ft.epochs_trained)
+
+            # check saving last ckpt in same folder as original model
+            model_ft = RNNModel.setup_finetuning(
+                old_model_name=original_model_name,
+                new_model_name=original_model_name,
+                work_dir=self.temp_work_dir,
+                trainer_params={"max_epochs": 8},
+                save_inplace=True,
+            )
+            model_ft.fit(self.series)
+            self.assertEqual(8, model_ft.epochs_trained)
+
+            # raise Exception when the number of additional epochs is contradictory
+            with self.assertRaises(ValueError):
+                model_ft = RNNModel.setup_finetuning(
+                    old_model_name=original_model_name,
+                    new_model_name=fintuned_model_name,
+                    work_dir=self.temp_work_dir,
+                    additional_epochs=2,
+                    trainer_params={"max_epochs": 10},
+                )
+
+            # raise Exception when the max_epochs trainer parameter is too small
+            with self.assertRaises(ValueError):
+                model_ft = RNNModel.setup_finetuning(
+                    old_model_name=original_model_name,
+                    new_model_name=fintuned_model_name,
+                    work_dir=self.temp_work_dir,
+                    trainer_params={"max_epochs": 1},
+                )
+
+            # raise Exception when the target checkpoint folder already exist
+            with self.assertRaises(ValueError):
+                model_ft = RNNModel.setup_finetuning(
+                    old_model_name=original_model_name,
+                    new_model_name=original_model_name,
+                    work_dir=self.temp_work_dir,
+                    additional_epochs=2,
+                )
+
+            # raise Exception when trying to save ckpt in place and force_reset simultaneously
+            with self.assertRaises(ValueError):
+                model_ft = RNNModel.setup_finetuning(
+                    old_model_name=original_model_name,
+                    new_model_name=original_model_name,
+                    work_dir=self.temp_work_dir,
+                    additional_epochs=2,
+                    save_inplace=True,
+                    force_reset=True,
+                )
+
+        def test_setup_finetuning_optimizer(self):
+            original_model_name = "original"
+            fintuned_model_name = "fintuned"
+            # original model, Adam optimizer
+            model1 = RNNModel(
+                12,
+                "RNN",
+                10,
+                10,
+                n_epochs=2,
+                work_dir=self.temp_work_dir,
+                save_checkpoints=True,
+                model_name=original_model_name,
+            )
+            model1.fit(self.series)
+            self.assertEqual(2, model1.epochs_trained)
+
+            # load last checkpoint of original model, change optimizer from Adam to RAdam
+            model_ft = RNNModel.setup_finetuning(
+                old_model_name=original_model_name,
+                new_model_name=fintuned_model_name,
+                work_dir=self.temp_work_dir,
+                additional_epochs=2,
+                optimizer_cls=torch.optim.RAdam,
+                optimizer_kwargs={"lr": 0.0001},
+            )
+            model_ft.fit(self.series, trainer=model_ft.trainer)
+            self.assertEqual(4, model_ft.epochs_trained)
+            self.assertEqual(type(model_ft.trainer.optimizers[0]), torch.optim.RAdam)
+
+        def test_setup_finetuning_scheduler(self):
+            original_model_name = "original"
+            fintuned_model_name = "fintuned"
+            # original model, without scheduler
+            model1 = RNNModel(
+                12,
+                "RNN",
+                10,
+                10,
+                n_epochs=2,
+                work_dir=self.temp_work_dir,
+                save_checkpoints=True,
+                model_name=original_model_name,
+            )
+            model1.fit(self.series)
+            self.assertEqual(2, model1.epochs_trained)
+
+            # load last checkpoint of original model, add a scheduler
+            model_ft = RNNModel.setup_finetuning(
+                old_model_name=original_model_name,
+                new_model_name=fintuned_model_name,
+                work_dir=self.temp_work_dir,
+                additional_epochs=2,
+                lr_scheduler_cls=torch.optim.lr_scheduler.StepLR,
+                lr_scheduler_kwargs={"step_size": 10},
+            )
+            model_ft.fit(self.series)
+            self.assertEqual(4, model_ft.epochs_trained)
+            # cannot check class, use length of config as a proxy
+            self.assertEqual(len(model_ft.trainer.lr_scheduler_configs), 1)
+
         def test_optimizers(self):
 
             optimizers = [
