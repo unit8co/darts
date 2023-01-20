@@ -675,11 +675,9 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             max_future_cov_lag,
         ) = reg_model.extreme_lags
         max_past_lag = max(
-            [
-                abs(v)
-                for v in [min_target_lag, min_past_cov_lag, min_future_cov_lag]
-                if v is not None
-            ]
+            abs(v)
+            for v in [min_target_lag, min_past_cov_lag, min_future_cov_lag]
+            if v is not None
         )
 
         len_target_features = [
@@ -1751,6 +1749,32 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     for model in [model_pc_valid0, model_fc_valid0, model_mixed_valid0]:
                         model.fit(ts)
                         assert not model.encoders.encoding_available
+                        _ = model.predict(n=1, series=ts)
+                        _ = model.predict(n=3, series=ts)
+
+                    model_pc_valid0 = model_cls(
+                        lags_past_covariates=[-2],
+                        add_encoders=encoder_examples["past"],
+                        multi_models=mode,
+                        output_chunk_length=ocl,
+                    )
+                    model_fc_valid0 = model_cls(
+                        lags_future_covariates=[-1, 0],
+                        add_encoders=encoder_examples["future"],
+                        multi_models=mode,
+                        output_chunk_length=ocl,
+                    )
+                    model_mixed_valid0 = model_cls(
+                        lags_past_covariates=[-2, -1],
+                        lags_future_covariates=[-3, 3],
+                        add_encoders=encoder_examples["mixed"],
+                        multi_models=mode,
+                        output_chunk_length=ocl,
+                    )
+                    # check that fit/predict works with model internal covariate requirement checks
+                    for model in [model_pc_valid0, model_fc_valid0, model_mixed_valid0]:
+                        model.fit(ts)
+                        assert model.encoders.encoding_available
                         _ = model.predict(n=1, series=ts)
                         _ = model.predict(n=3, series=ts)
 
