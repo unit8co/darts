@@ -919,16 +919,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def setup_finetuning(
         old_model_name: str,
         new_model_name: str = None,
+        additional_epochs: int = 0,
+        trainer_params: Optional[Dict] = None,
         work_dir: str = None,
         file_name: str = None,
-        additional_epochs: int = 0,
         best: bool = False,
         save_inplace: bool = False,
         optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
         optimizer_kwargs: Optional[Dict] = None,
         lr_scheduler_cls: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
         lr_scheduler_kwargs: Optional[Dict] = None,
-        trainer_params: Optional[Dict] = None,
     ):
         # call _get_checkpoint_fname if file_name is None
         # TODO: support for load_from_checkpoint kwargs
@@ -975,8 +975,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 _get_runs_folder(model.work_dir, model.model_name), INIT_MODEL_NAME
             )
         )
-
-        print()
 
         # TODO: avoid user warning about dirpath change
         checkpoint_callback = pl.callbacks.ModelCheckpoint(
