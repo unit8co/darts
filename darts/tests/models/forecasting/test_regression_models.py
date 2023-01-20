@@ -675,11 +675,9 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             max_future_cov_lag,
         ) = reg_model.extreme_lags
         max_past_lag = max(
-            [
-                abs(v)
-                for v in [min_target_lag, min_past_cov_lag, min_future_cov_lag]
-                if v is not None
-            ]
+            abs(v)
+            for v in [min_target_lag, min_past_cov_lag, min_future_cov_lag]
+            if v is not None
         )
 
         len_target_features = [
@@ -1827,7 +1825,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             freq = ts[0].freq
 
             def to_ts(dt):
-                return pd.Timestamp(dt, freq=freq)
+                return pd.Timestamp(dt)
 
             def train_start_end(start_base, end_base):
                 start = to_ts(start_base) - int(not multi_model) * (ocl - 1) * freq
