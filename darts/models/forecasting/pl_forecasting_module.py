@@ -274,6 +274,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
             on_step=False,
             logger=True,
             prog_bar=True,
+            sync_dist=True
         )
 
     def configure_optimizers(self):
