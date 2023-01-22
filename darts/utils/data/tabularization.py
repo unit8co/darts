@@ -79,10 +79,12 @@ def create_lagged_data(
     `target_series.n_components=2`):
         lag_+0_comp_1_target | lag_+0_comp_2_target | ... | lag_+3_comp_1_target | lag_+3_comp_2_target
 
-    The `lags` specified for the `target_series` must all be less than or equal to -1 (i.e. one can't use the value
-    of the target series at time `t` to predict the target series at the same time `t`). Conversely, the values in
-    `lags_past_covariates` and/or `lags_future_covariates` must be less than or equal to 0 (i.e. we *are* able to
-    use the value of `past_covariates`/`future_covariates` at time `t` to predict `target_series` at time `t`).
+    The `lags` and `lags_past_covariates` must contain only values less than or equal to -1. In other words, one
+    cannot use the value of either of these series at time `t` to predict the value of the target series at the
+    same time `t`; this is because the values of `target_series` and `past_covariates` at time `t` aren't available
+    at prediction time, by definition. Conversely, since the values of `future_covariates` are known into the future,
+    `lags_future_covariates` can contain negative, positive, and/or zero lag values (i.e. we *can* use the values of
+    `future_covariates` at time `t` or beyond to predict the value of `target_series` at time `t`).
 
     The exact method used to construct `X` and `y` depends on whether all of the specified timeseries are
     of the same frequency or not:
