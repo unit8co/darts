@@ -617,20 +617,46 @@ class TimeSeries:
                         "The provided integer time index column contains duplicate values.",
                     )
 
-                    start_idx, stop_idx = min(time_col_vals), max(time_col_vals) + 1
-
-                    # All the integers in the range have to be present
-                    raise_if_not(
-                        stop_idx - start_idx == len(df),
-                        "The provided integer time index column does not contain all integers in the range.",
-                    )
-
                     # Temporarily use an Int64Index (soon to be NumericIndex) to sort the values,
                     # then replace by a RangeIndex.
                     series_df.index = time_col_vals
-                    series_df = series_df.sort_index()
+                    if not time_col_vals.is_monotonic_increasing:
+                        series_df = series_df.sort_index()
+
+                    if not freq and len(df) == 1:
+                        logger.warning(
+                            "No frequency `freq` was provided, and the provided integer time index column only "
+                            "contains one value. `freq` will be set to `1`"
+                        )
+                        inferred_freq = 1
+                    elif freq:
+                        inferred_freq = freq
+                    else:
+                        inferred_freq = series_df.index[1] - series_df.index[0]
+
+                    start_idx, stop_idx = (
+                        min(time_col_vals),
+                        max(time_col_vals) + inferred_freq,
+                    )
+
+                    # All the integers in the range have to be present
+                    if (stop_idx - start_idx) // inferred_freq != len(series_df) or (
+                        (series_df.index - start_idx) % inferred_freq
+                    ).any():
+                        # better to compute formatted string only in case condition is true
+                        raise_if(
+                            True,
+                            f"The provided integer time index column contains some integers outside the range of "
+                            f"`pd.RangeIndex(start={start_idx}, stop={stop_idx}, step={inferred_freq})`. If `freq` was "
+                            f"not provided, `step` was inferred from the two smallest integers.",
+                            logger=logger,
+                        )
+
                     time_index = pd.RangeIndex(
-                        start=start_idx, stop=stop_idx, step=1, name=time_col
+                        start=start_idx,
+                        stop=stop_idx,
+                        step=inferred_freq,
+                        name=time_col,
                     )
                 elif np.issubdtype(time_col_vals.dtype, object):
                     # The integer conversion failed; try datetimes
