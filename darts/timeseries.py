@@ -3628,7 +3628,7 @@ class TimeSeries:
         high_quantile: Optional[float] = 0.95,
         default_formatting: bool = True,
         label: Optional[Union[str, Sequence[str]]] = "",
-        plot_all_components: Optional[bool] = False,
+        max_nr_components: int = 10,
         *args,
         **kwargs,
     ):
@@ -3658,8 +3658,8 @@ class TimeSeries:
         label
             A prefix that will appear in front of each component of the TimeSeries or a list of string of
             length the number of components in the plotted TimeSeries (default "").
-        plot_all_components
-            Whether to plot all components of the series, or only the first 10.
+        max_nr_components
+            The maximum number of components of a series to plot. -1 means all components will be plotted.
         args
             some positional arguments for the `plot()` method
         kwargs
@@ -3691,16 +3691,16 @@ class TimeSeries:
         if not any(lw in kwargs for lw in ["lw", "linewidth"]):
             kwargs["lw"] = 2
 
-        n_components_to_plot = 10
-        if self.n_components > n_components_to_plot and not plot_all_components:
+        n_components_to_plot = max_nr_components
+        if n_components_to_plot == -1:
+            n_components_to_plot = self.n_components
+        elif self.n_components > max_nr_components:
             logger.warning(
-                f"Number of components is larger than {n_components_to_plot} ({self.n_components}). "
-                f"Plotting only the first {n_components_to_plot} components."
+                f"Number of components is larger than {max_nr_components} ({self.n_components}). "
+                f"Plotting only the first {max_nr_components} components."
                 f"You can overwrite this in the using the `plot_all_components` argument in plot()"
                 f"Beware that plotting all components may take a long time."
             )
-        if plot_all_components:
-            n_components_to_plot = self.n_components
 
         if not isinstance(label, str) and isinstance(label, Sequence):
             raise_if_not(

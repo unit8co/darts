@@ -11,6 +11,11 @@ from darts.explainability.explainability import (
 )
 from darts.models import TFTModel
 
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
 
 class TFTExplainer(ForecastingModelExplainer):
     def __init__(
@@ -111,9 +116,7 @@ class TFTExplainer(ForecastingModelExplainer):
         return ExplainabilityResult(
             {
                 0: {
-                    "attention_heads": TimeSeries.from_dataframe(
-                        pd.DataFrame(attention_heads).transpose()
-                    ),
+                    "attention_heads": TimeSeries.from_values(attention_heads.T),
                 }
             },
         )
@@ -132,23 +135,23 @@ class TFTExplainer(ForecastingModelExplainer):
             fig = plt.figure()
             attention_heads.plot(
                 label="Attention Head",
-                plot_all_components=True,
+                max_nr_components=-1,
                 figure=fig,
             )
             # move legend to the right side of the figure
             plt.legend(bbox_to_anchor=(0.95, 1), loc="upper left")
-            plt.xlabel("Time steps in past")
+            plt.xlabel("Time steps in the past (# lags)")
             plt.ylabel("Attention")
         elif plot_type == "time":
             fig = plt.figure()
             attention_heads.mean(1).plot(label="Mean Attention Head", figure=fig)
-            plt.xlabel("Time steps in past")
+            plt.xlabel("Time steps in the past (# lags)")
             plt.ylabel("Attention")
         elif plot_type == "heatmap":
             avg_attention = attention_heads.values().transpose()
             fig = plt.figure()
             plt.imshow(avg_attention, cmap="hot", interpolation="nearest", figure=fig)
-            plt.xlabel("Time steps in past")
+            plt.xlabel("Time steps in the past (# lags)")
             plt.ylabel("Horizon")
         else:
             raise ValueError("`plot_type` must be either 'all', 'time' or 'heatmap'")
