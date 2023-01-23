@@ -916,167 +916,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self._train(train_loader, val_loader)
         return self
 
-    @staticmethod
-    def setup_finetuning(
-        old_model_name: str,
-        new_model_name: str = None,
-        additional_epochs: int = 0,
-        trainer_params: Optional[Dict] = None,
-        work_dir: str = None,
-        file_name: str = None,
-        best: bool = False,
-        save_inplace: bool = False,
-        force_reset: bool = False,
-        optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
-        optimizer_kwargs: Optional[Dict] = None,
-        lr_scheduler_cls: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
-        lr_scheduler_kwargs: Optional[Dict] = None,
-        **kwargs,
-    ):
-        # call _get_checkpoint_fname if file_name is None
-        # TODO: support for load_from_checkpoint kwargs
-        model = TorchForecastingModel.load_from_checkpoint(
-            model_name=old_model_name,
-            work_dir=work_dir,
-            file_name=file_name,
-            best=best,
-            **kwargs,
-        )
-
-        if new_model_name is None:
-            model.model_name = old_model_name
-        else:
-            model.model_name = new_model_name
-        model.model_params["model_name"] = model.model_name
-
-        if work_dir is not None and work_dir != model.work_dir:
-            model.work_dir = work_dir
-
-        # checkpoint path
-        checkpoints_folder = _get_checkpoint_folder(model.work_dir, model.model_name)
-        checkpoint_exists = (
-            os.path.exists(checkpoints_folder)
-            and len(glob(os.path.join(checkpoints_folder, "*"))) > 0
-        )
-        raise_if(
-            save_inplace and force_reset,
-            "For safety reasons, `save_inplace` and `force_reset` cannot be both True to prevent "
-            " deletion of the loaded checkpoint.",
-            logger,
-        )
-        if checkpoint_exists and model.save_checkpoints:
-            if force_reset:
-                model.reset_model()
-            else:
-                raise_if_not(
-                    save_inplace,
-                    f"Some model data already exists for `model_name` '{model.model_name}'. Either provide a"
-                    f" `new_model_name` to save the checkpoints in a new folder or set `save_inplace`"
-                    f" to True to save them in the existing folder (calling `fit` on the loaded model"
-                    f" will likely overwrite the loaded checkpoint).",
-                    logger,
-                )
-        elif model.save_checkpoints:
-            model._create_save_dirs()
-        else:
-            pass
-
-        # TODO: avoid user warning about dirpath change
-        checkpoint_callback = pl.callbacks.ModelCheckpoint(
-            dirpath=checkpoints_folder,
-            save_last=True,
-            monitor="val_loss",
-            filename="best-{epoch}-{val_loss:.2f}",
-        )
-        checkpoint_callback.CHECKPOINT_NAME_LAST = "last-{epoch}"
-
-        # update trainer
-        old_trainer_params = model.trainer_params.copy()
-        new_max_epochs = old_trainer_params["max_epochs"] + additional_epochs
-        if trainer_params is not None:
-            for trainer_param in trainer_params.keys():
-                model.trainer_params[trainer_param] = trainer_params[trainer_param]
-
-            # special parameter handling
-            if "callbacks" in trainer_params.keys() and len(
-                trainer_params["callbacks"] > 0
-            ):
-                model.trainer_params["callbacks"] = [
-                    checkpoint_callback
-                ] + trainer_params["callbacks"]
-            else:
-                model.trainer_params["callbacks"] = [checkpoint_callback]
-
-            if "max_epochs" in trainer_params.keys():
-                if additional_epochs != 0:
-                    raise_if(
-                        trainer_params["max_epochs"] != new_max_epochs,
-                        "The number of epochs to retrain the model for was defined in"
-                        " both the `trainer_params` and `additional_epochs` arguments"
-                        f" with differents values ({trainer_params['max_epochs']} and"
-                        f" {old_trainer_params['max_epochs']} + {additional_epochs})",
-                        logger,
-                    )
-                else:
-                    new_max_epochs = trainer_params["max_epochs"]
-        raise_if(
-            new_max_epochs <= old_trainer_params["max_epochs"],
-            "The number of epochs to retrain passed in `trainer_params['max_epochs']`"
-            " or `additional_epochs`is smaller or equal to the number of epochs used"
-            " to train the model",
-            logger,
-        )
-        model.n_epochs = new_max_epochs
-        model.model_params["n_epochs"] = new_max_epochs
-        model.trainer_params["max_epochs"] = new_max_epochs
-
-        # update optimizer
-        if optimizer_cls == model.model.optimizer_cls:
-            if optimizer_kwargs is not None:
-                model.model.optimizer_kwargs.update(optimizer_kwargs)
-        else:
-            # using different optimizer
-            model.model.optimizer_cls = optimizer_cls
-            model.model.optimizer_kwargs = (
-                dict() if optimizer_kwargs is None else optimizer_kwargs
-            )
-        model.model_params["optimizer_scheduler_cls"] = model.model.optimizer_cls
-        model.model_params["optimizer_kwargs"] = model.model.optimizer_kwargs
-        model.pl_module_params["optimizer_cls"] = model.model.optimizer_cls
-        model.pl_module_params["optimizer_kwargs"] = model.model.optimizer_kwargs
-
-        # update scheduler
-        if lr_scheduler_cls == model.model.lr_scheduler_cls:
-            if lr_scheduler_kwargs is not None:
-                model.model.lr_scheduler_kwargs.update(lr_scheduler_kwargs)
-        else:
-            model.model.lr_scheduler_cls = lr_scheduler_cls
-            model.model.lr_scheduler_kwargs = (
-                dict() if lr_scheduler_kwargs is None else lr_scheduler_kwargs
-            )
-        model.model_params["lr_scheduler_cls"] = model.model.lr_scheduler_cls
-        model.model_params["lr_scheduler_kwargs"] = model.model.lr_scheduler_kwargs
-        model.pl_module_params["lr_scheduler_cls"] = model.model.lr_scheduler_cls
-        model.pl_module_params["lr_scheduler_kwargs"] = model.model.lr_scheduler_kwargs
-
-        # save the initialized TorchForecastingModel as PyTorch-Lightning only saves module checkpoints
-        # to allow finetuning of a fine-tuned model...
-        model.save(
-            os.path.join(
-                _get_runs_folder(model.work_dir, model.model_name), INIT_MODEL_NAME
-            )
-        )
-
-        new_trainer = model._init_trainer(
-            model.trainer_params, model.trainer_params["max_epochs"]
-        )
-        model.trainer = new_trainer
-        model.model.trainer = new_trainer
-        model.trainer.strategy.setup_optimizers(new_trainer)
-
-        model.model.setup("fit")
-        return model
-
     def _train(
         self, train_loader: DataLoader, val_loader: Optional[DataLoader]
     ) -> None:
@@ -1494,6 +1333,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         work_dir: str = None,
         file_name: str = None,
         best: bool = True,
+        new_model_name: Optional[str] = None,
+        save_inplace: bool = False,
+        force_reset: bool = False,
+        pl_trainer_kwargs: Optional[Dict] = None,
+        optimizer_cls: Optional[torch.optim.Optimizer] = None,
+        optimizer_kwargs: Optional[Dict] = None,
+        lr_scheduler_cls: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
+        lr_scheduler_kwargs: Optional[Dict] = None,
         **kwargs,
     ) -> "TorchForecastingModel":
         """
@@ -1501,6 +1348,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         This method is used for models that were created with ``save_checkpoints=True``.
 
         If you manually saved your model, consider using :meth:`load() <TorchForecastingModel.load()>`.
+
+        Optionnaly, the optimizer, learning rate scheduler and trainer can be modified. This can be accomplished by
+        using another Pytorch class or just changing their parameters.
 
         Example for loading a :class:`RNNModel` from checkpoint (``model_name`` is the ``model_name`` used at model
         creation):
@@ -1530,6 +1380,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 model_loaded.to_cpu()
             ..
 
+        Example for loading a :class:`RNNModel` from checkpoint and changing its optimizer learning rate:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from darts.models import RNNModel
+
+                model_loaded = RNNModel.load_from_checkpoint(model_name, best=True, optimizer_kwargs={"lr":1e-5})
+            ..
+
         Parameters
         ----------
         model_name
@@ -1540,7 +1400,31 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             The name of the checkpoint file. If not specified, use the most recent one.
         best
             If set, will retrieve the best model (according to validation loss) instead of the most recent one. Only
-            is ignored when ``file_name`` is given.
+            is ignored when ``file_name`` is given. Default: ``True``.
+        new_model_name
+            The name of the model after loading the checkpoint, used to save the upcoming checkpoints in a new folder.
+            By default, the name of the loaded model is reused.
+        pl_trainer_kwargs
+            Possibility to overwrite trainer parameters declared during the model instanciation, notably adding
+            customized callbacks or increase the model's max number of training epochs. Default: ``None``.
+        save_inplace
+            If set to ``True``, checkpoints generated during the training of the loaded model will be saved in an
+            exisiting folder, overwriting the existing "last-" and possibly the "best-" checkpoints. Default: ``False``.
+        force_reset
+            If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
+            be discarded). Default: ``False``.
+        optimizer_cls
+            Optionnaly, change the PyTorch optimizer for the remaining training epochs. Caution: at the moment, the new
+            optimizer must be compatible with the previous one: for example, RAdam can replace Adam whereas SGD cannot.
+            Default: ``None``.
+        optimizer_kwargs
+            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
+            for specifying a learning rate). Otherwise the values of the loaded model will be used. Default: ``None``.
+        lr_scheduler_cls
+            Optionnaly, change or add a PyTorch learning rate scheduler for the remaining training epochs. Default:
+            ``None``.
+        lr_scheduler_kwargs
+            Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         **kwargs
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             such as ``map_location`` to load the model onto a different device than the one from which it was saved.
@@ -1579,6 +1463,121 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         model.model = model._load_from_checkpoint(file_path, **kwargs)
         model.load_ckpt_path = file_path
+
+        # retrained model is renamed and saved in another folder
+        if new_model_name is not None:
+            model.model_name = new_model_name
+            model.model_params["model_name"] = new_model_name
+            checkpoint_dir = _get_checkpoint_folder(work_dir, new_model_name)
+
+            checkpoint_exists = (
+                os.path.exists(checkpoint_dir)
+                and len(glob(os.path.join(checkpoint_dir, "*"))) > 0
+            )
+            raise_if(
+                save_inplace and force_reset,
+                "For safety reasons, `save_inplace` and `force_reset` cannot be both ``True`` to prevent "
+                " deletion of the loaded checkpoint.",
+                logger,
+            )
+            if checkpoint_exists and model.save_checkpoints:
+                if force_reset:
+                    model.reset_model()
+                else:
+                    raise_if_not(
+                        save_inplace,
+                        f"Some model data already exists for `model_name` '{model.model_name}'. Either provide a"
+                        f" `new_model_name` to save the checkpoints in a new folder or set `save_inplace`"
+                        f" to True to save them in the existing folder (calling `fit` on the loaded model"
+                        f" will likely overwrite the loaded checkpoint).",
+                        logger,
+                    )
+            elif model.save_checkpoints:
+                model._create_save_dirs()
+            else:
+                pass
+
+        # issue warning when dirpath changes
+        checkpoint_callback = pl.callbacks.ModelCheckpoint(
+            dirpath=checkpoint_dir,
+            save_last=True,
+            monitor="val_loss",
+            filename="best-{epoch}-{val_loss:.2f}",
+        )
+        checkpoint_callback.CHECKPOINT_NAME_LAST = "last-{epoch}"
+
+        # update trainer parameters
+        if pl_trainer_kwargs is not None:
+            if "max_epochs" in pl_trainer_kwargs.keys():
+                raise_if(
+                    pl_trainer_kwargs["max_epochs"]
+                    < model.trainer_params["max_epochs"],
+                    "The value of `max_epochs` passed in `trainer_params` is smaller"
+                    " than the number of epochs used to train the model loaded from"
+                    " from the checkpoint.",
+                    logger,
+                )
+                model.n_epochs = pl_trainer_kwargs["max_epochs"]
+                model.model_params["n_epochs"] = pl_trainer_kwargs["max_epochs"]
+
+            model.trainer_params.update(pl_trainer_kwargs)
+
+            # special parameters handling
+            if "callbacks" in pl_trainer_kwargs.keys() and len(
+                pl_trainer_kwargs["callbacks"] > 0
+            ):
+                model.trainer_params["callbacks"] = [
+                    checkpoint_callback
+                ] + pl_trainer_kwargs["callbacks"]
+            else:
+                model.trainer_params["callbacks"] = [checkpoint_callback]
+
+        # update optimizer
+        if optimizer_cls is not None and optimizer_cls != model.model.optimizer_cls:
+            model.model.optimizer_cls = optimizer_cls
+            model.model.optimizer_kwargs = (
+                dict() if optimizer_kwargs is None else optimizer_kwargs
+            )
+        else:
+            if optimizer_kwargs is not None:
+                model.model.optimizer_kwargs.update(optimizer_kwargs)
+
+        model.model_params["optimizer_scheduler_cls"] = model.model.optimizer_cls
+        model.model_params["optimizer_kwargs"] = model.model.optimizer_kwargs
+        model.pl_module_params["optimizer_cls"] = model.model.optimizer_cls
+        model.pl_module_params["optimizer_kwargs"] = model.model.optimizer_kwargs
+
+        # update scheduler
+        if (
+            lr_scheduler_cls is not None
+            and lr_scheduler_cls != model.model.lr_scheduler_cls
+        ):
+            model.model.lr_scheduler_cls = lr_scheduler_cls
+            model.model.lr_scheduler_kwargs = (
+                dict() if lr_scheduler_kwargs is None else lr_scheduler_kwargs
+            )
+        else:
+            if lr_scheduler_kwargs is not None:
+                model.model.lr_scheduler_kwargs.update(lr_scheduler_kwargs)
+
+        model.model_params["lr_scheduler_cls"] = model.model.lr_scheduler_cls
+        model.model_params["lr_scheduler_kwargs"] = model.model.lr_scheduler_kwargs
+        model.pl_module_params["lr_scheduler_cls"] = model.model.lr_scheduler_cls
+        model.pl_module_params["lr_scheduler_kwargs"] = model.model.lr_scheduler_kwargs
+
+        # save the initialized TorchForecastingModel to allow re-training of already re-trained model
+        model.save(
+            os.path.join(
+                _get_runs_folder(model.work_dir, model.model_name), INIT_MODEL_NAME
+            )
+        )
+
+        new_trainer = model._init_trainer(model.trainer_params)
+        model.trainer = new_trainer
+        model.model.trainer = new_trainer
+        model.trainer.strategy.setup_optimizers(new_trainer)
+
+        model.model.setup("fit")
         return model
 
     def _load_from_checkpoint(self, file_path, **kwargs):
