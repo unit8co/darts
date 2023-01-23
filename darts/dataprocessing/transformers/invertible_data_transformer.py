@@ -21,7 +21,6 @@ class InvertibleDataTransformer(BaseDataTransformer):
         name: str = "InvertibleDataTransformer",
         n_jobs: int = 1,
         verbose: bool = False,
-        input_dim_variant: bool = False,
     ):
 
         """Abstract class for invertible transformers.
