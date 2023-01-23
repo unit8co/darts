@@ -53,7 +53,7 @@ class FittableDataTransformer(BaseDataTransformer):
         super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
 
         self._fit_called = False
-        self.fitted_params = None  # stores the fitted parameters/objects
+        self._fitted_params = None  # stores the fitted parameters/objects
 
     @staticmethod
     @abstractmethod
