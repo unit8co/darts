@@ -218,7 +218,7 @@ class FittableDataTransformer(BaseDataTransformer):
         raise_if(
             len(data) != len(self._fitted_params),
             f"There is a mismatch between the number of TimeSeries used during training"
-            f" ({len(self._fitted_params)}) and transformation ({len(data)}).",
+            f" ({len(self._fitted_params)}) and to transform ({len(data)}).",
             logger,
         )
 
