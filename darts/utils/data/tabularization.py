@@ -1,7 +1,12 @@
 import warnings
 from functools import reduce
 from math import inf
-from typing import Literal, Optional, Sequence, Tuple, Union
+from typing import Optional, Sequence, Tuple, Union
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 import numpy as np
 import pandas as pd
