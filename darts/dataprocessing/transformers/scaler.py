@@ -4,11 +4,11 @@ Scaler
 """
 
 from copy import deepcopy
-from typing import Any, Iterator, Sequence, Tuple
+from typing import Any, Iterator, List, Sequence, Tuple, Union
 
 from sklearn.preprocessing import MinMaxScaler
 
-from darts.logging import get_logger, raise_log
+from darts.logging import get_logger, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
 
 from .fittable_data_transformer import FittableDataTransformer
@@ -134,6 +134,41 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
             Scaler._reshape_in(series, component_mask=component_mask)
         )
         return scaler
+
+    def transform(
+        self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
+    ) -> Union[TimeSeries, List[TimeSeries]]:
+        # check length of input matches fitted parameters
+        if isinstance(series, TimeSeries):
+            data = [series]
+        else:
+            data = series
+
+        raise_if_not(
+            len(data) == len(self._fitted_params),
+            f"There is a mismatch between the number of TimeSeries used during training"
+            f" ({len(self._fitted_params)}) and to transform ({len(data)}).",
+            logger,
+        )
+
+        return super().transform(series, *args, **kwargs)
+
+    def inverse_transform(
+        self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
+    ) -> Union[TimeSeries, List[TimeSeries]]:
+        # check length of input matches fitted parameters
+        if isinstance(series, TimeSeries):
+            data = [series]
+        else:
+            data = series
+
+        raise_if_not(
+            len(data) == len(self._fitted_params),
+            f"There is a mismatch between the number of TimeSeries used during training"
+            f" ({len(self._fitted_params)}) and to transform ({len(data)}).",
+            logger,
+        )
+        return super().inverse_transform(series, *args, **kwargs)
 
     def _fit_iterator(
         self, series: Sequence[TimeSeries]

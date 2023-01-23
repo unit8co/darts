@@ -21,6 +21,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
         name: str = "InvertibleDataTransformer",
         n_jobs: int = 1,
         verbose: bool = False,
+        input_dim_variant: bool = False,
     ):
 
         """Abstract class for invertible transformers.
@@ -162,14 +163,6 @@ class InvertibleDataTransformer(BaseDataTransformer):
             data = [series]
         else:
             data = series
-
-        if hasattr(self, "_fitted_params"):
-            raise_if_not(
-                len(data) == len(self._fitted_params),
-                f"There is a mismatch between the number of TimeSeries used during training"
-                f" ({len(self._fitted_params)}) and to transform ({len(data)}).",
-                logger,
-            )
 
         input_iterator = _build_tqdm_iterator(
             self._inverse_transform_iterator(data),
