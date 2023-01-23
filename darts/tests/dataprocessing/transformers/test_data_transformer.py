@@ -89,6 +89,12 @@ class DataTransformerTestCase(unittest.TestCase):
         # fitted on 2 series, transform 3 series
         with self.assertRaises(ValueError):
             transformer1.transform([self.series1, self.series1, self.series2])
+        # fitted on 2 series, inverse transform 1 serie
+        with self.assertRaises(ValueError):
+            transformer1.inverse_transform(self.series1)
+        # fitted on 2 series, inverse transform 3 series
+        with self.assertRaises(ValueError):
+            transformer1.inverse_transform([self.series1, self.series1, self.series2])
 
     def test_multivariate_stochastic_series(self):
         scaler = Scaler(MinMaxScaler())
