@@ -83,6 +83,13 @@ class DataTransformerTestCase(unittest.TestCase):
                 series_array[index].values().flatten(),
             )
 
+        # fitted on 2 series, transform 1 serie
+        with self.assertRaises(ValueError):
+            transformer1.transform(self.series1)
+        # fitted on 2 series, transform 3 series
+        with self.assertRaises(ValueError):
+            transformer1.transform([self.series1, self.series1, self.series2])
+
     def test_multivariate_stochastic_series(self):
         scaler = Scaler(MinMaxScaler())
         vals = np.random.rand(10, 5, 50)
