@@ -7,7 +7,7 @@ from abc import abstractmethod
 from typing import Iterator, List, Sequence, Tuple, Union
 
 from darts import TimeSeries
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_if
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 
 from .base_data_transformer import BaseDataTransformer
@@ -205,3 +205,21 @@ class FittableDataTransformer(BaseDataTransformer):
         return self.fit(series, component_mask=component_mask).transform(
             series, *args, **kwargs
         )
+
+    def transform(
+        self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
+    ) -> Union[TimeSeries, List[TimeSeries]]:
+        # check length of input matches fitted parameters
+        if isinstance(series, TimeSeries):
+            data = [series]
+        else:
+            data = series
+
+        raise_if(
+            len(data) != len(self._fitted_params),
+            f"There is a mismatch between the number of TimeSeries used during training"
+            f" ({len(self._fitted_params)}) and transformation ({len(data)}).",
+            logger,
+        )
+
+        return super().transform(series, *args, **kwargs)
