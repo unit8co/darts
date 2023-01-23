@@ -113,6 +113,15 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         # getting index for idx should return i s.t., series[i].time == idx
         self.assertEqual(series.get_index_at_point(101), 91)
 
+        # slicing outside of the index range should return an empty ts
+        self.assertEqual(len(series[120:125]), 0)
+        self.assertEqual(series[120:125], series.slice(120, 125))
+
+        # slicing with a partial index overlap should return the ts subset
+        self.assertEqual(len(series[95:105]), 5)
+        # adding the 10 values index shift to compare the same values
+        self.assertEqual(series[95:105], series.slice(105, 115))
+
         # check integer indexing features when series index starts at 0 with a step > 1
         values = np.random.random(100)
         times = pd.RangeIndex(0, 200, step=2)
@@ -121,8 +130,22 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         # getting index for idx should return i s.t., series[i].time == idx
         self.assertEqual(series.get_index_at_point(100), 50)
 
+        # getting index outside of the index range should raise an exception
+        with self.assertRaises(IndexError):
+            series[100]
+
         # slicing should act the same irrespective of the initial time stamp
         np.testing.assert_equal(series[10:20].values().flatten(), values[10:20])
+
+        # slicing outside of the range should return an empty ts
+        self.assertEqual(len(series[105:110]), 0)
+        # multiply the slice start and end values by 2 to compare the same values
+        self.assertEqual(series[105:110], series.slice(210, 220))
+
+        # slicing with an index overlap should return the ts subset
+        self.assertEqual(len(series[95:105]), 5)
+        # multiply the slice start and end values by 2 to compare the same values
+        self.assertEqual(series[95:105], series.slice(190, 210))
 
         # drop_after should act on the timestamp
         np.testing.assert_equal(series.drop_after(20).values().flatten(), values[:10])
@@ -134,6 +157,32 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         # getting index for idx should return i s.t., series[i].time == idx
         self.assertEqual(series.get_index_at_point(16), 3)
+
+    def test_datetime_indexing(self):
+        # checking that the DatetimeIndex slicing is behaving as described in
+        # https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html
+
+        # getting index outside of the index range should raise an exception
+        with self.assertRaises(KeyError):
+            self.series1[pd.Timestamp("20130111")]
+
+        # slicing outside of the range should return an empty ts
+        self.assertEqual(
+            len(self.series1[pd.Timestamp("20130111") : pd.Timestamp("20130115")]), 0
+        )
+        self.assertEqual(
+            self.series1[pd.Timestamp("20130111") : pd.Timestamp("20130115")],
+            self.series1.slice(pd.Timestamp("20130111"), pd.Timestamp("20130115")),
+        )
+
+        # slicing with an partial index overlap should return the ts subset (start and end included)
+        self.assertEqual(
+            len(self.series1[pd.Timestamp("20130105") : pd.Timestamp("20130112")]), 6
+        )
+        self.assertEqual(
+            self.series1[pd.Timestamp("20130105") : pd.Timestamp("20130112")],
+            self.series1.slice(pd.Timestamp("20130105"), pd.Timestamp("20130112")),
+        )
 
     def test_univariate_component(self):
         series = TimeSeries.from_values(np.array([10, 20, 30])).with_columns_renamed(
@@ -362,7 +411,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         idx = pd.RangeIndex(start=0, stop=60, step=2)
         ts = TimeSeries.from_times_and_values(idx, values)
         slice_vals = ts.slice(11, 31).values(copy=False).flatten()
-        np.testing.assert_equal(slice_vals, values[5:15])
+        np.testing.assert_equal(slice_vals, values[6:15])
 
         slice_ts = ts.slice(40, 60)
         test_case.assertEqual(ts.end_time(), slice_ts.end_time())
