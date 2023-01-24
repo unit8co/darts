@@ -1,10 +1,18 @@
-from math import lcm
+from math import gcd
 
 import pandas as pd
 
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.data.tabularization import get_shared_times
 from darts.utils.timeseries_generation import linear_timeseries
+
+
+# math.lcm is not available in Python <= 3.8, so we define it here
+def lcm(*integers):
+    a = integers[0]
+    for b in integers[1:]:
+        a = (a * b) // gcd(a, b)
+    return a
 
 
 class GetSharedTimesTestCase(DartsBaseTestClass):
