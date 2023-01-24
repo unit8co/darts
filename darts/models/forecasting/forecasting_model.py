@@ -40,7 +40,9 @@ from darts.utils import (
 from darts.utils.timeseries_generation import (
     _build_forecast_series,
     _generate_new_dates,
+    generate_index,
 )
+from darts.utils.utils import drop_after_index, drop_before_index, series2seq
 
 logger = get_logger(__name__)
 
@@ -105,19 +107,33 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     @abstractmethod
     def __init__(self, *args, **kwargs):
-        # The series used for training the model through the `fit()` function.
+        # The series, and covariates used for training the model through the `fit()` function.
         # This is only used if the model has been fit on one time series.
         self.training_series: Optional[TimeSeries] = None
-
-        # static covariates sample from the (first) target series used for training the model through the `fit()`
-        # function.
+        self.past_covariate_series: Optional[TimeSeries] = None
+        self.future_covariate_series: Optional[TimeSeries] = None
         self.static_covariates: Optional[pd.DataFrame] = None
+
+        self._expect_past_covariates, self._expect_future_covariates = False, False
+        self._uses_past_covariates, self._uses_future_covariates = False, False
 
         # state; whether the model has been fit (on a single time series)
         self._fit_called = False
 
         # extract and store sub class model creation parameters
         self._model_params = self._extract_model_creation_params()
+
+        if "add_encoders" not in kwargs:
+            raise_log(
+                NotImplementedError(
+                    "Model subclass must pass the `add_encoders` parameter to base class."
+                ),
+                logger=logger,
+            )
+
+        # by default models do not use encoders
+        self.add_encoders = kwargs["add_encoders"]
+        self.encoders: Optional[SequentialEncoder] = None
 
     @abstractmethod
     def fit(self, series: TimeSeries) -> "ForecastingModel":
@@ -171,12 +187,26 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return False
 
     @property
-    def uses_past_covariates(self):
+    def supports_past_covariates(self):
         return "past_covariates" in inspect.signature(self.fit).parameters.keys()
 
     @property
-    def uses_future_covariates(self):
+    def supports_future_covariates(self):
         return "future_covariates" in inspect.signature(self.fit).parameters.keys()
+
+    @property
+    def uses_past_covariates(self):
+        """
+        Whether the model uses past covariates, once fitted.
+        """
+        return self._uses_past_covariates
+
+    @property
+    def uses_future_covariates(self):
+        """
+        Whether the model uses future covariates, once fitted.
+        """
+        return self._uses_future_covariates
 
     @abstractmethod
     def predict(self, n: int, num_samples: int = 1) -> TimeSeries:
@@ -240,6 +270,225 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         return 3
 
+    @property
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+    ]:
+        """
+        A 5-tuple containing in order:
+        (minimum target lag, maximum target lag, min past covariate lag, min future covariate lag, max future covariate
+        lag). If 0 is the index of the first prediction, then all lags are relative to this index, except for the
+        maximum target lag, which is relative to the last element of the time series before the first prediction.
+        See examples below.
+
+        If the model wasn't fitted with:
+            - target lag (concerning RegressionModels only) the first element should be `None`.
+
+            - past covariates, the third element should be `None`.
+
+            - future covariates, the fourth and fifth elements should be `None`.
+
+        Should be overridden by models that use past or future covariates, and/or for model that have minimum target
+        lag and maximum target lags potentially different from -1 and 1.
+
+        Notes
+        -----
+        maximum target lag (second value) cannot be `None` and is always larger than 1.
+        Examples
+        --------
+        >>> model = LinearRegressionModel(lags=3, output_chunk_length=2)
+        >>> model.fit(train_series)
+        >>> model.extreme_lags
+        (-3, 2, None, None, None)
+        >>> model = LinearRegressionModel(lags=[3, 5], past_covariates_lags = 4, output_chunk_length=7)
+        >>> model.fit(train_series, past_covariates=past_covariates)
+        >>> model.extreme_lags
+        (-5, 7, -4, None, None)
+        >>> model = LinearRegressionModel(lags=[3, 5], future_covariates_lags = [4, 6], output_chunk_length=7)
+        >>> model.fit(train_series, future_covariates=future_covariates)
+        >>> model.extreme_lags
+        (-5, 7, None, 4, 6)
+        >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7)
+        >>> model.fit(train_series)
+        >>> model.extreme_lags
+        (-10, 7, None, None, None)
+        >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7, future_covariates_lags=[4, 6])
+        >>> model.fit(train_series, future_covariates)
+        >>> model.extreme_lags
+        (-10, 7, None, 4, 6)
+        """
+
+        return (-1, 1, None, None, None)
+
+    @property
+    def _training_sample_time_index_length(self) -> int:
+        """
+        Required time_index length for one training sample, for any model.
+        """
+        (
+            min_target_lag,
+            max_target_lag,
+            min_past_cov_lag,
+            min_future_cov_lag,
+            max_future_cov_lag,
+        ) = self.extreme_lags
+
+        return max(
+            max_target_lag,
+            max_future_cov_lag if max_future_cov_lag else 0,
+        ) - min(
+            min_target_lag if min_target_lag else 0,
+            min_past_cov_lag if min_past_cov_lag else 0,
+            min_future_cov_lag if min_future_cov_lag else 0,
+        )
+
+    @property
+    def _predict_sample_time_index_length(self) -> int:
+        """
+        Required time_index length for one predict sample, for any model.
+         A predict sample is the minimum required set of series and covariates chunks to be able to predict
+         a single point.
+        """
+        (
+            min_target_lag,
+            max_target_lag,
+            min_past_cov_lag,
+            min_future_cov_lag,
+            max_future_cov_lag,
+        ) = self.extreme_lags
+
+        return (max_future_cov_lag if max_future_cov_lag else 0) - min(
+            min_target_lag if min_target_lag else 0,
+            min_past_cov_lag if min_past_cov_lag else 0,
+            min_future_cov_lag if min_future_cov_lag else 0,
+        )
+
+    def _get_historical_forecastable_time_index(
+        self,
+        series: Optional[TimeSeries] = None,
+        past_covariates: Optional[TimeSeries] = None,
+        future_covariates: Optional[TimeSeries] = None,
+        is_training: Optional[bool] = False,
+    ) -> Union[pd.DatetimeIndex, pd.RangeIndex, None]:
+        """
+        Private function that returns the largest time_index representing the subset of each timestamps
+        for which historical forecasts can be made, given the model's properties, the training series
+        and the covariates.
+            - If ``None`` is returned, there is no point where a forecast can be made.
+
+            - If ``is_training=False``, it returns the time_index subset of predictable timestamps.
+
+            - If ``is_training=True``, it returns the time_index subset of trainable timestamps. A trainable
+            timestamp is a timestamp that has a training sample of length at least ``self.training_sample_length``
+             preceding it.
+
+
+        Parameters
+        ----------
+        series
+            Optionally, a target series.
+        past_covariates
+            Optionally, a past covariates.
+        future_covariates
+            Optionally, a future covariates.
+        is_training
+            Whether the returned time_index should be taking into account the training.
+
+        Returns
+        -------
+        Union[pd.DatetimeIndex, pd.RangeIndex, None]
+            The longest time_index that can be used for historical forecasting.
+
+        Examples
+        --------
+        >>> model = LinearRegressionModel(lags=3, output_chunk_length=2)
+        >>> model.fit(train_series)
+        >>> series = TimeSeries.from_times_and_values(pd.date_range('2000-01-01', '2000-01-10'), np.arange(10))
+        >>> model._get_historical_forecastable_time_index(series=series, is_training=False)
+        DatetimeIndex(['2000-01-04', '2000-01-05', '2000-01-06', '2000-01-07',
+               '2000-01-08', '2000-01-09', '2000-01-10'],
+              dtype='datetime64[ns]', freq='D')
+        >>> model._get_historical_forecastable_time_index(series=series, is_training=True)
+        DatetimeIndex(['2000-01-06', '2000-01-08', '2000-01-09', '2000-01-10'],
+                dtype='datetime64[ns]', freq='D')
+
+        >>> model = NBEATSModel(input_chunk_length=3, output_chunk_length=3)
+        >>> model.fit(train_series, train_past_covariates)
+        >>> series = TimeSeries.from_times_and_values(pd.date_range('2000-10-01', '2000-10-09'), np.arange(8))
+        >>> past_covariates = TimeSeries.from_times_and_values(pd.date_range('2000-10-03', '2000-10-20'),
+        np.arange(18))
+        >>> model._get_historical_forecastable_time_index(series=series, past_covariates=past_covariates,
+        is_training=False)
+        DatetimeIndex(['2000-10-06', '2000-10-07', '2000-10-08', '2000-10-09'], dtype='datetime64[ns]', freq='D')
+        >>> model._get_historical_forecastable_time_index(series=series, past_covariates=past_covariates,
+        is_training=True)
+        DatetimeIndex(['2000-10-09'], dtype='datetime64[ns]', freq='D') # Only one point is trainable, and
+        # corresponds to the first point after we reach a common subset of timestamps of training_sample_length length.
+        """
+
+        (
+            min_target_lag,
+            max_target_lag,
+            min_past_cov_lag,
+            min_future_cov_lag,
+            max_future_cov_lag,
+        ) = self.extreme_lags
+
+        intersect_ = None
+
+        # target longest possible time index
+        if (min_target_lag is not None) and (series is not None):
+            intersect_ = generate_index(
+                start=series.start_time()
+                - (min_target_lag - max_target_lag) * series.freq
+                if is_training
+                else series.start_time() - min_target_lag * series.freq,
+                end=series.end_time(),
+                freq=series.freq,
+            )
+
+        # past covariates longest possible time index
+        if (min_past_cov_lag is not None) and (past_covariates is not None):
+            tmp_ = generate_index(
+                start=past_covariates.start_time()
+                - (min_past_cov_lag - max_target_lag) * past_covariates.freq
+                if is_training
+                else past_covariates.start_time()
+                - min_past_cov_lag * past_covariates.freq,
+                end=past_covariates.end_time(),
+                freq=past_covariates.freq,
+            )
+            if intersect_ is not None:
+                intersect_ = intersect_.intersection(tmp_)
+            else:
+                intersect_ = tmp_
+
+        # future covariates longest possible time index
+        if (min_future_cov_lag is not None) and (future_covariates is not None):
+            tmp_ = generate_index(
+                start=future_covariates.start_time()
+                - (min_future_cov_lag - max_target_lag) * future_covariates.freq
+                if is_training
+                else future_covariates.start_time()
+                - min_future_cov_lag * future_covariates.freq,
+                end=future_covariates.end_time()
+                - max_future_cov_lag * future_covariates.freq,
+                freq=future_covariates.freq,
+            )
+
+            if intersect_ is not None:
+                intersect_ = intersect_.intersection(tmp_)
+            else:
+                intersect_ = tmp_
+
+        return intersect_ if len(intersect_) > 0 else None
+
     def _generate_new_dates(
         self, n: int, input_series: Optional[TimeSeries] = None
     ) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
@@ -295,30 +544,34 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     @_with_sanity_checks("_historical_forecasts_sanity_checks")
     def historical_forecasts(
         self,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
         train_length: Optional[int] = None,
-        start: Union[pd.Timestamp, float, int] = 0.5,
+        start: Optional[Union[pd.Timestamp, float, int]] = None,
         forecast_horizon: int = 1,
         stride: int = 1,
         retrain: Union[bool, int, Callable[..., bool]] = True,
         overlap_end: bool = False,
         last_points_only: bool = True,
         verbose: bool = False,
-    ) -> Union[TimeSeries, List[TimeSeries]]:
+    ) -> Union[
+        TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
+    ]:
 
-        """Compute the historical forecasts that would have been obtained by this model on the `series`.
+        """Compute the historical forecasts that would have been obtained by this model on
+        (potentially multiple) `series`.
 
         This method uses an expanding training window;
         it repeatedly builds a training set from the beginning of `series`. It trains the
         model on the training set, emits a forecast of length equal to forecast_horizon, and then moves
         the end of the training set forward by `stride` time steps.
 
-        By default, this method will return a single time series made up of the last point of each
-        historical forecast. This time series will thus have a frequency of ``series.freq * stride``.
-        If `last_points_only` is set to False, it will instead return a list of the
+        By default, this method will return one (or a sequence of) single time series made up of
+        the last point of each historical forecast.
+        This time series will thus have a frequency of ``series.freq * stride``.
+        If `last_points_only` is set to False, it will instead return one (or a sequence of) list of the
         historical forecasts series.
 
         By default, this method always re-trains the models on the entire available history,
@@ -330,11 +583,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Parameters
         ----------
         series
-            The target time series to use to successively train and evaluate the historical forecasts.
+            One or multiple target time series to use to successively train and evaluate
+            the historical forecasts.
         past_covariates
-            An optional past-observed covariate series. This applies only if the model supports past covariates.
+            Optionally, one (or a sequence of) past-observed covariate series.
+            This applies only if the model supports past covariates.
         future_covariates
-            An optional future-known covariate series. This applies only if the model supports future covariates.
+            Optionally, one (or a sequence of) of future-known covariate series.
+            This applies only if the model supports future covariates.
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
@@ -352,6 +608,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             `series` that will be used as first prediction time.
             In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
             directly.
+            If `start` is not specified, the first prediction time will automatically be set to :
+                 - the first predictable point if `retrain` is False
+
+                 - the first trainable point if `retrain` is True and `train_length` is None
+
+                 - the first trainable point + `train_length` otherwise
         forecast_horizon
             The forecast horizon for the predictions
         stride
@@ -383,17 +645,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Whether to print progress
         Returns
         -------
-        TimeSeries or List[TimeSeries]
-            By default, a single ``TimeSeries`` instance created from the last point of each individual forecast.
-            If `last_points_only` is set to False, a list of the historical forecasts.
-        """
+        TimeSeries or List[TimeSeries] or List[List[TimeSeries]]
+            If `last_points_only` is set to True and a single series is provided in input,
+            a single ``TimeSeries`` is returned, which contains the the historical forecast
+            at the desired horizon.
 
-        # TODO: do we need a check here? I'd rather leave these checks to the models/datasets.
-        # if covariates:
-        #     raise_if_not(
-        #         series.end_time() <= covariates.end_time() and covariates.start_time() <= series.start_time(),
-        #         'The provided covariates must be at least as long as the target series.'
-        #     )
+            A ``List[TimeSeries]`` is returned if either `series` is a ``Sequence`` of ``TimeSeries``,
+            or if `last_points_only` is set to False. A list of lists is returned if both conditions are met.
+            In this last case, the outer list is over the series provided in the input sequence,
+            and the inner lists contain the different historical forecasts.
+        """
 
         # only GlobalForecastingModels support historical forecastings without retraining the model
         base_class_name = self.__class__.__base__.__name__
@@ -416,7 +677,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ValueError("If not None, train_length needs to be positive."),
                 logger,
             )
-        elif (train_length is not None) and train_length < self.min_train_series_length:
+        elif (
+            train_length is not None
+        ) and train_length < self._training_sample_time_index_length:
             raise_log(
                 ValueError(
                     "train_length is too small for the training requirements of this model"
@@ -428,10 +691,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             retrain_func = _retrain_wrapper(
                 lambda counter: counter % int(retrain) == 0 if retrain else False
             )
-
         elif isinstance(retrain, Callable):
             retrain_func = _retrain_wrapper(retrain)
-
         else:
             raise_log(
                 ValueError(
@@ -439,110 +700,218 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ),
                 logger,
             )
+
         retrain_func_signature = tuple(
             inspect.signature(retrain_func).parameters.keys()
         )
 
-        # prepare the start parameter -> pd.Timestamp
-        start = series.get_timestamp_at_point(start)
+        series = series2seq(series)
+        past_covariates = series2seq(past_covariates)
+        future_covariates = series2seq(future_covariates)
 
-        # build the prediction times in advance (to be able to use tqdm)
-        last_valid_pred_time = self._get_last_prediction_time(
-            series, forecast_horizon, overlap_end
-        )
+        # If the model has never been fitted before using historical_forecasts,
+        # we need to know if it uses past or future covariates. The only possible assumption is that
+        # the user is using the same covariates as they would in the fit method.
+        if self._fit_called is False:
+            if past_covariates is not None:
+                self._uses_past_covariates = True
+            if future_covariates is not None:
+                self._uses_future_covariates = True
 
-        pred_times = [start]
-        while pred_times[-1] < last_valid_pred_time:
-            # compute the next prediction time and add it to pred times
-            pred_times.append(pred_times[-1] + series.freq * stride)
+        if len(series) == 1:
+            # Use tqdm on the outer loop only if there's more than one series to iterate over
+            # (otherwise use tqdm on the inner loop).
+            outer_iterator = series
+        else:
+            outer_iterator = _build_tqdm_iterator(series, verbose)
 
-        # the last prediction time computed might have overshot last_valid_pred_time
-        if pred_times[-1] > last_valid_pred_time:
-            pred_times.pop(-1)
+        forecasts_list = []
+        for idx, series_ in enumerate(outer_iterator):
+            past_covariates_ = past_covariates[idx] if past_covariates else None
+            future_covariates_ = future_covariates[idx] if future_covariates else None
 
-        iterator = _build_tqdm_iterator(pred_times, verbose)
-
-        # Either store the whole forecasts or only the last points of each forecast, depending on last_points_only
-        forecasts = []
-
-        last_points_times = []
-        last_points_values = []
-
-        # iterate and forecast
-        for _counter, pred_time in enumerate(iterator):
-            # build the training series
-            train = series.drop_after(pred_time)
-            if train_length and len(train) > train_length:
-                train = train[-train_length:]
-
-            # train_cov = covariates.drop_after(pred_time) if covariates else None
-
-            if (not self._fit_called) or retrain_func(
-                counter=_counter,
-                pred_time=pred_time,
-                train_series=train,
-                past_covariates=past_covariates.drop_after(pred_time)
-                if past_covariates and ("past_covariates" in retrain_func_signature)
-                else None,
-                future_covariates=future_covariates.drop_after(
-                    min(pred_time + series.freq * forecast_horizon, series.end_time())
+            # Determines the time index the historical forecasts will be made on
+            historical_forecasts_time_index = (
+                self._get_historical_forecastable_time_index(
+                    series_,
+                    past_covariates_,
+                    future_covariates_,
+                    (retrain is not False) or (not self._fit_called),
                 )
-                if future_covariates and ("future_covariates" in retrain_func_signature)
-                else None,
-            ):
-                self._fit_wrapper(
-                    series=train,
-                    past_covariates=past_covariates,
-                    future_covariates=future_covariates,
-                )
-
-            forecast = self._predict_wrapper(
-                n=forecast_horizon,
-                series=train,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                num_samples=num_samples,
-                verbose=verbose,
             )
 
-            if last_points_only:
-                last_points_values.append(forecast.all_values(copy=False)[-1])
-                last_points_times.append(forecast.end_time())
-            else:
-                forecasts.append(forecast)
-
-        if last_points_only:
-            if series.has_datetime_index:
-                return TimeSeries.from_times_and_values(
-                    pd.DatetimeIndex(last_points_times, freq=series.freq * stride),
-                    np.array(last_points_values),
-                    columns=series.columns,
-                    static_covariates=series.static_covariates,
-                    hierarchy=series.hierarchy,
+            # We also need the first value timestamp to be used for prediction or training
+            min_timestamp = (
+                historical_forecasts_time_index[0]
+                - (
+                    self._training_sample_time_index_length
+                    if retrain
+                    else self._predict_sample_time_index_length
                 )
-            else:
-                return TimeSeries.from_times_and_values(
-                    pd.RangeIndex(
-                        start=last_points_times[0],
-                        stop=last_points_times[-1] + 1,
-                        step=series.freq * stride,
+                * series_.freq
+            )
+
+            if historical_forecasts_time_index is None:
+                raise_log(
+                    ValueError(
+                        "Given the provided model, series and covariates, there is no timestamps "
+                        f" where we can make a prediction or train the model (series index: {idx}). "
+                        "Please check the time indexes of the series and covariates."
                     ),
-                    np.array(last_points_values),
-                    columns=series.columns,
-                    static_covariates=series.static_covariates,
-                    hierarchy=series.hierarchy,
+                    logger,
                 )
 
-        return forecasts
+            # prepare the start parameter -> pd.Timestamp
+            if start is not None:
+                historical_forecasts_time_index = drop_before_index(
+                    historical_forecasts_time_index,
+                    series_.get_timestamp_at_point(start),
+                )
+            else:
+                if (retrain is not False) or (not self._fit_called):
+                    if train_length:
+                        historical_forecasts_time_index = drop_before_index(
+                            historical_forecasts_time_index,
+                            historical_forecasts_time_index[0]
+                            + max(
+                                (
+                                    train_length
+                                    - self._training_sample_time_index_length
+                                ),
+                                0,
+                            )
+                            * series_.freq,
+                        )
+                    # if not we start training right away, but with 2 minimum points, so we start
+                    # 1 time step after the first trainable point.
+                    # (sklearn check that there are at least 2 points in the training set and it seems
+                    # rather reasonable)
+                    else:
+                        historical_forecasts_time_index = drop_before_index(
+                            historical_forecasts_time_index,
+                            historical_forecasts_time_index[0] + 1 * series_.freq,
+                        )
+
+                    # if retrain is False, fit hasn't been called yet and train_length None,
+                    # it means that the entire backtesting will be based on a set of two training samples
+                    # at the first step, so we warn the user.
+                    raise_if(
+                        (not self._fit_called)
+                        and (retrain is False)
+                        and (not train_length),
+                        "The model has not been fitted yet, and `start` and train_length are not specified. "
+                        "The model is not retraining during the historical forecasts. Hence the "
+                        "first and only training would be done on 2 samples.",
+                        logger,
+                    )
+
+            # build the prediction times in advance (to be able to use tqdm)
+            last_valid_pred_time = self._get_last_prediction_time(
+                series_,
+                forecast_horizon,
+                overlap_end,
+            )
+
+            historical_forecasts_time_index = drop_after_index(
+                historical_forecasts_time_index, last_valid_pred_time
+            )
+
+            if len(series) == 1:
+                # Only use tqdm if there's no outer loop
+                iterator = _build_tqdm_iterator(
+                    historical_forecasts_time_index[::stride], verbose
+                )
+            else:
+                iterator = historical_forecasts_time_index[::stride]
+
+            # Either store the whole forecasts or only the last points of each forecast, depending on last_points_only
+            forecasts = []
+
+            last_points_times = []
+            last_points_values = []
+
+            # iterate and forecast
+            for _counter, pred_time in enumerate(iterator):
+                # build the training series
+                if min_timestamp > series_.time_index[0]:
+                    train_series = series_.drop_before(
+                        min_timestamp - 1 * series_.freq
+                    ).drop_after(pred_time)
+                else:
+                    train_series = series_.drop_after(pred_time)
+
+                if train_length and len(train_series) > train_length:
+                    train_series = train_series[-train_length:]
+
+                if (not self._fit_called) or retrain_func(
+                    counter=_counter,
+                    pred_time=pred_time,
+                    train_series=train_series,
+                    past_covariates=past_covariates_.drop_after(pred_time)
+                    if past_covariates_
+                    and ("past_covariates" in retrain_func_signature)
+                    else None,
+                    future_covariates=future_covariates_.drop_after(
+                        min(
+                            pred_time + train_series.freq * forecast_horizon,
+                            series_.end_time(),
+                        )
+                    )
+                    if future_covariates_
+                    else None,
+                ):
+                    # avoid fitting the same model multiple times
+                    model = self.untrained_model()
+                    model._fit_wrapper(
+                        series=train_series,
+                        past_covariates=past_covariates_,
+                        future_covariates=future_covariates_,
+                    )
+                else:
+                    model = self
+
+                forecast = model._predict_wrapper(
+                    n=forecast_horizon,
+                    series=train_series,
+                    past_covariates=past_covariates_,
+                    future_covariates=future_covariates_,
+                    num_samples=num_samples,
+                    verbose=verbose,
+                )
+
+                if last_points_only:
+                    last_points_values.append(forecast.all_values(copy=False)[-1])
+                    last_points_times.append(forecast.end_time())
+                else:
+                    forecasts.append(forecast)
+
+            if last_points_only:
+                forecasts_list.append(
+                    TimeSeries.from_times_and_values(
+                        generate_index(
+                            start=last_points_times[0],
+                            end=last_points_times[-1],
+                            freq=series_.freq,
+                        )[::stride],
+                        np.array(last_points_values),
+                        columns=series_.columns,
+                        static_covariates=series_.static_covariates,
+                        hierarchy=series_.hierarchy,
+                    )
+                )
+            else:
+                forecasts_list.append(forecasts)
+
+        return forecasts_list if len(series) > 1 else forecasts_list[0]
 
     def backtest(
         self,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
         train_length: Optional[int] = None,
-        start: Union[pd.Timestamp, float, int] = 0.5,
+        start: Optional[Union[pd.Timestamp, float, int]] = None,
         forecast_horizon: int = 1,
         stride: int = 1,
         retrain: Union[bool, int, Callable[..., bool]] = True,
@@ -554,13 +923,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         ] = metrics.mape,
         reduction: Union[Callable[[np.ndarray], float], None] = np.mean,
         verbose: bool = False,
-    ) -> Union[float, List[float]]:
+    ) -> Union[float, List[float], Sequence[float], List[Sequence[float]]]:
 
         """Compute error values that the model would have produced when
-        used on `series`.
+        used on (potentially multiple) `series`.
 
-        It repeatedly builds a training set from the beginning of `series`. It trains the current model on
-        the training set, emits a forecast of length equal to forecast_horizon, and then moves the end of the
+        It repeatedly builds a training set from the beginning of `series`. It trains the
+        current model on the training set, emits a forecast of length equal to forecast_horizon, and then moves
+        the end of the
         training set forward by `stride` time steps. A metric (given by the `metric` function) is then evaluated
         on the forecast and the actual values. Finally, the method returns a `reduction` (the mean by default)
         of all these metric scores.
@@ -579,11 +949,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Parameters
         ----------
         series
-            The target time series to use to successively train and evaluate the historical forecasts
+            The (or a sequence of) target time series to use to successively train and evaluate the historical forecasts
         past_covariates
-            An optional past-observed covariate series. This applies only if the model supports past covariates.
+            Optionally, one (or a sequence of) past-observed covariate series.
+            This applies only if the model supports past covariates.
         future_covariates
-            An optional future-known covariate series. This applies only if the model supports future covariates.
+            Optionally, one (or a sequence of) future-known covariate series.
+            This applies only if the model supports future covariates.
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
@@ -601,6 +973,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             `series` that will be used as first prediction time.
             In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
             directly.
+            If `start` is not specified, the first prediction time will automatically be set to :
+                 - the first predictable point if `retrain` is False
+
+                 - the first trainable point if `retrain` is True and `train_length` is None
+
+                 - the first trainable point + `train_length` otherwise
         forecast_horizon
             The forecast horizon for the point prediction.
         stride
@@ -639,9 +1017,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Whether to print progress
         Returns
         -------
-        float or List[float]
-            The error score, or the list of individual error scores if `reduction` is `None`
+        float or List[float] or List[List[float]]
+            The (sequence of) error score on a series, or list of list containing error scores for each
+            provided series and each sample.
         """
+
         forecasts = self.historical_forecasts(
             series=series,
             past_covariates=past_covariates,
@@ -657,26 +1037,35 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             verbose=verbose,
         )
 
+        series = series2seq(series)
+        if len(series) == 1:
+            forecasts = [forecasts]
+
         if not isinstance(metric, list):
             metric = [metric]
 
-        if last_points_only:
-            errors = [metric_f(series, forecasts) for metric_f in metric]
+        backtest_list = []
+        for idx, target_ts in enumerate(series):
+            if last_points_only:
+                errors = [metric_f(target_ts, forecasts[idx]) for metric_f in metric]
+                if len(errors) == 1:
+                    errors = errors[0]
+                backtest_list.append(errors)
+            else:
 
-        else:
-            # metric in columns, forecast in rows
-            errors = [
-                [metric_f(series, forecast) for metric_f in metric]
-                for forecast in forecasts
-            ]
-            if reduction is not None:
-                # one value per metric
-                errors = reduction(np.array(errors), axis=0)
+                errors = [
+                    [metric_f(series, f) for metric_f in metric]
+                    if len(metric) > 1
+                    else metric[0](series, f)
+                    for f in forecasts[idx]
+                ]
 
-        if len(metric) > 1:
-            return errors
-        else:
-            return errors[0]
+                if reduction is None:
+                    backtest_list.append(errors)
+                else:
+                    backtest_list.append(reduction(np.array(errors), axis=0))
+
+        return backtest_list if len(backtest_list) > 1 else backtest_list[0]
 
     @classmethod
     def gridsearch(
@@ -897,14 +1286,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     def residuals(
         self,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         forecast_horizon: int = 1,
         retrain: bool = True,
         verbose: bool = False,
-    ) -> TimeSeries:
-        """Compute the residuals produced by this model on a univariate time series.
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        """Compute the residuals produced by this model on a (or sequence of) univariate  time series.
 
         This function computes the difference between the actual observations from `series`
         and the fitted values vector `p` obtained by training the model on `series`.
@@ -936,52 +1325,176 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Whether to print progress.
         Returns
         -------
-        TimeSeries
+        TimeSeries (or Sequence[TimeSeries])
             The vector of residuals.
         """
-        try:
-            series._assert_univariate()
-        except (AttributeError, TypeError):
-            raise ValueError(
-                "series must be of type TimeSeries. "
-                "If Sequence[TimeSeries] is provided, select the series to compute residuals for."
+
+        series = series2seq(series)
+        past_covariates = series2seq(past_covariates)
+        future_covariates = series2seq(future_covariates)
+
+        raise_if_not(
+            all([serie.is_univariate for serie in series]),
+            "Each series in the sequence must be univariate.",
+            logger,
+        )
+
+        residuals_list = []
+        # compute residuals
+        for idx, target_ts in enumerate(series):
+            # get first index not contained in the first training set
+            first_index = target_ts.time_index[self.min_train_series_length]
+
+            # compute fitted values
+            forecasts = self.historical_forecasts(
+                series=target_ts,
+                past_covariates=past_covariates[idx] if past_covariates else None,
+                future_covariates=future_covariates[idx] if future_covariates else None,
+                start=first_index,
+                forecast_horizon=forecast_horizon,
+                stride=1,
+                retrain=retrain,
+                last_points_only=True,
+                verbose=verbose,
+            )
+            series_trimmed = target_ts.slice_intersect(forecasts)
+            residuals_list.append(
+                series_trimmed
+                - (
+                    forecasts.quantile_timeseries(quantile=0.5)
+                    if forecasts.is_stochastic
+                    else forecasts
+                )
             )
 
-        if past_covariates is not None:
-            raise_if_not(
-                isinstance(past_covariates, TimeSeries),
-                "past_covariates should be of type TimeSeries",
-            )
+        return residuals_list if len(residuals_list) > 1 else residuals_list[0]
 
-        if future_covariates is not None:
-            raise_if_not(
-                isinstance(future_covariates, TimeSeries),
-                "future_covariates should be of type TimeSeries",
-            )
+    def initialize_encoders(self) -> SequentialEncoder:
+        """instantiates the SequentialEncoder object based on self._model_encoder_settings and parameter
+        ``add_encoders`` used at model creation"""
+        (
+            input_chunk_length,
+            output_chunk_length,
+            takes_past_covariates,
+            takes_future_covariates,
+            lags_past_covariates,
+            lags_future_covariates,
+        ) = self._model_encoder_settings
 
-        # get first index not contained in the first training set
-        first_index = series.time_index[self.min_train_series_length]
+        return SequentialEncoder(
+            add_encoders=self.add_encoders,
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            lags_past_covariates=lags_past_covariates,
+            lags_future_covariates=lags_future_covariates,
+            takes_past_covariates=takes_past_covariates,
+            takes_future_covariates=takes_future_covariates,
+        )
 
-        # compute fitted values
-        p = self.historical_forecasts(
-            series=series,
+    def generate_fit_encodings(
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+    ) -> Tuple[
+        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
+    ]:
+        """Generates the covariate encodings that were used/generated for fitting the model and returns a tuple of
+        past, and future covariates series with the original and encoded covariates stacked together. The encodings are
+        generated by the encoders defined at model creation with parameter `add_encoders`. Pass the same `series`,
+        `past_covariates`, and  `future_covariates` that you used to train/fit the model.
+
+        Parameters
+        ----------
+        series
+            The series or sequence of series with the target values used when fitting the model.
+        past_covariates
+            Optionally, the series or sequence of series with the past-observed covariates used when fitting the model.
+        future_covariates
+            Optionally, the series or sequence of series with the future-known covariates used when fitting the model.
+
+        Returns
+        -------
+        Tuple[Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]]
+            A tuple of (past covariates, future covariates). Each covariate contains the original as well as the
+            encoded covariates.
+        """
+        raise_if(
+            self.encoders is None or not self.encoders.encoding_available,
+            "Encodings are not available. Consider adding parameter `add_encoders` at model creation and fitting the "
+            "model with `model.fit()` before.",
+            logger=logger,
+        )
+        return self.encoders.encode_train(
+            target=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            start=first_index,
-            forecast_horizon=forecast_horizon,
-            stride=1,
-            retrain=retrain,
-            last_points_only=True,
-            verbose=verbose,
         )
 
-        # compute residuals
-        series_trimmed = series.slice_intersect(p)
-        residuals = series_trimmed - (
-            p.quantile_timeseries(quantile=0.5) if p.is_stochastic else p
+    def generate_predict_encodings(
+        self,
+        n: int,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+    ) -> Tuple[
+        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
+    ]:
+        """Generates covariate encodings for the inference/prediction set and returns a tuple of past, and future
+        covariates series with the original and encoded covariates stacked together. The encodings are generated by the
+        encoders defined at model creation with parameter `add_encoders`. Pass the same `series`, `past_covariates`,
+        and `future_covariates` that you intend to use for prediction.
+
+        Parameters
+        ----------
+        n
+            The number of prediction time steps after the end of `series` intended to be used for prediction.
+        series
+            The series or sequence of series with target values intended to be used for prediction.
+        past_covariates
+            Optionally, the past-observed covariates series intended to be used for prediction. The dimensions must
+            match those of the covariates used for training.
+        future_covariates
+            Optionally, the future-known covariates series intended to be used for prediction. The dimensions must
+            match those of the covariates used for training.
+
+        Returns
+        -------
+        Tuple[Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]]
+            A tuple of (past covariates, future covariates). Each covariate contains the original as well as the
+            encoded covariates.
+        """
+        raise_if(
+            self.encoders is None or not self.encoders.encoding_available,
+            "Encodings are not available. Consider adding parameter `add_encoders` at model creation and fitting the "
+            "model with `model.fit()` before.",
+            logger=logger,
+        )
+        return self.encoders.encode_inference(
+            n=n,
+            target=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
         )
 
-        return residuals
+    @property
+    @abstractmethod
+    def _model_encoder_settings(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        bool,
+        bool,
+        Optional[List[int]],
+        Optional[List[int]],
+    ]:
+        """Abstract property that returns model specific encoder settings that are used to initialize the encoders.
+
+        Must return Tuple (input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates,
+        lags_past_covariates, lags_future_covariates).
+        """
+        pass
 
     @classmethod
     def _sample_params(model_class, params, n_random_samples):
@@ -1010,7 +1523,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return model_params
 
     def untrained_model(self):
-        return self.__class__(**self.model_params)
+        return self.__class__(**copy.deepcopy(self.model_params))
 
     @property
     def model_params(self) -> dict:
@@ -1105,6 +1618,22 @@ class LocalForecastingModel(ForecastingModel, ABC):
     All implementations must implement the `fit()` and `predict()` methods.
     """
 
+    def __init__(self, add_encoders: Optional[dict] = None):
+        super().__init__(add_encoders=add_encoders)
+
+    @property
+    def _model_encoder_settings(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        bool,
+        bool,
+        Optional[List[int]],
+        Optional[List[int]],
+    ]:
+        return None, None, False, False, None, None
+
     @abstractmethod
     def fit(self, series: TimeSeries) -> "LocalForecastingModel":
         super().fit(series)
@@ -1132,15 +1661,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     provide to :func:`predict()` the series they want to forecast, as well as covariates, if needed.
     """
 
-    _expect_past_covariates, _expect_future_covariates = False, False
-    past_covariate_series, future_covariate_series = None, None
-
     def __init__(self, add_encoders: Optional[dict] = None):
-        super().__init__()
-
-        # by default models do not use encoders
-        self.add_encoders = add_encoders
-        self.encoders: Optional[SequentialEncoder] = None
+        super().__init__(add_encoders=add_encoders)
 
     @abstractmethod
     def fit(
@@ -1187,10 +1709,17 @@ class GlobalForecastingModel(ForecastingModel, ABC):
                 self.future_covariate_series = future_covariates
         else:
             self.static_covariates = series[0].static_covariates
+
             if past_covariates is not None:
                 self._expect_past_covariates = True
             if future_covariates is not None:
                 self._expect_future_covariates = True
+
+        if past_covariates is not None:
+            self._uses_past_covariates = True
+        if future_covariates is not None:
+            self._uses_future_covariates = True
+
         self._fit_called = True
 
     @abstractmethod
@@ -1287,134 +1816,15 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     ):
         self.fit(
             series=series,
-            past_covariates=past_covariates if self.uses_past_covariates else None,
+            past_covariates=past_covariates if self.supports_past_covariates else None,
             future_covariates=future_covariates
-            if self.uses_future_covariates
+            if self.supports_future_covariates
             else None,
         )
 
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
         """GlobalForecastingModel supports historical forecasts without retraining the model"""
         return True
-
-    @property
-    @abstractmethod
-    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
-        """Abstract property that returns model specific encoder settings that are used to initialize the encoders.
-
-        Must return Tuple (input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates)
-        """
-        pass
-
-    def initialize_encoders(self) -> SequentialEncoder:
-        """instantiates the SequentialEncoder object based on self._model_encoder_settings and parameter
-        ``add_encoders`` used at model creation"""
-        (
-            input_chunk_length,
-            output_chunk_length,
-            takes_past_covariates,
-            takes_future_covariates,
-        ) = self._model_encoder_settings
-
-        return SequentialEncoder(
-            add_encoders=self.add_encoders,
-            input_chunk_length=input_chunk_length,
-            output_chunk_length=output_chunk_length,
-            takes_past_covariates=takes_past_covariates,
-            takes_future_covariates=takes_future_covariates,
-        )
-
-    def generate_fit_encodings(
-        self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    ) -> Tuple[
-        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
-    ]:
-        """Generates the covariate encodings that were used/generated for fitting the model and returns a tuple of
-        past, and future covariates series with the original and encoded covariates stacked together. The encodings are
-        generated by the encoders defined at model creation with parameter `add_encoders`. Pass the same `series`,
-        `past_covariates`, and  `future_covariates` that you used to train/fit the model.
-
-        Parameters
-        ----------
-        series
-            The series or sequence of series with the target values used when fitting the model.
-        past_covariates
-            Optionally, the series or sequence of series with the past-observed covariates used when fitting the model.
-        future_covariates
-            Optionally, the series or sequence of series with the future-known covariates used when fitting the model.
-
-        Returns
-        -------
-        Tuple[Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]]
-            A tuple of (past covariates, future covariates). Each covariate contains the original as well as the
-            encoded covariates.
-        """
-        raise_if(
-            self.encoders is None or not self.encoders.encoding_available,
-            "Encodings are not available. Consider adding parameter `add_encoders` at model creation and fitting the "
-            "model with `model.fit()` before.",
-            logger=logger,
-        )
-        return self.encoders.encode_train(
-            target=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-        )
-
-    def generate_predict_encodings(
-        self,
-        n: int,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    ) -> Tuple[
-        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
-    ]:
-        """Generates covariate encodings for the inference/prediction set and returns a tuple of past, and future
-        covariates series with the original and encoded covariates stacked together. The encodings are generated by the
-        encoders defined at model creation with parameter `add_encoders`. Pass the same `series`, `past_covariates`,
-        and `future_covariates` that you intend to use for prediction.
-
-        Parameters
-        ----------
-        n
-            The number of prediction time steps after the end of `series` intended to be used for prediction.
-        series
-            The series or sequence of series with target values intended to be used for prediction.
-        past_covariates
-            Optionally, the past-observed covariates series intended to be used for prediction. The dimensions must
-            match those of the covariates used for training.
-        future_covariates
-            Optionally, the future-known covariates series intended to be used for prediction. The dimensions must
-            match those of the covariates used for training.
-
-        Returns
-        -------
-        Tuple[Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]]
-            A tuple of (past covariates, future covariates). Each covariate contains the original as well as the
-            encoded covariates.
-        """
-        raise_if(
-            self.encoders is None or not self.encoders.encoding_available,
-            "Encodings are not available. Consider adding parameter `add_encoders` at model creation and fitting the "
-            "model with `model.fit()` before.",
-            logger=logger,
-        )
-        return self.encoders.encode_inference(
-            n=self._get_encoders_n(n),
-            target=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-        )
-
-    def _get_encoders_n(self, n) -> int:
-        """Returns the number of prediction steps for generating with `model.encoders.generate_predict_encodings()`.
-        Subclasses can have different requirements for setting `n`. The most general case simply returns `n` as is.
-        """
-        return n
 
 
 class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
@@ -1430,8 +1840,6 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
 
     All implementations must implement the :func:`_fit()` and :func:`_predict()` methods.
     """
-
-    _expect_covariate = False
 
     def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         """Fit/train the model on the (single) provided series.
@@ -1462,9 +1870,17 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
                 series.has_same_time_as(future_covariates),
                 "The provided `future_covariates` series must contain at least the same time steps/"
                 "indices as the target `series`.",
-                logger,
+                logger=logger,
             )
-            self._expect_covariate = True
+            self._expect_future_covariates = True
+
+        self.encoders = self.initialize_encoders()
+        if self.encoders.encoding_available:
+            _, future_covariates = self.generate_fit_encodings(
+                series=series,
+                past_covariates=None,
+                future_covariates=future_covariates,
+            )
 
         super().fit(series)
 
@@ -1507,19 +1923,16 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
 
         super().predict(n, num_samples)
 
-        if self._expect_covariate and future_covariates is None:
-            raise_log(
-                ValueError(
-                    "The model has been trained with `future_covariates` variable. Some matching "
-                    "`future_covariates` variables have to be provided to `predict()`."
+        # avoid generating encodings again if subclass has already generated them
+        if not self._supress_generate_predict_encoding:
+            self._verify_passed_predict_covariates(future_covariates)
+            if self.encoders is not None and self.encoders.encoding_available:
+                _, future_covariates = self.generate_predict_encodings(
+                    n=n,
+                    series=self.training_series,
+                    past_covariates=None,
+                    future_covariates=future_covariates,
                 )
-            )
-
-        raise_if(
-            not self._expect_covariate and future_covariates is not None,
-            "The model has been trained without `future_covariates` variable, but the "
-            "`future_covariates` parameter provided to `predict()` is not None.",
-        )
 
         if future_covariates is not None:
             start = self.training_series.end_time() + self.training_series.freq
@@ -1540,9 +1953,9 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
                 if isinstance(future_covariates.time_index, pd.DatetimeIndex)
                 else n
             )
-            future_covariates = future_covariates[
-                start : start + offset * self.training_series.freq
-            ]
+            future_covariates = future_covariates.slice(
+                start, start + offset * self.training_series.freq
+            )
 
             raise_if_not(
                 len(future_covariates) == n,
@@ -1591,6 +2004,41 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
             num_samples=num_samples,
             verbose=verbose,
         )
+
+    @property
+    def _model_encoder_settings(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        bool,
+        bool,
+        Optional[List[int]],
+        Optional[List[int]],
+    ]:
+        return None, None, False, True, None, None
+
+    def _verify_passed_predict_covariates(self, future_covariates):
+        """Simple check if user supplied/did not supply covariates as done at fitting time."""
+        if self._expect_future_covariates and future_covariates is None:
+            raise_log(
+                ValueError(
+                    "The model has been trained with `future_covariates` variable. Some matching "
+                    "`future_covariates` variables have to be provided to `predict()`."
+                )
+            )
+        if not self._expect_future_covariates and future_covariates is not None:
+            raise_log(
+                ValueError(
+                    "The model has been trained without `future_covariates` variable, but the "
+                    "`future_covariates` parameter provided to `predict()` is not None.",
+                )
+            )
+
+    @property
+    def _supress_generate_predict_encoding(self) -> bool:
+        """Controls wether encodings should be generated in :func:`FutureCovariatesLocalForecastingModel.predict()``"""
+        return False
 
 
 class TransferableFutureCovariatesLocalForecastingModel(
@@ -1647,13 +2095,13 @@ class TransferableFutureCovariatesLocalForecastingModel(
         -------
         TimeSeries, a single time series containing the `n` next points after then end of the training series.
         """
-
-        if self._expect_covariate and future_covariates is None:
-            raise_log(
-                ValueError(
-                    "The model has been trained with `future_covariates` variable. Some matching "
-                    "`future_covariates` variables have to be provided to `predict()`."
-                )
+        self._verify_passed_predict_covariates(future_covariates)
+        if self.encoders is not None and self.encoders.encoding_available:
+            _, future_covariates = self.generate_predict_encodings(
+                n=n,
+                series=series if series is not None else self.training_series,
+                past_covariates=None,
+                future_covariates=future_covariates,
             )
 
         historic_future_covariates = None
@@ -1699,6 +2147,38 @@ class TransferableFutureCovariatesLocalForecastingModel(
 
         return result
 
+    def generate_predict_encodings(
+        self,
+        n: int,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+    ) -> Tuple[
+        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
+    ]:
+        raise_if(
+            self.encoders is None or not self.encoders.encoding_available,
+            "Encodings are not available. Consider adding parameter `add_encoders` at model creation and fitting the "
+            "model with `model.fit()` before.",
+            logger=logger,
+        )
+        _, future_covariates_future = self.encoders.encode_inference(
+            n=n,
+            target=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
+        if future_covariates is not None:
+            return _, future_covariates_future
+
+        _, future_covariates_historic = self.encoders.encode_train(
+            target=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+        return _, future_covariates_historic.append(future_covariates_future)
+
     @abstractmethod
     def _predict(
         self,
@@ -1733,3 +2213,11 @@ class TransferableFutureCovariatesLocalForecastingModel(
 
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
         return True
+
+    @property
+    def _supress_generate_predict_encoding(self) -> bool:
+        return True
+
+    @property
+    def extreme_lags(self):
+        return (-1, 1, None, 0, 0)

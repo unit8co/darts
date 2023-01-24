@@ -1,13 +1,15 @@
 """
 Regression Model
 ----------------
-A `RegressionModel` forecasts future values of a target series based on lagged values of
+A `RegressionModel` forecasts future values of a target series based on
 
 * The target series (past lags only)
 
 * An optional past_covariates series (past lags only)
 
 * An optional future_covariates series (possibly past and future lags)
+
+* Available static covariates
 
 
 The regression models are learned in a supervised way, and they can wrap around any "scikit-learn like" regression model
@@ -21,9 +23,10 @@ Behind the scenes this model is tabularizing the time series data to make it wor
 The lags can be specified either using an integer - in which case it represents the _number_ of (past or future) lags
 to take into consideration, or as a list - in which case the lags have to be enumerated (strictly negative values
 denoting past lags and positive values including 0 denoting future lags).
+When static covariates are present, they are appended to the lagged features. When multiple time series are passed,
+if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.
 """
 
-import math
 from collections import OrderedDict
 from typing import List, Optional, Sequence, Tuple, Union
 
@@ -33,7 +36,7 @@ from sklearn.linear_model import LinearRegression
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
-from darts.utils.data.tabularization import _create_lagged_data
+from darts.utils.data.tabularization import create_lagged_training_data
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import _check_quantiles, seq2series, series2seq
 
@@ -68,13 +71,13 @@ class RegressionModel(GlobalForecastingModel):
         ----------
         lags
             Lagged target values used to predict the next time step. If an integer is given the last `lags` past lags
-            are used (from -1 backward). Otherwise a list of integers with lags is required (each lag must be < 0).
+            are used (from -1 backward). Otherwise, a list of integers with lags is required (each lag must be < 0).
         lags_past_covariates
             Number of lagged past_covariates values used to predict the next time step. If an integer is given the last
             `lags_past_covariates` past lags are used (inclusive, starting from lag -1). Otherwise a list of integers
             with lags < 0 is required.
         lags_future_covariates
-            Number of lagged future_covariates values used to predict the next time step. If an tuple (past, future) is
+            Number of lagged future_covariates values used to predict the next time step. If a tuple (past, future) is
             given the last `past` lags in the past are used (inclusive, starting from lag -1) along with the first
             `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list
             of integers with lags is required.
@@ -239,44 +242,52 @@ class RegressionModel(GlobalForecastingModel):
         self.pred_dim = self.output_chunk_length if self.multi_models else 1
 
     @property
-    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
-        lags_covariates = {
-            lag for key in ["past", "future"] for lag in self.lags.get(key, [])
-        }
-        if lags_covariates:
-            # for lags < 0 we need to take `n` steps backwards from past and/or historic future covariates
-            # for minimum lag = -1 -> steps_back_inclusive = 1
-            # inclusive means n steps back including the end of the target series
-            n_steps_back_inclusive = abs(min(min(lags_covariates), 0))
-            # for lags >= 0 we need to take `n` steps ahead from future covariates
-            # for maximum lag = 0 -> output_chunk_length = 1
-            # exclusive means n steps ahead after the last step of the target series
-            n_steps_ahead_exclusive = max(max(lags_covariates), 0) + 1
-            takes_past_covariates = "past" in self.lags
-            takes_future_covariates = "future" in self.lags
-        else:
-            n_steps_back_inclusive = 0
-            n_steps_ahead_exclusive = 0
-            takes_past_covariates = False
-            takes_future_covariates = False
+    def _model_encoder_settings(
+        self,
+    ) -> Tuple[int, int, bool, bool, Optional[List[int]], Optional[List[int]]]:
+        target_lags = self.lags.get("target", [0])
+        lags_past_covariates = self.lags.get("past", None)
+        if lags_past_covariates is not None:
+            lags_past_covariates = [
+                min(lags_past_covariates)
+                - int(not self.multi_models) * (self.output_chunk_length - 1),
+                max(lags_past_covariates),
+            ]
+        lags_future_covariates = self.lags.get("future", None)
+        if lags_future_covariates is not None:
+            lags_future_covariates = [
+                min(lags_future_covariates)
+                - int(not self.multi_models) * (self.output_chunk_length - 1),
+                max(lags_future_covariates),
+            ]
         return (
-            n_steps_back_inclusive,
-            n_steps_ahead_exclusive,
-            takes_past_covariates,
-            takes_future_covariates,
+            abs(min(target_lags)),
+            self.output_chunk_length,
+            lags_past_covariates is not None,
+            lags_future_covariates is not None,
+            lags_past_covariates,
+            lags_future_covariates,
         )
 
-    def _get_encoders_n(self, n) -> int:
-        """Returns the `n` encoder prediction steps specific to RegressionModels.
-        This will generate slightly more past covariates than the minimum requirement when using past and future
-        covariate lags simultaneously. This is because encoders were written for TorchForecastingModels where we only
-        needed `n` future covariates. For RegressionModel we need `n + max_future_lag`
-        """
-        _, n_steps_ahead, _, takes_future_covariates = self._model_encoder_settings
-        if not takes_future_covariates:
-            return n
-        else:
-            return n + (n_steps_ahead - 1)
+    @property
+    def extreme_lags(self):
+        min_target_lag = self.lags.get("target")[0] if "target" in self.lags else None
+        max_target_lag = self.output_chunk_length
+        min_past_cov_lag = self.lags.get("past")[0] if "past" in self.lags else None
+        min_future_cov_lag = (
+            self.lags.get("future")[0] if "future" in self.lags else None
+        )
+        max_future_cov_lag = (
+            self.lags.get("future")[-1] if "future" in self.lags else None
+        )
+
+        return (
+            min_target_lag,
+            max_target_lag,
+            min_past_cov_lag,
+            min_future_cov_lag,
+            max_future_cov_lag,
+        )
 
     @property
     def min_train_series_length(self) -> int:
@@ -313,7 +324,7 @@ class RegressionModel(GlobalForecastingModel):
         lags_past_covariates = self.lags.get("past")
         lags_future_covariates = self.lags.get("future")
 
-        training_samples, training_labels, _ = _create_lagged_data(
+        features, labels, _ = create_lagged_training_data(
             target_series=target_series,
             output_chunk_length=self.output_chunk_length,
             past_covariates=past_covariates,
@@ -323,9 +334,110 @@ class RegressionModel(GlobalForecastingModel):
             lags_future_covariates=lags_future_covariates,
             max_samples_per_ts=max_samples_per_ts,
             multi_models=self.multi_models,
+            check_inputs=False,
+            concatenate=False,
         )
 
+        for i, (X_i, y_i) in enumerate(zip(features, labels)):
+            features[i] = X_i[:, :, 0]
+            labels[i] = y_i[:, :, 0]
+
+        features = self._add_static_covariates(
+            features,
+            target_series,
+        )
+
+        training_samples = np.concatenate(features, axis=0)
+        training_labels = np.concatenate(labels, axis=0)
+
         return training_samples, training_labels
+
+    def _add_static_covariates(
+        self,
+        features: Union[np.array, Sequence[np.array]],
+        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+    ) -> Union[np.array, Sequence[np.array]]:
+        """
+        Add static covariates to the features' table for RegressionModels.
+        Accounts for series with potentially different static covariates by padding with 0 to accomodate for the maximum
+        number of available static_covariates in any of the given series in the sequence.
+
+        If no static covariates are provided for a given series, its corresponding features are padded with 0.
+        Accounts for the case where the model is trained with series with static covariates and then used to predict
+        on series without static covariates by padding with 0 the corresponding features of the series without
+        static covariates.
+
+        Parameters
+        ----------
+        features
+            The features' numpy array(s) to which the static covariates will be added. Can either be a lone feature
+            matrix or a `Sequence` of feature matrices; in the latter case, static covariates will be appended to
+            each feature matrix in this `Sequence`.
+        target_series
+            The target series from which to read the static covariates.
+
+        Returns
+        -------
+        features
+            The features' array(s) with appended static covariates columns. If the `features` input was passed as a
+            `Sequence` of `np.array`s, then a `Sequence` is also returned; if `features` was passed as an `np.array`,
+            a `np.array` is returned.
+        """
+
+        input_not_list = not isinstance(features, Sequence)
+        if input_not_list:
+            features = [features]
+        target_series = series2seq(target_series)
+        # collect static covariates info
+        scovs_map = {
+            "covs_exist": False,
+            "vals": [],  # Stores values of static cov arrays in each timeseries
+            "sizes": {},  # Stores sizes of static cov arrays in each timeseries
+        }
+        for ts in target_series:
+            if ts.has_static_covariates:
+                scovs_map["covs_exist"] = True
+                # Each static covariate either adds 1 extra columns or
+                # `n_component` extra columns:
+                vals_i = {}
+                for name, row in ts.static_covariates.items():
+                    vals_i[name] = row
+                    scovs_map["sizes"][name] = row.size
+                scovs_map["vals"].append(vals_i)
+            else:
+                scovs_map["vals"].append(None)
+
+        if (
+            not scovs_map["covs_exist"]
+            and hasattr(self.model, "n_features_in_")
+            and (self.model.n_features_in_ is not None)
+            and (self.model.n_features_in_ > features[0].shape[1])
+        ):
+            # for when series in prediction do not have static covariates but some of the training series did
+            num_static_components = self.model.n_features_in_ - features[0].shape[1]
+            for i, features_i in enumerate(features):
+                padding = np.zeros((features_i.shape[0], num_static_components))
+                features[i] = np.hstack([features_i, padding])
+        elif scovs_map["covs_exist"]:
+            scov_width = sum(scovs_map["sizes"].values())
+            for i, features_i in enumerate(features):
+                vals = scovs_map["vals"][i]
+                if vals:
+                    scov_arrays = []
+                    for name, size in scovs_map["sizes"].items():
+                        scov_arrays.append(
+                            vals[name] if name in vals else np.zeros((size,))
+                        )
+                    scov_array = np.concatenate(scov_arrays)
+                    scovs = np.broadcast_to(
+                        scov_array, (features_i.shape[0], scov_width)
+                    )
+                else:
+                    scovs = np.zeros((features_i.shape[0], scov_width))
+                features[i] = np.hstack([features_i, scovs])
+        if input_not_list:
+            features = features[0]
+        return features
 
     def _fit_model(
         self,
@@ -341,7 +453,10 @@ class RegressionModel(GlobalForecastingModel):
         """
 
         training_samples, training_labels = self._create_lagged_data(
-            target_series, past_covariates, future_covariates, max_samples_per_ts
+            target_series,
+            past_covariates,
+            future_covariates,
+            max_samples_per_ts,
         )
 
         # if training_labels is of shape (n_samples, 1) flatten it to shape (n_samples,)
@@ -394,6 +509,11 @@ class RegressionModel(GlobalForecastingModel):
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
             )
+
+        if past_covariates is not None:
+            self._uses_past_covariates = True
+        if future_covariates is not None:
+            self._uses_future_covariates = True
 
         for covs, name in zip([past_covariates, future_covariates], ["past", "future"]):
             raise_if(
@@ -543,7 +663,6 @@ class RegressionModel(GlobalForecastingModel):
         )
 
         # prediction preprocessing
-
         covariates = {
             "past": (past_covariates, self.lags.get("past")),
             "future": (future_covariates, self.lags.get("future")),
@@ -561,54 +680,45 @@ class RegressionModel(GlobalForecastingModel):
         covariate_matrices = {}
         # dictionary containing covariate lags relative to minimum covariate lag
         relative_cov_lags = {}
-        # number of prediction steps given forecast horizon and output_chunk_length
-        n_pred_steps = math.ceil(n / self.output_chunk_length)
         for cov_type, (covs, lags) in covariates.items():
-            if covs is not None:
-                relative_cov_lags[cov_type] = np.array(lags) - lags[0]
-                covariate_matrices[cov_type] = []
-                for idx, (ts, cov) in enumerate(zip(series, covs)):
-                    # calculating first and last prediction time steps
-                    first_pred_ts = ts.end_time() + 1 * ts.freq
-                    last_pred_ts = (
-                        (
-                            first_pred_ts
-                            + ((n_pred_steps - 1) * self.output_chunk_length) * ts.freq
-                        )
-                        if self.multi_models
-                        else (first_pred_ts + (n - 1) * ts.freq)
+            if covs is None:
+                continue
+
+            relative_cov_lags[cov_type] = np.array(lags) - lags[0]
+            covariate_matrices[cov_type] = []
+            for idx, (ts, cov) in enumerate(zip(series, covs)):
+                # how many steps to go back from end of target series for start of covariates
+                steps_back = -(min(lags) + 1) + shift
+                lags_diff = max(lags) - min(lags) + 1
+                # over how many steps the covariates range
+                n_steps = lags_diff + max(0, n - self.output_chunk_length) + shift
+
+                # calculate first and last required covariate time steps
+                start_ts = ts.end_time() - ts.freq * steps_back
+                end_ts = start_ts + ts.freq * (n_steps - 1)
+
+                # check for sufficient covariate data
+                if not (cov.start_time() <= start_ts and cov.end_time() >= end_ts):
+                    raise_log(
+                        ValueError(
+                            f"The corresponding {cov_type}_covariate of the series at index {idx} isn't sufficiently "
+                            f"long. Given horizon `n={n}`, `min(lags_{cov_type}_covariates)={lags[0]}`, "
+                            f"`max(lags_{cov_type}_covariates)={lags[-1]}` and "
+                            f"`output_chunk_length={self.output_chunk_length}`, the {cov_type}_covariate has to range "
+                            f"from {start_ts} until {end_ts} (inclusive), but it ranges only from {cov.start_time()} "
+                            f"until {cov.end_time()}."
+                        ),
+                        logger=logger,
                     )
 
-                    # calculating first and last required time steps
-                    first_req_ts = (
-                        first_pred_ts + (lags[0] - shift) * ts.freq
-                    )  # shift lags if using one_shot
-                    last_req_ts = last_pred_ts + (lags[-1] - shift) * ts.freq
-                    # check for sufficient covariate data
-                    raise_if_not(
-                        cov.start_time() <= first_req_ts
-                        and cov.end_time() >= last_req_ts,
-                        f"The corresponding {cov_type}_covariate of the series at index {idx} isn't sufficiently long. "
-                        f"Given horizon `n={n}`, `min(lags_{cov_type}_covariates)={lags[0]}`, "
-                        f"`max(lags_{cov_type}_covariates)={lags[-1]}` and "
-                        f"`output_chunk_length={self.output_chunk_length}`\n"
-                        f"the {cov_type}_covariate has to range from {first_req_ts} until {last_req_ts} (inclusive), "
-                        f"but it ranges only from {cov.start_time()} until {cov.end_time()}.",
-                    )
+                # use slice() instead of [] as for integer-indexed series [] does not act on time index
+                # for range indexes, we make the end timestamp inclusive here
+                end_ts = end_ts + ts.freq if ts.has_range_index else end_ts
+                covariate_matrices[cov_type].append(
+                    cov.slice(start_ts, end_ts).values(copy=False)
+                )
 
-                    # Note: we use slice() rather than the [] operator because
-                    # for integer-indexed series [] does not act on the time index.
-                    last_req_ts = (
-                        # For range indexes, we need to make the end timestamp inclusive here
-                        last_req_ts + ts.freq
-                        if ts.has_range_index
-                        else last_req_ts
-                    )
-                    covariate_matrices[cov_type].append(
-                        cov.slice(first_req_ts, last_req_ts).values(copy=False)
-                    )
-
-                covariate_matrices[cov_type] = np.stack(covariate_matrices[cov_type])
+            covariate_matrices[cov_type] = np.stack(covariate_matrices[cov_type])
 
         series_matrix = None
         if "target" in self.lags:
@@ -628,20 +738,30 @@ class RegressionModel(GlobalForecastingModel):
             covariate_matrices[cov_type] = np.repeat(data, num_samples, axis=0)
         # prediction
         predictions = []
+        last_step_shift = 0
+
         # t_pred indicates the number of time steps after the first prediction
         for t_pred in range(0, n, step):
+            # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
+            # we have to step back `step` from `n` in the last iteration
+            if 0 < n - t_pred < step and t_pred > 0:
+                last_step_shift = t_pred - (n - step)
+                t_pred = n - step
+
             np_X = []
             # retrieve target lags
             if "target" in self.lags:
-
-                target_matrix = (
-                    np.concatenate([series_matrix, *predictions], axis=1)
-                    if predictions
-                    else series_matrix
-                )
+                if predictions:
+                    series_matrix = np.concatenate(
+                        [series_matrix, predictions[-1]], axis=1
+                    )
                 np_X.append(
-                    target_matrix[
-                        :, [lag - shift for lag in self.lags["target"]]
+                    series_matrix[
+                        :,
+                        [
+                            lag - (shift + last_step_shift)
+                            for lag in self.lags["target"]
+                        ],
                     ].reshape(len(series) * num_samples, -1)
                 )
             # retrieve covariate lags, enforce order (dict only preserves insertion order for python 3.6+)
@@ -655,11 +775,19 @@ class RegressionModel(GlobalForecastingModel):
 
             # concatenate retrieved lags
             X = np.concatenate(np_X, axis=1)
+            # Need to split up `X` into three equally-sized sub-blocks
+            # corresponding to each timeseries in `series`, so that
+            # static covariates can be added to each block; valid since
+            # each block contains same number of observations:
+            X_blocks = np.split(X, len(series), axis=0)
+            X_blocks = self._add_static_covariates(X_blocks, series)
+            X = np.concatenate(X_blocks, axis=0)
+
             # X has shape (n_series * n_samples, n_regression_features)
             prediction = self._predict_and_sample(X, num_samples, **kwargs)
             # prediction shape (n_series * n_samples, output_chunk_length, n_components)
             # append prediction to final predictions
-            predictions.append(prediction)
+            predictions.append(prediction[:, last_step_shift:])
 
         # concatenate and use first n points as prediction
         predictions = np.concatenate(predictions, axis=1)[:, :n]
@@ -686,6 +814,10 @@ class RegressionModel(GlobalForecastingModel):
 
     def __str__(self):
         return self.model.__str__()
+
+    @staticmethod
+    def _supports_static_covariates() -> bool:
+        return True
 
 
 class _LikelihoodMixin:

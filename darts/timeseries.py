@@ -37,7 +37,7 @@ import re
 from collections import defaultdict
 from copy import deepcopy
 from inspect import signature
-from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -47,6 +47,11 @@ from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
 
 from .logging import get_logger, raise_if, raise_if_not, raise_log
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 logger = get_logger(__name__)
 
@@ -183,26 +188,29 @@ class TimeSeries:
             # reset freq inside the xarray index (see bug of sortby() above).
             self._xa.get_index(self._time_dim).freq = self._freq
 
-            # We have to check manually if the index is complete. Another way could be to rely
-            # on `inferred_freq` being present, but this fails for series of length < 3.
+            # We have to check manually if the index is complete for non-empty series. Another way could
+            # be to rely on `inferred_freq` being present, but this fails for series of length < 3.
+            if len(self._time_index) > 0:
 
-            is_index_complete = (
-                len(
-                    pd.date_range(
-                        self._time_index.min(), self._time_index.max(), freq=self._freq
-                    ).difference(self._time_index)
+                is_index_complete = (
+                    len(
+                        pd.date_range(
+                            self._time_index.min(),
+                            self._time_index.max(),
+                            freq=self._freq,
+                        ).difference(self._time_index)
+                    )
+                    == 0
                 )
-                == 0
-            )
 
-            raise_if_not(
-                is_index_complete,
-                "Not all timestamps seem to be present in the time index. Does "
-                "the series contain holes? If you are using a factory method, "
-                "try specifying `fill_missing_dates=True` "
-                "or specify the `freq` parameter.",
-                logger,
-            )
+                raise_if_not(
+                    is_index_complete,
+                    "Not all timestamps seem to be present in the time index. Does "
+                    "the series contain holes? If you are using a factory method, "
+                    "try specifying `fill_missing_dates=True` "
+                    "or specify the `freq` parameter.",
+                    logger,
+                )
         else:
             self._freq = self._time_index.step
             self._freq_str = None
@@ -697,7 +705,7 @@ class TimeSeries:
         fill_missing_dates: Optional[bool] = False,
         freq: Optional[str] = None,
         fillna_value: Optional[float] = None,
-    ) -> Union["TimeSeries", List["TimeSeries"]]:
+    ) -> List["TimeSeries"]:
         """
         Build a list of TimeSeries instances grouped by a selection of columns from a DataFrame.
         One column (or the DataFrame index) has to represent the time,
@@ -741,7 +749,7 @@ class TimeSeries:
 
         Returns
         -------
-        TimeSeries
+        List[TimeSeries]
             A list containing a univariate or multivariate deterministic TimeSeries per group in the DataFrame.
         """
         group_cols = [group_cols] if not isinstance(group_cols, list) else group_cols
@@ -754,8 +762,11 @@ class TimeSeries:
         static_cov_cols = group_cols + static_cols
 
         # split df by groups, and store group values and static values (static covariates)
+        # single elements group columns must be unpacked for same groupby() behavior across different pandas versions
         splits = []
-        for static_cov_vals, group in df.groupby(group_cols):
+        for static_cov_vals, group in df.groupby(
+            group_cols[0] if len(group_cols) == 1 else group_cols
+        ):
             static_cov_vals = (
                 (static_cov_vals,)
                 if not isinstance(static_cov_vals, tuple)
@@ -2085,7 +2096,8 @@ class TimeSeries:
         self, split_point: Union[pd.Timestamp, float, int], after: bool = True
     ) -> Tuple["TimeSeries", "TimeSeries"]:
 
-        point_index = self.get_index_at_point(split_point, after)
+        # Get index with not after in order to avoid moving twice if split_point is not in self
+        point_index = self.get_index_at_point(split_point, not after)
         return (
             self[: point_index + (1 if after else 0)],
             self[point_index + (1 if after else 0) :],
@@ -2227,6 +2239,11 @@ class TimeSeries:
                 if start_ts not in self._time_index
                 else start_ts
             )
+            if effective_start_ts < start_ts:
+                # if the requested start_ts is smaller than the start argument,
+                # we have to increase it to be consistent with the docstring
+                effective_start_ts += self.freq
+
             effective_end_ts = (
                 min(self._time_index, key=lambda t: abs(t - end_ts))
                 if end_ts not in self._time_index
@@ -2263,7 +2280,7 @@ class TimeSeries:
         self._raise_if_not_within(start_ts)
 
         if isinstance(start_ts, (int, np.int64)):
-            return self[start_ts : start_ts + n]
+            return self[pd.RangeIndex(start=start_ts, stop=start_ts + n)]
         elif isinstance(start_ts, pd.Timestamp):
             # get first timestamp greater or equal to start_ts
             tss = self._get_first_timestamp_after(start_ts)
@@ -2299,7 +2316,7 @@ class TimeSeries:
         self._raise_if_not_within(end_ts)
 
         if isinstance(end_ts, (int, np.int64)):
-            return self[end_ts - n + 1 : end_ts + 1]
+            return self[pd.RangeIndex(start=end_ts - n + 1, stop=end_ts + 1)]
         elif isinstance(end_ts, pd.Timestamp):
             # get last timestamp smaller or equal to start_ts
             tss = self._get_last_timestamp_before(end_ts)
@@ -2603,10 +2620,6 @@ class TimeSeries:
             attrs=self._xa.attrs,
         )
 
-        # new_xa = xr.concat(objs=[self._xa, other_xa], dim=str(self._time_dim))
-        if not self._has_datetime_index:
-            new_xa = new_xa.reset_index(dims_or_levels=new_xa.dims[0])
-
         return self.__class__.from_xarray(
             new_xa, fill_missing_dates=True, freq=self._freq_str
         )
@@ -2625,7 +2638,6 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries with the new values appended
         """
-
         if self._has_datetime_index:
             idx = pd.DatetimeIndex(
                 [self.end_time() + i * self._freq for i in range(1, len(values) + 1)],
@@ -2633,9 +2645,10 @@ class TimeSeries:
             )
         else:
             idx = pd.RangeIndex(
-                len(self), len(self) + self.freq * len(values), step=self.freq
+                start=self.end_time() + self._freq,
+                stop=self.end_time() + (len(values) + 1) * self._freq,
+                step=self._freq,
             )
-
         return self.append(
             self.__class__.from_times_and_values(
                 values=values,
@@ -3162,6 +3175,7 @@ class TimeSeries:
         treat_na: Optional[Union[str, Union[int, float]]] = None,
         forecasting_safe: Optional[bool] = True,
         keep_non_transformed: Optional[bool] = False,
+        include_current: Optional[bool] = True,
     ) -> "TimeSeries":
         """
         Applies a moving/rolling, expanding or exponentially weighted window transformation over this ``TimeSeries``.
@@ -3253,6 +3267,9 @@ class TimeSeries:
             ``False`` to return the transformed components only, ``True`` to return all original components along
             the transformed ones. Default is ``False``.
 
+        include_current
+            ``True`` to include the current time step in the window, ``False`` to exclude it. Default is ``True``.
+
         Returns
         -------
         TimeSeries
@@ -3296,6 +3313,7 @@ class TimeSeries:
 
             # take expanding as the default window operation if not specified, safer than rolling
             mode = transformation.get("mode", "expanding")
+
             raise_if_not(
                 mode in PD_WINDOW_OPERATIONS.keys(),
                 f"Invalid window operation: '{mode}'. Must be one of {PD_WINDOW_OPERATIONS.keys()}.",
@@ -3443,6 +3461,15 @@ class TimeSeries:
                 transformation, forecasting_safe
             )
 
+            closed = transformation.get("closed", None)
+            if not include_current:
+                if window_mode == "rolling":
+                    shifts = 0 if closed == "left" else 1  # avoid shifting twice
+                else:
+                    shifts = 1
+            else:
+                shifts = 0
+
             resulting_transformations = pd.concat(
                 [
                     resulting_transformations,
@@ -3451,7 +3478,7 @@ class TimeSeries:
                             **window_mode_kwargs
                         ),
                         fn,
-                    )(**function_kwargs),
+                    )(**function_kwargs).shift(periods=shifts),
                 ],
                 axis=1,
             )
@@ -3470,9 +3497,10 @@ class TimeSeries:
             # track how many NaN rows are added by each transformation on each transformed column
             # NaNs would appear only if user changes "min_periods" to else than 1, if not,
             # by default there should be no NaNs unless the original series starts with NaNs (those would be maintained)
+            total_na = min_periods + shifts + (closed == "left")
             added_na.extend(
                 [
-                    min_periods - 1 if min_periods > 0 else min_periods
+                    total_na - 1 if min_periods > 0 else total_na
                     for _ in filter_df_columns
                 ]
             )
@@ -3525,6 +3553,8 @@ class TimeSeries:
                 len(new_index), -1, n_samples
             ),
             columns=new_columns,
+            static_covariates=self.static_covariates,
+            hierarchy=self.hierarchy,
         )
 
         return transformed_time_series

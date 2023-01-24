@@ -113,6 +113,15 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         # getting index for idx should return i s.t., series[i].time == idx
         self.assertEqual(series.get_index_at_point(101), 91)
 
+        # slicing outside of the index range should return an empty ts
+        self.assertEqual(len(series[120:125]), 0)
+        self.assertEqual(series[120:125], series.slice(120, 125))
+
+        # slicing with a partial index overlap should return the ts subset
+        self.assertEqual(len(series[95:105]), 5)
+        # adding the 10 values index shift to compare the same values
+        self.assertEqual(series[95:105], series.slice(105, 115))
+
         # check integer indexing features when series index starts at 0 with a step > 1
         values = np.random.random(100)
         times = pd.RangeIndex(0, 200, step=2)
@@ -121,8 +130,22 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         # getting index for idx should return i s.t., series[i].time == idx
         self.assertEqual(series.get_index_at_point(100), 50)
 
+        # getting index outside of the index range should raise an exception
+        with self.assertRaises(IndexError):
+            series[100]
+
         # slicing should act the same irrespective of the initial time stamp
         np.testing.assert_equal(series[10:20].values().flatten(), values[10:20])
+
+        # slicing outside of the range should return an empty ts
+        self.assertEqual(len(series[105:110]), 0)
+        # multiply the slice start and end values by 2 to compare the same values
+        self.assertEqual(series[105:110], series.slice(210, 220))
+
+        # slicing with an index overlap should return the ts subset
+        self.assertEqual(len(series[95:105]), 5)
+        # multiply the slice start and end values by 2 to compare the same values
+        self.assertEqual(series[95:105], series.slice(190, 210))
 
         # drop_after should act on the timestamp
         np.testing.assert_equal(series.drop_after(20).values().flatten(), values[:10])
@@ -134,6 +157,32 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         # getting index for idx should return i s.t., series[i].time == idx
         self.assertEqual(series.get_index_at_point(16), 3)
+
+    def test_datetime_indexing(self):
+        # checking that the DatetimeIndex slicing is behaving as described in
+        # https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html
+
+        # getting index outside of the index range should raise an exception
+        with self.assertRaises(KeyError):
+            self.series1[pd.Timestamp("20130111")]
+
+        # slicing outside of the range should return an empty ts
+        self.assertEqual(
+            len(self.series1[pd.Timestamp("20130111") : pd.Timestamp("20130115")]), 0
+        )
+        self.assertEqual(
+            self.series1[pd.Timestamp("20130111") : pd.Timestamp("20130115")],
+            self.series1.slice(pd.Timestamp("20130111"), pd.Timestamp("20130115")),
+        )
+
+        # slicing with an partial index overlap should return the ts subset (start and end included)
+        self.assertEqual(
+            len(self.series1[pd.Timestamp("20130105") : pd.Timestamp("20130112")]), 6
+        )
+        self.assertEqual(
+            self.series1[pd.Timestamp("20130105") : pd.Timestamp("20130112")],
+            self.series1.slice(pd.Timestamp("20130105"), pd.Timestamp("20130112")),
+        )
 
     def test_univariate_component(self):
         series = TimeSeries.from_values(np.array([10, 20, 30])).with_columns_renamed(
@@ -336,6 +385,14 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         test_case.assertEqual(seriesG.start_time(), pd.Timestamp("20130101"))
         test_case.assertEqual(seriesG.end_time(), pd.Timestamp("20130107"))
 
+        # test slice_n_points_after and slice_n_points_before with integer-indexed series
+        s = TimeSeries.from_times_and_values(pd.RangeIndex(6, 10), np.arange(16, 20))
+        sliced_idx = s.slice_n_points_after(7, 2).time_index
+        test_case.assertTrue(all(sliced_idx == pd.RangeIndex(7, 9)))
+
+        sliced_idx = s.slice_n_points_before(8, 2).time_index
+        test_case.assertTrue(all(sliced_idx == pd.RangeIndex(7, 9)))
+
         # integer indexed series, step = 1, timestamps not in series
         values = np.random.rand(30)
         idx = pd.RangeIndex(start=0, stop=30, step=1)
@@ -354,7 +411,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         idx = pd.RangeIndex(start=0, stop=60, step=2)
         ts = TimeSeries.from_times_and_values(idx, values)
         slice_vals = ts.slice(11, 31).values(copy=False).flatten()
-        np.testing.assert_equal(slice_vals, values[5:15])
+        np.testing.assert_equal(slice_vals, values[6:15])
 
         slice_ts = ts.slice(40, 60)
         test_case.assertEqual(ts.end_time(), slice_ts.end_time())
@@ -396,6 +453,18 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         for value in [-5, 1.1, pd.Timestamp("21300104")]:
             with test_case.assertRaises(ValueError):
                 test_series.split_before(value)
+
+        # Test split points between series indeces
+        times = pd.date_range("20130101", "20130120", freq="2D")
+        pd_series = pd.Series(range(10), index=times)
+        test_series2: TimeSeries = TimeSeries.from_series(pd_series)
+        split_date = pd.Timestamp("20130110")
+        seriesM, seriesN = test_series2.split_before(split_date)
+        seriesO, seriesP = test_series2.split_after(split_date)
+        test_case.assertLess(seriesM.end_time(), split_date)
+        test_case.assertGreaterEqual(seriesN.start_time(), split_date)
+        test_case.assertLessEqual(seriesO.end_time(), split_date)
+        test_case.assertGreater(seriesP.start_time(), split_date)
 
     @staticmethod
     def helper_test_drop(test_case, test_series: TimeSeries):
@@ -490,7 +559,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             )
         )
 
-        with test_case.assertRaises(ValueError):
+        with test_case.assertRaises(Exception):
             test_series.shift(1e6)
 
         seriesM = TimeSeries.from_times_and_values(
@@ -609,15 +678,53 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
     def test_append(self):
         TimeSeriesTestCase.helper_test_append(self, self.series1)
+        # Check `append` deals with `RangeIndex` series correctly:
+        series_1 = linear_timeseries(start=1, length=5, freq=2)
+        series_2 = linear_timeseries(start=11, length=2, freq=2)
+        appended = series_1.append(series_2)
+        expected_vals = np.concatenate(
+            [series_1.all_values(), series_2.all_values()], axis=0
+        )
+        expected_idx = pd.RangeIndex(start=1, stop=15, step=2)
+        self.assertTrue(np.allclose(appended.all_values(), expected_vals))
+        self.assertTrue(appended.time_index.equals(expected_idx))
 
     def test_append_values(self):
         TimeSeriesTestCase.helper_test_append_values(self, self.series1)
+        # Check `append_values` deals with `RangeIndex` series correctly:
+        series = linear_timeseries(start=1, length=5, freq=2)
+        appended = series.append_values(np.ones((2, 1, 1)))
+        expected_vals = np.concatenate(
+            [series.all_values(), np.ones((2, 1, 1))], axis=0
+        )
+        expected_idx = pd.RangeIndex(start=1, stop=15, step=2)
+        self.assertTrue(np.allclose(appended.all_values(), expected_vals))
+        self.assertTrue(appended.time_index.equals(expected_idx))
 
     def test_prepend(self):
         TimeSeriesTestCase.helper_test_prepend(self, self.series1)
+        # Check `prepend` deals with `RangeIndex` series correctly:
+        series_1 = linear_timeseries(start=1, length=5, freq=2)
+        series_2 = linear_timeseries(start=11, length=2, freq=2)
+        prepended = series_2.prepend(series_1)
+        expected_vals = np.concatenate(
+            [series_1.all_values(), series_2.all_values()], axis=0
+        )
+        expected_idx = pd.RangeIndex(start=1, stop=15, step=2)
+        self.assertTrue(np.allclose(prepended.all_values(), expected_vals))
+        self.assertTrue(prepended.time_index.equals(expected_idx))
 
     def test_prepend_values(self):
         TimeSeriesTestCase.helper_test_prepend_values(self, self.series1)
+        # Check `prepend_values` deals with `RangeIndex` series correctly:
+        series = linear_timeseries(start=1, length=5, freq=2)
+        prepended = series.prepend_values(np.ones((2, 1, 1)))
+        expected_vals = np.concatenate(
+            [np.ones((2, 1, 1)), series.all_values()], axis=0
+        )
+        expected_idx = pd.RangeIndex(start=-3, stop=11, step=2)
+        self.assertTrue(np.allclose(prepended.all_values(), expected_vals))
+        self.assertTrue(prepended.time_index.equals(expected_idx))
 
     def test_with_values(self):
         vals = np.random.rand(5, 10, 3)

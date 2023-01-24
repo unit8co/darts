@@ -20,6 +20,7 @@ class WindowTransformer(BaseDataTransformer):
         treat_na: Optional[Union[str, Union[int, float]]] = None,
         forecasting_safe: Optional[bool] = True,
         keep_non_transformed: Optional[bool] = False,
+        include_current: Optional[bool] = True,
         name: str = "WindowTransformer",
         n_jobs: int = 1,
         verbose: bool = False,
@@ -116,6 +117,9 @@ class WindowTransformer(BaseDataTransformer):
             ``False`` to return the transformed components only, ``True`` to return all original components along
             the transformed ones. Default is ``False``.
 
+        include_current
+            ``True`` to include the current time step in the window, ``False`` to exclude it. Default is ``True``.
+
         name
             A specific name for the transformer.
 
@@ -134,6 +138,7 @@ class WindowTransformer(BaseDataTransformer):
         self.keep_non_transformed = keep_non_transformed
         self.treat_na = treat_na
         self.forecasting_safe = forecasting_safe
+        self.include_current = include_current
 
     def _transform_iterator(
         self, series: Union[TimeSeries, Sequence[TimeSeries]]
@@ -146,6 +151,7 @@ class WindowTransformer(BaseDataTransformer):
             "keep_non_transformed": self.keep_non_transformed,
             "treat_na": self.treat_na,
             "forecasting_safe": self.forecasting_safe,
+            "include_current": self.include_current,
         }
         for s in series:
             yield (s, kwargs_dict)
