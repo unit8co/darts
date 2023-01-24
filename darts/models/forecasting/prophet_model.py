@@ -28,6 +28,12 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         country_holidays: Optional[str] = None,
         suppress_stdout_stderror: bool = True,
         add_encoders: Optional[dict] = None,
+        cap: Union[
+            float, Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]]
+        ] = None,
+        floor: Union[
+            float, Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]]
+        ] = None,
         **prophet_kwargs,
     ):
         """Facebook Prophet
@@ -92,10 +98,48 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                     'transformer': Scaler()
                 }
             ..
+        cap
+            Parameter specifiying the maximum carrying capacity when predicting with logistic growth.
+            Mandatory when `growth = 'logistic'`, otherwise ignored.
+            See <https://facebook.github.io/prophet/docs/saturating_forecasts.html> for more information
+            on logistic forecasts.
+            Can be either
+
+            - a number, for constant carrying capacities
+            - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
+            where each number indicates the carrying capacity at this index.
+        floor
+            Parameter specifiying the minimum carrying capacity when predicting logistic growth.
+            Optional when `growth = 'logistic'` (defaults to 0), otherwise ignored.
+            See <https://facebook.github.io/prophet/docs/saturating_forecasts.html> for more information
+            on logistic forecasts.
+            Can be either
+
+            - a number, for constant carrying capacities
+            - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
+            where each number indicates the carrying capacity at this index.
         prophet_kwargs
             Some optional keyword arguments for Prophet.
             For information about the parameters see:
             `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py>`_.
+        """
+
+        """Set carrying capacities for predicting with logistic growth.
+        These capacities are only used when `Prophet` was instantiated with `growth = 'logistic'`
+        See <https://facebook.github.io/prophet/docs/saturating_forecasts.html> for more information
+        on logistic forecasts.
+
+        The `cap` and `floor` parameters may be:
+        - a number, for constant carrying capacities
+        - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
+          where each number indicates the carrying capacity at this index.
+
+        Parameters
+        ----------
+        cap
+            The maximum carrying capacity
+        floor
+            The minimum carrying capacity, by default 0
         """
 
         super().__init__(add_encoders=add_encoders)
@@ -119,11 +163,25 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         self._execute_and_suppress_output = execute_and_suppress_output
         self._model_builder = prophet.Prophet
 
-        self.is_logistic = False
-        if "growth" in prophet_kwargs and prophet_kwargs["growth"] == "logistic":
-            self.is_logistic = True
-        self._cap = None
-        self._floor = None
+        self._cap = cap
+        self._floor = floor
+        self.is_logistic = (
+            "growth" in prophet_kwargs and prophet_kwargs["growth"] == "logistic"
+        )
+        if not self.is_logistic and (cap is not None or floor is not None):
+            logger.warning(
+                "Parameters `cap` and/or `floor` were set although `growth` is not "
+                "logistic. The set capacities will be ignored."
+            )
+        if self.is_logistic:
+            raise_if(
+                cap is None,
+                "Parameter `cap` has to be set when `growth` is logistic",
+                logger,
+            )
+            if floor is None:
+                # Use 0 as default value
+                self._floor = 0
 
     def __str__(self):
         return "Prophet"
@@ -138,12 +196,6 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             data={"ds": series.time_index, "y": series.univariate_values()}
         )
         if self.is_logistic:
-            raise_if(
-                self._cap is None or self._floor is None,
-                "Cap and floor have to be set by calling `Prophet.set_capacity` "
-                "before fitting, when parameter `growth` is set to 'logistic'.",
-                logger,
-            )
             fit_df = self._add_capacities_to_df(fit_df)
 
         self.model = self._model_builder(**self.prophet_kwargs)
@@ -317,40 +369,6 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             "mode": mode,
         }
         self._store_add_seasonality_call(seasonality_call=function_call)
-
-    def set_capacity(
-        self,
-        cap: Union[
-            float, Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]]
-        ],
-        floor: Union[
-            float, Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]]
-        ] = 0,
-    ) -> None:
-        """Set carrying capacities for predicting with logistic growth.
-        These capacities are only used when `Prophet` was instantiated with `growth = 'logistic'`
-        See <https://facebook.github.io/prophet/docs/saturating_forecasts.html> for more information
-        on logistic forecasts.
-
-        The `cap` and `floor` parameters may be:
-        - a number, for constant carrying capacities
-        - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
-          where each number indicates the carrying capacity at this index.
-
-        Parameters
-        ----------
-        cap
-            The maximum carrying capacity
-        floor
-            The minimum carrying capacity, by default 0
-        """
-        if not self.is_logistic:
-            logger.warning(
-                "Capacities were set although `growth` is not logistic. "
-                "The set capacities will be ignored."
-            )
-        self._cap = cap
-        self._floor = floor
 
     def _store_add_seasonality_call(
         self, seasonality_call: Optional[dict] = None

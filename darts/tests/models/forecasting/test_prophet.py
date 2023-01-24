@@ -134,8 +134,7 @@ class ProphetTestCase(DartsBaseTestClass):
         assert model._model_builder == FBProphet, "model should use Facebook Prophet"
 
     def test_prophet_model_with_logistic_growth(self):
-        model = Prophet(growth="logistic")
-        model.set_capacity(1, 0)
+        model = Prophet(growth="logistic", cap=1)
 
         # Create timeseries with logistic function
         times = tg.generate_index(
