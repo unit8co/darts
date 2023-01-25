@@ -14,7 +14,6 @@ References
 from typing import Sequence
 
 import numpy as np
-from numpy.lib.stride_tricks import sliding_window_view
 from scipy.stats import wasserstein_distance
 
 from darts.ad.scorers.scorers import FittableAnomalyScorer
@@ -141,51 +140,50 @@ class WassersteinScorer(FittableAnomalyScorer):
             [s.all_values(copy=False) for s in list_series]
         ).squeeze(-1)
 
-        if not self.component_wise:
+        if (not self.component_wise) | (list_series[0].width == 1):
             self.training_data = self.training_data.flatten()
 
-    def _score_core(self, series: TimeSeries) -> TimeSeries:
+    def _score_core(self, list_series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
+
         raise_if_not(
-            self.width_trained_on == series.width,
-            "Input must have the same number of components as the data used for"
-            + " training the Wasserstein model, found number of components equal"
-            + f" to {series.width} and expected {self.width_trained_on}.",
+            all([(self.width_trained_on == series.width) for series in list_series]),
+            "All series in 'series' must have the same number of components"
+            + " as the data used for training the Wasserstein model,"
+            + f" expected {self.width_trained_on} components.",
         )
 
-        np_series = series.all_values(copy=False)
-        np_anomaly_score = []
+        if (not self.component_wise) | (list_series[0].width == 1):
 
-        if not self.component_wise:
-            np_anomaly_score = [
-                wasserstein_distance(self.training_data, window_samples)
-                for window_samples in sliding_window_view(
-                    np_series, window_shape=self.window, axis=0
+            list_np_anomaly_score = [
+                [
+                    wasserstein_distance(self.training_data, window_samples)
+                    for window_samples in tabular_series
+                ]
+                for tabular_series in self._tabularize_series(
+                    list_series, concatenate=False, component_wise=False
                 )
-                .transpose(0, 3, 1, 2)
-                .reshape(-1, self.window * series.width)
             ]
 
-            return TimeSeries.from_times_and_values(
-                series.time_index[self.window - 1 :], np_anomaly_score
-            )
+            return [
+                TimeSeries.from_times_and_values(
+                    series.time_index[self.window - 1 :], np_anomaly_score
+                )
+                for series, np_anomaly_score in zip(list_series, list_np_anomaly_score)
+            ]
 
         else:
-            for component_idx in range(self.width_trained_on):
-                score = [
-                    wasserstein_distance(
-                        self.training_data[component_idx, :], window_samples
+            list_np_anomaly_score = np.array(
+                [
+                    [
+                        wasserstein_distance(self.training_data[idx], window_samples)
+                        for window_samples in tabular_series
+                    ]
+                    for idx, tabular_series in enumerate(
+                        self._tabularize_series(
+                            list_series, concatenate=True, component_wise=True
+                        )
                     )
-                    for window_samples in sliding_window_view(
-                        np_series[:, component_idx],
-                        window_shape=self.window,
-                        axis=0,
-                    )
-                    .transpose(0, 2, 1)
-                    .reshape(-1, self.window)
                 ]
-
-                np_anomaly_score.append(score)
-
-            return TimeSeries.from_times_and_values(
-                series.time_index[self.window - 1 :], list(zip(*np_anomaly_score))
             )
+
+            return self._convert_tabular_to_series(list_series, list_np_anomaly_score)

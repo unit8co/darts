@@ -11,6 +11,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Sequence, Union
 
 import numpy as np
+from numpy.lib.stride_tricks import sliding_window_view
 
 from darts import TimeSeries
 from darts.ad.utils import (
@@ -45,6 +46,79 @@ class AnomalyScorer(ABC):
         self.window = window
 
         self.univariate_scorer = univariate_scorer
+
+    def _tabularize_series(
+        self, list_series: Sequence[TimeSeries], concatenate: bool, component_wise: bool
+    ) -> np.ndarray:
+        """Internal function called by scorers ``KmeansScorer``, ``PyODScorer``, ``WassersteinScorer``
+        for their ``fit()`` and ``score()`` functions.
+
+        Transforms a (sequence of) series into tabular data of size window `W`. The parameter `component_wise`
+        indicates how the rolling window must treat the different components if the series is multivariate.
+        If set to False, the rolling window will be done on each component independently. If set to True,
+        the `N` components will be concatenated to create windows of size `W` * `N`. The resulting tabular
+        data of each series are concatenated if the parameter `concatenate` is set to True.
+        """
+
+        list_np_series = [series.all_values(copy=False) for series in list_series]
+
+        if not component_wise:
+
+            tabular_data = [
+                sliding_window_view(arr, window_shape=self.window, axis=0).reshape(
+                    -1, self.window * len(arr[0])
+                )
+                for arr in list_np_series
+            ]
+
+            if concatenate:
+                return np.concatenate(tabular_data, axis=0)
+
+        else:
+
+            tabular_data = [
+                np.stack(
+                    sliding_window_view(arr, window_shape=self.window, axis=0), axis=1
+                ).reshape(len(arr[0]), -1, self.window)
+                for arr in list_np_series
+            ]
+
+            if concatenate:
+                return np.concatenate(tabular_data, axis=1)
+
+        return tabular_data
+
+    def _convert_tabular_to_series(
+        self, list_series: Sequence[TimeSeries], list_np_anomaly_score: np.ndarray
+    ) -> Sequence[TimeSeries]:
+        """Internal function called by scorers ``KmeansScorer``, ``PyODScorer``, ``WassersteinScorer``
+        for their ``score()`` functions when the parameter `component_wise` is set to True and the
+        (sequence of) series has more than 1 component.
+
+        Returns the resulting anomaly score as a (sequence of) series, from the np.array `list_np_anomaly_score`
+        containing the anomaly score of the (sequence of) series. For efficiency reasons, the anomaly scores were
+        computed in one go for each component (component-wise is set to True, so each component has its own fitted
+        model). If a list of series is given, each series will be concatenated by its components. The function
+        aims to split the anomaly score at the proper indexes to create an anomaly score for each series.
+        """
+        indice = 0
+        result = []
+        for series in list_series:
+            result.append(
+                TimeSeries.from_times_and_values(
+                    series.time_index[self.window - 1 :],
+                    list(
+                        zip(
+                            *list_np_anomaly_score[
+                                :, indice : indice + len(series) - self.window + 1
+                            ]
+                        )
+                    ),
+                )
+            )
+            indice += len(series) - self.window + 1
+
+        return result
 
     def _check_univariate_scorer(self, actual_anomalies: Sequence[TimeSeries]):
         """Checks if `actual_anomalies` contains only univariate series when the scorer has the
@@ -406,6 +480,15 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         list_series = _to_list(series)
 
+        for s in list_series:
+            _assert_timeseries(s)
+            self._check_window_size(s)
+
+        list_series = [self._assert_deterministic(s, "series") for s in list_series]
+
+        anomaly_scores = self._score_core(list_series)
+
+        """
         anomaly_scores = []
         for s in list_series:
             _assert_timeseries(s)
@@ -413,6 +496,7 @@ class FittableAnomalyScorer(AnomalyScorer):
             anomaly_scores.append(
                 self._score_core(self._assert_deterministic(s, "series"))
             )
+        """
 
         if len(anomaly_scores) == 1 and not isinstance(series, Sequence):
             return anomaly_scores[0]

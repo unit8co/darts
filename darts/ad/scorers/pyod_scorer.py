@@ -9,7 +9,6 @@ This scorer can wrap around detection algorithms of PyOD.
 from typing import Sequence
 
 import numpy as np
-from numpy.lib.stride_tricks import sliding_window_view
 from pyod.models.base import BaseDetector
 
 from darts.ad.scorers.scorers import FittableAnomalyScorer
@@ -117,78 +116,57 @@ class PyODScorer(FittableAnomalyScorer):
 
     def _fit_core(self, list_series: Sequence[TimeSeries]):
 
-        list_np_series = [series.all_values(copy=False) for series in list_series]
-
-        # TODO: can we factorize code in common bteween PyODScorer and KMeansScorer?
-
-        if not self.component_wise:
+        if (not self.component_wise) | (list_series[0].width == 1):
             self.model.fit(
-                np.concatenate(
-                    [
-                        sliding_window_view(ar, window_shape=self.window, axis=0)
-                        .transpose(0, 3, 1, 2)
-                        .reshape(-1, self.window * len(ar[0]))
-                        for ar in list_np_series
-                    ]
+                self._tabularize_series(
+                    list_series, concatenate=True, component_wise=False
                 )
             )
         else:
-            models = []
-            for component_idx in range(self.width_trained_on):
-
-                model_width = self.model
-                model_width.fit(
-                    np.concatenate(
-                        [
-                            sliding_window_view(
-                                ar[:, component_idx], window_shape=self.window, axis=0
-                            )
-                            .transpose(0, 2, 1)
-                            .reshape(-1, self.window)
-                            for ar in list_np_series
-                        ]
-                    )
+            self.models = [
+                self.model.fit(tabular_data)
+                for tabular_data in self._tabularize_series(
+                    list_series, concatenate=True, component_wise=True
                 )
-                models.append(model_width)
-            self.models = models
+            ]
 
-    def _score_core(self, series: TimeSeries) -> TimeSeries:
+    def _score_core(self, list_series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
 
         raise_if_not(
-            self.width_trained_on == series.width,
-            "Input must have the same number of components as the data used for training"
-            + " the PyODScorer model {},".format(self.model.__str__().split("(")[0])
-            + f" found number of components equal to {series.width} and expected "
-            + f"{self.width_trained_on}.",
-        )
-
-        np_series = series.all_values(copy=False)
-        np_anomaly_score = []
-
-        if not self.component_wise:
-
-            np_anomaly_score.append(
-                self.model.decision_function(
-                    sliding_window_view(np_series, window_shape=self.window, axis=0)
-                    .transpose(0, 3, 1, 2)
-                    .reshape(-1, self.window * series.width)
-                )
+            all([(self.width_trained_on == series.width) for series in list_series]),
+            "All series in 'series' must have the same number of components as the data used "
+            + "for training the PyODScorer model {},".format(
+                self.model.__str__().split("(")[0]
             )
-        else:
-
-            for component_idx in range(self.width_trained_on):
-                score = self.models[component_idx].decision_function(
-                    sliding_window_view(
-                        np_series[:, component_idx],
-                        window_shape=self.window,
-                        axis=0,
-                    )
-                    .transpose(0, 2, 1)
-                    .reshape(-1, self.window)
-                )
-
-                np_anomaly_score.append(score)
-
-        return TimeSeries.from_times_and_values(
-            series.time_index[self.window - 1 :], list(zip(*np_anomaly_score))
+            + f" expected {self.width_trained_on} components.",
         )
+
+        if (not self.component_wise) | (list_series[0].width == 1):
+
+            list_np_anomaly_score = [
+                self.model.decision_function(tabular_data)
+                for tabular_data in self._tabularize_series(
+                    list_series, concatenate=False, component_wise=False
+                )
+            ]
+
+            return [
+                TimeSeries.from_times_and_values(
+                    series.time_index[self.window - 1 :], np_anomaly_score
+                )
+                for series, np_anomaly_score in zip(list_series, list_np_anomaly_score)
+            ]
+
+        else:
+            list_np_anomaly_score = np.array(
+                [
+                    model.decision_function(tabular_data)
+                    for model, tabular_data in zip(
+                        self.models,
+                        self._tabularize_series(
+                            list_series, concatenate=True, component_wise=True
+                        ),
+                    )
+                ]
+            )
+            return self._convert_tabular_to_series(list_series, list_np_anomaly_score)

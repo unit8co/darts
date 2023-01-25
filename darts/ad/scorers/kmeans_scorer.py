@@ -12,7 +12,6 @@ References
 from typing import Sequence
 
 import numpy as np
-from numpy.lib.stride_tricks import sliding_window_view
 from sklearn.cluster import KMeans
 
 from darts.ad.scorers.scorers import FittableAnomalyScorer
@@ -108,6 +107,8 @@ class KMeansScorer(FittableAnomalyScorer):
         )
         self.component_wise = component_wise
 
+        if "n_init" not in kwargs:
+            kwargs["n_init"] = 10
         self.kmeans_kwargs = kwargs
         self.kmeans_kwargs["n_clusters"] = k
 
@@ -123,79 +124,54 @@ class KMeansScorer(FittableAnomalyScorer):
         list_series: Sequence[TimeSeries],
     ):
 
-        list_np_series = [series.all_values(copy=False) for series in list_series]
-
-        if not self.component_wise:
-            self.model = KMeans(**self.kmeans_kwargs)
-            self.model.fit(
-                np.concatenate(
-                    [
-                        sliding_window_view(ar, window_shape=self.window, axis=0)
-                        .transpose(0, 3, 1, 2)
-                        .reshape(-1, self.window * len(ar[0]))
-                        for ar in list_np_series
-                    ],
-                    axis=0,
+        if (not self.component_wise) | (list_series[0].width == 1):
+            self.model = KMeans(**self.kmeans_kwargs).fit(
+                self._tabularize_series(
+                    list_series, concatenate=True, component_wise=False
                 )
             )
         else:
-            models = []
-            for component_idx in range(self.width_trained_on):
-                model = KMeans(**self.kmeans_kwargs)
-                model.fit(
-                    np.concatenate(
-                        [
-                            sliding_window_view(
-                                ar[:, component_idx], window_shape=self.window, axis=0
-                            )
-                            .transpose(0, 2, 1)
-                            .reshape(-1, self.window)
-                            for ar in list_np_series
-                        ],
-                        axis=0,
-                    )
+            self.models = [
+                KMeans(**self.kmeans_kwargs).fit(tabular_data)
+                for tabular_data in self._tabularize_series(
+                    list_series, concatenate=True, component_wise=True
                 )
-                models.append(model)
-            self.models = models
+            ]
 
-    def _score_core(self, series: TimeSeries) -> TimeSeries:
+    def _score_core(self, list_series: Sequence[TimeSeries]) -> Sequence[TimeSeries]:
+
         raise_if_not(
-            self.width_trained_on == series.width,
-            "Input must have the same number of components as the data used for"
-            + " training the KMeans model, found number of components equal to"
-            + f" {series.width} and expected {self.width_trained_on}.",
+            all([(self.width_trained_on == series.width) for series in list_series]),
+            "All series in 'series' must have the same number of components as the data used"
+            + f" for training the KMeans model, expected {self.width_trained_on} components.",
         )
 
-        np_series = series.all_values(copy=False)
-        np_anomaly_score = []
-
-        if not self.component_wise:
-            # return distance to the clostest centroid
-            np_anomaly_score.append(
-                self.model.transform(
-                    sliding_window_view(np_series, window_shape=self.window, axis=0)
-                    .transpose(0, 3, 1, 2)
-                    .reshape(-1, self.window * series.width)
-                ).min(axis=1)
-            )  # only return the closest distance out of the k ones (k centroids)
-        else:
-            for component_idx in range(self.width_trained_on):
-                score = (
-                    self.models[component_idx]
-                    .transform(
-                        sliding_window_view(
-                            np_series[:, component_idx],
-                            window_shape=self.window,
-                            axis=0,
-                        )
-                        .transpose(0, 2, 1)
-                        .reshape(-1, self.window)
-                    )
-                    .min(axis=1)
+        if (not self.component_wise) | (list_series[0].width == 1):
+            # only return the closest distance out of the k ones (k centroids)
+            list_np_anomaly_score = [
+                self.model.transform(tabular_data).min(axis=1)
+                for tabular_data in self._tabularize_series(
+                    list_series, concatenate=False, component_wise=False
                 )
+            ]
+            return [
+                TimeSeries.from_times_and_values(
+                    series.time_index[self.window - 1 :], np_anomaly_score
+                )
+                for series, np_anomaly_score in zip(list_series, list_np_anomaly_score)
+            ]
 
-                np_anomaly_score.append(score)
+        else:
+            list_np_anomaly_score = np.array(
+                [
+                    model.transform(tabular_data).min(axis=1)
+                    for model, tabular_data in zip(
+                        self.models,
+                        self._tabularize_series(
+                            list_series, concatenate=True, component_wise=True
+                        ),
+                    )
+                ]
+            )
 
-        return TimeSeries.from_times_and_values(
-            series.time_index[self.window - 1 :], list(zip(*np_anomaly_score))
-        )
+            return self._convert_tabular_to_series(list_series, list_np_anomaly_score)

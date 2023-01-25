@@ -604,6 +604,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # Check parameters
         self.check_type_component_wise(Norm)
+        self.expects_deterministic_input(Norm)
 
         # if component_wise=False must always return a univariate anomaly score
         scorer = Norm(component_wise=False)
@@ -663,8 +664,6 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         scorer = Norm(component_wise=False)
 
-        # always expects a deterministic input
-
         # univariate case (equivalent to abs diff)
         self.assertEqual(
             scorer.score_from_prediction(self.test, self.test + 1)
@@ -696,13 +695,9 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
     def test_Difference(self):
 
-        scorer = Difference()
+        self.expects_deterministic_input(Difference)
 
-        # always expects a deterministic input
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(self.train, self.probabilistic)
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(self.probabilistic, self.train)
+        scorer = Difference()
 
         # univariate case
         self.assertEqual(
@@ -795,6 +790,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             scorer(diff_fn=1, **kwargs)
 
+        self.check_diff_series(scorer, **kwargs)
+
     def check_type_component_wise(self, scorer, **kwargs):
 
         # component_wise must be bool
@@ -821,30 +818,36 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         scorer.fit(self.mts_train)
         self.assertTrue(scorer.score(self.mts_test).width == self.mts_test.width)
 
+    def check_diff_series(self, scorer, **kwargs):
+
+        # test _diff_series() directly: parameter must by "abs_diff" or "diff"
+        with self.assertRaises(ValueError):
+            s_tmp = scorer(**kwargs)
+            s_tmp.diff_fn = "random"
+            s_tmp._diff_series(self.train, self.test)
+
+    def expects_deterministic_input(self, scorer, **kwargs):
+
+        scorer = scorer(**kwargs)
+        if scorer.trainable:
+            scorer.fit(self.train)
+            np.testing.assert_warns(scorer.score(self.probabilistic))
+
+        # always expects a deterministic input
+        np.testing.assert_warns(
+            scorer.score_from_prediction(self.train, self.probabilistic)
+        )
+        np.testing.assert_warns(
+            scorer.score_from_prediction(self.probabilistic, self.train)
+        )
+
     def test_WassersteinScorer(self):
 
-        # Check parameters
+        # Check parameters and inputs
         self.component_wise_parameter(WassersteinScorer)
         self.window_parameter(WassersteinScorer)
         self.diff_fn_parameter(WassersteinScorer)
-
-        # test _diff_series() directly
-        with self.assertRaises(ValueError):
-            s_tmp = WassersteinScorer()
-            s_tmp.diff_fn = "random"
-            s_tmp._diff_series(self.train, self.test)
-        WassersteinScorer(diff_fn="diff")._diff_series(self.train, self.test)
-        WassersteinScorer()._diff_series(self.train, self.test)
-
-        scorer = WassersteinScorer()
-
-        # always expects a deterministic input
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(self.train, self.probabilistic)
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(self.probabilistic, self.train)
-        with self.assertRaises(ValueError):
-            scorer.score(self.probabilistic)
+        self.expects_deterministic_input(WassersteinScorer)
 
         # test plotting (just call the functions)
         scorer = WassersteinScorer(window=2)
@@ -1004,22 +1007,12 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
     def test_kmeansScorer(self):
 
-        # Check parameters
+        # Check parameters and inputs
         self.component_wise_parameter(KMeansScorer)
         self.window_parameter(KMeansScorer)
         self.diff_fn_parameter(KMeansScorer)
-
-        scorer = KMeansScorer()
-
-        # always expects a deterministic input
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(self.train, self.probabilistic)
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(self.probabilistic, self.train)
-        with self.assertRaises(ValueError):
-            scorer.score(self.probabilistic)
-
-        self.assertFalse(scorer.is_probabilistic)
+        self.expects_deterministic_input(KMeansScorer)
+        self.assertFalse(KMeansScorer().is_probabilistic)
 
     def test_univariate_kmeans(self):
 
@@ -1253,26 +1246,16 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
     def test_PyODScorer(self):
 
-        # Check parameters
+        # Check parameters and inputs
         self.component_wise_parameter(PyODScorer, model=KNN())
         self.window_parameter(PyODScorer, model=KNN())
         self.diff_fn_parameter(PyODScorer, model=KNN())
+        self.expects_deterministic_input(PyODScorer, model=KNN())
+        self.assertFalse(PyODScorer(model=KNN()).is_probabilistic)
 
         # model parameter must be pyod.models type BaseDetector
         with self.assertRaises(ValueError):
             PyODScorer(model=MovingAverage(window=10))
-
-        scorer = PyODScorer(model=KNN())
-
-        # always expects a deterministic input
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(self.train, self.probabilistic)
-        with self.assertRaises(ValueError):
-            scorer.score_from_prediction(self.probabilistic, self.train)
-        with self.assertRaises(ValueError):
-            scorer.score(self.probabilistic)
-
-        self.assertFalse(scorer.is_probabilistic)
 
     def test_univariate_PyODScorer(self):
 

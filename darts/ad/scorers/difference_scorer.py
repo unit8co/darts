@@ -23,6 +23,6 @@ class DifferenceScorer(NonFittableAnomalyScorer):
         actual_series: TimeSeries,
         pred_series: TimeSeries,
     ) -> TimeSeries:
-        self._assert_deterministic(actual_series, "actual_series")
-        self._assert_deterministic(pred_series, "pred_series")
+        actual_series = self._assert_deterministic(actual_series, "actual_series")
+        pred_series = self._assert_deterministic(pred_series, "pred_series")
         return actual_series - pred_series
