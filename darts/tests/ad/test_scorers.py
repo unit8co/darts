@@ -1227,14 +1227,14 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # test scorer with component_wise=False
-        scorer_w10_cwfalse = KMeansScorer(window=10, component_wise=False)
+        scorer_w10_cwfalse = KMeansScorer(window=10, component_wise=False, n_init=10)
         scorer_w10_cwfalse.fit(mts_train_kmeans)
         auc_roc_cwfalse = scorer_w10_cwfalse.eval_accuracy(
             anomalies_common_kmeans, mts_test_kmeans, metric="AUC_ROC"
         )
 
         # test scorer with component_wise=True
-        scorer_w10_cwtrue = KMeansScorer(window=10, component_wise=True)
+        scorer_w10_cwtrue = KMeansScorer(window=10, component_wise=True, n_init=10)
         scorer_w10_cwtrue.fit(mts_train_kmeans)
         auc_roc_cwtrue = scorer_w10_cwtrue.eval_accuracy(
             anomalies_kmeans_per_width, mts_test_kmeans, metric="AUC_ROC"
