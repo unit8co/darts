@@ -129,7 +129,7 @@ class StatsForecastETS(FutureCovariatesLocalForecastingModel):
 
         if future_covariates is not None:
             mu_linreg = self._linreg.predict(n, future_covariates=future_covariates)
-            mu_linreg_values = mu_linreg.values().reshape(
+            mu_linreg_values = mu_linreg.values(copy=False).reshape(
                 n,
             )
             mu = mu_ets + mu_linreg_values
