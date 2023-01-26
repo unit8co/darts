@@ -96,7 +96,7 @@ class StatsForecastETS(FutureCovariatesLocalForecastingModel):
             linreg = LinearRegressionModel(lags_future_covariates=[0])
             linreg.fit(series, future_covariates=future_covariates)
             fitted_values = linreg.model.predict(
-                X=future_covariates.slice_intersect(series).values()
+                X=future_covariates.slice_intersect(series).values(copy=False)
             )
             fitted_values_ts = TimeSeries.from_times_and_values(
                 times=series.time_index, values=fitted_values
