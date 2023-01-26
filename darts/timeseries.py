@@ -598,6 +598,65 @@ class TimeSeries:
                 value_cols = [value_cols]
             series_df = df[value_cols]
 
+        def integer_df_to_range_index(
+            df_int: pd.DataFrame, idx_name: Optional[str] = None
+        ) -> Tuple[pd.DataFrame, pd.RangeIndex]:
+            """If possible, converts the integer index of pd.DataFrame `df_int` into a pd.RangeIndex, and sorts the
+            DataFrame. Otherwise raises an error.
+
+            Parameters
+            ----------
+            df_int
+                A pd.DataFrame with a integer pd.Index. The index must be convertible into a pd.RangeIndex
+            idx_name
+                Optionally, a name for the index. If `None`, will take the name of the underlying index.
+
+            Returns
+            -------
+            (pd.DataFrame, pd.RangeIndex)
+                The sorted input DataFrame `df_int` indexed with a pd.RangeIndex.
+            """
+
+            if not df_int.index.is_monotonic_increasing:
+                df_int = df_int.sort_index()
+
+            if not freq and len(df_int) == 1:
+                logger.warning(
+                    "No frequency `freq` was provided, and the provided integer time index column only "
+                    "contains one value. `freq` will be set to `1`"
+                )
+                inferred_freq = 1
+            elif freq:
+                inferred_freq = freq
+            else:
+                inferred_freq = df_int.index[1] - df_int.index[0]
+
+            start_idx, stop_idx = (
+                min(df_int.index),
+                max(df_int.index) + inferred_freq,
+            )
+
+            # All the integers in the range have to be present
+            if (stop_idx - start_idx) // inferred_freq != len(df_int) or (
+                (df_int.index - start_idx) % inferred_freq
+            ).any():
+                # better to compute formatted string only in case condition is true
+                raise_if(
+                    True,
+                    f"The provided integer time index column contains some integers outside the range of "
+                    f"`pd.RangeIndex(start={start_idx}, stop={stop_idx}, step={inferred_freq})`. If `freq` was "
+                    f"not provided, `step` was inferred from the two smallest integers.",
+                    logger=logger,
+                )
+
+            idx = pd.RangeIndex(
+                start=start_idx,
+                stop=stop_idx,
+                step=inferred_freq,
+                name=idx_name if idx_name is not None else df_int.index.name,
+            )
+            return df_int, idx
+
         # get time index
         if time_col:
             if time_col in df.columns:
@@ -620,44 +679,10 @@ class TimeSeries:
                     # Temporarily use an Int64Index (soon to be NumericIndex) to sort the values,
                     # then replace by a RangeIndex.
                     series_df.index = time_col_vals
-                    if not time_col_vals.is_monotonic_increasing:
-                        series_df = series_df.sort_index()
-
-                    if not freq and len(df) == 1:
-                        logger.warning(
-                            "No frequency `freq` was provided, and the provided integer time index column only "
-                            "contains one value. `freq` will be set to `1`"
-                        )
-                        inferred_freq = 1
-                    elif freq:
-                        inferred_freq = freq
-                    else:
-                        inferred_freq = series_df.index[1] - series_df.index[0]
-
-                    start_idx, stop_idx = (
-                        min(time_col_vals),
-                        max(time_col_vals) + inferred_freq,
+                    series_df, time_index = integer_df_to_range_index(
+                        series_df, idx_name=time_col
                     )
 
-                    # All the integers in the range have to be present
-                    if (stop_idx - start_idx) // inferred_freq != len(series_df) or (
-                        (series_df.index - start_idx) % inferred_freq
-                    ).any():
-                        # better to compute formatted string only in case condition is true
-                        raise_if(
-                            True,
-                            f"The provided integer time index column contains some integers outside the range of "
-                            f"`pd.RangeIndex(start={start_idx}, stop={stop_idx}, step={inferred_freq})`. If `freq` was "
-                            f"not provided, `step` was inferred from the two smallest integers.",
-                            logger=logger,
-                        )
-
-                    time_index = pd.RangeIndex(
-                        start=start_idx,
-                        stop=stop_idx,
-                        step=inferred_freq,
-                        name=time_col,
-                    )
                 elif np.issubdtype(time_col_vals.dtype, object):
                     # The integer conversion failed; try datetimes
                     try:
@@ -680,14 +705,21 @@ class TimeSeries:
                 raise_log(AttributeError(f"time_col='{time_col}' is not present."))
         else:
             raise_if_not(
-                isinstance(df.index, VALID_INDEX_TYPES),
+                isinstance(df.index, VALID_INDEX_TYPES)
+                or np.issubdtype(df.index.dtype, np.integer),
                 "If time_col is not specified, the DataFrame must be indexed either with "
-                "a DatetimeIndex, or with a RangeIndex.",
+                "a DatetimeIndex, a RangeIndex, or an integer Index that can be converted into a RangeIndex",
                 logger,
             )
+            if not isinstance(df.index, pd.RangeIndex) and np.issubdtype(
+                df.index.dtype, np.integer
+            ):
+                series_df, time_index = integer_df_to_range_index(
+                    series_df, idx_name=df.index.name
+                )
             # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
             # pandas.DataFrame loses the tz information if it's not its index
-            if isinstance(df.index, pd.DatetimeIndex) and df.index.tz is not None:
+            elif isinstance(df.index, pd.DatetimeIndex) and df.index.tz is not None:
                 logger.warning(
                     "The provided DatetimeIndex was associated with a timezone, which is currently not supported "
                     "by xarray. To avoid unexpected behaviour, the tz information was removed. Consider calling "
