@@ -1052,11 +1052,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     errors = errors[0]
                 backtest_list.append(errors)
             else:
-
                 errors = [
-                    [metric_f(series, f) for metric_f in metric]
+                    [metric_f(target_ts, f) for metric_f in metric]
                     if len(metric) > 1
-                    else metric[0](series, f)
+                    else metric[0](target_ts, f)
                     for f in forecasts[idx]
                 ]
 
