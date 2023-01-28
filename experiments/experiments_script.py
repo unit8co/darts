@@ -19,15 +19,14 @@ from darts.dataprocessing.transformers import Scaler
 
 # data and models
 from darts.datasets import (
+    ElectricityDataset,
     ETTh1Dataset,
     ETTh2Dataset,
     ETTm1Dataset,
     ETTm2Dataset,
     ILINetDataset,
-    ElectricityDataset,
 )
-from .builders import MODEL_BUILDERS
-from darts.metrics import mse, mae, smape, rmse, mape, mase
+from darts.metrics import mae, mape, mase, mse, rmse, smape
 from darts.models import (
     CatBoostModel,
     DLinearModel,
@@ -39,26 +38,53 @@ from darts.models import (
     TCNModel,
     XGBModel,
 )
-from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
+from darts.models.forecasting.torch_forecasting_model import (
+    FutureCovariatesTorchModel,
+    MixedCovariatesTorchModel,
+    PastCovariatesTorchModel,
+    TorchForecastingModel,
+)
 from darts.utils import missing_values
 from darts.utils.utils import series2seq
 
+from builders import MODEL_BUILDERS
+
 # experiment configuration
 
-dataset_map = {"ETTh1": ETTh1Dataset, "ETTh2": ETTh2Dataset,
-               "ETTm1": ETTm1Dataset, "ETTm2": ETTm2Dataset,
-               "ILINet": ILINetDataset, "Electricity": ElectricityDataset,}
+dataset_map = {
+    "ETTh1": ETTh1Dataset,
+    "ETTh2": ETTh2Dataset,
+    "ETTm1": ETTm1Dataset,
+    "ETTm2": ETTm2Dataset,
+    "ILINet": ILINetDataset,
+    "Electricity": ElectricityDataset,
+}
 model_map = {
     "TCN": TCNModel,
     "DLinear": DLinearModel,
     "NLinear": NLinearModel,
     "NHiTS": NHiTSModel,
+    "LinearRegression": LinearRegressionModel,
+    "lgbm": LightGBMModel,
+    "xgb": XGBModel,
 }
-metric_map = {"smape": smape, "mae": mae, "mase":mase, "mse": mse, "rmse":rmse, "mape":mape}
+metric_map = {
+    "smape": smape,
+    "mae": mae,
+    "mase": mase,
+    "mse": mse,
+    "rmse": rmse,
+    "mape": mape,
+}
 
-encoders = {
+encoders_past = {
     "datetime_attribute": {"past": ["month", "week", "hour", "dayofweek"]},
     "cyclic": {"past": ["month", "week", "hour", "dayofweek"]},
+}
+
+encoders_future = {
+    "datetime_attribute": {"future": ["month", "week", "hour", "dayofweek"]},
+    "cyclic": {"future": ["month", "week", "hour", "dayofweek"]},
 }
 
 argParser = argparse.ArgumentParser()
@@ -82,6 +108,7 @@ argParser.add_argument(
     "--subset_size",
     help="subset size as number of timesteps to keep from the dataset",
     type=int,
+    default = int(365 * 1.5)
 )
 argParser.add_argument(
     "--split", help="split ratio for train and validation/test", type=float, default=0.7
@@ -93,15 +120,15 @@ argParser.add_argument(
     type=bool,
     default=False,
 )
-argParser.add_argument("--encoders", help="encoders to use", type=str, default=encoders)
+argParser.add_argument("--encoders", help="encoders to use", type=str)
 argParser.add_argument(
-    "--train_with_metric",
+    "--optimize_with_metric",
     help="whether to optimize based on a metric evaluation on validation set "
     "or based on val_loss",
     type=bool,
     default=True,
 )
-argParser.add_argument("--eval_metric", help="evaluation metric to use", default=smape)
+argParser.add_argument("--eval_metric", help="evaluation metric to use", default="smape")
 argParser.add_argument(
     "--time_budget", help="time budget in seconds", type=int, default=900
 )
@@ -147,14 +174,25 @@ fixed_params = {
     "RANDOM_STATE": random_seed,
 }
 
-train_with_metric = args.train_with_metric
+optimize_with_metric = args.optimize_with_metric
 eval_metric = metric_map[args.eval_metric]
 time_budget = args.time_budget
-encoders = json.loads(args.encoders) if args.encoders else encoders
+encoders = (
+    json.loads(args.encoders)
+    if args.encoders
+    else (
+        encoders_future
+        if issubclass(model_cl, (MixedCovariatesTorchModel, FutureCovariatesTorchModel))
+        else encoders_past
+    )
+)
+
+IN_MIN = 5  # make argument?
+IN_MAX = 30
 
 
-def generate_params_NHITS(trial):
-    in_len = trial.suggest_int("in_len", 5 * PERIOD_UNIT, 14 * PERIOD_UNIT)
+def _params_NHITS(trial):
+    in_len = trial.suggest_int("in_len", IN_MIN * PERIOD_UNIT, IN_MAX * PERIOD_UNIT)
 
     out_len = trial.suggest_int("out_len", 1, in_len - PERIOD_UNIT)
 
@@ -181,8 +219,8 @@ def generate_params_NHITS(trial):
     return constants
 
 
-def generate_params_NLINEAR(trial):
-    in_len = trial.suggest_int("in_len", 5 * PERIOD_UNIT, 14 * PERIOD_UNIT)
+def _params_NLINEAR(trial):
+    in_len = trial.suggest_int("in_len", IN_MIN * PERIOD_UNIT, IN_MAX * PERIOD_UNIT)
 
     out_len = trial.suggest_int("out_len", 1, in_len - PERIOD_UNIT)
 
@@ -195,9 +233,9 @@ def generate_params_NLINEAR(trial):
     return None
 
 
-def generate_params_DLINEAR(trial):
+def _params_DLINEAR(trial):
 
-    in_len = trial.suggest_int("in_len", 5 * PERIOD_UNIT, 14 * PERIOD_UNIT)
+    in_len = trial.suggest_int("in_len", IN_MIN * PERIOD_UNIT, IN_MAX * PERIOD_UNIT)
 
     out_len = trial.suggest_int("out_len", 1, in_len - PERIOD_UNIT)
 
@@ -210,9 +248,9 @@ def generate_params_DLINEAR(trial):
     return None
 
 
-def generate_params_TCNMODEL(trial):
+def _params_TCNMODEL(trial):
 
-    in_len = trial.suggest_int("in_len", 5 * PERIOD_UNIT, 14 * PERIOD_UNIT)
+    in_len = trial.suggest_int("in_len", IN_MIN * PERIOD_UNIT, IN_MAX * PERIOD_UNIT)
 
     out_len = trial.suggest_int("out_len", 1, in_len - PERIOD_UNIT)
 
@@ -227,11 +265,26 @@ def generate_params_TCNMODEL(trial):
     return None
 
 
+def _params_LGBMModel(trial):
+    pass
+
+
+def _params_XGBModel(trial):
+    pass
+
+
+def _params_LinearRegression(trial):
+    pass
+
+
 params_generators = {
-    TCNModel.__name__: generate_params_TCNMODEL,
-    DLinearModel.__name__: generate_params_DLINEAR,
-    NLinearModel.__name__: generate_params_NLINEAR,
-    NHiTSModel.__name__: generate_params_NHITS,
+    TCNModel.__name__: _params_TCNMODEL,
+    DLinearModel.__name__: _params_DLINEAR,
+    NLinearModel.__name__: _params_NLINEAR,
+    NHiTSModel.__name__: _params_NHITS,
+    LightGBMModel.__name__: _params_LGBMModel,
+    XGBModel.__name__: _params_XGBModel,
+    LinearRegressionModel.__name__: _params_LinearRegression,
 }
 
 
@@ -252,7 +305,7 @@ if __name__ == "__main__":
         os.getcwd(), f"benchmark_experiments/{dataset.__name__}"
     )
     experiment_dir = os.path.join(os.getcwd(), f"{experiment_root}/{exp_name}")
-    print(experiment_dir)
+    print(f"experiment directory: {experiment_dir}")
     os.makedirs(experiment_dir, exist_ok=True)
 
     # setup logging file
@@ -265,6 +318,7 @@ if __name__ == "__main__":
         "model training time",
         "model inference time",
         "seed",
+        "optimize with metric",
     ]
 
     logging_file = f"{experiment_root}/logs.csv"
@@ -275,7 +329,7 @@ if __name__ == "__main__":
             writer.writeheader()
             f.close()
 
-    print(logging_file)
+    print(f"log file location : {logging_file}")
 
     # read data
     if "multivariate" in dataset.__init__.__code__.co_varnames:
@@ -349,12 +403,12 @@ if __name__ == "__main__":
         config, model_cl, encoders, fixed_params, train=train, val=val
     ):
 
-        metrics = {"val_loss": "val_loss"}
+        metrics = {"metric": "val_loss"}
 
         callbacks = [TuneReportCallback(metrics, on="validation_end")]
 
         model = MODEL_BUILDERS[model_cl.__name__](
-            **config, encoders=encoders, callbacks=callbacks
+            **config, fixed_params=fixed_params, encoders=encoders, callbacks=callbacks
         )
 
         # train the model
@@ -415,6 +469,8 @@ if __name__ == "__main__":
         val=val,
     )
 
+    # https://docs.ray.io/en/latest/tune/examples/optuna_example.html
+    # the default optuna algorithm is TPEsampler
     search_alg = OptunaSearch(
         space=params_generators[model_cl.__name__],
         metric="metric",
@@ -423,7 +479,7 @@ if __name__ == "__main__":
 
     tuner = tune.Tuner(
         trainable=objective_metric_with_params
-        if train_with_metric
+        if optimize_with_metric
         else objective_val_loss_with_params,
         tune_config=tune.TuneConfig(
             search_alg=search_alg,
@@ -434,7 +490,6 @@ if __name__ == "__main__":
             local_dir=experiment_dir,
             name=f"{model_cl.__name__}_tuner_{eval_metric.__name__}",
         ),
-        # param_space = params_space[model_cl.__name__],
     )
 
     # run tuner
@@ -481,6 +536,7 @@ if __name__ == "__main__":
     metric_evals_mean = (
         np.mean(metric_evals) if metric_evals != np.nan else float("inf")
     )
+    # if multiple series
     metric_evals_std = np.std(metric_evals)
     print(
         f"{eval_metric.__name__} mean = {metric_evals_mean}, std = {metric_evals_std}"
@@ -505,6 +561,7 @@ if __name__ == "__main__":
         "model training time": training_time,
         "model inference time": inference_time,
         "seed": random_seed,
+        "optimize with metric": optimize_with_metric,
     }
 
     with open(logging_file, "a") as f:

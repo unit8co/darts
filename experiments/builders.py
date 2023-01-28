@@ -15,9 +15,12 @@ from darts.models import (
     XGBModel,
 )
 
+# DEEP LEARNING MODELS
 torch_early_stopper = EarlyStopping(
     "val_loss", min_delta=0.001, patience=3, verbose=True
 )
+
+CALLBACKS = [torch_early_stopper]
 
 # detect if a GPU is available
 if torch.cuda.is_available():
@@ -25,10 +28,10 @@ if torch.cuda.is_available():
         "accelerator": "gpu",
         "gpus": -1,
         "auto_select_gpus": True,
-        "callbacks": [torch_early_stopper],
+        "callbacks": CALLBACKS,
     }
 else:
-    PL_TRAINER_KWARGS = {"callbacks": [torch_early_stopper]}
+    PL_TRAINER_KWARGS = {"callbacks": CALLBACKS}
 
 
 def NHiTSModelBuilder(
@@ -53,9 +56,8 @@ def NHiTSModelBuilder(
 ):
 
     if callbacks is not None:
-        PL_TRAINER_KWARGS["callbacks"] = PL_TRAINER_KWARGS["callbacks"].append(
-            torch_early_stopper
-        )
+        CALLBACKS.extend(callbacks)
+        PL_TRAINER_KWARGS["callbacks"] = CALLBACKS
 
     model = NHiTSModel(
         input_chunk_length=in_len,
@@ -99,11 +101,9 @@ def NLinearModelBuilder(
     callbacks=None,
     work_dir=None,
 ):
-
     if callbacks is not None:
-        PL_TRAINER_KWARGS["callbacks"] = PL_TRAINER_KWARGS["callbacks"].append(
-            torch_early_stopper
-        )
+        CALLBACKS.extend(callbacks)
+        PL_TRAINER_KWARGS["callbacks"] = CALLBACKS
 
     model = NLinearModel(
         input_chunk_length=in_len,
@@ -141,11 +141,9 @@ def DLinearModelBuilder(
     callbacks=None,
     work_dir=None,
 ):
-
     if callbacks is not None:
-        PL_TRAINER_KWARGS["callbacks"] = PL_TRAINER_KWARGS["callbacks"].append(
-            torch_early_stopper
-        )
+        CALLBACKS.extend(callbacks)
+        PL_TRAINER_KWARGS["callbacks"] = CALLBACKS
 
     model = DLinearModel(
         input_chunk_length=in_len,
@@ -185,11 +183,9 @@ def TCNModelBuilder(
     callbacks=None,
     work_dir=None,
 ):
-
     if callbacks is not None:
-        PL_TRAINER_KWARGS["callbacks"] = PL_TRAINER_KWARGS["callbacks"].append(
-            torch_early_stopper
-        )
+        CALLBACKS.extend(callbacks)
+        PL_TRAINER_KWARGS["callbacks"] = CALLBACKS
 
     # build the model
     model = TCNModel(
@@ -216,6 +212,19 @@ def TCNModelBuilder(
     return model
 
 
+# ML MODELS
+def LGBMModelBuilder():
+    pass
+
+
+def XGBModelBuilder():
+    pass
+
+
+def LinearRegressionModelBuilder():
+    pass
+
+
 MODEL_BUILDERS = {
     TCNModel.__name__: TCNModelBuilder,
     DLinearModel.__name__: DLinearModelBuilder,
@@ -224,4 +233,7 @@ MODEL_BUILDERS = {
     # TFTModel.__name__: TFTModelBuilder,
     # TransformerModel.__name__: TransformerModelBuilder,
     NHiTSModel.__name__: NHiTSModelBuilder,
+    LightGBMModel.__name__: LGBMModelBuilder,
+    XGBModel.__name__: XGBModelBuilder,
+    LinearRegressionModel.__name__: LinearRegressionModelBuilder,
 }
