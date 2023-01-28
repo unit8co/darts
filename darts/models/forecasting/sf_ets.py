@@ -84,6 +84,7 @@ class StatsForecastETS(FutureCovariatesLocalForecastingModel):
         """
         super().__init__(add_encoders=add_encoders)
         self.model = AutoETS(*ets_args, **ets_kwargs)
+        self._linreg = None
 
     def __str__(self):
         return "ETS-Statsforecasts"
