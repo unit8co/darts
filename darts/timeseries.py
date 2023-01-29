@@ -346,14 +346,30 @@ class TimeSeries:
             A univariate or multivariate deterministic TimeSeries constructed from the inputs.
         """
         xa_index = xa.get_index(xa.dims[0])
+
         has_datetime_index = isinstance(xa_index, pd.DatetimeIndex)
-        has_frequency = has_datetime_index and xa_index.freq is not None
+        has_range_index = isinstance(xa_index, pd.RangeIndex)
+        has_integer_index = not has_range_index and np.issubdtype(
+            xa_index.dtype, np.integer
+        )
+
+        has_frequency = (
+            has_datetime_index and xa_index.freq is not None
+        ) or has_range_index
+
         # optionally fill missing dates; do it only when there is a DatetimeIndex (and not a RangeIndex)
-        if fill_missing_dates and has_datetime_index:
+        if fill_missing_dates:
             xa_ = cls._fill_missing_dates(xa, freq=freq)
-        # The provided index does not have a freq; using the provided freq
-        elif has_datetime_index and freq is not None and not has_frequency:
+        # provided index does not have a freq; using the provided freq
+        elif (
+            (has_datetime_index or has_integer_index)
+            and freq is not None
+            and not has_frequency
+        ):
             xa_ = cls._restore_xarray_from_frequency(xa, freq=freq)
+        # index is an integer index and no freq is provided; try convert it to pd.RangeIndex
+        elif has_integer_index and freq is None:
+            xa_ = cls._integer_to_range_indexed_xarray(xa)
         else:
             xa_ = xa
         if fillna_value is not None:
@@ -598,111 +614,51 @@ class TimeSeries:
                 value_cols = [value_cols]
             series_df = df[value_cols]
 
-        def integer_df_to_range_index(
-            df_int: pd.DataFrame, idx_name: Optional[str] = None
-        ) -> Tuple[pd.DataFrame, pd.RangeIndex]:
-            """If possible, converts the integer index of pd.DataFrame `df_int` into a pd.RangeIndex, and sorts the
-            DataFrame. Otherwise raises an error.
-
-            Parameters
-            ----------
-            df_int
-                A pd.DataFrame with a integer pd.Index. The index must be convertible into a pd.RangeIndex
-            idx_name
-                Optionally, a name for the index. If `None`, will take the name of the underlying index.
-
-            Returns
-            -------
-            (pd.DataFrame, pd.RangeIndex)
-                The sorted input DataFrame `df_int` indexed with a pd.RangeIndex.
-            """
-
-            if not df_int.index.is_monotonic_increasing:
-                df_int = df_int.sort_index()
-
-            if not freq and len(df_int) == 1:
-                logger.warning(
-                    "No frequency `freq` was provided, and the provided integer time index column only "
-                    "contains one value. `freq` will be set to `1`"
-                )
-                inferred_freq = 1
-            elif freq:
-                inferred_freq = freq
-            else:
-                inferred_freq = df_int.index[1] - df_int.index[0]
-
-            start_idx, stop_idx = (
-                min(df_int.index),
-                max(df_int.index) + inferred_freq,
-            )
-
-            # All the integers in the range have to be present
-            if (stop_idx - start_idx) // inferred_freq != len(df_int) or (
-                (df_int.index - start_idx) % inferred_freq
-            ).any():
-                # better to compute formatted string only in case condition is true
-                raise_if(
-                    True,
-                    f"The provided integer time index column contains some integers outside the range of "
-                    f"`pd.RangeIndex(start={start_idx}, stop={stop_idx}, step={inferred_freq})`. If `freq` was "
-                    f"not provided, `step` was inferred from the two smallest integers.",
-                    logger=logger,
-                )
-
-            idx = pd.RangeIndex(
-                start=start_idx,
-                stop=stop_idx,
-                step=inferred_freq,
-                name=idx_name if idx_name is not None else df_int.index.name,
-            )
-            return df_int, idx
-
         # get time index
         if time_col:
-            if time_col in df.columns:
-                time_col_vals = df[time_col]
+            if time_col not in df.columns:
+                raise_log(AttributeError(f"time_col='{time_col}' is not present."))
 
-                if np.issubdtype(time_col_vals.dtype, object):
-                    # Try to convert to integers if needed
-                    try:
-                        time_col_vals = time_col_vals.astype(int)
-                    except ValueError:
-                        pass
+            time_index = pd.Index([])
+            time_col_vals = df[time_col]
 
-                if np.issubdtype(time_col_vals.dtype, np.integer):
-                    # We have to check all integers appear only once to have a valid index
-                    raise_if(
-                        time_col_vals.duplicated().any(),
-                        "The provided integer time index column contains duplicate values.",
-                    )
+            if np.issubdtype(time_col_vals.dtype, object):
+                # Try to convert to integers if needed
+                try:
+                    time_col_vals = time_col_vals.astype(int)
+                except ValueError:
+                    pass
 
-                    # Temporarily use an Int64Index (soon to be NumericIndex) to sort the values,
-                    # then replace by a RangeIndex.
-                    series_df.index = time_col_vals
-                    series_df, time_index = integer_df_to_range_index(
-                        series_df, idx_name=time_col
-                    )
+            if np.issubdtype(time_col_vals.dtype, np.integer):
+                # We have to check all integers appear only once to have a valid index
+                raise_if(
+                    time_col_vals.duplicated().any(),
+                    "The provided integer time index column contains duplicate values.",
+                )
 
-                elif np.issubdtype(time_col_vals.dtype, object):
-                    # The integer conversion failed; try datetimes
-                    try:
-                        time_index = pd.DatetimeIndex(time_col_vals)
-                    except ValueError:
-                        raise_log(
-                            AttributeError(
-                                "'time_col' is of 'object' dtype but doesn't contain valid timestamps"
-                            )
-                        )
-                elif np.issubdtype(time_col_vals.dtype, np.datetime64):
+                # Temporarily use an Int64Index (soon to be NumericIndex) to sort the values,
+                # then replace by a RangeIndex.
+                time_index = pd.Index(time_col_vals)
+
+            elif np.issubdtype(time_col_vals.dtype, object):
+                # The integer conversion failed; try datetimes
+                try:
                     time_index = pd.DatetimeIndex(time_col_vals)
-                else:
+                except ValueError:
                     raise_log(
                         AttributeError(
-                            "Invalid type of `time_col`: it needs to be of either 'str', 'datetime' or 'int' dtype."
+                            "'time_col' is of 'object' dtype but doesn't contain valid timestamps"
                         )
                     )
+            elif np.issubdtype(time_col_vals.dtype, np.datetime64):
+                time_index = pd.DatetimeIndex(time_col_vals)
             else:
-                raise_log(AttributeError(f"time_col='{time_col}' is not present."))
+                raise_log(
+                    AttributeError(
+                        "Invalid type of `time_col`: it needs to be of either 'str', 'datetime' or 'int' dtype."
+                    )
+                )
+            time_index.name = time_col
         else:
             raise_if_not(
                 isinstance(df.index, VALID_INDEX_TYPES)
@@ -714,9 +670,10 @@ class TimeSeries:
             if not isinstance(df.index, pd.RangeIndex) and np.issubdtype(
                 df.index.dtype, np.integer
             ):
-                series_df, time_index = integer_df_to_range_index(
-                    series_df, idx_name=df.index.name
-                )
+                # series_df, time_index = integer_df_to_range_index(
+                #     series_df, idx_name=df.index.name
+                # )
+                time_index = series_df.index
             # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
             # pandas.DataFrame loses the tz information if it's not its index
             elif isinstance(df.index, pd.DatetimeIndex) and df.index.tz is not None:
@@ -4283,44 +4240,114 @@ class TimeSeries:
         )
 
         time_dim = xa.dims[0]
-        sorted_xa = (
-            xa.copy()
-            if xa.get_index(time_dim).is_monotonic_increasing
-            else xa.sortby(time_dim)
-        )
-        time_index = sorted_xa.get_index(time_dim)
+        sorted_xa = cls._sort_index(xa)
+        time_index: Union[
+            pd.Index, pd.RangeIndex, pd.DatetimeIndex
+        ] = sorted_xa.get_index(time_dim)
+
+        if isinstance(time_index, pd.DatetimeIndex):
+            has_datetime_index = True
+            observed_freqs = cls._observed_freq_datetime_index(time_index)
+        else:  # integer index (non RangeIndex)
+            has_datetime_index = False
+            observed_freqs = cls._observed_freq_integer_index(time_index)
 
         offset_alias_info = (
-            "For more information about frequency aliases, read "
-            "https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases"
+            (
+                " For more information about frequency aliases, read "
+                "https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases"
+            )
+            if has_datetime_index
+            else ""
         )
-
-        step_size = 3
-        n_dates = len(time_index)
-        # this creates n steps containing 3 timestamps each; used to infer frequency of time_index
-        steps = np.column_stack(
-            [time_index[i : (n_dates - step_size + (i + 1))] for i in range(step_size)]
-        )
-        observed_freqs = {pd.infer_freq(step) for step in steps}
-        observed_freqs.discard(None)
-
-        raise_if_not(
-            len(observed_freqs) == 1,
-            f"Could not observe an inferred frequency. An explicit frequency must be evident over a span of at least "
-            f"3 consecutive time stamps in the input data. {offset_alias_info}"
-            if not len(observed_freqs)
-            else f"Could not find a unique inferred frequency (not constant). Observed frequencies: {observed_freqs}. "
-            f"If any of those is the actual frequency, try passing it with fill_missing_dates=True "
-            f"and freq=your_frequency. {offset_alias_info}",
-            logger,
-        )
+        if not len(observed_freqs) == 1:
+            raise_log(
+                ValueError(
+                    f"Could not observe an inferred frequency. An explicit frequency must be evident over a span of "
+                    f"at least 3 consecutive time stamps in the input data. {offset_alias_info}"
+                    if not len(observed_freqs)
+                    else f"Could not find a unique inferred frequency (not constant). Observed frequencies: "
+                    f"{observed_freqs}. If any of those is the actual frequency, try passing it with "
+                    f"`fill_missing_dates=True` and `freq=your_frequency`.{offset_alias_info}"
+                ),
+                logger,
+            )
 
         freq = observed_freqs.pop()
 
         return cls._restore_xarray_from_frequency(sorted_xa, freq)
 
     @staticmethod
-    def _restore_xarray_from_frequency(xa: xr.DataArray, freq: str) -> xr.DataArray:
+    def _sort_index(xa: xr.DataArray) -> xr.DataArray:
+        """Sorts an xarray by its index (only if it is not already monotonically increasing)"""
+        time_dim = xa.dims[0]
+        return (
+            xa.copy()
+            if xa.get_index(time_dim).is_monotonic_increasing
+            else xa.sortby(time_dim)
+        )
+
+    @staticmethod
+    def _observed_freq_datetime_index(index: pd.DatetimeIndex) -> set:
+        """Returns all observed/inferred frequencies of a pd.DatetimeIndex. The frequencies are inferred from all
+        combinations of three adjacent time steps
+        """
+        step_size = 3
+        n_dates = len(index)
+        # this creates n steps containing 3 timestamps each; used to infer frequency of index
+        steps = np.column_stack(
+            [index[i : (n_dates - step_size + (i + 1))] for i in range(step_size)]
+        )
+        observed_freqs = {pd.infer_freq(step) for step in steps}
+        observed_freqs.discard(None)
+        return observed_freqs
+
+    @staticmethod
+    def _observed_freq_integer_index(index: pd.Index) -> set:
+        """Returns all observed/inferred frequencies of a pd.Index (integer index). The frequencies are inferred from
+        all differences between two adjacent indices.
+        """
+        return set(index[1:] - index[:-1])
+
+    @classmethod
+    def _integer_to_range_indexed_xarray(cls, xa: xr.DataArray) -> xr.DataArray:
+        """If possible, converts the input xarray DataArray's integer index to a pd.RangeIndex. Otherwise, raise an
+        error. An integer Index can be converted to a pd.RangeIndex, assuming that the sorted integer index has a
+        constant step size.
+        """
+        time_dim = xa.dims[0]
+        sorted_xa = cls._sort_index(xa)
+        time_index = sorted_xa.get_index(time_dim)
+        observed_freqs = cls._observed_freq_integer_index(time_index)
+        raise_if_not(
+            len(observed_freqs) == 1,
+            f"Could not convert integer index to a pd.RangeIndex. Found non-unique step sizes/frequencies: "
+            f"{observed_freqs}. If any of those is the actual frequency, try passing it with fill_missing_dates=True "
+            f"and freq=your_frequency.",
+            logger,
+        )
+        freq = observed_freqs.pop()
+        idx = pd.RangeIndex(
+            start=min(time_index),
+            stop=max(time_index) + freq,
+            step=freq,
+            name=time_index.name,
+        )
+        coords = {
+            str(xa.dims[0]): idx,
+            str(xa.dims[1]): xa.coords[DIMS[1]],
+        }
+        return xr.DataArray(
+            data=sorted_xa.data,
+            dims=xa.dims,
+            coords=coords,
+            attrs=xa.attrs,
+        )
+
+    @classmethod
+    def _restore_xarray_from_frequency(
+        cls, xa: xr.DataArray, freq: Union[str, int]
+    ) -> xr.DataArray:
         """Return an xarray DataArray instance that is resampled from an input xarray DataArray `xa` with frequency
         `freq`. `freq` should be the inferred or actual frequency of `xa`. All data from `xa` is maintained in the
         output DataArray at the corresponding dates. Any missing dates from `xa` will be inserted into the returned
@@ -4337,12 +4364,13 @@ class TimeSeries:
         xa
             The xarray DataArray
         freq
-            A string representing the actual or inferred frequency of the Pandas DateTimeIndex from `xa`.
+            A string/integer representing the actual or inferred frequency/step size of the pd.DateTimeIndex/pd.Index
+            from `xa`.
 
         Raises
         -------
         ValueError
-            If the resampled DateTimeIndex does not contain all dates from `xa`
+            If the resampled/reindexed DateTimeIndex/RangeIndex does not contain all dates from `xa`
 
         Returns
         -------
@@ -4351,32 +4379,43 @@ class TimeSeries:
         """
 
         time_dim = xa.dims[0]
-        sorted_xa = (
-            xa.copy()
-            if xa.get_index(time_dim).is_monotonic_increasing
-            else xa.sortby(time_dim)
-        )
+        sorted_xa = cls._sort_index(xa)
 
         time_index = sorted_xa.get_index(time_dim)
-        resampled_time_index = pd.Series(index=time_index, dtype="object").asfreq(freq)
-
+        resampled_time_index = pd.Series(index=time_index, dtype="object")
+        if isinstance(time_index, pd.DatetimeIndex):
+            has_datetime_index = True
+            resampled_time_index = resampled_time_index.asfreq(freq)
+        else:  # integer index (non RangeIndex) -> resampled to RangeIndex
+            has_datetime_index = False
+            resampled_time_index = resampled_time_index.reindex(
+                range(min(time_index), max(time_index) + freq, freq)
+            )
         # check if new time index with inferred frequency contains all input data
         contains_all_data = time_index.isin(resampled_time_index.index).all()
 
         offset_alias_info = (
-            "For more information about frequency aliases, read "
-            "https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases"
+            (
+                " For more information about frequency aliases, read "
+                "https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases"
+            )
+            if has_datetime_index
+            else ""
         )
-        raise_if_not(
-            contains_all_data,
-            f"Could not correctly fill missing dates with the observed/passed frequency freq='{freq}'. "
-            f"Not all input time stamps contained in the newly created TimeSeries. {offset_alias_info}",
-            logger,
-        )
+        if not contains_all_data:
+            raise_log(
+                ValueError(
+                    f"Could not correctly fill missing {'dates' if has_datetime_index else 'indices'} with the "
+                    f"observed/passed {'frequency' if has_datetime_index else 'step size'} `freq='{freq}'`. "
+                    f"Not all input {'time stamps' if has_datetime_index else 'indices'} contained in the newly "
+                    f"created TimeSeries.{offset_alias_info}"
+                ),
+                logger,
+            )
 
         coords = {
-            xa.dims[0]: pd.DatetimeIndex(resampled_time_index.index),
-            xa.dims[1]: xa.coords[DIMS[1]],
+            str(xa.dims[0]): resampled_time_index.index,
+            str(xa.dims[1]): xa.coords[DIMS[1]],
         }
 
         # convert to float as for instance integer arrays cannot accept nans
