@@ -213,16 +213,55 @@ def TCNModelBuilder(
 
 
 # ML MODELS
-def LGBMModelBuilder():
-    pass
+def LGBMModelBuilder(
+    lags,
+    out_len,
+    add_encoders,
+    num_iterations,
+    num_leaves,
+    learning_rate,
+    max_bin,
+    boosting,
+    fixed_params,
+    encoders=None,
+    work_dir=None,
+):
+
+    kwargs = {
+        "num_leaves": num_leaves,
+        "learning_rate": learning_rate,
+        "num_iterations": num_iterations,
+        "max_bin": max_bin,
+        "boosting": boosting,
+        "early_stopping_rounds": 3,
+    }
+
+    model = LightGBMModel(
+        lags=lags,
+        output_chunk_length=out_len,
+        add_encoders=encoders if add_encoders else None,
+        random_state=fixed_params["RANDOM_STATE"],
+        **kwargs
+    )
+    return model
 
 
 def XGBModelBuilder():
     pass
 
 
-def LinearRegressionModelBuilder():
-    pass
+def LinearRegressionModelBuilder(
+    lags, out_len, fixed_params, encoders=None, work_dir=None
+):
+
+    model = LinearRegressionModel(
+        lags=lags,
+        output_chunk_length=out_len,
+        add_encoders=None,
+        random_state=fixed_params["RANDOM_STATE"],
+        multi_models=True,
+    )
+    return model
 
 
 MODEL_BUILDERS = {

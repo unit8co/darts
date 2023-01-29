@@ -5,9 +5,11 @@ import pickle
 import random
 from csv import DictWriter
 from datetime import datetime
+from statistics import mean, stdev
 
 import numpy as np
 import torch
+from builders import MODEL_BUILDERS
 from ray import air, tune
 from ray.air import session
 from ray.tune.integration.pytorch_lightning import TuneReportCallback
@@ -38,6 +40,7 @@ from darts.models import (
     TCNModel,
     XGBModel,
 )
+from darts.models.forecasting.regression_model import RegressionModel
 from darts.models.forecasting.torch_forecasting_model import (
     FutureCovariatesTorchModel,
     MixedCovariatesTorchModel,
@@ -46,8 +49,6 @@ from darts.models.forecasting.torch_forecasting_model import (
 )
 from darts.utils import missing_values
 from darts.utils.utils import series2seq
-
-from builders import MODEL_BUILDERS
 
 # experiment configuration
 
@@ -108,7 +109,7 @@ argParser.add_argument(
     "--subset_size",
     help="subset size as number of timesteps to keep from the dataset",
     type=int,
-    default = int(365 * 1.5)
+    default=int(365 * 1.5),
 )
 argParser.add_argument(
     "--split", help="split ratio for train and validation/test", type=float, default=0.7
@@ -128,7 +129,9 @@ argParser.add_argument(
     type=bool,
     default=True,
 )
-argParser.add_argument("--eval_metric", help="evaluation metric to use", default="smape")
+argParser.add_argument(
+    "--eval_metric", help="evaluation metric to use", default="smape"
+)
 argParser.add_argument(
     "--time_budget", help="time budget in seconds", type=int, default=900
 )
@@ -182,10 +185,15 @@ encoders = (
     if args.encoders
     else (
         encoders_future
-        if issubclass(model_cl, (MixedCovariatesTorchModel, FutureCovariatesTorchModel))
+        if issubclass(
+            model_cl,
+            (MixedCovariatesTorchModel, FutureCovariatesTorchModel, RegressionModel),
+        )
         else encoders_past
     )
 )
+
+RUNS = 5
 
 IN_MIN = 5  # make argument?
 IN_MAX = 30
@@ -194,7 +202,7 @@ IN_MAX = 30
 def _params_NHITS(trial):
     in_len = trial.suggest_int("in_len", IN_MIN * PERIOD_UNIT, IN_MAX * PERIOD_UNIT)
 
-    out_len = trial.suggest_int("out_len", 1, in_len - PERIOD_UNIT)
+    out_len = trial.suggest_int("out_len", 1, (in_len-1) * PERIOD_UNIT)
 
     num_stacks = trial.suggest_int("num_stacks", 2, 5)
     num_blocks = trial.suggest_int("num_blocks", 1, 3)
@@ -222,7 +230,7 @@ def _params_NHITS(trial):
 def _params_NLINEAR(trial):
     in_len = trial.suggest_int("in_len", IN_MIN * PERIOD_UNIT, IN_MAX * PERIOD_UNIT)
 
-    out_len = trial.suggest_int("out_len", 1, in_len - PERIOD_UNIT)
+    out_len = trial.suggest_int("out_len", 1, (in_len-1) * PERIOD_UNIT)
 
     shared_weights = trial.suggest_categorical("shared_weights", [False, True])
     const_init = trial.suggest_categorical("const_init", [False, True])
@@ -237,7 +245,7 @@ def _params_DLINEAR(trial):
 
     in_len = trial.suggest_int("in_len", IN_MIN * PERIOD_UNIT, IN_MAX * PERIOD_UNIT)
 
-    out_len = trial.suggest_int("out_len", 1, in_len - PERIOD_UNIT)
+    out_len = trial.suggest_int("out_len", 1, (in_len-1) * PERIOD_UNIT)
 
     kernel_size = trial.suggest_int("kernel_size", 5, 25)
     shared_weights = trial.suggest_categorical("shared_weights", [False, True])
@@ -252,7 +260,7 @@ def _params_TCNMODEL(trial):
 
     in_len = trial.suggest_int("in_len", IN_MIN * PERIOD_UNIT, IN_MAX * PERIOD_UNIT)
 
-    out_len = trial.suggest_int("out_len", 1, in_len - PERIOD_UNIT)
+    out_len = trial.suggest_int("out_len", 1, (in_len-1) * PERIOD_UNIT)
 
     kernel_size = trial.suggest_int("kernel_size", 5, 25)
     num_filters = trial.suggest_int("num_filters", 5, 25)
@@ -266,7 +274,18 @@ def _params_TCNMODEL(trial):
 
 
 def _params_LGBMModel(trial):
-    pass
+
+    lags = trial.suggest_int("lags", IN_MIN * PERIOD_UNIT, IN_MAX * PERIOD_UNIT)
+    out_len = trial.suggest_int("out_len", 1, (lags-1) * PERIOD_UNIT)
+
+    boosting = trial.suggest_categorical("boosting", ["gbdt", "dart"])
+    num_leaves = trial.suggest_int("num_leaves", 2, 50)
+    max_bin = trial.suggest_int("max_bin", 100, 500)
+    learning_rate = trial.suggest_float("learning_rate", 1e-8, 1e-1, log=True)
+    num_iterations = trial.suggest_int("num_iterations", 50, 500)
+    add_encoders = trial.suggest_categorical("add_encoders", [False, True])
+
+    return None
 
 
 def _params_XGBModel(trial):
@@ -274,10 +293,14 @@ def _params_XGBModel(trial):
 
 
 def _params_LinearRegression(trial):
-    pass
+
+    lags = trial.suggest_int("lags", IN_MIN * PERIOD_UNIT, IN_MAX * PERIOD_UNIT)
+    out_len = trial.suggest_int("out_len", 1, lags - PERIOD_UNIT)
+
+    return None
 
 
-params_generators = {
+PARAMS_GENERATORS = {
     TCNModel.__name__: _params_TCNMODEL,
     DLinearModel.__name__: _params_DLINEAR,
     NLinearModel.__name__: _params_NLINEAR,
@@ -315,8 +338,10 @@ if __name__ == "__main__":
         "metric",
         "metric on test-mean",
         "metric on test-std",
-        "model training time",
-        "model inference time",
+        "model training time-mean",
+        "model training time-std",
+        "model inference time-mean",
+        "model inference time-std",
         "seed",
         "optimize with metric",
     ]
@@ -412,11 +437,16 @@ if __name__ == "__main__":
         )
 
         # train the model
-        model.fit(
-            series=train,
-            val_series=val,
-            max_samples_per_ts=fixed_params["MAX_SAMPLES_PER_TS"],
-        )
+        if "val_series" in model.fit.__code__.co_varnames:
+            model.fit(
+                series=train,
+                val_series=val,
+                max_samples_per_ts=fixed_params["MAX_SAMPLES_PER_TS"],
+            )
+        else:
+            model.fit(
+                series=train, max_samples_per_ts=fixed_params["MAX_SAMPLES_PER_TS"]
+            )
 
     def objective_metric(
         config, model_cl, metric, encoders, fixed_params, train=train, val=val
@@ -426,16 +456,22 @@ if __name__ == "__main__":
         )
 
         # train the model
-        model.fit(
-            series=train,
-            val_series=val,
-            max_samples_per_ts=fixed_params["MAX_SAMPLES_PER_TS"],
-        )
+        if "val_series" in model.fit.__code__.co_varnames:
+            model.fit(
+                series=train,
+                val_series=val,
+                max_samples_per_ts=fixed_params["MAX_SAMPLES_PER_TS"],
+            )
+        else:
+            model.fit(
+                series=train, max_samples_per_ts=fixed_params["MAX_SAMPLES_PER_TS"]
+            )
 
-        # use best model for subsequent evaluation
-        model = model_cl.load_from_checkpoint(
-            model_cl.__name__, work_dir=os.getcwd(), best=True
-        )
+        # DL Models : use best model for subsequent evaluation
+        if isinstance(model, TorchForecastingModel):
+            model = model_cl.load_from_checkpoint(
+                model_cl.__name__, work_dir=os.getcwd(), best=True
+            )
 
         preds = model.predict(series=train, n=val_len)
 
@@ -472,7 +508,7 @@ if __name__ == "__main__":
     # https://docs.ray.io/en/latest/tune/examples/optuna_example.html
     # the default optuna algorithm is TPEsampler
     search_alg = OptunaSearch(
-        space=params_generators[model_cl.__name__],
+        space=PARAMS_GENERATORS[model_cl.__name__],
         metric="metric",
         mode="min",
     )
@@ -499,48 +535,61 @@ if __name__ == "__main__":
     best_params = tuner_results.get_best_result(metric="metric", mode="min").config
     print("best parameters:", best_params)
 
-    # train best model and get training time
-    best_model = MODEL_BUILDERS[model_cl.__name__](
-        **best_params,
-        encoders=encoders,
-        fixed_params=fixed_params,
-        work_dir=experiment_dir,
-    )
+    runs_accuracy = []
+    runs_training_time = []
+    runs_inference_time = []
 
-    best_model.n_epochs = fixed_params["MAX_N_EPOCHS"] + 50
-
-    train_start_time = datetime.now()
-    # train the model
-    best_model.fit(
-        series=train,
-        val_series=val,
-        max_samples_per_ts=fixed_params["MAX_SAMPLES_PER_TS"],
-    )
-    train_end_time = datetime.now()
-    training_time = (train_end_time - train_start_time).total_seconds()
-
-    # inference with best model and inference time
-    inference_start_time = datetime.now()
-    test_predictions = best_model.predict(series=val, n=test_len)
-    inference_end_time = datetime.now()
-    inference_time = (inference_end_time - inference_start_time).total_seconds()
-
-    # best model accuracy
-    if eval_metric.__name__ == "mase":
-        metric_evals = eval_metric(
-            test, test_predictions, train, n_jobs=-1, verbose=True
+    for _ in range(RUNS):
+        # train best model and get training time
+        best_model = MODEL_BUILDERS[model_cl.__name__](
+            **best_params,
+            encoders=encoders,
+            fixed_params=fixed_params,
+            work_dir=experiment_dir,
         )
-    else:
-        metric_evals = eval_metric(test, test_predictions, n_jobs=-1, verbose=True)
 
-    metric_evals_mean = (
-        np.mean(metric_evals) if metric_evals != np.nan else float("inf")
-    )
-    # if multiple series
-    metric_evals_std = np.std(metric_evals)
-    print(
-        f"{eval_metric.__name__} mean = {metric_evals_mean}, std = {metric_evals_std}"
-    )
+        if isinstance(best_model, TorchForecastingModel):
+            best_model.n_epochs = fixed_params["MAX_N_EPOCHS"] + 50
+
+        train_start_time = datetime.now()
+        # train the model
+        if "val_series" in best_model.fit.__code__.co_varnames:
+            best_model.fit(
+                series=train,
+                val_series=val,
+                max_samples_per_ts=fixed_params["MAX_SAMPLES_PER_TS"],
+            )
+        else:
+            best_model.fit(
+                series=train,
+                max_samples_per_ts=fixed_params["MAX_SAMPLES_PER_TS"],
+            )
+
+        train_end_time = datetime.now()
+        training_time = (train_end_time - train_start_time).total_seconds()
+        runs_training_time.append(training_time)
+
+        # inference with best model and inference time
+        inference_start_time = datetime.now()
+        test_predictions = best_model.predict(series=val, n=test_len)
+        inference_end_time = datetime.now()
+        inference_time = (inference_end_time - inference_start_time).total_seconds()
+        runs_inference_time.append(inference_time)
+
+        # best model accuracy
+        if eval_metric.__name__ == "mase":
+            metric_evals = eval_metric(
+                test, test_predictions, train, n_jobs=-1, verbose=True
+            )
+        else:
+            metric_evals = eval_metric(test, test_predictions, n_jobs=-1, verbose=True)
+
+        metric_evals_mean = (
+            np.mean(metric_evals) if metric_evals != np.nan else float("inf")
+        )
+        # if multiple series
+        # metric_evals_std = np.std(metric_evals)
+        runs_accuracy.append(metric_evals_mean)
 
     # backup resutls
     # dump best_prams
@@ -552,14 +601,22 @@ if __name__ == "__main__":
         f.write(json.dumps(encoders))
         f.close()
 
+    with open(f"{experiment_dir}/all_runs_stats.txt", "w") as f:
+        f.write(f"accuracy: {str(runs_accuracy)} \n")
+        f.write(f"training time: {str(runs_training_time)} \n")
+        f.write(f"inference time: {str(runs_inference_time)} \n")
+        f.close()
+
     data_line = {
         "experiment name": exp_name,
         "model": model_cl.__name__,
         "metric": eval_metric.__name__,
-        "metric on test-mean": metric_evals_mean,
-        "metric on test-std": metric_evals_std,
-        "model training time": training_time,
-        "model inference time": inference_time,
+        "metric on test-mean": mean(runs_accuracy),
+        "metric on test-std": stdev(runs_accuracy),
+        "model training time-mean": mean(runs_training_time),
+        "model training time-std": stdev(runs_training_time),
+        "model inference time-mean": mean(runs_inference_time),
+        "model inference time-std": stdev(runs_inference_time),
         "seed": random_seed,
         "optimize with metric": optimize_with_metric,
     }
