@@ -24,7 +24,7 @@ import shutil
 import sys
 from abc import ABC, abstractmethod
 from glob import glob
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -860,7 +860,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 same_dims,
                 "The dimensionality of the series in the training set do not match the dimensionality"
                 " of the series the model has previously been trained on. "
-                "Model input/output dimensions = {}, provided input/ouptput dimensions = {}".format(
+                "Model input/output dimensions = {}, provided input/output dimensions = {}".format(
                     tuple(
                         s.shape[1] if s is not None else None for s in self.train_sample
                     ),
@@ -1333,63 +1333,30 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         work_dir: str = None,
         file_name: str = None,
         best: bool = True,
-        new_model_name: Optional[str] = None,
-        save_inplace: bool = False,
-        force_reset: bool = False,
-        pl_trainer_kwargs: Optional[Dict] = None,
-        optimizer_cls: Optional[torch.optim.Optimizer] = None,
-        optimizer_kwargs: Optional[Dict] = None,
-        lr_scheduler_cls: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
-        lr_scheduler_kwargs: Optional[Dict] = None,
         **kwargs,
     ) -> "TorchForecastingModel":
         """
         Load the model from automatically saved checkpoints under '{work_dir}/darts_logs/{model_name}/checkpoints/'.
         This method is used for models that were created with ``save_checkpoints=True``.
-
         If you manually saved your model, consider using :meth:`load() <TorchForecastingModel.load()>`.
-
-        Optionnaly, the optimizer, learning rate scheduler and trainer can be modified. This can be accomplished by
-        using another Pytorch class or just changing their parameters.
-
         Example for loading a :class:`RNNModel` from checkpoint (``model_name`` is the ``model_name`` used at model
         creation):
-
             .. highlight:: python
             .. code-block:: python
-
                 from darts.models import RNNModel
-
                 model_loaded = RNNModel.load_from_checkpoint(model_name, best=True)
             ..
-
         If ``file_name`` is given, returns the model saved under
         '{work_dir}/darts_logs/{model_name}/checkpoints/{file_name}'.
-
         If ``file_name`` is not given, will try to restore the best checkpoint (if ``best`` is ``True``) or the most
         recent checkpoint (if ``best`` is ``False`` from '{work_dir}/darts_logs/{model_name}/checkpoints/'.
-
         Example for loading an :class:`RNNModel` checkpoint to CPU that was saved on GPU:
-
             .. highlight:: python
             .. code-block:: python
-
                 from darts.models import RNNModel
-
                 model_loaded = RNNModel.load_from_checkpoint(model_name, best=True, map_location="cpu")
                 model_loaded.to_cpu()
             ..
-
-        Example for loading a :class:`RNNModel` from checkpoint and changing its optimizer learning rate:
-
-            .. highlight:: python
-            .. code-block:: python
-
-                from darts.models import RNNModel
-
-                model_loaded = RNNModel.load_from_checkpoint(model_name, best=True, optimizer_kwargs={"lr":1e-5})
-            ..
-
         Parameters
         ----------
         model_name
@@ -1400,38 +1367,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             The name of the checkpoint file. If not specified, use the most recent one.
         best
             If set, will retrieve the best model (according to validation loss) instead of the most recent one. Only
-            is ignored when ``file_name`` is given. Default: ``True``.
-        new_model_name
-            The name of the model after loading the checkpoint, used to save the upcoming checkpoints in a new folder.
-            By default, the name of the loaded model is reused.
-        pl_trainer_kwargs
-            Possibility to overwrite trainer parameters declared during the model instanciation, notably adding
-            customized callbacks or increase the model's max number of training epochs. Default: ``None``.
-        save_inplace
-            If set to ``True``, checkpoints generated during the training of the loaded model will be saved in an
-            exisiting folder, overwriting the existing "last-" and possibly the "best-" checkpoints. Default: ``False``.
-        force_reset
-            If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
-            be discarded). Default: ``False``.
-        optimizer_cls
-            Optionnaly, change the PyTorch optimizer for the remaining training epochs. Caution: at the moment, the new
-            optimizer must be compatible with the previous one: for example, RAdam can replace Adam whereas SGD cannot.
-            Default: ``None``.
-        optimizer_kwargs
-            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
-            for specifying a learning rate). Otherwise the values of the loaded model will be used. Default: ``None``.
-        lr_scheduler_cls
-            Optionnaly, change or add a PyTorch learning rate scheduler for the remaining training epochs. Default:
-            ``None``.
-        lr_scheduler_kwargs
-            Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
+            is ignored when ``file_name`` is given.
         **kwargs
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             such as ``map_location`` to load the model onto a different device than the one from which it was saved.
             For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
             common/lightning_module.html#load-from-checkpoint>`_.
-
-
         Returns
         -------
         TorchForecastingModel
@@ -1463,121 +1404,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         model.model = model._load_from_checkpoint(file_path, **kwargs)
         model.load_ckpt_path = file_path
-
-        # retrained model is renamed and saved in another folder
-        if new_model_name is not None:
-            model.model_name = new_model_name
-            model.model_params["model_name"] = new_model_name
-            checkpoint_dir = _get_checkpoint_folder(work_dir, new_model_name)
-
-            checkpoint_exists = (
-                os.path.exists(checkpoint_dir)
-                and len(glob(os.path.join(checkpoint_dir, "*"))) > 0
-            )
-            raise_if(
-                save_inplace and force_reset,
-                "For safety reasons, `save_inplace` and `force_reset` cannot be both ``True`` to prevent "
-                " deletion of the loaded checkpoint.",
-                logger,
-            )
-            if checkpoint_exists and model.save_checkpoints:
-                if force_reset:
-                    model.reset_model()
-                else:
-                    raise_if_not(
-                        save_inplace,
-                        f"Some model data already exists for `model_name` '{model.model_name}'. Either provide a"
-                        f" `new_model_name` to save the checkpoints in a new folder or set `save_inplace`"
-                        f" to True to save them in the existing folder (calling `fit` on the loaded model"
-                        f" will likely overwrite the loaded checkpoint).",
-                        logger,
-                    )
-            elif model.save_checkpoints:
-                model._create_save_dirs()
-            else:
-                pass
-
-        # issue warning when dirpath changes
-        checkpoint_callback = pl.callbacks.ModelCheckpoint(
-            dirpath=checkpoint_dir,
-            save_last=True,
-            monitor="val_loss",
-            filename="best-{epoch}-{val_loss:.2f}",
-        )
-        checkpoint_callback.CHECKPOINT_NAME_LAST = "last-{epoch}"
-
-        # update trainer parameters
-        if pl_trainer_kwargs is not None:
-            if "max_epochs" in pl_trainer_kwargs.keys():
-                raise_if(
-                    pl_trainer_kwargs["max_epochs"]
-                    < model.trainer_params["max_epochs"],
-                    "The value of `max_epochs` passed in `trainer_params` is smaller"
-                    " than the number of epochs used to train the model loaded from"
-                    " from the checkpoint.",
-                    logger,
-                )
-                model.n_epochs = pl_trainer_kwargs["max_epochs"]
-                model.model_params["n_epochs"] = pl_trainer_kwargs["max_epochs"]
-
-            model.trainer_params.update(pl_trainer_kwargs)
-
-            # special parameters handling
-            if "callbacks" in pl_trainer_kwargs.keys() and len(
-                pl_trainer_kwargs["callbacks"] > 0
-            ):
-                model.trainer_params["callbacks"] = [
-                    checkpoint_callback
-                ] + pl_trainer_kwargs["callbacks"]
-            else:
-                model.trainer_params["callbacks"] = [checkpoint_callback]
-
-        # update optimizer
-        if optimizer_cls is not None and optimizer_cls != model.model.optimizer_cls:
-            model.model.optimizer_cls = optimizer_cls
-            model.model.optimizer_kwargs = (
-                dict() if optimizer_kwargs is None else optimizer_kwargs
-            )
-        else:
-            if optimizer_kwargs is not None:
-                model.model.optimizer_kwargs.update(optimizer_kwargs)
-
-        model.model_params["optimizer_scheduler_cls"] = model.model.optimizer_cls
-        model.model_params["optimizer_kwargs"] = model.model.optimizer_kwargs
-        model.pl_module_params["optimizer_cls"] = model.model.optimizer_cls
-        model.pl_module_params["optimizer_kwargs"] = model.model.optimizer_kwargs
-
-        # update scheduler
-        if (
-            lr_scheduler_cls is not None
-            and lr_scheduler_cls != model.model.lr_scheduler_cls
-        ):
-            model.model.lr_scheduler_cls = lr_scheduler_cls
-            model.model.lr_scheduler_kwargs = (
-                dict() if lr_scheduler_kwargs is None else lr_scheduler_kwargs
-            )
-        else:
-            if lr_scheduler_kwargs is not None:
-                model.model.lr_scheduler_kwargs.update(lr_scheduler_kwargs)
-
-        model.model_params["lr_scheduler_cls"] = model.model.lr_scheduler_cls
-        model.model_params["lr_scheduler_kwargs"] = model.model.lr_scheduler_kwargs
-        model.pl_module_params["lr_scheduler_cls"] = model.model.lr_scheduler_cls
-        model.pl_module_params["lr_scheduler_kwargs"] = model.model.lr_scheduler_kwargs
-
-        # save the initialized TorchForecastingModel to allow re-training of already re-trained model
-        model.save(
-            os.path.join(
-                _get_runs_folder(model.work_dir, model.model_name), INIT_MODEL_NAME
-            )
-        )
-
-        new_trainer = model._init_trainer(model.trainer_params)
-        model.trainer = new_trainer
-        model.model.trainer = new_trainer
-        model.trainer.strategy.setup_optimizers(new_trainer)
-
-        model.model.setup("fit")
         return model
 
     def _load_from_checkpoint(self, file_path, **kwargs):
@@ -1588,6 +1414,120 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         pl_module_cls = getattr(sys.modules[self._module_path], self._module_name)
         return pl_module_cls.load_from_checkpoint(file_path, **kwargs)
+
+    def load_weights_from_checkpoint(
+        self,
+        model_name: str = None,
+        work_dir: str = None,
+        file_name: str = None,
+        best: bool = True,
+        strict: bool = True,
+        shift: int = 1,
+        length: int = 12,
+        **kwargs,
+    ):
+        """
+        Load only the weights from automatically saved checkpoints under '{work_dir}/darts_logs/{model_name}/
+        checkpoints/'. This method is used for models that were created with ``save_checkpoints=True`` and
+        that need to be re-trained or fine-tuned with different optimizer or learning rate scheduler.
+
+        To resume an interrupted training, please consider using :meth:`load_from_checkpoint()
+        <TorchForecastingModel.load_from_checkpoint()>` which also reload the trainer, optimizer and
+        learning rate scheduler states.
+
+        For manually saved model, consider using :meth:`load() <TorchForecastingModel.load()>` instead.
+
+        Parameters
+        ----------
+        model_name
+            The name of the model (used to retrieve the checkpoints folder's name). Default: ``self.model_name``.
+        work_dir
+            Working directory (containing the checkpoints folder). Defaults to current working directory.
+        file_name
+            The name of the checkpoint file. If not specified, use the most recent one.
+        best
+            If set, will retrieve the best model (according to validation loss) instead of the most recent one. Only
+            is ignored when ``file_name`` is given. Default: ``True``.
+        strict
+            If set, strictly enforce that the keys in state_dict match the keys returned by this module’s state_dict().
+            Default: ``True``.
+            For more information, read the `official documentation <https://pytorch.org/docs/stable/generated/torch.
+            nn.Module.html?highlight=load_state_dict#torch.nn.Module.load_state_dict>`_.
+        **kwargs
+            Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
+            different device than the one from which it was saved.
+            For more information, read the `official documentation <https://pytorch.org/docs/stable/generated/
+            torch.load.html>`_.
+        """
+        raise_if(
+            "weights_only" in kwargs.keys() and kwargs["weights_only"],
+            "Passing `weights_only=True` to `torch.load` will disrupt this"
+            " method sanity checks.",
+            logger,
+        )
+
+        # use the name of the model being loaded with the saved weights
+        if model_name is None:
+            model_name = self.model_name
+
+        if work_dir is None:
+            work_dir = os.path.join(os.getcwd(), DEFAULT_DARTS_FOLDER)
+
+        # load PyTorch LightningModule from checkpoint
+        # if file_name is None, find most recent file in savepath that is a checkpoint
+        if file_name is None:
+            file_name = _get_checkpoint_fname(work_dir, model_name, best=best)
+
+        checkpoint_dir = _get_checkpoint_folder(work_dir, model_name)
+
+        ckpt = torch.load(os.path.join(checkpoint_dir, file_name), **kwargs)
+        ckpt_hyper_params = ckpt["hyper_parameters"]
+
+        # verify that the arguments passed to the constructor match those of the checkpoint
+        for param_key, param_value in self.model_params.items():
+            # TODO: there are discrepancies between the param names, for ex num_layer/n_rnn_layers
+            if param_key in ckpt_hyper_params.keys():
+                raise_if(
+                    param_value != ckpt_hyper_params[param_key],
+                    f"The values of the hyper parameter {param_key} should be identical between "
+                    f" the instanciated model ({param_value}) and the loaded checkpoint "
+                    f"({ckpt_hyper_params[param_key]}). Please adjust the model accordingly.",
+                    logger,
+                )
+
+        # bypass the requirement of train_sample (usually created in `fit_from_dataset`)
+
+        # length must be >= to max(`self.input_chunk_length`, `self.shift + self.output_chunk_length``)
+        # these values depend on the model and the dataset, need to access the length and shift attributes
+        # of the dataset used during training...
+        mock_ts_length = max(
+            [
+                ckpt_hyper_params["input_chunk_length"]
+                + ckpt_hyper_params["output_chunk_length"]
+                + 100,
+                length,
+                shift + length,
+            ]
+        )
+
+        mock_ts = TimeSeries.from_values(np.ones(mock_ts_length))
+        # self.train_sample length depends on the model's dataset class, the dimensions information are carried
+        # in target, the other covariates can be None without interfering with the model instantiation.
+        mock_dataset = self._build_train_dataset(
+            target=mock_ts,
+            past_covariates=None,
+            future_covariates=None,
+            max_samples_per_ts=None,
+        )
+
+        self.train_sample = mock_dataset[0]
+        self.output_dim = ckpt_hyper_params["target_size"]
+
+        # instanciate the model without having to all `fit_from_dataset`
+        self._init_model()
+
+        # load only the weights from the state dict
+        self.model.load_state_dict(ckpt["state_dict"], strict=strict)
 
     def to_cpu(self):
         """Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time :fun:`fit()` or

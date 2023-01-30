@@ -7,6 +7,7 @@ import pandas as pd
 
 from darts import TimeSeries
 from darts.logging import get_logger
+from darts.metrics import mape
 from darts.tests.base_test_class import DartsBaseTestClass
 
 logger = get_logger(__name__)
@@ -290,159 +291,74 @@ if TORCH_AVAILABLE:
             model1.fit(self.series, epochs=15)
             self.assertEqual(15, model1.epochs_trained)
 
-        def test_load_from_checkpoint(self):
+        def test_load_weights_from_checkpoint(self):
             original_model_name = "original"
             retrained_model_name = "retrained"
             # original model, checkpoints are saved
             model1 = RNNModel(
                 12,
                 "RNN",
-                10,
-                10,
+                5,
+                5,
                 n_epochs=2,
                 work_dir=self.temp_work_dir,
                 save_checkpoints=True,
                 model_name=original_model_name,
             )
-            model1.fit(self.series)
+            model1.fit(self.series[:95])
             self.assertEqual(2, model1.epochs_trained)
+            original_preds = model1.predict(5)
+            original_mape = mape(original_preds, self.series[95:])
 
             # load last checkpoint of original model, train it for 2 additional epochs
-            model_ft = RNNModel.load_from_checkpoint(
-                model_name=original_model_name,
-                new_model_name=retrained_model_name,
+            model_rt = RNNModel(
+                12,
+                "RNN",
+                5,
+                5,
+                n_epochs=2,
                 work_dir=self.temp_work_dir,
-                best=False,
-            )
-            model_ft.fit(self.series, epochs=4)
-            self.assertEqual(4, model_ft.epochs_trained)
-
-            # load last checkpoint of original model, train it for 4 additional epochs
-            model_ft = RNNModel.load_from_checkpoint(
-                model_name=original_model_name,
-                new_model_name=retrained_model_name,
-                work_dir=self.temp_work_dir,
-                best=False,
-                pl_trainer_kwargs={"max_epochs": 6},
-                force_reset=True,
-            )
-            model_ft.fit(self.series)
-            self.assertEqual(6, model_ft.epochs_trained)
-
-            # load last checkpoint of re-trained model, train it for 2 additional epochs
-            model_ft = RNNModel.load_from_checkpoint(
                 model_name=retrained_model_name,
-                new_model_name=retrained_model_name + "_twice",
-                work_dir=self.temp_work_dir,
-                best=False,
             )
-            model_ft.fit(self.series, epochs=8)
-            self.assertEqual(8, model_ft.epochs_trained)
-
-            # saving last ckpt in same folder as original model
-            model_ft = RNNModel.load_from_checkpoint(
-                model_name=original_model_name,
-                new_model_name=original_model_name,
-                work_dir=self.temp_work_dir,
-                best=False,
-                save_inplace=True,
+            model_rt.load_weights_from_checkpoint(
+                model_name=original_model_name, work_dir=self.temp_work_dir, best=False
             )
-            model_ft.fit(self.series, epochs=8)
-            self.assertEqual(8, model_ft.epochs_trained)
+            model_rt.fit(self.series[:95])
+            retrained_preds = model_rt.predict(5)
+            retrained_mape = mape(retrained_preds, self.series[95:])
+            self.assertTrue(
+                retrained_mape < original_mape,
+                "Retrained model has a greater error (mape) than the original model.",
+            )
 
-            # raise Exception when the max_epochs trainer parameter is too small
+            # raise Exception when trying to load ckpt weights in different architecture
             with self.assertRaises(ValueError):
-                model_ft = RNNModel.load_from_checkpoint(
-                    model_name=original_model_name,
-                    new_model_name=retrained_model_name,
-                    work_dir=self.temp_work_dir,
-                    best=False,
-                    pl_trainer_kwargs={"max_epochs": 1},
+                model_rt = RNNModel(
+                    12,
+                    "RNN",
+                    10,  # loaded model has only 5 hidden_layers
+                    5,
                 )
-
-            # raise Exception when the target checkpoint folder already exist
-            with self.assertRaises(ValueError):
-                model_ft = RNNModel.load_from_checkpoint(
+                model_rt.load_weights_from_checkpoint(
                     model_name=original_model_name,
-                    new_model_name=original_model_name,
                     work_dir=self.temp_work_dir,
                     best=False,
                 )
 
-            # raise Exception when trying to save ckpt in place and force_reset simultaneously
+            # raise Exception when trying to pass `weights_only`=True to `torch.load()`
             with self.assertRaises(ValueError):
-                model_ft = RNNModel.load_from_checkpoint(
+                model_rt = RNNModel(
+                    12,
+                    "RNN",
+                    5,
+                    5,
+                )
+                model_rt.load_weights_from_checkpoint(
                     model_name=original_model_name,
-                    new_model_name=original_model_name,
                     work_dir=self.temp_work_dir,
                     best=False,
-                    save_inplace=True,
-                    force_reset=True,
+                    weights_only=True,
                 )
-
-        def test_load_from_checkpoint_new_optimizer(self):
-            original_model_name = "original"
-            fintuned_model_name = "fintuned"
-            # original model, Adam optimizer
-            model1 = RNNModel(
-                12,
-                "RNN",
-                10,
-                10,
-                n_epochs=2,
-                work_dir=self.temp_work_dir,
-                save_checkpoints=True,
-                model_name=original_model_name,
-            )
-            model1.fit(self.series)
-            self.assertEqual(2, model1.epochs_trained)
-
-            # load last checkpoint of original model, change optimizer from Adam to RAdam
-            model_ft = RNNModel.load_from_checkpoint(
-                model_name=original_model_name,
-                new_model_name=fintuned_model_name,
-                work_dir=self.temp_work_dir,
-                best=False,
-                pl_trainer_kwargs={"max_epochs": 4},
-                optimizer_cls=torch.optim.RAdam,
-                optimizer_kwargs={"lr": 0.0001},
-            )
-            model_ft.fit(self.series, trainer=model_ft.trainer)
-            self.assertEqual(4, model_ft.epochs_trained)
-            self.assertEqual(type(model_ft.trainer.optimizers[0]), torch.optim.RAdam)
-
-        def test_load_from_checkpoint_new_scheduler(self):
-            original_model_name = "original"
-            fintuned_model_name = "fintuned"
-            # original model, without scheduler
-            model1 = RNNModel(
-                12,
-                "RNN",
-                10,
-                10,
-                n_epochs=2,
-                work_dir=self.temp_work_dir,
-                save_checkpoints=True,
-                model_name=original_model_name,
-            )
-            model1.fit(self.series)
-            self.assertEqual(2, model1.epochs_trained)
-            self.assertEqual(len(model1.trainer.lr_scheduler_configs), 0)
-
-            # load last checkpoint of original model, add a scheduler
-            model_ft = RNNModel.load_from_checkpoint(
-                model_name=original_model_name,
-                new_model_name=fintuned_model_name,
-                work_dir=self.temp_work_dir,
-                best=False,
-                pl_trainer_kwargs={"max_epochs": 4},
-                lr_scheduler_cls=torch.optim.lr_scheduler.StepLR,
-                lr_scheduler_kwargs={"step_size": 10},
-            )
-            model_ft.fit(self.series)
-            self.assertEqual(4, model_ft.epochs_trained)
-            # cannot check class, use length of config as a proxy
-            self.assertEqual(len(model_ft.trainer.lr_scheduler_configs), 1)
 
         def test_optimizers(self):
 
