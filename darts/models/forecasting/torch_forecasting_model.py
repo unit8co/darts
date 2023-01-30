@@ -1486,7 +1486,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # verify that the arguments passed to the constructor match those of the checkpoint
         for param_key, param_value in self.model_params.items():
             # TODO: there are discrepancies between the param names, for ex num_layer/n_rnn_layers
-            if param_key in ckpt_hyper_params.keys():
+            if param_key in ckpt_hyper_params.keys() and param_value is not None:
                 # some parameters must be converted
                 if isinstance(ckpt_hyper_params[param_key], list) and not isinstance(
                     param_value, list
