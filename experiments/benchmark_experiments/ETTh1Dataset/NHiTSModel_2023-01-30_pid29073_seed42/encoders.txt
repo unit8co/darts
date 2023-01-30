@@ -1,0 +1,1 @@
+{"datetime_attribute": {"past": ["month", "week", "hour", "dayofweek"]}, "cyclic": {"past": ["month", "week", "hour", "dayofweek"]}}

@@ -233,7 +233,7 @@ def LGBMModelBuilder(
         "num_iterations": num_iterations,
         "max_bin": max_bin,
         "boosting": boosting,
-        "early_stopping_rounds": 3,
+        "early_stopping_rounds": 2,
     }
 
     model = LightGBMModel(
@@ -242,7 +242,7 @@ def LGBMModelBuilder(
         lags_future_covariates=(lags, out_len) if add_encoders else None,
         add_encoders=encoders if add_encoders else None,
         random_state=fixed_params["RANDOM_STATE"],
-        multi_models=True,
+        multi_models=False,
         **kwargs
     )
     return model
@@ -256,7 +256,7 @@ def LinearRegressionModelBuilder(
         lags=lags,
         lags_future_covariates=(lags, out_len) if add_encoders else None,
         output_chunk_length=out_len,
-        add_encoders=encoders,
+        add_encoders=encoders if add_encoders else None,
         random_state=fixed_params["RANDOM_STATE"],
         multi_models=True,
     )
