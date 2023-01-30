@@ -215,8 +215,8 @@ best_model = model.load_from_checkpoint(model_name='MyModel', best=True)
 
 You can also save or load manually:
 ```python
-model.save_model(model_path)
-loaded_model = model.load_model(model_path)
+model.save(model_path)
+loaded_model = model.load(model_path)
 ```
 /!\ Warning /!\ At this stage of Darts development, we are not (yet) ensuring backward compatibility, so it might not always be possible to load a model saved by an older version of the library.
 
