@@ -433,7 +433,7 @@ if __name__ == "__main__":
         )
 
         # train the model
-        if "val_series" in model.fit.__code__.co_varnames:
+        if isinstance(model, (TorchForecastingModel, LightGBMModel)):
             model.fit(
                 series=train,
                 val_series=val,
@@ -452,7 +452,7 @@ if __name__ == "__main__":
         )
 
         # train the model
-        if "val_series" in model.fit.__code__.co_varnames:
+        if isinstance(model, (TorchForecastingModel, LightGBMModel)):
             model.fit(
                 series=train,
                 val_series=val,
@@ -549,7 +549,7 @@ if __name__ == "__main__":
 
         train_start_time = datetime.now()
         # train the model
-        if "val_series" in best_model.fit.__code__.co_varnames:
+        if isinstance(best_model, (TorchForecastingModel, LightGBMModel)):
             best_model.fit(
                 series=train,
                 val_series=val,
