@@ -1487,10 +1487,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         for param_key, param_value in self.model_params.items():
             # TODO: there are discrepancies between the param names, for ex num_layer/n_rnn_layers
             if param_key in ckpt_hyper_params.keys():
+                # some parameters must be converted
+                if isinstance(ckpt_hyper_params[param_key], list) and not isinstance(
+                    param_value, list
+                ):
+                    param_value = [param_value] * len(ckpt_hyper_params[param_key])
+
                 raise_if(
                     param_value != ckpt_hyper_params[param_key],
                     f"The values of the hyper parameter {param_key} should be identical between "
-                    f" the instanciated model ({param_value}) and the loaded checkpoint "
+                    f"the instantiated model ({param_value}) and the loaded checkpoint "
                     f"({ckpt_hyper_params[param_key]}). Please adjust the model accordingly.",
                     logger,
                 )
