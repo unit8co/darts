@@ -31,8 +31,7 @@ the experiment.
       * "NLinear": ``NLinearModel``,
       * "NHiTS": ``NHiTSModel``,
       * "LinearRegression": ``LinearRegressionModel``,
-      * "lgbm": ``LightGBMModel``,
-      * "xgb": ``XGBModel``
+      * "lgbm": ``LightGBMModel``
 * The argument ``time_budget`` allows to set the time budget in seconds for the hyperparameters tuning.
 * By default, the hyperparameters of the models are tuned by minimizing an objective based on a metric function 
 evaluated on the validation set. The default metric is ``smape``, it can be changed with the ``--eval_metric`` argument.
@@ -50,8 +49,8 @@ The models hyperparameters tuning is done using [ray tune](https://docs.ray.io/e
 and its default TPESampler is used as the default sampler from this space. 
 
 ## Adding a new model: 
-In order to add a new model, you need to add a new model builder in the builders.py file. Furthermore, a function to 
-generate the parameters of this model needs to be added to experiments_script.py. 
+In order to add a new model, you need to add a new model builder in the ``builders.py`` file. Furthermore, a function to 
+generate the parameters of this model needs to be added to ``experiments_script.py``. 
 
 ## Example: 
 To run the experiments for the TCN model on the ETTh1 dataset with a time budget of 10 minutes:
