@@ -239,25 +239,24 @@ def LGBMModelBuilder(
     model = LightGBMModel(
         lags=lags,
         output_chunk_length=out_len,
+        lags_future_covariates=(lags, out_len) if add_encoders else None,
         add_encoders=encoders if add_encoders else None,
         random_state=fixed_params["RANDOM_STATE"],
+        multi_models=True,
         **kwargs
     )
     return model
 
 
-def XGBModelBuilder():
-    pass
-
-
 def LinearRegressionModelBuilder(
-    lags, out_len, fixed_params, encoders=None, work_dir=None
+    lags, out_len, fixed_params, add_encoders, encoders=None, work_dir=None
 ):
 
     model = LinearRegressionModel(
         lags=lags,
+        lags_future_covariates=(lags, out_len) if add_encoders else None,
         output_chunk_length=out_len,
-        add_encoders=None,
+        add_encoders=encoders,
         random_state=fixed_params["RANDOM_STATE"],
         multi_models=True,
     )
@@ -268,11 +267,7 @@ MODEL_BUILDERS = {
     TCNModel.__name__: TCNModelBuilder,
     DLinearModel.__name__: DLinearModelBuilder,
     NLinearModel.__name__: NLinearModelBuilder,
-    # NBEATSModel.__name__: NBEATSModelBuilder,
-    # TFTModel.__name__: TFTModelBuilder,
-    # TransformerModel.__name__: TransformerModelBuilder,
     NHiTSModel.__name__: NHiTSModelBuilder,
     LightGBMModel.__name__: LGBMModelBuilder,
-    XGBModel.__name__: XGBModelBuilder,
     LinearRegressionModel.__name__: LinearRegressionModelBuilder,
 }

@@ -38,6 +38,12 @@ the experiment.
 evaluated on the validation set. The default metric is ``smape``, it can be changed with the ``--eval_metric`` argument.
 * The script will fit and predict with the best model 5 times in order to get an estimation of the variability 
  (in standard deviation) of the accuracy metric on the test set as well as the training and inference time.
+* For each new dataset experimented with, the script adds a folder for this specific dataset in the working directory. 
+The newly created directory will contain all the log files and the results of the experiments, namely the 
+hyperparameters' tuner logs, the models checkpoints where available and the results file ``logs.csv``. Each model will 
+create its own subidrectoy in the dataset directory uniquely identified by the process id running the experiment.
+The best parameters found by the hyperparameters' tuner are saved in the ``best_params_bkp.pkl`` pickle dump file. The
+encoders that were experimented with are backed up in the ``encoders.txt`` file.
 
 The models hyperparameters tuning is done using [ray tune](https://docs.ray.io/en/master/tune/index.html).
 [Optuna](https://optuna.org/) is used as the default method to setup the hyperparameters' search space 

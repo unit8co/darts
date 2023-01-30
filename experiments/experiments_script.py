@@ -67,7 +67,6 @@ model_map = {
     "NHiTS": NHiTSModel,
     "LinearRegression": LinearRegressionModel,
     "lgbm": LightGBMModel,
-    "xgb": XGBModel,
 }
 metric_map = {
     "smape": smape,
@@ -202,7 +201,7 @@ IN_MAX = 30
 def _params_NHITS(trial):
     in_len = trial.suggest_int("in_len", IN_MIN * PERIOD_UNIT, IN_MAX * PERIOD_UNIT)
 
-    out_len = trial.suggest_int("out_len", 1, (in_len-1) * PERIOD_UNIT)
+    out_len = trial.suggest_int("out_len", 1, in_len - PERIOD_UNIT)
 
     num_stacks = trial.suggest_int("num_stacks", 2, 5)
     num_blocks = trial.suggest_int("num_blocks", 1, 3)
@@ -230,7 +229,7 @@ def _params_NHITS(trial):
 def _params_NLINEAR(trial):
     in_len = trial.suggest_int("in_len", IN_MIN * PERIOD_UNIT, IN_MAX * PERIOD_UNIT)
 
-    out_len = trial.suggest_int("out_len", 1, (in_len-1) * PERIOD_UNIT)
+    out_len = trial.suggest_int("out_len", 1, in_len - PERIOD_UNIT)
 
     shared_weights = trial.suggest_categorical("shared_weights", [False, True])
     const_init = trial.suggest_categorical("const_init", [False, True])
@@ -245,7 +244,7 @@ def _params_DLINEAR(trial):
 
     in_len = trial.suggest_int("in_len", IN_MIN * PERIOD_UNIT, IN_MAX * PERIOD_UNIT)
 
-    out_len = trial.suggest_int("out_len", 1, (in_len-1) * PERIOD_UNIT)
+    out_len = trial.suggest_int("out_len", 1, in_len - PERIOD_UNIT)
 
     kernel_size = trial.suggest_int("kernel_size", 5, 25)
     shared_weights = trial.suggest_categorical("shared_weights", [False, True])
@@ -260,7 +259,7 @@ def _params_TCNMODEL(trial):
 
     in_len = trial.suggest_int("in_len", IN_MIN * PERIOD_UNIT, IN_MAX * PERIOD_UNIT)
 
-    out_len = trial.suggest_int("out_len", 1, (in_len-1) * PERIOD_UNIT)
+    out_len = trial.suggest_int("out_len", 1, in_len - PERIOD_UNIT)
 
     kernel_size = trial.suggest_int("kernel_size", 5, 25)
     num_filters = trial.suggest_int("num_filters", 5, 25)
@@ -276,7 +275,7 @@ def _params_TCNMODEL(trial):
 def _params_LGBMModel(trial):
 
     lags = trial.suggest_int("lags", IN_MIN * PERIOD_UNIT, IN_MAX * PERIOD_UNIT)
-    out_len = trial.suggest_int("out_len", 1, (lags-1) * PERIOD_UNIT)
+    out_len = trial.suggest_int("out_len", 1, lags - PERIOD_UNIT)
 
     boosting = trial.suggest_categorical("boosting", ["gbdt", "dart"])
     num_leaves = trial.suggest_int("num_leaves", 2, 50)
@@ -288,14 +287,12 @@ def _params_LGBMModel(trial):
     return None
 
 
-def _params_XGBModel(trial):
-    pass
-
-
 def _params_LinearRegression(trial):
 
     lags = trial.suggest_int("lags", IN_MIN * PERIOD_UNIT, IN_MAX * PERIOD_UNIT)
     out_len = trial.suggest_int("out_len", 1, lags - PERIOD_UNIT)
+
+    add_encoders = trial.suggest_categorical("add_encoders", [False, True])
 
     return None
 
@@ -306,7 +303,6 @@ PARAMS_GENERATORS = {
     NLinearModel.__name__: _params_NLINEAR,
     NHiTSModel.__name__: _params_NHITS,
     LightGBMModel.__name__: _params_LGBMModel,
-    XGBModel.__name__: _params_XGBModel,
     LinearRegressionModel.__name__: _params_LinearRegression,
 }
 
