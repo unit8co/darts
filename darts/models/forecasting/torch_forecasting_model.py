@@ -1527,7 +1527,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         self.train_sample = mock_dataset[0]
-        self.output_dim = ckpt_hyper_params["target_size"]
 
         # instanciate the model without having to all `fit_from_dataset`
         self._init_model()
