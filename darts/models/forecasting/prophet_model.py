@@ -130,6 +130,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         on logistic forecasts.
 
         The `cap` and `floor` parameters may be:
+        
         - a number, for constant carrying capacities
         - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
           where each number indicates the carrying capacity at this index.
