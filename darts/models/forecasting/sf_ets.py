@@ -5,7 +5,7 @@ StatsForecastETS
 
 from typing import Optional
 
-from statsforecast.models import AutoETS
+from statsforecast.models import ETS as SFAutoETS
 
 from darts import TimeSeries
 from darts.models import LinearRegressionModel
@@ -83,7 +83,7 @@ class StatsForecastETS(FutureCovariatesLocalForecastingModel):
         >>> pred = model.predict(36)
         """
         super().__init__(add_encoders=add_encoders)
-        self.model = AutoETS(*ets_args, **ets_kwargs)
+        self.model = SFAutoETS(*ets_args, **ets_kwargs)
         self._linreg = None
 
     def __str__(self):

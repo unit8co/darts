@@ -3,9 +3,8 @@ import pandas as pd
 
 from darts import TimeSeries
 from darts.datasets import AirPassengersDataset
-
-# from darts.metrics import mape
-from darts.models import StatsForecastETS
+from darts.metrics import mae
+from darts.models import LinearRegressionModel, StatsForecastETS
 from darts.tests.base_test_class import DartsBaseTestClass
 
 
@@ -23,23 +22,19 @@ class StatsForecastETSTestCase(DartsBaseTestClass):
     ts_trend_train, ts_trend_val = ts_trend.split_after(pd.Timestamp("19570101"))
 
     def test_fit_on_residuals(self):
-        model = StatsForecastETS(season_length=12, model="ZZN")
+        model = StatsForecastETS(season_length=12, model="ZZZ")
 
         # test if we are indeed fitting the AutoETS on the residuals of the linear regression
         model.fit(series=self.ts_pass_train, future_covariates=self.ts_trend_train)
 
-        # check if linear regression was fit
-        self.assertIsNotNone(model._linreg)
-        self.assertTrue(model._linreg._fit_called)
-
         # create the residuals from the linear regression
-        fitted_values = model._linreg.model.predict(
+        fitted_values_linreg = model._linreg.model.predict(
             X=self.ts_trend_train.values(copy=False)
         )
-        fitted_values_ts = TimeSeries.from_times_and_values(
-            times=self.ts_pass_train.time_index, values=fitted_values
+        fitted_values_linreg_ts = TimeSeries.from_times_and_values(
+            times=self.ts_pass_train.time_index, values=fitted_values_linreg
         )
-        resids = self.ts_pass_train - fitted_values_ts
+        resids = self.ts_pass_train - fitted_values_linreg_ts
 
         # now make in-sample predictions with the AutoETS model
         in_sample_preds = model.model.predict_in_sample()["fitted"]
@@ -48,6 +43,21 @@ class StatsForecastETSTestCase(DartsBaseTestClass):
         )
 
         # compare in-sample predictions to the residuals they have supposedly been fitted on
-        # current_mape = mape(resids, ts_in_sample_preds)
+        current_mae = mae(resids, ts_in_sample_preds)
 
-        return resids, ts_in_sample_preds
+        self.assertTrue(current_mae < 9)
+
+    def test_fit_a_linreg(self):
+        model = StatsForecastETS(season_length=12, model="ZZN")
+        model.fit(series=self.ts_pass_train, future_covariates=self.ts_trend_train)
+
+        # check if linear regression was fit
+        self.assertIsNotNone(model._linreg)
+        self.assertTrue(model._linreg._fit_called)
+
+        # fit a linear regression
+        linreg = LinearRegressionModel(lags_future_covariates=[0])
+        linreg.fit(series=self.ts_pass_train, future_covariates=self.ts_trend_train)
+
+        # check if the linear regression was fit on the same data by checking if the coefficients are equal
+        self.assertEqual(model._linreg.model.coef_, linreg.model.coef_)

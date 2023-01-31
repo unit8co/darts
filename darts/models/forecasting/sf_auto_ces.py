@@ -6,11 +6,6 @@ StatsForecastAutoCES
 from statsforecast.models import AutoCES as SFAutoCES
 
 from darts import TimeSeries
-from darts.models.components.statsforecast_utils import (
-    create_normal_samples,
-    one_sigma_rule,
-    unpack_sf_dict,
-)
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
 
 
@@ -68,16 +63,11 @@ class StatsForecastAutoCES(LocalForecastingModel):
         super().predict(n, num_samples)
         forecast_dict = self.model.predict(
             h=n,
-            level=(one_sigma_rule,),  # ask one std for the confidence interval.
         )
 
-        mu, std = unpack_sf_dict(forecast_dict)
-        if num_samples > 1:
-            samples = create_normal_samples(mu, std, num_samples, n)
-        else:
-            samples = mu
+        mu = forecast_dict["mean"]
 
-        return self._build_forecast_series(samples)
+        return self._build_forecast_series(mu)
 
     @property
     def min_train_series_length(self) -> int:
@@ -87,4 +77,4 @@ class StatsForecastAutoCES(LocalForecastingModel):
         return True
 
     def _is_probabilistic(self) -> bool:
-        return True
+        return False

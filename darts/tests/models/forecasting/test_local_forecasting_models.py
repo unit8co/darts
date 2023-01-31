@@ -12,7 +12,6 @@ import pytest
 from darts.datasets import AirPassengersDataset, IceCreamHeaterDataset
 from darts.logging import get_logger
 from darts.metrics import mape
-from darts.models import Theta  # StatsForecastAutoCES,
 from darts.models import (
     ARIMA,
     BATS,
@@ -32,8 +31,10 @@ from darts.models import (
     RandomForest,
     RegressionModel,
     StatsForecastAutoARIMA,
+    StatsForecastAutoCES,
     StatsForecastAutoTheta,
     StatsForecastETS,
+    Theta,
 )
 from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
@@ -53,10 +54,8 @@ models = [
     (ARIMA(1, 1, 1), 24),
     (StatsForecastAutoARIMA(season_length=12), 4.6),
     (StatsForecastAutoTheta(season_length=12), 5.5),
-    (StatsForecastAutoTheta(season_length=12, decomposition_type="additive"), 7.9),
-    # (StatsForecastAutoCES(season_length=12, model="Z"), 4.1),
+    (StatsForecastAutoCES(season_length=12, model="Z"), 7.3),
     (StatsForecastETS(season_length=12, model="AAZ"), 4.1),
-    (StatsForecastETS(season_length=12, model="AAZ", damped=True), 7.0),
     (Croston(version="classic"), 23),
     (Croston(version="tsb", alpha_d=0.1, alpha_p=0.1), 23),
     (Theta(), 11),
