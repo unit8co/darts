@@ -48,7 +48,7 @@ class StatsForecastETSTestCase(DartsBaseTestClass):
         self.assertTrue(current_mae < 9)
 
     def test_fit_a_linreg(self):
-        model = StatsForecastETS(season_length=12, model="ZZN")
+        model = StatsForecastETS(season_length=12, model="ZZZ")
         model.fit(series=self.ts_pass_train, future_covariates=self.ts_trend_train)
 
         # check if linear regression was fit
