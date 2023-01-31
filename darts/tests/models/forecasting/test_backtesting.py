@@ -7,9 +7,17 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries
+from darts.datasets import AirPassengersDataset, MonthlyMilkDataset
 from darts.logging import get_logger
 from darts.metrics import mape, r2_score
-from darts.models import ARIMA, FFT, ExponentialSmoothing, NaiveDrift, Theta
+from darts.models import (
+    ARIMA,
+    FFT,
+    ExponentialSmoothing,
+    NaiveDrift,
+    NaiveSeasonal,
+    Theta,
+)
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.timeseries_generation import gaussian_timeseries as gt
 from darts.utils.timeseries_generation import linear_timeseries as lt
@@ -256,6 +264,25 @@ class BacktestingTestCase(DartsBaseTestClass):
             )
             self.assertEqual(pred.width, 2)
             self.assertEqual(pred.end_time(), linear_series.end_time())
+
+    def test_backtest_multiple_series(self):
+        series = [AirPassengersDataset().load(), MonthlyMilkDataset().load()]
+        model = NaiveSeasonal(K=1)
+
+        error = model.backtest(
+            series,
+            train_length=30,
+            forecast_horizon=2,
+            stride=1,
+            retrain=True,
+            last_points_only=False,
+            verbose=False,
+        )
+
+        expected = [11.63104, 6.09458]
+        self.assertEqual(len(error), 2)
+        self.assertAlmostEqual(error[0], expected[0], places=4)
+        self.assertAlmostEqual(error[1], expected[1], places=4)
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_backtest_regression(self):
