@@ -651,7 +651,7 @@ class TimeSeries:
                 )
 
                 # Temporarily use an Int64Index (soon to be NumericIndex) to sort the values,
-                # then replace by a RangeIndex.
+                # and replace by a RangeIndex in `TimeSeries.from_xarray()`
                 time_index = pd.Index(time_col_vals)
 
             elif np.issubdtype(time_col_vals.dtype, object):
@@ -693,13 +693,6 @@ class TimeSeries:
                     "original timezone."
                 )
                 time_index = df.index.tz_localize(None)
-            elif not isinstance(df.index, pd.RangeIndex) and np.issubdtype(
-                df.index.dtype, np.integer
-            ):
-                # series_df, time_index = integer_df_to_range_index(
-                #     series_df, idx_name=df.index.name
-                # )
-                time_index = series_df.index
             else:
                 time_index = df.index
 
