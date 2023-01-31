@@ -124,25 +124,6 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py>`_.
         """
 
-        """Set carrying capacities for predicting with logistic growth.
-        These capacities are only used when `Prophet` was instantiated with `growth = 'logistic'`
-        See <https://facebook.github.io/prophet/docs/saturating_forecasts.html> for more information
-        on logistic forecasts.
-
-        The `cap` and `floor` parameters may be:
-        
-        - a number, for constant carrying capacities
-        - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
-          where each number indicates the carrying capacity at this index.
-
-        Parameters
-        ----------
-        cap
-            The maximum carrying capacity
-        floor
-            The minimum carrying capacity, by default 0
-        """
-
         super().__init__(add_encoders=add_encoders)
 
         self._auto_seasonalities = self._extract_auto_seasonality(prophet_kwargs)
