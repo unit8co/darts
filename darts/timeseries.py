@@ -3699,7 +3699,7 @@ class TimeSeries:
                 f"Number of components is larger than {max_nr_components} ({self.n_components}). "
                 f"Plotting only the first {max_nr_components} components."
                 f"You can overwrite this in the using the `plot_all_components` argument in plot()"
-                f"Beware that plotting all components may take a long time."
+                f"Beware that plotting a large number of components may cause performance issues."
             )
 
         if not isinstance(label, str) and isinstance(label, Sequence):
