@@ -1,4 +1,4 @@
-from typing import Dict, List, Literal, Optional
+from typing import Dict, List, Optional
 
 import matplotlib.pyplot as plt
 import pandas as pd
