@@ -414,7 +414,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             "calling `super.__init__(...)`. Do this with `self._extract_pl_module_params(**self.model_params).`",
         )
 
-        self.pl_module_params["train_sample"] = self.train_sample
+        self.pl_module_params["train_sample_shape"] = [
+            variate.shape if variate is not None else None
+            for variate in self.train_sample
+        ]
         # the tensors have shape (chunk_length, nr_dimensions)
         self.model = self._create_model(self.train_sample)
         self._module_name = self.model.__class__.__name__
@@ -1499,8 +1502,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     logger,
                 )
 
-        # pl_forecasting module is saves the train_sample
-        self.train_sample = ckpt["train_sample"]
+        # pl_forecasting module saves the train_sample shape, must recreate one
+        mock_train_sample = [
+            np.zeros(sample_shape) if sample_shape else None
+            for sample_shape in ckpt["train_sample_shape"]
+        ]
+        self.train_sample = mock_train_sample
 
         # instanciate the model without having to call `fit_from_dataset`
         self._init_model()

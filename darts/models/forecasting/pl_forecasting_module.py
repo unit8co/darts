@@ -30,7 +30,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
-        train_sample: Optional[Dict] = None,
+        train_sample_shape: Tuple = None,
         loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
         torch_metrics: Optional[
             Union[torchmetrics.Metric, torchmetrics.MetricCollection]
@@ -103,7 +103,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.likelihood = likelihood
 
         # saved in checkpoint to be able to instantiate a model without calling fit_from_dataset
-        self.train_sample = train_sample
+        self.train_sample_shape = train_sample_shape
 
         # persist optimiser and LR scheduler parameters
         self.optimizer_cls = optimizer_cls
@@ -375,7 +375,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         # we must save the dtype for correct parameter precision at loading time
         checkpoint["model_dtype"] = self.dtype
         # we must save the shape of the input to be able to instanciate the model without calling fit_from_dataset
-        checkpoint["train_sample"] = self.train_sample
+        checkpoint["train_sample_shape"] = self.train_sample_shape
 
     def on_load_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
         # by default our models are initialized as float32. For other dtypes, we need to cast to the correct precision
