@@ -263,7 +263,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # class name will be set in fit_from_dataset()
         self._module_name: Optional[str] = ""
 
-        self.train_sample: Optional[Tuple] = None
         self.output_dim: Optional[int] = None
 
         self.n_epochs = n_epochs
@@ -415,6 +414,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             "calling `super.__init__(...)`. Do this with `self._extract_pl_module_params(**self.model_params).`",
         )
 
+        self.pl_module_params["train_sample"] = self.train_sample
         # the tensors have shape (chunk_length, nr_dimensions)
         self.model = self._create_model(self.train_sample)
         self._module_name = self.model.__class__.__name__
@@ -1422,8 +1422,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         file_name: str = None,
         best: bool = True,
         strict: bool = True,
-        shift: int = 1,
-        length: int = 12,
         **kwargs,
     ):
         """
@@ -1501,34 +1499,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     logger,
                 )
 
-        # bypass the requirement of train_sample (usually created in `fit_from_dataset`)
+        # pl_forecasting module is saves the train_sample
+        self.train_sample = ckpt["train_sample"]
 
-        # length must be >= to max(`self.input_chunk_length`, `self.shift + self.output_chunk_length``)
-        # these values depend on the model and the dataset, need to access the length and shift attributes
-        # of the dataset used during training...
-        mock_ts_length = max(
-            [
-                ckpt_hyper_params["input_chunk_length"]
-                + ckpt_hyper_params["output_chunk_length"]
-                + 100,
-                length,
-                shift + length,
-            ]
-        )
-
-        mock_ts = TimeSeries.from_values(np.ones(mock_ts_length))
-        # self.train_sample length depends on the model's dataset class, the dimensions information are carried
-        # in target, the other covariates can be None without interfering with the model instantiation.
-        mock_dataset = self._build_train_dataset(
-            target=mock_ts,
-            past_covariates=None,
-            future_covariates=None,
-            max_samples_per_ts=None,
-        )
-
-        self.train_sample = mock_dataset[0]
-
-        # instanciate the model without having to all `fit_from_dataset`
+        # instanciate the model without having to call `fit_from_dataset`
         self._init_model()
 
         # load only the weights from the state dict
