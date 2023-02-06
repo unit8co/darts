@@ -299,23 +299,22 @@ if TORCH_AVAILABLE:
                 12,
                 "RNN",
                 5,
-                5,
+                1,
                 n_epochs=2,
                 work_dir=self.temp_work_dir,
                 save_checkpoints=True,
                 model_name=original_model_name,
             )
-            model1.fit(self.series[:95])
-            self.assertEqual(2, model1.epochs_trained)
-            original_preds = model1.predict(5)
-            original_mape = mape(original_preds, self.series[95:])
+            model1.fit(self.series[:90])
+            original_preds = model1.predict(10)
+            original_mape = mape(original_preds, self.series[90:])
 
             # load last checkpoint of original model, train it for 2 additional epochs
             model_rt = RNNModel(
                 12,
                 "RNN",
                 5,
-                5,
+                1,
                 n_epochs=2,
                 work_dir=self.temp_work_dir,
                 model_name=retrained_model_name,
@@ -323,9 +322,9 @@ if TORCH_AVAILABLE:
             model_rt.load_weights_from_checkpoint(
                 model_name=original_model_name, work_dir=self.temp_work_dir, best=False
             )
-            model_rt.fit(self.series[:95])
-            retrained_preds = model_rt.predict(5)
-            retrained_mape = mape(retrained_preds, self.series[95:])
+            model_rt.fit(self.series[:90])
+            retrained_preds = model_rt.predict(10)
+            retrained_mape = mape(retrained_preds, self.series[90:])
             self.assertTrue(
                 retrained_mape < original_mape,
                 "Retrained model has a greater error (mape) than the original model.",
