@@ -1515,6 +1515,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # load only the weights from the state dict
         self.model.load_state_dict(ckpt["state_dict"], strict=strict)
+        # update the fit_called attribute to allow for direct inference
+        self._fit_called = True
 
     def to_cpu(self):
         """Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time :fun:`fit()` or
