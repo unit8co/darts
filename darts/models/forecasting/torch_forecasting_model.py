@@ -1508,7 +1508,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             np.zeros(sample_shape) if sample_shape else None
             for sample_shape in ckpt["train_sample_shape"]
         ]
-        self.train_sample = mock_train_sample
+        self.train_sample = tuple(mock_train_sample)
 
         # instanciate the model without having to call `fit_from_dataset`
         self._init_model()
