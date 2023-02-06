@@ -300,7 +300,7 @@ if TORCH_AVAILABLE:
                 "RNN",
                 5,
                 1,
-                n_epochs=2,
+                n_epochs=5,
                 work_dir=self.temp_work_dir,
                 save_checkpoints=True,
                 model_name=original_model_name,
@@ -315,7 +315,7 @@ if TORCH_AVAILABLE:
                 "RNN",
                 5,
                 1,
-                n_epochs=2,
+                n_epochs=5,
                 work_dir=self.temp_work_dir,
                 model_name=retrained_model_name,
             )
