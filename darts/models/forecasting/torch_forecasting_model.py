@@ -263,6 +263,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # class name will be set in fit_from_dataset()
         self._module_name: Optional[str] = ""
 
+        self.train_sample: Optional[Tuple] = None
         self.output_dim: Optional[int] = None
 
         self.n_epochs = n_epochs
