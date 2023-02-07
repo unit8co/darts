@@ -643,7 +643,7 @@ class NBEATSModel(PastCovariatesTorchModel):
             To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where
             :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
             :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
-            :func:`save_model()` and loaded using :func:`load_model()`. Default: ``False``.
+            :func:`save()` and loaded using :func:`load()`. Default: ``False``.
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
