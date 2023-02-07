@@ -91,14 +91,14 @@ try:
     from darts.models.forecasting.croston import Croston
     from darts.models.forecasting.sf_auto_arima import StatsForecastAutoARIMA
     from darts.models.forecasting.sf_auto_ces import StatsForecastAutoCES
+    from darts.models.forecasting.sf_auto_ets import StatsForecastAutoETS
     from darts.models.forecasting.sf_auto_theta import StatsForecastAutoTheta
-    from darts.models.forecasting.sf_ets import StatsForecastETS
 
 except ImportError:
     logger.warning(
         "The statsforecast module could not be imported. "
         "To enable support for the StatsForecastAutoARIMA, "
-        "StatsForecastETS and Croston models, please consider "
+        "StatsForecastAutoETS and Croston models, please consider "
         "installing it."
     )
 
@@ -107,10 +107,10 @@ except ImportError:
 
     StatsForecastAutoARIMA = NotImportedStatsForecastAutoARIMA()
 
-    class NotImportedStatsForecastETS:
+    class NotImportedStatsForecastAutoETS:
         usable = False
 
-    StatsForecastETS = NotImportedStatsForecastETS()
+    StatsForecastAutoETS = NotImportedStatsForecastAutoETS()
 
     class NotImportedCroston:
         usable = False

@@ -1,11 +1,11 @@
 """
-StatsForecastETS
+StatsForecastAutoETS
 -----------
 """
 
 from typing import Optional
 
-from statsforecast.models import ETS as SFAutoETS
+from statsforecast.models import AutoETS as SFAutoETS
 
 from darts import TimeSeries
 from darts.models import LinearRegressionModel
@@ -19,7 +19,7 @@ from darts.models.forecasting.forecasting_model import (
 )
 
 
-class StatsForecastETS(FutureCovariatesLocalForecastingModel):
+class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
     def __init__(self, *ets_args, add_encoders: Optional[dict] = None, **ets_kwargs):
         """ETS based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
@@ -76,9 +76,9 @@ class StatsForecastETS(FutureCovariatesLocalForecastingModel):
         Examples
         --------
         >>> from darts.datasets import AirPassengersDataset
-        >>> from darts.models import StatsForecastETS
+        >>> from darts.models import StatsForecastAutoETS
         >>> series = AirPassengersDataset().load()
-        >>> model = StatsForecastETS(season_length=12, model="AZZ")
+        >>> model = StatsForecastAutoETS(season_length=12, model="AZZ")
         >>> model.fit(series[:-36])
         >>> pred = model.predict(36)
         """
