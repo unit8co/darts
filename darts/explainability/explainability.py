@@ -262,6 +262,11 @@ class ForecastingModelExplainer(ABC):
         This series has length 3, as the model can explain 5-3+1 forecasts
         (timestamp indexes 4, 5, and 6)
 
+        Note, it's also possible to retrieve the feature values corresponding to the explanation via the method
+        :func:`ExplainabilityResult.get_feature_values(horizon, target_component)`. Finally, one can use the
+        :func:`ExplainabilityResult.get_shap_explanation_object(horizon, target_component)` to retrieve the
+        corresponding SHAP explanation object.
+
         Parameters
         ----------
         foreground_series

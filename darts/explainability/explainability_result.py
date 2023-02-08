@@ -20,8 +20,8 @@ logger = get_logger(__name__)
 
 def check_input_validity_for_querying_explainability_result(func: Callable) -> Callable:
     """
-    A decorator that validates the input parameters of a method that query the ExplainabilityResult (e.g.,
-    get_explanation(), get_feature_values()).
+    A decorator that validates the input parameters of a method that queries the ExplainabilityResult (i.e.,
+    get_explanation(), get_feature_values(), and get_shap_explanation_object).
     """
 
     @wraps(func)
@@ -73,7 +73,6 @@ class ExplainabilityResult(ABC):
             Dict[integer, Dict[str, TimeSeries]],
             Sequence[Dict[integer, Dict[str, TimeSeries]]],
         ],
-        # Original SHAP explanation object in case SHAP is used by ForecastingModelExplainer
         shap_explanation_object: Optional[
             Union[
                 Dict[integer, Dict[str, shap.Explanation]],
@@ -131,7 +130,7 @@ class ExplainabilityResult(ABC):
         horizon
             The horizon for which to return the feature values.
         component
-            The component for which to return the explanation. Does not
+            The component for which to return the feature values. Does not
             need to be specified for univariate series.
         """
         if isinstance(self.feature_values, list):
@@ -147,14 +146,15 @@ class ExplainabilityResult(ABC):
         self, horizon: int, component: Optional[str] = None
     ) -> Union[shap.Explanation, Sequence[shap.Explanation]]:
         """
-        Returns one or several shap.Explanations objects for a given horizon and component.
+        In case, SHAP is used by the :class:`ForecastingModelExplainer` to explain the forecast, this method
+        returns the underlying `shap.Explanations` object(s) for a given horizon and component.
 
         Parameters
         ----------
         horizon
-            The horizon for which to return the feature values.
+            The horizon for which to return the `shap.Explanations` object(s).
         component
-            The component for which to return the explanation. Does not
+            The component for which to return the `shap.Explanations` object(s). Does not
             need to be specified for univariate series.
         """
         if not self.shap_explanation_object:
