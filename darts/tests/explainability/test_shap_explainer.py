@@ -5,6 +5,7 @@ import pandas as pd
 import shap
 import sklearn
 from dateutil.relativedelta import relativedelta
+from numpy.testing import assert_array_equal
 from sklearn.preprocessing import MinMaxScaler
 
 from darts import TimeSeries
@@ -267,19 +268,28 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             # wrong horizon
             results.get_explanation(horizon=5, component="price")
+            results.get_feature_values(horizon=5, component="price")
+            results.get_shap_explanation_object(horizon=5, component="price")
             # wrong component name
             results.get_explanation(horizon=1, component="test")
+            results.get_feature_values(horizon=1, component="test")
+            results.get_shap_explanation_object(horizon=1, component="test")
 
         results = shap_explain.explain(horizons=[1, 3], target_components=["power"])
         with self.assertRaises(ValueError):
             # wrong horizon
             results.get_explanation(horizon=2, component="power")
+            results.get_feature_values(horizon=2, component="power")
+            results.get_shap_explanation_object(horizon=2, component="power")
             # wrong component name
             results.get_explanation(horizon=1, component="test")
+            results.get_feature_values(horizon=1, component="test")
+            results.get_shap_explanation_object(horizon=1, component="test")
 
         explanation = results.get_explanation(horizon=1, component="power")
-
         self.assertEqual(len(explanation), 537)
+        feature_vals = results.get_feature_values(horizon=1, component="power")
+        self.assertEqual(len(feature_vals), 537)
 
         # list of foregrounds: encoders have to be corrected first.
         results = shap_explain.explain(
@@ -288,8 +298,10 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             foreground_future_covariates=[self.fut_cov_ts, self.fut_cov_ts[:40]],
         )
         ts_res = results.get_explanation(horizon=2, component="power")
-
         self.assertEqual(len(ts_res), 2)
+        feature_vals = results.get_feature_values(horizon=2, component="power")
+        self.assertEqual(len(feature_vals), 2)
+
         # explain with a new foreground, minimum required. We should obtain one
         # timeseries with only one time element
         results = shap_explain.explain(
@@ -301,12 +313,17 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         ts_res = results.get_explanation(horizon=2, component="power")
         self.assertTrue(len(ts_res) == 1)
         self.assertTrue(ts_res.time_index[-1] == pd.Timestamp(2014, 6, 5))
+        feature_vals = results.get_feature_values(horizon=2, component="power")
+        self.assertTrue(len(feature_vals) == 1)
+        self.assertTrue(feature_vals.time_index[-1] == pd.Timestamp(2014, 6, 5))
 
         with self.assertRaises(ValueError):
             # wrong horizon
             results.get_explanation(horizon=5, component="price")
+            results.get_feature_values(horizon=5, component="price")
             # wrong component name
             results.get_explanation(horizon=1, component="test")
+            results.get_feature_values(horizon=1, component="test")
 
         # right instance
         self.assertTrue(isinstance(results, ExplainabilityResult))
@@ -552,3 +569,55 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             target_component="power",
         )
         self.assertTrue(isinstance(fplot, shap.plots._force.BaseVisualizer))
+
+    def test_feature_values_validity(self):
+        model = LightGBMModel(
+            lags=4,
+            lags_past_covariates=2,
+            lags_future_covariates=[1],
+            output_chunk_length=1,
+        )
+        model.fit(
+            series=self.target_ts,
+            past_covariates=self.past_cov_ts,
+            future_covariates=self.fut_cov_ts,
+        )
+        shap_explain = ShapExplainer(model)
+        explanation_results = shap_explain.explain()
+        df = pd.merge(
+            self.target_ts.pd_dataframe(),
+            explanation_results.get_feature_values(
+                horizon=1, component="price"
+            ).pd_dataframe(),
+            how="left",
+            left_index=True,
+            right_index=True,
+        )
+        df[["price_shift_4", "power_shift_4"]] = df[["price", "power"]].shift(4)
+
+        assert_array_equal(
+            df[["price_shift_4", "power_shift_4"]],
+            df[["price_target_lag-4", "power_target_lag-4"]],
+        )
+
+    def test_shap_explanation_object_validity(self):
+        model = LightGBMModel(
+            lags=4,
+            lags_past_covariates=2,
+            lags_future_covariates=[1],
+            output_chunk_length=1,
+        )
+        model.fit(
+            series=self.target_ts,
+            past_covariates=self.past_cov_ts,
+            future_covariates=self.fut_cov_ts,
+        )
+        shap_explain = ShapExplainer(model)
+        explanation_results = shap_explain.explain()
+
+        self.assertIsInstance(
+            explanation_results.get_shap_explanation_object(
+                horizon=1, component="power"
+            ),
+            shap.Explanation,
+        )
