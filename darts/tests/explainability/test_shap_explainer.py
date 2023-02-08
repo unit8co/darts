@@ -573,14 +573,10 @@ class ShapExplainerTestCase(DartsBaseTestClass):
     def test_feature_values_validity(self):
         model = LightGBMModel(
             lags=4,
-            lags_past_covariates=2,
-            lags_future_covariates=[1],
             output_chunk_length=1,
         )
         model.fit(
             series=self.target_ts,
-            past_covariates=self.past_cov_ts,
-            future_covariates=self.fut_cov_ts,
         )
         shap_explain = ShapExplainer(model)
         explanation_results = shap_explain.explain()
@@ -596,8 +592,8 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         df[["price_shift_4", "power_shift_4"]] = df[["price", "power"]].shift(4)
 
         assert_array_equal(
-            df[["price_shift_4", "power_shift_4"]],
-            df[["price_target_lag-4", "power_target_lag-4"]],
+            df[["price_shift_4", "power_shift_4"]].values,
+            df[["price_target_lag-4", "power_target_lag-4"]].values,
         )
 
     def test_shap_explanation_object_validity(self):

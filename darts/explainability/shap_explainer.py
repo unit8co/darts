@@ -601,6 +601,7 @@ class _RegressionShapExplainers:
                                 :, :, self.target_dim * (h - 1) + t_idx
                             ]
                         )
+                        tmp_t.data = shap_explanation_tmp.data
                         tmp_t.base_values = shap_explanation_tmp.base_values[
                             :, self.target_dim * (h - 1) + t_idx
                         ].ravel()
