@@ -35,7 +35,7 @@ from darts.explainability.explainability import (
 )
 from darts.logging import get_logger, raise_if, raise_log
 from darts.models.forecasting.regression_model import RegressionModel
-from darts.utils.data.tabularization import _create_lagged_data
+from darts.utils.data.tabularization import create_lagged_prediction_data
 from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
@@ -665,16 +665,18 @@ class _RegressionShapExplainers:
         lags_past_covariates_list = self.model.lags.get("past")
         lags_future_covariates_list = self.model.lags.get("future")
 
-        X, _, indexes = _create_lagged_data(
-            target_series,
-            self.n,
-            past_covariates,
-            future_covariates,
-            lags_list,
-            lags_past_covariates_list,
-            lags_future_covariates_list,
-            is_training=False,
+        X, indexes = create_lagged_prediction_data(
+            target_series=target_series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            lags=lags_list,
+            lags_past_covariates=lags_past_covariates_list if past_covariates else None,
+            lags_future_covariates=lags_future_covariates_list
+            if future_covariates
+            else None,
         )
+        # Remove sample axis:
+        X = X[:, :, 0]
 
         if train:
             X = pd.DataFrame(X)

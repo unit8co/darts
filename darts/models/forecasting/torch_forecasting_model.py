@@ -433,11 +433,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             if trainer is None
             else trainer.precision
         )
+
         raise_if(
-            precision_user is not None and precision_user != precision,
-            f"User-defined trainer_kwarg `precision={precision_user}`-bit does not match dtype: `{dtype}` of the "
-            f"underlying TimeSeries. Set `precision` to `{precision}` or cast your data to `{precision_user}-"
-            f"bit` with `TimeSeries.astype(np.float{precision_user})`.",
+            precision_user is not None and int(precision_user) != precision,
+            f"User-defined trainer_kwarg `precision={precision_user}` does not match dtype: `{dtype}` of the "
+            f"underlying TimeSeries. Set `precision` to `{precision}` or cast your data to `{precision_user}"
+            f"` with `TimeSeries.astype(np.float{precision_user})`.",
             logger,
         )
 
