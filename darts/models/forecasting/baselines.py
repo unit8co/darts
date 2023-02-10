@@ -157,9 +157,10 @@ class NaiveMovingAverage(LocalForecastingModel):
 
     def predict(self, n: int, num_samples: int = 1, verbose: bool = False):
         super().predict(n, num_samples)
-        
+
         predictions_with_observations = np.concatenate(
-            (self.rolling_window, np.zeros(shape=(n, self.rolling_window.shape[1]))), axis=0
+            (self.rolling_window, np.zeros(shape=(n, self.rolling_window.shape[1]))),
+            axis=0,
         )
         rolling_sum = sum(self.rolling_window)
         print(rolling_sum)
