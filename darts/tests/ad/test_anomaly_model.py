@@ -29,7 +29,7 @@ from darts.ad import (
     WassersteinScorer,
 )
 from darts.ad.utils import eval_accuracy_from_scores, show_anomalies_from_scores
-from darts.models import MovingAverage, NaiveSeasonal, RegressionModel
+from darts.models import MovingAverageFilter, NaiveSeasonal, RegressionModel
 from darts.tests.base_test_class import DartsBaseTestClass
 
 
@@ -59,8 +59,8 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         train._time_index, np_only_0_anomalies
     )
 
-    modified_train = MovingAverage(window=10).filter(train)
-    modified_test = MovingAverage(window=10).filter(test)
+    modified_train = MovingAverageFilter(window=10).filter(train)
+    modified_test = MovingAverageFilter(window=10).filter(test)
 
     np_probabilistic = np.random.normal(loc=10, scale=1, size=[100, 1, 20])
     probabilistic = TimeSeries.from_times_and_values(
@@ -95,7 +95,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         for scorers in list_NonFittableAnomalyScorer:
             for anomaly_model in [
                 ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer=scorers),
-                FilteringAnomalyModel(model=MovingAverage(window=20), scorer=scorers),
+                FilteringAnomalyModel(model=MovingAverageFilter(window=20), scorer=scorers),
             ]:
 
                 # scorer are trainable
@@ -110,7 +110,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         for scorers in list_FittableAnomalyScorer:
             for anomaly_model in [
                 ForecastingAnomalyModel(model=RegressionModel(lags=10), scorer=scorers),
-                FilteringAnomalyModel(model=MovingAverage(window=20), scorer=scorers),
+                FilteringAnomalyModel(model=MovingAverageFilter(window=20), scorer=scorers),
             ]:
 
                 # scorer are not trainable
@@ -123,7 +123,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         )
         am1.fit(self.train, allow_model_training=True)
 
-        am2 = FilteringAnomalyModel(model=MovingAverage(window=20), scorer=NormScorer())
+        am2 = FilteringAnomalyModel(model=MovingAverageFilter(window=20), scorer=NormScorer())
 
         for am in [am1, am2]:
             # Parameter return_model_prediction
@@ -149,12 +149,12 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
     def test_FitFilteringAnomalyModelInput(self):
 
         for anomaly_model in [
-            FilteringAnomalyModel(model=MovingAverage(window=20), scorer=NormScorer()),
+            FilteringAnomalyModel(model=MovingAverageFilter(window=20), scorer=NormScorer()),
             FilteringAnomalyModel(
-                model=MovingAverage(window=20), scorer=[NormScorer(), KMeansScorer()]
+                model=MovingAverageFilter(window=20), scorer=[NormScorer(), KMeansScorer()]
             ),
             FilteringAnomalyModel(
-                model=MovingAverage(window=20), scorer=KMeansScorer()
+                model=MovingAverageFilter(window=20), scorer=KMeansScorer()
             ),
         ]:
 
@@ -336,12 +336,12 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
     def test_ScoreFilteringAnomalyModelInput(self):
 
         for anomaly_model in [
-            FilteringAnomalyModel(model=MovingAverage(window=10), scorer=NormScorer()),
+            FilteringAnomalyModel(model=MovingAverageFilter(window=10), scorer=NormScorer()),
             FilteringAnomalyModel(
-                model=MovingAverage(window=10), scorer=[NormScorer(), KMeansScorer()]
+                model=MovingAverageFilter(window=10), scorer=[NormScorer(), KMeansScorer()]
             ),
             FilteringAnomalyModel(
-                model=MovingAverage(window=10), scorer=KMeansScorer()
+                model=MovingAverageFilter(window=10), scorer=KMeansScorer()
             ),
         ]:
 
@@ -355,7 +355,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         )
         am1.fit(self.train, allow_model_training=True)
 
-        am2 = FilteringAnomalyModel(model=MovingAverage(window=20), scorer=NormScorer())
+        am2 = FilteringAnomalyModel(model=MovingAverageFilter(window=20), scorer=NormScorer())
 
         am3 = ForecastingAnomalyModel(
             model=RegressionModel(lags=10), scorer=[NormScorer(), WassersteinScorer()]
@@ -363,7 +363,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         am3.fit(self.train, allow_model_training=True)
 
         am4 = FilteringAnomalyModel(
-            model=MovingAverage(window=20), scorer=[NormScorer(), WassersteinScorer()]
+            model=MovingAverageFilter(window=20), scorer=[NormScorer(), WassersteinScorer()]
         )
         am4.fit(self.train)
 
@@ -500,7 +500,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             ForecastingAnomalyModel(model=1, scorer=NormScorer())
         with self.assertRaises(ValueError):
-            ForecastingAnomalyModel(model=MovingAverage(window=10), scorer=NormScorer())
+            ForecastingAnomalyModel(model=MovingAverageFilter(window=10), scorer=NormScorer())
         with self.assertRaises(ValueError):
             ForecastingAnomalyModel(
                 model=[RegressionModel(lags=10), RegressionModel(lags=5)],
@@ -534,23 +534,23 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             FilteringAnomalyModel(model=RegressionModel(lags=10), scorer=NormScorer())
         with self.assertRaises(ValueError):
             FilteringAnomalyModel(
-                model=[MovingAverage(window=10), MovingAverage(window=10)],
+                model=[MovingAverageFilter(window=10), MovingAverageFilter(window=10)],
                 scorer=NormScorer(),
             )
 
         # scorer input
         # scorer input must be of type AnomalyScorer
         with self.assertRaises(ValueError):
-            FilteringAnomalyModel(model=MovingAverage(window=10), scorer=1)
+            FilteringAnomalyModel(model=MovingAverageFilter(window=10), scorer=1)
         with self.assertRaises(ValueError):
-            FilteringAnomalyModel(model=MovingAverage(window=10), scorer="str")
+            FilteringAnomalyModel(model=MovingAverageFilter(window=10), scorer="str")
         with self.assertRaises(ValueError):
             FilteringAnomalyModel(
-                model=MovingAverage(window=10), scorer=MovingAverage(window=10)
+                model=MovingAverageFilter(window=10), scorer=MovingAverageFilter(window=10)
             )
         with self.assertRaises(ValueError):
             FilteringAnomalyModel(
-                model=MovingAverage(window=10), scorer=[NormScorer(), "str"]
+                model=MovingAverageFilter(window=10), scorer=[NormScorer(), "str"]
             )
 
     def test_univariate_ForecastingAnomalyModel(self):
@@ -700,7 +700,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         )
 
         anomaly_model = FilteringAnomalyModel(
-            model=MovingAverage(window=5),
+            model=MovingAverageFilter(window=5),
             scorer=[
                 NormScorer(),
                 Difference(),
@@ -974,7 +974,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
         # first case: scorers that return univariate scores
         anomaly_model = FilteringAnomalyModel(
-            model=MovingAverage(window=10),
+            model=MovingAverageFilter(window=10),
             scorer=[
                 NormScorer(component_wise=False),
                 WassersteinScorer(),
@@ -1058,7 +1058,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
         # second case: scorers that return scorers that have the same width as the input
         anomaly_model = FilteringAnomalyModel(
-            model=MovingAverage(window=10),
+            model=MovingAverageFilter(window=10),
             scorer=[
                 NormScorer(component_wise=True),
                 Difference(),
@@ -1379,7 +1379,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         forecasting_anomaly_model.fit(self.train, allow_model_training=True)
 
         filtering_anomaly_model = FilteringAnomalyModel(
-            model=MovingAverage(window=10), scorer=NormScorer()
+            model=MovingAverageFilter(window=10), scorer=NormScorer()
         )
 
         for anomaly_model in [forecasting_anomaly_model, filtering_anomaly_model]:
