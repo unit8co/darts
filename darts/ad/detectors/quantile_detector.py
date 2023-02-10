@@ -108,12 +108,12 @@ class QuantileDetector(FittableDetector):
         raise_if_not(
             all(
                 [
-                    l < h
+                    l <= h
                     for (l, h) in zip(self.low_quantile, self.high_quantile)
                     if ((l is not None) and (h is not None))
                 ]
             ),
-            "all values in `low_quantile` must be lower than their corresponding value in `high_quantile`.",
+            "all values in `low_quantile` must be lower or equal than their corresponding value in `high_quantile`.",
         )
 
     def _fit_core(self, list_series: Sequence[TimeSeries]) -> None:
