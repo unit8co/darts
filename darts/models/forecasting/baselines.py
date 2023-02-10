@@ -123,6 +123,55 @@ class NaiveDrift(LocalForecastingModel):
         return self._build_forecast_series(forecast)
 
 
+class NaiveMovingAverage(LocalForecastingModel):
+    def __init__(self, W: int = 1):
+        """Naive Moving Average Model
+
+        This model predicts using predicts using an auto-regressive moving average.
+
+        Parameters
+        ----------
+        W is the size of the sliding window used to calcualte Moving Average
+        """
+        super().__init__()
+        self.W = W
+        self.last_w_vals = None
+
+    @property
+    def min_train_series_length(self):
+        return self.W
+
+    def __str__(self):
+        return f"Naive moving average model, with W={self.W}"
+
+    def fit(self, series: TimeSeries):
+        super().fit(series)
+
+        raise_if_not(
+            len(series) >= self.W,
+            f"The time series requires at least W={self.W} points",
+            logger,
+        )
+        self.rolling_window = series[-self.W :].values(copy=False)
+        return self
+
+    def predict(self, n: int, num_samples: int = 1, verbose: bool = False):
+        super().predict(n, num_samples)
+        
+        predictions_with_observations = np.concatenate(
+            (self.rolling_window, np.zeros(shape=(n, self.rolling_window.shape[1]))), axis=0
+        )
+        rolling_sum = sum(self.rolling_window)
+        print(rolling_sum)
+
+        for i in range(self.W, self.W + n):
+            prediction = rolling_sum / self.W
+            predictions_with_observations[i] = prediction
+            lost_value = predictions_with_observations[i - self.W]
+            rolling_sum += prediction - lost_value
+        return self._build_forecast_series(predictions_with_observations[-n:])
+
+
 class NaiveEnsembleModel(EnsembleModel):
     def __init__(
         self, models: Union[List[LocalForecastingModel], List[GlobalForecastingModel]]
