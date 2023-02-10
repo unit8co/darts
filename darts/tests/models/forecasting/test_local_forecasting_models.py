@@ -32,7 +32,9 @@ from darts.models import (
     RandomForest,
     RegressionModel,
     StatsForecastAutoARIMA,
-    StatsForecastETS,
+    StatsForecastAutoCES,
+    StatsForecastAutoETS,
+    StatsForecastAutoTheta,
     Theta,
 )
 from darts.models.forecasting.forecasting_model import (
@@ -52,7 +54,9 @@ models = [
     (ARIMA(12, 2, 1), 5.2),
     (ARIMA(1, 1, 1), 24),
     (StatsForecastAutoARIMA(season_length=12), 4.6),
-    (StatsForecastETS(season_length=12, model="AAZ"), 4.1),
+    (StatsForecastAutoTheta(season_length=12), 5.5),
+    (StatsForecastAutoCES(season_length=12, model="Z"), 7.3),
+    (StatsForecastAutoETS(season_length=12, model="AAZ"), 4.1),
     (Croston(version="classic"), 23),
     (Croston(version="tsb", alpha_d=0.1, alpha_p=0.1), 23),
     (Theta(), 11),
@@ -87,7 +91,7 @@ multivariate_models = [
 dual_models = [
     ARIMA(),
     StatsForecastAutoARIMA(season_length=12),
-    StatsForecastETS(season_length=12),
+    StatsForecastAutoETS(season_length=12),
     Prophet(),
     AutoARIMA(),
 ]
