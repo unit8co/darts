@@ -27,6 +27,7 @@ from darts.models import (
     NaiveDrift,
     NaiveMean,
     NaiveSeasonal,
+    NaiveMovingAverage,
     Prophet,
     RandomForest,
     RegressionModel,
@@ -80,6 +81,7 @@ multivariate_models = [
     (NaiveSeasonal(), 32),
     (NaiveMean(), 37),
     (NaiveDrift(), 39),
+    (NaiveMovingAverage(W=5), 34),
 ]
 
 dual_models = [
