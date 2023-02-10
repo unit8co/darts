@@ -163,7 +163,6 @@ class NaiveMovingAverage(LocalForecastingModel):
             axis=0,
         )
         rolling_sum = sum(self.rolling_window)
-        print(rolling_sum)
 
         for i in range(self.W, self.W + n):
             prediction = rolling_sum / self.W
