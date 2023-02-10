@@ -91,12 +91,12 @@ class ThresholdDetector(Detector):
         raise_if_not(
             all(
                 [
-                    l < h
+                    l <= h
                     for (l, h) in zip(self.low_threshold, self.high_threshold)
                     if ((l is not None) and (h is not None))
                 ]
             ),
-            "all values in `low_threshold` must be lower than their corresponding value in `high_threshold`.",
+            "all values in `low_threshold` must be lower or equal than their corresponding value in `high_threshold`.",
         )
 
     def _detect_core(self, series: TimeSeries) -> TimeSeries:
