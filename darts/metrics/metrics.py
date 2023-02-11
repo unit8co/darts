@@ -1217,7 +1217,7 @@ def rho_risk(
 # rho-risk (quantile risk)
 @multi_ts_support
 @multivariate_support
-def pinball_loss(
+def quantile_loss(
     actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     tau: float = 0.5,

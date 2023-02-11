@@ -14,7 +14,7 @@ from .metrics import (
     ope,
     r2_score,
     rho_risk,
-    pinball_loss,
+    quantile_loss,
     rmse,
     rmsle,
     smape,
