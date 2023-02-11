@@ -4,6 +4,7 @@ import pandas as pd
 from darts import TimeSeries
 from darts.metrics import metrics
 from darts.tests.base_test_class import DartsBaseTestClass
+from ...metrics.metrics import pinball_loss
 
 
 class MetricsTestCase(DartsBaseTestClass):
@@ -346,6 +347,35 @@ class MetricsTestCase(DartsBaseTestClass):
         )
         self.assertAlmostEqual(metrics.rho_risk(s1, s12_stochastic, rho=0.0), 0.0)
         self.assertAlmostEqual(metrics.rho_risk(s2, s12_stochastic, rho=1.0), 0.0)
+    
+    def test_pinball(self):
+        # deterministic not supported
+        with self.assertRaises(ValueError):
+            pinball_loss(self.series1, self.series1)
+
+        # general univariate, multivariate and multi-ts tests
+        self.helper_test_multivariate_duplication_equality(
+            pinball_loss, is_stochastic=True
+        )
+        self.helper_test_multiple_ts_duplication_equality(
+            pinball_loss, is_stochastic=True
+        )
+        self.helper_test_nan(pinball_loss, is_stochastic=True)
+
+        # test perfect predictions -> risk = 0
+        for tau in [0.25, 0.5]:
+            self.assertAlmostEqual(
+                pinball_loss(self.series1, self.series11_stochastic, tau=tau), 0.0
+            )
+        
+        # test whether stochastic sample from two TimeSeries (ts) represents the individual ts at 0. and 1. quantiles
+        s1 = self.series1
+        s2 = self.series1 * 2
+        s12_stochastic = TimeSeries.from_times_and_values(
+            s1.time_index, np.stack([s1.values(), s2.values()], axis=2)
+        )
+        self.assertAlmostEqual(metrics.pinball_loss(s1, s12_stochastic, tau=1.0), 0.0)
+        self.assertAlmostEqual(metrics.pinball_loss(s2, s12_stochastic, tau=0.0), 0.0)
 
     def test_metrics_arguments(self):
         series00 = self.series0.stack(self.series0)
