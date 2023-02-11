@@ -11,6 +11,7 @@ from typing import Callable, Optional, Sequence, Tuple, Union
 from warnings import warn
 
 import numpy as np
+import torch
 
 from darts import TimeSeries
 from darts.dataprocessing import dtw
@@ -1275,15 +1276,15 @@ def pinball_loss(
         stochastic_quantile=None,
         remove_nan_union=True,
     )
-    ts_length = 1 if len(y_hat.shape) < 2 else y_hat.shape[2]
+
+    ts_length = y.shape[0]
     sample_size = 1 if len(y_hat.shape) < 3 else y_hat.shape[2]
 
-    y = y.reshape(-1, ts_length, 1).repeat(sample_size, axis=2)    # y shape == y_hat shape
-    y_hat = y_hat.reshape(-1, ts_length, sample_size)
+    y = y.reshape(ts_length, -1, 1).repeat(sample_size, axis=2)
+    y_hat = y_hat.reshape(ts_length, -1, sample_size)   # make sure y shape == y_hat shape
 
-    Y_delta = y - y_hat
-    Y_hat_delta = y_hat - y
-    pinball_matrix = np.maximum(Y_delta * tau, Y_hat_delta * (1 - tau))
-
-    loss_values = pinball_matrix.mean(axis=(0, 2))    # separate mean for every multivariate feature
-    return reduction(loss_values)
+    errors = y - y_hat
+    losses = np.maximum(
+        (tau - 1) * errors, tau * errors
+    )
+    return losses.mean()
