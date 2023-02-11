@@ -1212,3 +1212,78 @@ def rho_risk(
 
     rho_loss = 2 * (z_true - z_hat_rho) * (rho * pred_below - (1 - rho) * pred_above)
     return rho_loss / z_true
+
+# rho-risk (quantile risk)
+@multi_ts_support
+@multivariate_support
+def pinball_loss(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    tau: float = 0.5,
+    intersect: bool = True,
+    *,
+    reduction: Callable[[np.ndarray], float] = np.mean,
+    inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
+    n_jobs: int = 1,
+    verbose: bool = False
+) -> float:
+    """
+
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    rho
+        The quantile (float [0, 1]) of interest for the risk evaluation.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    reduction
+        Function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to aggregate
+        the metrics of different components in case of multivariate ``TimeSeries`` instances.
+    inter_reduction
+        Function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.
+        This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
+        ``Sequence[TimeSeries]``. Defaults to the identity function, which returns the pairwise metrics for each pair
+        of ``TimeSeries`` received in input. Example: ``inter_reduction=np.mean``, will return the average of the
+        pairwise metrics.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress
+
+    Returns
+    -------
+    float
+        The pinball loss metric
+    """
+
+    raise_if_not(
+        pred_series.is_stochastic,
+        "pinball_loss (quantile) loss should only be computed for stochastic predicted TimeSeries.",
+    )
+
+    y, y_hat = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        stochastic_quantile=None,
+        remove_nan_union=True,
+    )
+    ts_length = 1 if len(y_hat.shape) < 2 else y_hat.shape[2]
+    sample_size = 1 if len(y_hat.shape) < 3 else y_hat.shape[2]
+
+    y = y.reshape(-1, ts_length, 1).repeat(sample_size, axis=2)    # y shape == y_hat shape
+    y_hat = y_hat.reshape(-1, ts_length, sample_size)
+
+    Y_delta = y - y_hat
+    Y_hat_delta = y_hat - y
+    pinball_matrix = np.maximum(Y_delta * tau, Y_hat_delta * (1 - tau))
+
+    loss_values = pinball_matrix.mean(axis=(0, 2))    # separate mean for every multivariate feature
+    return reduction(loss_values)
