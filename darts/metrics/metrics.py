@@ -11,7 +11,6 @@ from typing import Callable, Optional, Sequence, Tuple, Union
 from warnings import warn
 
 import numpy as np
-import torch
 
 from darts import TimeSeries
 from darts.dataprocessing import dtw
@@ -1214,6 +1213,7 @@ def rho_risk(
     rho_loss = 2 * (z_true - z_hat_rho) * (rho * pred_below - (1 - rho) * pred_above)
     return rho_loss / z_true
 
+
 # rho-risk (quantile risk)
 @multi_ts_support
 @multivariate_support
@@ -1281,10 +1281,10 @@ def quantile_loss(
     sample_size = 1 if len(y_hat.shape) < 3 else y_hat.shape[2]
 
     y = y.reshape(ts_length, -1, 1).repeat(sample_size, axis=2)
-    y_hat = y_hat.reshape(ts_length, -1, sample_size)   # make sure y shape == y_hat shape
+    y_hat = y_hat.reshape(
+        ts_length, -1, sample_size
+    )  # make sure y shape == y_hat shape
 
     errors = y - y_hat
-    losses = np.maximum(
-        (tau - 1) * errors, tau * errors
-    )
+    losses = np.maximum((tau - 1) * errors, tau * errors)
     return losses.mean()
