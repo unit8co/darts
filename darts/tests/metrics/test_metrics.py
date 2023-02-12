@@ -347,7 +347,7 @@ class MetricsTestCase(DartsBaseTestClass):
         )
         self.assertAlmostEqual(metrics.rho_risk(s1, s12_stochastic, rho=0.0), 0.0)
         self.assertAlmostEqual(metrics.rho_risk(s2, s12_stochastic, rho=1.0), 0.0)
-    
+
     def test_quantile_loss(self):
         # deterministic not supported
         with self.assertRaises(ValueError):
@@ -367,7 +367,7 @@ class MetricsTestCase(DartsBaseTestClass):
             self.assertAlmostEqual(
                 quantile_loss(self.series1, self.series11_stochastic, tau=tau), 0.0
             )
-        
+
         # test whether stochastic sample from two TimeSeries (ts) represents the individual ts at 0. and 1. quantiles
         s1 = self.series1
         s2 = self.series1 * 2

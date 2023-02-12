@@ -1229,7 +1229,9 @@ def quantile_loss(
     verbose: bool = False
 ) -> float:
     """
-
+    Given a time series of actual values :math:`y` of length :math:`T` and a time series of stochastic predictions
+    (containing N samples) :math:`y'` of shape :math:`T  x N`, quantile loss is a metric that quantifies the
+    accuracy of a specific quantile :math:`q` from the predicted value distribution.
 
     Parameters
     ----------
@@ -1237,8 +1239,8 @@ def quantile_loss(
         The (sequence of) actual series.
     pred_series
         The (sequence of) predicted series.
-    rho
-        The quantile (float [0, 1]) of interest for the risk evaluation.
+    tau
+        The quantile (float [0, 1]) of interest for the loss.
     intersect
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
@@ -1261,12 +1263,12 @@ def quantile_loss(
     Returns
     -------
     float
-        The pinball loss metric
+        The quantile loss metric
     """
 
     raise_if_not(
         pred_series.is_stochastic,
-        "pinball_loss (quantile) loss should only be computed for stochastic predicted TimeSeries.",
+        "quantile (quantile) loss should only be computed for stochastic predicted TimeSeries.",
     )
 
     y, y_hat = _get_values_or_raise(
@@ -1287,4 +1289,4 @@ def quantile_loss(
 
     errors = y - y_hat
     losses = np.maximum((tau - 1) * errors, tau * errors)
-    return losses.mean()
+    return reduction(losses)
