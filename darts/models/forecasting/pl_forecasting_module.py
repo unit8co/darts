@@ -30,7 +30,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
-        train_sample_shape: Tuple = None,
+        train_sample_shape: Optional[Tuple] = None,
         loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
         torch_metrics: Optional[
             Union[torchmetrics.Metric, torchmetrics.MetricCollection]
@@ -60,6 +60,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
             Number of input past time steps per chunk.
         output_chunk_length
             Number of output time steps per chunk.
+        train_sample_shape
+            Shape of the model's input, used to instantiate model without calling ``fit_from_dataset`` and
+            perform sanity check on new training/inference datasets used for re-training or prediction.
         loss_fn
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.

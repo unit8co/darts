@@ -3,6 +3,7 @@ import shutil
 import tempfile
 from unittest.mock import patch
 
+import numpy as np
 import pandas as pd
 
 from darts import TimeSeries
@@ -31,6 +32,10 @@ except ImportError:
 if TORCH_AVAILABLE:
 
     class TestTorchForecastingModel(DartsBaseTestClass):
+
+        np.random.seed(13)
+        torch.manual_seed(13)
+
         def setUp(self):
             self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
 
@@ -292,10 +297,12 @@ if TORCH_AVAILABLE:
             self.assertEqual(15, model1.epochs_trained)
 
         def test_load_weights_from_checkpoint(self):
+            ts_training = self.series[:90]
+            ts_test = self.series[90:]
             original_model_name = "original"
             retrained_model_name = "retrained"
             # original model, checkpoints are saved
-            model1 = RNNModel(
+            model = RNNModel(
                 12,
                 "RNN",
                 5,
@@ -305,9 +312,9 @@ if TORCH_AVAILABLE:
                 save_checkpoints=True,
                 model_name=original_model_name,
             )
-            model1.fit(self.series[:90])
-            original_preds = model1.predict(10)
-            original_mape = mape(original_preds, self.series[90:])
+            model.fit(ts_training)
+            original_preds = model.predict(10)
+            original_mape = mape(original_preds, ts_test)
 
             # load last checkpoint of original model, train it for 2 additional epochs
             model_rt = RNNModel(
@@ -322,12 +329,19 @@ if TORCH_AVAILABLE:
             model_rt.load_weights_from_checkpoint(
                 model_name=original_model_name, work_dir=self.temp_work_dir, best=False
             )
-            model_rt.fit(self.series[:90])
+
+            # must indicate series otherwise self.training_series must be saved in checkpoint
+            loaded_preds = model_rt.predict(10, ts_training)
+            # save/load checkpoint should produce identical predictions
+            self.assertTrue(np.allclose(original_preds.values(), loaded_preds.values()))
+
+            model_rt.fit(ts_training)
             retrained_preds = model_rt.predict(10)
-            retrained_mape = mape(retrained_preds, self.series[90:])
+            retrained_mape = mape(retrained_preds, ts_test)
             self.assertTrue(
                 retrained_mape < original_mape,
-                "Retrained model has a greater error (mape) than the original model.",
+                f"Retrained model has a greater error (mape) than the original model, "
+                f"respectively {retrained_mape} and {original_mape}",
             )
 
             # raise Exception when trying to load ckpt weights in different architecture
@@ -358,6 +372,54 @@ if TORCH_AVAILABLE:
                     best=False,
                     weights_only=True,
                 )
+
+        def test_load_weights(self):
+            ts_training = self.series[:90]
+            ts_test = self.series[90:]
+            original_model_name = "original"
+            retrained_model_name = "retrained"
+            # original model, checkpoints are saved
+            model = RNNModel(
+                12,
+                "RNN",
+                5,
+                1,
+                n_epochs=5,
+                work_dir=self.temp_work_dir,
+                save_checkpoints=False,
+                model_name=original_model_name,
+            )
+            model.fit(ts_training)
+            path_manual_save = os.path.join(self.temp_work_dir, "RNN_manual_save.pt")
+            model.save(path_manual_save)
+            original_preds = model.predict(10)
+            original_mape = mape(original_preds, ts_test)
+
+            # load last checkpoint of original model, train it for 2 additional epochs
+            model_rt = RNNModel(
+                12,
+                "RNN",
+                5,
+                1,
+                n_epochs=5,
+                work_dir=self.temp_work_dir,
+                model_name=retrained_model_name,
+            )
+            model_rt.load_weights(path=path_manual_save + ".ckpt")
+
+            # must indicate series otherwise self.training_series must be saved in checkpoint
+            loaded_preds = model_rt.predict(10, ts_training)
+            # save/load checkpoint should produce identical predictions
+            self.assertTrue(np.allclose(original_preds.values(), loaded_preds.values()))
+
+            model_rt.fit(ts_training)
+            retrained_preds = model_rt.predict(10)
+            retrained_mape = mape(retrained_preds, ts_test)
+            self.assertTrue(
+                retrained_mape < original_mape,
+                f"Retrained model has a greater mape error than the original model, "
+                f"respectively {retrained_mape} and {original_mape}",
+            )
 
         def test_optimizers(self):
 
