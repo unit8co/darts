@@ -5,10 +5,14 @@ StatsForecastAutoARIMA
 
 from typing import Optional
 
-import numpy as np
 from statsforecast.models import AutoARIMA as SFAutoARIMA
 
 from darts import TimeSeries
+from darts.models.components.statsforecast_utils import (
+    create_normal_samples,
+    one_sigma_rule,
+    unpack_sf_dict,
+)
 from darts.models.forecasting.forecasting_model import (
     FutureCovariatesLocalForecastingModel,
 )
@@ -91,17 +95,15 @@ class StatsForecastAutoARIMA(FutureCovariatesLocalForecastingModel):
         verbose: bool = False,
     ):
         super()._predict(n, future_covariates, num_samples)
-        forecast_df = self.model.predict(
+        forecast_dict = self.model.predict(
             h=n,
             X=future_covariates.values(copy=False) if future_covariates else None,
-            level=(68.27,),  # ask one std for the confidence interval.
+            level=(one_sigma_rule,),  # ask one std for the confidence interval.
         )
 
-        mu = forecast_df["mean"]
+        mu, std = unpack_sf_dict(forecast_dict)
         if num_samples > 1:
-            std = forecast_df["hi-68.27"] - mu
-            samples = np.random.normal(loc=mu, scale=std, size=(num_samples, n)).T
-            samples = np.expand_dims(samples, axis=1)
+            samples = create_normal_samples(mu, std, num_samples, n)
         else:
             samples = mu
 
