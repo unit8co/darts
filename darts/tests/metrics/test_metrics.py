@@ -4,7 +4,6 @@ import pandas as pd
 from darts import TimeSeries
 from darts.metrics import metrics
 from darts.tests.base_test_class import DartsBaseTestClass
-from ...metrics.metrics import quantile_loss
 
 
 class MetricsTestCase(DartsBaseTestClass):
@@ -351,21 +350,22 @@ class MetricsTestCase(DartsBaseTestClass):
     def test_quantile_loss(self):
         # deterministic not supported
         with self.assertRaises(ValueError):
-            quantile_loss(self.series1, self.series1)
+            metrics.quantile_loss(self.series1, self.series1)
 
         # general univariate, multivariate and multi-ts tests
         self.helper_test_multivariate_duplication_equality(
-            quantile_loss, is_stochastic=True
+            metrics.quantile_loss, is_stochastic=True
         )
         self.helper_test_multiple_ts_duplication_equality(
-            quantile_loss, is_stochastic=True
+            metrics.quantile_loss, is_stochastic=True
         )
-        self.helper_test_nan(quantile_loss, is_stochastic=True)
+        self.helper_test_nan(metrics.quantile_loss, is_stochastic=True)
 
         # test perfect predictions -> risk = 0
         for tau in [0.25, 0.5]:
             self.assertAlmostEqual(
-                quantile_loss(self.series1, self.series11_stochastic, tau=tau), 0.0
+                metrics.quantile_loss(self.series1, self.series11_stochastic, tau=tau),
+                0.0,
             )
 
         # test whether stochastic sample from two TimeSeries (ts) represents the individual ts at 0. and 1. quantiles
