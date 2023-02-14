@@ -1513,6 +1513,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     logger,
                 )
 
+        # indicate to the user than checkpoints generated with darts <= 0.23.1 are not supported
+        raise_if_not(
+            "train_sample_shape" in ckpt.keys(),
+            "The provided checkpoint was generated with darts release <= 0.23.1"
+            " and it is missing the 'train_sample_shape' key. This value must"
+            " be computed from the `model.train_sample` attribute and manually"
+            " added to the checkpoint prior to loading.",
+            logger,
+        )
+
         # pl_forecasting module saves the train_sample shape, must recreate one
         mock_train_sample = [
             np.zeros(sample_shape) if sample_shape else None
