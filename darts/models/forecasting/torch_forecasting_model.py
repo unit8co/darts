@@ -1267,8 +1267,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         path
             Path under which to save the model at its current state. Please avoid path starting with "last-" or
             "best-" to avoid collision with Pytorch-Ligthning checkpoints. If no path is specified, the model
-            is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pt"``.
-            E.g., ``"RNNModel_2020-01-01_12:00:00.pt"``.
+            is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pt"``.
+            E.g., ``"RNNModel_2020-01-01_12_00_00.pt"``.
         """
         if path is None:
             # default path
