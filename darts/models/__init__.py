@@ -13,8 +13,8 @@ from darts.models.forecasting.auto_arima import AutoARIMA
 from darts.models.forecasting.baselines import (
     NaiveDrift,
     NaiveMean,
-    NaiveSeasonal,
     NaiveMovingAverage,
+    NaiveSeasonal,
 )
 from darts.models.forecasting.exponential_smoothing import ExponentialSmoothing
 from darts.models.forecasting.fft import FFT
