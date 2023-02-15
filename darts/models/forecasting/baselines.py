@@ -124,35 +124,30 @@ class NaiveDrift(LocalForecastingModel):
 
 
 class NaiveMovingAverage(LocalForecastingModel):
-    def __init__(self, W: int = 1):
+    def __init__(self, input_chunk_length: int = 1):
         """Naive Moving Average Model
 
         This model predicts using predicts using an auto-regressive moving average.
 
         Parameters
         ----------
-        W is the size of the sliding window used to calcualte Moving Average
+        input_chunk_length is the size of the sliding window used to calcualte Moving Average
         """
         super().__init__()
-        self.W = W
-        self.last_w_vals = None
+        self.input_chunk_length = input_chunk_length
+        self.rolling_window = None
 
     @property
     def min_train_series_length(self):
-        return self.W
+        return self.input_chunk_length
 
     def __str__(self):
-        return f"Naive moving average model, with W={self.W}"
+        return f"Naive moving average model, with input_chunk_length={self.input_chunk_length}"
 
     def fit(self, series: TimeSeries):
         super().fit(series)
 
-        raise_if_not(
-            len(series) >= self.W,
-            f"The time series requires at least W={self.W} points",
-            logger,
-        )
-        self.rolling_window = series[-self.W :].values(copy=False)
+        self.rolling_window = series[-self.input_chunk_length :].values(copy=False)
         return self
 
     def predict(self, n: int, num_samples: int = 1, verbose: bool = False):
@@ -164,10 +159,11 @@ class NaiveMovingAverage(LocalForecastingModel):
         )
         rolling_sum = sum(self.rolling_window)
 
-        for i in range(self.W, self.W + n):
-            prediction = rolling_sum / self.W
+        chunk_length = self.input_chunk_length
+        for i in range(chunk_length, chunk_length + n):
+            prediction = rolling_sum / chunk_length
             predictions_with_observations[i] = prediction
-            lost_value = predictions_with_observations[i - self.W]
+            lost_value = predictions_with_observations[i - chunk_length]
             rolling_sum += prediction - lost_value
         return self._build_forecast_series(predictions_with_observations[-n:])
 
