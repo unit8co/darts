@@ -1289,4 +1289,4 @@ def quantile_loss(
 
     errors = y - y_hat
     losses = np.maximum((tau - 1) * errors, tau * errors)
-    return reduction(losses)
+    return losses.mean()
