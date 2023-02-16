@@ -329,7 +329,6 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
     def test_past_index_generator_with_lags(self):
         icl = self.input_chunk_length
         ocl = self.output_chunk_length
-        freq = self.target_time.freq
         target = self.target_time
 
         def test_routine_train(
@@ -341,8 +340,8 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
                 lags_covariates=[min_lag, max_lag],
             )
             idx, _ = idxg.generate_train_idx(target, None)
-            self.assertEqual(idx[0], pd.Timestamp(start_expected, freq=freq))
-            self.assertEqual(idx[-1], pd.Timestamp(end_expected, freq=freq))
+            self.assertEqual(idx[0], pd.Timestamp(start_expected))
+            self.assertEqual(idx[-1], pd.Timestamp(end_expected))
             # check case 0: we give covariates, index will always be the covariate time index
             idx, _ = idxg.generate_train_idx(target, self.cov_time_train)
             self.assertTrue(idx.equals(self.cov_time_train.time_index))
@@ -350,8 +349,8 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
 
         def test_routine_inf(self, idxg, n, start_expected, end_expected):
             idx, _ = idxg.generate_inference_idx(n, target, None)
-            self.assertEqual(idx[0], pd.Timestamp(start_expected, freq=freq))
-            self.assertEqual(idx[-1], pd.Timestamp(end_expected, freq=freq))
+            self.assertEqual(idx[0], pd.Timestamp(start_expected))
+            self.assertEqual(idx[-1], pd.Timestamp(end_expected))
             # check case 0: we give covariates, index will always be the covariate time index
             idx, _ = idxg.generate_inference_idx(n, target, self.cov_time_inf_short)
             self.assertTrue(idx.equals(self.cov_time_inf_short.time_index))
@@ -436,7 +435,6 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
     def test_future_index_generator_with_lags(self):
         icl = self.input_chunk_length
         ocl = self.output_chunk_length
-        freq = self.target_time.freq
         target = self.target_time
 
         def test_routine_train(
@@ -448,8 +446,8 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
                 lags_covariates=[min_lag, max_lag],
             )
             idx, _ = idxg.generate_train_idx(target, None)
-            self.assertEqual(idx[0], pd.Timestamp(start_expected, freq=freq))
-            self.assertEqual(idx[-1], pd.Timestamp(end_expected, freq=freq))
+            self.assertEqual(idx[0], pd.Timestamp(start_expected))
+            self.assertEqual(idx[-1], pd.Timestamp(end_expected))
             # check case 0: we give covariates, index will always be the covariate time index
             idx, _ = idxg.generate_train_idx(target, self.cov_time_train)
             self.assertTrue(idx.equals(self.cov_time_train.time_index))
@@ -457,8 +455,8 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
 
         def test_routine_inf(self, idxg, n, start_expected, end_expected):
             idx, _ = idxg.generate_inference_idx(n, target, None)
-            self.assertTrue(idx[0], pd.Timestamp(start_expected, freq=freq))
-            self.assertTrue(idx[-1], pd.Timestamp(end_expected, freq=freq))
+            self.assertTrue(idx[0], pd.Timestamp(start_expected))
+            self.assertTrue(idx[-1], pd.Timestamp(end_expected))
             # check case 0: we give covariates, index will always be the covariate time index
             idx, _ = idxg.generate_inference_idx(n, target, self.cov_time_inf_short)
             self.assertTrue(idx.equals(self.cov_time_inf_short.time_index))
