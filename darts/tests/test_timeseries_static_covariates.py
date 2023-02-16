@@ -592,7 +592,7 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
 
         ts_stoch = ts.from_times_and_values(
             times=ts.time_index,
-            values=np.ones((10, 1, 3)),
+            values=np.random.randint(low=0, high=10, size=(10, 1, 3)),
             static_covariates=static_covs,
         )
         assert ts_stoch.static_covariates.index.equals(ts_stoch.components)
