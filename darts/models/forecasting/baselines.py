@@ -127,11 +127,12 @@ class NaiveMovingAverage(LocalForecastingModel):
     def __init__(self, input_chunk_length: int = 1):
         """Naive Moving Average Model
 
-        This model predicts using predicts using an auto-regressive moving average.
+        This model forecasts using an auto-regressive moving average (ARMA).
 
         Parameters
         ----------
-        input_chunk_length is the size of the sliding window used to calcualte Moving Average
+        input_chunk_length
+            The size of the sliding window used to calculate the moving average
         """
         super().__init__()
         self.input_chunk_length = input_chunk_length
@@ -142,10 +143,11 @@ class NaiveMovingAverage(LocalForecastingModel):
         return self.input_chunk_length
 
     def __str__(self):
-        return f"Naive moving average model, with input_chunk_length={self.input_chunk_length}"
+        return f"NaiveMovingAverage({self.input_chunk_length})"
 
     def fit(self, series: TimeSeries):
         super().fit(series)
+        assert series.n_samples == 1, "This model expects deterministic time series"
 
         self.rolling_window = series[-self.input_chunk_length :].values(copy=False)
         return self
