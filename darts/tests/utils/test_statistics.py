@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -203,4 +204,6 @@ class PlotTestCase(DartsBaseTestClass):
 
     def test_statistics_plot(self):
         plot_residuals_analysis(self.series)
+        plt.close()
         plot_pacf(self.series)
+        plt.close()
