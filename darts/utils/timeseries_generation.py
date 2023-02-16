@@ -570,7 +570,7 @@ def holidays_timeseries(
 
     time_index = _extend_time_index_until(time_index, until, add_length)
     scope = range(time_index[0].year, (time_index[-1] + pd.Timedelta(days=1)).year)
-    country_holidays = holidays.CountryHoliday(
+    country_holidays = holidays.country_holidays(
         country_code, prov=prov, state=state, years=scope
     )
     index_series = pd.Series(time_index, index=time_index)
