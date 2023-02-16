@@ -93,6 +93,7 @@ if TORCH_AVAILABLE:
         def test_manual_save_and_load(self):
             """validate manual save with automatic save files by comparing output between the two"""
 
+            model_dir = os.path.join(self.temp_work_dir)
             manual_name = "test_save_manual"
             auto_name = "test_save_automatic"
             model_manual_save = RNNModel(
@@ -116,10 +117,26 @@ if TORCH_AVAILABLE:
                 random_state=42,
             )
 
+            # save model without training
+            no_training_ckpt = "no_training.pth.tar"
+            no_training_ckpt_path = os.path.join(model_dir, no_training_ckpt)
+            model_manual_save.save(no_training_ckpt_path)
+            # check that model object file was created
+            self.assertTrue(os.path.exists(no_training_ckpt_path))
+            # check that the PyTorch Ligthning ckpt does not exist
+            self.assertFalse(os.path.exists(no_training_ckpt_path + ".ckpt"))
+            # informative exception about `fit()` not called
+            with self.assertRaises(
+                ValueError,
+                msg="The model must be fit before calling predict(). "
+                "For global models, if predict() is called without specifying a series, "
+                "the model must have been fit on a single training series.",
+            ):
+                no_train_model = RNNModel.load(no_training_ckpt_path)
+                no_train_model.predict(n=4)
+
             model_manual_save.fit(self.series, epochs=1)
             model_auto_save.fit(self.series, epochs=1)
-
-            model_dir = os.path.join(self.temp_work_dir)
 
             # check that file was not created with manual save
             self.assertFalse(
@@ -168,6 +185,37 @@ if TORCH_AVAILABLE:
             # compare loaded checkpoint with manual save
             self.assertEqual(
                 model_manual_save.predict(n=4), model_auto_save1.predict(n=4)
+            )
+
+            # save() model directly after load_from_checkpoint()
+            checkpoint_file_name_2 = "checkpoint_1.pth.tar"
+            checkpoint_file_name_cpkt_2 = checkpoint_file_name_2 + ".ckpt"
+
+            model_path_manual_2 = os.path.join(
+                checkpoint_path_manual, checkpoint_file_name_2
+            )
+            model_path_manual_ckpt_2 = os.path.join(
+                checkpoint_path_manual, checkpoint_file_name_cpkt_2
+            )
+            model_auto_save2 = RNNModel.load_from_checkpoint(
+                model_name=auto_name,
+                work_dir=self.temp_work_dir,
+                best=False,
+                map_location="cpu",
+            )
+            # save model directly after loading, model has no trainer
+            model_auto_save2.save(model_path_manual_2)
+
+            # assert original .ckpt checkpoint was correctly copied
+            self.assertTrue(os.path.exists(model_path_manual_ckpt_2))
+
+            model_chained_load_save = RNNModel.load(
+                model_path_manual_2, map_location="cpu"
+            )
+
+            # compare chained load_from_checkpoint() save() with manual save
+            self.assertEqual(
+                model_chained_load_save.predict(n=4), model_manual_save.predict(n=4)
             )
 
         def test_create_instance_new_model_no_name_set(self):

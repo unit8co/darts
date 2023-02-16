@@ -1279,9 +1279,24 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             torch.save(self, f_out)
 
         # save the LightningModule checkpoint
+        path_ptl_ckpt = path + ".ckpt"
         if self.trainer is not None:
-            path_ptl_ckpt = path + ".ckpt"
             self.trainer.save_checkpoint(path_ptl_ckpt)
+        # try to recover original automatic PL checkpoint
+        elif self.load_ckpt_path:
+            if os.path.exists(self.load_ckpt_path):
+                shutil.copy(self.load_ckpt_path, path_ptl_ckpt)
+            else:
+                logger.warning(
+                    f"Model was not trained since the last loading and attempt to retrieve PyTorch "
+                    f"Lightning checkpoint {self.load_ckpt_path} was unsuccessful: model was saved "
+                    f"without its weights."
+                )
+        else:
+            logger.warning(
+                "Could not find trainer or checkpoint associated with the model, model was saved without "
+                "its weights. `fit()` will have to be called before `predict`."
+            )
 
     @staticmethod
     def load(path: str, **kwargs) -> "TorchForecastingModel":
@@ -1331,6 +1346,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         path_ptl_ckpt = path + ".ckpt"
         if os.path.exists(path_ptl_ckpt):
             model.model = model._load_from_checkpoint(path_ptl_ckpt, **kwargs)
+        else:
+            model._fit_called = False
+            logger.warning(
+                f"Model was loaded without weights since no PyTorch LightningModule checkpoint ('.ckpt) could be "
+                f"found at {path_ptl_ckpt}. Please call `fit()` before calling `predict()`."
+            )
         return model
 
     @staticmethod
@@ -1409,6 +1430,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         logger.info(f"loading {file_name}")
 
         model.model = model._load_from_checkpoint(file_path, **kwargs)
+        # restore _fit_called attribute, set to False in load() if no .ckpt is found/provided
+        model._fit_called = True
         model.load_ckpt_path = file_path
         return model
 
