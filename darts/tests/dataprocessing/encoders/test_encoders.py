@@ -829,14 +829,14 @@ class EncoderTestCase(DartsBaseTestClass):
         )
         pc1, fc1 = encs.encode_train(ts)
         self.assertTrue(
-            pc1.start_time() == pd.Timestamp("1999-11-01", freq=ts.freq)
-            and pc1.end_time() == pd.Timestamp("2001-01-01", freq=ts.freq)
+            pc1.start_time() == pd.Timestamp("1999-11-01")
+            and pc1.end_time() == pd.Timestamp("2001-01-01")
             and (pc1.univariate_values() == np.arange(-25, -10)).all()
             and pc1[ts.start_time()].univariate_values()[0] == -23
         )
         self.assertTrue(
-            fc1.start_time() == pd.Timestamp("2001-03-01", freq=ts.freq)
-            and fc1.end_time() == pd.Timestamp("2002-03-01", freq=ts.freq)
+            fc1.start_time() == pd.Timestamp("2001-03-01")
+            and fc1.end_time() == pd.Timestamp("2002-03-01")
             and (fc1.univariate_values() == np.arange(-9, 4)).all()
             and fc1[ts.end_time()].univariate_values()[0] == 0
         )
@@ -844,13 +844,13 @@ class EncoderTestCase(DartsBaseTestClass):
         n = 2
         pc2, fc2 = encs.encode_inference(n=n, target=ts)
         self.assertTrue(
-            pc2.start_time() == pd.Timestamp("2000-11-01", freq=ts.freq)
-            and pc2.end_time() == pd.Timestamp("2001-07-01", freq=ts.freq)
+            pc2.start_time() == pd.Timestamp("2000-11-01")
+            and pc2.end_time() == pd.Timestamp("2001-07-01")
             and (pc2.univariate_values() == np.arange(-13, -4)).all()
         )
         self.assertTrue(
-            fc2.start_time() == pd.Timestamp("2002-03-01", freq=ts.freq)
-            and fc2.end_time() == pd.Timestamp("2002-09-01", freq=ts.freq)
+            fc2.start_time() == pd.Timestamp("2002-03-01")
+            and fc2.end_time() == pd.Timestamp("2002-09-01")
             and (fc2.univariate_values() == np.arange(3, 10)).all()
         )
 
