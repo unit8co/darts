@@ -1229,9 +1229,9 @@ def quantile_loss(
     verbose: bool = False
 ) -> float:
     """
-    Given a time series of actual values :math:`y` of length :math:`T` and a time series of stochastic predictions
+    Also known as Pinball Loss, given a time series of actual values :math:`y` of length :math:`T` and a time series of stochastic predictions
     (containing N samples) :math:`y'` of shape :math:`T  x N`, quantile loss is a metric that quantifies the
-    accuracy of a specific quantile :math:`q` from the predicted value distribution.
+    accuracy of a specific quantile :math:`tau` from the predicted value distribution.
 
     Parameters
     ----------
@@ -1268,7 +1268,7 @@ def quantile_loss(
 
     raise_if_not(
         pred_series.is_stochastic,
-        "quantile (quantile) loss should only be computed for stochastic predicted TimeSeries.",
+        "quantile (pinball) loss should only be computed for stochastic predicted TimeSeries.",
     )
 
     y, y_hat = _get_values_or_raise(
@@ -1279,9 +1279,7 @@ def quantile_loss(
         remove_nan_union=True,
     )
 
-    ts_length = y.shape[0]
-    sample_size = 1 if len(y_hat.shape) < 3 else y_hat.shape[2]
-
+    ts_length, _, sample_size = y_hat.shape
     y = y.reshape(ts_length, -1, 1).repeat(sample_size, axis=2)
     y_hat = y_hat.reshape(
         ts_length, -1, sample_size
