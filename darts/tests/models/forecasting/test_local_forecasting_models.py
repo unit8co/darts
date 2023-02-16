@@ -85,7 +85,7 @@ multivariate_models = [
     (NaiveSeasonal(), 32),
     (NaiveMean(), 37),
     (NaiveDrift(), 39),
-    (NaiveMovingAverage(W=5), 34),
+    (NaiveMovingAverage(input_chunk_length=5), 34),
 ]
 
 dual_models = [
