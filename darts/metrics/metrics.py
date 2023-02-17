@@ -1229,9 +1229,10 @@ def quantile_loss(
     verbose: bool = False
 ) -> float:
     """
-    Also known as Pinball Loss, given a time series of actual values :math:`y` of length :math:`T` and a time series of stochastic predictions
-    (containing N samples) :math:`y'` of shape :math:`T  x N`, quantile loss is a metric that quantifies the
-    accuracy of a specific quantile :math:`tau` from the predicted value distribution.
+    Also known as Pinball Loss, given a time series of actual values :math:`y` of length :math:`T`
+    and a time series of stochastic predictions (containing N samples) :math:`y'` of shape :math:`T  x N`
+    quantile loss is a metric that quantifies the accuracy of a specific quantile :math:`tau`
+    from the predicted value distribution.
 
     Parameters
     ----------
