@@ -611,7 +611,7 @@ class UberTLCDataset(DatasetLoaderCSV):
 
                 output_dict[locationID] = count_series
             output_df = pd.DataFrame(output_dict)
-            output_df.to_csv(dataset_path, lineterminator="\n")
+            output_df.to_csv(dataset_path, line_terminator="\n")
 
         super().__init__(
             metadata=DatasetLoaderMetadata(
