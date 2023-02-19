@@ -1581,7 +1581,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ----------
         path
             Path from which to load the model's weights. If no path was specified when saving the model, the
-            automatically generated path ending with ".ckpt" has to be provided.
+            automatically generated path ending with ".pt" has to be provided.
         **kwargs
             Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
             different device than the one from which it was saved.
@@ -1589,15 +1589,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             torch.load.html>`_.
 
         """
+        path_ptl_ckpt = path + ".ckpt"
         raise_if_not(
-            path.endswith(".ckpt"),
-            "The file path passed to this method should end with '.ckpt' "
-            "(Pytorch LightningModule checkpoints extension).",
+            os.path.exists(path_ptl_ckpt),
+            f"Could not find PyTorch LightningModule checkpoint {path_ptl_ckpt}.",
             logger,
         )
 
         self.load_weights_from_checkpoint(
-            file_name=path,
+            file_name=path_ptl_ckpt,
             **kwargs,
         )
 

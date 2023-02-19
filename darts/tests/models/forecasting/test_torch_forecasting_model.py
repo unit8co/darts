@@ -452,7 +452,7 @@ if TORCH_AVAILABLE:
                 model_name=retrained_model_name,
                 random_state=1,
             )
-            model_rt.load_weights(path=path_manual_save + ".ckpt")
+            model_rt.load_weights(path=path_manual_save)
 
             # must indicate series otherwise self.training_series must be saved in checkpoint
             loaded_preds = model_rt.predict(10, ts_training)
