@@ -1365,25 +1365,37 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         Load the model from automatically saved checkpoints under '{work_dir}/darts_logs/{model_name}/checkpoints/'.
         This method is used for models that were created with ``save_checkpoints=True``.
+
         If you manually saved your model, consider using :meth:`load() <TorchForecastingModel.load()>`.
+
         Example for loading a :class:`RNNModel` from checkpoint (``model_name`` is the ``model_name`` used at model
         creation):
+
             .. highlight:: python
             .. code-block:: python
+
                 from darts.models import RNNModel
+
                 model_loaded = RNNModel.load_from_checkpoint(model_name, best=True)
             ..
+
         If ``file_name`` is given, returns the model saved under
-        '{work_dir}/darts_logs/{model_name}/checkpoints/{file_name}'.
+        '{work_dir}/darts_logs/{model_name}/checkpoints/{file_name}'.\
+
         If ``file_name`` is not given, will try to restore the best checkpoint (if ``best`` is ``True``) or the most
         recent checkpoint (if ``best`` is ``False`` from '{work_dir}/darts_logs/{model_name}/checkpoints/'.
+
         Example for loading an :class:`RNNModel` checkpoint to CPU that was saved on GPU:
+
             .. highlight:: python
             .. code-block:: python
+
                 from darts.models import RNNModel
+
                 model_loaded = RNNModel.load_from_checkpoint(model_name, best=True, map_location="cpu")
                 model_loaded.to_cpu()
             ..
+
         Parameters
         ----------
         model_name
@@ -1400,6 +1412,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             such as ``map_location`` to load the model onto a different device than the one from which it was saved.
             For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
             common/lightning_module.html#load-from-checkpoint>`_.
+
+
         Returns
         -------
         TorchForecastingModel
