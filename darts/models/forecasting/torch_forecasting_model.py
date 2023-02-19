@@ -1282,7 +1282,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         path_ptl_ckpt = path + ".ckpt"
         if self.trainer is not None:
             self.trainer.save_checkpoint(path_ptl_ckpt)
-        # TODO: keep track of PyTorch Lightning to see if they implement model checkpoint saving 
+        # TODO: keep track of PyTorch Lightning to see if they implement model checkpoint saving
         #  without having to call fit/predict/validate/test before
         # try to recover original automatic PL checkpoint
         elif self.load_ckpt_path:
@@ -1294,11 +1294,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     f"Lightning checkpoint {self.load_ckpt_path} was unsuccessful: model was saved "
                     f"without its weights."
                 )
-        else:
-            logger.warning(
-                "Could not find trainer or checkpoint associated with the model, model was saved without "
-                "its weights. `fit()` will have to be called before `predict`."
-            )
 
     @staticmethod
     def load(path: str, **kwargs) -> "TorchForecastingModel":
@@ -1351,7 +1346,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         else:
             model._fit_called = False
             logger.warning(
-                f"Model was loaded without weights since no PyTorch LightningModule checkpoint ('.ckpt) could be "
+                f"Model was loaded without weights since no PyTorch LightningModule checkpoint ('.ckpt') could be "
                 f"found at {path_ptl_ckpt}. Please call `fit()` before calling `predict()`."
             )
         return model
