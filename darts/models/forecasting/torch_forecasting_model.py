@@ -1377,7 +1377,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             ..
 
         If ``file_name`` is given, returns the model saved under
-        '{work_dir}/darts_logs/{model_name}/checkpoints/{file_name}'.\
+        '{work_dir}/darts_logs/{model_name}/checkpoints/{file_name}'.
 
         If ``file_name`` is not given, will try to restore the best checkpoint (if ``best`` is ``True``) or the most
         recent checkpoint (if ``best`` is ``False`` from '{work_dir}/darts_logs/{model_name}/checkpoints/'.
