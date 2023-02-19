@@ -1399,7 +1399,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Parameters
         ----------
         model_name
-            The name of the model (used to retrieve the checkpoints folder's name).
+            The name of the model, used to retrieve the checkpoints folder's name.
         work_dir
             Working directory (containing the checkpoints folder). Defaults to current working directory.
         file_name
@@ -1483,7 +1483,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Parameters
         ----------
         model_name
-            The name of the model (used to retrieve the checkpoints folder's name). Default: ``self.model_name``.
+            The name of the model, used to retrieve the checkpoints folder's name. Default: ``self.model_name``.
         work_dir
             Working directory (containing the checkpoints folder). Defaults to current working directory.
         file_name
