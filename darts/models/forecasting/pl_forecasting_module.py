@@ -384,6 +384,10 @@ class PLForecastingModule(pl.LightningModule, ABC):
         # by default our models are initialized as float32. For other dtypes, we need to cast to the correct precision
         # before parameters are loaded by PyTorch-Lightning
         dtype = checkpoint["model_dtype"]
+        self.to_dtype(dtype)
+
+    def to_dtype(self, dtype):
+        """Cast module precision (float32 by default) to another precision."""
         if dtype == torch.float16:
             self.half()
         if dtype == torch.float32:

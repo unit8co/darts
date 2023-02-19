@@ -1569,7 +1569,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # instanciate the model without having to call `fit_from_dataset`
         self._init_model()
-
+        # cast model precision to correct type
+        self.model.to_dtype(ckpt["model_dtype"])
         # load only the weights from the state dict
         self.model.load_state_dict(ckpt["state_dict"], strict=strict)
         # update the fit_called attribute to allow for direct inference

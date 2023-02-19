@@ -3,7 +3,6 @@ import shutil
 import tempfile
 from unittest.mock import patch
 
-import numpy as np
 import pandas as pd
 
 from darts import TimeSeries
@@ -379,7 +378,7 @@ if TORCH_AVAILABLE:
             # must indicate series otherwise self.training_series must be saved in checkpoint
             loaded_preds = model_rt.predict(10, ts_training)
             # save/load checkpoint should produce identical predictions
-            self.assertTrue(np.allclose(original_preds.values(), loaded_preds.values()))
+            self.assertEqual(original_preds, loaded_preds)
 
             model_rt.fit(ts_training)
             retrained_preds = model_rt.predict(10)
@@ -458,7 +457,7 @@ if TORCH_AVAILABLE:
             # must indicate series otherwise self.training_series must be saved in checkpoint
             loaded_preds = model_rt.predict(10, ts_training)
             # save/load checkpoint should produce identical predictions
-            self.assertTrue(np.allclose(original_preds.values(), loaded_preds.values()))
+            self.assertEqual(original_preds, loaded_preds)
 
             model_rt.fit(ts_training)
             retrained_preds = model_rt.predict(10)
