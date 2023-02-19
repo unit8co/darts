@@ -32,10 +32,6 @@ except ImportError:
 if TORCH_AVAILABLE:
 
     class TestTorchForecastingModel(DartsBaseTestClass):
-
-        np.random.seed(13)
-        torch.manual_seed(13)
-
         def setUp(self):
             self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
 
@@ -359,6 +355,7 @@ if TORCH_AVAILABLE:
                 work_dir=self.temp_work_dir,
                 save_checkpoints=True,
                 model_name=original_model_name,
+                random_state=1,
             )
             model.fit(ts_training)
             original_preds = model.predict(10)
@@ -373,6 +370,7 @@ if TORCH_AVAILABLE:
                 n_epochs=5,
                 work_dir=self.temp_work_dir,
                 model_name=retrained_model_name,
+                random_state=1,
             )
             model_rt.load_weights_from_checkpoint(
                 model_name=original_model_name, work_dir=self.temp_work_dir, best=False
@@ -436,6 +434,7 @@ if TORCH_AVAILABLE:
                 work_dir=self.temp_work_dir,
                 save_checkpoints=False,
                 model_name=original_model_name,
+                random_state=1,
             )
             model.fit(ts_training)
             path_manual_save = os.path.join(self.temp_work_dir, "RNN_manual_save.pt")
@@ -452,6 +451,7 @@ if TORCH_AVAILABLE:
                 n_epochs=5,
                 work_dir=self.temp_work_dir,
                 model_name=retrained_model_name,
+                random_state=1,
             )
             model_rt.load_weights(path=path_manual_save + ".ckpt")
 
