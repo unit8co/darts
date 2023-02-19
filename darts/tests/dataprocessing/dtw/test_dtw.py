@@ -1,5 +1,6 @@
 import unittest
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -198,6 +199,7 @@ class DynamicTimeWarpingTestCase(DartsBaseTestClass):
         align = dtw.dtw(self.series2, self.series1)
         align.plot()
         align.plot_alignment()
+        plt.close()
 
     def test_multivariate(self):
         n = 2

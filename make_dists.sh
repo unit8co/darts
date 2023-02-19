@@ -1,6 +1,6 @@
 python -m pip install --upgrade build
 
-# build u8darts
+# build darts
 python -m build
 
 # build darts, swapping the setup_darts.py files temporarily
