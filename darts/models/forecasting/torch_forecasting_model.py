@@ -154,10 +154,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Number of epochs over which to train the model. Default: ``100``.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-            defaults to the following string ``"YYYY-mm-dd_HH.MM.SS_torch_model_run_PID"``, where the initial part
+            defaults to the following string ``"YYYY-mm-dd_HH_MM_SS_torch_model_run_PID"``, where the initial part
             of the name is formatted with the local date and time, while PID is the processed ID (preventing models
             spawned at the same time by different processes to share the same model_name). E.g.,
-            ``"2021-06-14_09.53.32_torch_model_run_44607"``.
+            ``"2021-06-14_09_53_32_torch_model_run_44607"``.
         work_dir
             Path of the working directory, where to save checkpoints and Tensorboard summaries.
             Default: current working directory.
@@ -271,7 +271,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # get model name and work dir
         if model_name is None:
-            current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S.%f")
+            current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
             model_name = current_time + "_torch_model_run_" + str(os.getpid())
 
         self.model_name = model_name
