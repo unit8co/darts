@@ -1575,9 +1575,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def load_weights(self, path: str, **kwargs):
         """
-        Loads a model weights from a Pytorch Lightning checkpoint file ('.ckpt') path.
-
-        This method is used for the checkpoints created with ``model.save()``
+        Loads the weights from a manually saved model (saved with :meth:`save() <TorchForecastingModel.save()>`).
 
         Parameters
         ----------
