@@ -1282,6 +1282,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         path_ptl_ckpt = path + ".ckpt"
         if self.trainer is not None:
             self.trainer.save_checkpoint(path_ptl_ckpt)
+        # TODO: keep track of PyTorch Lightning to see if they implement model checkpoint saving 
+        #  without having to call fit/predict/validate/test before
         # try to recover original automatic PL checkpoint
         elif self.load_ckpt_path:
             if os.path.exists(self.load_ckpt_path):
