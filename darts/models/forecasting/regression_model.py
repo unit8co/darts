@@ -1036,56 +1036,65 @@ class _QuantileModelContainer(OrderedDict):
 
 def _get_categorical_features(
     model: RegressionModel,
-    target_series: Union[List[TimeSeries], TimeSeries],
+    series: Union[List[TimeSeries], TimeSeries],
     past_covariates: Optional[Union[List[TimeSeries], TimeSeries]] = None,
     future_covariates: Optional[Union[List[TimeSeries], TimeSeries]] = None,
 ) -> Tuple[List[int], List[str]]:
     """
-    Returns the indices of the categorical features in the model.
+    Returns the indices and column names of the categorical features in the regression model.
+
+    Steps:
+    1. Get the list of features used in the model. We keep the creation order of the different lags/features
+        in create_lagged_data.
+    2. Get a list containing the names of the categorical covariates (past, fut and static))
+    3. Get the indices of the categorical features in the list of features
     """
-    target_ts = target_series[0]
+    target_ts = series if isinstance(series, TimeSeries) else series[0]
     past_covs_ts = past_covariates[0] if past_covariates else None
     fut_covs_ts = future_covariates[0] if future_covariates else None
 
+    # TODO: currently assumes that the set of features is the same for all time series the model is trained on and
+    #  can thus be retrieved from the first time series. Check corner cases
     # We keep the creation order of the different lags/features in create_lagged_data
-    feature_list = []
-    lags_list = model.lags.get("target")
-    lags_past_covariates_list = model.lags.get("past")
-    lags_future_covariates_list = model.lags.get("future")
-    if lags_list:
-        for lag in lags_list:
-            for component in target_ts.components:
-                feature_list.append(f"target_{component}_{lag}")
-    if lags_past_covariates_list:
-        for lag in lags_past_covariates_list:
-            for component in past_covs_ts.components:
-                feature_list.append(f"past_cov_{component}_{lag}")
-    if lags_future_covariates_list:
-        for lag in lags_future_covariates_list:
-            for component in fut_covs_ts.components:
-                feature_list.append(f"fut_cov_{component}_{lag}")
+    feature_list = (
+        [
+            f"target_{component}_{lag}"
+            for lag in model.lags.get("target", [])
+            for component in target_ts.components
+        ]
+        + [
+            f"past_cov_{component}_{lag}"
+            for lag in model.lags.get("past", [])
+            for component in past_covs_ts.components
+        ]
+        + [
+            f"fut_cov_{component}_{lag}"
+            for lag in model.lags.get("future", [])
+            for component in fut_covs_ts.components
+        ]
+        + (
+            list(target_ts.static_covariates.columns)
+            if isinstance(target_ts.static_covariates, pd.DataFrame)
+            else []
+        )
+    )
 
-    static_covs = target_ts.static_covariates
-    if isinstance(static_covs, pd.DataFrame):
-        feature_list.append(list(static_covs.columns))
-
-    categorical_features = []
+    categorical_covariates_list = []
     for ts in [target_ts, past_covs_ts, fut_covs_ts]:
         if ts:
             if ts.categorical_components:
-                categorical_features.append(ts.categorical_components)
+                categorical_covariates_list.append(ts.categorical_components)
             if ts.categorical_static_covariates:
-                categorical_features.append(ts.categorical_static_covariates)
+                categorical_covariates_list.append(ts.categorical_static_covariates)
 
-    feature_list = list(flatten_my_list(feature_list))
-    categorical_features = list(flatten_my_list(categorical_features))
+    categorical_covariates_list = list(flatten_my_list(categorical_covariates_list))
 
-    indices = []
-    for col in feature_list:
-        for cat in categorical_features:
-            if cat and cat in col:
-                indices.append(feature_list.index(col))
-
+    indices = [
+        i
+        for i, col in enumerate(feature_list)
+        for cat in categorical_covariates_list
+        if cat and cat in col
+    ]
     col_names = [feature_list[i] for i in indices]
 
     return indices, col_names

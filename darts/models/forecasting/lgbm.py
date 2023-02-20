@@ -38,6 +38,7 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
         quantiles: List[float] = None,
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
+        use_native_categorical_handling: bool = True,
         **kwargs,
     ):
         """LGBM Model
@@ -91,10 +92,14 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
+        use_native_categorical_handling
+            If True, LightGBM's native categorical feature handling will be used as described
+            `here <https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`_.
         **kwargs
             Additional keyword arguments passed to `lightgbm.LGBRegressor`.
         """
         kwargs["random_state"] = random_state  # seed for tree learner
+        self.use_native_categorical_handling = use_native_categorical_handling
         self.kwargs = kwargs
         self._median_idx = None
         self._model_container = None
@@ -224,12 +229,13 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
             max_samples_per_ts,
         )
 
-        cat_cols_indices, _ = _get_categorical_features(
-            self,
-            target_series,
-            past_covariates,
-            future_covariates,
-        )
+        if self.use_native_categorical_handling:
+            cat_cols_indices, _ = _get_categorical_features(
+                self,
+                target_series,
+                past_covariates,
+                future_covariates,
+            )
 
         # if training_labels is of shape (n_samples, 1) flatten it to shape (n_samples,)
         if len(training_labels.shape) == 2 and training_labels.shape[1] == 1:
@@ -237,7 +243,9 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
         self.model.fit(
             training_samples,
             training_labels,
-            categorical_feature=cat_cols_indices,
+            categorical_feature=cat_cols_indices
+            if self.use_native_categorical_handling
+            else None,
             **kwargs,
         )
 

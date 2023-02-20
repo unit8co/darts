@@ -1,6 +1,7 @@
 import copy
 import functools
 import math
+from contextlib import nullcontext as does_not_raise
 from typing import Optional, Sequence, Union
 from unittest.mock import patch
 
@@ -28,6 +29,7 @@ from darts.models import (
     XGBModel,
 )
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
+from darts.models.forecasting.regression_model import _get_categorical_features
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 from darts.utils.data.tabularization import create_lagged_training_data
@@ -2093,8 +2095,8 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         assert lgb_fit_patch.call_args[1]["eval_set"] is not None
         assert lgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
 
-    def test_gradient_boosted_model_with_categorical_covs(self):
-        """.."""
+    def test_fit_predict_with_categorical_features(self):
+        """Test a RegressionModel with categorical features"""
         target_df = pd.DataFrame(
             {
                 "date": pd.date_range("20130101", periods=100),
@@ -2109,8 +2111,91 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 "past_cov_regular": np.random.randint(0, 5, 100),
             }
         )
-
         model = LightGBMModel(lags=1, lags_past_covariates=1, output_chunk_length=1)
+        with does_not_raise():
+            model.fit(
+                series=TimeSeries.from_dataframe(
+                    df=target_df,
+                    time_col="date",
+                    value_cols="target",
+                    static_covariates=pd.DataFrame(
+                        {"static_cat_1": [1], "static_cat_2": [2]}
+                    ),
+                    categorical_static_covariates=["static_cat_1", "static_cat_2"],
+                ),
+                past_covariates=TimeSeries.from_dataframe(
+                    df=past_cov_df,
+                    time_col="date",
+                    value_cols=["past_cov_cat_1", "past_cov_cat_2", "past_cov_regular"],
+                    categorical_components=["past_cov_cat_1", "past_cov_cat_2"],
+                ),
+            )
+            model.predict(1)
+
+    def test__get_categorical_features_helper(self):
+        """Test helper function responsible for retrieving indices of categorical features"""
+        target_df = pd.DataFrame(
+            {
+                "date": pd.date_range("20130101", periods=10),
+                "target": np.random.rand(10),
+            }
+        )
+        past_cov_df = pd.DataFrame(
+            {
+                "date": pd.date_range("20130101", periods=10),
+                "past_cov_cat_1": np.random.randint(0, 5, 10),
+                "past_cov_regular_1": np.random.randint(0, 5, 10),
+                "past_cov_cat_2": np.random.randint(0, 5, 10),
+                "past_cov_regular_2": np.random.randint(0, 5, 10),
+            }
+        )
+        fut_cov_df = pd.DataFrame(
+            {
+                "date": pd.date_range("20130101", periods=10),
+                "fut_cov_regular_1": np.random.randint(0, 5, 10),
+                "fut_cov_regular_2": np.random.randint(0, 5, 10),
+                "fut_cov_cat_1": np.random.randint(0, 5, 10),
+                "fut_cov_regular_3": np.random.randint(0, 5, 10),
+            }
+        )
+        model = LightGBMModel(
+            lags=2, lags_past_covariates=2, lags_future_covariates=[1]
+        )
+        indices, column_names = _get_categorical_features(
+            model=model,
+            series=TimeSeries.from_dataframe(
+                df=target_df,
+                time_col="date",
+                value_cols="target",
+                static_covariates=pd.DataFrame(
+                    {"static_cat_1": [1], "static_cat_2": [2]}
+                ),
+                categorical_static_covariates=["static_cat_2"],
+            ),
+            past_covariates=TimeSeries.from_dataframe(
+                df=past_cov_df,
+                time_col="date",
+                value_cols=[
+                    "past_cov_cat_1",
+                    "past_cov_regular_1",
+                    "past_cov_cat_2",
+                    "past_cov_regular_2",
+                ],
+                categorical_components=["past_cov_cat_1", "past_cov_cat_2"],
+            ),
+            future_covariates=TimeSeries.from_dataframe(
+                df=fut_cov_df,
+                time_col="date",
+                value_cols=[
+                    "fut_cov_regular_1",
+                    "fut_cov_regular_2",
+                    "fut_cov_cat_1",
+                    "fut_cov_regular_3",
+                ],
+                categorical_components=["fut_cov_cat_1"],
+            ),
+        )
+
         model.fit(
             series=TimeSeries.from_dataframe(
                 df=target_df,
@@ -2119,16 +2204,33 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 static_covariates=pd.DataFrame(
                     {"static_cat_1": [1], "static_cat_2": [2]}
                 ),
-                categorical_static_covariates=["static_cat_1", "static_cat_2"],
+                categorical_static_covariates=["static_cat_2"],
             ),
             past_covariates=TimeSeries.from_dataframe(
                 df=past_cov_df,
                 time_col="date",
-                value_cols=["past_cov_cat_1", "past_cov_cat_2", "past_cov_regular"],
+                value_cols=[
+                    "past_cov_cat_1",
+                    "past_cov_regular_1",
+                    "past_cov_cat_2",
+                    "past_cov_regular_2",
+                ],
                 categorical_components=["past_cov_cat_1", "past_cov_cat_2"],
             ),
+            future_covariates=TimeSeries.from_dataframe(
+                df=fut_cov_df,
+                time_col="date",
+                value_cols=[
+                    "fut_cov_regular_1",
+                    "fut_cov_regular_2",
+                    "fut_cov_cat_1",
+                    "fut_cov_regular_3",
+                ],
+                categorical_components=["fut_cov_cat_1"],
+            ),
         )
-        model.predict(1)
+
+        assert indices == [2, 4, 6, 8, 12, 15]
 
 
 class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):
