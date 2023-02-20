@@ -2108,7 +2108,9 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             }
         )
         ts = TimeSeries.from_dataframe(target_df, "date", "target")
-        covs = TimeSeries.from_dataframe(past_cov_df, "date", "cat")
+        covs = TimeSeries.from_dataframe(
+            past_cov_df, "date", "cat", categorical_components=["cat"]
+        )
 
         model = LightGBMModel(lags=1, lags_past_covariates=1, output_chunk_length=1)
         model.fit(

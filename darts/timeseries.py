@@ -63,6 +63,7 @@ VALID_INDEX_TYPES = (pd.DatetimeIndex, pd.RangeIndex)
 STATIC_COV_TAG = "static_covariates"
 DEFAULT_GLOBAL_STATIC_COV_NAME = "global_components"
 HIERARCHY_TAG = "hierarchy"
+CATEGORICAL_COMPONENTS = "categorical_components"
 
 
 class TimeSeries:
@@ -301,6 +302,8 @@ class TimeSeries:
         # Store static covariates and hierarchy in attributes (potentially storing None)
         self._xa = _xarray_with_attrs(self._xa, static_covariates, hierarchy)
 
+        self.categorical_components = self._xa.attrs.get(CATEGORICAL_COMPONENTS, None)
+
     """
     Factory Methods
     ===============
@@ -525,6 +528,7 @@ class TimeSeries:
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[Dict] = None,
+        categorical_components: Optional[List[str]] = None,
     ) -> "TimeSeries":
         """
         Build a deterministic TimeSeries instance built from a selection of columns of a DataFrame.
@@ -684,7 +688,11 @@ class TimeSeries:
             series_df.values[:, :, np.newaxis],
             dims=(time_index.name,) + DIMS[-2:],
             coords={time_index.name: time_index, DIMS[1]: series_df.columns},
-            attrs={STATIC_COV_TAG: static_covariates, HIERARCHY_TAG: hierarchy},
+            attrs={
+                STATIC_COV_TAG: static_covariates,
+                HIERARCHY_TAG: hierarchy,
+                CATEGORICAL_COMPONENTS: categorical_components,
+            },
         )
 
         return cls.from_xarray(
