@@ -2093,6 +2093,30 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         assert lgb_fit_patch.call_args[1]["eval_set"] is not None
         assert lgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
 
+    def test_gradient_boosted_model_with_categorical_covs(self):
+        """.."""
+        target_df = pd.DataFrame(
+            {
+                "date": pd.date_range("20130101", periods=100),
+                "target": np.random.rand(100),
+            }
+        )
+        past_cov_df = pd.DataFrame(
+            {
+                "date": pd.date_range("20130101", periods=100),
+                "cat": np.random.randint(0, 5, 100),
+            }
+        )
+        ts = TimeSeries.from_dataframe(target_df, "date", "target")
+        covs = TimeSeries.from_dataframe(past_cov_df, "date", "cat")
+
+        model = LightGBMModel(lags=1, lags_past_covariates=1, output_chunk_length=1)
+        model.fit(
+            series=ts,
+            past_covariates=covs,
+        )
+        model.predict(1)
+
 
 class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):
     models_cls_kwargs_errs = [

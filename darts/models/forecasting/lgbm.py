@@ -200,6 +200,60 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
 
         return self
 
+    def _fit_model(
+        self,
+        target_series,
+        past_covariates,
+        future_covariates,
+        max_samples_per_ts,
+        **kwargs,
+    ):
+        """
+        Function that fit the model. Deriving classes can override this method for adding additional parameters (e.g.,
+        adding validation data), keeping the sanity checks on series performed by fit().
+        """
+
+        training_samples, training_labels = self._create_lagged_data(
+            target_series,
+            past_covariates,
+            future_covariates,
+            max_samples_per_ts,
+        )
+
+        target_ts = target_series[0]
+        past_covs_ts = past_covariates[0] if past_covariates else None
+        fut_covs_ts = future_covariates[0] if future_covariates else None
+
+        # We keep the creation order of the different lags/features in create_lagged_data
+        feature_list = []
+        lags_list = self.lags.get("target")
+        lags_past_covariates_list = self.lags.get("past")
+        lags_future_covariates_list = self.lags.get("future")
+        if lags_list:
+            for lag in lags_list:
+                for component in target_ts.components:
+                    feature_list.append(f"target_{component}_{lag}")
+        if lags_past_covariates_list:
+            for lag in lags_past_covariates_list:
+                for component in past_covs_ts.components:
+                    feature_list.append(f"past_cov_{component}_{lag}")
+        if lags_future_covariates_list:
+            for lag in lags_future_covariates_list:
+                for component in fut_covs_ts.components:
+                    feature_list.append(f"fut_cov_{component}_{lag}")
+
+        static_covs = target_ts.static_covariates
+        if static_covs:
+            for cov in static_covs:
+                feature_list.append(cov)
+
+        # indices = [i for i in range(len(feature_list))]
+
+        # if training_labels is of shape (n_samples, 1) flatten it to shape (n_samples,)
+        if len(training_labels.shape) == 2 and training_labels.shape[1] == 1:
+            training_labels = training_labels.ravel()
+        self.model.fit(training_samples, training_labels, **kwargs)
+
     def _predict_and_sample(
         self, x: np.ndarray, num_samples: int, **kwargs
     ) -> np.ndarray:
