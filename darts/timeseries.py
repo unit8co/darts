@@ -64,6 +64,7 @@ STATIC_COV_TAG = "static_covariates"
 DEFAULT_GLOBAL_STATIC_COV_NAME = "global_components"
 HIERARCHY_TAG = "hierarchy"
 CATEGORICAL_COMPONENTS = "categorical_components"
+CATEGORICAL_STATIC_COVARIATES = "categorical_static_covariates"
 
 
 class TimeSeries:
@@ -303,6 +304,9 @@ class TimeSeries:
         self._xa = _xarray_with_attrs(self._xa, static_covariates, hierarchy)
 
         self.categorical_components = self._xa.attrs.get(CATEGORICAL_COMPONENTS, None)
+        self.categorical_static_covariates = self._xa.attrs.get(
+            CATEGORICAL_STATIC_COVARIATES, None
+        )
 
     """
     Factory Methods
@@ -529,6 +533,7 @@ class TimeSeries:
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[Dict] = None,
         categorical_components: Optional[List[str]] = None,
+        categorical_static_covariates: Optional[List[str]] = None,
     ) -> "TimeSeries":
         """
         Build a deterministic TimeSeries instance built from a selection of columns of a DataFrame.
@@ -692,6 +697,7 @@ class TimeSeries:
                 STATIC_COV_TAG: static_covariates,
                 HIERARCHY_TAG: hierarchy,
                 CATEGORICAL_COMPONENTS: categorical_components,
+                CATEGORICAL_STATIC_COVARIATES: categorical_static_covariates,
             },
         )
 

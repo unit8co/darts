@@ -26,7 +26,7 @@ denoting past lags and positive values including 0 denoting future lags).
 When static covariates are present, they are appended to the lagged features. When multiple time series are passed,
 if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.
 """
-
+import itertools
 from collections import OrderedDict
 from typing import List, Optional, Sequence, Tuple, Union
 
@@ -1032,3 +1032,60 @@ class _QuantileModelContainer(OrderedDict):
 
     def __str__(self):
         return f"_QuantileModelContainer(quantiles={list(self.keys())})"
+
+
+def _get_categorical_features(
+    model: RegressionModel,
+    target_series: Union[List[TimeSeries], TimeSeries],
+    past_covariates: Optional[Union[List[TimeSeries], TimeSeries]] = None,
+    future_covariates: Optional[Union[List[TimeSeries], TimeSeries]] = None,
+) -> Tuple[List[int], List[str]]:
+    """
+    Returns the indices of the categorical features in the model.
+    """
+    target_ts = target_series[0]
+    past_covs_ts = past_covariates[0] if past_covariates else None
+    fut_covs_ts = future_covariates[0] if future_covariates else None
+
+    # We keep the creation order of the different lags/features in create_lagged_data
+    feature_list = []
+    lags_list = model.lags.get("target")
+    lags_past_covariates_list = model.lags.get("past")
+    lags_future_covariates_list = model.lags.get("future")
+    if lags_list:
+        for lag in lags_list:
+            for component in target_ts.components:
+                feature_list.append(f"target_{component}_{lag}")
+    if lags_past_covariates_list:
+        for lag in lags_past_covariates_list:
+            for component in past_covs_ts.components:
+                feature_list.append(f"past_cov_{component}_{lag}")
+    if lags_future_covariates_list:
+        for lag in lags_future_covariates_list:
+            for component in fut_covs_ts.components:
+                feature_list.append(f"fut_cov_{component}_{lag}")
+
+    static_covs = target_ts.static_covariates
+    if static_covs:
+        for cov in static_covs:
+            feature_list.append(cov)
+
+    categorical_features = []
+    for ts in [target_ts, past_covs_ts, fut_covs_ts]:
+        if ts:
+            if ts.categorical_components:
+                categorical_features.append(ts.categorical_components)
+            if ts.categorical_static_covariates:
+                categorical_features.append(ts.categorical_static_covariates)
+
+    categorical_features = list(itertools.chain(*categorical_features))
+
+    indices = []
+    for col in feature_list:
+        for cat in categorical_features:
+            if cat and cat in col:
+                indices.append(feature_list.index(col))
+
+    col_names = [feature_list[i] for i in indices]
+
+    return indices, col_names
