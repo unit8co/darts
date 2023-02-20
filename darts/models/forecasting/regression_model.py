@@ -26,11 +26,11 @@ denoting past lags and positive values including 0 denoting future lags).
 When static covariates are present, they are appended to the lagged features. When multiple time series are passed,
 if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.
 """
-import itertools
 from collections import OrderedDict
 from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
+import pandas as pd
 from sklearn.linear_model import LinearRegression
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
@@ -38,7 +38,7 @@ from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
 from darts.utils.data.tabularization import create_lagged_training_data
 from darts.utils.multioutput import MultiOutputRegressor
-from darts.utils.utils import _check_quantiles, seq2series, series2seq
+from darts.utils.utils import _check_quantiles, flatten_my_list, seq2series, series2seq
 
 logger = get_logger(__name__)
 
@@ -1066,9 +1066,8 @@ def _get_categorical_features(
                 feature_list.append(f"fut_cov_{component}_{lag}")
 
     static_covs = target_ts.static_covariates
-    if static_covs:
-        for cov in static_covs:
-            feature_list.append(cov)
+    if isinstance(static_covs, pd.DataFrame):
+        feature_list.append(list(static_covs.columns))
 
     categorical_features = []
     for ts in [target_ts, past_covs_ts, fut_covs_ts]:
@@ -1078,7 +1077,8 @@ def _get_categorical_features(
             if ts.categorical_static_covariates:
                 categorical_features.append(ts.categorical_static_covariates)
 
-    categorical_features = list(itertools.chain(*categorical_features))
+    feature_list = list(flatten_my_list(feature_list))
+    categorical_features = list(flatten_my_list(categorical_features))
 
     indices = []
     for col in feature_list:

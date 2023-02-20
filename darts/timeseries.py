@@ -2769,7 +2769,9 @@ class TimeSeries:
         return self.__class__(new_xa)
 
     def with_static_covariates(
-        self, covariates: Optional[Union[pd.Series, pd.DataFrame]]
+        self,
+        covariates: Optional[Union[pd.Series, pd.DataFrame]],
+        categorical_static_covariates: Optional[List[str]] = None,
     ):
         """Returns a new TimeSeries object with added static covariates.
 
@@ -2821,7 +2823,11 @@ class TimeSeries:
                 self._xa.values,
                 dims=self._xa.dims,
                 coords=self._xa.coords,
-                attrs={STATIC_COV_TAG: covariates, HIERARCHY_TAG: self.hierarchy},
+                attrs={
+                    STATIC_COV_TAG: covariates,
+                    HIERARCHY_TAG: self.hierarchy,
+                    CATEGORICAL_STATIC_COVARIATES: categorical_static_covariates,
+                },
             )
         )
 

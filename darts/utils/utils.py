@@ -6,7 +6,18 @@ from enum import Enum
 from functools import wraps
 from inspect import Parameter, getcallargs, signature
 from types import SimpleNamespace
-from typing import Callable, Iterator, List, Optional, Sequence, Tuple, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Generator,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import numpy as np
 import pandas as pd
@@ -479,3 +490,18 @@ def drop_after_index(
     """
 
     return slice_index(index, index[0], split_point)
+
+
+def flatten_my_list(*lists: List[Any]) -> Generator[Any, None, None]:
+    """
+    Recursive generator designed to flatten the elements of nested lists. It can deal with any depth of an
+    arbitrarily nested list.
+
+    @param lst: (nested) list to be flattened
+    @return: Generator function that returns an iterator containing all the elements in a nested list
+    """
+    for element in lists:
+        if isinstance(element, list):
+            yield from flatten_my_list(*element)
+        else:
+            yield element

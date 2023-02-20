@@ -2104,18 +2104,29 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         past_cov_df = pd.DataFrame(
             {
                 "date": pd.date_range("20130101", periods=100),
-                "cat": np.random.randint(0, 5, 100),
+                "past_cov_cat_1": np.random.randint(0, 5, 100),
+                "past_cov_cat_2": np.random.randint(0, 5, 100),
+                "past_cov_regular": np.random.randint(0, 5, 100),
             }
-        )
-        ts = TimeSeries.from_dataframe(target_df, "date", "target")
-        covs = TimeSeries.from_dataframe(
-            past_cov_df, "date", "cat", categorical_components=["cat"]
         )
 
         model = LightGBMModel(lags=1, lags_past_covariates=1, output_chunk_length=1)
         model.fit(
-            series=ts,
-            past_covariates=covs,
+            series=TimeSeries.from_dataframe(
+                df=target_df,
+                time_col="date",
+                value_cols="target",
+                static_covariates=pd.DataFrame(
+                    {"static_cat_1": [1], "static_cat_2": [2]}
+                ),
+                categorical_static_covariates=["static_cat_1", "static_cat_2"],
+            ),
+            past_covariates=TimeSeries.from_dataframe(
+                df=past_cov_df,
+                time_col="date",
+                value_cols=["past_cov_cat_1", "past_cov_cat_2", "past_cov_regular"],
+                categorical_components=["past_cov_cat_1", "past_cov_cat_2"],
+            ),
         )
         model.predict(1)
 
