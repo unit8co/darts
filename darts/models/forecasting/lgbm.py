@@ -15,7 +15,7 @@ from typing import List, Optional, Sequence, Tuple, Union
 import lightgbm as lgb
 import numpy as np
 
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.regression_model import RegressionModel, _LikelihoodMixin
 from darts.timeseries import TimeSeries
 
@@ -34,7 +34,6 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
         quantiles: List[float] = None,
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
-        use_native_categorical_handling: bool = True,
         **kwargs,
     ):
         """LGBM Model
@@ -88,14 +87,10 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
-        use_native_categorical_handling
-            If True, LightGBM's native categorical feature handling will be used as described
-            `here <https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`_.
         **kwargs
             Additional keyword arguments passed to `lightgbm.LGBRegressor`.
         """
         kwargs["random_state"] = random_state  # seed for tree learner
-        self.use_native_categorical_handling = use_native_categorical_handling
         self.kwargs = kwargs
         self._median_idx = None
         self._model_container = None
@@ -179,6 +174,53 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
          **kwargs
             Additional kwargs passed to `lightgbm.LGBRegressor.fit()`
         """
+
+        if categorical_past_covariates:
+            if not past_covariates:
+                raise_log(
+                    ValueError(
+                        "categorical_past_covariates is not None but past_covariates is None"
+                    )
+                )
+            s = (
+                past_covariates
+                if isinstance(past_covariates, TimeSeries)
+                else past_covariates[0]
+            )
+            if not set(categorical_past_covariates).issubset(set(s.components)):
+                raise_log(
+                    ValueError(
+                        "categorical_past_covariates must be a subset of past_covariates components"
+                    )
+                )
+        if categorical_future_covariates:
+            if not future_covariates:
+                raise_log(
+                    ValueError(
+                        "categorical_future_covariates is not None but future_covariates is None"
+                    )
+                )
+            s = (
+                future_covariates
+                if isinstance(future_covariates, TimeSeries)
+                else future_covariates[0]
+            )
+            if not set(categorical_past_covariates).issubset(set(s.components)):
+                raise_log(
+                    ValueError(
+                        "categorical_future_covariates must be a subset of future_covariates components"
+                    )
+                )
+        if categorical_static_covariates:
+            s = series if isinstance(series, TimeSeries) else series[0]
+            if not set(categorical_static_covariates).issubset(
+                set(s.static_covariates.columns)
+            ):
+                raise_log(
+                    ValueError(
+                        "categorical_static_covariates must be a subset of static_covariates columns"
+                    )
+                )
 
         if val_series is not None:
             kwargs["eval_set"] = self._create_lagged_data(
