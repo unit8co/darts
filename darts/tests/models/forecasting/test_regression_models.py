@@ -29,7 +29,6 @@ from darts.models import (
     XGBModel,
 )
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
-from darts.models.forecasting.regression_model import _get_categorical_features
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 from darts.utils.data.tabularization import create_lagged_training_data
@@ -2132,7 +2131,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             )
             model.predict(1)
 
-    def test__get_categorical_features_helper(self):
+    def test_get_categorical_features_helper(self):
         """Test helper function responsible for retrieving indices of categorical features"""
         target_df = pd.DataFrame(
             {
@@ -2161,8 +2160,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         model = LightGBMModel(
             lags=2, lags_past_covariates=2, lags_future_covariates=[1]
         )
-        indices, column_names = _get_categorical_features(
-            model=model,
+        indices, column_names = model._get_categorical_features(
             series=TimeSeries.from_dataframe(
                 df=target_df,
                 time_col="date",

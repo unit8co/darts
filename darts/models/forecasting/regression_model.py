@@ -812,6 +812,71 @@ class RegressionModel(GlobalForecastingModel):
 
         return prediction.reshape(k, self.pred_dim, -1)
 
+    def _get_categorical_features(
+        self,
+        series: Union[List[TimeSeries], TimeSeries],
+        past_covariates: Optional[Union[List[TimeSeries], TimeSeries]] = None,
+        future_covariates: Optional[Union[List[TimeSeries], TimeSeries]] = None,
+    ) -> Tuple[List[int], List[str]]:
+        """
+        Returns the indices and column names of the categorical features in the regression model.
+
+        Steps:
+        1. Get the list of features used in the model. We keep the creation order of the different lags/features
+            in create_lagged_data.
+        2. Get a list containing the names of the categorical covariates (past, fut and static).
+        3. Get the indices of the categorical features in the list of features.
+        """
+        target_ts = series if isinstance(series, TimeSeries) else series[0]
+        past_covs_ts = past_covariates[0] if past_covariates else None
+        fut_covs_ts = future_covariates[0] if future_covariates else None
+
+        # TODO: currently assumes that the set of features is the same for all time series the model is trained on and
+        #  can thus be retrieved from the first time series. Check corner cases
+        # We keep the creation order of the different lags/features in create_lagged_data
+        feature_list = (
+            [
+                f"target_{component}_{lag}"
+                for lag in self.lags.get("target", [])
+                for component in target_ts.components
+            ]
+            + [
+                f"past_cov_{component}_{lag}"
+                for lag in self.lags.get("past", [])
+                for component in past_covs_ts.components
+            ]
+            + [
+                f"fut_cov_{component}_{lag}"
+                for lag in self.lags.get("future", [])
+                for component in fut_covs_ts.components
+            ]
+            + (
+                list(target_ts.static_covariates.columns)
+                if isinstance(target_ts.static_covariates, pd.DataFrame)
+                else []
+            )
+        )
+
+        categorical_covariates_list = []
+        for ts in [target_ts, past_covs_ts, fut_covs_ts]:
+            if ts:
+                if ts.categorical_components:
+                    categorical_covariates_list.append(ts.categorical_components)
+                if ts.categorical_static_covariates:
+                    categorical_covariates_list.append(ts.categorical_static_covariates)
+
+        categorical_covariates_list = list(flatten_my_list(categorical_covariates_list))
+
+        indices = [
+            i
+            for i, col in enumerate(feature_list)
+            for cat in categorical_covariates_list
+            if cat and cat in col
+        ]
+        col_names = [feature_list[i] for i in indices]
+
+        return indices, col_names
+
     def __str__(self):
         return self.model.__str__()
 
@@ -1032,69 +1097,3 @@ class _QuantileModelContainer(OrderedDict):
 
     def __str__(self):
         return f"_QuantileModelContainer(quantiles={list(self.keys())})"
-
-
-def _get_categorical_features(
-    model: RegressionModel,
-    series: Union[List[TimeSeries], TimeSeries],
-    past_covariates: Optional[Union[List[TimeSeries], TimeSeries]] = None,
-    future_covariates: Optional[Union[List[TimeSeries], TimeSeries]] = None,
-) -> Tuple[List[int], List[str]]:
-    """
-    Returns the indices and column names of the categorical features in the regression model.
-
-    Steps:
-    1. Get the list of features used in the model. We keep the creation order of the different lags/features
-        in create_lagged_data.
-    2. Get a list containing the names of the categorical covariates (past, fut and static))
-    3. Get the indices of the categorical features in the list of features
-    """
-    target_ts = series if isinstance(series, TimeSeries) else series[0]
-    past_covs_ts = past_covariates[0] if past_covariates else None
-    fut_covs_ts = future_covariates[0] if future_covariates else None
-
-    # TODO: currently assumes that the set of features is the same for all time series the model is trained on and
-    #  can thus be retrieved from the first time series. Check corner cases
-    # We keep the creation order of the different lags/features in create_lagged_data
-    feature_list = (
-        [
-            f"target_{component}_{lag}"
-            for lag in model.lags.get("target", [])
-            for component in target_ts.components
-        ]
-        + [
-            f"past_cov_{component}_{lag}"
-            for lag in model.lags.get("past", [])
-            for component in past_covs_ts.components
-        ]
-        + [
-            f"fut_cov_{component}_{lag}"
-            for lag in model.lags.get("future", [])
-            for component in fut_covs_ts.components
-        ]
-        + (
-            list(target_ts.static_covariates.columns)
-            if isinstance(target_ts.static_covariates, pd.DataFrame)
-            else []
-        )
-    )
-
-    categorical_covariates_list = []
-    for ts in [target_ts, past_covs_ts, fut_covs_ts]:
-        if ts:
-            if ts.categorical_components:
-                categorical_covariates_list.append(ts.categorical_components)
-            if ts.categorical_static_covariates:
-                categorical_covariates_list.append(ts.categorical_static_covariates)
-
-    categorical_covariates_list = list(flatten_my_list(categorical_covariates_list))
-
-    indices = [
-        i
-        for i, col in enumerate(feature_list)
-        for cat in categorical_covariates_list
-        if cat and cat in col
-    ]
-    col_names = [feature_list[i] for i in indices]
-
-    return indices, col_names

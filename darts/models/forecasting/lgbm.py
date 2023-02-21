@@ -16,11 +16,7 @@ import lightgbm as lgb
 import numpy as np
 
 from darts.logging import get_logger
-from darts.models.forecasting.regression_model import (
-    RegressionModel,
-    _get_categorical_features,
-    _LikelihoodMixin,
-)
+from darts.models.forecasting.regression_model import RegressionModel, _LikelihoodMixin
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
@@ -230,8 +226,7 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
         )
 
         if self.use_native_categorical_handling:
-            cat_cols_indices, _ = _get_categorical_features(
-                self,
+            cat_cols_indices, _ = self._get_categorical_features(
                 target_series,
                 past_covariates,
                 future_covariates,
