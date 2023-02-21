@@ -154,10 +154,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Number of epochs over which to train the model. Default: ``100``.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part
+            defaults to the following string ``"YYYY-mm-dd_HH_MM_SS_torch_model_run_PID"``, where the initial part
             of the name is formatted with the local date and time, while PID is the processed ID (preventing models
             spawned at the same time by different processes to share the same model_name). E.g.,
-            ``"2021-06-14_09:53:32_torch_model_run_44607"``.
+            ``"2021-06-14_09_53_32_torch_model_run_44607"``.
         work_dir
             Path of the working directory, where to save checkpoints and Tensorboard summaries.
             Default: current working directory.
@@ -271,7 +271,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # get model name and work dir
         if model_name is None:
-            current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S.%f")
+            current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
             model_name = current_time + "_torch_model_run_" + str(os.getpid())
 
         self.model_name = model_name
@@ -415,6 +415,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             "calling `super.__init__(...)`. Do this with `self._extract_pl_module_params(**self.model_params).`",
         )
 
+        self.pl_module_params["train_sample_shape"] = [
+            variate.shape if variate is not None else None
+            for variate in self.train_sample
+        ]
         # the tensors have shape (chunk_length, nr_dimensions)
         self.model = self._create_model(self.train_sample)
         self._module_name = self.model.__class__.__name__
@@ -860,7 +864,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 same_dims,
                 "The dimensionality of the series in the training set do not match the dimensionality"
                 " of the series the model has previously been trained on. "
-                "Model input/output dimensions = {}, provided input/ouptput dimensions = {}".format(
+                "Model input/output dimensions = {}, provided input/output dimensions = {}".format(
                     tuple(
                         s.shape[1] if s is not None else None for s in self.train_sample
                     ),
@@ -1261,8 +1265,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Parameters
         ----------
         path
-            Path under which to save the model at its current state. If no path is specified, the model is automatically
-            saved under ``"{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pt"``. E.g., ``"RNNModel_2020-01-01_12:00:00.pt"``.
+            Path under which to save the model at its current state. Please avoid path starting with "last-" or
+            "best-" to avoid collision with Pytorch-Ligthning checkpoints. If no path is specified, the model
+            is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pt"``.
+            E.g., ``"RNNModel_2020-01-01_12_00_00.pt"``.
         """
         if path is None:
             # default path
@@ -1273,9 +1279,21 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             torch.save(self, f_out)
 
         # save the LightningModule checkpoint
+        path_ptl_ckpt = path + ".ckpt"
         if self.trainer is not None:
-            path_ptl_ckpt = path + ".ckpt"
             self.trainer.save_checkpoint(path_ptl_ckpt)
+        # TODO: keep track of PyTorch Lightning to see if they implement model checkpoint saving
+        #  without having to call fit/predict/validate/test before
+        # try to recover original automatic PL checkpoint
+        elif self.load_ckpt_path:
+            if os.path.exists(self.load_ckpt_path):
+                shutil.copy(self.load_ckpt_path, path_ptl_ckpt)
+            else:
+                logger.warning(
+                    f"Model was not trained since the last loading and attempt to retrieve PyTorch "
+                    f"Lightning checkpoint {self.load_ckpt_path} was unsuccessful: model was saved "
+                    f"without its weights."
+                )
 
     @staticmethod
     def load(path: str, **kwargs) -> "TorchForecastingModel":
@@ -1325,6 +1343,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         path_ptl_ckpt = path + ".ckpt"
         if os.path.exists(path_ptl_ckpt):
             model.model = model._load_from_checkpoint(path_ptl_ckpt, **kwargs)
+        else:
+            model._fit_called = False
+            logger.warning(
+                f"Model was loaded without weights since no PyTorch LightningModule checkpoint ('.ckpt') could be "
+                f"found at {path_ptl_ckpt}. Please call `fit()` before calling `predict()`."
+            )
         return model
 
     @staticmethod
@@ -1372,7 +1396,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Parameters
         ----------
         model_name
-            The name of the model (used to retrieve the checkpoints folder's name).
+            The name of the model, used to retrieve the checkpoints folder's name.
         work_dir
             Working directory (containing the checkpoints folder). Defaults to current working directory.
         file_name
@@ -1409,7 +1433,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         model = TorchForecastingModel.load(base_model_path, **kwargs)
 
         # load PyTorch LightningModule from checkpoint
-        # if file_name is None, find most recent file in savepath that is a checkpoint
+        # if file_name is None, find the path of the best or most recent checkpoint in savepath
         if file_name is None:
             file_name = _get_checkpoint_fname(work_dir, model_name, best=best)
 
@@ -1417,6 +1441,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         logger.info(f"loading {file_name}")
 
         model.model = model._load_from_checkpoint(file_path, **kwargs)
+        # restore _fit_called attribute, set to False in load() if no .ckpt is found/provided
+        model._fit_called = True
         model.load_ckpt_path = file_path
         return model
 
@@ -1428,6 +1454,152 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         pl_module_cls = getattr(sys.modules[self._module_path], self._module_name)
         return pl_module_cls.load_from_checkpoint(file_path, **kwargs)
+
+    def load_weights_from_checkpoint(
+        self,
+        model_name: str = None,
+        work_dir: str = None,
+        file_name: str = None,
+        best: bool = True,
+        strict: bool = True,
+        **kwargs,
+    ):
+        """
+        Load only the weights from automatically saved checkpoints under '{work_dir}/darts_logs/{model_name}/
+        checkpoints/'. This method is used for models that were created with ``save_checkpoints=True`` and
+        that need to be re-trained or fine-tuned with different optimizer or learning rate scheduler. However,
+        it can also be used to load weights for inference.
+
+        To resume an interrupted training, please consider using :meth:`load_from_checkpoint()
+        <TorchForecastingModel.load_from_checkpoint()>` which also reload the trainer, optimizer and
+        learning rate scheduler states.
+
+        For manually saved model, consider using :meth:`load() <TorchForecastingModel.load()>` or
+        :meth:`load_weights() <TorchForecastingModel.load_weights()>` instead.
+
+        Parameters
+        ----------
+        model_name
+            The name of the model, used to retrieve the checkpoints folder's name. Default: ``self.model_name``.
+        work_dir
+            Working directory (containing the checkpoints folder). Defaults to current working directory.
+        file_name
+            The name of the checkpoint file. If not specified, use the most recent one.
+        best
+            If set, will retrieve the best model (according to validation loss) instead of the most recent one. Only
+            is ignored when ``file_name`` is given. Default: ``True``.
+        strict
+            If set, strictly enforce that the keys in state_dict match the keys returned by this module’s state_dict().
+            Default: ``True``.
+            For more information, read the `official documentation <https://pytorch.org/docs/stable/generated/torch.
+            nn.Module.html?highlight=load_state_dict#torch.nn.Module.load_state_dict>`_.
+        **kwargs
+            Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
+            different device than the one from which it was saved.
+            For more information, read the `official documentation <https://pytorch.org/docs/stable/generated/
+            torch.load.html>`_.
+        """
+        raise_if(
+            "weights_only" in kwargs.keys() and kwargs["weights_only"],
+            "Passing `weights_only=True` to `torch.load` will disrupt this"
+            " method sanity checks.",
+            logger,
+        )
+
+        # use the name of the model being loaded with the saved weights
+        if model_name is None:
+            model_name = self.model_name
+
+        if work_dir is None:
+            work_dir = os.path.join(os.getcwd(), DEFAULT_DARTS_FOLDER)
+
+        # load PyTorch LightningModule from checkpoint
+        # if file_name is None, find the path of the best or most recent checkpoint in savepath
+        if file_name is None:
+            file_name = _get_checkpoint_fname(work_dir, model_name, best=best)
+
+        # checkpoints generated by PL, prefix is defined in TorchForecastingModel __init__()
+        if file_name[:5] == "last-" or file_name[:5] == "best-":
+            checkpoint_dir = _get_checkpoint_folder(work_dir, model_name)
+        # manual save
+        else:
+            checkpoint_dir = os.getcwd()
+
+        ckpt_path = os.path.join(checkpoint_dir, file_name)
+        ckpt = torch.load(ckpt_path, **kwargs)
+        ckpt_hyper_params = ckpt["hyper_parameters"]
+
+        # verify that the arguments passed to the constructor match those of the checkpoint
+        for param_key, param_value in self.model_params.items():
+            # TODO: there are discrepancies between the param names, for ex num_layer/n_rnn_layers
+            if param_key in ckpt_hyper_params.keys() and param_value is not None:
+                # some parameters must be converted
+                if isinstance(ckpt_hyper_params[param_key], list) and not isinstance(
+                    param_value, list
+                ):
+                    param_value = [param_value] * len(ckpt_hyper_params[param_key])
+
+                raise_if(
+                    param_value != ckpt_hyper_params[param_key],
+                    f"The values of the hyper parameter {param_key} should be identical between "
+                    f"the instantiated model ({param_value}) and the loaded checkpoint "
+                    f"({ckpt_hyper_params[param_key]}). Please adjust the model accordingly.",
+                    logger,
+                )
+
+        # indicate to the user than checkpoints generated with darts <= 0.23.1 are not supported
+        raise_if_not(
+            "train_sample_shape" in ckpt.keys(),
+            "The provided checkpoint was generated with darts release <= 0.23.1"
+            " and it is missing the 'train_sample_shape' key. This value must"
+            " be computed from the `model.train_sample` attribute and manually"
+            " added to the checkpoint prior to loading.",
+            logger,
+        )
+
+        # pl_forecasting module saves the train_sample shape, must recreate one
+        mock_train_sample = [
+            np.zeros(sample_shape) if sample_shape else None
+            for sample_shape in ckpt["train_sample_shape"]
+        ]
+        self.train_sample = tuple(mock_train_sample)
+
+        # instanciate the model without having to call `fit_from_dataset`
+        self._init_model()
+        # cast model precision to correct type
+        self.model.to_dtype(ckpt["model_dtype"])
+        # load only the weights from the state dict
+        self.model.load_state_dict(ckpt["state_dict"], strict=strict)
+        # update the fit_called attribute to allow for direct inference
+        self._fit_called = True
+
+    def load_weights(self, path: str, **kwargs):
+        """
+        Loads the weights from a manually saved model (saved with :meth:`save() <TorchForecastingModel.save()>`).
+
+        Parameters
+        ----------
+        path
+            Path from which to load the model's weights. If no path was specified when saving the model, the
+            automatically generated path ending with ".pt" has to be provided.
+        **kwargs
+            Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
+            different device than the one from which it was saved.
+            For more information, read the `official documentation <https://pytorch.org/docs/stable/generated/
+            torch.load.html>`_.
+
+        """
+        path_ptl_ckpt = path + ".ckpt"
+        raise_if_not(
+            os.path.exists(path_ptl_ckpt),
+            f"Could not find PyTorch LightningModule checkpoint {path_ptl_ckpt}.",
+            logger,
+        )
+
+        self.load_weights_from_checkpoint(
+            file_name=path_ptl_ckpt,
+            **kwargs,
+        )
 
     def to_cpu(self):
         """Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time :fun:`fit()` or
