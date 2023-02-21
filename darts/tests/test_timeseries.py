@@ -1794,6 +1794,27 @@ class TimeSeriesHierarchyTestCase(DartsBaseTestClass):
             (series1.slice_intersect(series2[10:20])).hierarchy, self.hierarchy
         )
 
+    def test_with_string_items(self):
+        # Single parents may be specified as string rather than [string]
+        dates = pd.date_range("2020-01-01", "2020-12-31", freq="D")
+        nr_dates = len(dates)
+        t1 = TimeSeries.from_times_and_values(
+            dates, 3 * np.ones(nr_dates), columns=["T1"]
+        )
+        t2 = TimeSeries.from_times_and_values(
+            dates, 5 * np.ones(nr_dates), columns=["T2"]
+        )
+        t3 = TimeSeries.from_times_and_values(dates, np.ones(nr_dates), columns=["T3"])
+        tsum = TimeSeries.from_times_and_values(
+            dates, 9 * np.ones(nr_dates), columns=["T_sum"]
+        )
+
+        ts = concatenate([t1, t2, t3, tsum], axis="component")
+        hierarchy = {"T1": "T_sum", "T2": "T_sum", "T3": "T_sum"}
+        ts = ts.with_hierarchy(hierarchy)
+        hierarchy_as_list = {k: [v] for k, v in hierarchy.items()}
+        assert ts.hierarchy == hierarchy_as_list
+
 
 class TimeSeriesHeadTailTestCase(DartsBaseTestClass):
 

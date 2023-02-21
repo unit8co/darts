@@ -270,6 +270,16 @@ class TimeSeries:
             # pre-compute grouping informations
             components_set = set(self.components)
             children = set(hierarchy.keys())
+
+            # If ancestors are a string which is a component, convert them to a list
+            # Strings that are not components are not converted for backwards compatibility
+            converted_strs = {
+                k: [v]
+                for k, v in hierarchy.items()
+                if isinstance(v, str) and v in components_set
+            }
+            hierarchy.update(converted_strs)
+
             raise_if_not(
                 all(c in components_set for c in children),
                 "The keys of the hierarchy must be time series components",
@@ -2811,7 +2821,7 @@ class TimeSeries:
             )
         )
 
-    def with_hierarchy(self, hierarchy: Dict):
+    def with_hierarchy(self, hierarchy: Dict[str, Union[str, list[str]]]):
         """
         Adds a hierarchy to the TimeSeries.
 
@@ -2819,6 +2829,7 @@ class TimeSeries:
         ----------
         hierarchy
             A dictionary mapping components to a list of their parent(s) in the hierarchy.
+            Single parents may be specified as string or list containing one string.
             For example, assume the series contains the components
             ``["total", "a", "b", "x", "y", "ax", "ay", "bx", "by"]``,
             the following dictionary would encode the groupings shown on
@@ -2833,9 +2844,10 @@ class TimeSeries:
                              'by': ['b', 'y'],
                              'a': ['total'],
                              'b': ['total'],
-                             'x': ['total'],
-                             'y': ['total']}
+                             'x': 'total',
+                             'y': 'total'}
             ..
+
 
         """
 
