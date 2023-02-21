@@ -827,12 +827,12 @@ class RegressionModel(GlobalForecastingModel):
             in create_lagged_data.
         2. Get the indices of the categorical features in the list of features.
         """
+        # TODO: currently assumes that the set of features is the same for all time series the model is trained on and
+        #  can thus be retrieved from the first time series. Check (corner cases) if this always holds
         target_ts = series if isinstance(series, TimeSeries) else series[0]
         past_covs_ts = past_covariates[0] if past_covariates else None
         fut_covs_ts = future_covariates[0] if future_covariates else None
 
-        # TODO: currently assumes that the set of features is the same for all time series the model is trained on and
-        #  can thus be retrieved from the first time series. Check corner cases
         # We keep the creation order of the different lags/features in create_lagged_data
         feature_list = (
             [

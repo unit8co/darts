@@ -684,10 +684,7 @@ class TimeSeries:
             series_df.values[:, :, np.newaxis],
             dims=(time_index.name,) + DIMS[-2:],
             coords={time_index.name: time_index, DIMS[1]: series_df.columns},
-            attrs={
-                STATIC_COV_TAG: static_covariates,
-                HIERARCHY_TAG: hierarchy,
-            },
+            attrs={STATIC_COV_TAG: static_covariates, HIERARCHY_TAG: hierarchy},
         )
 
         return cls.from_xarray(
@@ -2758,8 +2755,7 @@ class TimeSeries:
         return self.__class__(new_xa)
 
     def with_static_covariates(
-        self,
-        covariates: Optional[Union[pd.Series, pd.DataFrame]],
+        self, covariates: Optional[Union[pd.Series, pd.DataFrame]]
     ):
         """Returns a new TimeSeries object with added static covariates.
 

@@ -205,7 +205,7 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
                 if isinstance(future_covariates, TimeSeries)
                 else future_covariates[0]
             )
-            if not set(categorical_past_covariates).issubset(set(s.components)):
+            if not set(categorical_future_covariates).issubset(set(s.components)):
                 raise_log(
                     ValueError(
                         "categorical_future_covariates must be a subset of future_covariates components"
