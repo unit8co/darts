@@ -137,6 +137,9 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
         val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        categorical_past_covariates: Optional[List[str]] = None,
+        categorical_future_covariates: Optional[List[str]] = None,
+        categorical_static_covariates: Optional[List[str]] = None,
         max_samples_per_ts: Optional[int] = None,
         **kwargs,
     ):
@@ -157,6 +160,15 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
             Optionally, a series or sequence of series specifying past-observed covariates for evaluation dataset
         val_future_covariates : Union[TimeSeries, Sequence[TimeSeries]]
             Optionally, a series or sequence of series specifying future-known covariates for evaluation dataset
+        categorical_past_covariates
+            Optionally, a list of component names specifying the past covariates that should be treated as categorical
+            by the underlying `LightGBMRegressor`.
+        categorical_future_covariates
+            Optionally, a list of component names specifying the future covariates that should be treated as categorical
+            by the underlying `LightGBMRegressor`.
+        categorical_static_covariates
+            Optionally, a list of names specifying the static covariates that should be treated as categorical
+            by the underlying `LightGBMRegressor`.
         max_samples_per_ts
             This is an integer upper bound on the number of tuples that can be produced
             per time series. It can be used in order to have an upper bound on the total size of the dataset and
@@ -188,6 +200,9 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
                     past_covariates=past_covariates,
                     future_covariates=future_covariates,
                     max_samples_per_ts=max_samples_per_ts,
+                    categorical_past_covariates=categorical_past_covariates,
+                    categorical_future_covariates=categorical_future_covariates,
+                    categorical_static_covariates=categorical_static_covariates,
                     **kwargs,
                 )
 
@@ -200,6 +215,9 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             max_samples_per_ts=max_samples_per_ts,
+            categorical_past_covariates=categorical_past_covariates,
+            categorical_future_covariates=categorical_future_covariates,
+            categorical_static_covariates=categorical_static_covariates,
             **kwargs,
         )
 
@@ -225,8 +243,23 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
             max_samples_per_ts,
         )
 
-        if self.use_native_categorical_handling:
+        # Check if there are covariates that should be treated as categorical
+        categorical_past_covariates = kwargs.pop("categorical_past_covariates", None)
+        categorical_future_covariates = kwargs.pop(
+            "categorical_future_covariates", None
+        )
+        categorical_static_covariates = kwargs.pop(
+            "categorical_static_covariates", None
+        )
+        categorical_covariates = (
+            (categorical_past_covariates if categorical_past_covariates else [])
+            + (categorical_future_covariates if categorical_future_covariates else [])
+            + (categorical_static_covariates if categorical_static_covariates else [])
+        )
+        cat_cols_indices = None
+        if categorical_covariates:
             cat_cols_indices, _ = self._get_categorical_features(
+                categorical_covariates,
                 target_series,
                 past_covariates,
                 future_covariates,
@@ -238,9 +271,7 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
         self.model.fit(
             training_samples,
             training_labels,
-            categorical_feature=cat_cols_indices
-            if self.use_native_categorical_handling
-            else None,
+            categorical_feature=cat_cols_indices,
             **kwargs,
         )
 

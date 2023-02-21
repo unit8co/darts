@@ -2120,14 +2120,14 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     static_covariates=pd.DataFrame(
                         {"static_cat_1": [1], "static_cat_2": [2]}
                     ),
-                    categorical_static_covariates=["static_cat_1", "static_cat_2"],
                 ),
                 past_covariates=TimeSeries.from_dataframe(
                     df=past_cov_df,
                     time_col="date",
                     value_cols=["past_cov_cat_1", "past_cov_cat_2", "past_cov_regular"],
-                    categorical_components=["past_cov_cat_1", "past_cov_cat_2"],
                 ),
+                categorical_past_covariates=["past_cov_cat_1", "past_cov_cat_2"],
+                categorical_static_covariates=["static_cat_1", "static_cat_2"],
             )
             model.predict(1)
 
@@ -2161,14 +2161,17 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             lags=2, lags_past_covariates=2, lags_future_covariates=[1]
         )
         indices, column_names = model._get_categorical_features(
+            categorical_covariates=[
+                "past_cov_cat_1",
+                "past_cov_cat_2",
+                "fut_cov_cat_1",
+                "static_cat",
+            ],
             series=TimeSeries.from_dataframe(
                 df=target_df,
                 time_col="date",
                 value_cols="target",
-                static_covariates=pd.DataFrame(
-                    {"static_cat_1": [1], "static_cat_2": [2]}
-                ),
-                categorical_static_covariates=["static_cat_2"],
+                static_covariates=pd.DataFrame({"static_cat": [1]}),
             ),
             past_covariates=TimeSeries.from_dataframe(
                 df=past_cov_df,
@@ -2179,7 +2182,6 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     "past_cov_cat_2",
                     "past_cov_regular_2",
                 ],
-                categorical_components=["past_cov_cat_1", "past_cov_cat_2"],
             ),
             future_covariates=TimeSeries.from_dataframe(
                 df=fut_cov_df,
@@ -2190,45 +2192,10 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     "fut_cov_cat_1",
                     "fut_cov_regular_3",
                 ],
-                categorical_components=["fut_cov_cat_1"],
             ),
         )
 
-        model.fit(
-            series=TimeSeries.from_dataframe(
-                df=target_df,
-                time_col="date",
-                value_cols="target",
-                static_covariates=pd.DataFrame(
-                    {"static_cat_1": [1], "static_cat_2": [2]}
-                ),
-                categorical_static_covariates=["static_cat_2"],
-            ),
-            past_covariates=TimeSeries.from_dataframe(
-                df=past_cov_df,
-                time_col="date",
-                value_cols=[
-                    "past_cov_cat_1",
-                    "past_cov_regular_1",
-                    "past_cov_cat_2",
-                    "past_cov_regular_2",
-                ],
-                categorical_components=["past_cov_cat_1", "past_cov_cat_2"],
-            ),
-            future_covariates=TimeSeries.from_dataframe(
-                df=fut_cov_df,
-                time_col="date",
-                value_cols=[
-                    "fut_cov_regular_1",
-                    "fut_cov_regular_2",
-                    "fut_cov_cat_1",
-                    "fut_cov_regular_3",
-                ],
-                categorical_components=["fut_cov_cat_1"],
-            ),
-        )
-
-        assert indices == [2, 4, 6, 8, 12, 15]
+        self.assertEqual(indices, [2, 4, 6, 8, 12, 14])
 
 
 class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):

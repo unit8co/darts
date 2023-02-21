@@ -38,7 +38,7 @@ from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
 from darts.utils.data.tabularization import create_lagged_training_data
 from darts.utils.multioutput import MultiOutputRegressor
-from darts.utils.utils import _check_quantiles, flatten_my_list, seq2series, series2seq
+from darts.utils.utils import _check_quantiles, seq2series, series2seq
 
 logger = get_logger(__name__)
 
@@ -814,6 +814,7 @@ class RegressionModel(GlobalForecastingModel):
 
     def _get_categorical_features(
         self,
+        categorical_covariates: List[str],
         series: Union[List[TimeSeries], TimeSeries],
         past_covariates: Optional[Union[List[TimeSeries], TimeSeries]] = None,
         future_covariates: Optional[Union[List[TimeSeries], TimeSeries]] = None,
@@ -824,8 +825,7 @@ class RegressionModel(GlobalForecastingModel):
         Steps:
         1. Get the list of features used in the model. We keep the creation order of the different lags/features
             in create_lagged_data.
-        2. Get a list containing the names of the categorical covariates (past, fut and static).
-        3. Get the indices of the categorical features in the list of features.
+        2. Get the indices of the categorical features in the list of features.
         """
         target_ts = series if isinstance(series, TimeSeries) else series[0]
         past_covs_ts = past_covariates[0] if past_covariates else None
@@ -857,20 +857,10 @@ class RegressionModel(GlobalForecastingModel):
             )
         )
 
-        categorical_covariates_list = []
-        for ts in [target_ts, past_covs_ts, fut_covs_ts]:
-            if ts:
-                if ts.categorical_components:
-                    categorical_covariates_list.append(ts.categorical_components)
-                if ts.categorical_static_covariates:
-                    categorical_covariates_list.append(ts.categorical_static_covariates)
-
-        categorical_covariates_list = list(flatten_my_list(categorical_covariates_list))
-
         indices = [
             i
             for i, col in enumerate(feature_list)
-            for cat in categorical_covariates_list
+            for cat in categorical_covariates
             if cat and cat in col
         ]
         col_names = [feature_list[i] for i in indices]
