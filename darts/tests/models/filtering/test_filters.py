@@ -173,9 +173,9 @@ class GaussianProcessFilterTestCase(FilterBaseTestClass):
         noise = TimeSeries.from_values(np.random.normal(0, 0.4, len(testing_signal)))
         testing_signal_with_noise = testing_signal + noise
 
-        kernel = ExpSineSquared()
+        kernel = ExpSineSquared(length_scale_bounds=(1e-3, 1e3))
         gpf = GaussianProcessFilter(
-            kernel=kernel, alpha=0.2, n_restarts_optimizer=100, random_state=42
+            kernel=kernel, alpha=0.2, n_restarts_optimizer=10, random_state=42
         )
         filtered_ts = gpf.filter(testing_signal_with_noise, num_samples=1)
 
@@ -205,7 +205,8 @@ class GaussianProcessFilterTestCase(FilterBaseTestClass):
     def test_gaussian_process_missing_values(self):
         ts = TimeSeries.from_values(np.ones(6))
 
-        gpf = GaussianProcessFilter(RBF())
+        kernel = RBF(length_scale_bounds=(1e-3, 1e10))
+        gpf = GaussianProcessFilter(kernel=kernel)
         filtered_values = gpf.filter(ts).values()
         np.testing.assert_allclose(filtered_values, np.ones_like(filtered_values))
 
