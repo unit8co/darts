@@ -147,8 +147,8 @@ class NaiveMovingAverage(LocalForecastingModel):
 
     def fit(self, series: TimeSeries):
         super().fit(series)
-        assert series.n_samples == 1, "This model expects deterministic time series"
-
+        raise_if_not(series.is_deterministic, "This model expects deterministic time series")
+        
         self.rolling_window = series[-self.input_chunk_length :].values(copy=False)
         return self
 
