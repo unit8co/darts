@@ -6,12 +6,12 @@ Below, we detail how to install Darts using either `conda` or `pip`.
 Currently only the x86_64 architecture with Python 3.7-3.10
 is fully supported with conda; consider using PyPI if you are running into troubles.
 
-To create a conda environment for Python 3.9
+Create a conda environment (e.g., for Python 3.10):
 (after installing [conda](https://docs.conda.io/en/latest/miniconda.html)):
 
-    conda create --name <env-name> python=3.9
+    conda create --name <env-name> python=3.10
 
-Don't forget to activate your virtual environment
+Activate your virtual environment
 
     conda activate <env-name>
 
@@ -19,10 +19,7 @@ As some models have relatively heavy dependencies, we provide two conda-forge pa
 
 * Install darts with all available models (recommended): `conda install -c conda-forge -c pytorch u8darts-all`.
 * Install core + neural networks (PyTorch): `conda install -c conda-forge -c pytorch u8darts-torch`
-* Install core only (without neural networks or AutoARIMA): `conda install -c conda-forge u8darts`
-
-For GPU support, please follow the instructions to install CUDA in the [PyTorch installation guide](https://pytorch.org/get-started/locally/).
-
+* Install core only (without neural networks): `conda install -c conda-forge u8darts`
 
 ## From PyPI
 Install darts with all available models: `pip install darts`.
@@ -37,31 +34,38 @@ we also maintain the `u8darts` package, which provides the following alternate l
 * Install core + neural networks (PyTorch): `pip install "u8darts[torch]"`
 * Install core + AutoARIMA: `pip install "u8darts[pmdarima]"`
 
-### Enabling Support for LightGBM
+## Other Information
 
-To enable support for LightGBM in Darts, please follow the
-[installation instructions](https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html) for your OS.
+### Issues with LightGBM
+If you run into issues with LightGBM when installing Darts, please follow the
+[installation instructions](https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html) for your OS,
+and then try re-installing Darts.
 
-#### MacOS Issues with LightGBM
-At the time of writing, there is an issue with ``libomp`` 12.0.1 that results in
-[segmentation fault on Mac OS Big Sur](https://github.com/microsoft/LightGBM/issues/4229).
-Here's the procedure to downgrade the ``libomp`` library (from the
-[original Github issue](https://github.com/microsoft/LightGBM/issues/4229#issue-867528353)):
-* [Install brew](https://brew.sh/) if you don't already have it.
-* Install `wget` if you don't already have it : `brew install wget`.
-* Run the commands below:
+For instance, on MacOS you may have to run this (using [brew](https://brew.sh/)):
 ```
-wget https://raw.githubusercontent.com/Homebrew/homebrew-core/fb8323f2b170bd4ae97e1bac9bf3e2983af3fdb0/Formula/libomp.rb
-brew unlink libomp
-brew install libomp.rb
+brew install cmake
+brew install libomp
 ```
+and then again: `pip install darts`.
 
-#### Test environment Apple M1 processor
+### Enabling support for Prophet
+By default, as of 0.24.0, `darts` does not have Prophet as a dependency anymore, because its build
+process was too often causing issues, [notably on Apple silicon](https://github.com/facebook/prophet/issues/2002).
 
-We currently recommend to run Darts in an x_64 emulated environment on Mac computers with the Silicon M1 processor,
-instead of trying to install directly with native arm64 packages, many of the dependent packages still have compatibility 
-issues. The following is a proposed procedure, if you tested other procedures on similar hardware and they worked, 
-please let us know about them by opening an issue or by updating this file and opening a PR. 
+If you want to use Darts' `Prophet` model, you will need to install the `prophet` package (version 1.1 or more recent).
+We refer to the [Prophet README install guide](https://github.com/facebook/prophet#installation-in-python---pypi-release)
+
+### Enabling GPU support
+Darts relies on PyTorch for the neural network models.
+For GPU support, please follow the instructions to install CUDA in the [PyTorch installation guide](https://pytorch.org/get-started/locally/).
+
+### Using an emulated x64 environment on Apple Silicon.
+The installation of `darts` has been tested to work on Apple silicon (Python 3.10, OSX Ventura 13.2.1).
+It requires following the instructions to make LightGBM work 
+[here](https://github.com/unit8co/darts/blob/master/INSTALL.md#issues-with-lightgbm).
+
+If you still run into some issues with Apple silicon, you can consider using rosetta
+to use an emulated x64 environment by following the steps below:
 
 Before you start make sure that you have rosetta2 installed by running: 
 ```
@@ -85,8 +89,8 @@ Below are the necessary instructions to create and configure the environment:
   conda activate env_name
   ```
 - Install darts: `pip install darts`
-  - With this method of installation, lightgbm might still have issues finding the libomp library.
-  The following procedure is to guarantee that the correct libomp (11.1.0) library is linked.
+  - If after this you still run into issues with lightgbm having issues finding the libomp library,
+  the following procedure guarantees that the correct libomp (11.1.0) library is linked.
     - Unlink the existing libomp, from terminal : `brew unlink libomp`
     - Setup a homebrew installer that is compatible with x_64 packages (follow this [blog](https://medium.com/mkdir-awesome/how-to-install-x86-64-homebrew-packages-on-apple-m1-macbook-54ba295230f) 
     post):
@@ -106,7 +110,7 @@ Below are the necessary instructions to create and configure the environment:
     ```
     - Verify that your lightgbm works by importing lightgbm from your python env. It should not give library loading errors. 
 
-## Running the examples only, without installing:
+### Running the examples only, without installing:
 
 If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use Python notebooks with demo examples.
 To run the example notebooks without installing our libraries natively on your machine, you can use our Docker image:

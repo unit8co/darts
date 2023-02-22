@@ -10,7 +10,9 @@ def read_requirements(path):
 base_reqs = read_requirements("requirements/core.txt")
 torch_reqs = read_requirements("requirements/torch.txt")
 
-all_reqs = base_reqs + torch_reqs
+# Note: Prophet is not included in darts package by default
+
+reqs = base_reqs + torch_reqs
 
 with open("README.md") as fh:
     LONG_DESCRIPTION = fh.read()
@@ -38,7 +40,7 @@ setup(
     maintainer_email="darts@unit8.co",
     license="Apache License 2.0",
     packages=find_packages(),
-    install_requires=all_reqs,
+    install_requires=reqs,
     package_data={
         "darts": ["py.typed"],
     },

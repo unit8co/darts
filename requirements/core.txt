@@ -7,7 +7,6 @@ nfoursid>=1.0.0
 numpy>=1.19.0
 pandas>=1.0.5
 pmdarima>=1.8.0
-prophet>=1.1.1
 pyod>=0.9.5
 requests>=2.22.0
 scikit-learn>=1.0.1
