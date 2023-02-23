@@ -134,9 +134,9 @@ class TopDownReconciliator(FittableDataTransformer):
 
         # compute proportions for each base component
         proportions = sum_base / sum_total
-
+        top_level_index = list(series.components).index(series.top_level_component)
         G = np.zeros((m, n))
-        G[:, list(series.components).index(series.top_level_component)] = proportions
+        G[:, top_level_index] = proportions
 
         return G
 
