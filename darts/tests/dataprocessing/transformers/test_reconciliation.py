@@ -2,6 +2,7 @@ import logging
 import unittest
 
 import numpy as np
+from pandas import date_range
 
 from darts import TimeSeries, concatenate
 from darts.dataprocessing.transformers.reconciliation import (
@@ -179,3 +180,47 @@ class ReconciliationTestCase(unittest.TestCase):
         recon = MinTReconciliator("wls_val")
         recon.fit(self.series_complex)
         self._assert_reconciliation_complex(recon)
+
+    def test_reconcilliation_is_order_independent(self):
+        dates = date_range("2020-01-01", "2020-12-31", freq="D")
+        nr_dates = len(dates)
+        t1 = TimeSeries.from_times_and_values(
+            dates, 2 * np.ones(nr_dates), columns=["T1"]
+        )
+        t2 = TimeSeries.from_times_and_values(
+            dates, 5 * np.ones(nr_dates), columns=["T2"]
+        )
+        t3 = TimeSeries.from_times_and_values(dates, np.ones(nr_dates), columns=["T3"])
+        tsum = TimeSeries.from_times_and_values(
+            dates, 9 * np.ones(nr_dates), columns=["T_sum"]
+        )
+        ts_1 = concatenate([t1, t2, t3, tsum], axis="component")
+        ts_2 = concatenate([tsum, t1, t2, t3], axis="component")
+
+        def assert_ts_are_equal(ts1, ts2):
+            for comp in ["T1", "T2", "T3", "T_sum"]:
+                self.assertEqual(ts1[comp], ts2[comp])
+
+        hierarchy = {"T1": ["T_sum"], "T2": ["T_sum"], "T3": ["T_sum"]}
+        ts_1 = ts_1.with_hierarchy(hierarchy)
+        ts_2 = ts_2.with_hierarchy(hierarchy)
+        assert_ts_are_equal(ts_1, ts_2)
+
+        S1 = _get_summation_matrix(ts_1)
+        S2 = _get_summation_matrix(ts_2)
+        np.testing.assert_array_equal(S1, S2)
+
+        ts_1_reconc = TopDownReconciliator().fit_transform(ts_1)
+        ts_2_reconc = TopDownReconciliator().fit_transform(ts_2)
+
+        assert_ts_are_equal(ts_1_reconc, ts_2_reconc)
+
+        ts_1_reconc = MinTReconciliator().fit_transform(ts_1)
+        ts_2_reconc = MinTReconciliator().fit_transform(ts_2)
+
+        assert_ts_are_equal(ts_1_reconc, ts_2_reconc)
+
+        ts_1_reconc = BottomUpReconciliator().transform(ts_1)
+        ts_2_reconc = BottomUpReconciliator().transform(ts_2)
+
+        assert_ts_are_equal(ts_1_reconc, ts_2_reconc)
