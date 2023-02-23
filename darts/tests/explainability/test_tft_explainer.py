@@ -67,8 +67,7 @@ class TFTExplainerTestCase(DartsBaseTestClass):
     # use the last 3 years as past input data
     input_chunk_length_ice = 36
 
-    models = []
-    models.append(
+    models = [
         TFTModel(
             input_chunk_length=input_chunk_length_ice,
             output_chunk_length=forecast_horizon_ice,
@@ -81,8 +80,8 @@ class TFTExplainerTestCase(DartsBaseTestClass):
             add_relative_index=False,
             optimizer_kwargs={"lr": 1e-3},
             random_state=42,
-        )
-    )
+        ),
+    ]
 
     def test_class_init_not_fitted_model_raises_error(self):
         """The TFTExplainer class should raise an error if the model we want to explain is not fitted."""
@@ -339,10 +338,7 @@ class TFTExplainerTestCase(DartsBaseTestClass):
 
         # assert
         self.assertTrue(isinstance(res, ExplainabilityResult))
-        res_attention_heads = res.get_explanation(
-            component="attention_heads",
-            horizon=0,
-        )
+        res_attention_heads = res.get_explanation(component="attention_heads")
         self.assertTrue(len(res_attention_heads) == 48)
         self.assertTrue(
             (
@@ -374,7 +370,7 @@ class TFTExplainerTestCase(DartsBaseTestClass):
         expl_result = explainer.explain()
 
         # act
-        res = expl_result.get_explanation(component="attention_heads", horizon=0)
+        res = expl_result.get_explanation(component="attention_heads")
 
         # assert
         self.assertTrue(isinstance(res, TimeSeries))

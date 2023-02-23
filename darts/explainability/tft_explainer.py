@@ -165,10 +165,8 @@ class TFTExplainer(ForecastingModelExplainer):
         # return the explainer result to be used in other methods
         return ExplainabilityResult(
             {
-                0: {
-                    "attention_heads": TimeSeries.from_values(attention_heads.T),
-                }
-            },
+                "attention_heads": TimeSeries.from_values(attention_heads.T),
+            }
         )
 
     @staticmethod
@@ -177,10 +175,7 @@ class TFTExplainer(ForecastingModelExplainer):
         plot_type: Optional[Literal["all", "time", "heatmap"]] = "time",
     ):
         """Plots the attention heads of the TFT model."""
-        attention_heads = expl_result.get_explanation(
-            component="attention_heads",
-            horizon=0,
-        )
+        attention_heads = expl_result.get_explanation(component="attention_heads")
         if plot_type == "all":
             fig = plt.figure()
             attention_heads.plot(
