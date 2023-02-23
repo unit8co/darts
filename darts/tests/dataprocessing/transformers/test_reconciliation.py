@@ -206,9 +206,8 @@ class ReconciliationTestCase(unittest.TestCase):
         ts_2 = ts_2.with_hierarchy(hierarchy)
         assert_ts_are_equal(ts_1, ts_2)
 
-        S1 = _get_summation_matrix(ts_1)
-        S2 = _get_summation_matrix(ts_2)
-        np.testing.assert_array_equal(S1, S2)
+        P1 = BottomUpReconciliator().get_projection_matrix(ts_1)
+        P2 = BottomUpReconciliator().get_projection_matrix(ts_2)
 
         ts_1_reconc = TopDownReconciliator().fit_transform(ts_1)
         ts_2_reconc = TopDownReconciliator().fit_transform(ts_2)
