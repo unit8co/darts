@@ -1,3 +1,27 @@
+"""
+TFT Explainer for Temporal Fusion Transformer models.
+------------------------------------
+
+This module contains the implementation of the TFT Explainer class. The TFTExplainer uses a trained TFT model
+and extracts the explainability information from the model.
+
+The .get_variable_selection_weights() method returns the variable selection weights for each of the input features.
+This reflects the feature importance for the model. The weights of the encoder and decoder matrix are returned.
+An optional plot parameter can be used to plot the variable selection weights.
+
+The .plot_attention_heads() method shows the transformer attention heads learned by the TFT model.
+The attention heads reflect the effect of past values of the dependent variable onto the prediction and
+what autoregressive pattern the model has learned.
+
+The values of the attention heads can also be extracted using the .get_attention_heads() method.
+explain_result = .explain()
+res_attention_heads = explain_result.get_explanation(component="attention_heads", horizon=0)
+
+For an examples on how to use the TFT explainer, please have a look at the TFT notebook in the /examples directory
+ <https://github.com/unit8co/darts/blob/master/examples/13-TFT-examples.ipynb>`_.
+
+"""
+
 from typing import Dict, List, Optional
 
 import matplotlib.pyplot as plt
@@ -39,6 +63,19 @@ class TFTExplainer(ForecastingModelExplainer):
 
     @property
     def encoder_importance(self):
+        """Returns the encoder variable importance of the TFT model.
+
+        The encoder_weights are calculated for the past inputs of the model.
+        The encoder_importance contains the weights of the encoder variable selection network.
+        The encoder variable selection network is used to select the most important static and time dependent
+        covariates. It provides insights which variable are most significant for the prediction problem.
+        See section 4.2 of the paper for more details.
+
+        Returns
+        -------
+        pd.DataFrame
+            The encoder variable importance.
+        """
         return self._get_importance(
             weight=self._model.model._encoder_sparse_weights,
             names=self._model.model.encoder_variables,
@@ -46,6 +83,19 @@ class TFTExplainer(ForecastingModelExplainer):
 
     @property
     def decoder_importance(self):
+        """Returns the decoder variable importance of the TFT model.
+
+        The decoder_weights are calculated for the known future inputs of the model.
+        The decoder_importance contains the weights of the decoder variable selection network.
+        The decoder variable selection network is used to select the most important static and time dependent
+        covariates. It provides insights which variable are most significant for the prediction problem.
+        See section 4.2 of the paper for more details.
+
+        Returns
+        -------
+        pd.DataFrame
+            The importance of the decoder variables.
+        """
         return self._get_importance(
             weight=self._model.model._decoder_sparse_weights,
             names=self._model.model.decoder_variables,
