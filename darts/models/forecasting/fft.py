@@ -269,7 +269,17 @@ class FFT(LocalForecastingModel):
             + ")"
         )
 
-    def _constant_null(self, x):
+    def _exp_trend(self, x):
+        """Helper function, used to make FFT model pickable."""
+        return np.exp(self.trend_coefficients[1]) * np.exp(
+            self.trend_coefficients[0] * x
+        )
+
+    def _poly_trend(self, trend_coefficients):
+        """Helper function, for consistency with the other trends"""
+        return np.poly1d(trend_coefficients)
+
+    def _null_trend(self, x):
         """Helper function, used to make FFT model pickable."""
         return 0
 
@@ -281,20 +291,18 @@ class FFT(LocalForecastingModel):
 
         # determine trend
         if self.trend == "poly":
-            trend_coefficients = np.polyfit(
+            self.trend_coefficients = np.polyfit(
                 range(len(series)), series.univariate_values(), self.trend_poly_degree
             )
-            self.trend_function = np.poly1d(trend_coefficients)
+            self.trend_function = self._poly_trend(self.trend_coefficients)
         elif self.trend == "exp":
-            trend_coefficients = np.polyfit(
+            self.trend_coefficients = np.polyfit(
                 range(len(series)), np.log(series.univariate_values()), 1
             )
-            self.trend_function = lambda x: np.exp(trend_coefficients[1]) * np.exp(
-                trend_coefficients[0] * x
-            )
+            self.trend_function = self._exp_trend
         else:
-            # `lambda x : 0 ` is not pickable
-            self.trend_function = self._constant_null
+            self.trend_coefficients = None
+            self.trend_function = self._null_trend
 
         # subtract trend
         detrended_values = series.univariate_values() - self.trend_function(
