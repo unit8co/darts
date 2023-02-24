@@ -907,6 +907,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def backtest(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
+        historical_forecasts: Union[TimeSeries, Sequence[TimeSeries]] = None,
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
@@ -1022,7 +1023,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             provided series and each sample.
         """
 
-        forecasts = self.historical_forecasts(
+        forecasts = historical_forecasts or self.historical_forecasts(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
@@ -1038,8 +1039,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         )
 
         series = series2seq(series)
-        if len(series) == 1:
-            forecasts = [forecasts]
+        forecasts = series2seq(forecasts)
 
         if not isinstance(metric, list):
             metric = [metric]
