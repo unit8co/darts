@@ -238,7 +238,7 @@ class FFT(LocalForecastingModel):
             pd.Timestamp attributes that are relevant for the seasonality automatically.
         trend
             If set, indicates what kind of detrending will be applied before performing DFT.
-            Possible values: 'poly' or 'exp', for polynomial trend, or exponential trend, respectively.
+            Possible values: 'poly', 'exp' or None, for polynomial trend, exponential trend or no trend, respectively.
         trend_poly_degree
             The degree of the polynomial that will be used for detrending, if `trend='poly'`.
 
@@ -269,6 +269,10 @@ class FFT(LocalForecastingModel):
             + ")"
         )
 
+    def _constant_null(self, x):
+        """Helper function, used to make FFT model pickable."""
+        return 0
+
     def fit(self, series: TimeSeries):
         series = fill_missing_values(series)
         super().fit(series)
@@ -289,7 +293,8 @@ class FFT(LocalForecastingModel):
                 trend_coefficients[0] * x
             )
         else:
-            self.trend_function = lambda x: 0
+            # `lambda x : 0 ` is not pickable
+            self.trend_function = self._constant_null
 
         # subtract trend
         detrended_values = series.univariate_values() - self.trend_function(
