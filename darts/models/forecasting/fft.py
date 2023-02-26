@@ -269,17 +269,17 @@ class FFT(LocalForecastingModel):
             + ")"
         )
 
-    def _exp_trend(self, x):
+    def _exp_trend(self, x) -> Callable:
         """Helper function, used to make FFT model pickable."""
         return np.exp(self.trend_coefficients[1]) * np.exp(
             self.trend_coefficients[0] * x
         )
 
-    def _poly_trend(self, trend_coefficients):
+    def _poly_trend(self, trend_coefficients) -> Callable:
         """Helper function, for consistency with the other trends"""
         return np.poly1d(trend_coefficients)
 
-    def _null_trend(self, x):
+    def _null_trend(self, x) -> Callable:
         """Helper function, used to make FFT model pickable."""
         return 0
 
