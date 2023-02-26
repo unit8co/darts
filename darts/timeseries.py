@@ -653,8 +653,8 @@ class TimeSeries:
                     "The provided integer time index column contains duplicate values.",
                 )
 
-                # Temporarily use an Int64Index (soon to be NumericIndex) to sort the values,
-                # and replace by a RangeIndex in `TimeSeries.from_xarray()`
+                # Temporarily use an integer Index to sort the values, and replace by a
+                # RangeIndex in `TimeSeries.from_xarray()`
                 time_index = pd.Index(time_col_vals)
 
             elif np.issubdtype(time_col_vals.dtype, object):
@@ -4321,12 +4321,17 @@ class TimeSeries:
         """Returns all observed/inferred frequencies of a pandas DatetimeIndex. The frequencies are inferred from all
         combinations of three adjacent time steps
         """
-        step_size = 3
-        n_dates = len(index)
-        # this creates n steps containing 3 timestamps each; used to infer frequency of index
-        steps = np.column_stack(
-            [index[i : (n_dates - step_size + (i + 1))] for i in range(step_size)]
+        # find unique time deltas indices from three consecutive time stamps
+        _, unq_td_index = np.unique(
+            np.stack([(index[1:-1] - index[:-2]), (index[2:] - index[1:-1])]),
+            return_index=True,
+            axis=1,
         )
+
+        # for each unique index, take one example including the left time stamp, and one including the right
+        steps = np.column_stack([index[unq_td_index + i] for i in range(3)])
+
+        # find all unique inferred frequencies
         observed_freqs = {pd.infer_freq(step) for step in steps}
         observed_freqs.discard(None)
         return observed_freqs
