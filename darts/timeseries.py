@@ -146,12 +146,8 @@ class TimeSeries:
         # The following sorting returns a copy, which we are relying on.
         # As of xarray 0.18.2, this sorting discards the freq of the index for some reason
         # https://github.com/pydata/xarray/issues/5466
-        # We sort only if the time axis is not already sorted (monotically increasing).
-        self._xa = (
-            xa.copy()
-            if xa.get_index(self._time_dim).is_monotonic_increasing
-            else xa.sortby(self._time_dim)
-        )
+        # We sort only if the time axis is not already sorted (monotonically increasing).
+        self._xa = self._sort_index(xa, copy=True)
 
         self._time_index = self._xa.get_index(self._time_dim)
 
@@ -4269,7 +4265,7 @@ class TimeSeries:
         )
 
         time_dim = xa.dims[0]
-        sorted_xa = cls._sort_index(xa)
+        sorted_xa = cls._sort_index(xa, copy=False)
         time_index: Union[
             pd.Index, pd.RangeIndex, pd.DatetimeIndex
         ] = sorted_xa.get_index(time_dim)
@@ -4307,11 +4303,11 @@ class TimeSeries:
         return cls._restore_xarray_from_frequency(sorted_xa, freq)
 
     @staticmethod
-    def _sort_index(xa: xr.DataArray) -> xr.DataArray:
+    def _sort_index(xa: xr.DataArray, copy: bool = True) -> xr.DataArray:
         """Sorts an xarray by its time dimension index (only if it is not already monotonically increasing)."""
         time_dim = xa.dims[0]
         return (
-            xa.copy()
+            (xa.copy() if copy else xa)
             if xa.get_index(time_dim).is_monotonic_increasing
             else xa.sortby(time_dim)
         )
@@ -4350,7 +4346,7 @@ class TimeSeries:
         has a constant step size.
         """
         time_dim = xa.dims[0]
-        sorted_xa = cls._sort_index(xa)
+        sorted_xa = cls._sort_index(xa, copy=False)
         time_index = sorted_xa.get_index(time_dim)
         observed_freqs = cls._observed_freq_integer_index(time_index)
         raise_if_not(
@@ -4414,7 +4410,7 @@ class TimeSeries:
         """
 
         time_dim = xa.dims[0]
-        sorted_xa = cls._sort_index(xa)
+        sorted_xa = cls._sort_index(xa, copy=False)
 
         time_index = sorted_xa.get_index(time_dim)
         resampled_time_index = pd.Series(index=time_index, dtype="object")
