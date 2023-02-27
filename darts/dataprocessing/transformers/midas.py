@@ -15,27 +15,30 @@ from darts.logging import get_logger, raise_log
 logger = get_logger(__name__)
 
 
-def _assert_high_to_low_freq(high_freq_series_df: pd.DataFrame,
-                             low_freq_series_df: pd.DataFrame,
-                             rule,
-                             high_freq,
-                             ):
+def _assert_high_to_low_freq(
+    high_freq_series_df: pd.DataFrame,
+    low_freq_series_df: pd.DataFrame,
+    rule,
+    high_freq,
+):
     if not low_freq_series_df.shape[0] < high_freq_series_df.shape[0]:
         raise_log(
-            ValueError(f"The target conversion should go from a high to a " \
-                       f"low frequency, instead the targeted frequency is" \
-                       f"{rule}, while the original frequency is {high_freq}.")
+            ValueError(
+                f"The target conversion should go from a high to a "
+                f"low frequency, instead the targeted frequency is"
+                f"{rule}, while the original frequency is {high_freq}."
+            )
         )
 
 
 class MIDASTransformer(BaseDataTransformer):
     def __init__(
-            self,
-            rule: str,
-            strip: bool = True,
-            name: str = "MIDASTransformer",
-            n_jobs: int = 1,
-            verbose: bool = False,
+        self,
+        rule: str,
+        strip: bool = True,
+        name: str = "MIDASTransformer",
+        n_jobs: int = 1,
+        verbose: bool = False,
     ):
         """
         A transformer that converts higher frequency time series to lower frequency using mixed-data sampling.
@@ -45,10 +48,11 @@ class MIDASTransformer(BaseDataTransformer):
         self.strip = strip
 
     @staticmethod
-    def ts_transform(series: TimeSeries,
-                     rule: Union[DateOffset, Timedelta, str],
-                     strip: bool,
-                     ) -> TimeSeries:
+    def ts_transform(
+        series: TimeSeries,
+        rule: Union[DateOffset, Timedelta, str],
+        strip: bool,
+    ) -> TimeSeries:
         high_freq = series.freq_str
         series_df = series.pd_dataframe()
         series_copy_df = series_df.copy()
@@ -59,22 +63,26 @@ class MIDASTransformer(BaseDataTransformer):
         # we do this by resampling from high to low and then back to high again
         low_freq_series_df = series_df.resample(rule).last()
         low_index = low_freq_series_df.index.to_timestamp()
-        high_freq_series_df = low_freq_series_df.resample(high_freq_period).bfill().ffill()
+        high_freq_series_df = (
+            low_freq_series_df.resample(high_freq_period).bfill().ffill()
+        )
         high_index = high_freq_series_df.index.to_timestamp()
 
-        _assert_high_to_low_freq(high_freq_series_df=high_freq_series_df,
-                                 low_freq_series_df=low_freq_series_df,
-                                 rule=rule,
-                                 high_freq=high_freq,
-                                 )
+        _assert_high_to_low_freq(
+            high_freq_series_df=high_freq_series_df,
+            low_freq_series_df=low_freq_series_df,
+            rule=rule,
+            high_freq=high_freq,
+        )
 
         # if necessary, expand the original series
         if len(high_index) > series_df.shape[0]:
-            series_df = pd.DataFrame(np.nan, index=high_index, columns=series_df.columns)
+            series_df = pd.DataFrame(
+                np.nan, index=high_index, columns=series_df.columns
+            )
             series_df.loc[series_copy_df.index, :] = series_copy_df.values
         else:
             series_df = series_copy_df
-
 
         n_high = series_df.shape[0]
         n_low = low_freq_series_df.shape[0]
@@ -87,7 +95,7 @@ class MIDASTransformer(BaseDataTransformer):
             range_lst_tmp = range_lst[f:][0::factor]
             series_tmp_df = series_df.iloc[range_lst_tmp, :]
             series_tmp_df.index = low_index
-            col_names_tmp = [col_name + f'_{f}' for col_name in col_names]
+            col_names_tmp = [col_name + f"_{f}" for col_name in col_names]
             rename_dict_tmp = dict(zip(col_names, col_names_tmp))
             midas_lst += [series_tmp_df.rename(columns=rename_dict_tmp)]
 
@@ -104,4 +112,3 @@ class MIDASTransformer(BaseDataTransformer):
 # from darts.datasets import AirPassengersDataset
 
 # series = AirPassengersDataset().load()
-
