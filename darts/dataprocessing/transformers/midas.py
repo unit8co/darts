@@ -87,7 +87,7 @@ class MIDASTransformer(BaseDataTransformer):
         midas_df = _create_midas_df(
             series_df=series_df,
             low_freq_series_df=low_freq_series_df,
-            low_index=low_index,
+            low_index_datetime=low_index,
         )
 
         # back to TimeSeries
