@@ -1532,7 +1532,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     @classmethod
     def _default_save_path(cls) -> str:
-        return f"{cls.__name__}_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}"
+        return f"{cls.__name__}_{datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')}"
 
     def save(self, path: Optional[Union[str, BinaryIO]] = None, **pkl_kwargs) -> None:
         """
@@ -1555,8 +1555,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         ----------
         path
             Path or file handle under which to save the model at its current state. If no path is specified, the model
-            is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pkl"``.
-            E.g., ``"RegressionModel_2020-01-01_12:00:00.pkl"``.
+            is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
+            E.g., ``"RegressionModel_2020-01-01_12_00_00.pkl"``.
         pkl_kwargs
             Keyword arguments passed to `pickle.dump()`
         """

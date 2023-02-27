@@ -1939,7 +1939,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             freq = ts[0].freq
 
             def to_ts(dt):
-                return pd.Timestamp(dt, freq=freq)
+                return pd.Timestamp(dt)
 
             def train_start_end(start_base, end_base):
                 start = to_ts(start_base) - int(not multi_model) * (ocl - 1) * freq
