@@ -27,7 +27,7 @@ When static covariates are present, they are appended to the lagged features. Wh
 if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.
 """
 from collections import OrderedDict
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import List, Optional, Protocol, Sequence, Tuple, Union, runtime_checkable
 
 import numpy as np
 import pandas as pd
@@ -814,7 +814,6 @@ class RegressionModel(GlobalForecastingModel):
 
     def _get_categorical_features(
         self,
-        categorical_covariates: List[str],
         series: Union[List[TimeSeries], TimeSeries],
         past_covariates: Optional[Union[List[TimeSeries], TimeSeries]] = None,
         future_covariates: Optional[Union[List[TimeSeries], TimeSeries]] = None,
@@ -827,6 +826,30 @@ class RegressionModel(GlobalForecastingModel):
             in create_lagged_data.
         2. Get the indices of the categorical features in the list of features.
         """
+
+        assert isinstance(self, SupportsCategoricalCovariates), (
+            "The `_get_categorical_features` method is only available for RegressionModels that support "
+            "categorical covariates."
+        )
+
+        categorical_covariates = (
+            (
+                self.categorical_past_covariates
+                if self.categorical_past_covariates
+                else []
+            )
+            + (
+                self.categorical_future_covariates
+                if self.categorical_future_covariates
+                else []
+            )
+            + (
+                self.categorical_static_covariates
+                if self.categorical_static_covariates
+                else []
+            )
+        )
+
         # TODO: currently assumes that the set of features is the same for all time series the model is trained on and
         #  can thus be retrieved from the first time series. Check (corner cases) if this always holds
         target_ts = series if isinstance(series, TimeSeries) else series[0]
@@ -873,6 +896,13 @@ class RegressionModel(GlobalForecastingModel):
     @staticmethod
     def _supports_static_covariates() -> bool:
         return True
+
+
+@runtime_checkable
+class SupportsCategoricalCovariates(Protocol):
+    categorical_past_covariates: Optional[List[str]]
+    categorical_future_covariates: Optional[List[str]]
+    categorical_static_covariates: Optional[List[str]]
 
 
 class _LikelihoodMixin:

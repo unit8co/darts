@@ -2110,7 +2110,13 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 "past_cov_regular": np.random.randint(0, 5, 100),
             }
         )
-        model = LightGBMModel(lags=1, lags_past_covariates=1, output_chunk_length=1)
+        model = LightGBMModel(
+            lags=1,
+            lags_past_covariates=1,
+            output_chunk_length=1,
+            categorical_past_covariates=["past_cov_cat_1", "past_cov_cat_2"],
+            categorical_static_covariates=["static_cat_1", "static_cat_2"],
+        )
         with does_not_raise():
             model.fit(
                 series=TimeSeries.from_dataframe(
@@ -2126,12 +2132,10 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     time_col="date",
                     value_cols=["past_cov_cat_1", "past_cov_cat_2", "past_cov_regular"],
                 ),
-                categorical_past_covariates=["past_cov_cat_1", "past_cov_cat_2"],
-                categorical_static_covariates=["static_cat_1", "static_cat_2"],
             )
             model.predict(1)
 
-    def test_error_raised_invalid_categorical_past_cov(self):
+    def test_inconsistent_categorical_covariates(self):
         target_df = pd.DataFrame(
             {
                 "date": pd.date_range("20130101", periods=100),
@@ -2146,82 +2150,52 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 "past_cov_regular": np.random.randint(0, 5, 100),
             }
         )
-        model = LightGBMModel(lags=1, lags_past_covariates=1, output_chunk_length=1)
-        with self.assertRaises(ValueError):
-            model.fit(
-                series=TimeSeries.from_dataframe(
-                    df=target_df,
-                    time_col="date",
-                    value_cols="target",
-                    static_covariates=pd.DataFrame(
-                        {"static_cat_1": [1], "static_cat_2": [2]}
-                    ),
-                ),
-                past_covariates=TimeSeries.from_dataframe(
-                    df=past_cov_df,
-                    time_col="date",
-                    value_cols=["past_cov_cat_1", "past_cov_cat_2", "past_cov_regular"],
-                ),
-                categorical_past_covariates=["does_not_exist", "past_cov_cat_2"],
-                categorical_static_covariates=["static_cat_1", "static_cat_2"],
-            )
+        model_incorrect_pastcov = LightGBMModel(
+            lags=1,
+            lags_past_covariates=1,
+            output_chunk_length=1,
+            categorical_past_covariates=["does_not_exist", "past_cov_cat_2"],
+            categorical_static_covariates=["static_cat_1", "static_cat_2"],
+        )
+        model_incorrect_statcov = LightGBMModel(
+            lags=1,
+            lags_past_covariates=1,
+            output_chunk_length=1,
+            categorical_past_covariates=["past_cov_cat_1", "past_cov_cat_2"],
+            categorical_static_covariates=["static_cat_1", "does_not_exist"],
+        )
+        model_incorrect_futcov = LightGBMModel(
+            lags=1,
+            lags_past_covariates=1,
+            output_chunk_length=1,
+            categorical_future_covariates=["does_not_exist"],
+        )
 
-    def test_error_raised_invalid_categorical_static_cov(self):
-        target_df = pd.DataFrame(
-            {
-                "date": pd.date_range("20130101", periods=100),
-                "target": np.random.rand(100),
-            }
-        )
-        past_cov_df = pd.DataFrame(
-            {
-                "date": pd.date_range("20130101", periods=100),
-                "past_cov_cat_1": np.random.randint(0, 5, 100),
-                "past_cov_cat_2": np.random.randint(0, 5, 100),
-                "past_cov_regular": np.random.randint(0, 5, 100),
-            }
-        )
-        model = LightGBMModel(lags=1, lags_past_covariates=1, output_chunk_length=1)
-        with self.assertRaises(ValueError):
-            model.fit(
-                series=TimeSeries.from_dataframe(
-                    df=target_df,
-                    time_col="date",
-                    value_cols="target",
-                    static_covariates=pd.DataFrame(
-                        {"static_cat_1": [1], "static_cat_2": [2]}
+        for model in [
+            model_incorrect_pastcov,
+            model_incorrect_statcov,
+            model_incorrect_futcov,
+        ]:
+            with self.assertRaises(ValueError):
+                model.fit(
+                    series=TimeSeries.from_dataframe(
+                        df=target_df,
+                        time_col="date",
+                        value_cols="target",
+                        static_covariates=pd.DataFrame(
+                            {"static_cat_1": [1], "static_cat_2": [2]}
+                        ),
                     ),
-                ),
-                past_covariates=TimeSeries.from_dataframe(
-                    df=past_cov_df,
-                    time_col="date",
-                    value_cols=["past_cov_cat_1", "past_cov_cat_2", "past_cov_regular"],
-                ),
-                categorical_past_covariates=["past_cov_cat_1", "past_cov_cat_2"],
-                categorical_static_covariates=["static_cat_1", "does_not_exist"],
-            )
-
-    def test_error_raised_no_covs_but_cat_input(self):
-        target_df = pd.DataFrame(
-            {
-                "date": pd.date_range("20130101", periods=100),
-                "target": np.random.rand(100),
-            }
-        )
-        model = LightGBMModel(lags=1, lags_past_covariates=1, output_chunk_length=1)
-        with self.assertRaises(ValueError):
-            model.fit(
-                series=TimeSeries.from_dataframe(
-                    df=target_df,
-                    time_col="date",
-                    value_cols="target",
-                    static_covariates=pd.DataFrame(
-                        {"static_cat_1": [1], "static_cat_2": [2]}
+                    past_covariates=TimeSeries.from_dataframe(
+                        df=past_cov_df,
+                        time_col="date",
+                        value_cols=[
+                            "past_cov_cat_1",
+                            "past_cov_cat_2",
+                            "past_cov_regular",
+                        ],
                     ),
-                ),
-                categorical_past_covariates=["past_cov_cat_1", "past_cov_cat_2"],
-                categorical_static_covariates=["static_cat_1", "does_not_exist"],
-            )
+                )
 
     def test_get_categorical_features_helper(self):
         """Test helper function responsible for retrieving indices of categorical features"""
@@ -2250,15 +2224,14 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             }
         )
         model = LightGBMModel(
-            lags=2, lags_past_covariates=2, lags_future_covariates=[1]
+            lags=2,
+            lags_past_covariates=2,
+            lags_future_covariates=[1],
+            categorical_past_covariates=["past_cov_cat_1", "past_cov_cat_2"],
+            categorical_future_covariates=["fut_cov_cat_1"],
+            categorical_static_covariates=["static_cat"],
         )
         indices, column_names = model._get_categorical_features(
-            categorical_covariates=[
-                "past_cov_cat_1",
-                "past_cov_cat_2",
-                "fut_cov_cat_1",
-                "static_cat",
-            ],
             series=TimeSeries.from_dataframe(
                 df=target_df,
                 time_col="date",

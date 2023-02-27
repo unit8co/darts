@@ -34,6 +34,9 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
         quantiles: List[float] = None,
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
+        categorical_past_covariates: Optional[List[str]] = None,
+        categorical_future_covariates: Optional[List[str]] = None,
+        categorical_static_covariates: Optional[List[str]] = None,
         **kwargs,
     ):
         """LGBM Model
@@ -87,6 +90,15 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
+        categorical_past_covariates
+            Optionally, a list of component names specifying the past covariates that should be treated as categorical
+            by the underlying `LightGBMRegressor`.
+        categorical_future_covariates
+            Optionally, a list of component names specifying the future covariates that should be treated as categorical
+            by the underlying `LightGBMRegressor`.
+        categorical_static_covariates
+            Optionally, a list of names specifying the static covariates that should be treated as categorical
+            by the underlying `LightGBMRegressor`.
         **kwargs
             Additional keyword arguments passed to `lightgbm.LGBRegressor`.
         """
@@ -97,6 +109,9 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
         self.quantiles = None
         self.likelihood = likelihood
         self._rng = None
+        self.categorical_past_covariates = categorical_past_covariates
+        self.categorical_future_covariates = categorical_future_covariates
+        self.categorical_static_covariates = categorical_static_covariates
 
         # parse likelihood
         available_likelihoods = ["quantile", "poisson"]  # to be extended
@@ -132,9 +147,6 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
         val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        categorical_past_covariates: Optional[List[str]] = None,
-        categorical_future_covariates: Optional[List[str]] = None,
-        categorical_static_covariates: Optional[List[str]] = None,
         max_samples_per_ts: Optional[int] = None,
         **kwargs,
     ):
@@ -155,15 +167,6 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
             Optionally, a series or sequence of series specifying past-observed covariates for evaluation dataset
         val_future_covariates : Union[TimeSeries, Sequence[TimeSeries]]
             Optionally, a series or sequence of series specifying future-known covariates for evaluation dataset
-        categorical_past_covariates
-            Optionally, a list of component names specifying the past covariates that should be treated as categorical
-            by the underlying `LightGBMRegressor`.
-        categorical_future_covariates
-            Optionally, a list of component names specifying the future covariates that should be treated as categorical
-            by the underlying `LightGBMRegressor`.
-        categorical_static_covariates
-            Optionally, a list of names specifying the static covariates that should be treated as categorical
-            by the underlying `LightGBMRegressor`.
         max_samples_per_ts
             This is an integer upper bound on the number of tuples that can be produced
             per time series. It can be used in order to have an upper bound on the total size of the dataset and
@@ -175,50 +178,40 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
             Additional kwargs passed to `lightgbm.LGBRegressor.fit()`
         """
 
-        if categorical_past_covariates:
-            if not past_covariates:
-                raise_log(
-                    ValueError(
-                        "categorical_past_covariates is not None but past_covariates is None"
+        # Validate that categorical covariates of the model are a subset of all covariates
+        for categorical_covariates, covariates, cov_type in zip(
+            [self.categorical_past_covariates, self.categorical_future_covariates],
+            [past_covariates, future_covariates],
+            ["past_covariates", "future_covariates"],
+        ):
+            if categorical_covariates:
+                if not covariates:
+                    raise_log(
+                        ValueError(
+                            f"Categorical {cov_type} are declared in the model constructor but no "
+                            f"{cov_type} are passed to the `fit()` call."
+                        ),
                     )
-                )
-            s = (
-                past_covariates
-                if isinstance(past_covariates, TimeSeries)
-                else past_covariates[0]
-            )
-            if not set(categorical_past_covariates).issubset(set(s.components)):
-                raise_log(
-                    ValueError(
-                        "categorical_past_covariates must be a subset of past_covariates components"
+                s = covariates if isinstance(covariates, TimeSeries) else covariates[0]
+                if not set(categorical_covariates).issubset(set(s.components)):
+                    raise_log(
+                        ValueError(
+                            f"Some {cov_type} ({set(categorical_covariates) - set(s.components)}) "
+                            f"declared as categorical in the model constructor are not "
+                            f"present in the {cov_type} passed to the `fit()` call."
+                        )
                     )
-                )
-        if categorical_future_covariates:
-            if not future_covariates:
-                raise_log(
-                    ValueError(
-                        "categorical_future_covariates is not None but future_covariates is None"
-                    )
-                )
-            s = (
-                future_covariates
-                if isinstance(future_covariates, TimeSeries)
-                else future_covariates[0]
-            )
-            if not set(categorical_future_covariates).issubset(set(s.components)):
-                raise_log(
-                    ValueError(
-                        "categorical_future_covariates must be a subset of future_covariates components"
-                    )
-                )
-        if categorical_static_covariates:
+        if self.categorical_static_covariates:
             s = series if isinstance(series, TimeSeries) else series[0]
-            if not set(categorical_static_covariates).issubset(
+            if not set(self.categorical_static_covariates).issubset(
                 set(s.static_covariates.columns)
             ):
                 raise_log(
                     ValueError(
-                        "categorical_static_covariates must be a subset of static_covariates columns"
+                        f"Some static covariates "
+                        f"({set(self.categorical_static_covariates) - set(s.static_covariates.columns)}) "
+                        f"declared as categorical in the model constructor are not "
+                        f"present in the series passed to the `fit()` call."
                     )
                 )
 
@@ -242,9 +235,6 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
                     past_covariates=past_covariates,
                     future_covariates=future_covariates,
                     max_samples_per_ts=max_samples_per_ts,
-                    categorical_past_covariates=categorical_past_covariates,
-                    categorical_future_covariates=categorical_future_covariates,
-                    categorical_static_covariates=categorical_static_covariates,
                     **kwargs,
                 )
 
@@ -257,9 +247,6 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             max_samples_per_ts=max_samples_per_ts,
-            categorical_past_covariates=categorical_past_covariates,
-            categorical_future_covariates=categorical_future_covariates,
-            categorical_static_covariates=categorical_static_covariates,
             **kwargs,
         )
 
@@ -286,17 +273,22 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
         )
 
         # Check if there are covariates that should be treated as categorical
-        categorical_past_covariates = kwargs.pop("categorical_past_covariates", None)
-        categorical_future_covariates = kwargs.pop(
-            "categorical_future_covariates", None
-        )
-        categorical_static_covariates = kwargs.pop(
-            "categorical_static_covariates", None
-        )
         categorical_covariates = (
-            (categorical_past_covariates if categorical_past_covariates else [])
-            + (categorical_future_covariates if categorical_future_covariates else [])
-            + (categorical_static_covariates if categorical_static_covariates else [])
+            (
+                self.categorical_past_covariates
+                if self.categorical_past_covariates
+                else []
+            )
+            + (
+                self.categorical_future_covariates
+                if self.categorical_future_covariates
+                else []
+            )
+            + (
+                self.categorical_static_covariates
+                if self.categorical_static_covariates
+                else []
+            )
         )
         cat_cols_indices = None
         if categorical_covariates:
