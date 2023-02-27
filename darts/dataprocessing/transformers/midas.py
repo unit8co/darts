@@ -15,22 +15,6 @@ from darts.logging import get_logger, raise_log
 logger = get_logger(__name__)
 
 
-def _assert_high_to_low_freq(
-    high_freq_series_df: pd.DataFrame,
-    low_freq_series_df: pd.DataFrame,
-    rule,
-    high_freq,
-):
-    if not low_freq_series_df.shape[0] < high_freq_series_df.shape[0]:
-        raise_log(
-            ValueError(
-                f"The target conversion should go from a high to a "
-                f"low frequency, instead the targeted frequency is"
-                f"{rule}, while the original frequency is {high_freq}."
-            )
-        )
-
-
 class MIDASTransformer(BaseDataTransformer):
     def __init__(
         self,
@@ -98,11 +82,33 @@ class MIDASTransformer(BaseDataTransformer):
         return midas_ts
 
 
+def _assert_high_to_low_freq(
+    high_freq_series_df: pd.DataFrame,
+    low_freq_series_df: pd.DataFrame,
+    rule,
+    high_freq,
+):
+    """ "
+    Asserts that the lower frequency series really has a lower frequency then the assumed higher frequency series.
+    """
+    if not low_freq_series_df.shape[0] < high_freq_series_df.shape[0]:
+        raise_log(
+            ValueError(
+                f"The target conversion should go from a high to a "
+                f"low frequency, instead the targeted frequency is"
+                f"{rule}, while the original frequency is {high_freq}."
+            )
+        )
+
+
 def _create_midas_df(
     series_df: pd.DataFrame,
     low_freq_series_df: int,
     low_index_datetime: DatetimeIndex,
 ) -> pd.DataFrame:
+    """
+    Function for actually creating the lower frequency dataframe out of a higher frequency dataframe.
+    """
     # calculate the multiple
     n_high = series_df.shape[0]
     n_low = low_freq_series_df.shape[0]
