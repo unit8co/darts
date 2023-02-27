@@ -103,7 +103,7 @@ def _assert_high_to_low_freq(
 
 def _create_midas_df(
     series_df: pd.DataFrame,
-    low_freq_series_df: int,
+    low_freq_series_df: pd.DataFrame,
     low_index_datetime: DatetimeIndex,
 ) -> pd.DataFrame:
     """
