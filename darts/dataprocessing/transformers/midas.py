@@ -37,7 +37,7 @@ class MIDASTransformer(BaseDataTransformer):
         rule: Union[DateOffset, Timedelta, str],
         strip: bool,
     ) -> TimeSeries:
-        high_freq = series.freq_str
+        high_freq_datetime = series.freq_str
         series_df = series.pd_dataframe()
         series_copy_df = series_df.copy()
         series_df.index = series_df.index.to_period()
@@ -46,23 +46,23 @@ class MIDASTransformer(BaseDataTransformer):
         # ensure the length of the series is an exact multiple of the length of the targeted low frequency series
         # we do this by resampling from a high freq to a low freq and then back to high again (possibly adding NaNs)
         low_freq_series_df = series_df.resample(rule).last()
-        low_index = low_freq_series_df.index.to_timestamp()
+        low_index_datetime = low_freq_series_df.index.to_timestamp()
         high_freq_series_df = (
             low_freq_series_df.resample(high_freq_period).bfill().ffill()
         )
-        high_index = high_freq_series_df.index.to_timestamp()
+        high_index_datetime = high_freq_series_df.index.to_timestamp()
 
         _assert_high_to_low_freq(
             high_freq_series_df=high_freq_series_df,
             low_freq_series_df=low_freq_series_df,
             rule=rule,
-            high_freq=high_freq,
+            high_freq=high_freq_datetime,
         )
 
         # if necessary, expand the original series
-        if len(high_index) > series_df.shape[0]:
+        if len(high_index_datetime) > series_df.shape[0]:
             series_df = pd.DataFrame(
-                np.nan, index=high_index, columns=series_df.columns
+                np.nan, index=high_index_datetime, columns=series_df.columns
             )
             series_df.loc[series_copy_df.index, :] = series_copy_df.values
         else:
@@ -71,7 +71,7 @@ class MIDASTransformer(BaseDataTransformer):
         midas_df = _create_midas_df(
             series_df=series_df,
             low_freq_series_df=low_freq_series_df,
-            low_index_datetime=low_index,
+            low_index_datetime=low_index_datetime,
         )
 
         # back to TimeSeries
