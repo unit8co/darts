@@ -6,7 +6,7 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
-from pandas import DateOffset, Timedelta
+from pandas import DateOffset, DatetimeIndex, Timedelta
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import BaseDataTransformer
@@ -59,8 +59,8 @@ class MIDASTransformer(BaseDataTransformer):
         series_df.index = series_df.index.to_period()
         high_freq_period = series_df.index.freqstr
 
-        # first ensure the length of the series is an exact multiple of the length of the targeted low frequency series
-        # we do this by resampling from high to low and then back to high again
+        # ensure the length of the series is an exact multiple of the length of the targeted low frequency series
+        # we do this by resampling from a high freq to a low freq and then back to high again (possibly adding NaNs)
         low_freq_series_df = series_df.resample(rule).last()
         low_index = low_freq_series_df.index.to_timestamp()
         high_freq_series_df = (
@@ -84,29 +84,46 @@ class MIDASTransformer(BaseDataTransformer):
         else:
             series_df = series_copy_df
 
-        n_high = series_df.shape[0]
-        n_low = low_freq_series_df.shape[0]
-        factor = int(n_high / n_low)
+        midas_df = _create_midas_df(
+            series_df=series_df,
+            low_freq_series_df=low_freq_series_df,
+            low_index=low_index,
+        )
 
-        range_lst = list(range(n_high))
-        col_names = list(series_df.columns)
-        midas_lst = []
-        for f in range(factor):
-            range_lst_tmp = range_lst[f:][0::factor]
-            series_tmp_df = series_df.iloc[range_lst_tmp, :]
-            series_tmp_df.index = low_index
-            col_names_tmp = [col_name + f"_{f}" for col_name in col_names]
-            rename_dict_tmp = dict(zip(col_names, col_names_tmp))
-            midas_lst += [series_tmp_df.rename(columns=rename_dict_tmp)]
-
-        midas_df = pd.concat(midas_lst, axis=1)
-
+        # back to TimeSeries
         midas_ts = TimeSeries.from_dataframe(midas_df)
-
         if strip:
             midas_ts = midas_ts.strip()
 
         return midas_ts
+
+
+def _create_midas_df(
+    series_df: pd.DataFrame,
+    low_freq_series_df: int,
+    low_index_datetime: DatetimeIndex,
+) -> pd.DataFrame:
+    # calculate the multiple
+    n_high = series_df.shape[0]
+    n_low = low_freq_series_df.shape[0]
+    multiple = int(n_high / n_low)
+
+    # set up integer index
+    range_lst = list(range(n_high))
+    col_names = list(series_df.columns)
+    midas_lst = []
+
+    # for every column we now create 'multiple' columns
+    # by going through a column and picking every one in 'multiple' values
+    for f in range(multiple):
+        range_lst_tmp = range_lst[f:][0::multiple]
+        series_tmp_df = series_df.iloc[range_lst_tmp, :]
+        series_tmp_df.index = low_index_datetime
+        col_names_tmp = [col_name + f"_{f}" for col_name in col_names]
+        rename_dict_tmp = dict(zip(col_names, col_names_tmp))
+        midas_lst += [series_tmp_df.rename(columns=rename_dict_tmp)]
+
+    return pd.concat(midas_lst, axis=1)
 
 
 # from darts.datasets import AirPassengersDataset
