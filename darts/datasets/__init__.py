@@ -493,7 +493,7 @@ class ETTm2Dataset(DatasetLoaderCSV):
 class TaxiNewYorkDataset(DatasetLoaderCSV):
     """
     Taxi Passengers in New York, from 2014-07 to 2015-01.
-    The data consists of aggregating the total number of
+    The data consists of aggregated total number of
     taxi passengers into 30 minute buckets.
     Univariate series.
     Source: [1]_
