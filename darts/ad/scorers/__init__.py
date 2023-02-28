@@ -30,7 +30,7 @@ As an example, the ``KMeansScorer``, which is trainable, can be applied using th
   between the prediction (coming e.g., from a forecasting model) and the series itself.
   When scoring, the scorer will attribute a higher score to residuals that are distant
   from the clusters found during the training phase.
-    
+
 Note that `Anomaly Models <https://unit8co.github.io/darts/generated_api/darts.ad.anomaly_model.html>`_
 can be used to conveniently combine any of Darts forecasting and filtering models with one or multiple scorers.
 
@@ -39,13 +39,19 @@ Most of the scorers have the following main parameters:
 - `window`:
   Integer value indicating the size of the window W used by the scorer to transform the series into
   an anomaly score. A scorer will slice the given series into subsequences of size W and returns
-  a value indicating how anomalous these subset of W values are. The window size should be commensurate
-  to the expected durations of the anomalies one is looking for.
+  a value indicating how anomalous these subset of W values are. A post-processing step will convert
+  this anomaly score into a point-wise anomaly score (see definition of `window_transform`). The window
+  size should be commensurate to the expected durations of the anomalies one is looking for.
 - `component_wise`:
-  boolean parameter indicating how the scorer should behave with multivariate series. If set to
+  Boolean parameter indicating how the scorer should behave with multivariate series. If set to
   True, the model will treat each series dimension independently. If set to False, the model will
   consider the dimensions jointly in the considered `window` W to compute the score.
-
+- `window_transform`:
+  Boolean value indicates if the scorer needs to post-process its output when the `window` parameter
+  exceeds 1. If set to True, the scores for each point can be assigned by aggregating the anomaly
+  scores for each window the point is included in. It returns a point-wise anomaly score. If set to
+  False, the score is returned without this post-processing step and is a window-wise anomaly score.
+  Default: True
 
 Other useful functions are:
 

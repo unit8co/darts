@@ -391,7 +391,9 @@ class NonFittableAnomalyScorer(AnomalyScorer):
 class FittableAnomalyScorer(AnomalyScorer):
     """Base class of scorers that do need training."""
 
-    def __init__(self, univariate_scorer, window, diff_fn="abs_diff") -> None:
+    def __init__(
+        self, univariate_scorer, window, window_transform, diff_fn="abs_diff"
+    ) -> None:
         super().__init__(univariate_scorer=univariate_scorer, window=window)
 
         # indicates if the scorer is trainable or not
@@ -405,6 +407,47 @@ class FittableAnomalyScorer(AnomalyScorer):
             self.diff_fn = diff_fn
         else:
             raise ValueError(f"Metric should be 'diff' or 'abs_diff', found {diff_fn}")
+
+        raise_if_not(
+            type(window_transform) is bool,
+            f"Parameter `window_transform` must be Boolean, found type: {type(window_transform)}.",
+        )
+        self.window_transform = window_transform
+
+    def _fun_window_transform(
+        self, list_scores: Sequence[TimeSeries], window: int
+    ) -> Sequence[TimeSeries]:
+        """
+        Transforms a window-wise anomaly score into a point-wise anomaly score.
+
+        When using a window of size `W`, a scorer will return an anomaly score
+        with values that represent how anomalous each past `W` is. If the parameter
+        `window_transform` is set to True (default value), the scores for each point
+        can be assigned by aggregating the anomaly scores for each window the point
+        is included in. This post-processing step is equivalent to rolling a window
+        on the reversed series and computing the mean function. The return anomaly
+        score represents the abnormality of each timestamp.
+        """
+        list_scores_point_wise = []
+        for score in list_scores:
+
+            series_reversed = TimeSeries.from_values(score.all_values()[::-1])
+
+            score_point_wise = TimeSeries.from_times_and_values(
+                score.time_index,
+                series_reversed.window_transform(
+                    transforms={
+                        "window": window,
+                        "function": "mean",
+                        "mode": "rolling",
+                        "min_periods": 0,
+                    },
+                ).all_values()[::-1],
+            )
+
+            list_scores_point_wise.append(score_point_wise)
+
+        return list_scores_point_wise
 
     def check_if_fit_called(self):
         """Checks if the scorer has been fitted before calling its `score()` function."""
@@ -452,8 +495,13 @@ class FittableAnomalyScorer(AnomalyScorer):
         self._check_univariate_scorer(actual_anomalies)
         anomaly_score = self.score(series)
 
+        if self.window_transform:
+            window = 1
+        else:
+            window = self.window
+
         return eval_accuracy_from_scores(
-            actual_anomalies, anomaly_score, self.window, metric
+            actual_anomalies, anomaly_score, window, metric
         )
 
     def score(
@@ -564,10 +612,15 @@ class FittableAnomalyScorer(AnomalyScorer):
         if scorer_name is None:
             scorer_name = f"anomaly score by {self.__str__()}"
 
+        if self.window_transform:
+            window = 1
+        else:
+            window = self.window
+
         return show_anomalies_from_scores(
             series,
             anomaly_scores=anomaly_score,
-            window=self.window,
+            window=window,
             names_of_scorers=scorer_name,
             actual_anomalies=actual_anomalies,
             title=title,

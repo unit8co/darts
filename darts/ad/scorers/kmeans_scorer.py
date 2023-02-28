@@ -25,6 +25,7 @@ class KMeansScorer(FittableAnomalyScorer):
         window: int = 1,
         k: int = 8,
         component_wise: bool = False,
+        window_transform: bool = True,
         diff_fn="abs_diff",
         **kwargs,
     ) -> None:
@@ -87,16 +88,22 @@ class KMeansScorer(FittableAnomalyScorer):
             Size of the window used to create the subsequences of the series.
         k
             The number of clusters to form as well as the number of centroids to generate by the KMeans model.
+        component_wise
+            Boolean value indicating if the score needs to be computed for each component independently (True)
+            or by concatenating the component in the considered window to compute one score (False).
+            Default: False
+        window_transform
+            Boolean value indicates if the scorer needs to post-process its output when the `window` parameter
+            exceeds 1. If set to True, the scores for each point can be assigned by aggregating the anomaly
+            scores for each window the point is included in. It returns a point-wise anomaly score. If set to
+            False, the score is returned without this post-processing step and is a window-wise anomaly score.
+            Default: True
         diff_fn
             Optionally, reduction function to use if two series are given. It will transform the two series into one.
             This allows the KMeansScorer to apply KMeans on the original series or on its residuals (difference
             between the prediction and the original series).
             Must be one of "abs_diff" and "diff" (defined in ``_diff_series()``).
             Default: "abs_diff"
-        component_wise
-            Boolean value indicating if the score needs to be computed for each component independently (True)
-            or by concatenating the component in the considered window to compute one score (False).
-            Default: False
         kwargs
             Additional keyword arguments passed to the internal scikit-learn KMeans model(s).
         """
@@ -114,7 +121,10 @@ class KMeansScorer(FittableAnomalyScorer):
             self.kmeans_kwargs["n_init"] = "auto"
 
         super().__init__(
-            univariate_scorer=(not component_wise), window=window, diff_fn=diff_fn
+            univariate_scorer=(not component_wise),
+            window=window,
+            diff_fn=diff_fn,
+            window_transform=window_transform,
         )
 
     def __str__(self):
@@ -155,7 +165,7 @@ class KMeansScorer(FittableAnomalyScorer):
                     list_series, concatenate=False, component_wise=False
                 )
             ]
-            return [
+            list_anomaly_score = [
                 TimeSeries.from_times_and_values(
                     series.time_index[self.window - 1 :], np_anomaly_score
                 )
@@ -175,4 +185,11 @@ class KMeansScorer(FittableAnomalyScorer):
                 ]
             )
 
-            return self._convert_tabular_to_series(list_series, list_np_anomaly_score)
+            list_anomaly_score = self._convert_tabular_to_series(
+                list_series, list_np_anomaly_score
+            )
+
+        if self.window > 1 and self.window_transform:
+            return self._fun_window_transform(list_anomaly_score, self.window)
+        else:
+            return list_anomaly_score
