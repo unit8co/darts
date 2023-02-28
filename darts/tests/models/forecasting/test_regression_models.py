@@ -2306,6 +2306,14 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             future_covariates=future_covariates,
         )
         self.assertEqual(indices, [2, 3, 5])
+        self.assertEqual(
+            column_names,
+            [
+                "past_cov_past_cov_cat_dummy_lag-1",
+                "fut_cov_fut_cov_promo_mechanism_lag1",
+                "product_id",
+            ],
+        )
 
 
 class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):
