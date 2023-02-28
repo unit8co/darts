@@ -30,7 +30,6 @@ from collections import OrderedDict
 from typing import List, Optional, Protocol, Sequence, Tuple, Union, runtime_checkable
 
 import numpy as np
-import pandas as pd
 from sklearn.linear_model import LinearRegression
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
@@ -876,7 +875,8 @@ class RegressionModel(GlobalForecastingModel):
                 ]
                 + (
                     list(target_ts.static_covariates.columns)
-                    if isinstance(target_ts.static_covariates, pd.DataFrame)
+                    if target_ts.has_static_covariates
+                    # if isinstance(target_ts.static_covariates, pd.DataFrame)
                     else []
                 )
             )
