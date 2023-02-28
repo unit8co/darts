@@ -164,16 +164,12 @@ class NaiveEnsembleModel(EnsembleModel):
         predictions: Union[TimeSeries, Sequence[TimeSeries]],
         series: Optional[Sequence[TimeSeries]] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        def take_average(prediction: TimeSeries) -> TimeSeries:
+            series = prediction.pd_dataframe(copy=False).sum(axis=1) / len(self.models)
+            series.name = prediction.components[0]
+            return TimeSeries.from_series(series)
+
         if isinstance(predictions, Sequence):
-            return [
-                TimeSeries.from_series(
-                    p.pd_dataframe(copy=False).sum(axis=1) / len(self.models),
-                    static_covariates=p.static_covariates,
-                )
-                for p in predictions
-            ]
+            return [take_average(p) for p in predictions]
         else:
-            return TimeSeries.from_series(
-                predictions.pd_dataframe(copy=False).sum(axis=1) / len(self.models),
-                static_covariates=predictions.static_covariates,
-            )
+            return take_average(predictions)
