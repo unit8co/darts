@@ -272,32 +272,11 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
             max_samples_per_ts,
         )
 
-        # Check if there are covariates that should be treated as categorical
-        categorical_covariates = (
-            (
-                self.categorical_past_covariates
-                if self.categorical_past_covariates
-                else []
-            )
-            + (
-                self.categorical_future_covariates
-                if self.categorical_future_covariates
-                else []
-            )
-            + (
-                self.categorical_static_covariates
-                if self.categorical_static_covariates
-                else []
-            )
+        cat_cols_indices, _ = self._get_categorical_features(
+            target_series,
+            past_covariates,
+            future_covariates,
         )
-        cat_cols_indices = None
-        if categorical_covariates:
-            cat_cols_indices, _ = self._get_categorical_features(
-                categorical_covariates,
-                target_series,
-                past_covariates,
-                future_covariates,
-            )
 
         # if training_labels is of shape (n_samples, 1) flatten it to shape (n_samples,)
         if len(training_labels.shape) == 2 and training_labels.shape[1] == 1:

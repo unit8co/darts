@@ -232,6 +232,16 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         ]
     )
 
+    lgbm_w_categorical_covariates = LightGBMModel(
+        lags=1,
+        lags_past_covariates=1,
+        lags_future_covariates=[1],
+        output_chunk_length=1,
+        categorical_future_covariates=["fut_cov_promo_mechanism"],
+        categorical_past_covariates=["past_cov_cat_dummy"],
+        categorical_static_covariates=["product_id"],
+    )
+
     univariate_accuracies = [
         0.03,  # RandomForest
         1e-13,  # LinearRegressionModel
@@ -305,6 +315,82 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     sine_multiseries2 = [sine_univariate4, sine_univariate5, sine_univariate6]
 
     lags_1 = {"target": [-3, -2, -1], "past": [-4, -2], "future": [-5, 2]}
+
+    @property
+    def inputs_for_tests_categorical_covariates(self):
+        """
+        Returns a series, past and future covariates that can be used for testing impact of categorical covariates.
+
+        Details:
+        - series is a univariate TimeSeries with daily frequency.
+        - future_covariates are a TimeSeries with 2 components. The first component represents a "promotion"
+            mechanism and has an impact on the target quantiy according to 'apply_promo_mechanism'. The second
+            component contains random data that should have no impact on the target quantity. Note that altough the
+            intention is to model the "promotion_mechnism" as a categorical variable, it is encoded as integers.
+            This is required by LightGBM.
+        - past_covariates are a TimeSeries with 2 components. It only contains dummy data and does not
+            have any impact on the target series.
+        """
+
+        def apply_promo_mechanism(promo_mechanism):
+            if promo_mechanism == 0:
+                return np.random.normal(0, 5)
+            elif promo_mechanism == 1:
+                return np.random.normal(5, 5)
+            elif promo_mechanism == 2:
+                return np.random.normal(10, 5)
+            elif promo_mechanism == 3:
+                return np.random.normal(30, 5)
+            elif promo_mechanism == 4:
+                return np.random.normal(20, 5)
+            elif promo_mechanism == 5:
+                return np.random.normal(15, 5)
+            elif promo_mechanism == 6:
+                return np.random.normal(10, 3)
+            elif promo_mechanism == 7:
+                return np.random.normal(5, 3)
+            elif promo_mechanism == 8:
+                return np.random.normal(10, 3)
+            elif promo_mechanism == 9:
+                return np.random.normal(15, 3)
+            elif promo_mechanism == 10:
+                return np.random.normal(20, 3)
+
+        date_range = pd.date_range(start="2020-01-01", end="2023-01-01", freq="D")
+        df = (
+            pd.DataFrame(
+                {
+                    "date": date_range,
+                    "baseline": np.random.normal(100, 20, len(date_range)),
+                    "fut_cov_promo_mechanism": np.random.randint(
+                        0, 11, len(date_range)
+                    ),
+                    "fut_cov_dummy": np.random.normal(10, 2, len(date_range)),
+                    "past_cov_dummy": np.random.normal(10, 2, len(date_range)),
+                    "past_cov_cat_dummy": np.random.normal(10, 2, len(date_range)),
+                }
+            )
+            .assign(
+                target_qty=lambda _df: _df.baseline
+                + _df.fut_cov_promo_mechanism.apply(apply_promo_mechanism)
+            )
+            .drop(columns=["baseline"])
+        )
+
+        series = TimeSeries.from_dataframe(
+            df,
+            time_col="date",
+            value_cols=["target_qty"],
+            static_covariates=pd.DataFrame({"product_id": [1]}),
+        )
+        past_covariates = TimeSeries.from_dataframe(
+            df, time_col="date", value_cols=["past_cov_dummy", "past_cov_cat_dummy"]
+        )
+        future_covariates = TimeSeries.from_dataframe(
+            df, time_col="date", value_cols=["fut_cov_promo_mechanism", "fut_cov_dummy"]
+        )
+
+        return series, past_covariates, future_covariates
 
     def test_model_construction(self):
         multi_models_modes = [True, False]
@@ -2094,7 +2180,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         assert lgb_fit_patch.call_args[1]["eval_set"] is not None
         assert lgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
 
-    def test_fit_predict_with_categorical_features(self):
+    def test_fit_predict_with_categorical_features_good_performance(self):
         """Test a RegressionModel with categorical features"""
         target_df = pd.DataFrame(
             {
@@ -2105,7 +2191,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         past_cov_df = pd.DataFrame(
             {
                 "date": pd.date_range("20130101", periods=100),
-                "past_cov_cat_1": np.random.randint(0, 5, 100),
+                "fut_cov_promo_mechanism": np.random.randint(0, 5, 100),
                 "past_cov_cat_2": np.random.randint(0, 5, 100),
                 "past_cov_regular": np.random.randint(0, 5, 100),
             }
@@ -2114,55 +2200,59 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             lags=1,
             lags_past_covariates=1,
             output_chunk_length=1,
-            categorical_past_covariates=["past_cov_cat_1", "past_cov_cat_2"],
-            categorical_static_covariates=["static_cat_1", "static_cat_2"],
+            categorical_future_covariates=["fut_cov_promo_mechanism"],
         )
+        model.fit(
+            series=TimeSeries.from_dataframe(
+                df=target_df,
+                time_col="date",
+                value_cols="target",
+                static_covariates=pd.DataFrame(
+                    {"static_cat_1": [1], "static_cat_2": [2]}
+                ),
+            ),
+            past_covariates=TimeSeries.from_dataframe(
+                df=past_cov_df,
+                time_col="date",
+                value_cols=["past_cov_cat_1", "past_cov_cat_2", "past_cov_regular"],
+            ),
+        )
+
+    def test_fit_predict_with_categorical_features(self):
+        """Test a RegressionModel with categorical features"""
+        (
+            series,
+            past_covariates,
+            future_covariates,
+        ) = self.inputs_for_tests_categorical_covariates
         with does_not_raise():
-            model.fit(
-                series=TimeSeries.from_dataframe(
-                    df=target_df,
-                    time_col="date",
-                    value_cols="target",
-                    static_covariates=pd.DataFrame(
-                        {"static_cat_1": [1], "static_cat_2": [2]}
-                    ),
-                ),
-                past_covariates=TimeSeries.from_dataframe(
-                    df=past_cov_df,
-                    time_col="date",
-                    value_cols=["past_cov_cat_1", "past_cov_cat_2", "past_cov_regular"],
-                ),
+            self.lgbm_w_categorical_covariates.fit(
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
             )
-            model.predict(1)
 
     def test_inconsistent_categorical_covariates(self):
-        target_df = pd.DataFrame(
-            {
-                "date": pd.date_range("20130101", periods=100),
-                "target": np.random.rand(100),
-            }
-        )
-        past_cov_df = pd.DataFrame(
-            {
-                "date": pd.date_range("20130101", periods=100),
-                "past_cov_cat_1": np.random.randint(0, 5, 100),
-                "past_cov_cat_2": np.random.randint(0, 5, 100),
-                "past_cov_regular": np.random.randint(0, 5, 100),
-            }
-        )
+        (
+            series,
+            past_covariates,
+            future_covariates,
+        ) = self.inputs_for_tests_categorical_covariates
         model_incorrect_pastcov = LightGBMModel(
             lags=1,
             lags_past_covariates=1,
             output_chunk_length=1,
-            categorical_past_covariates=["does_not_exist", "past_cov_cat_2"],
-            categorical_static_covariates=["static_cat_1", "static_cat_2"],
+            categorical_past_covariates=["does_not_exist", "past_cov_cat_dummy"],
+            categorical_static_covariates=["product_id"],
         )
         model_incorrect_statcov = LightGBMModel(
             lags=1,
             lags_past_covariates=1,
             output_chunk_length=1,
-            categorical_past_covariates=["past_cov_cat_1", "past_cov_cat_2"],
-            categorical_static_covariates=["static_cat_1", "does_not_exist"],
+            categorical_past_covariates=[
+                "past_cov_cat_dummy",
+            ],
+            categorical_static_covariates=["does_not_exist"],
         )
         model_incorrect_futcov = LightGBMModel(
             lags=1,
@@ -2178,89 +2268,27 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         ]:
             with self.assertRaises(ValueError):
                 model.fit(
-                    series=TimeSeries.from_dataframe(
-                        df=target_df,
-                        time_col="date",
-                        value_cols="target",
-                        static_covariates=pd.DataFrame(
-                            {"static_cat_1": [1], "static_cat_2": [2]}
-                        ),
-                    ),
-                    past_covariates=TimeSeries.from_dataframe(
-                        df=past_cov_df,
-                        time_col="date",
-                        value_cols=[
-                            "past_cov_cat_1",
-                            "past_cov_cat_2",
-                            "past_cov_regular",
-                        ],
-                    ),
+                    series=series,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
                 )
 
     def test_get_categorical_features_helper(self):
         """Test helper function responsible for retrieving indices of categorical features"""
-        target_df = pd.DataFrame(
-            {
-                "date": pd.date_range("20130101", periods=10),
-                "target": np.random.rand(10),
-            }
+        (
+            series,
+            past_covariates,
+            future_covariates,
+        ) = self.inputs_for_tests_categorical_covariates
+        (
+            indices,
+            column_names,
+        ) = self.lgbm_w_categorical_covariates._get_categorical_features(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
         )
-        past_cov_df = pd.DataFrame(
-            {
-                "date": pd.date_range("20130101", periods=10),
-                "past_cov_cat_1": np.random.randint(0, 5, 10),
-                "past_cov_regular_1": np.random.randint(0, 5, 10),
-                "past_cov_cat_2": np.random.randint(0, 5, 10),
-                "past_cov_regular_2": np.random.randint(0, 5, 10),
-            }
-        )
-        fut_cov_df = pd.DataFrame(
-            {
-                "date": pd.date_range("20130101", periods=10),
-                "fut_cov_regular_1": np.random.randint(0, 5, 10),
-                "fut_cov_regular_2": np.random.randint(0, 5, 10),
-                "fut_cov_cat_1": np.random.randint(0, 5, 10),
-                "fut_cov_regular_3": np.random.randint(0, 5, 10),
-            }
-        )
-        model = LightGBMModel(
-            lags=2,
-            lags_past_covariates=2,
-            lags_future_covariates=[1],
-            categorical_past_covariates=["past_cov_cat_1", "past_cov_cat_2"],
-            categorical_future_covariates=["fut_cov_cat_1"],
-            categorical_static_covariates=["static_cat"],
-        )
-        indices, column_names = model._get_categorical_features(
-            series=TimeSeries.from_dataframe(
-                df=target_df,
-                time_col="date",
-                value_cols="target",
-                static_covariates=pd.DataFrame({"static_cat": [1]}),
-            ),
-            past_covariates=TimeSeries.from_dataframe(
-                df=past_cov_df,
-                time_col="date",
-                value_cols=[
-                    "past_cov_cat_1",
-                    "past_cov_regular_1",
-                    "past_cov_cat_2",
-                    "past_cov_regular_2",
-                ],
-            ),
-            future_covariates=TimeSeries.from_dataframe(
-                df=fut_cov_df,
-                time_col="date",
-                value_cols=[
-                    "fut_cov_regular_1",
-                    "fut_cov_regular_2",
-                    "fut_cov_cat_1",
-                    "fut_cov_regular_3",
-                ],
-            ),
-        )
-
-        self.assertEqual(indices, [2, 4, 6, 8, 12, 14])
+        self.assertEqual(indices, [2, 3, 5])
 
 
 class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):

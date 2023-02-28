@@ -850,45 +850,48 @@ class RegressionModel(GlobalForecastingModel):
             )
         )
 
-        # TODO: currently assumes that the set of features is the same for all time series the model is trained on and
-        #  can thus be retrieved from the first time series. Check (corner cases) if this always holds
-        target_ts = series if isinstance(series, TimeSeries) else series[0]
-        past_covs_ts = past_covariates[0] if past_covariates else None
-        fut_covs_ts = future_covariates[0] if future_covariates else None
+        if not categorical_covariates:
+            return [], []
+        else:
+            # TODO: currently assumes that the set of features is the same for all time series the model is trained on
+            #  and can thus be retrieved from the first time series. Check (corner cases) if this always holds
+            target_ts = series if isinstance(series, TimeSeries) else series[0]
+            past_covs_ts = past_covariates[0] if past_covariates else None
+            fut_covs_ts = future_covariates[0] if future_covariates else None
 
-        # We keep the creation order of the different lags/features in create_lagged_data
-        feature_list = (
-            [
-                f"target_{component}_{lag}"
-                for lag in self.lags.get("target", [])
-                for component in target_ts.components
-            ]
-            + [
-                f"past_cov_{component}_{lag}"
-                for lag in self.lags.get("past", [])
-                for component in past_covs_ts.components
-            ]
-            + [
-                f"fut_cov_{component}_{lag}"
-                for lag in self.lags.get("future", [])
-                for component in fut_covs_ts.components
-            ]
-            + (
-                list(target_ts.static_covariates.columns)
-                if isinstance(target_ts.static_covariates, pd.DataFrame)
-                else []
+            # We keep the creation order of the different lags/features in create_lagged_data
+            feature_list = (
+                [
+                    f"target_{component}_{lag}"
+                    for lag in self.lags.get("target", [])
+                    for component in target_ts.components
+                ]
+                + [
+                    f"past_cov_{component}_{lag}"
+                    for lag in self.lags.get("past", [])
+                    for component in past_covs_ts.components
+                ]
+                + [
+                    f"fut_cov_{component}_{lag}"
+                    for lag in self.lags.get("future", [])
+                    for component in fut_covs_ts.components
+                ]
+                + (
+                    list(target_ts.static_covariates.columns)
+                    if isinstance(target_ts.static_covariates, pd.DataFrame)
+                    else []
+                )
             )
-        )
 
-        indices = [
-            i
-            for i, col in enumerate(feature_list)
-            for cat in categorical_covariates
-            if cat and cat in col
-        ]
-        col_names = [feature_list[i] for i in indices]
+            indices = [
+                i
+                for i, col in enumerate(feature_list)
+                for cat in categorical_covariates
+                if cat and cat in col
+            ]
+            col_names = [feature_list[i] for i in indices]
 
-        return indices, col_names
+            return indices, col_names
 
     def __str__(self):
         return self.model.__str__()
