@@ -6,6 +6,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 [Full Changelog](https://github.com/unit8co/darts/compare/0.23.1...master)
+- `LightGBM` model now supports native categorical feature handling as described
+   [here](https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features).
+   [#1585](https://github.com/unit8co/darts/pull/1585) by [Rijk van der Meulen](https://github.com/rijkvandermeulen)
 
 ## [0.23.1](https://github.com/unit8co/darts/tree/0.23.1) (2023-01-12)
 Patch release

@@ -319,7 +319,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     @property
     def inputs_for_tests_categorical_covariates(self):
         """
-        Returns a series, past and future covariates that can be used for testing impact of categorical covariates.
+        Returns TimeSeries objects that can be used for testing impact of categorical covariates.
 
         Details:
         - series is a univariate TimeSeries with daily frequency.
@@ -332,7 +332,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             have any impact on the target series.
         """
 
-        def apply_promo_mechanism(promo_mechanism):
+        def _apply_promo_mechanism(promo_mechanism):
             if promo_mechanism == 0:
                 return 0
             elif promo_mechanism == 1:
@@ -372,7 +372,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             )
             .assign(
                 target_qty=lambda _df: _df.baseline
-                + _df.fut_cov_promo_mechanism.apply(apply_promo_mechanism)
+                + _df.fut_cov_promo_mechanism.apply(_apply_promo_mechanism)
             )
             .drop(columns=["baseline"])
         )
