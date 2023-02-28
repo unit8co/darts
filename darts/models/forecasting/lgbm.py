@@ -92,13 +92,18 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
             trained to predict at step 'output_chunk_length' in the future. Default: True.
         categorical_past_covariates
             Optionally, a list of component names specifying the past covariates that should be treated as categorical
-            by the underlying `LightGBMRegressor`.
+            by the underlying `lightgbm.LightGBMRegressor`. It's recommended that the components that are treated as
+            categorical are integer-encoded. For more information on how LightGBM handles categorical features, visit:
+            `Categorical feature support documentation
+            <https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`_
         categorical_future_covariates
             Optionally, a list of component names specifying the future covariates that should be treated as categorical
-            by the underlying `LightGBMRegressor`.
+            by the underlying `lightgbm.LightGBMRegressor`. It's recommended that the components that are treated as
+            categorical are integer-encoded.
         categorical_static_covariates
             Optionally, a list of names specifying the static covariates that should be treated as categorical
-            by the underlying `LightGBMRegressor`.
+            by the underlying `lightgbm.LightGBMRegressor`. It's recommended that the static covariates that are
+            treated as categorical are integer-encoded.
         **kwargs
             Additional keyword arguments passed to `lightgbm.LGBRegressor`.
         """

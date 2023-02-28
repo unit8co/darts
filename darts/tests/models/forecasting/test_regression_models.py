@@ -2315,6 +2315,24 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             ],
         )
 
+    @patch.object(darts.models.forecasting.lgbm.lgb.LGBMRegressor, "fit")
+    def test_lgbm_categorical_features_passed_to_fit_correctly(self, lgb_fit_patch):
+        """Test whether the categorical features are passed to LightGBMRegressor"""
+        (
+            series,
+            past_covariates,
+            future_covariates,
+        ) = self.inputs_for_tests_categorical_covariates
+        self.lgbm_w_categorical_covariates.fit(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
+        # Check that mocked super.fit() method was called with correct categorical_feature argument
+        args, kwargs = lgb_fit_patch.call_args
+        self.assertEqual(kwargs["categorical_feature"], [2, 3, 5])
+
 
 class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):
     models_cls_kwargs_errs = [
