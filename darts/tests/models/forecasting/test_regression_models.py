@@ -334,25 +334,25 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
         def apply_promo_mechanism(promo_mechanism):
             if promo_mechanism == 0:
-                return np.random.normal(0, 5)
+                return 0
             elif promo_mechanism == 1:
-                return np.random.normal(5, 5)
+                return np.random.normal(25, 5)
             elif promo_mechanism == 2:
-                return np.random.normal(10, 5)
+                return np.random.normal(5, 1)
             elif promo_mechanism == 3:
-                return np.random.normal(30, 5)
+                return np.random.normal(6, 2)
             elif promo_mechanism == 4:
-                return np.random.normal(20, 5)
+                return np.random.normal(50, 5)
             elif promo_mechanism == 5:
-                return np.random.normal(15, 5)
+                return np.random.normal(2, 0.5)
             elif promo_mechanism == 6:
-                return np.random.normal(10, 3)
+                return np.random.normal(-10, 3)
             elif promo_mechanism == 7:
-                return np.random.normal(5, 3)
-            elif promo_mechanism == 8:
-                return np.random.normal(10, 3)
-            elif promo_mechanism == 9:
                 return np.random.normal(15, 3)
+            elif promo_mechanism == 8:
+                return np.random.normal(40, 7)
+            elif promo_mechanism == 9:
+                return 0
             elif promo_mechanism == 10:
                 return np.random.normal(20, 3)
 
@@ -361,7 +361,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             pd.DataFrame(
                 {
                     "date": date_range,
-                    "baseline": np.random.normal(100, 20, len(date_range)),
+                    "baseline": np.random.normal(100, 10, len(date_range)),
                     "fut_cov_promo_mechanism": np.random.randint(
                         0, 11, len(date_range)
                     ),
@@ -2180,46 +2180,63 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         assert lgb_fit_patch.call_args[1]["eval_set"] is not None
         assert lgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
 
-    def test_fit_predict_with_categorical_features_good_performance(self):
-        """Test a RegressionModel with categorical features"""
-        target_df = pd.DataFrame(
-            {
-                "date": pd.date_range("20130101", periods=100),
-                "target": np.random.rand(100),
-            }
-        )
-        past_cov_df = pd.DataFrame(
-            {
-                "date": pd.date_range("20130101", periods=100),
-                "fut_cov_promo_mechanism": np.random.randint(0, 5, 100),
-                "past_cov_cat_2": np.random.randint(0, 5, 100),
-                "past_cov_regular": np.random.randint(0, 5, 100),
-            }
-        )
-        model = LightGBMModel(
+    def test_quality_forecast_with_categorical_covariates(self):
+        (
+            series,
+            past_covariates,
+            future_covariates,
+        ) = self.inputs_for_tests_categorical_covariates
+
+        model_without_fut_cov = LightGBMModel(
             lags=1,
-            lags_past_covariates=1,
+            output_chunk_length=1,
+            n_estimators=20,
+            max_depth=3,
+        )
+        model_with_fut_cov = LightGBMModel(
+            lags=1,
+            lags_future_covariates=[0, 1],
+            output_chunk_length=1,
+            n_estimators=20,
+            max_depth=3,
+        )
+        model_with_fut_cov_categorical = LightGBMModel(
+            lags=1,
+            lags_future_covariates=[0, 1],
             output_chunk_length=1,
             categorical_future_covariates=["fut_cov_promo_mechanism"],
-        )
-        model.fit(
-            series=TimeSeries.from_dataframe(
-                df=target_df,
-                time_col="date",
-                value_cols="target",
-                static_covariates=pd.DataFrame(
-                    {"static_cat_1": [1], "static_cat_2": [2]}
-                ),
-            ),
-            past_covariates=TimeSeries.from_dataframe(
-                df=past_cov_df,
-                time_col="date",
-                value_cols=["past_cov_cat_1", "past_cov_cat_2", "past_cov_regular"],
-            ),
+            n_estimators=20,
+            max_depth=3,
         )
 
-    def test_fit_predict_with_categorical_features(self):
-        """Test a RegressionModel with categorical features"""
+        rmse_without_fut_cov = model_without_fut_cov.backtest(
+            series=series,
+            start=0.8,
+            retrain=False,
+            forecast_horizon=1,
+            metric=rmse,
+        )
+        rmse_with_fut_cov = model_with_fut_cov.backtest(
+            series=series,
+            future_covariates=future_covariates,
+            start=0.8,
+            retrain=False,
+            forecast_horizon=1,
+            metric=rmse,
+        )
+        rmse_with_fut_cov_categorical = model_with_fut_cov_categorical.backtest(
+            series=series,
+            future_covariates=future_covariates,
+            start=0.8,
+            retrain=False,
+            forecast_horizon=1,
+            metric=rmse,
+        )
+
+        self.assertGreater(rmse_without_fut_cov, rmse_with_fut_cov_categorical)
+        self.assertGreater(rmse_with_fut_cov, rmse_with_fut_cov_categorical)
+
+    def test_fit_with_categorical_features_successful(self):
         (
             series,
             past_covariates,
@@ -2232,7 +2249,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 future_covariates=future_covariates,
             )
 
-    def test_inconsistent_categorical_covariates(self):
+    def test_fit_with_categorical_features_raises_error(self):
         (
             series,
             past_covariates,
