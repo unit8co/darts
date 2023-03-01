@@ -2237,7 +2237,11 @@ class TransferableFutureCovariatesLocalForecastingModel(
             Parameter names mapped to their values.
         """
         default_model_params = self._get_default_model_params()
-        changed_model_params = [(k, v) for k, v in self.model_params.items() if v != default_model_params.get(k, None)]
+        changed_model_params = [
+            (k, v)
+            for k, v in self.model_params.items()
+            if v != default_model_params.get(k, None)
+        ]
 
         model_name = self.__class__.__name__
         params_string = ", ".join([f"{k}={v}" for k, v in changed_model_params])
@@ -2249,7 +2253,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
         init_signature = inspect.signature(cls.__init__)
         # Consider the constructor parameters excluding 'self'
         return {
-            p.name : p.default
+            p.name: p.default
             for p in init_signature.parameters.values()
             if p.name != "self"
         }
