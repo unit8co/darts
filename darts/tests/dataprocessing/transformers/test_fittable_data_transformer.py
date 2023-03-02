@@ -11,7 +11,12 @@ from darts.dataprocessing.transformers.fittable_data_transformer import (
 from darts.utils.timeseries_generation import constant_timeseries
 
 
-class BaseDataTransformerTestCase(unittest.TestCase):
+class LocalFittableDataTransformerTestCase(unittest.TestCase):
+    """
+    Tests that data transformers inheriting from `FittableDataTransformer` class behave
+    correctly when `global_fit` attribute is `False`.
+    """
+
     __test__ = True
 
     @classmethod
@@ -100,24 +105,24 @@ class BaseDataTransformerTestCase(unittest.TestCase):
             # Ensure manual masking only performed when `mask_components = False`
             # when transform constructed:
             if not mask_components and ("component_mask" in kwargs):
-                vals = BaseDataTransformerTestCase.DataTransformerMock.apply_component_mask(
+                vals = LocalFittableDataTransformerTestCase.DataTransformerMock.apply_component_mask(
                     series, kwargs["component_mask"], return_ts=False
                 )
             else:
                 vals = series.all_values()
 
             if stack_samples:
-                vals = BaseDataTransformerTestCase.DataTransformerMock.stack_samples(
+                vals = LocalFittableDataTransformerTestCase.DataTransformerMock.stack_samples(
                     vals
                 )
             vals = scale * vals + translation
             if stack_samples:
-                vals = BaseDataTransformerTestCase.DataTransformerMock.unstack_samples(
+                vals = LocalFittableDataTransformerTestCase.DataTransformerMock.unstack_samples(
                     vals, series=series
                 )
 
             if not mask_components and ("component_mask" in kwargs):
-                vals = BaseDataTransformerTestCase.DataTransformerMock.unapply_component_mask(
+                vals = LocalFittableDataTransformerTestCase.DataTransformerMock.unapply_component_mask(
                     series, vals, kwargs["component_mask"]
                 )
 
@@ -270,3 +275,100 @@ class BaseDataTransformerTestCase(unittest.TestCase):
         mock = self.DataTransformerMock(scale=2, translation=10, mask_components=False)
         transformed = mock.fit_transform(test_input, component_mask=mask)
         self.assertEqual(transformed, expected)
+
+
+class GlobalFittableDataTransformerTestCase(unittest.TestCase):
+    """
+    Tests that data transformers inheriting from `FittableDataTransformer` class behave
+    correctly when `global_fit` attribute is `True`.
+    """
+
+    __test__ = True
+
+    @classmethod
+    def setUpClass(cls):
+        logging.disable(logging.CRITICAL)
+
+    class DataTransformerMock(FittableDataTransformer):
+        def __init__(self, global_fit: bool):
+            """
+            Subtracts off the time-averaged mean of each component in a `TimeSeries`.
+
+            If `global_fit` is `True`, then all of the `TimeSeries` provided to `fit` are
+            used to compute a single time-averaged mean that will be subtracted from
+            every `TimeSeries` subsequently provided to `transform`.
+
+            Conversely, if `global_fit` is `False`, then the time-averaged mean of each
+            `TimeSeries` pass to `fit` is individually computed, resulting in `n` means
+            being computed if `n` `TimeSeries` were passed to `fit`. If multiple `TimeSeries`
+            are subsequently passed to `transform`, the `i`th computed mean will be subtracted
+            from the `i`th provided `TimeSeries`.
+
+            Parameters
+            ----------
+            global_fit
+                Whether global fitting should be performed.
+            """
+            super().__init__(name="DataTransformerMock", global_fit=global_fit)
+
+        @staticmethod
+        def ts_fit(
+            series: Union[TimeSeries, Sequence[TimeSeries]],
+            params: Mapping[str, Any],
+            **kwargs
+        ):
+            """
+            'Fits' transform by computing time-average of each sample and
+            component in `series`.
+
+            If `global_fit` is `True`, then `series` is a `Sequence[TimeSeries]` and the time-averaged mean
+            of each component over *all* of the `TimeSeries` is computed. If `global_fit` is `False`, then
+            `series` is a single `TimeSeries` and the time-averaged mean of the components of this single
+            `TimeSeries` are computed.
+            """
+            if not isinstance(series, Sequence):
+                series = [series]
+            vals = np.concatenate([ts.all_values(copy=False) for ts in series], axis=0)
+            return np.mean(vals, axis=0)
+
+        @staticmethod
+        def ts_transform(
+            series: TimeSeries, params: Mapping[str, Any], **kwargs
+        ) -> TimeSeries:
+            """
+            Implements the transform `series - mean`.
+            """
+            mean = params["fitted"]
+            vals = series.all_values()
+            vals -= mean
+            return TimeSeries.from_values(vals)
+
+    def test_global_fitting(self):
+        """
+        Tests that time-averaged mean subtraction transformation behaves
+        correctly when `global_fit = False` and when `global_fit = True`.
+        """
+
+        series_1 = TimeSeries.from_values(np.ones((3, 2, 1)))
+        series_2 = TimeSeries.from_values(2 * np.ones((3, 2, 1)))
+
+        # Local fitting - subtracting mean of each series from itself should return
+        # zero-valued series:
+        transformed_1, transformed_2 = self.DataTransformerMock(
+            global_fit=False
+        ).fit_transform([series_1, series_2])
+        self.assertEqual(transformed_1, TimeSeries.from_values(np.zeros((3, 2, 1))))
+        self.assertEqual(transformed_2, TimeSeries.from_values(np.zeros((3, 2, 1))))
+
+        # Global fitting - mean of `series_1` and `series_2` should be `1.5`, so
+        # `series_1` values should be transformed to `-0.5` and `series_2` values
+        # should be transformed to `1.5`:
+        transformed_1, transformed_2 = self.DataTransformerMock(
+            global_fit=True
+        ).fit_transform([series_1, series_2])
+        self.assertEqual(
+            transformed_1, TimeSeries.from_values(-0.5 * np.ones((3, 2, 1)))
+        )
+        self.assertEqual(
+            transformed_2, TimeSeries.from_values(0.5 * np.ones((3, 2, 1)))
+        )
