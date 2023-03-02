@@ -347,6 +347,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # pl_module_params must be set in __init__ method of TorchForecastingModel subclass
         self.pl_module_params: Optional[dict] = None
+        self.train_loader = None
+        self.val_loader = None
 
     @classmethod
     def _validate_model_params(cls, **kwargs):
@@ -592,6 +594,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         epochs: int = 0,
         max_samples_per_ts: Optional[int] = None,
         num_loader_workers: int = 0,
+        setup_only: bool = False,
     ):
         """Fit/train the model on one or multiple series.
 
@@ -649,6 +652,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             both for the training and validation loaders (if any).
             A larger number of workers can sometimes increase performance, but can also incur extra overheads
             and increase memory usage, as more batches are loaded in parallel.
+        setup_only
+            Boolean value indicating "setup_only" mode.
+            In th default ``False`` case, the training runs as usual.
+            In case it is set to ``True``, all the setup and preparation is done,
+            but the main training cycle is not run.
+            This can be used to set up the model for training and then access the tuner functions, like ``lr_find()``
+            and ``scale_batch_size()``.
 
         Returns
         -------
@@ -763,7 +773,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         return self.fit_from_dataset(
-            train_dataset, val_dataset, trainer, verbose, epochs, num_loader_workers
+            train_dataset,
+            val_dataset,
+            trainer,
+            verbose,
+            epochs,
+            num_loader_workers,
+            setup_only,
         )
 
     @random_method
@@ -775,6 +791,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: Optional[bool] = None,
         epochs: int = 0,
         num_loader_workers: int = 0,
+        setup_only: bool = False,
     ):
         """
         Train the model with a specific :class:`darts.utils.data.TrainingDataset` instance.
@@ -811,6 +828,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             both for the training and validation loaders (if any).
             A larger number of workers can sometimes increase performance, but can also incur extra overheads
             and increase memory usage, as more batches are loaded in parallel.
+        setup_only
+            Boolean value indicating "setup_only" mode. In the default ``False`` case, the training runs as usual.
+            In case it is set to ``True``, all the setup and preparation is done,
+            but the main training cycle is not run.
+            This can be used to set up the model for training and then access the tuner functions,
+            like ``lr_find()`` and ``scale_batch_size()``.
 
         Returns
         -------
@@ -915,10 +938,85 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 "best=False)`. Finally, train the model with `model.fit(..., epochs=new_epochs)` where "
                 "`new_epochs` is the sum of (epochs already trained + some additional epochs)."
             )
+        self.train_loader = train_loader
+        self.val_loader = val_loader
 
-        # Train model
-        self._train(train_loader, val_loader)
+        # Train model if not in "setup_only" mode
+        if not setup_only:
+            self._train(train_loader, val_loader)
         return self
+
+    def lr_find(
+        self,
+        min_lr: float = 1e-08,
+        max_lr: float = 1,
+        num_training: int = 100,
+        mode: str = "exponential",
+        early_stop_threshold: float = 4.0,
+    ):
+        """
+        Helper function for accessing the `lr_find()` functionality of Lightning,
+        which according to the documentation 'Enables the user to do a range test of
+        good initial learning rates,
+        to reduce the amount of guesswork in picking a good starting learning rate.'
+        For more information on PyTorch Lightning Tuners check out
+        `this link
+        <https://pytorch-lightning.readthedocs.io/en/stable/api/pytorch_lightning.tuner.tuning.Tuner.html`_
+
+        This function presupposes, that the model was already initialized with running
+        `model.fit(...,setup_only=True)`, so a valid `train_dataloader` is available in it.
+
+        Parameters
+        ----------
+        min_lr
+            minimum learning rate to investigate
+        max_lr
+            maximum learning rate to investigate
+        num_training
+            number of learning rates to test
+        mode
+            Search strategy to update learning rate after each batch:
+            'exponential': Increases the learning rate exponentially.
+            'linear': Increases the learning rate linearly.
+        early_stop_threshold
+            Threshold for stopping the search. If the loss at any point is larger
+            than early_stop_threshold*best_loss then the search is stopped.
+            To disable, set to `None`
+
+
+        Returns
+        -------
+        lr_finder
+            `_LRFinder` object of Lightning containing the results of the LR sweep.
+        """
+        raise_if_not(
+            self._fit_called,
+            "The model is not yet initialized properly"
+            "Please call model.fit(...,setup_only=True)"
+            "before executing this call!",
+        )
+
+        train_dataloader = (
+            self.train_loader
+        )  # self.trainer._data_connector._train_dataloader_source.instance
+        val_dataloader = (
+            self.val_loader
+        )  # self.trainer._data_connector._val_dataloader_source.instance
+
+        lr_finder = self.trainer.tuner.lr_find(
+            self.model,
+            train_dataloaders=train_dataloader,
+            val_dataloaders=val_dataloader,
+            method="fit",
+            min_lr=min_lr,
+            max_lr=max_lr,
+            num_training=num_training,
+            mode=mode,
+            early_stop_threshold=early_stop_threshold,
+            update_attr=False,
+        )
+
+        return lr_finder
 
     def _train(
         self, train_loader: DataLoader, val_loader: Optional[DataLoader]
