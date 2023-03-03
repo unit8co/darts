@@ -83,8 +83,14 @@ class BottomUpReconciliator(BaseDataTransformer):
 
     @staticmethod
     def get_projection_matrix(series):
-        n, m = series.n_components, len(series.bottom_level_components)
-        return np.concatenate([np.zeros((m, n - m)), np.eye(m)], axis=1)
+        leaves_seq = list(series.bottom_level_components)
+        n, m = series.n_components, len(leaves_seq)
+        leaves_indexes = {l: i for i, l in enumerate(leaves_seq)}
+        G = np.zeros((m, n))
+        for i, c in enumerate(series.components):
+            if c in leaves_indexes:
+                G[leaves_indexes[c], i] = 1.0
+        return G
 
     @staticmethod
     def ts_transform(
@@ -135,9 +141,9 @@ class TopDownReconciliator(FittableDataTransformer):
 
         # compute proportions for each base component
         proportions = sum_base / sum_total
-
+        top_level_index = list(series.components).index(series.top_level_component)
         G = np.zeros((m, n))
-        G[:, 0] = proportions
+        G[:, top_level_index] = proportions
 
         return G
 
