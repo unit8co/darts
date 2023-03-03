@@ -356,7 +356,7 @@ class BaseDataTransformer(ABC):
         Creates generator of dictionaries containing fixed parameter values
         (i.e. attributes defined in the child-most class). Those fixed parameters
         specified by `parallel_params` are given different values over each of the
-        parallel jobs. Called by `_transform_iterator` and `_inverse_transform_iterator`,
+        parallel jobs. Called by `transform` and `inverse_transform`,
         if `Transformer` does *not* inherit from `FittableTransformer`.
         """
         self._check_fixed_params(n_timeseries)

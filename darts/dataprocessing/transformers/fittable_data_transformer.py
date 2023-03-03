@@ -324,7 +324,7 @@ class FittableDataTransformer(BaseDataTransformer):
         specified by `parallel_params` are given different values over each of the parallel jobs;
         every fitted parameter is given a different value for each parallel job (since `self.fit`
         returns a `Sequence` containing one fitted parameter value of each parallel job). Called by
-        `_transform_iterator` and `_inverse_transform_iterator`.
+        `transform` and `inverse_transform`.
         """
         # Call `_check_fixed_params` of `BaseDataTransformer`:
         self._check_fixed_params(n_timeseries)
