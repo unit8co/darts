@@ -1,3 +1,8 @@
+"""
+Differencing Transformer
+------------------------
+"""
+
 from typing import Any, Iterator, Sequence, Tuple, Union
 
 import numpy as np
