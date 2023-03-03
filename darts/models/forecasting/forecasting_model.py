@@ -952,7 +952,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series
             The (or a sequence of) target time series to use to successively train and evaluate the historical forecasts
         historical_forecasts
-            Optionally, the (or a sequence of) historical forecasts time series to be evaluated.s
+            Optionally, the (or a sequence of) historical forecasts time series to be evaluated.
         past_covariates
             Optionally, one (or a sequence of) past-observed covariate series.
             This applies only if the model supports past covariates.
