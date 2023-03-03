@@ -4,17 +4,7 @@ Data Transformer Base Class
 """
 
 from abc import ABC, abstractmethod
-from typing import (
-    Any,
-    Generator,
-    Iterator,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-)
+from typing import Any, Generator, List, Mapping, Optional, Sequence, Union
 
 import numpy as np
 import xarray as xr
@@ -151,45 +141,6 @@ class BaseDataTransformer(ABC):
         """
         pass
 
-    def _transform_iterator(
-        self, series: Sequence[TimeSeries]
-    ) -> Iterator[Tuple[TimeSeries]]:
-        """
-        Return an ``Iterator`` object with tuples of inputs for each single call to :func:`ts_transform()`.
-        Additional `args` and `kwargs` from :func:`transform()` (constant across all the calls to
-        :func:`ts_transform()`) are already forwarded, and thus don't need to be included in this generator.
-
-        The basic implementation of this method returns ``zip(series)``, i.e., a generator of single-valued tuples,
-        each containing one ``TimeSeries`` object.
-
-        Parameters
-        ----------
-        series
-            Sequence of series received in input.
-
-        Returns
-        -------
-        Iterator[Tuple[TimeSeries]]
-            An iterator containing tuples of inputs for the :func:`ts_transform` method.
-
-        Examples
-        ________
-
-        class IncreasingAdder(BaseDataTransformer):
-            def __init__(self):
-                super().__init__()
-
-            @staticmethod
-            def ts_transform(series: TimeSeries, n: int) -> TimeSeries:
-                return series + n
-
-            def _transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, int]]:
-                return zip(series, (i for i in range(len(series))))
-
-        """
-        params = self._get_params(n_timeseries=len(series))
-        return zip(series, params)
-
     def transform(
         self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
     ) -> Union[TimeSeries, List[TimeSeries]]:
@@ -232,7 +183,7 @@ class BaseDataTransformer(ABC):
             data = [self.apply_component_mask(ts, mask, return_ts=True) for ts in data]
 
         input_iterator = _build_tqdm_iterator(
-            self._transform_iterator(data),
+            zip(data, self._get_params(n_timeseries=len(data))),
             verbose=self._verbose,
             desc=desc,
             total=len(data),

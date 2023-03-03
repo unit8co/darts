@@ -4,7 +4,7 @@ Invertible Data Transformer Base Class
 """
 
 from abc import abstractmethod
-from typing import Any, Iterator, List, Mapping, Sequence, Tuple, Union
+from typing import Any, List, Mapping, Sequence, Union
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if_not
@@ -105,52 +105,6 @@ class InvertibleDataTransformer(BaseDataTransformer):
         """
         pass
 
-    def _inverse_transform_iterator(
-        self, series: Sequence[TimeSeries]
-    ) -> Iterator[Tuple[TimeSeries]]:
-        """Return an `Iterator` object with tuples of inputs for each single call to :func:`ts_inverse_transform()`.
-
-        Additional `args` and `kwargs` from :func:`inverse_transform()` (that don't change across the calls to
-        :func:`ts_inverse_transform()`) are already forwarded, and thus don't need to be included in this generator.
-
-        The basic implementation of this method returns ``zip(series)``, i.e., a generator of single-valued tuples,
-        each containing one TimeSeries object.
-
-        Parameters
-        ----------
-        series (Sequence[TimeSeries])
-            Sequence of TimeSeries received in input.
-
-        Returns
-        -------
-        Iterator[Tuple[TimeSeries]]
-            An iterator containing tuples of inputs for the :func:`ts_inverse_transform()` method.
-
-        Examples
-        ________
-
-        class IncreasingAdder(InvertibleDataTransformer):
-            def __init__(self):
-                super().__init__(ts_transform=my_ts_transform,
-                                 ts_inverse_transform=my_ts_inverse_transform)
-
-            @staticmethod
-            def ts_transform(series: TimeSeries, n: int) -> TimeSeries:
-                return series + n
-
-            @staticmethod
-            def ts_inverse_transform(series: TimeSeries, n: int) -> TimeSeries:
-                return series - n
-
-            def _transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, int]]:
-                return zip(series, (i for i in range(len(series))))
-
-            def _inverse_transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, int]]:
-                return zip(series, (i for i in range(len(series))))
-        """
-        params = self._get_params(n_timeseries=len(series))
-        return zip(series, params)
-
     def inverse_transform(
         self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
     ) -> Union[TimeSeries, List[TimeSeries]]:
@@ -199,7 +153,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
             data = [self.apply_component_mask(ts, mask, return_ts=True) for ts in data]
 
         input_iterator = _build_tqdm_iterator(
-            self._inverse_transform_iterator(data),
+            zip(data, self._get_params(n_timeseries=len(data))),
             verbose=self._verbose,
             desc=desc,
             total=len(data),
