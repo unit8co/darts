@@ -1,3 +1,8 @@
+"""
+Differencing Transformer
+------------------------
+"""
+
 from typing import Any, Mapping, Sequence, Union
 
 import numpy as np
