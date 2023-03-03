@@ -32,6 +32,7 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
             Union[float, Sequence[float], Sequence[Sequence[float]]]
         ] = None,
         optim_method: Literal["mle", "pearsonr"] = "mle",
+        global_fit: bool = False,
         n_jobs: int = 1,
         verbose: bool = False,
     ):
@@ -65,6 +66,14 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         optim_method
             Specifies which method to use to find an optimal value for the lmbda parameter.
             Either 'mle' or 'pearsonr'. Ignored if `lmbda` is not `None`.
+        global_fit
+            Optionally, whether all of the `TimeSeries` passed to the `fit()` method should be used to fit
+            a *single* set of parameters, or if a different set of parameters should be independently fitted
+            to each provided `TimeSeries`. If `True`, then a `Sequence[TimeSeries]` is passed to `ts_fit`
+            and a single set of parameters is fitted using all of the provided `TimeSeries`. If `False`, then
+            each `TimeSeries` is individually passed to `ts_fit`, and a different set of fitted parameters
+            if yielded for each of these fitting operations. See `FittableDataTransformer` documentation for
+            further details.
         n_jobs
             The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
             passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
@@ -117,28 +126,36 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
             verbose=verbose,
             parallel_params=parallel_params,
             mask_components=True,
+            global_fit=global_fit,
         )
 
     @staticmethod
     def ts_fit(
-        series: TimeSeries, params: Mapping[str, Any], *args, **kwargs
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        params: Mapping[str, Any],
+        *args,
+        **kwargs
     ) -> Union[Sequence[float], pd.core.series.Series]:
         lmbda, method = params["fixed"]["_lmbda"], params["fixed"]["_optim_method"]
+        # If `global_fit` is `True`, then `series` will be ` Sequence[TimeSeries]`;
+        # otherwise, `series` is a single `TimeSeries`:
+        if isinstance(series, TimeSeries):
+            series = [series]
         if lmbda is None:
             # Compute optimal lmbda for each dimension of the time series. In this case, the return type is
             # an ndarray and not a Sequence
-            vals = BoxCox.stack_samples(series)
+            vals = np.concatenate([BoxCox.stack_samples(ts) for ts in series], axis=0)
             lmbda = np.apply_along_axis(boxcox_normmax, axis=0, arr=vals, method=method)
 
         elif isinstance(lmbda, Sequence):
             raise_if(
-                len(lmbda) != series.width,
+                len(lmbda) != series[0].width,
                 "lmbda should have one value per dimension (ie. column or variable) of the time series",
                 logger,
             )
         else:
             # Replicate lmbda to match dimensions of the time series
-            lmbda = [lmbda] * series.width
+            lmbda = [lmbda] * series[0].width
 
         return lmbda
 

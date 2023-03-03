@@ -4,8 +4,9 @@ Scaler
 """
 
 from copy import deepcopy
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence, Union
 
+import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
 from darts.logging import get_logger, raise_log
@@ -17,9 +18,14 @@ from .invertible_data_transformer import InvertibleDataTransformer
 logger = get_logger(__name__)
 
 
-class Scaler(InvertibleDataTransformer, FittableDataTransformer):
+class Scaler(FittableDataTransformer, InvertibleDataTransformer):
     def __init__(
-        self, scaler=None, name="Scaler", n_jobs: int = 1, verbose: bool = False
+        self,
+        scaler=None,
+        name="Scaler",
+        global_fit: bool = False,
+        n_jobs: int = 1,
+        verbose: bool = False,
     ):
         """Generic wrapper class for using scalers on time series.
 
@@ -47,6 +53,14 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
             the values of a time series between 0 and 1.
         name
             A specific name for the scaler
+        global_fit
+            Optionally, whether all of the `TimeSeries` passed to the `fit()` method should be used to fit
+            a *single* set of parameters, or if a different set of parameters should be independently fitted
+            to each provided `TimeSeries`. If `True`, then a `Sequence[TimeSeries]` is passed to `ts_fit`
+            and a single set of parameters is fitted using all of the provided `TimeSeries`. If `False`, then
+            each `TimeSeries` is individually passed to `ts_fit`, and a different set of fitted parameters
+            if yielded for each of these fitting operations. See `FittableDataTransformer` documentation for
+            further details.
         n_jobs
             The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
             passed as input to a method, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
@@ -92,7 +106,9 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
             )
 
         self.transformer = scaler
-        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
+        super().__init__(
+            name=name, n_jobs=n_jobs, verbose=verbose, global_fit=global_fit
+        )
 
     @staticmethod
     def ts_transform(
@@ -119,9 +135,17 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
         return series.with_values(inv_transformed_vals)
 
     @staticmethod
-    def ts_fit(series: TimeSeries, params: Mapping[str, Any], *args, **kwargs) -> Any:
+    def ts_fit(
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        params: Mapping[str, Any],
+        *args,
+        **kwargs
+    ) -> Any:
         transformer = deepcopy(params["fixed"]["transformer"])
-        # fit_parameter will receive the transformer object instance
-
-        scaler = transformer.fit(Scaler.stack_samples(series))
+        # If `global_fit` is `True`, then `series` will be ` Sequence[TimeSeries]`;
+        # otherwise, `series` is a single `TimeSeries`:
+        if isinstance(series, TimeSeries):
+            series = [series]
+        vals = np.concatenate([Scaler.stack_samples(ts) for ts in series], axis=0)
+        scaler = transformer.fit(vals)
         return scaler
