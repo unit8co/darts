@@ -74,7 +74,7 @@ class Mapper(BaseDataTransformer):
         * component  (component) <U1 '0'
         Dimensions without coordinates: sample
         """
-
+        # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self._fn = fn
         super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
 

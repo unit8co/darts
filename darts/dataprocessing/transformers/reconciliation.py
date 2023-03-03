@@ -185,6 +185,7 @@ class MinTReconciliator(FittableDataTransformer):
             method in known_methods,
             f"The method must be one of {known_methods}",
         )
+        # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self.method = method
         super().__init__()
 

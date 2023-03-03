@@ -104,7 +104,7 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
                 ),
                 logger,
             )
-
+        # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self.transformer = scaler
         super().__init__(
             name=name, n_jobs=n_jobs, verbose=verbose, global_fit=global_fit

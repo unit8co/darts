@@ -28,31 +28,38 @@ class WindowTransformer(BaseDataTransformer):
         A transformer that applies window transformation to a TimeSeries or a Sequence of TimeSeries. It expects a
         dictionary or a list of dictionaries specifying the window transformation(s) to be applied. All series in the
         sequence will be transformed with the same transformations.
+
         Parameters
         ----------
         transforms
             A dictionary or a list of dictionaries.
             Each dictionary specifies a different window transform.
+
             The dictionaries can contain the following keys:
+
             :``"function"``: Mandatory. The name of one of the pandas builtin transformation functions,
                             or a callable function that can be applied to the input series.
                             Pandas' functions can be found in the
                             `documentation <https://pandas.pydata.org/docs/reference/window.html>`_.
+
             :``"mode"``: Optional. The name of the pandas windowing mode on which the ``"function"`` is going to be
                         applied. The options are "rolling", "expanding" and "ewm".
                         If not provided, Darts defaults to "expanding".
                         User defined functions can use either "rolling" or "expanding" modes.
                         More information on pandas windowing operations can be found in the `documentation
                         <https://pandas.pydata.org/pandas-docs/stable/user_guide/window.html>`_.
+
             :``"components"``: Optional. A string or list of strings specifying the TimeSeries components on which the
                                transformation should be applied. If not specified, the transformation will be
                                applied on all components.
+
             All other dictionary items provided will be treated as keyword arguments for the windowing mode
             (i.e., ``rolling/ewm/expanding``) or for the specific function
             in that mode (i.e., ``pandas.DataFrame.rolling.mean/std/max/min...`` or
             ``pandas.DataFrame.ewm.mean/std/sum``).
             This allows for more flexibility in configuring the transformation, by providing for
             example:
+
             * :``"window"``: Size of the moving window for the "rolling" mode.
                             If an integer, the fixed number of observations used for each window.
                             If an offset, the time period of each window.
@@ -66,8 +73,10 @@ class WindowTransformer(BaseDataTransformer):
             * :``"closed"``: ``"right"``/``"left"``/``"both"``/``"neither"`` to specify whether the right,
                 left or both ends of the window are included in the window, or neither of them.
                 Darts defaults to ``"both"``.
+
             More information on the available functions and their parameters can be found in the
             `Pandas documentation <https://pandas.pydata.org/docs/reference/window.html>`_.
+
             For user-provided functions, extra keyword arguments in the transformation dictionary are passed to the
             user-defined function.
             By default, Darts expects user-defined functions to receive numpy arrays as input.
@@ -78,41 +87,52 @@ class WindowTransformer(BaseDataTransformer):
             <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.rolling.html>`_
             and `pandas.DataFrame.expanding().apply() documentation
             <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.expanding.html>`_.
+
         treat_na
             Specifies how to treat missing values that were added by the window transformations
             at the beginning of the resulting TimeSeries. By default, Darts will leave NaNs in the resulting TimeSeries.
             This parameter can be one of the following:
+
             * :``"dropna"``: to truncate the TimeSeries and drop time steps containing missing values.
                 If multiple columns contain different numbers of missing values, only the minimum number
                 of rows is dropped. This operation might reduce the length of the resulting TimeSeries.
+
             * :``"bfill"`` or ``"backfill"``: to specify that NaNs should be filled with the last transformed
                 and valid observation. If the original TimeSeries starts with NaNs, those are kept.
                 When ``forecasting_safe`` is ``True``, this option returns an exception to avoid future observation
                 contaminating the past.
+
             * :an integer or float: in which case NaNs will be filled with this value.
                 All columns will be filled with the same provided value.
+
         forecasting_safe
             If True, Darts enforces that the resulting TimeSeries is safe to be used in forecasting models as target
             or as feature. The window transformation will not allow future values to be included in the computations
             at their corresponding current timestep. Default is ``True``.
             "ewm" and "expanding" modes are forecasting safe by default.
             "rolling" mode is forecasting safe if ``"center": False`` is guaranteed.
+
         keep_non_transformed
             ``False`` to return the transformed components only, ``True`` to return all original components along
             the transformed ones. Default is ``False``.
+
         include_current
             ``True`` to include the current time step in the window, ``False`` to exclude it. Default is ``True``.
+
         name
             A specific name for the transformer.
+
         n_jobs
             The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
             passed as input to a method, parallelising operations regarding different ``TimeSeries``. Defaults to `1`.
+
         verbose
             Whether to print operations progress.
         """
 
         # dictionary checks are implemented in TimeSeries.window_transform()
 
+        # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self.transforms = transforms
         self.keep_non_transformed = keep_non_transformed
         self.treat_na = treat_na

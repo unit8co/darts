@@ -103,6 +103,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
 
         if not isinstance(lags, Sequence):
             lags = (lags,)
+        # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self._lags = lags
         self._dropna = dropna
         # Don't automatically apply `component_mask` - need to throw error when `dropna = True`
@@ -122,6 +123,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                 f"to difference with lags {lags}; series only has "
                 f"{series.n_timesteps} timesteps."
             ),
+            logger,
         )
         component_mask = Diff._get_component_mask(kwargs, dropna)
         vals = Diff.apply_component_mask(series, component_mask, return_ts=False)
@@ -165,6 +167,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                 f"Series is of frequency {series.freq}, but "
                 f"transform was fitted to data of frequency {freq}."
             ),
+            logger,
         )
         # Start dates 'missing' from differenced series if dropna = True, so need to shift forward:
         expected_start = start_time + sum(lags) * series.freq if dropna else start_time
@@ -174,6 +177,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                 f"Expected series to begin at time {expected_start}; "
                 f"instead, it begins at time {series.start_time()}."
             ),
+            logger,
         )
         component_mask = Diff._get_component_mask(kwargs, dropna)
         raise_if_not(
@@ -182,6 +186,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                 "Provided `component_mask` does not match "
                 "`component_mask` specified when `fit` was called."
             ),
+            logger,
         )
         if dropna:
             nan_shape = (sum(lags), series.n_components, series.n_samples)
@@ -194,6 +199,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                 f"Expected series to have {start_vals.shape[1]} components; "
                 f"instead, it has {vals.shape[1]}."
             ),
+            logger,
         )
         raise_if_not(
             vals.shape[2] == start_vals.shape[2],
@@ -201,6 +207,7 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                 f"Expected series to have {start_vals.shape[2]} samples; "
                 f"instead, it has {vals.shape[2]}."
             ),
+            logger,
         )
         cutoff = sum(lags)
         for lag in reversed(lags):
@@ -223,5 +230,6 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                 "since differenced and undifferenced components will be "
                 "of different lengths."
             ),
+            logger,
         )
         return component_mask

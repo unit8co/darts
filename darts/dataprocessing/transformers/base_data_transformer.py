@@ -27,14 +27,28 @@ class BaseDataTransformer(ABC):
     ):
         """Abstract class for data transformers.
 
-        All the deriving classes have to implement the static method :func:`ts_transform`.
-        The class offers the method :func:`transform()`, for applying a transformation to a ``TimeSeries`` or
-        ``Sequence[TimeSeries]``. This class takes care of parallelizing the transformation of multiple ``TimeSeries``
-        when possible.
+        All the deriving classes have to implement the static method :func:`ts_transform`; this implemented
+        method can then be applied to ``TimeSeries`` or ``Sequence[TimeSeries]`` inputs by calling the
+        :func:`transform()` method. Internally, :func:`transform()` parallelizes func:`ts_transform` over all
+        of the ``TimeSeries`` inputs passed to it. See the func:`ts_transform` method documentation
+        for further details on how to implement this method in a user-defined class.
 
         Data transformers requiring to be fit first before calling :func:`transform` should derive
-        from :class:`.FittableDataTransformer` instead.
-        Data transformers that are invertible should derive from :class:`.InvertibleDataTransformer` instead.
+        from :class:`.FittableDataTransformer` instead. Data transformers that are invertible should derive
+        from :class:`.InvertibleDataTransformer` instead. Transformers which are both fittable and invertible
+        should inherit from both :class:`.FittableDataTransformer` and :class:`.InvertibleDataTransformer`.
+
+        All Data Transformers can store *fixed parameters* that are automatically passed to func:`ts_transform`;
+        the fixed parameters of a data transformer object are taken to be all those attributes defined
+        in the `__init__` method of the child-most class *before* `super().__init__` is called. The fixed parameter
+        values can then be accessed within the func:`ts_transform` method through the `params` dictionary
+        argument. More specifically, `params['fixed']` stores a dictionary with all of the fixed parameter
+        values, where the keys are simply the attribute names of each fixed parameter (e.g. the `self._my_param`
+        fixed parameter attribute is accessed through `params['fixed']['_my_param']`).
+
+        Data Transformers which inherit from :class:`.FittableDataTransformer` can also store fitted parameters
+        alongside fixed parameters; please refer to the :class:`.FittableDataTransformer` documentation for
+        further details.
 
         Note: the :func:`ts_transform` method is designed to be a static method instead of a instance method to allow an
         efficient parallelisation also when the scaler instance is storing a non-negligible amount of data. Using
@@ -71,6 +85,61 @@ class BaseDataTransformer(ABC):
             be passed as a keyword argument, but won't automatically be applied to the input timeseries.
             See `apply_component_mask` for further details.
 
+        Example
+        --------
+        >>> from darts.dataprocessing.transformers import BaseDataTransformer
+        >>> from darts.utils.timeseries_generation import linear_timeseries
+        >>>
+        >>> class SimpleTransform(BaseDataTransformer):
+        >>>
+        >>>         def __init__(self, a):
+        >>>             self._a = a
+        >>>             super().__init__()
+        >>>
+        >>>         @staticmethod
+        >>>         def ts_transform(series, params, **kwargs):
+        >>>             a = params['fixed']['_a']
+        >>>             b = kwargs.pop('b')
+        >>>             return a*series + b
+        >>>
+        >>> series = linear_timeseries(length=5)
+        >>> print(series)
+        <TimeSeries (DataArray) (time: 5, component: 1, sample: 1)>
+        array([[[0.  ]],
+
+            [[0.25]],
+
+            [[0.5 ]],
+
+            [[0.75]],
+
+            [[1.  ]]])
+        Coordinates:
+        * time       (time) datetime64[ns] 2000-01-01 2000-01-02 ... 2000-01-05
+        * component  (component) object 'linear'
+        Dimensions without coordinates: sample
+        Attributes:
+            static_covariates:  None
+            hierarchy:          None
+        >>> series = SimpleTransform(a=2).transform(series, b=3)
+        >>> print(series)
+        <TimeSeries (DataArray) (time: 5, component: 1, sample: 1)>
+        array([[[3. ]],
+
+            [[3.5]],
+
+            [[4. ]],
+
+            [[4.5]],
+
+            [[5. ]]])
+        Coordinates:
+        * time       (time) datetime64[ns] 2000-01-01 2000-01-02 ... 2000-01-05
+        * component  (component) object 'linear'
+        Dimensions without coordinates: sample
+        Attributes:
+            static_covariates:  None
+            hierarchy:          None
         """
         # Assume `super().__init__` called at *very end* of
         # child-most class's `__init__`, so `vars(self)` contains
@@ -120,17 +189,59 @@ class BaseDataTransformer(ABC):
     def ts_transform(series: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
         """The function that will be applied to each series when :func:`transform()` is called.
 
-        The function must take as first argument a ``TimeSeries`` object, and return the transformed ``TimeSeries``
-        object. If more parameters are added as input in the derived classes, the ``_transform_iterator()`` should be
-        redefined accordingly, to yield the necessary arguments to this function (See ``_transform_iterator()`` for
-        further details).
-
         This method is not implemented in the base class and must be implemented in the deriving classes.
+
+        The function must take as first argument a ``TimeSeries`` object and, as a second argument, a
+        dictionary containing the fixed and/or fitted parameters of the transformation; this function
+        should then return a transformed ``TimeSeries`` object.
+
+        The `params` dictionary *can* contain up to two keys:
+            1. `params['fixed']` stores the fixed parameters of the transformation (i.e. attributed
+            defined in the `__init__` method of the child-most class *before* `super().__init__` is called);
+            `params['fixed']` is a dictionary itself, whose keys are the names of the fixed parameter
+            attributes. For example, if `_my_fixed_param` is defined as an attribute in the child-most
+            class, then this fixed parameter value can be accessed through `params['fixed']['_my_fixed_param']`.
+            2. If the transform inherits from the :class:`.FittableDataTransformer` class, then `params['fitted']`
+            will store the fitted parameters of the transformation; the fitted parameters are simply the output(s)
+            returned by the `ts_fit` function, whatever those output(s) may be. See :class:`.FittableDataTransformer`
+            for further details about fitted parameters.
+
+        Any positional/keyword argument supplied to the `transform` method are passed as positional/keyword arguments
+        to `ts_transform`; hence, `ts_transform` should also accept `*args` and/or `**kwargs` if positional/keyword
+        arguments are passed to `transform`. Note that if the `mask_components` attribute of `BaseDataTransformer`
+        is set to `False`, then the `component_mask` provided to `transform` will be passed as an additional keyword
+        argument to `ts_transform`.
+
+        The `BaseDataTransformer` class includes some helper methods which may prove useful when implementing a
+        `ts_transform` function:
+            1. The `apply_component_mask` and `unapply_component_mask` methods, which apply and 'unapply'
+            `component_mask`s to a `TimeSeries` respectively; these methods are automatically called in `transform`
+            if the `mask_component` attribute of `BaseDataTransformer` is set to `True`, but you may want to manually
+            call them if you set `mask_components` to `False` and wish to manually specify how `component_mask`s are
+            applied to a `TimeSeries`.
+            2. The `stack_samples` method, which stacks all the samples in a `TimeSeries` along
+            the component axis, so that the `TimeSeries` goes from shape `(n_timesteps, n_components, n_samples)` to
+            shape `(n_timesteps, n_components * n_samples)`. This stacking is useful if a pointwise transform is being
+            implemented (i.e. transforming the value at time `t` depends only on the value of the series at that
+            time `t`). Once transformed, the stacked `TimeSeries` can be 'unstacked' using the `unstack_samples` method.
 
         Parameters
         ----------
         series
             series to be transformed.
+        params
+            Dictionary containing the parameters of the transformation function. Fixed parameters
+            (i.e. attributes defined in the child-most class of the transformation prior to
+            calling `super.__init__()`) are stored under the `'fixed'` key. If the transformation
+            inherits from the `FittableDataTransformer` class, then the fitted parameters of the
+            transformation (i.e. the values returned by `ts_fit`) are stored under the
+            `'fitted'` key.
+        args
+            Any poisitional arguments provided in addition to `series` when
+        kwargs
+            Any additional keyword arguments provided to `transform`. Note that if the `mask_component`
+            attribute of `BaseDataTransformer` is set to `False`, then `component_mask` will
+            be passed as a keyword argument.
 
         Notes
         -----
@@ -142,12 +253,21 @@ class BaseDataTransformer(ABC):
         pass
 
     def transform(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        *args,
+        component_mask: Optional[np.array] = None,
+        **kwargs,
     ) -> Union[TimeSeries, List[TimeSeries]]:
-        """Transform a (sequence of) of series.
+        """Transforms a (sequence of) of series by calling the user-implemeneted `ts_transform` method.
 
-        In case a ``Sequence`` is passed as input data, this function takes care of
-        parallelising the transformation of multiple series in the sequence at the same time.
+        In case a ``Sequence[TimeSeries]`` is passed as input data, this function takes care of
+        parallelising the transformation of multiple series in the sequence at the same time. Additionally,
+        if the `mask_components` attribute was set to `True` when instantiating `BaseDataTransformer`,
+        then any provided `component_mask`s will be automatically applied to each input `TimeSeries`;
+        please refer to 'Notes' for further details on component masking.
+
+        Any additionally specified `*args` and `**kwargs` are automatically passed to `ts_transform`.
 
         Parameters
         ----------
@@ -155,17 +275,37 @@ class BaseDataTransformer(ABC):
             (sequence of) series to be transformed.
         args
             Additional positional arguments for each :func:`ts_transform()` method call
+        component_mask : Optional[np.ndarray] = None
+            Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies which
+            components of the underlying `series` the transform should consider. If the `mask_components`
+            attribute was set to `True` when instantiating `BaseDataTransformer`, then the component mask
+            will be automatically applied to each `TimeSeries` input. Otherwise, `component_mask` will be
+            provided as an addition keyword argument to `ts_transform`. See 'Notes' for further details.
         kwargs
             Additional keyword arguments for each :func:`ts_transform()` method call
-
-            component_mask : Optional[np.ndarray] = None
-                Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies which
-                components of the underlying `series` the transform should consider.
 
         Returns
         -------
         Union[TimeSeries, List[TimeSeries]]
             Transformed data.
+
+        Notes
+        -----
+        If the `mask_components` attribute was set to `True` when instantiating `BaseDataTransformer`,
+        then any provided `component_mask`s will be automatically applied to each `TimeSeries` input to
+        transform; `component_mask`s are simply boolean arrays of shape `(series.n_components,)` that
+        specify which components of each `series` should be transformed using `ts_transform` and which
+        components should not. If `component_mask[i]` is `True`, then the `i`th component of each
+        `series` will be transformed by `ts_transform`. Conversely, if `component_mask[i]` is `False`,
+        the `i`th component will be removed from each `series` before being passed to `ts_transform`;
+        after transforming this masked series, the untransformed `i`th component will be 'added back'
+        to the output. Note that automatic `component_mask`ing can only be performed if the `ts_transform`
+        does *not* change the number of timesteps in each series; if this were to happen, then the transformed
+        and untransformed components are unable to be concatenated back together along the component axis.
+
+        If `mask_components` was set to `False` when instantiating `BaseDataTransformer`, then any provided
+        `component_masks` will be passed as a keyword argument `ts_transform`; the user can then manually specify
+        how the `component_mask` should be applied to each series.
         """
 
         desc = f"Transform ({self._name})"
@@ -179,8 +319,12 @@ class BaseDataTransformer(ABC):
             data = series
 
         if self._mask_components:
-            mask = kwargs.pop("component_mask", None)
-            data = [self.apply_component_mask(ts, mask, return_ts=True) for ts in data]
+            data = [
+                self.apply_component_mask(ts, component_mask, return_ts=True)
+                for ts in data
+            ]
+        else:
+            kwargs["component_mask"] = component_mask
 
         input_iterator = _build_tqdm_iterator(
             zip(data, self._get_params(n_timeseries=len(data))),
@@ -196,7 +340,9 @@ class BaseDataTransformer(ABC):
         if self._mask_components:
             unmasked = []
             for ts, transformed_ts in zip(input_series, transformed_data):
-                unmasked.append(self.unapply_component_mask(ts, transformed_ts, mask))
+                unmasked.append(
+                    self.unapply_component_mask(ts, transformed_ts, component_mask)
+                )
             transformed_data = unmasked
 
         return (
@@ -265,7 +411,7 @@ class BaseDataTransformer(ABC):
         Returns
         -------
         masked
-            `TimeSeries` (if `return_ts = True`) or `np.ndarray` (if `return_ts = True`) with only those components
+            `TimeSeries` (if `return_ts = True`) or `np.ndarray` (if `return_ts = False`) with only those components
             specified by `component_mask` remaining.
 
         """

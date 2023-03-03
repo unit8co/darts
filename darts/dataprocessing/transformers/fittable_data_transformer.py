@@ -4,7 +4,9 @@ Fittable Data Transformer Base Class
 """
 
 from abc import abstractmethod
-from typing import Any, Generator, List, Mapping, Sequence, Union
+from typing import Any, Generator, List, Mapping, Optional, Sequence, Union
+
+import numpy as np
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not
@@ -25,7 +27,6 @@ class FittableDataTransformer(BaseDataTransformer):
         mask_components: bool = True,
         global_fit: bool = False,
     ):
-
         """Base class for fittable transformers.
 
         All the deriving classes have to implement the static methods
@@ -81,10 +82,84 @@ class FittableDataTransformer(BaseDataTransformer):
         `transform`/`inverse_transform`, each of these `TimeSeries` will be transformed using the exact same set
         of fitted parameters.
 
+        Note that if an invertible *and* fittable data transformer is to be globally fitted, the data transformer
+        class should first inherit from `FittableDataTransformer` and then from `InveritibleDataTransformer`. In
+        other words, `MyTransformer(FittableDataTransformer, InveritibleDataTransformer)` is correct, but
+        `MyTransformer(InveritibleDataTransformer, FittableDataTransformer)` is **not**. If this is not implemented
+        correctly, then the `global_fit` parameter will not be correctly passed to `FittableDataTransformer`'s
+        constructor.
+
         The :func:`ts_transform()` and :func:`ts_fit()` methods are designed to be static methods instead of instance
         methods to allow an efficient parallelisation also when the scaler instance is storing a non-negligible
         amount of data. Using instance methods would imply copying the instance's data through multiple processes, which
         can easily introduce a bottleneck and nullify parallelisation benefits.
+
+        Example
+        --------
+        >>> from darts.dataprocessing.transformers import FittableDataTransformer
+        >>> from darts.utils.timeseries_generation import linear_timeseries
+        >>>
+        >>> class SimpleRangeScaler(FittableDataTransformer):
+        >>>
+        >>>     def __init__(self, scale, position):
+        >>>         self._scale = scale
+        >>>         self._position = position
+        >>>         super().__init__()
+        >>>
+        >>>     @staticmethod
+        >>>     def ts_transform(series, params):
+        >>>         vals = series.all_values(copy=False)
+        >>>         fit_params = params['fitted']
+        >>>         unit_scale = (vals - fit_params['position'])/fit_params['scale']
+        >>>         fix_params = params['fixed']
+        >>>         rescaled = fix_params['_scale'] * unit_scale + fix_params['_position']
+        >>>         return series.from_values(rescaled)
+        >>>
+        >>>     @staticmethod
+        >>>     def ts_fit(series, params):
+        >>>         vals = series.all_values(copy=False)
+        >>>         scale = vals.max() - vals.min()
+        >>>         position = vals[0]
+        >>>         return {'scale': scale, 'position': position}
+        >>>
+        >>> series = linear_timeseries(length=5, start_value=1, end_value=5)
+        >>> print(series)
+        <TimeSeries (DataArray) (time: 5, component: 1, sample: 1)>
+        array([[[1.]],
+
+            [[2.]],
+
+            [[3.]],
+
+            [[4.]],
+
+            [[5.]]])
+        Coordinates:
+        * time       (time) datetime64[ns] 2000-01-01 2000-01-02 ... 2000-01-05
+        * component  (component) object 'linear'
+        Dimensions without coordinates: sample
+        Attributes:
+            static_covariates:  None
+            hierarchy:          None
+        >>> series = SimpleRangeScaler(scale=2, position=-1).fit_transform(series)
+        >>> print(series)
+        <TimeSeries (DataArray) (time: 5, component: 1, sample: 1)>
+        array([[[-1. ]],
+
+            [[-0.5]],
+
+            [[ 0. ]],
+
+            [[ 0.5]],
+
+            [[ 1. ]]])
+        Coordinates:
+        * time       (time) int64 0 1 2 3 4
+        * component  (component) <U1 '0'
+        Dimensions without coordinates: sample
+        Attributes:
+            static_covariates:  None
+            hierarchy:          None
         """
         super().__init__(
             name=name,
@@ -96,7 +171,7 @@ class FittableDataTransformer(BaseDataTransformer):
 
         self._fit_called = False
         self._fitted_params = None  # stores the fitted parameters/objects
-        self.global_fit = global_fit
+        self._global_fit = global_fit
 
     @staticmethod
     @abstractmethod
@@ -142,13 +217,21 @@ class FittableDataTransformer(BaseDataTransformer):
         pass
 
     def fit(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        *args,
+        component_mask: Optional[np.array] = None,
+        **kwargs,
     ) -> "FittableDataTransformer":
-        """Fit the transformer to the provided series or sequence of series.
+        """Fits transformer to a (sequence of) `TimeSeries` by calling the user-implemented `ts_fit` method.
 
-        Fit the data and store the fitting parameters into ``self._fitted_params``. If a sequence is passed as input
-        data, this function takes care of parallelising the fitting of multiple series in the sequence at the same time
-        (in this case ``self._fitted_params`` will contain an array of fitted params, one for each series).
+        The fitted parameters returned by `ts_fit` are stored in the ``self._fitted_params`` attribute.
+        If a `Sequence[TimeSeries]` is passed as the `series` data, then one of two outcomes will occur:
+            1. If the `global_fit` attribute was set to `False`, then a different set of parameters will be
+            individually fitted to each `TimeSeries` in the `Sequence`. In this case, this function automatically
+            parallelises this fitting process over all of the multiple `TimeSeries` that have been passed.
+            2. If the `global_fit` attribute was set to `True`, then all of the `TimeSeries` objects will be used
+            fit a single set of parameters.
 
         Parameters
         ----------
@@ -156,12 +239,11 @@ class FittableDataTransformer(BaseDataTransformer):
             (sequence of) series to fit the transformer on.
         args
             Additional positional arguments for the :func:`ts_fit` method
+        component_mask : Optional[np.ndarray] = None
+            Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies which
+            components of the underlying `series` the transform should be fitted to.
         kwargs
             Additional keyword arguments for the :func:`ts_fit` method
-
-            component_mask : Optional[np.ndarray] = None
-                Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies which
-                components of the underlying `series` the transform should be fitted to.
 
         Returns
         -------
@@ -178,16 +260,20 @@ class FittableDataTransformer(BaseDataTransformer):
             data = series
 
         if self._mask_components:
-            mask = kwargs.pop("component_mask", None)
-            data = [self.apply_component_mask(ts, mask, return_ts=True) for ts in data]
+            data = [
+                self.apply_component_mask(ts, component_mask, return_ts=True)
+                for ts in data
+            ]
+        else:
+            kwargs["component_mask"] = component_mask
 
         params_iterator = self._get_params(n_timeseries=len(data), calling_fit=True)
         fit_iterator = (
             zip(data, params_iterator)
-            if not self.global_fit
+            if not self._global_fit
             else zip([data], params_iterator)
         )
-        n_jobs = len(data) if not self.global_fit else 1
+        n_jobs = len(data) if not self._global_fit else 1
         input_iterator = _build_tqdm_iterator(
             fit_iterator, verbose=self._verbose, desc=desc, total=n_jobs
         )
@@ -199,7 +285,11 @@ class FittableDataTransformer(BaseDataTransformer):
         return self
 
     def fit_transform(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        *args,
+        component_mask: Optional[np.array] = None,
+        **kwargs,
     ) -> Union[TimeSeries, List[TimeSeries]]:
         """Fit the transformer to the (sequence of) series and return the transformed input.
 
@@ -208,24 +298,21 @@ class FittableDataTransformer(BaseDataTransformer):
         series
             the (sequence of) series to transform.
         args
-            Additional positional arguments for the :func:`ts_transform` method
+            Additional positional arguments passed to the :func:`ts_transform` and :func:`ts_fit` methods.
+        component_mask : Optional[np.ndarray] = None
+            Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies which
+            components of the underlying `series` the transform should be fitted and applied to.
         kwargs
-            Additional keyword arguments for the :func:`ts_transform` method:
-
-            component_mask : Optional[np.ndarray] = None
-                Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies which
-                components of the underlying `series` the transform should be fitted and applied to.
+            Additional keyword arguments passed to the :func:`ts_transform` and :func:`ts_fit` methods.
 
         Returns
         -------
         Union[TimeSeries, Sequence[TimeSeries]]
             Transformed data.
         """
-
-        component_mask = kwargs.pop("component_mask", None)
-        return self.fit(series, component_mask=component_mask).transform(
+        return self.fit(
             series, *args, component_mask=component_mask, **kwargs
-        )
+        ).transform(series, *args, component_mask=component_mask, **kwargs)
 
     def _get_params(
         self, n_timeseries: int, calling_fit: bool = False
@@ -261,14 +348,14 @@ class FittableDataTransformer(BaseDataTransformer):
                     params = None
                 yield params
 
-        n_jobs = n_timeseries if not (calling_fit and self.global_fit) else 1
+        n_jobs = n_timeseries if not (calling_fit and self._global_fit) else 1
 
         return params_generator(
             n_jobs,
             self._fixed_params,
             fitted_params,
             self._parallel_params,
-            self.global_fit,
+            self._global_fit,
         )
 
     def _get_fitted_params(self, n_timeseries: int, calling_fit: bool) -> Sequence[Any]:
@@ -285,7 +372,7 @@ class FittableDataTransformer(BaseDataTransformer):
             fitted_params = self._fitted_params
         else:
             fitted_params = tuple()
-        if not self.global_fit and fitted_params:
+        if not self._global_fit and fitted_params:
             raise_if(
                 n_timeseries > len(fitted_params),
                 (

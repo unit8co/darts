@@ -113,6 +113,7 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
             logger,
         )
 
+        # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self._lmbda = lmbda
         self._optim_method = optim_method
         if isinstance(lmbda, Sequence) and isinstance(lmbda[0], Sequence):

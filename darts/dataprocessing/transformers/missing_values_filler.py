@@ -77,7 +77,7 @@ class MissingValuesFiller(BaseDataTransformer):
             "invalid string for `fill`: can only be set to 'auto'",
             logger,
         )
-
+        # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self._fill = fill
         super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
 

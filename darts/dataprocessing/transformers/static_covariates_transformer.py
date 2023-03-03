@@ -102,6 +102,7 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
         comp2               1.0  2.0
         comp3               0.5  1.0
         """
+        # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self.transformer_num = (
             MinMaxScaler() if transformer_num is None else transformer_num
         )
