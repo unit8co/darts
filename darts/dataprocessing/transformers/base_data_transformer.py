@@ -428,7 +428,7 @@ class BaseDataTransformer(ABC):
                 "mismatch between number of components in `series` and length of `component_mask`",
                 logger,
             )
-            masked = series.all_values()[:, component_mask, :]
+            masked = series.all_values(copy=False)[:, component_mask, :]
             if return_ts:
                 # Remove masked components from coords:
                 coords = dict(series._xa.coords)
