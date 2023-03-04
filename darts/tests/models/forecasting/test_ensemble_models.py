@@ -79,7 +79,6 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
 
     def test_call_backtest_local_models(self):
         naive_ensemble = NaiveEnsembleModel([NaiveSeasonal(5), Theta(2, 5)])
-        print(naive_ensemble.extreme_lags)
         naive_ensemble.fit(self.series1)
         naive_ensemble.backtest(self.series1)
 
