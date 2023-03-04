@@ -182,6 +182,10 @@ class Theta(LocalForecastingModel):
         else:
             return 3
 
+    @property
+    def extreme_lags(self):
+        return (-self.min_train_series_length, 1, None, None, None)
+
 
 class FourTheta(LocalForecastingModel):
     def __init__(
@@ -484,3 +488,7 @@ class FourTheta(LocalForecastingModel):
             return 2 * self.seasonality_period
         else:
             return 3
+
+    @property
+    def extreme_lags(self):
+        return (-self.min_train_series_length, 1, None, None, None)
