@@ -197,5 +197,21 @@ class EnsembleModel(GlobalForecastingModel):
     def min_train_series_length(self) -> int:
         return max(model.min_train_series_length for model in self.models)
 
+    @property
+    def extreme_lags(self):
+        extreme_lags_length = len(super().extreme_lags)
+
+        return [self._find_max_lag_or_none(i) for i in range(extreme_lags_length)]
+
+    def _find_max_lag_or_none(self, lag_id):
+        max_lag = None
+        for model in self.models:
+            curr_lag = model.extreme_lags[lag_id]
+            if max_lag is None or (
+                curr_lag is not None and abs(curr_lag) > abs(max_lag)
+            ):
+                max_lag = curr_lag
+        return max_lag
+
     def _is_probabilistic(self) -> bool:
         return all([model._is_probabilistic() for model in self.models])
