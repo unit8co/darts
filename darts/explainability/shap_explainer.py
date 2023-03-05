@@ -267,9 +267,7 @@ class ShapExplainer(ForecastingModelExplainer):
 
         if len(shap_values_list) == 1:
             shap_values_list = shap_values_list[0]
-        if len(feature_values_list) == 1:
             feature_values_list = feature_values_list[0]
-        if len(shap_explanation_object_list) == 1:
             shap_explanation_object_list = shap_explanation_object_list[0]
 
         return ShapExplainabilityResult(

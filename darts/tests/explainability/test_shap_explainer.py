@@ -256,34 +256,39 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         )
 
         shap_explain = ShapExplainer(m_0)
-
         with self.assertRaises(ValueError):
-            # horizon > output_chunk_length
-            results = shap_explain.explain(horizons=[1, 5])
-            # wrong name
-            results = shap_explain.explain(horizons=[1, 2], target_components=["test"])
+            _ = shap_explain.explain(horizons=[1, 5])  # horizon > output_chunk_length
+        with self.assertRaises(ValueError):
+            _ = shap_explain.explain(
+                horizons=[1, 2], target_components=["test"]
+            )  # wrong name
 
         results = shap_explain.explain()
-
         with self.assertRaises(ValueError):
-            # wrong horizon
             results.get_explanation(horizon=5, component="price")
+        with self.assertRaises(ValueError):
             results.get_feature_values(horizon=5, component="price")
+        with self.assertRaises(ValueError):
             results.get_shap_explanation_object(horizon=5, component="price")
-            # wrong component name
+        with self.assertRaises(ValueError):
             results.get_explanation(horizon=1, component="test")
+        with self.assertRaises(ValueError):
             results.get_feature_values(horizon=1, component="test")
+        with self.assertRaises(ValueError):
             results.get_shap_explanation_object(horizon=1, component="test")
 
         results = shap_explain.explain(horizons=[1, 3], target_components=["power"])
         with self.assertRaises(ValueError):
-            # wrong horizon
             results.get_explanation(horizon=2, component="power")
+        with self.assertRaises(ValueError):
             results.get_feature_values(horizon=2, component="power")
+        with self.assertRaises(ValueError):
             results.get_shap_explanation_object(horizon=2, component="power")
-            # wrong component name
+        with self.assertRaises(ValueError):
             results.get_explanation(horizon=1, component="test")
+        with self.assertRaises(ValueError):
             results.get_feature_values(horizon=1, component="test")
+        with self.assertRaises(ValueError):
             results.get_shap_explanation_object(horizon=1, component="test")
 
         explanation = results.get_explanation(horizon=1, component="power")
@@ -318,11 +323,12 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         self.assertTrue(feature_vals.time_index[-1] == pd.Timestamp(2014, 6, 5))
 
         with self.assertRaises(ValueError):
-            # wrong horizon
             results.get_explanation(horizon=5, component="price")
+        with self.assertRaises(ValueError):
             results.get_feature_values(horizon=5, component="price")
-            # wrong component name
+        with self.assertRaises(ValueError):
             results.get_explanation(horizon=1, component="test")
+        with self.assertRaises(ValueError):
             results.get_feature_values(horizon=1, component="test")
 
         # right instance

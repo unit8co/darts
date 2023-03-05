@@ -173,11 +173,6 @@ class ShapExplainabilityResult(ExplainabilityResult):
             need to be specified for univariate series.
         """
         self._validate_input_for_querying_explainability_result(horizon, component)
-        if not self.shap_explanation_object:
-            raise ValueError(
-                "The shap_explanation_object is not available in your ExplainabilityResult instance."
-            )
-
         if isinstance(self.shap_explanation_object, list):
             return [
                 self.shap_explanation_object[i][horizon][component]
