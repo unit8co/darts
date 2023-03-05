@@ -802,7 +802,6 @@ if TORCH_AVAILABLE:
                     " start",
                 )
 
-
         @unittest.skipUnless(
             TORCH_AVAILABLE,
             "Torch not available. auto start and multiple time series for torch models and covariates "
@@ -810,13 +809,11 @@ if TORCH_AVAILABLE:
         )
         def test_retrain(self):
             """test historical_forecasts for an untrained model with different retrain values."""
+
             def helper_hist_forecasts(retrain_val):
                 model = LinearRegressionModel(lags=4)
                 model.historical_forecasts(
-                    self.ts_passengers,
-                    start=0.9,
-                    retrain=retrain_val,
-                    verbose=False
+                    self.ts_passengers, start=0.9, retrain=retrain_val, verbose=False
                 )
 
             def retrain_f_invalid(pred_time, train_series):

@@ -879,7 +879,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                                 f"`historical_forecasts()`, or use a different `retrain` value / modify the function "
                                 f"to return `True` in first iteration."
                             ),
-                            logger
+                            logger,
                         )
                     # use retrained model if `retrain` is not training every step
                     model = model if model is not None else self
