@@ -667,6 +667,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             logger,
         )
 
+        raise_if(
+            not isinstance(retrain, Callable) and not retrain and not self._fit_called,
+            "`retrain` is `False` or `0` and the model was not fit before. Call `fit()` before "
+            "`historical_forecasts()`, or use a different value for `retrain`.",
+            logger,
+        )
+
         if train_length and not isinstance(train_length, int):
             raise_log(
                 TypeError("If not None, train_length needs to be an integer."),
