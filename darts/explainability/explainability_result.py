@@ -6,8 +6,7 @@ Contains the explainability results obtained from :func:`ForecastingModelExplain
 """
 
 from abc import ABC
-from functools import wraps
-from typing import Callable, Dict, Optional, Sequence, Union
+from typing import Dict, Optional, Sequence, Union
 
 import shap
 from numpy import integer
@@ -18,15 +17,67 @@ from darts.logging import get_logger, raise_if, raise_if_not
 logger = get_logger(__name__)
 
 
-def check_input_validity_for_querying_explainability_result(func: Callable) -> Callable:
+class ExplainabilityResult(ABC):
     """
-    A decorator that validates the input parameters of a method that queries the ExplainabilityResult (i.e.,
-    get_explanation(), get_feature_values(), and get_shap_explanation_object).
+    Stores the explainability results of a :class:`ForecastingModelExplainer`
+    with convenient access to the results.
     """
 
-    @wraps(func)
-    def wrapper(self, horizon: int, component: Optional[str] = None) -> Callable:
+    def __init__(
+        self,
+        explained_forecasts: Union[
+            Dict[integer, Dict[str, TimeSeries]],
+            Sequence[Dict[integer, Dict[str, TimeSeries]]],
+        ],
+    ):
+        self.explained_forecasts = explained_forecasts
+        if isinstance(self.explained_forecasts, list):
+            self.available_horizons = list(self.explained_forecasts[0].keys())
+            h_0 = self.available_horizons[0]
+            self.available_components = list(self.explained_forecasts[0][h_0].keys())
+        else:
+            self.available_horizons = list(self.explained_forecasts.keys())
+            h_0 = self.available_horizons[0]
+            self.available_components = list(self.explained_forecasts[h_0].keys())
 
+    def get_explanation(
+        self, horizon: int, component: Optional[str] = None
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        """
+        Returns one or several `TimeSeries` representing the explanations
+        for a given horizon and component.
+
+        Parameters
+        ----------
+        horizon
+            The horizon for which to return the explanation.
+        component
+            The component for which to return the explanation. Does not
+            need to be specified for univariate series.
+        """
+        self._validate_input_for_querying_explainability_result(horizon, component)
+        if isinstance(self.explained_forecasts, list):
+            return [
+                self.explained_forecasts[i][horizon][component]
+                for i in range(len(self.explained_forecasts))
+            ]
+        else:
+            return self.explained_forecasts[horizon][component]
+
+    def _validate_input_for_querying_explainability_result(
+        self, horizon: int, component: Optional[str] = None
+    ) -> None:
+        """
+        Helper that validates the input parameters of a method that queries the ExplainabilityResult.
+
+        Parameters
+        ----------
+        horizon
+            The horizon for which to return the explanation.
+        component
+            The component for which to return the explanation. Does not
+            need to be specified for univariate series.
+        """
         raise_if(
             component is None and len(self.available_components) > 1,
             ValueError(
@@ -52,15 +103,12 @@ def check_input_validity_for_querying_explainability_result(func: Callable) -> C
             ),
         )
 
-        return func(self, horizon, component)
 
-    return wrapper
-
-
-class ExplainabilityResult(ABC):
+class ShapExplainabilityResult(ExplainabilityResult):
     """
-    Stores the explainability results of a :class:`ForecastingModelExplainer`
-    with convenient access to the results.
+    Stores the explainability results of a :class:`ShapExplainer`
+    with convenient access to the results. It extends the :class:`ExplainabilityResult` and carries additional
+    information specific to the Shap explainers.
     """
 
     def __init__(
@@ -80,44 +128,11 @@ class ExplainabilityResult(ABC):
             ]
         ],
     ):
-
+        super().__init__(explained_forecasts)
         self.explained_forecasts = explained_forecasts
         self.feature_values = feature_values
         self.shap_explanation_object = shap_explanation_object
-        if isinstance(self.explained_forecasts, list):
-            self.available_horizons = list(self.explained_forecasts[0].keys())
-            h_0 = self.available_horizons[0]
-            self.available_components = list(self.explained_forecasts[0][h_0].keys())
-        else:
-            self.available_horizons = list(self.explained_forecasts.keys())
-            h_0 = self.available_horizons[0]
-            self.available_components = list(self.explained_forecasts[h_0].keys())
 
-    @check_input_validity_for_querying_explainability_result
-    def get_explanation(
-        self, horizon: int, component: Optional[str] = None
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        """
-        Returns one or several `TimeSeries` representing the explanations
-        for a given horizon and component.
-
-        Parameters
-        ----------
-        horizon
-            The horizon for which to return the explanation.
-        component
-            The component for which to return the explanation. Does not
-            need to be specified for univariate series.
-        """
-        if isinstance(self.explained_forecasts, list):
-            return [
-                self.explained_forecasts[i][horizon][component]
-                for i in range(len(self.explained_forecasts))
-            ]
-        else:
-            return self.explained_forecasts[horizon][component]
-
-    @check_input_validity_for_querying_explainability_result
     def get_feature_values(
         self, horizon: int, component: Optional[str] = None
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
@@ -133,6 +148,7 @@ class ExplainabilityResult(ABC):
             The component for which to return the feature values. Does not
             need to be specified for univariate series.
         """
+        self._validate_input_for_querying_explainability_result(horizon, component)
         if isinstance(self.feature_values, list):
             return [
                 self.feature_values[i][horizon][component]
@@ -141,7 +157,6 @@ class ExplainabilityResult(ABC):
         else:
             return self.feature_values[horizon][component]
 
-    @check_input_validity_for_querying_explainability_result
     def get_shap_explanation_object(
         self, horizon: int, component: Optional[str] = None
     ) -> Union[shap.Explanation, Sequence[shap.Explanation]]:
@@ -157,6 +172,7 @@ class ExplainabilityResult(ABC):
             The component for which to return the `shap.Explanations` object(s). Does not
             need to be specified for univariate series.
         """
+        self._validate_input_for_querying_explainability_result(horizon, component)
         if not self.shap_explanation_object:
             raise ValueError(
                 "The shap_explanation_object is not available in your ExplainabilityResult instance."

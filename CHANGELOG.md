@@ -5,9 +5,9 @@ We do our best to avoid the introduction of breaking changes,
 but cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
-- Added the feature values and SHAP explanation object to `ExplainabilityResult`.
+- Created `ShapExplainabilityResult` by extending `ExplainabilityResult`. This subclass carries additional information specific to Shap Explainers.
   [#1545](https://github.com/unit8co/darts/pull/1545) by [Rijk van der Meulen](https://github.com/rijkvandermeulen).
-- 
+
 [Full Changelog](https://github.com/unit8co/darts/compare/0.23.1...master)
 
 ## [0.23.1](https://github.com/unit8co/darts/tree/0.23.1) (2023-01-12)

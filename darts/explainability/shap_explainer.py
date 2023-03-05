@@ -29,10 +29,8 @@ from numpy import integer
 from sklearn.multioutput import MultiOutputRegressor
 
 from darts import TimeSeries
-from darts.explainability.explainability import (
-    ExplainabilityResult,
-    ForecastingModelExplainer,
-)
+from darts.explainability.explainability import ForecastingModelExplainer
+from darts.explainability.explainability_result import ShapExplainabilityResult
 from darts.logging import get_logger, raise_if, raise_log
 from darts.models.forecasting.regression_model import RegressionModel
 from darts.utils.data.tabularization import create_lagged_prediction_data
@@ -187,7 +185,7 @@ class ShapExplainer(ForecastingModelExplainer):
         ] = None,
         horizons: Optional[Sequence[int]] = None,
         target_components: Optional[Sequence[str]] = None,
-    ) -> ExplainabilityResult:
+    ) -> ShapExplainabilityResult:
         super().explain(
             foreground_series, foreground_past_covariates, foreground_future_covariates
         )
@@ -274,7 +272,7 @@ class ShapExplainer(ForecastingModelExplainer):
         if len(shap_explanation_object_list) == 1:
             shap_explanation_object_list = shap_explanation_object_list[0]
 
-        return ExplainabilityResult(
+        return ShapExplainabilityResult(
             shap_values_list, feature_values_list, shap_explanation_object_list
         )
 
