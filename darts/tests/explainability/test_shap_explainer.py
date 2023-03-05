@@ -576,7 +576,7 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         )
         self.assertTrue(isinstance(fplot, shap.plots._force.BaseVisualizer))
 
-    def test_feature_values_validity(self):
+    def test_feature_values_align_with_input(self):
         model = LightGBMModel(
             lags=4,
             output_chunk_length=1,
@@ -601,6 +601,26 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             df[["price_shift_4", "power_shift_4"]].values,
             df[["price_target_lag-4", "power_target_lag-4"]].values,
         )
+
+    def test_feature_values_align_with_raw_output_shap(self):
+        model = LightGBMModel(
+            lags=4,
+            output_chunk_length=1,
+        )
+        model.fit(
+            series=self.target_ts,
+        )
+        shap_explain = ShapExplainer(model)
+        explanation_results = shap_explain.explain()
+
+        feature_values = explanation_results.get_feature_values(
+            horizon=1, component="price"
+        )
+        comparison = explanation_results.get_shap_explanation_object(
+            horizon=1, component="price"
+        ).data
+
+        assert_array_equal(feature_values.values(), comparison)
 
     def test_shap_explanation_object_validity(self):
         model = LightGBMModel(
