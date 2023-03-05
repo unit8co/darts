@@ -10,7 +10,7 @@ from sklearn.preprocessing import MinMaxScaler
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
-from darts.explainability.explainability import ExplainabilityResult
+from darts.explainability.explainability_result import ShapExplainabilityResult
 from darts.explainability.shap_explainer import ShapExplainer
 from darts.models import (
     CatBoostModel,
@@ -332,7 +332,7 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             results.get_feature_values(horizon=1, component="test")
 
         # right instance
-        self.assertTrue(isinstance(results, ExplainabilityResult))
+        self.assertTrue(isinstance(results, ShapExplainabilityResult))
 
         components_list = [
             "price_target_lag-4",
@@ -394,7 +394,7 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         )
         shap_explain = ShapExplainer(m)
 
-        self.assertTrue(isinstance(shap_explain.explain(), ExplainabilityResult))
+        self.assertTrue(isinstance(shap_explain.explain(), ShapExplainabilityResult))
 
     def test_explain_with_lags_future_covariates_series_of_same_length_as_target(self):
         model = LightGBMModel(
