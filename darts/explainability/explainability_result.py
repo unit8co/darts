@@ -131,7 +131,6 @@ class ShapExplainabilityResult(ExplainabilityResult):
         ],
     ):
         super().__init__(explained_forecasts)
-        self.explained_forecasts = explained_forecasts
         self.feature_values = feature_values
         self.shap_explanation_object = shap_explanation_object
 
