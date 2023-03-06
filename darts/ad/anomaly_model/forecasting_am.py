@@ -152,6 +152,9 @@ class ForecastingAnomalyModel(AnomalyModel):
         model_fit_kwargs["past_covariates"] = list_past_covariates
         model_fit_kwargs["future_covariates"] = list_future_covariates
 
+        # remove None elements from dictionary
+        model_fit_kwargs = {k: v for k, v in model_fit_kwargs.items() if v}
+
         # fit forecasting model
         if allow_model_training:
             # the model has not been trained yet

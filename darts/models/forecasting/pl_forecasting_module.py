@@ -30,6 +30,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
+        train_sample_shape: Optional[Tuple] = None,
         loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
         torch_metrics: Optional[
             Union[torchmetrics.Metric, torchmetrics.MetricCollection]
@@ -59,6 +60,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
             Number of input past time steps per chunk.
         output_chunk_length
             Number of output time steps per chunk.
+        train_sample_shape
+            Shape of the model's input, used to instantiate model without calling ``fit_from_dataset`` and
+            perform sanity check on new training/inference datasets used for re-training or prediction.
         loss_fn
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
@@ -100,6 +104,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.criterion = loss_fn
         # by default models are deterministic (i.e. not probabilistic)
         self.likelihood = likelihood
+
+        # saved in checkpoint to be able to instantiate a model without calling fit_from_dataset
+        self.train_sample_shape = train_sample_shape
 
         # persist optimiser and LR scheduler parameters
         self.optimizer_cls = optimizer_cls
@@ -150,7 +157,13 @@ class PLForecastingModule(pl.LightningModule, ABC):
             -1
         ]  # By convention target is always the last element returned by datasets
         loss = self._compute_loss(output, target)
-        self.log("train_loss", loss, batch_size=train_batch[0].shape[0], prog_bar=True)
+        self.log(
+            "train_loss",
+            loss,
+            batch_size=train_batch[0].shape[0],
+            prog_bar=True,
+            sync_dist=True,
+        )
         self._calculate_metrics(output, target, self.train_metrics)
         return loss
 
@@ -159,7 +172,13 @@ class PLForecastingModule(pl.LightningModule, ABC):
         output = self._produce_train_output(val_batch[:-1])
         target = val_batch[-1]
         loss = self._compute_loss(output, target)
-        self.log("val_loss", loss, batch_size=val_batch[0].shape[0], prog_bar=True)
+        self.log(
+            "val_loss",
+            loss,
+            batch_size=val_batch[0].shape[0],
+            prog_bar=True,
+            sync_dist=True,
+        )
         self._calculate_metrics(output, target, self.val_metrics)
         return loss
 
@@ -274,6 +293,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
             on_step=False,
             logger=True,
             prog_bar=True,
+            sync_dist=True,
         )
 
     def configure_optimizers(self):
@@ -370,11 +390,17 @@ class PLForecastingModule(pl.LightningModule, ABC):
     def on_save_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
         # we must save the dtype for correct parameter precision at loading time
         checkpoint["model_dtype"] = self.dtype
+        # we must save the shape of the input to be able to instanciate the model without calling fit_from_dataset
+        checkpoint["train_sample_shape"] = self.train_sample_shape
 
     def on_load_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
         # by default our models are initialized as float32. For other dtypes, we need to cast to the correct precision
         # before parameters are loaded by PyTorch-Lightning
         dtype = checkpoint["model_dtype"]
+        self.to_dtype(dtype)
+
+    def to_dtype(self, dtype):
+        """Cast module precision (float32 by default) to another precision."""
         if dtype == torch.float16:
             self.half()
         if dtype == torch.float32:

@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import shap
@@ -523,6 +524,7 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             "power",
         )
         self.assertTrue(isinstance(fplot, shap.plots._force.BaseVisualizer))
+        plt.close()
 
         # no component name -> multivariate error
         with self.assertRaises(ValueError):
@@ -575,6 +577,7 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             target_component="power",
         )
         self.assertTrue(isinstance(fplot, shap.plots._force.BaseVisualizer))
+        plt.close()
 
     def test_feature_values_align_with_input(self):
         model = LightGBMModel(

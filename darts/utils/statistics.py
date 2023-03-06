@@ -139,7 +139,7 @@ def extract_trend_and_seasonality(
         The seasonality period to use.
     model
         The type of decomposition to use.
-        Must be ``from darts import ModelMode, SeasonalityMode`` Enum member.
+        Must be ``from darts.utils.utils import ModelMode, SeasonalityMode`` Enum member.
         Either ``MULTIPLICATIVE`` or ``ADDITIVE``.
         Defaults ``ModelMode.MULTIPLICATIVE``.
     method
@@ -223,8 +223,9 @@ def remove_from_series(
         The TimeSeries to remove.
     model
         The type of model considered.
-        Must be `from darts import ModelMode, SeasonalityMode` Enums member.
-        Either MULTIPLICATIVE or ADDITIVE.
+        Must be ``from darts.utils.utils import ModelMode, SeasonalityMode`` Enums member.
+        Either ``MULTIPLICATIVE`` or ``ADDITIVE``.
+        Defaults ``ModelMode.MULTIPLICATIVE``.
     Returns
     -------
     TimeSeries
@@ -321,9 +322,9 @@ def remove_trend(
         The TimeSeries to adjust.
     model
         The type of decomposition to use.
-        Must be a `from darts import ModelMode` Enum member.
-        Either ModelMode.MULTIPLICATIVE or ModelMode.ADDITIVE.
-        Defaults ModelMode.MULTIPLICATIVE.
+        Must be a ``from darts.utils.utils import ModelMode`` Enum member.
+        Either ``MULTIPLICATIVE`` or ``ADDITIVE``.
+        Defaults ``ModelMode.MULTIPLICATIVE``.
     method
         The method to be used to decompose the series.
         - "naive" : Seasonal decomposition using moving averages [1]_.

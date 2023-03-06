@@ -182,6 +182,7 @@ if TORCH_AVAILABLE:
                     log_tensorboard=True,
                     work_dir=self.temp_work_dir,
                     generic_architecture=architecture,
+                    pl_trainer_kwargs={"log_every_n_steps": 1},
                 )
                 model.fit(ts)
                 model.predict(n=2)
