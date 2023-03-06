@@ -621,6 +621,12 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         ).data
 
         assert_array_equal(feature_values.values(), comparison)
+        self.assertTrue(
+            feature_values.values().shape,
+            explanation_results.get_explanation(horizon=1, component="price")
+            .values()
+            .shape,
+        ), "The shape of the feature values should be the same as the shap values"
 
     def test_shap_explanation_object_validity(self):
         model = LightGBMModel(
