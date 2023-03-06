@@ -108,7 +108,9 @@ class ShapExplainabilityResult(ExplainabilityResult):
     """
     Stores the explainability results of a :class:`ShapExplainer`
     with convenient access to the results. It extends the :class:`ExplainabilityResult` and carries additional
-    information specific to the Shap explainers.
+    information specific to the Shap explainers. In particular, in addition to the `explained_forecasts` (which in
+    the case of the :class:`ShapExplainer` are the shap values), it also provides access to the corresponding
+    `feature_values` and the underlying `shap.Explanation` object.
     """
 
     def __init__(
@@ -161,15 +163,14 @@ class ShapExplainabilityResult(ExplainabilityResult):
         self, horizon: int, component: Optional[str] = None
     ) -> Union[shap.Explanation, Sequence[shap.Explanation]]:
         """
-        In case, SHAP is used by the :class:`ForecastingModelExplainer` to explain the forecast, this method
-        returns the underlying `shap.Explanations` object(s) for a given horizon and component.
+        Returns the underlying `shap.Explanation` object for a given horizon and component.
 
         Parameters
         ----------
         horizon
-            The horizon for which to return the `shap.Explanations` object(s).
+            The horizon for which to return the `shap.Explanation` object.
         component
-            The component for which to return the `shap.Explanations` object(s). Does not
+            The component for which to return the `shap.Explanation` object. Does not
             need to be specified for univariate series.
         """
         self._validate_input_for_querying_explainability_result(horizon, component)
