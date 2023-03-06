@@ -136,6 +136,7 @@ if TORCH_AVAILABLE:
     ]
 
 
+@pytest.mark.slow
 class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
     np.random.seed(0)
 
