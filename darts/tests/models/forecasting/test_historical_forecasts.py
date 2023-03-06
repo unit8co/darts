@@ -802,11 +802,6 @@ if TORCH_AVAILABLE:
                     " start",
                 )
 
-        @unittest.skipUnless(
-            TORCH_AVAILABLE,
-            "Torch not available. auto start and multiple time series for torch models and covariates "
-            "will be skipped.",
-        )
         def test_retrain(self):
             """test historical_forecasts for an untrained model with different retrain values."""
 
