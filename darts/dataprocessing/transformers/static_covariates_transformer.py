@@ -5,11 +5,15 @@ Static Covariates Transformer
 from collections import OrderedDict
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
 from sklearn.preprocessing import MinMaxScaler, OrdinalEncoder
-from typing_extensions import Literal
 
 from darts.logging import get_logger, raise_log
 from darts.timeseries import TimeSeries
