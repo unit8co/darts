@@ -133,6 +133,27 @@ class ProphetTestCase(DartsBaseTestClass):
         model = Prophet()
         assert model._model_builder == FBProphet, "model should use Facebook Prophet"
 
+    def test_prophet_model_with_logistic_growth(self):
+        model = Prophet(growth="logistic", cap=1)
+
+        # Create timeseries with logistic function
+        times = tg.generate_index(
+            pd.Timestamp("20200101"), pd.Timestamp("20210101"), freq="D"
+        )
+        values = np.linspace(-10, 10, len(times))
+        f = np.vectorize(lambda x: 1 / (1 + np.exp(-x)))
+        values = f(values)
+        ts = TimeSeries.from_times_and_values(times, values, freq="D")
+        # split in the middle, so the only way of predicting the plateau correctly
+        # is using the capacity
+        train, val = ts.split_after(0.5)
+
+        model.fit(train)
+        pred = model.predict(len(val))
+
+        for val_i, pred_i in zip(val.univariate_values(), pred.univariate_values()):
+            self.assertAlmostEqual(val_i, pred_i, delta=0.1)
+
     def helper_test_freq_coversion(self, test_cases):
         for freq, period in test_cases.items():
             ts_sine = tg.sine_timeseries(
