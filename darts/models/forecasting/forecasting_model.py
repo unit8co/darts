@@ -952,7 +952,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series
             The (or a sequence of) target time series to use to successively train and evaluate the historical forecasts
         historical_forecasts
-            Optionally, the (or a sequence of) historical forecasts time series to be evaluated.
+            Optionally, the (or a sequence of) historical forecasts time series to be evaluated. Corresponds to 
+            the output of :meth:`historical_forecasts() <ForecastingModel.historical_forecasts>`. If provided, will 
+            skip historical forecasting and ignore parameters `num_samples`, `train_length`, `start`, 
+            `forecast_horizon`, `stride`, `retrain`, `overlap_end`, and `last_points_only`.
         past_covariates
             Optionally, one (or a sequence of) past-observed covariate series.
             This applies only if the model supports past covariates.
