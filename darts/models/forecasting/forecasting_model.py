@@ -929,12 +929,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """Compute error values that the model would have produced when
         used on (potentially multiple) `series`.
 
-        It repeatedly builds a training set from the beginning of `series`. It trains the
-        current model on the training set, emits a forecast of length equal to forecast_horizon, and then moves
-        the end of the
-        training set forward by `stride` time steps. A metric (given by the `metric` function) is then evaluated
-        on the forecast and the actual values. Finally, the method returns a `reduction` (the mean by default)
-        of all these metric scores.
+        If `historical_forecasts` are provided, it uses them to calculate loss for the actual values otherwise
+        it repeatedly builds a training set from the beginning of `series`.
+        It trains the current model on the training set, emits a forecast of length equal to forecast_horizon,
+        and then moves the end of the training set forward by `stride` time steps.
+        A metric (given by the `metric` function) is then evaluated on the forecast and the actual values.
+        Finally, the method returns a `reduction` (the mean by default) of all these metric scores.
 
         By default, this method uses each historical forecast (whole) to compute error scores.
         If `last_points_only` is set to True, it will use only the last point of each historical
@@ -952,9 +952,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series
             The (or a sequence of) target time series to use to successively train and evaluate the historical forecasts
         historical_forecasts
-            Optionally, the (or a sequence of) historical forecasts time series to be evaluated. Corresponds to 
-            the output of :meth:`historical_forecasts() <ForecastingModel.historical_forecasts>`. If provided, will 
-            skip historical forecasting and ignore parameters `num_samples`, `train_length`, `start`, 
+            Optionally, the (or a sequence of) historical forecasts time series to be evaluated. Corresponds to
+            the output of :meth:`historical_forecasts() <ForecastingModel.historical_forecasts>`. If provided, will
+            skip historical forecasting and ignore parameters `num_samples`, `train_length`, `start`,
             `forecast_horizon`, `stride`, `retrain`, `overlap_end`, and `last_points_only`.
         past_covariates
             Optionally, one (or a sequence of) past-observed covariate series.
@@ -1027,21 +1027,22 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             The (sequence of) error score on a series, or list of list containing error scores for each
             provided series and each sample.
         """
-
-        forecasts = historical_forecasts or self.historical_forecasts(
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            num_samples=num_samples,
-            train_length=train_length,
-            start=start,
-            forecast_horizon=forecast_horizon,
-            stride=stride,
-            retrain=retrain,
-            overlap_end=overlap_end,
-            last_points_only=last_points_only,
-            verbose=verbose,
-        )
+        forecasts = historical_forecasts
+        if historical_forecasts is None:
+            forecasts = self.historical_forecasts(
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                num_samples=num_samples,
+                train_length=train_length,
+                start=start,
+                forecast_horizon=forecast_horizon,
+                stride=stride,
+                retrain=retrain,
+                overlap_end=overlap_end,
+                last_points_only=last_points_only,
+                verbose=verbose,
+            )
 
         series = series2seq(series)
         if len(series) == 1:
