@@ -745,9 +745,10 @@ class TimeSeries:
             timestamps) or a RangeIndex (if it contains integers).
             If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is
             either a pandas DatetimeIndex, a pandas RangeIndex, or a pandas Index that can be converted to a
-            RangeIndex. It is better if the index has no holes; alternatively setting `fill_missing_dates` can in some
-            cases solve these issues (filling holes with NaN, or with the provided `fillna_value` numeric value, if
-            any).
+            RangeIndex. Be aware that the index must represents the actual index of each individual time series group
+            (can contain non-unique values). It is better if the index has no holes; alternatively setting
+            `fill_missing_dates` can in some cases solve these issues (filling holes with NaN, or with the provided
+            `fillna_value` numeric value, if any).
         value_cols
             A string or list of strings representing the value column(s) to be extracted from the DataFrame. If set to
             `None`, the whole DataFrame will be used.
@@ -775,6 +776,12 @@ class TimeSeries:
         List[TimeSeries]
             A list containing a univariate or multivariate deterministic TimeSeries per group in the DataFrame.
         """
+        if time_col is None and df.index.is_monotonic_increasing:
+            logger.warning(
+                "UserWarning: `time_col` was not set and `df` has a monotonically increasing (time) index. You can "
+                "ignore this warning if the index represents the actual index of each individual time series group."
+            )
+
         group_cols = [group_cols] if not isinstance(group_cols, list) else group_cols
         if static_cols is not None:
             static_cols = (
