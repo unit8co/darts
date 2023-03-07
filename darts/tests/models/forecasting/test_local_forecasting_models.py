@@ -463,11 +463,6 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             pred3 = model.predict(n=pred_len, future_covariates=exog1)
 
             self.assertTrue(np.array_equal(pred1.values(), pred3.values()))
-
-            # check backtesting with retrain=False
-            model: TransferableFutureCovariatesLocalForecastingModel = model_cls(
-                **kwargs
-            )
             model.backtest(series1, future_covariates=exog1, start=0.5, retrain=False)
 
     @patch("typing.Callable")
