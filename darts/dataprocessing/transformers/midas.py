@@ -2,7 +2,7 @@
 Mixed-data sampling (MIDAS) Transformer
 ------------------
 """
-from typing import Union
+from typing import Iterator, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -11,6 +11,7 @@ from pandas import DateOffset, DatetimeIndex, Timedelta
 from darts import TimeSeries
 from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.logging import get_logger, raise_log
+from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
 
@@ -30,6 +31,15 @@ class MIDASTransformer(BaseDataTransformer):
         super().__init__(name, n_jobs, verbose)
         self.rule = rule
         self.strip = strip
+
+    def _transform_iterator(
+        self, series: Sequence[TimeSeries]
+    ) -> Iterator[Tuple[TimeSeries]]:
+
+        series = series2seq(series)
+
+        for s in series:
+            yield s, self.rule, self.strip
 
     @staticmethod
     def ts_transform(
