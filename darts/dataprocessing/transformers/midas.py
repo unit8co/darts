@@ -88,7 +88,7 @@ def _assert_high_to_low_freq(
     rule,
     high_freq,
 ):
-    """ "
+    """
     Asserts that the lower frequency series really has a lower frequency then the assumed higher frequency series.
     """
     if not low_freq_series_df.shape[0] < high_freq_series_df.shape[0]:
@@ -112,7 +112,17 @@ def _create_midas_df(
     # calculate the multiple
     n_high = series_df.shape[0]
     n_low = low_freq_series_df.shape[0]
-    multiple = int(n_high / n_low)
+    multiple = n_high / n_low
+
+    if not multiple.is_integer():
+        raise_log(
+            ValueError(
+                "The frequency of the high frequency input series should be an exact multiple of the targeted"
+                "low frequency output. For example, you could go from a monthly series to a quarterly series."
+            )
+        )
+    else:
+        multiple = int(multiple)
 
     # set up integer index
     range_lst = list(range(n_high))
