@@ -4,7 +4,7 @@ Neural Prophet
 """
 
 import warnings
-from typing import Optional, Sequence, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import neuralprophet
 import pandas as pd
@@ -16,8 +16,50 @@ from darts.timeseries import TimeSeries, concatenate
 
 
 class NeuralProphet(ForecastingModel):
-    def __init__(self, n_lags: int = 0, n_forecasts: int = 1, **kwargs):
-        super().__init__()
+    def __init__(
+        self,
+        n_lags: int = 0,
+        n_forecasts: int = 1,
+        add_encoders: Optional[Dict] = None,
+        **kwargs,
+    ):
+        """Neural Prophet
+
+        This class provides a basic wrapper around `NeuralProphet <https://github.com/ourownstory/neural_prophet>`_.
+        It extends approach similar to Facebook Prophet model with auto-regressive feed-forward neural network
+        It supports also supports past and future covariates. For more parameters refer to the original documentation.
+
+        Parameters
+        ----------
+        n_lags
+            Number of lagged values provided to AR-Net. If equal to 0 then only trend
+            and seasonality will be used for forecasting.
+
+        n_forecast
+            Output size chunk of the AR-Net. Limits how far into the future is is possible to forecast.
+
+        add_encoders
+            A large number of future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
+            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'position': {'future': ['relative']},
+                    'custom': {'future': [lambda idx: (idx.year - 1950) / 50]},
+                    'transformer': Scaler()
+                }
+            ..
+        """
+        super().__init__(add_encoders=add_encoders, **kwargs)
         # TODO improve passing arguments to the model
 
         raise_if_not(n_lags >= 0, "Argument n_lags should be a non-negative integer")
@@ -43,7 +85,7 @@ class NeuralProphet(ForecastingModel):
 
         raise_if_not(
             past_covariates is None or self.n_lags > 0,
-            "Past covariates are only supported when auto-regression is enabled (n_lags > 1)",
+            "Past covariates are only supported when auto-regression is enabled (n_lags > 0)",
         )
 
         self.training_series = series
@@ -225,6 +267,18 @@ class NeuralProphet(ForecastingModel):
 
     def uses_future_covariates(self):
         return True
+
+    def _model_encoder_settings(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        bool,
+        bool,
+        Optional[List[int]],
+        Optional[List[int]],
+    ]:
+        return (None, None, True, True, None, None)
 
     def __str__(self):
         return "Neural Prophet"
