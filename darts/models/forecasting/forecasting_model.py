@@ -1606,26 +1606,31 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
 
     def __repr__(self):
+        """
+        Get full description for this estimator (includes all params).
+        """
         return self._get_model_description_string(True)
 
     def __str__(self):
         """
-        Get parameters for this estimator.
-
-        Parameters
-        ----------
-        deep : bool, default=True
-            If True, will return the parameters for this estimator and
-            contained subobjects that are estimators.
-
-        Returns
-        -------
-        params : dict
-            Parameter names mapped to their values.
+        Get short description for this estimator (only includes params with non-default values).
         """
         return self._get_model_description_string(False)
 
     def _get_model_description_string(self, include_default_params):
+        """
+        Get model description string of structure `model_name`(`model_param_key_value_pairs`).
+
+        Parameters
+        ----------
+        include_default_params : bool,
+            If True, will include params with default values in the description.
+
+        Returns
+        -------
+        description : String
+            Model description.
+        """
         default_model_params = self._get_default_model_params()
         changed_model_params = [
             (k, v)
