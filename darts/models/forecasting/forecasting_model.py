@@ -1605,6 +1605,49 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ValueError("This model only supports univariate TimeSeries instances")
             )
 
+    def __repr__(self):
+        return self._get_model_description_string(True)
+
+    def __str__(self):
+        """
+        Get parameters for this estimator.
+
+        Parameters
+        ----------
+        deep : bool, default=True
+            If True, will return the parameters for this estimator and
+            contained subobjects that are estimators.
+
+        Returns
+        -------
+        params : dict
+            Parameter names mapped to their values.
+        """
+        return self._get_model_description_string(False)
+
+    def _get_model_description_string(self, include_default_params):
+        default_model_params = self._get_default_model_params()
+        changed_model_params = [
+            (k, v)
+            for k, v in self.model_params.items()
+            if include_default_params or v != default_model_params.get(k, None)
+        ]
+
+        model_name = self.__class__.__name__
+        params_string = ", ".join([f"{k}={str(v)}" for k, v in changed_model_params])
+        return f"{model_name}({params_string})"
+
+    @classmethod
+    def _get_default_model_params(cls):
+        """Get parameter key : default_value pairs for the estimator"""
+        init_signature = inspect.signature(cls.__init__)
+        # Consider the constructor parameters excluding 'self'
+        return {
+            p.name: p.default
+            for p in init_signature.parameters.values()
+            if p.name != "self"
+        }
+
 
 class LocalForecastingModel(ForecastingModel, ABC):
     """The base class for "local" forecasting models, handling only single univariate time series.
@@ -2220,40 +2263,3 @@ class TransferableFutureCovariatesLocalForecastingModel(
     @property
     def extreme_lags(self):
         return (-1, 1, None, 0, 0)
-
-    def __str__(self):
-        """
-        Get parameters for this estimator.
-
-        Parameters
-        ----------
-        deep : bool, default=True
-            If True, will return the parameters for this estimator and
-            contained subobjects that are estimators.
-
-        Returns
-        -------
-        params : dict
-            Parameter names mapped to their values.
-        """
-        default_model_params = self._get_default_model_params()
-        changed_model_params = [
-            (k, v)
-            for k, v in self.model_params.items()
-            if v != default_model_params.get(k, None)
-        ]
-
-        model_name = self.__class__.__name__
-        params_string = ", ".join([f"{k}={v}" for k, v in changed_model_params])
-        return f"{model_name}({params_string})"
-
-    @classmethod
-    def _get_default_model_params(cls):
-        """Get parameter key : default_value pairs for the estimator"""
-        init_signature = inspect.signature(cls.__init__)
-        # Consider the constructor parameters excluding 'self'
-        return {
-            p.name: p.default
-            for p in init_signature.parameters.values()
-            if p.name != "self"
-        }
