@@ -459,41 +459,6 @@ class WindowTransformerTestCase(unittest.TestCase):
     sequence_det = [series_univ_det, series_multi_det]
     sequence_prob = [series_univ_prob, series_multi_prob]
 
-    def test_window_transformer_iterator(self):
-        # no series_id, no components : all series and all there components should receive the same transformation
-        window_transformations = {"function": "mean"}
-        transformer = WindowTransformer(transforms=window_transformations)
-        expected_kwargs_dict = {
-            "transforms": window_transformations,
-            "keep_non_transformed": False,
-            "treat_na": None,
-            "forecasting_safe": True,
-            "include_current": True,
-        }
-        associations_list = list(transformer._transform_iterator(self.sequence_det))
-        self.assertEqual(len(associations_list), 2)
-        self.assertEqual(associations_list[0][0], self.series_univ_det)
-        self.assertEqual(associations_list[0][1], expected_kwargs_dict)
-        self.assertEqual(associations_list[1][0], self.series_multi_det)
-        self.assertEqual(associations_list[1][1], expected_kwargs_dict)
-
-        # no series_id and components : all series will receive the same transformation on those components
-        window_transformations = {"function": "mean", "components": ["0"]}
-        transformer = WindowTransformer(transforms=window_transformations)
-        expected_kwargs_dict = {
-            "transforms": window_transformations,
-            "keep_non_transformed": False,
-            "treat_na": None,
-            "forecasting_safe": True,
-            "include_current": True,
-        }
-        associations_list = list(transformer._transform_iterator(self.sequence_det))
-        self.assertEqual(len(associations_list), 2)
-        self.assertEqual(associations_list[0][0], self.series_univ_det)
-        self.assertEqual(associations_list[0][1], expected_kwargs_dict)
-        self.assertEqual(associations_list[1][0], self.series_multi_det)
-        self.assertEqual(associations_list[1][1], expected_kwargs_dict)
-
     def test_window_transformer_output(self):
         window_transformations = {
             "function": "sum",
@@ -517,7 +482,12 @@ class WindowTransformerTestCase(unittest.TestCase):
             transformed_ts_list[1].n_timesteps, self.series_multi_det.n_timesteps
         )
 
-    def test_transformers_pipline(self):
+    def test_transformers_pipeline(self):
+        """
+        Test that the forecasting window transformer can be used in a pipeline
+
+        """
+
         times1 = pd.date_range("20130101", "20130110")
         series_1 = TimeSeries.from_times_and_values(times1, range(1, 11))
 
