@@ -1,6 +1,8 @@
 import unittest
 
 import numpy as np
+import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
@@ -799,3 +801,37 @@ if TORCH_AVAILABLE:
                     " of retrain=True and overlap_end=False and no past_covariates and future_covariates with different"
                     " start",
                 )
+
+        def test_retrain(self):
+            """test historical_forecasts for an untrained model with different retrain values."""
+
+            def helper_hist_forecasts(retrain_val):
+                model = LinearRegressionModel(lags=4)
+                model.historical_forecasts(
+                    self.ts_passengers, start=0.9, retrain=retrain_val, verbose=False
+                )
+
+            def retrain_f_invalid(pred_time, train_series):
+                return False
+
+            def retrain_f_valid(pred_time, train_series):
+                # only retrain once in first iteration
+                if pred_time == pd.Timestamp("1959-09-01 00:00:00"):
+                    return True
+                else:
+                    return False
+
+            # test callable
+            with pytest.raises(ValueError):
+                helper_hist_forecasts(retrain_f_invalid)
+            helper_hist_forecasts(retrain_f_valid)
+
+            # test int
+            with pytest.raises(ValueError):
+                helper_hist_forecasts(0)
+            helper_hist_forecasts(10)
+
+            # test bool
+            with pytest.raises(ValueError):
+                helper_hist_forecasts(False)
+            helper_hist_forecasts(True)
