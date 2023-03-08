@@ -81,11 +81,6 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
 
         assert d <= 1, "d > 1 not supported."
 
-    def __str__(self):
-        if self.d == 0:
-            return f"VARMA({self.p},{self.q})"
-        return f"VARIMA({self.p},{self.d},{self.q})"
-
     def _differentiate_series(self, series: TimeSeries) -> TimeSeries:
         """Differentiate the series self.d times"""
         for _ in range(self.d):
