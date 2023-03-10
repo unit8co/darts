@@ -16,7 +16,7 @@ from darts.utils.utils import series2seq
 logger = get_logger(__name__)
 
 
-class MIDASTransformer(BaseDataTransformer):
+class MIDAS(BaseDataTransformer):
     def __init__(
         self,
         rule: str,
@@ -25,8 +25,57 @@ class MIDASTransformer(BaseDataTransformer):
         n_jobs: int = 1,
         verbose: bool = False,
     ):
-        """
-        A transformer that converts higher frequency time series to lower frequency using mixed-data sampling.
+        """Mixed-data sampling transformer.
+
+        A transformer that converts higher frequency time series to lower frequency using mixed-data sampling; see
+        [1]_ for further details. This allows higher frequency covariates to be used whilst forecasting a lower
+        frequency target series. For example, using monthly inputs to forecast a quarterly target.
+
+        Notes
+        -----
+        The high input frequency should always relate in the same rate to the low target frequency. For
+        example, there's always three months in quarter. However, the number of days in a month varies per month. So in
+        the latter case a MIDAS transformation does not work and the transformer will raise an error.
+
+        Parameters
+        ----------
+        rule
+            The offset string or object representing target conversion. Passed on to the rule parameter in
+            pandas.DataFrame.resample and therefore it is equivalent to it.
+        strip
+            Whether to strip -remove the NaNs from the start and the end of- the transformed series.
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.dataprocessing.transformers import MIDAS
+        >>> monthly_series = AirPassengersDataset().load()
+        >>> midas = MIDAS(rule="Q")
+        >>> quarterly_series = midas.transform(monthly_series)
+        >>> print(quarterly_series.head())
+        <TimeSeries (DataArray) (Month: 5, component: 3, sample: 1)>
+        array([[[112.],
+                [118.],
+                [132.]],
+                [[129.],
+                [121.],
+                [135.]],
+                [[148.],
+                [148.],
+                [136.]],
+                [[119.],
+                [104.],
+                [118.]],
+                [[115.],
+                [126.],
+                [141.]]])
+        Coordinates:
+        * Month      (Month) datetime64[ns] 1949-01-01 1949-04-01 ... 1950-01-01
+        * component  (component) object '#Passengers_0' ... '#Passengers_2'
+
+        References
+        ----------
+        .. [1] https://en.wikipedia.org/wiki/Mixed-data_sampling
         """
         super().__init__(name, n_jobs, verbose)
         self.rule = rule
@@ -45,7 +94,7 @@ class MIDASTransformer(BaseDataTransformer):
     def ts_transform(
         series: TimeSeries,
         rule: Union[DateOffset, Timedelta, str],
-        strip: bool,
+        strip: bool = True,
     ) -> TimeSeries:
         high_freq_datetime = series.freq_str
         series_df = series.pd_dataframe()
