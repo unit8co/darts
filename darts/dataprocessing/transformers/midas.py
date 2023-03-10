@@ -96,21 +96,36 @@ class MIDAS(BaseDataTransformer):
         rule: Union[DateOffset, Timedelta, str],
         strip: bool = True,
     ) -> TimeSeries:
+        """
+        Transforms series from high to low frequency using a mixed-data sampling approach. Uses and relies on
+        pandas.DataFrame.resample.
+
+        Steps:
+            (1) Transform series to pd.DataFrame and it's index to a pd.PeriodIndex
+            (2) Downsample series and then upsample it again
+            (3) Replace input series by unsampled series if it's not 'full'
+            (4) Transform every column of the high frequency series into multiple columns for the low frequency series
+            (5) Transform the low frequency series back into a TimeSeries
+        """
+        # TimeSeries to pd.DataFrame
         high_freq_datetime = series.freq_str
         series_df = series.pd_dataframe()
         series_copy_df = series_df.copy()
+        # DateTime to PeriodIndex
         series_df.index = series_df.index.to_period()
         high_freq_period = series_df.index.freqstr
 
-        # ensure the length of the series is an exact multiple of the length of the targeted low frequency series
-        # we do this by resampling from a high freq to a low freq and then back to high again (possibly adding NaNs)
+        # length of the series must be an exact multiple of the length of the targeted low frequency series
+        # downsample
         low_freq_series_df = series_df.resample(rule).last()
         low_index_datetime = low_freq_series_df.index.to_timestamp()
+        # upsample (possibly add nans)
         high_freq_series_df = (
             low_freq_series_df.resample(high_freq_period).bfill().ffill()
         )
         high_index_datetime = high_freq_series_df.index.to_timestamp()
 
+        # check if user requested a transform from a high to a low frequency
         _assert_high_to_low_freq(
             high_freq_series_df=high_freq_series_df,
             low_freq_series_df=low_freq_series_df,
@@ -127,6 +142,7 @@ class MIDAS(BaseDataTransformer):
         else:
             series_df = series_copy_df
 
+        # make multiple low frequency columns out of the high frequency column(s)
         midas_df = _create_midas_df(
             series_df=series_df,
             low_freq_series_df=low_freq_series_df,
@@ -199,8 +215,3 @@ def _create_midas_df(
         midas_lst += [series_tmp_df.rename(columns=rename_dict_tmp)]
 
     return pd.concat(midas_lst, axis=1)
-
-
-# from darts.datasets import AirPassengersDataset
-
-# series = AirPassengersDataset().load()
