@@ -200,7 +200,7 @@ series.plot()
   supporting among other things custom callbacks, GPUs/TPUs training and custom trainers.
 
 * **Filtering Models:** Darts offers three filtering models: `KalmanFilter`, `GaussianProcessFilter`,
-  and `MovingAverage`, which allow to filter time series, and in some cases obtain probabilistic
+  and `MovingAverageFilter`, which allow to filter time series, and in some cases obtain probabilistic
   inferences of the underlying states/values.
 
 * **Datasets** The `darts.datasets` submodule contains some popular time series datasets for rapid
