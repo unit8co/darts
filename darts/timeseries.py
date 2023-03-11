@@ -778,8 +778,9 @@ class TimeSeries:
         """
         if time_col is None and df.index.is_monotonic_increasing:
             logger.warning(
-                "UserWarning: `time_col` was not set and `df` has a monotonically increasing (time) index. You can "
-                "ignore this warning if the index represents the actual index of each individual time series group."
+                "UserWarning: `time_col` was not set and `df` has a monotonically increasing (time) index. This "
+                "results in time series groups with non-overlapping (time) index. You can ignore this warning if the "
+                "index represents the actual index of each individual time series group."
             )
 
         group_cols = [group_cols] if not isinstance(group_cols, list) else group_cols
