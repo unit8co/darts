@@ -6,7 +6,7 @@ Contains the explainability results obtained from :func:`ForecastingModelExplain
 """
 
 from abc import ABC
-from typing import Dict, Optional, Sequence, Union
+from typing import Any, Dict, Optional, Sequence, Union
 
 import shap
 from numpy import integer
@@ -55,14 +55,39 @@ class ExplainabilityResult(ABC):
             The component for which to return the explanation. Does not
             need to be specified for univariate series.
         """
+        return self._query_explainability_result(
+            self.explained_forecasts, horizon, component
+        )
+
+    def _query_explainability_result(
+        self,
+        attr: Union[
+            Dict[integer, Dict[str, Any]], Sequence[Dict[integer, Dict[str, Any]]]
+        ],
+        horizon: int,
+        component: Optional[str] = None,
+    ) -> Any:
+        """
+        Helper that extracts and returns the explainability result attribute for a specified horizon and component from
+        the input attribute.
+
+        Parameters
+        ----------
+        attr
+            An explainability result attribute from which to extract the content for a certain horizon and component.
+        horizon
+            The horizon for which to return the content of the attribute.
+        component
+            The component for which to return the content of the attribute. Does not
+            need to be specified for univariate series.
+        """
         self._validate_input_for_querying_explainability_result(horizon, component)
-        if isinstance(self.explained_forecasts, list):
-            return [
-                self.explained_forecasts[i][horizon][component]
-                for i in range(len(self.explained_forecasts))
-            ]
+        if component is None:
+            component = self.available_components[0]
+        if isinstance(attr, list):
+            return [attr[i][horizon][component] for i in range(len(attr))]
         else:
-            return self.explained_forecasts[horizon][component]
+            return attr[horizon][component]
 
     def _validate_input_for_querying_explainability_result(
         self, horizon: int, component: Optional[str] = None
@@ -123,11 +148,9 @@ class ShapExplainabilityResult(ExplainabilityResult):
             Dict[integer, Dict[str, TimeSeries]],
             Sequence[Dict[integer, Dict[str, TimeSeries]]],
         ],
-        shap_explanation_object: Optional[
-            Union[
-                Dict[integer, Dict[str, shap.Explanation]],
-                Sequence[Dict[integer, Dict[str, shap.Explanation]]],
-            ]
+        shap_explanation_object: Union[
+            Dict[integer, Dict[str, shap.Explanation]],
+            Sequence[Dict[integer, Dict[str, shap.Explanation]]],
         ],
     ):
         super().__init__(explained_forecasts)
@@ -149,14 +172,9 @@ class ShapExplainabilityResult(ExplainabilityResult):
             The component for which to return the feature values. Does not
             need to be specified for univariate series.
         """
-        self._validate_input_for_querying_explainability_result(horizon, component)
-        if isinstance(self.feature_values, list):
-            return [
-                self.feature_values[i][horizon][component]
-                for i in range(len(self.feature_values))
-            ]
-        else:
-            return self.feature_values[horizon][component]
+        return self._query_explainability_result(
+            self.feature_values, horizon, component
+        )
 
     def get_shap_explanation_object(
         self, horizon: int, component: Optional[str] = None
@@ -172,11 +190,6 @@ class ShapExplainabilityResult(ExplainabilityResult):
             The component for which to return the `shap.Explanation` object. Does not
             need to be specified for univariate series.
         """
-        self._validate_input_for_querying_explainability_result(horizon, component)
-        if isinstance(self.shap_explanation_object, list):
-            return [
-                self.shap_explanation_object[i][horizon][component]
-                for i in range(len(self.shap_explanation_object))
-            ]
-        else:
-            return self.shap_explanation_object[horizon][component]
+        return self._query_explainability_result(
+            self.shap_explanation_object, horizon, component
+        )

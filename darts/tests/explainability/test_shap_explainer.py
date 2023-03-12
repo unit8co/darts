@@ -624,7 +624,7 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         ).data
 
         assert_array_equal(feature_values.values(), comparison)
-        self.assertTrue(
+        self.assertEqual(
             feature_values.values().shape,
             explanation_results.get_explanation(horizon=1, component="price")
             .values()
