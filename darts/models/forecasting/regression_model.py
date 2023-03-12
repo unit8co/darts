@@ -30,6 +30,7 @@ from collections import OrderedDict
 from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
+import pandas as pd
 from sklearn.linear_model import LinearRegression
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
@@ -1128,6 +1129,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             if isinstance(categorical_static_covariates, str)
             else categorical_static_covariates
         )
+        self._categorical_col_indices: Union[None, List[int]] = None
 
     def fit(
         self,
@@ -1323,6 +1325,17 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
 
             return indices, col_names
 
+    @staticmethod
+    def _cast_float_to_int(data: np.ndarray, col_indices: List[int]) -> pd.DataFrame:
+        """
+        Casts the columns of the data array at the given indices to int and returns a pd.DataFrame.
+        """
+        df = pd.DataFrame(data)
+        if col_indices:
+            for col in col_indices:
+                df[col] = df[col].astype(int)
+        return df
+
     def _fit_model(
         self,
         target_series,
@@ -1352,9 +1365,25 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             past_covariates,
             future_covariates,
         )
-        kwargs["categorical_feature"] = cat_col_indices
+
+        # Updated each time the model is fit such that the indices can be easily retrieved in the predict method later
+        self._categorical_col_indices = cat_col_indices
+
+        training_samples_df = self._cast_float_to_int(training_samples, cat_col_indices)
+
+        kwargs[self.categorical_fit_param_name] = cat_col_indices
         self.model.fit(
-            training_samples,
+            training_samples_df,
             training_labels,
             **kwargs,
         )
+
+    def _predict_and_sample(
+        self, x: np.ndarray, num_samples: int, **kwargs
+    ) -> np.ndarray:
+        prediction = self.model.predict(
+            self._cast_float_to_int(x, self._categorical_col_indices), **kwargs
+        )
+        k = x.shape[0]
+
+        return prediction.reshape(k, self.pred_dim, -1)

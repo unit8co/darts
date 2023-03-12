@@ -2223,33 +2223,39 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             sine_series.with_static_covariates(None),
             irregular_series.with_static_covariates(None),
         ]
-        model_no_cat = LightGBMModel(**get_model_params())
-        preds_no_cat = fit_predict(
-            model_no_cat,
-            train_series_no_cat,
-            predict_series=[series[:60] for series in train_series_no_cat],
-        )
-
         # test case using categorical static covariates
         train_series_cat = [sine_series, irregular_series]
-        model_cat = LightGBMModel(
-            categorical_static_covariates=["curve_type"], **get_model_params()
-        )
-        preds_cat = fit_predict(
-            model_cat,
-            train_series_cat,
-            predict_series=[series[:60] for series in train_series_cat],
-        )
-
-        # categorical covariates make model aware of the underlying curve type -> improves rmse
-        rmses_no_cat = rmse(train_series_cat, preds_no_cat)
-        rmses_cat = rmse(train_series_cat, preds_cat)
-        assert all(
+        for model_no_cat, model_cat in zip(
+            [LightGBMModel(**get_model_params()), CatBoostModel(**get_model_params())],
             [
-                rmse_no_cat > rmse_cat
-                for rmse_no_cat, rmse_cat in zip(rmses_no_cat, rmses_cat)
-            ]
-        )
+                LightGBMModel(
+                    categorical_static_covariates=["curve_type"], **get_model_params()
+                ),
+                CatBoostModel(
+                    categorical_static_covariates=["curve_type"], **get_model_params()
+                ),
+            ],
+        ):
+            preds_no_cat = fit_predict(
+                model_no_cat,
+                train_series_no_cat,
+                predict_series=[series[:60] for series in train_series_no_cat],
+            )
+            preds_cat = fit_predict(
+                model_cat,
+                train_series_cat,
+                predict_series=[series[:60] for series in train_series_cat],
+            )
+
+            # categorical covariates make model aware of the underlying curve type -> improves rmse
+            rmses_no_cat = rmse(train_series_cat, preds_no_cat)
+            rmses_cat = rmse(train_series_cat, preds_cat)
+            assert all(
+                [
+                    rmse_no_cat > rmse_cat
+                    for rmse_no_cat, rmse_cat in zip(rmses_no_cat, rmses_cat)
+                ]
+            )
 
     def test_fit_with_categorical_features_raises_error(self):
         (
@@ -2333,7 +2339,39 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
         # Check that mocked super.fit() method was called with correct categorical_feature argument
         args, kwargs = lgb_fit_patch.call_args
-        self.assertEqual(kwargs["categorical_feature"], [2, 3, 5])
+        self.assertEqual(
+            kwargs[self.lgbm_w_categorical_covariates.categorical_fit_param_name],
+            [2, 3, 5],
+        )
+
+    @patch.object(darts.models.forecasting.catboost_model.CatBoostRegressor, "fit")
+    def test_catboost_categorical_features_passed_to_fit_correctly(
+        self, catboost_fit_patch
+    ):
+        """Test whether the categorical features are passed to CatBoostRegressor"""
+        (
+            series,
+            past_covariates,
+            future_covariates,
+        ) = self.inputs_for_tests_categorical_covariates
+        catboost_model = CatBoostModel(
+            lags=1,
+            lags_past_covariates=1,
+            lags_future_covariates=[1],
+            output_chunk_length=1,
+            categorical_future_covariates=["fut_cov_promo_mechanism"],
+            categorical_past_covariates=["past_cov_cat_dummy"],
+            categorical_static_covariates=["product_id"],
+        )
+        catboost_model.fit(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
+        # Check that mocked super.fit() method was called with correct categorical_feature argument
+        args, kwargs = catboost_fit_patch.call_args
+        self.assertEqual(kwargs[catboost_model.categorical_fit_param_name], [2, 3, 5])
 
 
 class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):
