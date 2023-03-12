@@ -1308,7 +1308,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # model parameter must be pyod.models type BaseDetector
         with self.assertRaises(ValueError):
-            PyODScorer(model=MovingAverage(window=10))
+            PyODScorer(model=MovingAverageFilter(window=10))
 
     def test_univariate_PyODScorer(self):
 
