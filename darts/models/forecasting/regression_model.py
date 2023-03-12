@@ -1203,7 +1203,6 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         future_covariates
             Optionally, a series or sequence of series specifying future-known covariates
         """
-        # Validate that categorical covariates of the model are a subset of all covariates
         for categorical_covariates, covariates, cov_type in zip(
             [self.categorical_past_covariates, self.categorical_future_covariates],
             [past_covariates, future_covariates],
@@ -1213,30 +1212,39 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
                 if not covariates:
                     raise_log(
                         ValueError(
-                            f"Categorical {cov_type} are declared in the model constructor but no "
-                            f"{cov_type} are passed to the `fit()` call."
+                            f"`categorical_{cov_type}` were declared at model creation but no "
+                            f"`{cov_type}` are passed to the `fit()` call."
                         ),
                     )
                 s = covariates if isinstance(covariates, TimeSeries) else covariates[0]
                 if not set(categorical_covariates).issubset(set(s.components)):
                     raise_log(
                         ValueError(
-                            f"Some {cov_type} ({set(categorical_covariates) - set(s.components)}) "
-                            f"declared as categorical in the model constructor are not "
-                            f"present in the {cov_type} passed to the `fit()` call."
+                            f"Some `categorical_{cov_type}` components "
+                            f"({set(categorical_covariates) - set(s.components)}) "
+                            f"declared at model creation are not present in the `{cov_type}` "
+                            f"passed to the `fit()` call."
                         )
                     )
         if self.categorical_static_covariates:
             s = series if isinstance(series, TimeSeries) else series[0]
+            covariates = s.static_covariates
+            if not s.has_static_covariates:
+                raise_log(
+                    ValueError(
+                        "`categorical_static_covariates` were declared at model creation but `series`"
+                        "passed to the `fit()` call does not contain `static_covariates`."
+                    ),
+                )
             if not set(self.categorical_static_covariates).issubset(
-                set(s.static_covariates.columns)
+                set(covariates.columns)
             ):
                 raise_log(
                     ValueError(
-                        f"Some static covariates "
-                        f"({set(self.categorical_static_covariates) - set(s.static_covariates.columns)}) "
-                        f"declared as categorical in the model constructor are not "
-                        f"present in the series passed to the `fit()` call."
+                        f"Some `categorical_static_covariates` components "
+                        f"({set(self.categorical_static_covariates) - set(covariates.columns)}) "
+                        f"declared at model creation are not present in the series' `static_covariates` "
+                        f"passed to the `fit()` call."
                     )
                 )
 
