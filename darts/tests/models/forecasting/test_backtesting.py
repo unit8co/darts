@@ -217,6 +217,17 @@ class BacktestingTestCase(DartsBaseTestClass):
             tcn_model = TCNModel(
                 input_chunk_length=12, output_chunk_length=1, batch_size=1, n_epochs=1
             )
+            # cannot perform historical forecasts with `retrain=False` and untrained model
+            with pytest.raises(ValueError):
+                _ = tcn_model.historical_forecasts(
+                    linear_series,
+                    start=pd.Timestamp("20000125"),
+                    forecast_horizon=3,
+                    verbose=False,
+                    last_points_only=True,
+                    retrain=False,
+                )
+
             pred = tcn_model.historical_forecasts(
                 linear_series,
                 start=pd.Timestamp("20000125"),
@@ -234,7 +245,6 @@ class BacktestingTestCase(DartsBaseTestClass):
                 start=pd.Timestamp("20000125"),
                 forecast_horizon=3,
                 verbose=False,
-                retrain=False,
             )
 
             # univariate model
