@@ -1,7 +1,6 @@
 import copy
 import functools
 import math
-from contextlib import nullcontext as does_not_raise
 from typing import Optional, Sequence, Union
 from unittest.mock import patch
 
@@ -2235,19 +2234,6 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
         self.assertGreater(rmse_without_fut_cov, rmse_with_fut_cov_categorical)
         self.assertGreater(rmse_with_fut_cov, rmse_with_fut_cov_categorical)
-
-    def test_fit_with_categorical_features_successful(self):
-        (
-            series,
-            past_covariates,
-            future_covariates,
-        ) = self.inputs_for_tests_categorical_covariates
-        with does_not_raise():
-            self.lgbm_w_categorical_covariates.fit(
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-            )
 
     def test_fit_with_categorical_features_raises_error(self):
         (
