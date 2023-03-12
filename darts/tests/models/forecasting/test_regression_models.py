@@ -2180,60 +2180,76 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         assert lgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
 
     def test_quality_forecast_with_categorical_covariates(self):
-        (
-            series,
-            past_covariates,
-            future_covariates,
-        ) = self.inputs_for_tests_categorical_covariates
+        """Test case: two time series, a full sine wave series and a sine wave series
+        with some irregularities every other period. Only models which use categorical
+        static covariates should be able to recognize the underlying curve type when input for prediction is only a
+        sine wave
+        See the test case in section 6 from
+        https://github.com/unit8co/darts/blob/master/examples/15-static-covariates.ipynb
 
-        model_without_fut_cov = LightGBMModel(
-            lags=1,
-            output_chunk_length=1,
-            n_estimators=20,
-            max_depth=3,
-        )
-        model_with_fut_cov = LightGBMModel(
-            lags=1,
-            lags_future_covariates=[0, 1],
-            output_chunk_length=1,
-            n_estimators=20,
-            max_depth=3,
-        )
-        model_with_fut_cov_categorical = LightGBMModel(
-            lags=1,
-            lags_future_covariates=[0, 1],
-            output_chunk_length=1,
-            categorical_future_covariates="fut_cov_promo_mechanism",
-            n_estimators=20,
-            max_depth=3,
-        )
+        """
+        # full sine wave series
+        period = 20
+        sine_series = tg.sine_timeseries(
+            length=4 * period,
+            value_frequency=1 / period,
+            column_name="smooth",
+            freq="h",
+        ).with_static_covariates(pd.DataFrame(data={"curve_type": [1]}))
 
-        rmse_without_fut_cov = model_without_fut_cov.backtest(
-            series=series,
-            start=0.8,
-            retrain=False,
-            forecast_horizon=1,
-            metric=rmse,
-        )
-        rmse_with_fut_cov = model_with_fut_cov.backtest(
-            series=series,
-            future_covariates=future_covariates,
-            start=0.8,
-            retrain=False,
-            forecast_horizon=1,
-            metric=rmse,
-        )
-        rmse_with_fut_cov_categorical = model_with_fut_cov_categorical.backtest(
-            series=series,
-            future_covariates=future_covariates,
-            start=0.8,
-            retrain=False,
-            forecast_horizon=1,
-            metric=rmse,
+        # irregular sine wave series with linear ramp every other period
+        sine_vals = sine_series.values()
+        linear_vals = np.expand_dims(np.linspace(1, -1, num=19), -1)
+        sine_vals[21:40] = linear_vals
+        sine_vals[61:80] = linear_vals
+        irregular_series = TimeSeries.from_times_and_values(
+            values=sine_vals, times=sine_series.time_index, columns=["irregular"]
+        ).with_static_covariates(pd.DataFrame(data={"curve_type": [0]}))
+
+        def fit_predict(model, train_series, predict_series):
+            """perform model training and prediction"""
+            model.fit(train_series)
+            return model.predict(n=int(period / 2), series=predict_series)
+
+        def get_model_params():
+            """generate model parameters"""
+            return {
+                "lags": int(period / 2),
+                "output_chunk_length": int(period / 2),
+            }
+
+        # test case without using categorical static covariates
+        train_series_no_cat = [
+            sine_series.with_static_covariates(None),
+            irregular_series.with_static_covariates(None),
+        ]
+        model_no_cat = LightGBMModel(**get_model_params())
+        preds_no_cat = fit_predict(
+            model_no_cat,
+            train_series_no_cat,
+            predict_series=[series[:60] for series in train_series_no_cat],
         )
 
-        self.assertGreater(rmse_without_fut_cov, rmse_with_fut_cov_categorical)
-        self.assertGreater(rmse_with_fut_cov, rmse_with_fut_cov_categorical)
+        # test case using categorical static covariates
+        train_series_cat = [sine_series, irregular_series]
+        model_cat = LightGBMModel(
+            categorical_static_covariates=["curve_type"], **get_model_params()
+        )
+        preds_cat = fit_predict(
+            model_cat,
+            train_series_cat,
+            predict_series=[series[:60] for series in train_series_cat],
+        )
+
+        # categorical covariates make model aware of the underlying curve type -> improves rmse
+        rmses_no_cat = rmse(train_series_cat, preds_no_cat)
+        rmses_cat = rmse(train_series_cat, preds_cat)
+        assert all(
+            [
+                rmse_no_cat > rmse_cat
+                for rmse_no_cat, rmse_cat in zip(rmses_no_cat, rmses_cat)
+            ]
+        )
 
     def test_fit_with_categorical_features_raises_error(self):
         (
