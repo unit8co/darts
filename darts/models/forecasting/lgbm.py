@@ -15,14 +15,17 @@ from typing import List, Optional, Sequence, Tuple, Union
 import lightgbm as lgb
 import numpy as np
 
-from darts.logging import get_logger, raise_log
-from darts.models.forecasting.regression_model import RegressionModel, _LikelihoodMixin
+from darts.logging import get_logger
+from darts.models.forecasting.regression_model import (
+    RegressionModelWithCategoricalCovariates,
+    _LikelihoodMixin,
+)
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
-class LightGBMModel(RegressionModel, _LikelihoodMixin):
+class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
     def __init__(
         self,
         lags: Union[int, list] = None,
@@ -34,9 +37,9 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
         quantiles: List[float] = None,
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
-        categorical_past_covariates: Optional[List[str]] = None,
-        categorical_future_covariates: Optional[List[str]] = None,
-        categorical_static_covariates: Optional[List[str]] = None,
+        categorical_past_covariates: Optional[Union[str, List[str]]] = None,
+        categorical_future_covariates: Optional[Union[str, List[str]]] = None,
+        categorical_static_covariates: Optional[Union[str, List[str]]] = None,
         **kwargs,
     ):
         """LGBM Model
@@ -114,9 +117,6 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
         self.quantiles = None
         self.likelihood = likelihood
         self._rng = None
-        self.categorical_past_covariates = categorical_past_covariates
-        self.categorical_future_covariates = categorical_future_covariates
-        self.categorical_static_covariates = categorical_static_covariates
 
         # parse likelihood
         available_likelihoods = ["quantile", "poisson"]  # to be extended
@@ -137,6 +137,9 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
             add_encoders=add_encoders,
             multi_models=multi_models,
             model=lgb.LGBMRegressor(**self.kwargs),
+            categorical_past_covariates=categorical_past_covariates,
+            categorical_future_covariates=categorical_future_covariates,
+            categorical_static_covariates=categorical_static_covariates,
         )
 
     def __str__(self):
@@ -182,44 +185,6 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
          **kwargs
             Additional kwargs passed to `lightgbm.LGBRegressor.fit()`
         """
-
-        # Validate that categorical covariates of the model are a subset of all covariates
-        for categorical_covariates, covariates, cov_type in zip(
-            [self.categorical_past_covariates, self.categorical_future_covariates],
-            [past_covariates, future_covariates],
-            ["past_covariates", "future_covariates"],
-        ):
-            if categorical_covariates:
-                if not covariates:
-                    raise_log(
-                        ValueError(
-                            f"Categorical {cov_type} are declared in the model constructor but no "
-                            f"{cov_type} are passed to the `fit()` call."
-                        ),
-                    )
-                s = covariates if isinstance(covariates, TimeSeries) else covariates[0]
-                if not set(categorical_covariates).issubset(set(s.components)):
-                    raise_log(
-                        ValueError(
-                            f"Some {cov_type} ({set(categorical_covariates) - set(s.components)}) "
-                            f"declared as categorical in the model constructor are not "
-                            f"present in the {cov_type} passed to the `fit()` call."
-                        )
-                    )
-        if self.categorical_static_covariates:
-            s = series if isinstance(series, TimeSeries) else series[0]
-            if not set(self.categorical_static_covariates).issubset(
-                set(s.static_covariates.columns)
-            ):
-                raise_log(
-                    ValueError(
-                        f"Some static covariates "
-                        f"({set(self.categorical_static_covariates) - set(s.static_covariates.columns)}) "
-                        f"declared as categorical in the model constructor are not "
-                        f"present in the series passed to the `fit()` call."
-                    )
-                )
-
         if val_series is not None:
             kwargs["eval_set"] = self._create_lagged_data(
                 target_series=val_series,
@@ -256,42 +221,6 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
         )
 
         return self
-
-    def _fit_model(
-        self,
-        target_series,
-        past_covariates,
-        future_covariates,
-        max_samples_per_ts,
-        **kwargs,
-    ):
-        """
-        Custom fit function for the LightGBM model; adding logic to let the model handle categorical features
-        directly.
-        """
-
-        training_samples, training_labels = self._create_lagged_data(
-            target_series,
-            past_covariates,
-            future_covariates,
-            max_samples_per_ts,
-        )
-
-        cat_cols_indices, _ = self._get_categorical_features(
-            target_series,
-            past_covariates,
-            future_covariates,
-        )
-
-        # if training_labels is of shape (n_samples, 1) flatten it to shape (n_samples,)
-        if len(training_labels.shape) == 2 and training_labels.shape[1] == 1:
-            training_labels = training_labels.ravel()
-        self.model.fit(
-            training_samples,
-            training_labels,
-            categorical_feature=cat_cols_indices,
-            **kwargs,
-        )
 
     def _predict_and_sample(
         self, x: np.ndarray, num_samples: int, **kwargs

@@ -2204,7 +2204,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             lags=1,
             lags_future_covariates=[0, 1],
             output_chunk_length=1,
-            categorical_future_covariates=["fut_cov_promo_mechanism"],
+            categorical_future_covariates="fut_cov_promo_mechanism",
             n_estimators=20,
             max_depth=3,
         )
