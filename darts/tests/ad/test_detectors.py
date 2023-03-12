@@ -201,7 +201,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             QuantileDetector(low_quantile=[-0.2, 0.3])
 
-        # Parameter high must be higher than parameter low
+        # Parameter high must be higher or equal than parameter low
         with self.assertRaises(ValueError):
             QuantileDetector(low_quantile=0.7, high_quantile=0.2)
         with self.assertRaises(ValueError):
@@ -218,6 +218,11 @@ class ADDetectorsTestCase(DartsBaseTestClass):
             QuantileDetector(high_quantile=[None, None, None])
         with self.assertRaises(ValueError):
             QuantileDetector(low_quantile=[None], high_quantile=[None, None, None])
+
+        # check that low_threshold and high_threshold are the same and no errors are raised
+        detector = QuantileDetector(low_quantile=0.5, high_quantile=0.5)
+        detector.fit(self.train)
+        self.assertEqual(detector.low_threshold, detector.high_threshold)
 
         # widths of series used for fitting must match the number of values given for high or/and low,
         # if high and low have a length higher than 1
@@ -543,7 +548,7 @@ class ADDetectorsTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             ThresholdDetector(low_threshold=[0.2, 0.1, 0.7], high_threshold=[0.95, 0.8])
 
-        # Parameter high must be higher than parameter low
+        # Parameter high must be higher or equal than parameter low
         with self.assertRaises(ValueError):
             ThresholdDetector(low_threshold=0.7, high_threshold=0.2)
         with self.assertRaises(ValueError):

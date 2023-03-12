@@ -118,7 +118,7 @@ class KMeansScorer(FittableAnomalyScorer):
         self.kmeans_kwargs["n_clusters"] = k
         # stop warning about default value of "n_init" changing from 10 to "auto" in sklearn 1.4
         if "n_init" not in self.kmeans_kwargs:
-            self.kmeans_kwargs["n_init"] = "auto"
+            self.kmeans_kwargs["n_init"] = 10
 
         super().__init__(
             univariate_scorer=(not component_wise),

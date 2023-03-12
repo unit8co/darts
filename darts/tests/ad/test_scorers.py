@@ -16,7 +16,7 @@ from darts.ad.scorers import (
 )
 from darts.ad.scorers import NormScorer as Norm
 from darts.ad.scorers import PoissonNLLScorer, PyODScorer, WassersteinScorer
-from darts.models import MovingAverage
+from darts.models import MovingAverageFilter
 from darts.tests.base_test_class import DartsBaseTestClass
 
 list_NonFittableAnomalyScorer = [
@@ -70,8 +70,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         train._time_index, np_only_0_anomalies
     )
 
-    modified_train = MovingAverage(window=10).filter(train)
-    modified_test = MovingAverage(window=10).filter(test)
+    modified_train = MovingAverageFilter(window=10).filter(train)
+    modified_test = MovingAverageFilter(window=10).filter(test)
 
     np_probabilistic = np.random.normal(loc=10, scale=2, size=[100, 1, 20])
     probabilistic = TimeSeries.from_times_and_values(
@@ -90,8 +90,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         mts_train._time_index, np_mts_anomalies
     )
 
-    modified_mts_train = MovingAverage(window=10).filter(mts_train)
-    modified_mts_test = MovingAverage(window=10).filter(mts_test)
+    modified_mts_train = MovingAverageFilter(window=10).filter(mts_train)
+    modified_mts_test = MovingAverageFilter(window=10).filter(mts_test)
 
     np_mts_probabilistic = np.random.normal(
         loc=[[10], [5]], scale=[[1], [1.5]], size=[100, 2, 20]
@@ -1260,6 +1260,51 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         self.diff_fn_parameter(PyODScorer, model=KNN())
         self.expects_deterministic_input(PyODScorer, model=KNN())
         self.assertFalse(PyODScorer(model=KNN()).is_probabilistic)
+
+        # model parameter must be pyod.models typy BaseDetector
+        with self.assertRaises(ValueError):
+            PyODScorer(model=MovingAverageFilter(window=10))
+
+        # component_wise parameter
+        # component_wise must be bool
+        with self.assertRaises(ValueError):
+            PyODScorer(model=KNN(), component_wise=1)
+        with self.assertRaises(ValueError):
+            PyODScorer(model=KNN(), component_wise="string")
+        # if component_wise=False must always return a univariate anomaly score
+        scorer = PyODScorer(model=KNN(), component_wise=False)
+        scorer.fit(self.train)
+        self.assertTrue(scorer.score(self.test).width == 1)
+        scorer.fit(self.mts_train)
+        self.assertTrue(scorer.score(self.mts_test).width == 1)
+        # if component_wise=True must always return the same width as the input
+        scorer = PyODScorer(model=KNN(), component_wise=True)
+        scorer.fit(self.train)
+        self.assertTrue(scorer.score(self.test).width == 1)
+        scorer.fit(self.mts_train)
+        self.assertTrue(scorer.score(self.mts_test).width == self.mts_test.width)
+
+        # window parameter
+        # window must be int
+        with self.assertRaises(ValueError):
+            PyODScorer(model=KNN(), window=True)
+        with self.assertRaises(ValueError):
+            PyODScorer(model=KNN(), window="string")
+        # window must be non negative
+        with self.assertRaises(ValueError):
+            PyODScorer(model=KNN(), window=-1)
+        # window must be different from 0
+        with self.assertRaises(ValueError):
+            PyODScorer(model=KNN(), window=0)
+
+        # diff_fn paramter
+        # must be None, 'diff' or 'abs_diff'
+        with self.assertRaises(ValueError):
+            PyODScorer(model=KNN(), diff_fn="random")
+        with self.assertRaises(ValueError):
+            PyODScorer(model=KNN(), diff_fn=1)
+
+        scorer = PyODScorer(model=KNN())
 
         # model parameter must be pyod.models type BaseDetector
         with self.assertRaises(ValueError):

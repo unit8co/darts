@@ -12,6 +12,8 @@ For the sake of the example, we train a `TCNModel` on a single series, and optim
 You can also have a look at [this notebook](https://github.com/unit8co/darts/blob/master/examples/17-hyperparameter-optimization.ipynb)
 for a more complete example.
 
+_Note (2023-19-02): Optuna's `PyTorchLightningPruningCallback` raises an error with pytorch-lightning>=1.8. Until this fixed, a workaround is proposed [here](https://github.com/optuna/optuna-examples/issues/166#issuecomment-1403112861)._
+
 ```python
 import numpy as np
 import optuna

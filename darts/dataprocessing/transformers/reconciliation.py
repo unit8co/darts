@@ -10,7 +10,7 @@ It can be added to a ``TimeSeries`` using e.g., the :meth:`TimeSeries.with_hiera
 """
 
 
-from typing import Any, Iterator, Optional, Sequence, Tuple
+from typing import Any, Mapping, Optional
 
 import numpy as np
 
@@ -83,11 +83,19 @@ class BottomUpReconciliator(BaseDataTransformer):
 
     @staticmethod
     def get_projection_matrix(series):
-        n, m = series.n_components, len(series.bottom_level_components)
-        return np.concatenate([np.zeros((m, n - m)), np.eye(m)], axis=1)
+        leaves_seq = list(series.bottom_level_components)
+        n, m = series.n_components, len(leaves_seq)
+        leaves_indexes = {l: i for i, l in enumerate(leaves_seq)}
+        G = np.zeros((m, n))
+        for i, c in enumerate(series.components):
+            if c in leaves_indexes:
+                G[leaves_indexes[c], i] = 1.0
+        return G
 
     @staticmethod
-    def ts_transform(series: TimeSeries, *args, **kwargs) -> TimeSeries:
+    def ts_transform(
+        series: TimeSeries, params: Mapping[str, Any], *args, **kwargs
+    ) -> TimeSeries:
         S = _get_summation_matrix(series)
         G = BottomUpReconciliator.get_projection_matrix(series)
         return _reconcile_from_S_and_G(series, S, G)
@@ -103,12 +111,17 @@ class TopDownReconciliator(FittableDataTransformer):
     """
 
     @staticmethod
-    def ts_fit(series: TimeSeries, *args, **kwargs) -> np.ndarray:
+    def ts_fit(
+        series: TimeSeries, params: Mapping[str, Any], *args, **kwargs
+    ) -> np.ndarray:
         G = TopDownReconciliator.get_projection_matrix(series)
         return G
 
     @staticmethod
-    def ts_transform(series: TimeSeries, G: np.ndarray, *args, **kwargs) -> TimeSeries:
+    def ts_transform(
+        series: TimeSeries, params: Mapping[str, Any], *args, **kwargs
+    ) -> TimeSeries:
+        G = params["fitted"]
         S = _get_summation_matrix(series)
         return _reconcile_from_S_and_G(series, S, G)
 
@@ -128,18 +141,11 @@ class TopDownReconciliator(FittableDataTransformer):
 
         # compute proportions for each base component
         proportions = sum_base / sum_total
-
+        top_level_index = list(series.components).index(series.top_level_component)
         G = np.zeros((m, n))
-        G[:, 0] = proportions
+        G[:, top_level_index] = proportions
 
         return G
-
-    def _transform_iterator(
-        self, series: Sequence[TimeSeries]
-    ) -> Iterator[Tuple[TimeSeries, Any]]:
-        # since '_ts_fit()' returns the G matrices, the 'fit()' call will save matrix instance into
-        # self._fitted_params
-        return zip(series, self._fitted_params)
 
 
 class MinTReconciliator(FittableDataTransformer):
@@ -180,22 +186,28 @@ class MinTReconciliator(FittableDataTransformer):
                 trace minimization <https://robjhyndman.com/papers/MinT.pdf>`_
         .. [2] https://otexts.com/fpp3/reconciliation.html#the-mint-optimal-reconciliation-approach
         """
-        super().__init__()
         known_methods = ["ols", "wls", "wls_var", "wls_struct", "wls_val", "mint_cov"]
         raise_if_not(
             method in known_methods,
             f"The method must be one of {known_methods}",
         )
+        # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self.method = method
+        super().__init__()
 
     @staticmethod
-    def ts_fit(series: TimeSeries, method: str, *args, **kwargs) -> np.ndarray:
+    def ts_fit(
+        series: TimeSeries, params: Mapping[str, Any], *args, **kwargs
+    ) -> np.ndarray:
+        method = params["fixed"]["method"]
         S, G = MinTReconciliator.get_matrices(series, method)
         return S, G
 
     @staticmethod
-    def ts_transform(series: TimeSeries, S_and_G, *args, **kwargs) -> TimeSeries:
-        S, G = S_and_G
+    def ts_transform(
+        series: TimeSeries, params: Mapping[str, Any], *args, **kwargs
+    ) -> TimeSeries:
+        S, G = params["fitted"]
         return _reconcile_from_S_and_G(series, S, G)
 
     @staticmethod
@@ -239,16 +251,3 @@ class MinTReconciliator(FittableDataTransformer):
         Wh_inv = np.linalg.inv(Wh)
         G = np.linalg.inv(S.T @ Wh_inv @ S) @ S.T @ Wh_inv
         return S, G
-
-    def _fit_iterator(
-        self, series: Sequence[TimeSeries]
-    ) -> Iterator[Tuple[TimeSeries, Any]]:
-        # generator which also contains the method to use
-        return zip(series, (self.method for _ in range(len(series))))
-
-    def _transform_iterator(
-        self, series: Sequence[TimeSeries]
-    ) -> Iterator[Tuple[TimeSeries, Any]]:
-        # since '_ts_fit()' returns the G matrices, the 'fit()' call will save matrix instance into
-        # self._fitted_params
-        return zip(series, self._fitted_params)
