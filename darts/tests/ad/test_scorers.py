@@ -16,7 +16,7 @@ from darts.ad.scorers import (
 )
 from darts.ad.scorers import NormScorer as Norm
 from darts.ad.scorers import PoissonNLLScorer, PyODScorer, WassersteinScorer
-from darts.models import MovingAverage
+from darts.models import MovingAverageFilter
 from darts.tests.base_test_class import DartsBaseTestClass
 
 list_NonFittableAnomalyScorer = [
@@ -70,8 +70,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         train._time_index, np_only_0_anomalies
     )
 
-    modified_train = MovingAverage(window=10).filter(train)
-    modified_test = MovingAverage(window=10).filter(test)
+    modified_train = MovingAverageFilter(window=10).filter(train)
+    modified_test = MovingAverageFilter(window=10).filter(test)
 
     np_probabilistic = np.random.normal(loc=10, scale=2, size=[100, 1, 20])
     probabilistic = TimeSeries.from_times_and_values(
@@ -90,8 +90,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         mts_train._time_index, np_mts_anomalies
     )
 
-    modified_mts_train = MovingAverage(window=10).filter(mts_train)
-    modified_mts_test = MovingAverage(window=10).filter(mts_test)
+    modified_mts_train = MovingAverageFilter(window=10).filter(mts_train)
+    modified_mts_test = MovingAverageFilter(window=10).filter(mts_test)
 
     np_mts_probabilistic = np.random.normal(
         loc=[[10], [5]], scale=[[1], [1.5]], size=[100, 2, 20]
@@ -1278,7 +1278,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # model parameter must be pyod.models typy BaseDetector
         with self.assertRaises(ValueError):
-            PyODScorer(model=MovingAverage(window=10))
+            PyODScorer(model=MovingAverageFilter(window=10))
 
         # component_wise parameter
         # component_wise must be bool

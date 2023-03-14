@@ -5,18 +5,25 @@ from typing import Any, Mapping, Sequence, Union
 import numpy as np
 
 from darts import TimeSeries
-from darts.dataprocessing.transformers import BaseDataTransformer
+from darts.dataprocessing.transformers.fittable_data_transformer import (
+    FittableDataTransformer,
+)
 from darts.utils.timeseries_generation import constant_timeseries
 
 
-class BaseDataTransformerTestCase(unittest.TestCase):
+class LocalFittableDataTransformerTestCase(unittest.TestCase):
+    """
+    Tests that data transformers inheriting from `FittableDataTransformer` class behave
+    correctly when `global_fit` attribute is `False`.
+    """
+
     __test__ = True
 
     @classmethod
     def setUpClass(cls):
         logging.disable(logging.CRITICAL)
 
-    class DataTransformerMock(BaseDataTransformer):
+    class DataTransformerMock(FittableDataTransformer):
         def __init__(
             self,
             scale: float,
@@ -27,6 +34,7 @@ class BaseDataTransformerTestCase(unittest.TestCase):
         ):
             """
             Applies the transform `transformed_series = scale * series + translation`.
+            When 'fitting' this transform, the `scale` and `translation` fixed parameters are returned.
 
             Parameters
             ----------
@@ -56,6 +64,24 @@ class BaseDataTransformerTestCase(unittest.TestCase):
             )
 
         @staticmethod
+        def ts_fit(series: TimeSeries, params: Mapping[str, Any], **kwargs):
+            """
+            'Fits' transform by returning `scale` and `translation` fixed params.
+            """
+            # Ensure `component_mask` not passed via `kwargs` if specified `mask_components=True`
+            # when transform created
+            mask_components = params["fixed"]["_mask_components"]
+            if mask_components:
+                assert "component_mask" not in kwargs
+            # Ensure 'fitted' is not in `params`:
+            assert "fitted" not in params
+            scale, translation = (
+                params["fixed"]["_scale"],
+                params["fixed"]["_translation"],
+            )
+            return scale, translation
+
+        @staticmethod
         def ts_transform(
             series: TimeSeries, params: Mapping[str, Any], **kwargs
         ) -> TimeSeries:
@@ -67,10 +93,9 @@ class BaseDataTransformerTestCase(unittest.TestCase):
             all used when computing this transformation.
 
             """
-            fixed_params = params["fixed"]
-            stack_samples = fixed_params["_stack_samples"]
-            mask_components = fixed_params["_mask_components"]
-            scale, translation = fixed_params["_scale"], fixed_params["_translation"]
+            stack_samples = params["fixed"]["_stack_samples"]
+            mask_components = params["fixed"]["_mask_components"]
+            scale, translation = params["fitted"]
 
             # Ensure `component_mask` not passed via `kwargs` if specified `mask_components=True`
             # when transform created
@@ -80,24 +105,24 @@ class BaseDataTransformerTestCase(unittest.TestCase):
             # Ensure manual masking only performed when `mask_components = False`
             # when transform constructed:
             if not mask_components and ("component_mask" in kwargs):
-                vals = BaseDataTransformerTestCase.DataTransformerMock.apply_component_mask(
+                vals = LocalFittableDataTransformerTestCase.DataTransformerMock.apply_component_mask(
                     series, kwargs["component_mask"], return_ts=False
                 )
             else:
                 vals = series.all_values()
 
             if stack_samples:
-                vals = BaseDataTransformerTestCase.DataTransformerMock.stack_samples(
+                vals = LocalFittableDataTransformerTestCase.DataTransformerMock.stack_samples(
                     vals
                 )
             vals = scale * vals + translation
             if stack_samples:
-                vals = BaseDataTransformerTestCase.DataTransformerMock.unstack_samples(
+                vals = LocalFittableDataTransformerTestCase.DataTransformerMock.unstack_samples(
                     vals, series=series
                 )
 
             if not mask_components and ("component_mask" in kwargs):
-                vals = BaseDataTransformerTestCase.DataTransformerMock.unapply_component_mask(
+                vals = LocalFittableDataTransformerTestCase.DataTransformerMock.unapply_component_mask(
                     series, vals, kwargs["component_mask"]
                 )
 
@@ -111,7 +136,7 @@ class BaseDataTransformerTestCase(unittest.TestCase):
 
         mock = self.DataTransformerMock(scale=2, translation=10)
 
-        transformed = mock.transform(test_input)
+        transformed = mock.fit_transform(test_input)
 
         # 2 * 1 + 10 = 12
         expected = constant_timeseries(value=12, length=10)
@@ -123,15 +148,18 @@ class BaseDataTransformerTestCase(unittest.TestCase):
         different param values are used for different parallel
         jobs (i.e. test that `parallel_params` argument is treated
         correctly). Also tests that transformer correctly handles
-        being provided with fewer input series than fixed parameter
-        value sets.
+        being provided with fewer input series than series used
+        to fit the transformer.
         """
         test_input_1 = constant_timeseries(value=1, length=10)
         test_input_2 = constant_timeseries(value=2, length=11)
+        test_input_3 = constant_timeseries(value=3, length=12)
 
         # Don't have different params for different jobs:
         mock = self.DataTransformerMock(scale=2, translation=10, parallel_params=False)
-        (transformed_1, transformed_2) = mock.transform((test_input_1, test_input_2))
+        (transformed_1, transformed_2) = mock.fit_transform(
+            (test_input_1, test_input_2)
+        )
         # 2 * 1 + 10 = 12
         self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
         # 2 * 2 + 10 = 14
@@ -141,7 +169,9 @@ class BaseDataTransformerTestCase(unittest.TestCase):
         mock = self.DataTransformerMock(
             scale=(2, 3), translation=10, parallel_params=["_scale"]
         )
-        (transformed_1, transformed_2) = mock.transform((test_input_1, test_input_2))
+        (transformed_1, transformed_2) = mock.fit_transform(
+            (test_input_1, test_input_2)
+        )
         # 2 * 1 + 10 = 12
         self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
         # 3 * 2 + 10 = 16
@@ -160,7 +190,9 @@ class BaseDataTransformerTestCase(unittest.TestCase):
             mask_components=(False, False),
             parallel_params=True,
         )
-        (transformed_1, transformed_2) = mock.transform((test_input_1, test_input_2))
+        (transformed_1, transformed_2) = mock.fit_transform(
+            (test_input_1, test_input_2)
+        )
         # 2 * 1 + 10 = 12
         self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
         # 3 * 2 + 11 = 17
@@ -171,9 +203,10 @@ class BaseDataTransformerTestCase(unittest.TestCase):
         transformed_1 = mock.transform(test_input_1)
         self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
 
-        # Specify three sets of fixed params, but pass only one or two series as inputs
-        # to `transform`; transformer should apply `i`th set of fixed params to the `i`th
-        # input passed to `transform`
+        # Train on three series with three different fixed param values,
+        # but pass only one or two series as inputs to `transform`;
+        # transformer should use the parameters fitted to `i`th series to
+        # apply `transform`/`inverse_transform` to the `i`th input:
         mock = self.DataTransformerMock(
             scale=(2, 3, 4),
             translation=(10, 11, 12),
@@ -181,14 +214,14 @@ class BaseDataTransformerTestCase(unittest.TestCase):
             mask_components=(False, False, False),
             parallel_params=True,
         )
-        # If single series provided to transformer with three sets of
-        # fixed params, should transform using the first set of fixed
-        # parameters:
+        mock.fit([test_input_1, test_input_2, test_input_3])
+        # If single series provided to transformer trained on three
+        # series, should transform using the first set of fitted parameters:
         transformed_1 = mock.transform(test_input_1)
         self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
-        # If two series provided to transformer with three sets of
-        # fixed params, should transform using the first and second set of fixed
-        # parameters:
+        # If two series provided to transformer trained on three
+        # series, should transform using the first and second set of
+        # fitted parameters:
         transformed_1, transformed_2 = mock.transform((test_input_1, test_input_2))
         self.assertEqual(transformed_1, constant_timeseries(value=12, length=10))
         self.assertEqual(transformed_2, constant_timeseries(value=17, length=11))
@@ -204,7 +237,7 @@ class BaseDataTransformerTestCase(unittest.TestCase):
         )
 
         mock = self.DataTransformerMock(scale=2, translation=10, stack_samples=True)
-        transformed = mock.transform(test_input)
+        transformed = mock.fit_transform(test_input)
 
         # 2 * 1 + 10 = 12
         expected = constant_timeseries(value=12, length=10)
@@ -235,10 +268,107 @@ class BaseDataTransformerTestCase(unittest.TestCase):
         mock = self.DataTransformerMock(
             scale=scale, translation=translation, mask_components=True
         )
-        transformed = mock.transform(test_input, component_mask=mask)
+        transformed = mock.fit_transform(test_input, component_mask=mask)
         self.assertEqual(transformed, expected)
 
         # Manually apply component mask:
         mock = self.DataTransformerMock(scale=2, translation=10, mask_components=False)
-        transformed = mock.transform(test_input, component_mask=mask)
+        transformed = mock.fit_transform(test_input, component_mask=mask)
         self.assertEqual(transformed, expected)
+
+
+class GlobalFittableDataTransformerTestCase(unittest.TestCase):
+    """
+    Tests that data transformers inheriting from `FittableDataTransformer` class behave
+    correctly when `global_fit` attribute is `True`.
+    """
+
+    __test__ = True
+
+    @classmethod
+    def setUpClass(cls):
+        logging.disable(logging.CRITICAL)
+
+    class DataTransformerMock(FittableDataTransformer):
+        def __init__(self, global_fit: bool):
+            """
+            Subtracts off the time-averaged mean of each component in a `TimeSeries`.
+
+            If `global_fit` is `True`, then all of the `TimeSeries` provided to `fit` are
+            used to compute a single time-averaged mean that will be subtracted from
+            every `TimeSeries` subsequently provided to `transform`.
+
+            Conversely, if `global_fit` is `False`, then the time-averaged mean of each
+            `TimeSeries` pass to `fit` is individually computed, resulting in `n` means
+            being computed if `n` `TimeSeries` were passed to `fit`. If multiple `TimeSeries`
+            are subsequently passed to `transform`, the `i`th computed mean will be subtracted
+            from the `i`th provided `TimeSeries`.
+
+            Parameters
+            ----------
+            global_fit
+                Whether global fitting should be performed.
+            """
+            super().__init__(name="DataTransformerMock", global_fit=global_fit)
+
+        @staticmethod
+        def ts_fit(
+            series: Union[TimeSeries, Sequence[TimeSeries]],
+            params: Mapping[str, Any],
+            **kwargs
+        ):
+            """
+            'Fits' transform by computing time-average of each sample and
+            component in `series`.
+
+            If `global_fit` is `True`, then `series` is a `Sequence[TimeSeries]` and the time-averaged mean
+            of each component over *all* of the `TimeSeries` is computed. If `global_fit` is `False`, then
+            `series` is a single `TimeSeries` and the time-averaged mean of the components of this single
+            `TimeSeries` are computed.
+            """
+            if not isinstance(series, Sequence):
+                series = [series]
+            vals = np.concatenate([ts.all_values(copy=False) for ts in series], axis=0)
+            return np.mean(vals, axis=0)
+
+        @staticmethod
+        def ts_transform(
+            series: TimeSeries, params: Mapping[str, Any], **kwargs
+        ) -> TimeSeries:
+            """
+            Implements the transform `series - mean`.
+            """
+            mean = params["fitted"]
+            vals = series.all_values()
+            vals -= mean
+            return TimeSeries.from_values(vals)
+
+    def test_global_fitting(self):
+        """
+        Tests that time-averaged mean subtraction transformation behaves
+        correctly when `global_fit = False` and when `global_fit = True`.
+        """
+
+        series_1 = TimeSeries.from_values(np.ones((3, 2, 1)))
+        series_2 = TimeSeries.from_values(2 * np.ones((3, 2, 1)))
+
+        # Local fitting - subtracting mean of each series from itself should return
+        # zero-valued series:
+        transformed_1, transformed_2 = self.DataTransformerMock(
+            global_fit=False
+        ).fit_transform([series_1, series_2])
+        self.assertEqual(transformed_1, TimeSeries.from_values(np.zeros((3, 2, 1))))
+        self.assertEqual(transformed_2, TimeSeries.from_values(np.zeros((3, 2, 1))))
+
+        # Global fitting - mean of `series_1` and `series_2` should be `1.5`, so
+        # `series_1` values should be transformed to `-0.5` and `series_2` values
+        # should be transformed to `1.5`:
+        transformed_1, transformed_2 = self.DataTransformerMock(
+            global_fit=True
+        ).fit_transform([series_1, series_2])
+        self.assertEqual(
+            transformed_1, TimeSeries.from_values(-0.5 * np.ones((3, 2, 1)))
+        )
+        self.assertEqual(
+            transformed_2, TimeSeries.from_values(0.5 * np.ones((3, 2, 1)))
+        )
