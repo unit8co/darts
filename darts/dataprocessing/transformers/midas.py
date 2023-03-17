@@ -116,10 +116,6 @@ class MIDAS(BaseDataTransformer):
             (5) Transform the low frequency series back into a TimeSeries
         """
         high_freq_datetime = series.freq_str
-        if "End" in str(series.freq):
-            start_or_end = "end"
-        else:
-            start_or_end = "start"
 
         # TimeSeries to pd.DataFrame
         series_df = series.pd_dataframe()
@@ -136,8 +132,14 @@ class MIDAS(BaseDataTransformer):
         # upsample to get full range of high freq periods for every low freq period
         low_freq_series_df.index = low_index_datetime.to_period()
         high_freq_series_df = low_freq_series_df.resample(high_freq_period).last()
+
+        # make sure the extension of the index matches the original index
+        if "End" in str(series.freq):
+            args_to_timestamp = {"freq": high_freq_period}
+        else:
+            args_to_timestamp = {"how": "start"}
         high_index_datetime = high_freq_series_df.index.to_timestamp(
-            freq=high_freq_period, how=start_or_end
+            **args_to_timestamp
         )
 
         # check if user requested a transform from a high to a low frequency
