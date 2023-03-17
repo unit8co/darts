@@ -116,8 +116,14 @@ class MIDAS(BaseDataTransformer):
             (5) Transform the low frequency series back into a TimeSeries
         """
         high_freq_datetime = series.freq_str
+        if "End" in str(series.freq):
+            start_or_end = "end"
+        else:
+            start_or_end = "start"
+
         # TimeSeries to pd.DataFrame
         series_df = series.pd_dataframe()
+        series_copy_df = series_df.copy()
         # get high frequency string that's suitable for PeriodIndex
         series_period_index_df = series_df.copy()
         series_period_index_df.index = series_df.index.to_period()
@@ -126,13 +132,13 @@ class MIDAS(BaseDataTransformer):
         # downsample
         low_freq_series_df = series_df.resample(rule).last()
         low_index_datetime = low_freq_series_df.index
-        low_freq_series_df.index = low_index_datetime.to_period()
 
         # upsample to get full range of high freq periods for every low freq period
-        high_freq_series_df = (
-            low_freq_series_df.resample(high_freq_period).bfill().ffill()
+        low_freq_series_df.index = low_index_datetime.to_period()
+        high_freq_series_df = low_freq_series_df.resample(high_freq_period).last()
+        high_index_datetime = high_freq_series_df.index.to_timestamp(
+            freq=high_freq_period, how=start_or_end
         )
-        high_index_datetime = high_freq_series_df.index.to_timestamp()
 
         # check if user requested a transform from a high to a low frequency
         _assert_high_to_low_freq(
@@ -145,9 +151,9 @@ class MIDAS(BaseDataTransformer):
         # if necessary, expand the original series
         if len(high_index_datetime) > series_df.shape[0]:
             series_df = pd.DataFrame(
-                np.nan, index=high_index_datetime, columns=series_df.columns
+                np.nan, index=high_index_datetime, columns=series_copy_df.columns
             )
-            series_df.loc[series_df.index, :] = series_df.values
+            series_df.loc[series_copy_df.index, :] = series_copy_df.values
 
         # make multiple low frequency columns out of the high frequency column(s)
         midas_df = _create_midas_df(
@@ -176,7 +182,7 @@ def _assert_high_to_low_freq(
         raise_log(
             ValueError(
                 f"The target conversion should go from a high to a "
-                f"low frequency, instead the targeted frequency is"
+                f"low frequency, instead the targeted frequency is "
                 f"{rule}, while the original frequency is {high_freq}."
             )
         )
