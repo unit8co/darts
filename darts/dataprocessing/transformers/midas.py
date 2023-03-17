@@ -120,6 +120,7 @@ class MIDAS(BaseDataTransformer):
         # TimeSeries to pd.DataFrame
         series_df = series.pd_dataframe()
         series_copy_df = series_df.copy()
+
         # get high frequency string that's suitable for PeriodIndex
         series_period_index_df = series_df.copy()
         series_period_index_df.index = series_df.index.to_period()
@@ -129,7 +130,7 @@ class MIDAS(BaseDataTransformer):
         low_freq_series_df = series_df.resample(rule).last()
         low_index_datetime = low_freq_series_df.index
 
-        # upsample to get full range of high freq periods for every low freq period
+        # upsample again to get full range of high freq periods for every low freq period
         low_freq_series_df.index = low_index_datetime.to_period()
         high_freq_series_df = low_freq_series_df.resample(high_freq_period).last()
 
@@ -142,7 +143,7 @@ class MIDAS(BaseDataTransformer):
             **args_to_timestamp
         )
 
-        # check if user requested a transform from a high to a low frequency
+        # check if user requested a transform from a high to a low frequency (otherwise raise an error)
         _assert_high_to_low_freq(
             high_freq_series_df=high_freq_series_df,
             low_freq_series_df=low_freq_series_df,
