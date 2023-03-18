@@ -3,7 +3,12 @@ Static Covariates Transformer
 ------
 """
 from collections import OrderedDict
-from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 import numpy as np
 import pandas as pd
