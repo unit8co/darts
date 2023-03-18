@@ -29,10 +29,8 @@ from numpy import integer
 from sklearn.multioutput import MultiOutputRegressor
 
 from darts import TimeSeries
-from darts.explainability.explainability import (
-    ExplainabilityResult,
-    ForecastingModelExplainer,
-)
+from darts.explainability.explainability import ForecastingModelExplainer
+from darts.explainability.explainability_result import ShapExplainabilityResult
 from darts.logging import get_logger, raise_if, raise_log
 from darts.models.forecasting.regression_model import RegressionModel
 from darts.utils.data.tabularization import create_lagged_prediction_data
@@ -187,7 +185,7 @@ class ShapExplainer(ForecastingModelExplainer):
         ] = None,
         horizons: Optional[Sequence[int]] = None,
         target_components: Optional[Sequence[str]] = None,
-    ) -> ExplainabilityResult:
+    ) -> ShapExplainabilityResult:
         super().explain(
             foreground_series, foreground_past_covariates, foreground_future_covariates
         )
@@ -216,7 +214,8 @@ class ShapExplainer(ForecastingModelExplainer):
         )
 
         shap_values_list = []
-
+        feature_values_list = []
+        shap_explanation_object_list = []
         for idx, foreground_ts in enumerate(foreground_series):
 
             foreground_past_cov_ts = None
@@ -240,22 +239,40 @@ class ShapExplainer(ForecastingModelExplainer):
             )
 
             shap_values_dict = {}
+            feature_values_dict = {}
+            shap_explanation_object_dict = {}
             for h in horizons:
-                tmp = {}
+                shap_values_dict_single_h = {}
+                feature_values_dict_single_h = {}
+                shap_explanation_object_dict_single_h = {}
                 for t in target_names:
-                    tmp[t] = TimeSeries.from_times_and_values(
+                    shap_values_dict_single_h[t] = TimeSeries.from_times_and_values(
                         shap_[h][t].time_index,
                         shap_[h][t].values,
                         columns=shap_[h][t].feature_names,
                     )
-                shap_values_dict[h] = tmp
+                    feature_values_dict_single_h[t] = TimeSeries.from_times_and_values(
+                        shap_[h][t].time_index,
+                        shap_[h][t].data,
+                        columns=shap_[h][t].feature_names,
+                    )
+                    shap_explanation_object_dict_single_h[t] = shap_[h][t]
+                shap_values_dict[h] = shap_values_dict_single_h
+                feature_values_dict[h] = feature_values_dict_single_h
+                shap_explanation_object_dict[h] = shap_explanation_object_dict_single_h
 
             shap_values_list.append(shap_values_dict)
+            feature_values_list.append(feature_values_dict)
+            shap_explanation_object_list.append(shap_explanation_object_dict)
 
         if len(shap_values_list) == 1:
             shap_values_list = shap_values_list[0]
+            feature_values_list = feature_values_list[0]
+            shap_explanation_object_list = shap_explanation_object_list[0]
 
-        return ExplainabilityResult(shap_values_list)
+        return ShapExplainabilityResult(
+            shap_values_list, feature_values_list, shap_explanation_object_list
+        )
 
     def summary_plot(
         self,
@@ -580,6 +597,7 @@ class _RegressionShapExplainers:
                                 :, :, self.target_dim * (h - 1) + t_idx
                             ]
                         )
+                        tmp_t.data = shap_explanation_tmp.data
                         tmp_t.base_values = shap_explanation_tmp.base_values[
                             :, self.target_dim * (h - 1) + t_idx
                         ].ravel()
