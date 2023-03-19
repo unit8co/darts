@@ -224,17 +224,6 @@ if TORCH_AVAILABLE:
             start=ts_pass_val.start_time() + 5 * ts_pass_val.freq,
         )
 
-        # ts_past_cov_valid_bef_end = tg.gaussian_timeseries(
-        #     length=len(ts_pass_val) - 7,
-        #     freq=ts_pass_val.freq_str,
-        #     start=ts_pass_val.start_time(),
-        # )
-        # ts_past_cov_valid_aft_end = tg.gaussian_timeseries(
-        #     length=len(ts_pass_val) + 15,
-        #     freq=ts_pass_val.freq_str,
-        #     start=ts_pass_val.start_time(),
-        # )
-
         ts_fut_cov_valid_same_start = tg.gaussian_timeseries(
             length=len(ts_pass_val),
             freq=ts_pass_val.freq_str,
@@ -251,17 +240,6 @@ if TORCH_AVAILABLE:
             freq=ts_pass_val.freq_str,
             start=ts_pass_val.start_time() + 7 * ts_pass_val.freq,
         )
-
-        # ts_fut_cov_valid_bef_end = tg.gaussian_timeseries(
-        #     length=len(ts_pass_val) - 7,
-        #     freq=ts_pass_val.freq_str,
-        #     start=ts_pass_val.start_time(),
-        # )
-        # ts_fut_cov_valid_aft_end = tg.gaussian_timeseries(
-        #     length=len(ts_pass_val) + 15,
-        #     freq=ts_pass_val.freq_str,
-        #     start=ts_pass_val.start_time(),
-        # )
 
         # RangeIndex timeseries
         ts_passengers_range = TimeSeries.from_values(ts_passengers.values())
@@ -284,7 +262,7 @@ if TORCH_AVAILABLE:
         )
 
         def test_historical_forecasts(self):
-            return
+
             train_length = 7
             forecast_horizon = 8
             # if no fit and retrain=false, should fit at fist iteration
