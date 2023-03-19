@@ -7,6 +7,7 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
 from darts.utils import timeseries_generation as tg
+from darts.utils.timeseries_generation import linear_timeseries, sine_timeseries
 
 
 class DataTransformerTestCase(unittest.TestCase):
@@ -130,3 +131,23 @@ class DataTransformerTestCase(unittest.TestCase):
 
         # Test inverse transform
         np.testing.assert_allclose(s.all_values(), ssi.all_values())
+
+    def test_global_fitting(self):
+        """
+        Tests that `Scaler` correctly handles situation where `global_fit = True`. More
+        specifically, test checks that global fitting with two disjoint series
+        produces same fitted parameters as local fitting with a single series formed
+        by 'gluing' these two disjoint series together.
+        """
+        sine_series = sine_timeseries(length=50, value_y_offset=5, value_frequency=0.05)
+        lin_series = linear_timeseries(start_value=1, end_value=10, length=50)
+        series_combined = sine_series.append_values(lin_series.all_values())
+        local_fitted_scaler = (
+            Scaler(global_fit=False).fit(series_combined)._fitted_params[0]
+        )
+        global_fitted_scaler = (
+            Scaler(global_fit=True).fit([sine_series, lin_series])._fitted_params[0]
+        )
+        self.assertEqual(
+            local_fitted_scaler.get_params(), global_fitted_scaler.get_params()
+        )

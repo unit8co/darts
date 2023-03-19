@@ -724,6 +724,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         else:
             outer_iterator = _build_tqdm_iterator(series, verbose)
 
+        model: Optional[ForecastingModel] = None
         forecasts_list = []
         for idx, series_ in enumerate(outer_iterator):
             past_covariates_ = past_covariates[idx] if past_covariates else None
@@ -844,7 +845,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 if train_length and len(train_series) > train_length:
                     train_series = train_series[-train_length:]
 
-                if (not self._fit_called) or retrain_func(
+                if retrain_func(
                     counter=_counter,
                     pred_time=pred_time,
                     train_series=train_series,
@@ -859,6 +860,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         )
                     )
                     if future_covariates_
+                    and ("future_covariates" in retrain_func_signature)
                     else None,
                 ):
                     # avoid fitting the same model multiple times
@@ -869,7 +871,19 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         future_covariates=future_covariates_,
                     )
                 else:
-                    model = self
+                    # model must be fit before the first prediction
+                    if not _counter and not self._fit_called:
+                        raise_log(
+                            ValueError(
+                                f"`retrain` is `False` in first iteration at prediction point (in time) `{pred_time}` "
+                                f"and the model has not been fit before. Either call `fit()` before "
+                                f"`historical_forecasts()`, or use a different `retrain` value / modify the function "
+                                f"to return `True` in first iteration."
+                            ),
+                            logger,
+                        )
+                    # use retrained model if `retrain` is not training every step
+                    model = model if model is not None else self
 
                 forecast = model._predict_wrapper(
                     n=forecast_horizon,
