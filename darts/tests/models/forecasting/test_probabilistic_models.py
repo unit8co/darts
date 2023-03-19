@@ -127,7 +127,7 @@ if TORCH_AVAILABLE:
             {
                 "input_chunk_length": 10,
                 "output_chunk_length": 5,
-                "n_epochs": 5,
+                "n_epochs": 10,
                 "random_state": 0,
                 "likelihood": GaussianLikelihood(),
             },
@@ -168,6 +168,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
 
     def test_probabilistic_forecast_accuracy(self):
         for model_cls, model_kwargs, err in models_cls_kwargs_errs:
+            print(model_cls)
             self.helper_test_probabilistic_forecast_accuracy(
                 model_cls, model_kwargs, err, self.constant_ts, self.constant_noisy_ts
             )
