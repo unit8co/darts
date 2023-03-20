@@ -2876,7 +2876,7 @@ class TimeSeries:
                              'by': ['b', 'y'],
                              'a': ['total'],
                              'b': ['total'],
-                             'x': 'total',
+                             'x': 'total',  # or use a single string
                              'y': 'total'}
             ..
 
