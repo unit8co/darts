@@ -1041,7 +1041,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             The (sequence of) error score on a series, or list of list containing error scores for each
             provided series and each sample.
         """
-        forecasts = historical_forecasts
         if historical_forecasts is None:
             forecasts = self.historical_forecasts(
                 series=series,
@@ -1057,6 +1056,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 last_points_only=last_points_only,
                 verbose=verbose,
             )
+        else:
+            forecasts = historical_forecasts
 
         series = series2seq(series)
         if len(series) == 1:
