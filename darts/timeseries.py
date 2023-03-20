@@ -270,7 +270,9 @@ class TimeSeries:
             children = set(hierarchy.keys())
 
             # convert string ancestors to list of strings
-            hierarchy = {k: ([v] if isinstance(v, str) else v) for k, v in hierarchy.items()}
+            hierarchy = {
+                k: ([v] if isinstance(v, str) else v) for k, v in hierarchy.items()
+            }
 
             raise_if_not(
                 all(c in components_set for c in children),
