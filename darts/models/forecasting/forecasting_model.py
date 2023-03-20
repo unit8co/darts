@@ -943,12 +943,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """Compute error values that the model would have produced when
         used on (potentially multiple) `series`.
 
-        If `historical_forecasts` are provided, it uses them to calculate loss for the actual values otherwise
-        it repeatedly builds a training set from the beginning of `series`.
-        It trains the current model on the training set, emits a forecast of length equal to forecast_horizon,
-        and then moves the end of the training set forward by `stride` time steps.
-        A metric (given by the `metric` function) is then evaluated on the forecast and the actual values.
-        Finally, the method returns a `reduction` (the mean by default) of all these metric scores.
+        If `historical_forecasts` are provided, the metric (given by the `metric` function) is evaluated directly on 
+        the forecast and the actual values. Otherwise, it repeatedly builds a training set from the beginning of 
+        `series`. It trains the current model on the training set, emits a forecast of length equal to 
+        `forecast_horizon`, and then moves the end of the training set forward by `stride` time steps. The metric is 
+        then evaluated on the forecast and the actual values. Finally, the method returns a `reduction` (the mean by 
+        default) of all these metric scores.
 
         By default, this method uses each historical forecast (whole) to compute error scores.
         If `last_points_only` is set to True, it will use only the last point of each historical
