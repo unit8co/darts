@@ -20,6 +20,7 @@ This file contains several abstract classes:
 import datetime
 import inspect
 import os
+import re
 import shutil
 import sys
 from abc import ABC, abstractmethod
@@ -84,6 +85,10 @@ INIT_MODEL_NAME = "_model.pth.tar"
 TFM_ATTRS_NO_PICKLE = {"model": None, "trainer": None}
 
 logger = get_logger(__name__)
+
+# Check whether we are running pytorch-lightning >= 2.0.0 or not:
+tokens = pl.__version__.split(".")
+pl_200_or_above = int(tokens[0]) >= 2
 
 
 def _get_checkpoint_folder(work_dir, model_name):
@@ -429,25 +434,49 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         dtype = self.train_sample[0].dtype
         if np.issubdtype(dtype, np.float32):
             logger.info("Time series values are 32-bits; casting model to float32.")
-            precision = 32
+            precision = "32" if not pl_200_or_above else "32-true"
         elif np.issubdtype(dtype, np.float64):
             logger.info("Time series values are 64-bits; casting model to float64.")
-            precision = 64
+            precision = "64" if not pl_200_or_above else "64-true"
+        else:
+            raise_log(
+                ValueError(
+                    f"Invalid time series data type `{dtype}`. Cast your data to `np.float32` "
+                    f"or `np.float64`, e.g. with `TimeSeries.astype(np.float32)`."
+                ),
+                logger,
+            )
+        precision_int = int(re.findall(r"\d+", str(precision))[0])
 
         precision_user = (
             self.trainer_params.get("precision", None)
             if trainer is None
             else trainer.precision
         )
+        if precision_user is not None:
+            # currently, we only support float 64 and 32
+            valid_precisions = (
+                ["64", "32"] if not pl_200_or_above else ["64-true", "32-true"]
+            )
+            if str(precision_user) not in valid_precisions:
+                raise_log(
+                    ValueError(
+                        f"Invalid user-defined trainer_kwarg `precision={precision_user}`. "
+                        f"Use one of ({valid_precisions})"
+                    ),
+                    logger,
+                )
+            precision_user_int = int(re.findall(r"\d+", str(precision_user))[0])
+        else:
+            precision_user_int = None
 
         raise_if(
-            precision_user is not None and int(precision_user) != precision,
-            f"User-defined trainer_kwarg `precision={precision_user}` does not match dtype: `{dtype}` of the "
+            precision_user is not None and precision_user_int != precision_int,
+            f"User-defined trainer_kwarg `precision='{precision_user}'` does not match dtype: `{dtype}` of the "
             f"underlying TimeSeries. Set `precision` to `{precision}` or cast your data to `{precision_user}"
-            f"` with `TimeSeries.astype(np.float{precision_user})`.",
+            f"` with `TimeSeries.astype(np.float{precision_user_int})`.",
             logger,
         )
-
         self.trainer_params["precision"] = precision
 
         # we need to save the initialized TorchForecastingModel as PyTorch-Lightning only saves module checkpoints

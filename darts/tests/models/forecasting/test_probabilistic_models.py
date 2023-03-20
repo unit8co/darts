@@ -127,7 +127,7 @@ if TORCH_AVAILABLE:
             {
                 "input_chunk_length": 10,
                 "output_chunk_length": 5,
-                "n_epochs": 5,
+                "n_epochs": 10,
                 "random_state": 0,
                 "likelihood": GaussianLikelihood(),
             },
