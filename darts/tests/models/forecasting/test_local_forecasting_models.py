@@ -26,6 +26,7 @@ from darts.models import (
     LinearRegressionModel,
     NaiveDrift,
     NaiveMean,
+    NaiveMovingAverage,
     NaiveSeasonal,
     Prophet,
     RandomForest,
@@ -84,6 +85,7 @@ multivariate_models = [
     (NaiveSeasonal(), 32),
     (NaiveMean(), 37),
     (NaiveDrift(), 39),
+    (NaiveMovingAverage(input_chunk_length=5), 34),
 ]
 
 dual_models = [
@@ -357,6 +359,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
         self.assertEqual(pred.start_time(), pd.Timestamp("20130121"))
         self.assertEqual(pred.end_time(), pd.Timestamp("20130125"))
 
+    @pytest.mark.slow
     def test_statsmodels_future_models(self):
 
         # same tests, but VARIMA requires to work on a multivariate target series
@@ -461,11 +464,6 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             pred3 = model.predict(n=pred_len, future_covariates=exog1)
 
             self.assertTrue(np.array_equal(pred1.values(), pred3.values()))
-
-            # check backtesting with retrain=False
-            model: TransferableFutureCovariatesLocalForecastingModel = model_cls(
-                **kwargs
-            )
             model.backtest(series1, future_covariates=exog1, start=0.5, retrain=False)
 
     @patch("typing.Callable")

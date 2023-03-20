@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from darts import TimeSeries
 from darts.logging import get_logger
@@ -135,6 +136,7 @@ if TORCH_AVAILABLE:
     ]
 
 
+@pytest.mark.slow
 class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
     np.random.seed(0)
 
@@ -144,6 +146,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
     constant_noisy_multivar_ts = constant_noisy_ts.stack(constant_noisy_ts)
     num_samples = 5
 
+    @pytest.mark.slow
     def test_fit_predict_determinism(self):
 
         for model_cls, model_kwargs, _ in models_cls_kwargs_errs:

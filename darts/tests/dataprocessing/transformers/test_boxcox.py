@@ -110,3 +110,19 @@ class BoxCoxTestCase(unittest.TestCase):
 
         # Test inverse transform
         np.testing.assert_allclose(series.all_values(), series_back.all_values())
+
+    def test_global_fitting(self):
+        """
+        Tests that `BoxCox` correctly handles situation where `global_fit = True`. More
+        specifically, test checks that global fitting with two disjoint series
+        produces same fitted parameters as local fitting with a single series formed
+        by 'gluing' these two disjoint series together.
+        """
+        series_combined = self.sine_series.append_values(self.lin_series.all_values())
+        local_params = BoxCox(global_fit=False).fit(series_combined)._fitted_params
+        global_params = (
+            BoxCox(global_fit=True)
+            .fit([self.sine_series, self.lin_series])
+            ._fitted_params
+        )
+        self.assertEqual(local_params, global_params)
