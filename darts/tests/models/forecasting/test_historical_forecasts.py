@@ -471,6 +471,7 @@ if TORCH_AVAILABLE:
                     "of retrain=True and overlap_end=False, and a time index of type DateTimeIndex.",
                 )
 
+        @pytest.mark.slow
         @unittest.skipUnless(
             TORCH_AVAILABLE,
             "Torch not available. auto start and multiple time series for torch models will be skipped.",
@@ -637,6 +638,7 @@ if TORCH_AVAILABLE:
                     " retrain=True and overlap_end=False",
                 )
 
+        @pytest.mark.slow
         @unittest.skipUnless(
             TORCH_AVAILABLE,
             "Torch not available. auto start and multiple time series for torch models and covariates "

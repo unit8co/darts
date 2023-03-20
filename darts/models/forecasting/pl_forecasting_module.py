@@ -21,7 +21,7 @@ logger = get_logger(__name__)
 
 # Check whether we are running pytorch-lightning >= 1.6.0 or not:
 tokens = pl.__version__.split(".")
-pl_160_or_above = int(tokens[0]) >= 1 and int(tokens[1]) >= 6
+pl_160_or_above = int(tokens[0]) > 1 or int(tokens[0]) == 1 and int(tokens[1]) >= 6
 
 
 class PLForecastingModule(pl.LightningModule, ABC):
