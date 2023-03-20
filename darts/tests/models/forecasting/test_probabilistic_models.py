@@ -168,7 +168,6 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
 
     def test_probabilistic_forecast_accuracy(self):
         for model_cls, model_kwargs, err in models_cls_kwargs_errs:
-            print(model_cls)
             self.helper_test_probabilistic_forecast_accuracy(
                 model_cls, model_kwargs, err, self.constant_ts, self.constant_noisy_ts
             )
