@@ -30,6 +30,11 @@ if TORCH_AVAILABLE:
         }
 
         series = linear_timeseries(length=100).astype(np.float32)
+        pl_200_or_above = int(pl.__version__.split(".")[0]) >= 2
+        precisions = {
+            32: "32" if not pl_200_or_above else "32-true",
+            64: "64" if not pl_200_or_above else "64-true",
+        }
 
         def setUp(self):
             self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
@@ -57,7 +62,6 @@ if TORCH_AVAILABLE:
                 enable_checkpointing=True,
                 logger=False,
                 callbacks=model.trainer_params["callbacks"],
-                precision=32,
             )
             model.fit(self.series, trainer=trainer)
 
@@ -74,7 +78,7 @@ if TORCH_AVAILABLE:
             model2 = RNNModel(12, "RNN", 10, 10, random_state=42)
 
             # fit model with custom trainer
-            trainer = pl.Trainer(**self.trainer_params, precision=32)
+            trainer = pl.Trainer(**self.trainer_params, precision=self.precisions[32])
             model.fit(self.series, trainer=trainer)
 
             # fit model with built-in trainer
@@ -87,12 +91,12 @@ if TORCH_AVAILABLE:
             model = RNNModel(12, "RNN", 10, 10, random_state=42)
 
             # trainer with wrong precision should raise ValueError
-            trainer = pl.Trainer(**self.trainer_params, precision=64)
+            trainer = pl.Trainer(**self.trainer_params, precision=self.precisions[64])
             with self.assertRaises(ValueError):
                 model.fit(self.series, trainer=trainer)
 
             # no error with correct precision
-            trainer = pl.Trainer(**self.trainer_params, precision=32)
+            trainer = pl.Trainer(**self.trainer_params, precision=self.precisions[32])
             model.fit(self.series, trainer=trainer)
 
             # check if number of epochs trained is same as trainer.max_epochs
@@ -101,7 +105,7 @@ if TORCH_AVAILABLE:
         def test_builtin_extended_trainer(self):
             # wrong precision parameter name
             with self.assertRaises(TypeError):
-                invalid_trainer_kwarg = {"precisionn": "32-true"}
+                invalid_trainer_kwarg = {"precisionn": self.precisions[32]}
                 model = RNNModel(
                     12,
                     "RNN",
@@ -127,7 +131,7 @@ if TORCH_AVAILABLE:
 
             # precision value doesn't match `series` dtype
             with self.assertRaises(ValueError):
-                invalid_trainer_kwarg = {"precision": "64-true"}
+                invalid_trainer_kwarg = {"precision": self.precisions[64]}
                 model = RNNModel(
                     12,
                     "RNN",
@@ -138,9 +142,9 @@ if TORCH_AVAILABLE:
                 )
                 model.fit(self.series.astype(np.float32), epochs=1)
 
-            for precision, precision_int in zip(["64-true", "32-true"], [64, 32]):
+            for precision in [64, 32]:
                 valid_trainer_kwargs = {
-                    "precision": precision,
+                    "precision": self.precisions[precision],
                 }
 
                 # valid parameters shouldn't raise error
@@ -152,10 +156,10 @@ if TORCH_AVAILABLE:
                     random_state=42,
                     pl_trainer_kwargs=valid_trainer_kwargs,
                 )
-                ts_dtype = getattr(np, f"float{precision_int}")
+                ts_dtype = getattr(np, f"float{precision}")
                 model.fit(self.series.astype(ts_dtype), epochs=1)
                 preds = model.predict(n=3)
-                assert model.trainer.precision == precision
+                assert model.trainer.precision == self.precisions[precision]
                 assert preds.dtype == ts_dtype
 
         def test_custom_callback(self):
