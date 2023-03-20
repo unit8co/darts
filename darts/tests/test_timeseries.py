@@ -1861,10 +1861,13 @@ class TimeSeriesHierarchyTestCase(DartsBaseTestClass):
         )
 
         ts = concatenate([t1, t2, t3, tsum], axis="component")
-        hierarchy = {"T1": "T_sum", "T2": "T_sum", "T3": "T_sum"}
-        ts = ts.with_hierarchy(hierarchy)
-        hierarchy_as_list = {k: [v] for k, v in hierarchy.items()}
-        assert ts.hierarchy == hierarchy_as_list
+        string_hierarchy = {"T1": "T_sum", "T2": "T_sum", "T3": "T_sum"}
+        ts_with_string_hierarchy = ts.with_hierarchy(string_hierarchy)
+        hierarchy_as_list = {k: [v] for k, v in string_hierarchy.items()}
+        assert ts_with_string_hierarchy.hierarchy == hierarchy_as_list
+        list_hierarchy = {"T1": ["T_sum"], "T2": ["T_sum"], "T3": ["T_sum"]}
+        ts_with_list_hierarchy = ts.with_hierarchy(list_hierarchy)
+        assert ts_with_string_hierarchy.hierarchy == ts_with_list_hierarchy.hierarchy
 
 
 class TimeSeriesHeadTailTestCase(DartsBaseTestClass):
