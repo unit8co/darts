@@ -2857,7 +2857,7 @@ class TimeSeries:
             )
         )
 
-    def with_hierarchy(self, hierarchy: Dict[str, Union[str, list[str]]]):
+    def with_hierarchy(self, hierarchy: Dict[str, Union[str, List[str]]]):
         """
         Adds a hierarchy to the TimeSeries.
 
