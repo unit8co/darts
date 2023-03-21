@@ -1459,7 +1459,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             f"Could not find base model save file `{INIT_MODEL_NAME}` in {model_dir}.",
             logger,
         )
-        model = TorchForecastingModel.load(base_model_path, **kwargs)
+        model: TorchForecastingModel = torch.load(
+            base_model_path, map_location=kwargs.get("map_location")
+        )
 
         # load PyTorch LightningModule from checkpoint
         # if file_name is None, find the path of the best or most recent checkpoint in savepath
