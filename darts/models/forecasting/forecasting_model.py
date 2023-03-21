@@ -1616,7 +1616,17 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def _assert_univariate(self, series: TimeSeries):
         if not series.is_univariate:
             raise_log(
-                ValueError("This model only supports univariate TimeSeries instances")
+                ValueError(
+                    f"Model `{self.__class__.__name__}` only supports univariate TimeSeries instances"
+                )
+            )
+
+    def _assert_multivariate(self, series: TimeSeries):
+        if series.is_univariate:
+            raise_log(
+                ValueError(
+                    f"Model `{self.__class__.__name__}` only supports multivariate TimeSeries instances"
+                )
             )
 
 
