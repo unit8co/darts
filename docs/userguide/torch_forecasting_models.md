@@ -14,6 +14,13 @@ We assume that you already know about covariates in Darts. If you're new to the 
 [The second subsection](#in-depth-look-at-how-input-data-is-used-when-training-and-predicting-with-tfms) gives
 an in-depth guide of how input data is used when training and predicting with TFMs.
 
+[The third subsection](#advanced-functionnalities) provide
+some example of TFMs advanced features:
+- Train & save on GPU, load on CPU
+- Use custom callbacks during training
+
+[The fourth subsection](#performance-recommendations) lists tricks to speed up the computation during training.
+
 ## Introduction
 In Darts, **Torch Forecasting Models (TFMs)** are broadly speaking "machine learning based" models, which denote PyTorch-based (deep learning) models.
 
@@ -21,7 +28,7 @@ TFMs train and predict on fixed-length chunks (sub-samples) of your input `targe
 
 Each chunk contains an input chunk - representing the sample's past - and an output chunk - the sample's future. The sample's prediction point lies at the end of the input chunk. The length of these chunks has to be specified at model creation with parameters `input_chunk_length` and `output_chunk_length` (more on chunks in [the next subsection](#top-level-look-at-training-and-predicting-with-chunks)).
 
-```
+```python
 # model that looks 7 time steps back (past) and 1 time step ahead (future)
 model = SomeTorchForecastingModel(input_chunk_length=7,
                                   output_chunk_length=1,
@@ -140,7 +147,7 @@ The `output_chunk_length` can be set to `1` day to predict the next day.
 
 Now we can create a model and train it! Figure 2 shows you how `TFTModel` will use our data.
 
-```
+```python
 from darts.models import TFTModel
 
 model = TFTModel(input_chunk_length=7, output_chunk_length=1)
@@ -200,33 +207,11 @@ Instead of splitting by time, you can also use another subset of time series as 
 
 The model trains itself the same way as before but additionally evaluates the loss on the validation dataset. If you want to keep track of the best performing model on the validation set, you have to enable checkpoint saving as shown next.
 
-### Saving and Loading Model States
-Per default, the models don't automatically save any checkpoints. If you want to keep track of the best performing model on the validation set and the latest 5 epochs, you have to enable checkpoint saving at model creation:
-
-```python
-model = SomeTorchForecastingModel(..., model_name='MyModel', save_checkpoints=True)
-
-# checkpoints are saved automatically
-model.fit(...)
-
-# load the model state that performed best on validation set
-best_model = model.load_from_checkpoint(model_name='MyModel', best=True)
-```
-
-You can also save or load manually:
-```python
-model.save(model_path)
-loaded_model = model.load(model_path)
-```
-/!\ Warning /!\ At this stage of Darts development, we are not (yet) ensuring backward compatibility, so it might not always be possible to load a model saved by an older version of the library.
-
 ## Forecast/Prediction
 
-After having trained the model, we want to predict the future ice-cream sales for any number of days after our 365 days
-training data.
+After having trained the model, we want to predict the future ice-cream sales for any number of days after our 365 days training data.
 
-The actual prediction works very similar to how we trained the data on sequences. Depending on the number of days we
-want to predict - the forecast horizon `n` - we distinguish between two cases:
+The actual prediction works very similar to how we trained the data on sequences. Depending on the number of days we want to predict - the forecast horizon `n` - we distinguish between two cases:
 
 - If `n <= output_chunk_length`: we can predict `n` in one go (using one "internal model call")
     - in our example: predict the next day's ice-cream sales (`n = 1`)
@@ -255,6 +240,200 @@ prediction = model.predict(n=n,
 
 **Figure 6: Auto-regressive forecast for `n > output_chunk_length`**
 
+
+## Advanced Functionnalities
+### Saving and Loading Model States
+
+❗ Warning ❗ At this stage of Darts development, we are not (yet) ensuring backward compatibility, so it might not always be possible to load a model saved by an older version of the library.
+
+For models trained on GPU with versions of Darts <= 0.22.0 that needs to be loaded on CPU with a version of Darts >= 0.23.0, please look at the code snipped porvided in this [issue](https://github.com/unit8co/darts/issues/1245).
+
+#### Automatic checkpoints
+
+Per default, the models don't automatically save any checkpoints. If you want to keep track of the best performing model on the validation set and the latest 5 epochs, you have to enable checkpoint saving at model creation:
+
+```python
+model = SomeTorchForecastingModel(..., model_name='MyModel', save_checkpoints=True)
+
+# checkpoints are saved automatically
+model.fit(...)
+
+# load the model state that performed best on validation set
+best_model = model.load_from_checkpoint(model_name='MyModel', best=True)
+```
+
+If you want to retrain or fine-tune the model using a different optimizer or learning rate scheduler, you can load the weights from the automatic checkpoints into a new model:
+
+```python
+# model in which the weights will be loaded must have the same architecture 
+model_finetune = SomeTorchForecastingModel(..., model_name='MyModel')
+
+# checkpoint can be retrieve using the model's name or the path to the file
+model_finetune.load_weights_from_checkpoint(
+    model_name='MyModel', best=True
+)
+```
+
+The automatic checkpoints can also be saved directly on remote file systems, including cloud storage providers such as S3 on AWS, GCA on Google Cloud and ADL on Azure (see [detailed documentation](https://lightning.ai/docs/pytorch/latest/common/checkpointing_advanced.html)):
+
+```python
+# indicate AWS S3 bucket address
+model = SomeTorchForecastingModel(...,
+                                  model_name='MyModel',
+                                  save_checkpoints=True,
+                                  pl_trainer_kwargs={"default_root_dir":"s3://my_bucket/data/"}
+                                  )
+model.fit(...)
+
+# resume training using a checkpoint stored in a AWS S3 bucket
+model = SomeTorchForecastingModel(...,
+                                  model_name='MyModel',
+                                  save_checkpoints=True,
+                                  pl_trainer_kwargs={"ckpt_path":"s3://my_bucket/data/"}
+                                  )
+model.fit(...)
+```
+
+#### Manual checkpoints
+
+You can also save or load models manually:
+
+```python
+model.save(model_path)
+loaded_model = model.load(model_path)
+```
+
+Of course, the weights from a manual save can also be loaded into a model:
+
+```python
+# model in which the weights will be loaded must have the same architecture 
+model_finetune = SomeTorchForecastingModel(..., model_name='MyModel')
+
+# checkpoint path must be provided
+model_finetune.load_weights(path=model_path)
+```
+
+*Note*: The manual checkpoints can be used with the models instantiated with `save_checkpoints=True`.
+
+#### Mixed devices: train on GPU, load on CPU
+
+After training a model on GPU in order to speed up computation, it's possible to load it on CPU and to run inference without GPU (see detailed [documentation](https://unit8co.github.io/darts/userguide/gpu_and_tpu_usage.html)):
+
+```python
+# define a model using gpu as accelerator
+model = SomeTorchForecastingModel(...,
+                                  model_name='MyModel',
+                                  save_checkpoints=True,
+                                  pl_trainer_kwargs={"accelerator":"gpu",
+                                                     "devices": -1,
+                                                    }
+                                  )
+# train the model, automatic checkpoints will be created
+model.fit(...)
+
+# specify the device on which the model should be loaded
+model = SomeTorchForecastingModel.load_from_checkpoint(model_name='MyModel',
+                                                       best=True,
+                                                       map_location="cpu"
+                                                       )
+
+# run inference
+model.predict(...)
+```
+
+The manual checkpoints can also be loaded on cpu by using the `map_location` argument.
+
+### Custom callbacks
+
+Callbacks are a powerful way to control the behavior of the model training, such as reporting some special metrics (in addition of the loss or accuracy) or stopping the training of the model has converged.
+
+Frequently used callbacks implementation can be found in [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/extensions/callbacks.html#built-in-callbacks)
+
+#### Example with early stopping
+Early stopping can be an efficient way to cut down on the training time. Using early stopping trains the model for fewer epochs by stopping the training when the validation loss does not improve for a set number of `nr_epochs_val_period`.
+
+Early stopping can be easily implemented on all Darts neural networks based models, by leveraging PyTorch Lightning's `EarlyStopping` callback, as shown in the example code below.
+```python
+import pandas as pd
+
+from torchmetrics import MeanAbsolutePercentageError
+from pytorch_lightning.callbacks import EarlyStopping
+
+from darts.models import NBEATSModel
+from darts.datasets import AirPassengersDataset
+from darts.dataprocessing.transformers import Scaler
+
+# Read data:
+series = AirPassengersDataset().load()
+
+# Create training and validation sets:
+train, val = series.split_after(pd.Timestamp(year=1957, month=12, day=1))
+
+# Normalize the time series (note: we avoid fitting the transformer on the validation set)
+transformer = Scaler()
+train = transformer.fit_transform(train)
+val = transformer.transform(val)
+
+# A TorchMetric or val_loss can be used as the monitor
+torch_metrics = MeanAbsolutePercentageError()
+
+# Early stop callback
+my_stopper = EarlyStopping(
+    monitor="val_MeanAbsolutePercentageError",  # "val_loss",
+    patience=5,
+    min_delta=0.05,
+    mode='min',
+)
+pl_trainer_kwargs = {"callbacks": [my_stopper]}
+
+# Create the model
+model = NBEATSModel(
+    input_chunk_length=24,
+    output_chunk_length=12,
+    n_epochs=500,
+    torch_metrics=torch_metrics,
+    pl_trainer_kwargs=pl_trainer_kwargs)
+
+model.fit(
+    series=train,
+    val_series=val,
+)
+```
+
+Please look at the [hyperparameter optimization](https://unit8co.github.io/darts/userguide/hyperparameter_optimization.html) section for examples of how to use early-stopping and pruning in the context of hyperparameter optimization.
+
+### Example of custom callback
+
+Training and validation loss are automatically logged by Darts in a folder called `darts_log` and can be visualised using the [tensorboard library](https://www.tensorflow.org/tensorboard). It's however also possible to have them directly available in a Python object:
+```python
+from pytorch_lightning.callbacks import Callback
+
+class LossLogger(Callback):
+    def __init__(self):
+        self.train_loss = []
+        self.val_loss = []
+
+    # will automatically be called at the end of each epoch
+    def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        self.train_loss.append(float(trainer.callback_metrics["train_loss"]))
+
+    def on_validation_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        self.val_loss.append(float(trainer.callback_metrics["val_loss"]))
+
+
+loss_logger = LossLogger()
+
+model = SomeTorchForecastingModel(
+    ...,
+    nr_epochs_val_period=1,  # perform validation after every epoch
+    pl_trainer_kwargs={"callbacks": [loss_logger]}
+)
+
+# fit must include validation set for "val_loss"
+model.fit(...)
+```
+
+*Note* : The callback will give one more element in the loss_logger.val_loss as the model's trainer performs a validation sanity check before the training begins.
 
 ## Performance Recommendations
 This section recaps the main factors impacting the performance when
@@ -308,61 +487,6 @@ to see examples of how to do it.
 
 
 -------------
-
-## Early Stop
-Early stopping can be an efficient way to cut down on the training time.  Using early stopping trains the model for fewer epochs by stopping the training when the validation loss does not improve for a set number of `nr_epochs_val_period`.
-
-Early stopping can be easily implemented on all Darts neural networks based models, by leveraging PyTorch Lightning's `EarlyStopping` callback, as shown in the example code below.
-```python
-    from darts.models import NBEATSModel
-    from darts.datasets import AirPassengersDataset
-    from pytorch_lightning.callbacks import EarlyStopping
-    from torchmetrics import MeanAbsolutePercentageError
-    import pandas as pd
-    from darts.dataprocessing.transformers import Scaler
-
-    # Read data:
-    series = AirPassengersDataset().load()
-
-    # Create training and validation sets:
-    train, val = series.split_after(pd.Timestamp(year=1957, month=12, day=1))
-
-    # Normalize the time series (note: we avoid fitting the transformer on the validation set)
-    transformer = Scaler()
-    transformer.fit(train)
-    train = transformer.transform(train)
-    val = transformer.transform(val)
-
-    # A TorchMetric or val_loss can be used as the monitor
-    torch_metrics = MeanAbsolutePercentageError()
-
-    # Early stop callback
-    my_stopper = EarlyStopping(
-        monitor="val_MeanAbsolutePercentageError",  # "val_loss",
-        patience=5,
-        min_delta=0.05,
-        mode='min',
-    )
-    pl_trainer_kwargs = {"callbacks": [my_stopper]}
-
-    # Create the model
-    model = NBEATSModel(
-        input_chunk_length=24,
-        output_chunk_length=12,
-        n_epochs=500,
-        torch_metrics=torch_metrics,
-        pl_trainer_kwargs=pl_trainer_kwargs)
-
-    model.fit(
-        series=train,
-        val_series=val,
-    )
-```
-
--------------
-
-### Early-stopping for hyperparameter optimization
-We recommend looking at the [hyperparameter optimization](https://unit8co.github.io/darts/userguide/hyperparameter_optimization.html) section for examples of how to use early-stopping and pruning in the context of hyperparameter optimization.
 
 ### Example Benchmark
 As an example, we show here the time required to train one epoch on the first 80% of the energy dataset (`darts.datasets.EnergyDataset`), which consists of one multivariate series that is 28050 timesteps long and has 28 dimensions.
