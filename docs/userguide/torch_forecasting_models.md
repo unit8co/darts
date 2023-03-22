@@ -404,7 +404,12 @@ Please look at the [hyperparameter optimization](https://unit8co.github.io/darts
 
 ### Example of custom callback
 
-Training and validation loss are automatically logged by Darts in a folder called `darts_log` and can be visualised using the [tensorboard library](https://www.tensorflow.org/tensorboard). It's however also possible to have them directly available in a Python object:
+Training and validation loss are automatically logged by Darts in a folder called `darts_logs` and can be visualised using the [tensorboard library](https://www.tensorflow.org/tensorboard) using the following command (after installing the package) in the command line:
+```bash
+tensorboad --log_dir darts_logs
+```
+
+It's however also possible to have them directly available in a Python object:
 ```python
 from pytorch_lightning.callbacks import Callback
 
