@@ -5,21 +5,23 @@ We assume that you already know about covariates in Darts. If you're new to the 
 
 ## Content of this section
 
-[The first subsection](#introduction) covers the most important points about Torch Forecasting Models (TFMs):
-- How to use TFMs
-- Top-level look at chunks
-- TFM covariates support
-- Time span requirements for target and covariate series
+1. Introduction section covers the most important points about Torch Forecasting Models (TFMs):
+    - [How to use TFMs](#introduction)
+    - [Top-level look at chunks](#top-level-look-at-training-and-predicting-with-chunks)
+    - [TFM covariates support](#torch-forecasting-model-covariates-support)
+    - [Time span requirements for target and covariate series](#required-target-time-spans-for-training-validation-and-prediction)
 
-[The second subsection](#in-depth-look-at-how-input-data-is-used-when-training-and-predicting-with-tfms) gives
-an in-depth guide of how input data is used when training and predicting with TFMs.
+2. Input data usage in fit() section gives an in-depth guide of how input data is used when training and predicting with TFMs:
+    - [Simple training](#training)
+    - [Training with validation set](#training-with-a-validation-dataset)
 
-[The third subsection](#advanced-functionnalities) provide
-some example of TFMs advanced features:
-- Train & save on GPU, load on CPU
-- Use custom callbacks during training
+3. Advanced functionnalities section provides some example of TFMs advanced features:
+    - [Saving checkpoints in the cloud](#automatic-checkpoints)
+    - [Load weights only for fine-tuning](#re-training-or-finetuning-a-models-weights)
+    - [Train & save on GPU, load on CPU](#mixed-devices-train-on-gpu-load-on-cpu)
+    - [Use custom callbacks during training](#custom-callbacks)
 
-[The fourth subsection](#performance-recommendations) lists tricks to speed up the computation during training.
+4. [Performance optimisation section](#performance-recommendations) lists tricks to speed up the computation during training.
 
 ## Introduction
 In Darts, **Torch Forecasting Models (TFMs)** are broadly speaking "machine learning based" models, which denote PyTorch-based (deep learning) models.
@@ -87,25 +89,25 @@ When calling `predict()` and depending on your forecast horizon `n`, the model c
 Under the hood, Darts has 5 types of `{X}CovariatesModel` classes implemented to cover different combinations of the covariate types mentioned before:
 
 | Class                   | past covariates | future past covariates | future covariates | historic future covariates |
-|-------------------------|-----------------|------------------------|-------------------|----------------------------|
-| `PastCovariatesModel`   | ✅               | ✅                      |                   |                            |
-| `FutureCovariatesModel` |                 |                        | ✅                 |                            |
-| `DualCovariatesModel`   |                 |                        | ✅                 | ✅                          |
-| `MixedCovariatesModel`  | ✅               | ✅                      | ✅                 | ✅                          |
-| `SplitCovariatesModel`  | ✅               | ✅                      | ✅                 |                            |
+|-------------------------|:---------------:|:----------------------:|:-----------------:|:--------------------------:|
+| `PastCovariatesModel`   | ✅              | ✅                     | ❌                | ❌                         |
+| `FutureCovariatesModel` | ❌              | ❌                     | ✅                | ❌                         |
+| `DualCovariatesModel`   | ❌              | ❌                     | ✅                | ✅                         |
+| `MixedCovariatesModel`  | ✅              | ✅                     | ✅                | ✅                         |
+| `SplitCovariatesModel`  | ✅              | ✅                     | ✅                | ❌                         |
 
 **Table 1: Darts' "{X}CovariatesModels" covariate support**
 
 Each Torch Forecasting Model inherits from one `{X}CovariatesModel` (covariate class names are abbreviated by the `X`-part):
 
 | TFM                | `Past` | `Future` | `Dual` | `Mixed` | `Split` |
-|--------------------|--------|----------|--------|---------|---------|
-| `RNNModel`         |        |          | ✅      |         |         |
-| `BlockRNNModel`    | ✅      |          |        |         |         |
-| `NBEATSModel`      | ✅      |          |        |         |         |
-| `TCNModel`         | ✅      |          |        |         |         |
-| `TransformerModel` | ✅      |          |        |         |         |
-| `TFTModel`         |        |          |        | ✅       |         |
+|--------------------|:------:|:--------:|:------:|:-------:|:-------:|
+| `RNNModel`         | ❌     | ❌       | ✅     | ❌      | ❌      |
+| `BlockRNNModel`    | ✅     | ❌       | ❌     | ❌      | ❌      |
+| `NBEATSModel`      | ✅     | ❌       | ❌     | ❌      | ❌      |
+| `TCNModel`         | ✅     | ❌       | ❌     | ❌      | ❌      |
+| `TransformerModel` | ✅     | ❌       | ❌     | ❌      | ❌      |
+| `TFTModel`         | ❌     | ❌       | ❌     | ✅      | ❌      |
 
 **Table 2: Darts' Torch Forecasting Model covariate support**
 
@@ -262,18 +264,6 @@ model.fit(...)
 best_model = model.load_from_checkpoint(model_name='MyModel', best=True)
 ```
 
-If you want to retrain or fine-tune the model using a different optimizer or learning rate scheduler, you can load the weights from the automatic checkpoints into a new model:
-
-```python
-# model in which the weights will be loaded must have the same architecture 
-model_finetune = SomeTorchForecastingModel(..., model_name='MyModel')
-
-# checkpoint can be retrieve using the model's name or the path to the file
-model_finetune.load_weights_from_checkpoint(
-    model_name='MyModel', best=True
-)
-```
-
 The automatic checkpoints can also be saved directly on remote file systems, including cloud storage providers such as S3 on AWS, GCA on Google Cloud and ADL on Azure (see [detailed documentation](https://lightning.ai/docs/pytorch/latest/common/checkpointing_advanced.html)):
 
 ```python
@@ -281,16 +271,16 @@ The automatic checkpoints can also be saved directly on remote file systems, inc
 model = SomeTorchForecastingModel(...,
                                   model_name='MyModel',
                                   save_checkpoints=True,
-                                  pl_trainer_kwargs={"default_root_dir":"s3://my_bucket/data/"}
-                                  )
+                                  pl_trainer_kwargs={"default_root_dir":"s3://my_bucket/data/"})
+
 model.fit(...)
 
 # resume training using a checkpoint stored in a AWS S3 bucket
 model = SomeTorchForecastingModel(...,
                                   model_name='MyModel',
                                   save_checkpoints=True,
-                                  pl_trainer_kwargs={"ckpt_path":"s3://my_bucket/data/"}
-                                  )
+                                  pl_trainer_kwargs={"ckpt_path":"s3://my_bucket/data/"})
+
 model.fit(...)
 ```
 
@@ -301,16 +291,6 @@ You can also save or load models manually:
 ```python
 model.save(model_path)
 loaded_model = model.load(model_path)
-```
-
-Of course, the weights from a manual save can also be loaded into a model:
-
-```python
-# model in which the weights will be loaded must have the same architecture 
-model_finetune = SomeTorchForecastingModel(..., model_name='MyModel')
-
-# checkpoint path must be provided
-model_finetune.load_weights(path=model_path)
 ```
 
 *Note*: The manual checkpoints can be used with the models instantiated with `save_checkpoints=True`.
@@ -324,18 +304,18 @@ After training a model on GPU in order to speed up computation, it's possible to
 model = SomeTorchForecastingModel(...,
                                   model_name='MyModel',
                                   save_checkpoints=True,
-                                  pl_trainer_kwargs={"accelerator":"gpu",
+                                  pl_trainer_kwargs={
+                                                     "accelerator":"gpu",
                                                      "devices": -1,
-                                                    }
-                                  )
+                                                    })
+
 # train the model, automatic checkpoints will be created
 model.fit(...)
 
 # specify the device on which the model should be loaded
 model = SomeTorchForecastingModel.load_from_checkpoint(model_name='MyModel',
                                                        best=True,
-                                                       map_location="cpu"
-                                                       )
+                                                       map_location="cpu")
 
 # run inference
 model.predict(...)
@@ -343,9 +323,39 @@ model.predict(...)
 
 The manual checkpoints can also be loaded on cpu by using the `map_location` argument.
 
+#### Re-training or finetuning a model's weights
+
+If you want to retrain or fine-tune the model using a different optimizer or learning rate scheduler, you can load the weights from the automatic checkpoints into a new model:
+
+```python
+# model with identical architecture but different optimizer (default: torch.optim.Adam)
+model_finetune = SomeTorchForecastingModel(...,
+                                           optimizer_cls=torch.optim.SGD,
+                                           optimizer_kwargs={"lr": 0.001})
+
+# checkpoint can be retrieve using the model's name or the path to the file
+model_finetune.load_weights_from_checkpoint(model_name='MyModel', best=True)
+
+model_finetune.fit(...)
+```
+
+and similarly with manual checkpoints and the learning rate scheduler:
+
+```python
+# model with identical architecture but different lr scheduler (default: None)
+model_finetune = SomeTorchForecastingModel(...,
+                                           lr_scheduler_cls=torch.optim.lr_scheduler.ExponentialLR,
+                                           lr_scheduler_kwargs={"gamma": 0.09})
+
+# checkpoint path must be provided
+model_finetune.load_weights(path=model_path)
+```
+
 ### Custom callbacks
 
-Callbacks are a powerful way to control the behavior of the model training, such as reporting some special metrics (in addition of the loss or accuracy) or stopping the training of the model has converged.
+Callbacks are a powerful way to control the behavior of the model training, such as reporting some special metrics (in addition of the loss or accuracy) or stopping the training of the model has converged for example.
+
+They works as hooks that can be triggered at various points of the execution (beginning of the training, end of a validation step, at the end of the training, ...) and can be shared across models. 
 
 Frequently used callbacks implementation can be found in [PyTorch Lightning](https://lightning.ai/docs/pytorch/stable/extensions/callbacks.html#built-in-callbacks)
 
@@ -402,7 +412,7 @@ model.fit(
 
 Please look at the [hyperparameter optimization](https://unit8co.github.io/darts/userguide/hyperparameter_optimization.html) section for examples of how to use early-stopping and pruning in the context of hyperparameter optimization.
 
-### Example of custom callback
+### Example of custom callback to store losses
 
 Training and validation loss are automatically logged by Darts in a folder called `darts_logs` and can be visualised using the [tensorboard library](https://www.tensorflow.org/tensorboard) using the following command (after installing the package) in the command line:
 ```bash
