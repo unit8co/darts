@@ -478,7 +478,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 else future_covariates.start_time()
                 - min_future_cov_lag * future_covariates.freq,
                 end=future_covariates.end_time()
-                - max_future_cov_lag * future_covariates.freq,
+                - (max_future_cov_lag - 1) * future_covariates.freq,
                 freq=future_covariates.freq,
             )
 
@@ -559,7 +559,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:
-
         """Compute the historical forecasts that would have been obtained by this model on
         (potentially multiple) `series`.
 
@@ -806,13 +805,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         logger,
                     )
 
-            # build the prediction times in advance (to be able to use tqdm)
+            # Take into account overlap_end, and forecast_horizon.
             last_valid_pred_time = self._get_last_prediction_time(
                 series_,
                 forecast_horizon,
                 overlap_end,
             )
 
+            # The historical_forecasts_time_index end (which was just model dependent so far) is readjusted
+            # by function parameters overlap_end and forecast_horizon.
             historical_forecasts_time_index = drop_after_index(
                 historical_forecasts_time_index, last_valid_pred_time
             )
@@ -939,7 +940,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         reduction: Union[Callable[[np.ndarray], float], None] = np.mean,
         verbose: bool = False,
     ) -> Union[float, List[float], Sequence[float], List[Sequence[float]]]:
-
         """Compute error values that the model would have produced when
         used on (potentially multiple) `series`.
 
@@ -1616,7 +1616,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             with open(path, "rb") as handle:
                 model = pickle.load(file=handle)
         else:
-
             model = pickle.load(file=path)
 
         return model
