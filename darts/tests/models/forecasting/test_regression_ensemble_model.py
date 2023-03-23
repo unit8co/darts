@@ -15,7 +15,7 @@ from darts.models import (
     RandomForest,
     RegressionEnsembleModel,
     RegressionModel,
-    Prophet
+    Prophet,
 )
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.tests.models.forecasting.test_ensemble_models import _make_ts
@@ -36,7 +36,6 @@ except ImportError:
 
 
 class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
-
     RANDOM_SEED = 111
 
     sine_series = tg.sine_timeseries(
