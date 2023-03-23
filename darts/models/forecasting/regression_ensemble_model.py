@@ -150,9 +150,9 @@ class RegressionEnsembleModel(EnsembleModel):
 
             else:
                 if (future_covariates is not None) and model.supports_future_covariates:
-                    model.fit(series=series,future_covariates=future_covariates)
+                    model.fit(series=series, future_covariates=future_covariates)
                 elif (past_covariates is not None) and model.supports_past_covariates:
-                    model.fit(series=series,past_covariates=past_covariates)
+                    model.fit(series=series, past_covariates=past_covariates)
                 else:
                     model.fit(self.training_series)
 
