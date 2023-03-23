@@ -201,6 +201,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
     def test_train_predict_local_models_with_future_covariates(self):
         ensemble_models = self.get_local_models()
+
         # append model which supports future covariates
         ensemble_models.append(Prophet())
         ensemble = RegressionEnsembleModel(ensemble_models, 10)
