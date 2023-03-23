@@ -15,6 +15,7 @@ from darts.models import (
     RandomForest,
     RegressionEnsembleModel,
     RegressionModel,
+    Prophet
 )
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.tests.models.forecasting.test_ensemble_models import _make_ts
@@ -197,6 +198,14 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         ensemble = RegressionEnsembleModel(ensemble_models, 10)
         ensemble.fit(self.seq1, self.cov1)
         ensemble.predict(10, self.seq2, self.cov2)
+
+    def test_train_predict_local_models_with_future_covariates(self):
+        ensemble_models = self.get_local_models()
+        # append model which supports future covariates
+        ensemble_models.append(Prophet())
+        ensemble = RegressionEnsembleModel(ensemble_models, 10)
+        ensemble.fit(self.sine_series, future_covariates=self.ts_cov1)
+        ensemble.predict(10, self.sine_series, future_covariates=self.ts_cov1)
 
     def test_predict_with_target(self):
         series_long = self.combined
