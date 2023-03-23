@@ -140,22 +140,13 @@ class RegressionEnsembleModel(EnsembleModel):
         self.models = [model.untrained_model() for model in self.models]
 
         for model in self.models:
+            kwargs = dict(series=series)
             if self.is_global_ensemble:
-                kwargs = dict(series=series)
                 if model.supports_past_covariates:
                     kwargs["past_covariates"] = past_covariates
-                if model.supports_future_covariates:
-                    kwargs["future_covariates"] = future_covariates
-                model.fit(**kwargs)
-
-            else:
-                if (future_covariates is not None) and model.supports_future_covariates:
-                    model.fit(series=series, future_covariates=future_covariates)
-                elif (past_covariates is not None) and model.supports_past_covariates:
-                    model.fit(series=series, past_covariates=past_covariates)
-                else:
-                    model.fit(self.training_series)
-
+            if model.supports_future_covariates:
+                kwargs["future_covariates"] = future_covariates
+            model.fit(**kwargs)
         return self
 
     def ensemble(
