@@ -3261,7 +3261,8 @@ class TimeSeries:
 
             * :``"window"``: Size of the moving window for the "rolling" mode.
                             If an integer, the fixed number of observations used for each window.
-                            If an offset, the time period of each window.
+                            If an offset, the time period of each window with data type :class:`pandas.Timedelta`
+                            representing a fixed duration.
             * :``"min_periods"``: The minimum number of observations in the window required to have a value (otherwise
                 NaN). Darts reuses pandas defaults of 1 for "rolling" and "expanding" modes and of 0 for "ewm" mode.
             * :``"win_type"``: The type of weigthing to apply to the window elements.
