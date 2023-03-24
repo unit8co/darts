@@ -12,10 +12,10 @@ from darts.models import (
     LinearRegressionModel,
     NaiveDrift,
     NaiveSeasonal,
+    Prophet,
     RandomForest,
     RegressionEnsembleModel,
     RegressionModel,
-    Prophet,
 )
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.tests.models.forecasting.test_ensemble_models import _make_ts
