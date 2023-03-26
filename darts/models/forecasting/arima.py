@@ -83,11 +83,6 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
         self.model = None
         np.random.seed(random_state)
 
-    def __str__(self):
-        if self.seasonal_order == (0, 0, 0, 0):
-            return f"ARIMA{self.order}"
-        return f"SARIMA{self.order}x{self.seasonal_order}"
-
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         super()._fit(series, future_covariates)
 
