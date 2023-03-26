@@ -30,9 +30,6 @@ class NaiveMean(LocalForecastingModel):
         super().__init__()
         self.mean_val = None
 
-    def __str__(self):
-        return "Naive mean predictor model"
-
     def fit(self, series: TimeSeries):
         super().fit(series)
 
@@ -66,9 +63,6 @@ class NaiveSeasonal(LocalForecastingModel):
     def min_train_series_length(self):
         return max(self.K, 3)
 
-    def __str__(self):
-        return f"Naive seasonal model, with K={self.K}"
-
     def fit(self, series: TimeSeries):
         super().fit(series)
 
@@ -100,9 +94,6 @@ class NaiveDrift(LocalForecastingModel):
         .. math:: \\hat{y}_{T+h} = y_T + h\\left( \\frac{y_T - y_1}{T - 1} \\right)
         """
         super().__init__()
-
-    def __str__(self):
-        return "Naive drift model"
 
     def fit(self, series: TimeSeries):
         super().fit(series)
