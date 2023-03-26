@@ -50,9 +50,6 @@ class StatsForecastAutoTheta(LocalForecastingModel):
         super().__init__()
         self.model = SFAutoTheta(*autotheta_args, **autotheta_kwargs)
 
-    def __str__(self):
-        return "Auto-Theta-Statsforecasts"
-
     def fit(self, series: TimeSeries):
         super().fit(series)
         self._assert_univariate(series)

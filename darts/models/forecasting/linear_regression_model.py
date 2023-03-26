@@ -124,11 +124,6 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             multi_models=multi_models,
         )
 
-    def __str__(self):
-        if self.likelihood:
-            return f"LinearRegression(lags={self.lags}, likelihood={self.likelihood})"
-        return f"LinearRegression(lags={self.lags})"
-
     def fit(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
