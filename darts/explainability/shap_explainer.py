@@ -138,8 +138,9 @@ class ShapExplainer(ForecastingModelExplainer):
         if not model.multi_models:
             raise_log(
                 ValueError(
-                    "Invalid `multi_models` value. Currently, only RegressionModel models with parameter "
-                    "`multi_models`=True are supported."
+                    "Invalid `multi_models` value `False`. Currently, "
+                    "ShapExplainer only supports RegressionModels "
+                    "with `multi_models=True`."
                 ),
                 logger,
             )
