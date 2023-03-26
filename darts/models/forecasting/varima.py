@@ -114,6 +114,8 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
     ) -> None:
         super()._fit(series, future_covariates)
 
+        self._assert_multivariate(series)
+
         # storing to restore the statsmodels model results object
         self.training_historic_future_covariates = future_covariates
 
