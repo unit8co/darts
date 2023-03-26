@@ -359,6 +359,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
         self.assertEqual(pred.start_time(), pd.Timestamp("20130121"))
         self.assertEqual(pred.end_time(), pd.Timestamp("20130125"))
 
+    @pytest.mark.slow
     def test_statsmodels_future_models(self):
 
         # same tests, but VARIMA requires to work on a multivariate target series

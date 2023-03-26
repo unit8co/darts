@@ -478,7 +478,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 else future_covariates.start_time()
                 - min_future_cov_lag * future_covariates.freq,
                 end=future_covariates.end_time()
-                - max_future_cov_lag * future_covariates.freq,
+                - (max_future_cov_lag - 1) * future_covariates.freq,
                 freq=future_covariates.freq,
             )
 
@@ -559,7 +559,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:
-
         """Compute the historical forecasts that would have been obtained by this model on
         (potentially multiple) `series`.
 
@@ -806,13 +805,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         logger,
                     )
 
-            # build the prediction times in advance (to be able to use tqdm)
+            # Take into account overlap_end, and forecast_horizon.
             last_valid_pred_time = self._get_last_prediction_time(
                 series_,
                 forecast_horizon,
                 overlap_end,
             )
 
+            # The historical_forecasts_time_index end (which was just model dependent so far) is readjusted
+            # by function parameters overlap_end and forecast_horizon.
             historical_forecasts_time_index = drop_after_index(
                 historical_forecasts_time_index, last_valid_pred_time
             )
@@ -921,6 +922,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def backtest(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
+        historical_forecasts: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
@@ -938,16 +940,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         reduction: Union[Callable[[np.ndarray], float], None] = np.mean,
         verbose: bool = False,
     ) -> Union[float, List[float], Sequence[float], List[Sequence[float]]]:
-
         """Compute error values that the model would have produced when
         used on (potentially multiple) `series`.
 
-        It repeatedly builds a training set from the beginning of `series`. It trains the
-        current model on the training set, emits a forecast of length equal to forecast_horizon, and then moves
-        the end of the
-        training set forward by `stride` time steps. A metric (given by the `metric` function) is then evaluated
-        on the forecast and the actual values. Finally, the method returns a `reduction` (the mean by default)
-        of all these metric scores.
+        If `historical_forecasts` are provided, the metric (given by the `metric` function) is evaluated directly on
+        the forecast and the actual values. Otherwise, it repeatedly builds a training set from the beginning of
+        `series`. It trains the current model on the training set, emits a forecast of length equal to
+        `forecast_horizon`, and then moves the end of the training set forward by `stride` time steps. The metric is
+        then evaluated on the forecast and the actual values. Finally, the method returns a `reduction` (the mean by
+        default) of all these metric scores.
 
         By default, this method uses each historical forecast (whole) to compute error scores.
         If `last_points_only` is set to True, it will use only the last point of each historical
@@ -964,6 +965,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         ----------
         series
             The (or a sequence of) target time series to use to successively train and evaluate the historical forecasts
+        historical_forecasts
+            Optionally, the (or a sequence of) historical forecasts time series to be evaluated. Corresponds to
+            the output of :meth:`historical_forecasts() <ForecastingModel.historical_forecasts>`. If provided, will
+            skip historical forecasting and ignore parameters `num_samples`, `train_length`, `start`,
+            `forecast_horizon`, `stride`, `retrain`, `overlap_end`, and `last_points_only`.
         past_covariates
             Optionally, one (or a sequence of) past-observed covariate series.
             This applies only if the model supports past covariates.
@@ -1035,21 +1041,23 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             The (sequence of) error score on a series, or list of list containing error scores for each
             provided series and each sample.
         """
-
-        forecasts = self.historical_forecasts(
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            num_samples=num_samples,
-            train_length=train_length,
-            start=start,
-            forecast_horizon=forecast_horizon,
-            stride=stride,
-            retrain=retrain,
-            overlap_end=overlap_end,
-            last_points_only=last_points_only,
-            verbose=verbose,
-        )
+        if historical_forecasts is None:
+            forecasts = self.historical_forecasts(
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                num_samples=num_samples,
+                train_length=train_length,
+                start=start,
+                forecast_horizon=forecast_horizon,
+                stride=stride,
+                retrain=retrain,
+                overlap_end=overlap_end,
+                last_points_only=last_points_only,
+                verbose=verbose,
+            )
+        else:
+            forecasts = historical_forecasts
 
         series = series2seq(series)
         if len(series) == 1:
@@ -1608,7 +1616,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             with open(path, "rb") as handle:
                 model = pickle.load(file=handle)
         else:
-
             model = pickle.load(file=path)
 
         return model
@@ -1616,7 +1623,19 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def _assert_univariate(self, series: TimeSeries):
         if not series.is_univariate:
             raise_log(
-                ValueError("This model only supports univariate TimeSeries instances")
+                ValueError(
+                    f"Model `{self.__class__.__name__}` only supports univariate TimeSeries instances"
+                ),
+                logger=logger,
+            )
+
+    def _assert_multivariate(self, series: TimeSeries):
+        if series.is_univariate:
+            raise_log(
+                ValueError(
+                    f"Model `{self.__class__.__name__}` only supports multivariate TimeSeries instances"
+                ),
+                logger=logger,
             )
 
     def __repr__(self):

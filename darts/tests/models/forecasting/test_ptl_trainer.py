@@ -30,6 +30,11 @@ if TORCH_AVAILABLE:
         }
 
         series = linear_timeseries(length=100).astype(np.float32)
+        pl_200_or_above = int(pl.__version__.split(".")[0]) >= 2
+        precisions = {
+            32: "32" if not pl_200_or_above else "32-true",
+            64: "64" if not pl_200_or_above else "64-true",
+        }
 
         def setUp(self):
             self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
@@ -57,7 +62,6 @@ if TORCH_AVAILABLE:
                 enable_checkpointing=True,
                 logger=False,
                 callbacks=model.trainer_params["callbacks"],
-                precision=32,
             )
             model.fit(self.series, trainer=trainer)
 
@@ -74,7 +78,7 @@ if TORCH_AVAILABLE:
             model2 = RNNModel(12, "RNN", 10, 10, random_state=42)
 
             # fit model with custom trainer
-            trainer = pl.Trainer(**self.trainer_params, precision=32)
+            trainer = pl.Trainer(**self.trainer_params, precision=self.precisions[32])
             model.fit(self.series, trainer=trainer)
 
             # fit model with built-in trainer
@@ -87,22 +91,21 @@ if TORCH_AVAILABLE:
             model = RNNModel(12, "RNN", 10, 10, random_state=42)
 
             # trainer with wrong precision should raise ValueError
-            trainer = pl.Trainer(**self.trainer_params, precision=64)
+            trainer = pl.Trainer(**self.trainer_params, precision=self.precisions[64])
             with self.assertRaises(ValueError):
                 model.fit(self.series, trainer=trainer)
 
             # no error with correct precision
-            trainer = pl.Trainer(**self.trainer_params, precision=32)
+            trainer = pl.Trainer(**self.trainer_params, precision=self.precisions[32])
             model.fit(self.series, trainer=trainer)
 
             # check if number of epochs trained is same as trainer.max_epochs
             self.assertEqual(trainer.max_epochs, model.epochs_trained)
 
         def test_builtin_extended_trainer(self):
-            invalid_trainer_kwarg = {"precisionn": 32}
-
-            # error will be raised at training time
+            # wrong precision parameter name
             with self.assertRaises(TypeError):
+                invalid_trainer_kwarg = {"precisionn": self.precisions[32]}
                 model = RNNModel(
                     12,
                     "RNN",
@@ -113,20 +116,51 @@ if TORCH_AVAILABLE:
                 )
                 model.fit(self.series, epochs=1)
 
-            valid_trainer_kwargs = {
-                "precision": 32,
-            }
+            # flaot 16 not supported
+            with self.assertRaises(ValueError):
+                invalid_trainer_kwarg = {"precision": "16-mixed"}
+                model = RNNModel(
+                    12,
+                    "RNN",
+                    10,
+                    10,
+                    random_state=42,
+                    pl_trainer_kwargs=invalid_trainer_kwarg,
+                )
+                model.fit(self.series.astype(np.float16), epochs=1)
 
-            # valid parameters shouldn't raise error
-            model = RNNModel(
-                12,
-                "RNN",
-                10,
-                10,
-                random_state=42,
-                pl_trainer_kwargs=valid_trainer_kwargs,
-            )
-            model.fit(self.series, epochs=1)
+            # precision value doesn't match `series` dtype
+            with self.assertRaises(ValueError):
+                invalid_trainer_kwarg = {"precision": self.precisions[64]}
+                model = RNNModel(
+                    12,
+                    "RNN",
+                    10,
+                    10,
+                    random_state=42,
+                    pl_trainer_kwargs=invalid_trainer_kwarg,
+                )
+                model.fit(self.series.astype(np.float32), epochs=1)
+
+            for precision in [64, 32]:
+                valid_trainer_kwargs = {
+                    "precision": self.precisions[precision],
+                }
+
+                # valid parameters shouldn't raise error
+                model = RNNModel(
+                    12,
+                    "RNN",
+                    10,
+                    10,
+                    random_state=42,
+                    pl_trainer_kwargs=valid_trainer_kwargs,
+                )
+                ts_dtype = getattr(np, f"float{precision}")
+                model.fit(self.series.astype(ts_dtype), epochs=1)
+                preds = model.predict(n=3)
+                assert model.trainer.precision == self.precisions[precision]
+                assert preds.dtype == ts_dtype
 
         def test_custom_callback(self):
             class CounterCallback(pl.callbacks.Callback):

@@ -1,3 +1,5 @@
+import pytest
+
 from darts.logging import get_logger
 from darts.metrics import mae
 from darts.tests.base_test_class import DartsBaseTestClass
@@ -65,6 +67,7 @@ if TORCH_AVAILABLE:
 
             self.assertTrue(mae(pred, test) < 0.3)
 
+        @pytest.mark.slow
         def test_coverage(self):
             torch.manual_seed(0)
             input_chunk_lengths = range(20, 50)
