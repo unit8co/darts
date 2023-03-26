@@ -380,6 +380,13 @@ class RNNModel(DualCovariatesTorchModel):
         """
         # create copy of model parameters
         model_kwargs = {key: val for key, val in self.model_params.items()}
+
+        if model_kwargs.get("output_chunk_length") is not None:
+            logger.warning(
+                "`output_chunk_length` input detected. RNNModel has by definition a fixed `output_chunk_length`=1, "
+                "hence any different output_chunk_length will not be considered."
+            )
+
         model_kwargs["output_chunk_length"] = 1
 
         super().__init__(**self._extract_torch_model_params(**model_kwargs))
