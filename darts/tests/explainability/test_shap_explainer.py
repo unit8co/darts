@@ -153,6 +153,10 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         )
     )
 
+    models.append(
+        LinearRegressionModel(lags=1, output_chunk_length=2, multi_models=False)
+    )
+
     def test_creation(self):
 
         # Model should be fitted first
@@ -167,13 +171,23 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             ShapExplainer(m)
 
+        # For now, multi_models=False not allowed
+        m = self.models[-1].fit(
+            series=self.target_ts,
+        )
+        with self.assertRaises(ValueError):
+            ShapExplainer(
+                self.models[-1],
+                self.target_ts,
+            )
+
         m = self.models[0].fit(
             series=self.target_ts,
             past_covariates=self.past_cov_ts,
             future_covariates=self.fut_cov_ts,
         )
 
-        # SHould have the same number of target, past and futures in the respective lists
+        # Should have the same number of target, past and futures in the respective lists
         with self.assertRaises(ValueError):
             ShapExplainer(
                 self.models[0],
@@ -194,13 +208,13 @@ class ShapExplainerTestCase(DartsBaseTestClass):
                 m, self.target_ts, background_future_covariates=self.fut_cov_ts
             )
 
-        # good type of explainers
+        # Good type of explainers
         shap_explain = ShapExplainer(m)
         self.assertTrue(
             isinstance(shap_explain.explainers.explainers[0][0], shap.explainers.Tree)
         )
 
-        # Linear model - also not a MultiOuputRegressor
+        # Linear model - also not a MultiOutputRegressor
         m = self.models[2].fit(
             series=self.target_ts,
             past_covariates=self.past_cov_ts,
