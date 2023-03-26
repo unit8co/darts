@@ -384,7 +384,7 @@ class RNNModel(DualCovariatesTorchModel):
         if model_kwargs.get("output_chunk_length") is not None:
             logger.warning(
                 "`output_chunk_length` input detected. RNNModel has by definition a fixed `output_chunk_length`=1, "
-                "hence any different output_chunk_length will not be considered."
+                "hence any different `output_chunk_length` will not be considered."
             )
 
         model_kwargs["output_chunk_length"] = 1
