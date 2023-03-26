@@ -116,6 +116,22 @@ class BacktestingTestCase(DartsBaseTestClass):
         )
         self.assertEqual(score, 1.0)
 
+        # univariate model + univariate series + historical_forecasts precalculated
+        forecasts = NaiveDrift().historical_forecasts(
+            linear_series,
+            start=pd.Timestamp("20000201"),
+            forecast_horizon=3,
+            last_points_only=False,
+        )
+        precalculated_forecasts_score = NaiveDrift().backtest(
+            linear_series,
+            historical_forecasts=forecasts,
+            start=pd.Timestamp("20000201"),
+            forecast_horizon=3,
+            metric=r2_score,
+        )
+        self.assertEqual(score, precalculated_forecasts_score)
+
         # very large train length should not affect the backtest
         score = NaiveDrift().backtest(
             linear_series,
