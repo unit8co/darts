@@ -119,11 +119,6 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
             model=lgb.LGBMRegressor(**self.kwargs),
         )
 
-    def __str__(self):
-        if self.likelihood:
-            return f"LGBModel(lags={self.lags}, likelihood={self.likelihood})"
-        return f"LGBModel(lags={self.lags})"
-
     def fit(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
