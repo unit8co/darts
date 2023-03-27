@@ -1337,8 +1337,10 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         )
 
         kwargs[self._categorical_fit_param_name] = cat_col_indices
-        self.model.fit(
-            training_samples,
-            training_labels,
+        super()._fit_model(
+            target_series=target_series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            max_samples_per_ts=max_samples_per_ts,
             **kwargs,
         )
