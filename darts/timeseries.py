@@ -3255,6 +3255,14 @@ class TimeSeries:
                                transformation should be applied. If not specified, the transformation will be
                                applied on all components.
 
+            :``"function_name"``: Optional. A string specifying the function name referenced as part of
+                                  the transformation output name. For example, given a user-provided function
+                                  transformation on rolling window size of 5 on the component "comp", the
+                                  default transformation output name is "rolling_udf_5_comp" whereby "udf"
+                                  refers to "user defined function". If specified, the ``"function_name"`` will
+                                  replace the default name "udf". Similarly, the ``"function_name"`` will replace
+                                  the name of the pandas builtin transformation function name in the output name.
+
             All other dictionary items provided will be treated as keyword arguments for the windowing mode
             (i.e., ``rolling/ewm/expanding``) or for the specific function
             in that mode (i.e., ``pandas.DataFrame.rolling.mean/std/max/min...`` or
