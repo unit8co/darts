@@ -321,25 +321,6 @@ def _check_quantiles(quantiles):
     )
 
 
-def _retrain_wrapper(func: Callable[..., bool]):
-    """Utility function that keeps original signature in `retrain` function param in `historical_forecasts` method"""
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-
-        original_signature = tuple(signature(func).parameters.keys())
-        result = func(
-            *args, **{k: v for k, v in kwargs.items() if k in original_signature}
-        )
-
-        if not isinstance(result, bool):
-            raise_log(ValueError("Return value of `retrain` must be bool"), logger)
-
-        return result
-
-    return wrapper
-
-
 def series2seq(
     ts: Optional[Union[TimeSeries, Sequence[TimeSeries]]]
 ) -> Optional[Sequence[TimeSeries]]:
