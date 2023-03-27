@@ -7,7 +7,7 @@ from darts import TimeSeries
 from darts.ad.aggregators.and_aggregator import AndAggregator
 from darts.ad.aggregators.ensemble_sklearn_aggregator import EnsembleSklearnAggregator
 from darts.ad.aggregators.or_aggregator import OrAggregator
-from darts.models import MovingAverage
+from darts.models import MovingAverageFilter
 from darts.tests.base_test_class import DartsBaseTestClass
 
 list_NonFittableAggregator = [
@@ -725,7 +725,7 @@ class ADAggregatorsTestCase(DartsBaseTestClass):
 
         # Need to input an EnsembleSklearn model
         with self.assertRaises(ValueError):
-            EnsembleSklearnAggregator(model=MovingAverage(window=10))
+            EnsembleSklearnAggregator(model=MovingAverageFilter(window=10))
 
         # simple case
         # series has 3 components, and real_anomalies_3w is equal to
