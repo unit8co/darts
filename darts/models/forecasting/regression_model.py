@@ -30,7 +30,6 @@ from collections import OrderedDict
 from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
-import pandas as pd
 from sklearn.linear_model import LinearRegression
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
@@ -38,7 +37,12 @@ from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
 from darts.utils.data.tabularization import create_lagged_training_data
 from darts.utils.multioutput import MultiOutputRegressor
-from darts.utils.utils import _check_quantiles, seq2series, series2seq
+from darts.utils.utils import (
+    _check_quantiles,
+    get_single_series,
+    seq2series,
+    series2seq,
+)
 
 logger = get_logger(__name__)
 
@@ -1140,30 +1144,6 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         n_jobs_multioutput_wrapper: Optional[int] = None,
         **kwargs,
     ):
-        """
-        Fit/train the model on one or multiple series.
-
-        Parameters
-        ----------
-        series
-            TimeSeries or Sequence[TimeSeries] object containing the target values.
-        past_covariates
-            Optionally, a series or sequence of series specifying past-observed covariates
-        future_covariates
-            Optionally, a series or sequence of series specifying future-known covariates
-        max_samples_per_ts
-            This is an integer upper bound on the number of tuples that can be produced
-            per time series. It can be used in order to have an upper bound on the total size of the dataset and
-            ensure proper sampling. If `None`, it will read all of the individual time series in advance (at dataset
-            creation) to know their sizes, which might be expensive on big datasets.
-            If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
-            most recent `max_samples_per_ts` samples will be considered.
-        n_jobs_multioutput_wrapper
-            Number of jobs of the MultiOutputRegressor wrapper to run in parallel. Only used if the model doesn't
-            support multi-output regression natively.
-        **kwargs
-            Additional keyword arguments passed to the `fit` method of the model.
-        """
         self._validate_categorical_covariates(
             series=series,
             past_covariates=past_covariates,
@@ -1179,7 +1159,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         )
 
     @property
-    def categorical_fit_param_name(self) -> str:
+    def _categorical_fit_param_name(self) -> str:
         """
         Returns the name of the parameter of the model's `fit` method that specifies the categorical features.
         Can be overridden in subclasses.
@@ -1286,9 +1266,9 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         if not categorical_covariates:
             return [], []
         else:
-            target_ts = series if isinstance(series, TimeSeries) else series[0]
-            past_covs_ts = past_covariates[0] if past_covariates else None
-            fut_covs_ts = future_covariates[0] if future_covariates else None
+            target_ts = get_single_series(series)
+            past_covs_ts = get_single_series(past_covariates)
+            fut_covs_ts = get_single_series(future_covariates)
 
             # We keep the creation order of the different lags/features in create_lagged_data
             feature_list = (
@@ -1325,17 +1305,6 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
 
             return indices, col_names
 
-    @staticmethod
-    def _cast_float_to_int(data: np.ndarray, col_indices: List[int]) -> pd.DataFrame:
-        """
-        Casts the columns of the data array at the given indices to int and returns a pd.DataFrame.
-        """
-        df = pd.DataFrame(data)
-        if col_indices:
-            for col in col_indices:
-                df[col] = df[col].astype(int)
-        return df
-
     def _fit_model(
         self,
         target_series,
@@ -1369,21 +1338,9 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         # Updated each time the model is fit such that the indices can be easily retrieved in the predict method later
         self._categorical_col_indices = cat_col_indices
 
-        training_samples_df = self._cast_float_to_int(training_samples, cat_col_indices)
-
-        kwargs[self.categorical_fit_param_name] = cat_col_indices
+        kwargs[self._categorical_fit_param_name] = cat_col_indices
         self.model.fit(
-            training_samples_df,
+            training_samples,
             training_labels,
             **kwargs,
         )
-
-    def _predict_and_sample(
-        self, x: np.ndarray, num_samples: int, **kwargs
-    ) -> np.ndarray:
-        prediction = self.model.predict(
-            self._cast_float_to_int(x, self._categorical_col_indices), **kwargs
-        )
-        k = x.shape[0]
-
-        return prediction.reshape(k, self.pred_dim, -1)

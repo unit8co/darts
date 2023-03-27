@@ -13,16 +13,13 @@ import numpy as np
 from catboost import CatBoostRegressor
 
 from darts.logging import get_logger
-from darts.models.forecasting.regression_model import (
-    RegressionModelWithCategoricalCovariates,
-    _LikelihoodMixin,
-)
+from darts.models.forecasting.regression_model import RegressionModel, _LikelihoodMixin
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
-class CatBoostModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
+class CatBoostModel(RegressionModel, _LikelihoodMixin):
     def __init__(
         self,
         lags: Union[int, list] = None,
@@ -34,9 +31,6 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         quantiles: List = None,
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
-        categorical_past_covariates: Optional[Union[str, List[str]]] = None,
-        categorical_future_covariates: Optional[Union[str, List[str]]] = None,
-        categorical_static_covariates: Optional[Union[str, List[str]]] = None,
         **kwargs,
     ):
         """CatBoost Model
@@ -93,18 +87,6 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
-        categorical_past_covariates
-            Optionally, a list of component names specifying the past covariates that should be treated as categorical
-            by the underlying `catboost.CatBoostRegressor`. For more information on how CatBoost handles categorical
-            features, visit:
-            `Categorical feature support documentation
-            <https://catboost.ai/en/docs/features/categorical-features>`_
-        categorical_future_covariates
-            Optionally, a list of component names specifying the future covariates that should be treated as categorical
-            by the underlying `catboost.CatBoostRegressor`.
-        categorical_static_covariates
-            Optionally, a list of names specifying the static covariates that should be treated as categorical
-            by the underlying `catboost.CatBoostRegressor`.
         **kwargs
             Additional keyword arguments passed to `catboost.CatBoostRegressor`.
         """
@@ -150,20 +132,10 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
             add_encoders=add_encoders,
             multi_models=multi_models,
             model=CatBoostRegressor(**kwargs),
-            categorical_past_covariates=categorical_past_covariates,
-            categorical_future_covariates=categorical_future_covariates,
-            categorical_static_covariates=categorical_static_covariates,
         )
 
     def __str__(self):
         return f"CatBoostModel(lags={self.lags})"
-
-    @property
-    def categorical_fit_param_name(self) -> str:
-        """
-        Returns the name of the parameter of the CatBoost's `fit` method that specifies the categorical features.
-        """
-        return "cat_features"
 
     def fit(
         self,
