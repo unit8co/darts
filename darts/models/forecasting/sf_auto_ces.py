@@ -42,9 +42,6 @@ class StatsForecastAutoCES(LocalForecastingModel):
         super().__init__()
         self.model = SFAutoCES(*autoces_args, **autoces_kwargs)
 
-    def __str__(self):
-        return "Auto-CES-Statsforecasts"
-
     def fit(self, series: TimeSeries):
         super().fit(series)
         self._assert_univariate(series)

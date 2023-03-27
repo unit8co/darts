@@ -134,9 +134,6 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             model=CatBoostRegressor(**kwargs),
         )
 
-    def __str__(self):
-        return f"CatBoostModel(lags={self.lags})"
-
     def fit(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
