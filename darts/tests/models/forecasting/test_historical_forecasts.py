@@ -47,13 +47,27 @@ if TORCH_AVAILABLE:
     ]
 
     models_reg_cov_cls_kwargs = [
-        # # target + past covariates
+        # target + past covariates
         (LinearRegressionModel, {"lags": 4, "lags_past_covariates": 6}, (6, 1)),
-        # target + past covariates + outputchunk > 1
+        # target + past covariates + outputchunk > 3
         (
             LinearRegressionModel,
             {"lags": 4, "lags_past_covariates": 6, "output_chunk_length": 4},
             (6, 4),
+        ),
+        # target + future covariates
+        (LinearRegressionModel, {"lags": 4, "lags_future_covariates": [0, 1]}, (4, 2)),
+        # target + fut cov + output_chunk_length > 3
+        (
+            LinearRegressionModel,
+            {"lags": 2, "lags_future_covariates": [0, 1], "output_chunk_length": 6},
+            (3, 6),  # 3 = "0" of the fut cov + "-1" and "-2" from lags?
+        ),
+        # fut cov + output_chunk_length > 3
+        (
+            LinearRegressionModel,
+            {"lags_future_covariates": [0, 1], "output_chunk_length": 6},
+            (1, 6),  # 1 = "0" of fut cov?
         ),
         # past cov only
         (LinearRegressionModel, {"lags_past_covariates": 6}, (6, 1)),
@@ -185,10 +199,14 @@ if TORCH_AVAILABLE:
         torch.manual_seed(42)
 
         # real timeseries for functionality tests
+        ts_val_length = 72
         ts_passengers = AirPassengersDataset().load()
         scaler = Scaler()
         ts_passengers = scaler.fit_transform(ts_passengers)
-        ts_pass_train, ts_pass_val = ts_passengers[:-72], ts_passengers[-72:]
+        ts_pass_train, ts_pass_val = (
+            ts_passengers[:-ts_val_length],
+            ts_passengers[-ts_val_length:],
+        )
 
         # an additional noisy series
         ts_pass_train_1 = ts_pass_train + 0.01 * tg.gaussian_timeseries(
@@ -246,8 +264,8 @@ if TORCH_AVAILABLE:
         # RangeIndex timeseries
         ts_passengers_range = TimeSeries.from_values(ts_passengers.values())
         ts_pass_train_range, ts_pass_val_range = (
-            ts_passengers_range[:-72],
-            ts_passengers_range[-72:],
+            ts_passengers_range[:-ts_val_length],
+            ts_passengers_range[-ts_val_length:],
         )
 
         ts_past_cov_train_range = tg.gaussian_timeseries(
@@ -284,7 +302,7 @@ if TORCH_AVAILABLE:
                 )
 
                 theorical_forecast_length = (
-                    72
+                    self.ts_val_length
                     - max(
                         (bounds[0] + bounds[1]), train_length
                     )  # because we train we have enough data
@@ -295,7 +313,8 @@ if TORCH_AVAILABLE:
                 self.assertTrue(
                     len(forecasts) == theorical_forecast_length,
                     f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
-                    "of retrain=True and overlap_end=False, and a time index of type DateTimeIndex.",
+                    f"of retrain=True and overlap_end=False, and a time index of type DateTimeIndex. "
+                    f"Expected {theorical_forecast_length}, got {len(forecasts)}",
                 )
 
                 # range index
@@ -311,7 +330,8 @@ if TORCH_AVAILABLE:
                 self.assertTrue(
                     len(forecasts) == theorical_forecast_length,
                     f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
-                    " of retrain=True, overlap_end=False, and a time index of type RangeIndex.",
+                    f"of retrain=True, overlap_end=False, and a time index of type RangeIndex."
+                    f"Expected {theorical_forecast_length}, got {len(forecasts)}",
                 )
 
                 # stride 2
@@ -327,7 +347,7 @@ if TORCH_AVAILABLE:
                 theorical_forecast_length = np.floor(
                     (
                         (
-                            72
+                            self.ts_val_length
                             - max(
                                 (bounds[0] + bounds[1]), train_length
                             )  # because we train we have enough data
@@ -343,7 +363,8 @@ if TORCH_AVAILABLE:
                 self.assertTrue(
                     len(forecasts) == theorical_forecast_length,
                     f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
-                    "of retrain=True and overlap_end=False and stride=2",
+                    f"of retrain=True and overlap_end=False and stride=2. "
+                    f"Expected {theorical_forecast_length}, got {len(forecasts)}",
                 )
 
                 # stride 3
@@ -359,7 +380,7 @@ if TORCH_AVAILABLE:
                 theorical_forecast_length = np.floor(
                     (
                         (
-                            72
+                            self.ts_val_length
                             - max(
                                 (bounds[0] + bounds[1]), train_length
                             )  # because we train we have enough data
@@ -376,7 +397,8 @@ if TORCH_AVAILABLE:
                 self.assertTrue(
                     len(forecasts) == theorical_forecast_length,
                     f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
-                    "of retrain=True and overlap_end=False and stride=3",
+                    f"of retrain=True and overlap_end=False and stride=3. "
+                    f"Expected {theorical_forecast_length}, got {len(forecasts)}",
                 )
 
                 # last points only False
@@ -391,7 +413,7 @@ if TORCH_AVAILABLE:
                 )
 
                 theorical_forecast_length = (
-                    72
+                    self.ts_val_length
                     - max(
                         (bounds[0] + bounds[1]), train_length
                     )  # because we train we have enough data
@@ -401,14 +423,15 @@ if TORCH_AVAILABLE:
 
                 self.assertTrue(
                     len(forecasts) == theorical_forecast_length,
-                    f"Model {model_cls} does not return the right number of historical forecasts in the case of"
-                    " retrain=True and overlap_end=False, and last_points_only=False",
+                    f"Model {model_cls} does not return the right number of historical forecasts in the case of "
+                    f"retrain=True and overlap_end=False, and last_points_only=False. "
+                    f"expected {theorical_forecast_length}, got {len(forecasts)}",
                 )
 
                 self.assertTrue(
                     len(forecasts[0]) == forecast_horizon,
-                    f"Model {model_cls} does not return forecast_horizon points per historical forecast in the case of"
-                    " retrain=True and overlap_end=False, and last_points_only=False",
+                    f"Model {model_cls} does not return forecast_horizon points per historical forecast in the case of "
+                    f"retrain=True and overlap_end=False, and last_points_only=False",
                 )
 
         def test_regression_auto_start_multiple_no_cov(self):
@@ -434,7 +457,7 @@ if TORCH_AVAILABLE:
                 )
 
                 theorical_forecast_length = (
-                    72
+                    self.ts_val_length
                     - max(
                         (bounds[0] + bounds[1]), 15
                     )  # because we train we have enough data
@@ -445,7 +468,8 @@ if TORCH_AVAILABLE:
                 self.assertTrue(
                     len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length,
                     f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
-                    "of retrain=True and overlap_end=False, and a time index of type DateTimeIndex.",
+                    f"of retrain=True and overlap_end=False, and a time index of type DateTimeIndex. "
+                    f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}",
                 )
 
         @pytest.mark.slow
@@ -483,12 +507,14 @@ if TORCH_AVAILABLE:
                 # and the predictable point is the index -10 instead of index -1, so we
                 # have to add 1 to -10.
                 # Let's note that output_chunk_length is necessarily 1 for RNN.
+                theorical_forecast_length = (
+                    self.ts_val_length - (bounds[0] + bounds[1] + 1) - 10 + 1
+                )
                 self.assertTrue(
-                    len(forecasts[0])
-                    == len(forecasts[1])
-                    == 72 - (bounds[0] + bounds[1] + 1) - 10 + 1,
-                    f"Model {model_cls} does not return the right number of historical forecasts in the case of"
-                    " retrain=True and overlap_end=False",
+                    len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length,
+                    f"Model {model_cls} does not return the right number of historical forecasts in the case of "
+                    f"retrain=True and overlap_end=False. "
+                    f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}",
                 )
 
                 model = model_cls(
@@ -515,10 +541,11 @@ if TORCH_AVAILABLE:
                 # If retrain=True and overlap_end=True, as ts has 72 values, we can only forecast
                 # 72-(input_chunk_length+output_chunk_length+1)
                 # We are not limited thanks to overlap_end=True
+                theorical_forecast_length = self.ts_val_length - (
+                    bounds[0] + bounds[1] + 1
+                )
                 self.assertTrue(
-                    len(forecasts[0])
-                    == len(forecasts[1])
-                    == 72 - (bounds[0] + bounds[1] + 1)
+                    len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length
                 )
 
                 model = model_cls(
@@ -544,7 +571,9 @@ if TORCH_AVAILABLE:
                 # If retrain=False and overlap_end=False  as ts has 72 values, we can forecast
                 # 72-input_chunk_length - 10 + 1 = 39 values
                 self.assertTrue(
-                    len(forecasts[0]) == len(forecasts[1]) == 72 - bounds[0] - 10 + 1
+                    len(forecasts[0])
+                    == len(forecasts[1])
+                    == self.ts_val_length - bounds[0] - 10 + 1
                 )
 
                 model = model_cls(
@@ -571,7 +600,9 @@ if TORCH_AVAILABLE:
                 # 72-input_chunk_length
                 # We are not limited thanks to overlap_end=True
                 self.assertTrue(
-                    len(forecasts[0]) == len(forecasts[1]) == 72 - bounds[0]
+                    len(forecasts[0])
+                    == len(forecasts[1])
+                    == self.ts_val_length - bounds[0]
                 )
 
         def test_regression_auto_start_multiple_with_cov(self):
@@ -607,12 +638,14 @@ if TORCH_AVAILABLE:
                     f"Model {model_cls} did not return a list of historical forecasts",
                 )
 
+                theorical_forecast_length = (
+                    self.ts_val_length - (bounds[0] + bounds[1] + 1) - 10 + 1
+                )
                 self.assertTrue(
-                    len(forecasts[0])
-                    == len(forecasts[1])
-                    == 72 - (bounds[0] + bounds[1] + 1) - 10 + 1,
-                    f"Model {model_cls} does not return the right number of historical forecasts in the case of"
-                    " retrain=True and overlap_end=False",
+                    len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length,
+                    f"Model {model_cls} does not return the right number of historical forecasts in the case of "
+                    f"retrain=True and overlap_end=False. "
+                    f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}",
                 )
 
         @pytest.mark.slow
@@ -652,11 +685,14 @@ if TORCH_AVAILABLE:
                     len(forecasts) == 2,
                     f"Model {model_cls} did not return a list of historical forecasts",
                 )
-
+                theorical_forecast_length = (
+                    self.ts_val_length - (bounds[0] + bounds[1] + 1) - 10 + 1
+                )
                 self.assertTrue(
-                    len(forecasts[0]) == 72 - (bounds[0] + bounds[1] + 1) - 10 + 1,
+                    len(forecasts[0]) == theorical_forecast_length,
                     f"Model {model_cls} does not return the right number of historical forecasts in case "
-                    " of retrain=True and overlap_end=False and past_covariates with different start",
+                    f"of retrain=True and overlap_end=False and past_covariates with different start. "
+                    f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}",
                 )
 
                 model = model_cls(
@@ -679,16 +715,25 @@ if TORCH_AVAILABLE:
                 )
 
                 # we substract the shift of the past_cov_val ts (-5)
+                theorical_forecast_length = (
+                    self.ts_val_length - (bounds[0] + bounds[1]) - 10 - 5
+                )
                 self.assertTrue(
-                    len(forecasts[0]) == 72 - (bounds[0] + bounds[1]) - 10 - 5,
+                    len(forecasts[0]) == theorical_forecast_length,
                     f"Model {model_cls} does not return the right number of historical forecasts in case "
-                    " of retrain=True and overlap_end=False and past_covariates with different start",
+                    f"of retrain=True and overlap_end=False and past_covariates with different start. "
+                    f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}",
                 )
 
+                theorical_forecast_length = (
+                    self.ts_val_length - (bounds[0] + bounds[1]) - 10
+                )
                 self.assertTrue(
-                    len(forecasts[1]) == 72 - (bounds[0] + bounds[1]) - 10,
+                    len(forecasts[1])
+                    == self.ts_val_length - (bounds[0] + bounds[1]) - 10,
                     f"Model {model_cls} does not return the right number of historical forecasts in case "
-                    " of retrain=True and overlap_end=False and past_covariates starting before.",
+                    f"of retrain=True and overlap_end=False and past_covariates starting before. "
+                    f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}",
                 )
 
             # Past and future covariates
@@ -722,17 +767,24 @@ if TORCH_AVAILABLE:
                     overlap_end=False,
                 )
 
-                self.assertTrue(
-                    len(forecasts[0]) == 72 - (bounds[0] + bounds[1]) - 10 - 5 - 4,
-                    f"Model {model_cls} does not return the right number of historical forecasts in case "
-                    " of retrain=True and overlap_end=False and past_covariates and future_covariates with "
-                    "different start",
+                theorical_forecast_length = (
+                    self.ts_val_length - (bounds[0] + bounds[1]) - 10 - 5 - 4
                 )
-
                 self.assertTrue(
-                    len(forecasts[1]) == 72 - (bounds[0] + bounds[1]) - 10 - 2,
+                    len(forecasts[0]) == theorical_forecast_length,
                     f"Model {model_cls} does not return the right number of historical forecasts in case "
-                    " of retrain=True and overlap_end=False and past_covariates with different start",
+                    f"of retrain=True and overlap_end=False and past_covariates and future_covariates with "
+                    f"different start. "
+                    f"Expected {theorical_forecast_length}, got {len(forecasts[0])}",
+                )
+                theorical_forecast_length = (
+                    self.ts_val_length - (bounds[0] + bounds[1]) - 10 - 2
+                )
+                self.assertTrue(
+                    len(forecasts[1]) == theorical_forecast_length,
+                    f"Model {model_cls} does not return the right number of historical forecasts in case "
+                    f"of retrain=True and overlap_end=False and past_covariates with different start. "
+                    f"Expected {theorical_forecast_length}, got {len(forecasts[1])}",
                 )
 
             # Future covariates only
@@ -765,18 +817,26 @@ if TORCH_AVAILABLE:
                     f"Model {model_cls} did not return a list of historical forecasts",
                 )
 
+                theorical_forecast_length = (
+                    self.ts_val_length - (bounds[0] + bounds[1]) - 10 - 9
+                )
                 self.assertTrue(
-                    len(forecasts[0]) == 72 - (bounds[0] + bounds[1]) - 10 - 9,
+                    len(forecasts[0]) == theorical_forecast_length,
                     f"Model {model_cls} does not return the right number of historical forecasts in case "
-                    " of retrain=True and overlap_end=False and no past_covariates and future_covariates with different"
-                    " start",
+                    f"of retrain=True and overlap_end=False and no past_covariates and future_covariates "
+                    f"with different start. "
+                    f"Expected {theorical_forecast_length}, got {len(forecasts[0])}",
                 )
 
+                theorical_forecast_length = (
+                    self.ts_val_length - (bounds[0] + bounds[1]) - 10 - 2
+                )
                 self.assertTrue(
-                    len(forecasts[1]) == 72 - (bounds[0] + bounds[1]) - 10 - 2,
+                    len(forecasts[1]) == theorical_forecast_length,
                     f"Model {model_cls} does not return the right number of historical forecasts in case "
-                    " of retrain=True and overlap_end=False and no past_covariates and future_covariates with different"
-                    " start",
+                    f"of retrain=True and overlap_end=False and no past_covariates and future_covariates "
+                    f"with different start. "
+                    f"Expected {theorical_forecast_length}, got {len(forecasts[1])}",
                 )
 
         def test_retrain(self):
@@ -788,10 +848,22 @@ if TORCH_AVAILABLE:
                     self.ts_passengers, start=0.9, retrain=retrain_val, verbose=False
                 )
 
-            def retrain_f_invalid(pred_time, train_series):
+            def retrain_f_invalid(
+                counter, pred_time, train_series, past_covariates, future_covariates
+            ):
                 return False
 
-            def retrain_f_valid(pred_time, train_series):
+            def retrain_f_invalid_args(
+                counter, train_series, past_covariates, future_covariates
+            ):
+                if len(train_series) % 2 == 0:
+                    return True
+                else:
+                    return False
+
+            def retrain_f_valid(
+                counter, pred_time, train_series, past_covariates, future_covariates
+            ):
                 # only retrain once in first iteration
                 if pred_time == pd.Timestamp("1959-09-01 00:00:00"):
                     return True
@@ -799,9 +871,13 @@ if TORCH_AVAILABLE:
                     return False
 
             # test callable
+            helper_hist_forecasts(retrain_f_valid)
+            # always return False with not-trained model
             with pytest.raises(ValueError):
                 helper_hist_forecasts(retrain_f_invalid)
-            helper_hist_forecasts(retrain_f_valid)
+            # missing the `pred_time` positional argument
+            with pytest.raises(ValueError):
+                helper_hist_forecasts(retrain_f_invalid_args)
 
             # test int
             with pytest.raises(ValueError):
