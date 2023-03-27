@@ -142,11 +142,6 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
             categorical_static_covariates=categorical_static_covariates,
         )
 
-    def __str__(self):
-        if self.likelihood:
-            return f"LGBModel(lags={self.lags}, likelihood={self.likelihood})"
-        return f"LGBModel(lags={self.lags})"
-
     def fit(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],

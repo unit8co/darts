@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
+import pytest
 from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import OneHotEncoder
@@ -1277,6 +1278,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 prediction = model_instance.predict(n=1)
                 self.assertEqual(len(prediction), 1)
 
+    @pytest.mark.slow
     def test_fit(self):
         multi_models_modes = [True, False]
         for mode in multi_models_modes:
@@ -2465,6 +2467,7 @@ class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):
     constant_noisy_multivar_ts = constant_noisy_ts.stack(constant_noisy_ts)
     num_samples = 5
 
+    @pytest.mark.slow
     def test_fit_predict_determinism(self):
         multi_models_modes = [False, True]
         for mode in multi_models_modes:
@@ -2485,6 +2488,7 @@ class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):
                 pred3 = model.predict(n=10, num_samples=2).values()
                 self.assertTrue((pred2 != pred3).any())
 
+    @pytest.mark.slow
     def test_probabilistic_forecast_accuracy(self):
         multi_models_modes = [True, False]
         for mode in multi_models_modes:

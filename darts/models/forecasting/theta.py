@@ -168,9 +168,6 @@ class Theta(LocalForecastingModel):
 
         return self._build_forecast_series(forecast)
 
-    def __str__(self):
-        return f"Theta({self.theta})"
-
     @property
     def min_train_series_length(self) -> int:
         if (
@@ -468,11 +465,6 @@ class FourTheta(LocalForecastingModel):
             n_jobs=n_jobs,
         )
         return theta
-
-    def __str__(self):
-        return "4Theta(theta:{}, curve:{}, model:{}, seasonality:{})".format(
-            self.theta, self.trend_mode, self.model_mode, self.season_mode
-        )
 
     @property
     def min_train_series_length(self) -> int:

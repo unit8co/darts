@@ -1034,9 +1034,6 @@ class _QuantileModelContainer(OrderedDict):
     def __init__(self):
         super().__init__()
 
-    def __str__(self):
-        return f"_QuantileModelContainer(quantiles={list(self.keys())})"
-
 
 class RegressionModelWithCategoricalCovariates(RegressionModel):
     def __init__(
