@@ -521,7 +521,7 @@ class WindowTransformerTestCase(unittest.TestCase):
             transforms=invalid_parameters,
         )
         # if pd.DateOffset, raise ValueError of non-fixed frequency
-        self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):
             invalid_transformer.transform(self.target_hourly)
 
     def test_transformers_pipeline(self):
