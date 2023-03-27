@@ -1102,12 +1102,14 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
         categorical_past_covariates
-            Optionally, a list of component names specifying the past covariates that should be treated as categorical.
+            Optionally, component name or list of component names specifying the past covariates that should be treated
+            as categorical.
         categorical_future_covariates
-            Optionally, a list of component names specifying the future covariates that should be treated as
-            categorical.
+            Optionally, component name or list of component names specifying the future covariates that should be
+            treated as categorical.
         categorical_static_covariates
-            Optionally, a list of names specifying the static covariates that should be treated as categorical.
+            Optionally, string or list of strings specifying the static covariates that should be treated as
+            categorical.
         """
         super().__init__(
             lags=lags,
@@ -1133,7 +1135,6 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             if isinstance(categorical_static_covariates, str)
             else categorical_static_covariates
         )
-        self._categorical_col_indices: Union[None, List[int]] = None
 
     def fit(
         self,
@@ -1198,7 +1199,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
                             f"`{cov_type}` are passed to the `fit()` call."
                         ),
                     )
-                s = covariates if isinstance(covariates, TimeSeries) else covariates[0]
+                s = get_single_series(covariates)
                 if not set(categorical_covariates).issubset(set(s.components)):
                     raise_log(
                         ValueError(
@@ -1209,7 +1210,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
                         )
                     )
         if self.categorical_static_covariates:
-            s = series if isinstance(series, TimeSeries) else series[0]
+            s = get_single_series(series)
             covariates = s.static_covariates
             if not s.has_static_covariates:
                 raise_log(
@@ -1334,9 +1335,6 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             past_covariates,
             future_covariates,
         )
-
-        # Updated each time the model is fit such that the indices can be easily retrieved in the predict method later
-        self._categorical_col_indices = cat_col_indices
 
         kwargs[self._categorical_fit_param_name] = cat_col_indices
         self.model.fit(

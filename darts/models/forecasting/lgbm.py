@@ -94,17 +94,17 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
         categorical_past_covariates
-            Optionally, a list of component names specifying the past covariates that should be treated as categorical
-            by the underlying `lightgbm.LightGBMRegressor`. It's recommended that the components that are treated as
-            categorical are integer-encoded. For more information on how LightGBM handles categorical features, visit:
-            `Categorical feature support documentation
+            Optionally, component name or list of component names specifying the past covariates that should be treated
+            as categorical by the underlying `lightgbm.LightGBMRegressor`. It's recommended that the components that
+            are treated as categorical are integer-encoded. For more information on how LightGBM handles categorical
+            features, visit: `Categorical feature support documentation
             <https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`_
         categorical_future_covariates
-            Optionally, a list of component names specifying the future covariates that should be treated as categorical
-            by the underlying `lightgbm.LightGBMRegressor`. It's recommended that the components that are treated as
-            categorical are integer-encoded.
+            Optionally, component name or list of component names specifying the future covariates that should be
+            treated as categorical by the underlying `lightgbm.LightGBMRegressor`. It's recommended that the components
+            that are treated as categorical are integer-encoded.
         categorical_static_covariates
-            Optionally, a list of names specifying the static covariates that should be treated as categorical
+            Optionally, string or list of strings specifying the static covariates that should be treated as categorical
             by the underlying `lightgbm.LightGBMRegressor`. It's recommended that the static covariates that are
             treated as categorical are integer-encoded.
         **kwargs
