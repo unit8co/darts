@@ -4,7 +4,6 @@ import unittest
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from darts import TimeSeries
 from darts.dataprocessing.pipeline import Pipeline
@@ -522,7 +521,7 @@ class WindowTransformerTestCase(unittest.TestCase):
             transforms=invalid_parameters,
         )
         # if pd.DateOffset, raise ValueError of non-fixed frequency
-        with pytest.raises(ValueError):
+        self.assertRaises(ValueError):
             invalid_transformer.transform(self.target_hourly)
 
     def test_transformers_pipeline(self):
