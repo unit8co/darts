@@ -98,9 +98,6 @@ class Croston(FutureCovariatesLocalForecastingModel):
 
         self.version = version
 
-    def __str__(self):
-        return "Croston"
-
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         super()._fit(series, future_covariates)
         self._assert_univariate(series)
