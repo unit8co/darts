@@ -3408,6 +3408,7 @@ class TimeSeries:
                 "function",
                 "group",
                 "components",
+                "function_name",
             }
 
             window_mode_expected_args = set(window_mode.__code__.co_varnames)
@@ -3535,8 +3536,13 @@ class TimeSeries:
             )
             min_periods = transformation["min_periods"]
             # set new columns names
+            fn_name = transformation.get("function_name")
+            if fn_name:
+                function_name = fn_name
+            else:
+                function_name = fn if fn != "apply" else "udf"
             name_prefix = (
-                f"{window_mode}_{fn if fn != 'apply' else 'udf'}"
+                f"{window_mode}_{function_name}"
                 f"{'_'+str(transformation['window']) if 'window' in transformation else ''}"
                 f"{'_'+str(min_periods) if min_periods>1 else ''}"
             )
