@@ -12,7 +12,6 @@ from darts.models import (
     LinearRegressionModel,
     NaiveDrift,
     NaiveSeasonal,
-    Prophet,
     RandomForest,
     RegressionEnsembleModel,
     RegressionModel,
@@ -198,11 +197,11 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         ensemble.fit(self.seq1, self.cov1)
         ensemble.predict(10, self.seq2, self.cov2)
 
-    def test_train_predict_local_models_with_future_covariates(self):
-        ensemble_models = self.get_local_models()
-
-        # append model which supports future covariates
-        ensemble_models.append(Prophet())
+    def test_train_predict_models_with_future_covariates(self):
+        ensemble_models = [
+            LinearRegressionModel(lags=1, lags_future_covariates=[1]),
+            RandomForest(lags=1, lags_future_covariates=[1]),
+        ]
         ensemble = RegressionEnsembleModel(ensemble_models, 10)
         ensemble.fit(self.sine_series, future_covariates=self.ts_cov1)
         ensemble.predict(10, self.sine_series, future_covariates=self.ts_cov1)
