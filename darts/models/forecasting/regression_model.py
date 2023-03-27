@@ -1315,8 +1315,6 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         Custom fit function for `RegressionModelWithCategoricalCovariates` models, adding logic to let the model
         handle categorical features directly.
         """
-
-
         cat_col_indices, _ = self._get_categorical_features(
             target_series,
             past_covariates,
