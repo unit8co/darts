@@ -1316,16 +1316,6 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         handle categorical features directly.
         """
 
-        training_samples, training_labels = self._create_lagged_data(
-            target_series,
-            past_covariates,
-            future_covariates,
-            max_samples_per_ts,
-        )
-
-        # if training_labels is of shape (n_samples, 1) flatten it to shape (n_samples,)
-        if len(training_labels.shape) == 2 and training_labels.shape[1] == 1:
-            training_labels = training_labels.ravel()
 
         cat_col_indices, _ = self._get_categorical_features(
             target_series,
