@@ -34,7 +34,6 @@ from darts.utils import (
     _build_tqdm_iterator,
     _historical_forecasts_general_checks,
     _parallel_apply,
-    _retrain_wrapper,
     _with_sanity_checks,
 )
 from darts.utils.timeseries_generation import (
@@ -618,20 +617,23 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         stride
             The number of time steps between two consecutive predictions.
         retrain
-            Whether and/or on which condition to retrain the model before predicting.
+            Whether and/or on which condition to retrain the model before predicting. Defaults: ``True``.
             This parameter supports 3 different datatypes: ``bool``, (positive) ``int``, and
             ``Callable`` (returning a ``bool``).
             In the case of ``bool``: retrain the model at each step (`True`), or never retrains the model (`False`).
             In the case of ``int``: the model is retrained every `retrain` iterations.
             In the case of ``Callable``: the model is retrained whenever callable returns `True`.
-            Arguments passed to the callable are as follows:
+            The callable must have the following positional arguments:
 
+                - `counter (int)`: current `retrain` iteration
                 - `pred_time (pd.Timestamp or int)`: timestamp of forecast time (end of the training series)
                 - `train_series (TimeSeries)`: train series up to `pred_time`
                 - `past_covariates (TimeSeries)`: past_covariates series up to `pred_time`
                 - `future_covariates (TimeSeries)`: future_covariates series up
                   to `min(pred_time + series.freq * forecast_horizon, series.end_time())`
 
+            Note: if an optionnal *_covariates arguments is not passed to `historical_forecast`,
+            ``None`` will be passed to the retrain function.
             Note: some models do require being retrained every time
             and do not support anything else than `retrain=True`.
         overlap_end
@@ -687,11 +689,45 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
 
         if isinstance(retrain, bool) or (isinstance(retrain, int) and retrain >= 0):
-            retrain_func = _retrain_wrapper(
-                lambda counter: counter % int(retrain) == 0 if retrain else False
-            )
+
+            def helper_retrain_func(
+                counter, pred_time, train_series, past_covariates, future_covariates
+            ):
+                return counter % int(retrain) == 0 if retrain else False
+
+            retrain_func = helper_retrain_func
         elif isinstance(retrain, Callable):
-            retrain_func = _retrain_wrapper(retrain)
+            retrain_func = retrain
+
+            # check that the signature matches the documentation
+            expected_arguments = {
+                "counter",
+                "pred_time",
+                "train_series",
+                "past_covariates",
+                "future_covariates",
+            }
+            passed_arguments = set(inspect.signature(retrain_func).parameters.keys())
+            raise_if(
+                len(expected_arguments - passed_arguments) > 0,
+                f"the Callable retrain argument is missing the following positional arguments: "
+                f"{list(expected_arguments-passed_arguments)}.",
+                logger,
+            )
+
+            # passing dummy values to check the type of the output
+            result = retrain_func(
+                counter=0,
+                pred_time=series.time_index[-1],
+                train_series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+            )
+            raise_if_not(
+                isinstance(result, bool),
+                f"Return value of `retrain` must be bool, received {type(result)}",
+                logger,
+            )
         else:
             raise_log(
                 ValueError(
@@ -699,10 +735,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ),
                 logger,
             )
-
-        retrain_func_signature = tuple(
-            inspect.signature(retrain_func).parameters.keys()
-        )
 
         series = series2seq(series)
         past_covariates = series2seq(past_covariates)
@@ -730,35 +762,76 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             past_covariates_ = past_covariates[idx] if past_covariates else None
             future_covariates_ = future_covariates[idx] if future_covariates else None
 
-            # Determines the time index the historical forecasts will be made on
-            historical_forecasts_time_index = (
+            # Prediction
+            historical_forecasts_time_index_predict = (
                 self._get_historical_forecastable_time_index(
                     series_,
                     past_covariates_,
                     future_covariates_,
-                    (retrain is not False) or (not self._fit_called),
+                    is_training=False,
                 )
             )
 
-            # We also need the first value timestamp to be used for prediction or training
-            min_timestamp = (
-                historical_forecasts_time_index[0]
-                - (
-                    self._training_sample_time_index_length
-                    if retrain
-                    else self._predict_sample_time_index_length
-                )
-                * series_.freq
-            )
-
-            if historical_forecasts_time_index is None:
+            if historical_forecasts_time_index_predict is None:
                 raise_log(
                     ValueError(
                         "Given the provided model, series and covariates, there is no timestamps "
-                        f" where we can make a prediction or train the model (series index: {idx}). "
+                        f" where we can make a prediction with the model (series index: {idx}). "
                         "Please check the time indexes of the series and covariates."
                     ),
                     logger,
+                )
+
+            # Train
+            historical_forecasts_time_index_train = (
+                self._get_historical_forecastable_time_index(
+                    series_,
+                    past_covariates_,
+                    future_covariates_,
+                    is_training=True,
+                )
+            )
+
+            if (
+                (retrain is not False) or (not self._fit_called)
+            ) and historical_forecasts_time_index_train is None:
+                raise_log(
+                    ValueError(
+                        "Given the provided model, series and covariates, there is no timestamps "
+                        f" where we can make train the model (series index: {idx}). "
+                        "Please check the time indexes of the series and covariates."
+                    ),
+                    logger,
+                )
+
+            # We need the first value timestamp to be used in order to properly shift the series
+            min_timestamp_train = (
+                historical_forecasts_time_index_train[0]
+                - self._training_sample_time_index_length * series_.freq
+            )
+            min_timestamp_predict = (
+                historical_forecasts_time_index_predict[0]
+                - self._predict_sample_time_index_length * series_.freq
+            )
+
+            if isinstance(retrain, Callable):
+                # retain the longer time index, anything can happen
+                if (
+                    historical_forecasts_time_index_train[0]
+                    < historical_forecasts_time_index_predict[0]
+                ):
+                    historical_forecasts_time_index = (
+                        historical_forecasts_time_index_train
+                    )
+                else:
+                    historical_forecasts_time_index = (
+                        historical_forecasts_time_index_predict
+                    )
+            elif retrain:
+                historical_forecasts_time_index = historical_forecasts_time_index_train
+            else:
+                historical_forecasts_time_index = (
+                    historical_forecasts_time_index_predict
                 )
 
             # prepare the start parameter -> pd.Timestamp
@@ -834,10 +907,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             # iterate and forecast
             for _counter, pred_time in enumerate(iterator):
-                # build the training series
-                if min_timestamp > series_.time_index[0]:
+                # build the training series, as if retrain is True to break circular dependency
+                if min_timestamp_train > series_.time_index[0]:
                     train_series = series_.drop_before(
-                        min_timestamp - 1 * series_.freq
+                        min_timestamp_train - 1 * series_.freq
                     ).drop_after(pred_time)
                 else:
                     train_series = series_.drop_after(pred_time)
@@ -845,23 +918,25 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 if train_length and len(train_series) > train_length:
                     train_series = train_series[-train_length:]
 
-                if retrain_func(
-                    counter=_counter,
-                    pred_time=pred_time,
-                    train_series=train_series,
-                    past_covariates=past_covariates_.drop_after(pred_time)
-                    if past_covariates_
-                    and ("past_covariates" in retrain_func_signature)
-                    else None,
-                    future_covariates=future_covariates_.drop_after(
-                        min(
-                            pred_time + train_series.freq * forecast_horizon,
-                            series_.end_time(),
+                # retrain_func processes the series that would be used for training
+                if (
+                    retrain_func(
+                        counter=_counter,
+                        pred_time=pred_time,
+                        train_series=train_series,
+                        past_covariates=past_covariates_.drop_after(pred_time)
+                        if past_covariates_
+                        else None,
+                        future_covariates=future_covariates_.drop_after(
+                            min(
+                                pred_time + train_series.freq * forecast_horizon,
+                                series_.end_time(),
+                            )
                         )
+                        if future_covariates_
+                        else None,
                     )
-                    if future_covariates_
-                    and ("future_covariates" in retrain_func_signature)
-                    else None,
+                    and pred_time in historical_forecasts_time_index_train
                 ):
                     # avoid fitting the same model multiple times
                     model = self.untrained_model()
@@ -884,6 +959,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         )
                     # use retrained model if `retrain` is not training every step
                     model = model if model is not None else self
+
+                    # slice the series for prediction without retraining
+                    if min_timestamp_predict > series_.time_index[0]:
+                        train_series = series_.drop_before(
+                            min_timestamp_predict - 1 * series_.freq
+                        ).drop_after(pred_time)
+                    else:
+                        train_series = series_.drop_after(pred_time)
 
                 forecast = model._predict_wrapper(
                     n=forecast_horizon,
