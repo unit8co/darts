@@ -9,7 +9,10 @@ from darts import TimeSeries
 from darts import concatenate as darts_concatenate
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.tests.base_test_class import DartsBaseTestClass
-from darts.utils.data.tabularization import create_lagged_training_data
+from darts.utils.data.tabularization import (
+    create_lagged_components_names,
+    create_lagged_training_data,
+)
 from darts.utils.timeseries_generation import linear_timeseries
 
 
@@ -49,7 +52,7 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
         timeseries = []
         for i in range(n_components):
             # Values of each component is 1 larger than the last:
-            timeseries_i = linear_timeseries(**kwargs) + i
+            timeseries_i = linear_timeseries(column_name=f"lin_ts_{i}", **kwargs) + i
             timeseries.append(timeseries_i)
         return darts_concatenate(timeseries, axis=1)
 
@@ -1795,3 +1798,142 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
                     use_moving_windows=use_moving_windows,
                 )
                 self.assertEqual(len(w), 0)
+
+    def test_create_lagged_components_names(self):
+        """
+        Tests that `create_lagged_components_names` produces the expected features name depending
+        on the lags, output_chunk_length and covariates.
+        """
+        target_with_no_cov = self.create_multivariate_linear_timeseries(
+            n_components=1, start_value=0, end_value=10, start=2, length=10, freq=2
+        )
+
+        target_with_cov = self.create_multivariate_linear_timeseries(
+            n_components=2, start_value=0, end_value=10, start=2, length=10, freq=2
+        )
+        target_with_cov = target_with_cov.with_static_covariates(
+            pd.Series([1], index=["dummy_static_cov"])
+        )
+
+        past = self.create_multivariate_linear_timeseries(
+            n_components=3, start_value=10, end_value=20, start=2, length=10, freq=2
+        )
+        future = self.create_multivariate_linear_timeseries(
+            n_components=4, start_value=20, end_value=30, start=2, length=10, freq=2
+        )
+
+        # target no static covariate
+        expected_lagged_features = ["lag_-2_lin_ts_0", "lag_-1_lin_ts_0"]
+        created_lagged_features, _ = create_lagged_components_names(
+            target_series=target_with_no_cov,
+            past_covariates=None,
+            future_covariates=None,
+            lags=[-2, -1],
+            lags_past_covariates=None,
+            lags_future_covariates=None,
+            concatenate=False,
+        )
+        self.assertEqual(expected_lagged_features, created_lagged_features[0])
+
+        # target with static covariate (not handled by this function)
+        expected_lagged_features = [
+            "lag_-4_lin_ts_0",
+            "lag_-4_lin_ts_1",
+            "lag_-1_lin_ts_0",
+            "lag_-1_lin_ts_1",
+        ]
+        created_lagged_features, _ = create_lagged_components_names(
+            target_series=target_with_cov,
+            past_covariates=None,
+            future_covariates=None,
+            lags=[-4, -1],
+            lags_past_covariates=None,
+            lags_future_covariates=None,
+            concatenate=False,
+        )
+        self.assertEqual(expected_lagged_features, created_lagged_features[0])
+
+        # target + past
+        expected_lagged_features = [
+            "lag_-4_lin_ts_0",
+            "lag_-3_lin_ts_0",
+            "lag_-1_lin_ts_0",
+            "lag_-1_lin_ts_1",
+            "lag_-1_lin_ts_2",
+        ]
+        created_lagged_features, _ = create_lagged_components_names(
+            target_series=target_with_no_cov,
+            past_covariates=past,
+            future_covariates=None,
+            lags=[-4, -3],
+            lags_past_covariates=[-1],
+            lags_future_covariates=None,
+            concatenate=False,
+        )
+        self.assertEqual(expected_lagged_features, created_lagged_features[0])
+
+        # target + future
+        expected_lagged_features = [
+            "lag_-2_lin_ts_0",
+            "lag_-1_lin_ts_0",
+            "lag_3_lin_ts_0",
+            "lag_3_lin_ts_1",
+            "lag_3_lin_ts_2",
+            "lag_3_lin_ts_3",
+        ]
+        created_lagged_features, _ = create_lagged_components_names(
+            target_series=target_with_no_cov,
+            past_covariates=None,
+            future_covariates=future,
+            lags=[-2, -1],
+            lags_past_covariates=None,
+            lags_future_covariates=[3],
+            concatenate=False,
+        )
+        self.assertEqual(expected_lagged_features, created_lagged_features[0])
+
+        # past + future
+        expected_lagged_features = [
+            "lag_-1_lin_ts_0",
+            "lag_-1_lin_ts_1",
+            "lag_-1_lin_ts_2",
+            "lag_2_lin_ts_0",
+            "lag_2_lin_ts_1",
+            "lag_2_lin_ts_2",
+            "lag_2_lin_ts_3",
+        ]
+        created_lagged_features, _ = create_lagged_components_names(
+            target_series=target_with_no_cov,
+            past_covariates=past,
+            future_covariates=future,
+            lags=None,
+            lags_past_covariates=[-1],
+            lags_future_covariates=[2],
+            concatenate=False,
+        )
+        self.assertEqual(expected_lagged_features, created_lagged_features[0])
+
+        # target with static + past + future
+        expected_lagged_features = [
+            "lag_-2_lin_ts_0",
+            "lag_-2_lin_ts_1",
+            "lag_-1_lin_ts_0",
+            "lag_-1_lin_ts_1",
+            "lag_-1_lin_ts_0",
+            "lag_-1_lin_ts_1",
+            "lag_-1_lin_ts_2",
+            "lag_2_lin_ts_0",
+            "lag_2_lin_ts_1",
+            "lag_2_lin_ts_2",
+            "lag_2_lin_ts_3",
+        ]
+        created_lagged_features, _ = create_lagged_components_names(
+            target_series=target_with_cov,
+            past_covariates=past,
+            future_covariates=future,
+            lags=[-2, -1],
+            lags_past_covariates=[-1],
+            lags_future_covariates=[2],
+            concatenate=False,
+        )
+        self.assertEqual(expected_lagged_features, created_lagged_features[0])
