@@ -586,3 +586,38 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                         if isinstance(retrain, Mock):
                             # check that patch_retrain_func has been called at each iteration
                             assert retrain.call_count > 1
+
+    def test_model_str_call(self):
+        model_expected_name_pairs = [
+            (ExponentialSmoothing(), "ExponentialSmoothing()"),  # no params changed
+            (ARIMA(1, 1, 1), "ARIMA(p=1, q=1)"),  # default value for a param
+            (
+                Prophet(
+                    add_encoders={"cyclic": {"past": ["month"]}}
+                ),  # data structure param
+                "Prophet(add_encoders={'cyclic': {'past': ['month']}})",
+            ),
+            (
+                TBATS(
+                    use_trend=True, use_arma_errors=True, use_box_cox=True
+                ),  # params in wrong order
+                "TBATS(use_box_cox=True, use_trend=True)",
+            ),
+        ]
+        for model, expected in model_expected_name_pairs:
+            self.assertEqual(expected, str(model))
+
+    def test_model_repr_call(self):
+        model_expected_name_pairs = [
+            (
+                ExponentialSmoothing(),
+                "ExponentialSmoothing(trend=ModelMode.ADDITIVE, damped=False, seasonal=SeasonalityMode.ADDITIVE, "
+                + "seasonal_periods=None, random_state=0)",
+            ),  # no params changed
+            (
+                ARIMA(1, 1, 1),
+                "ARIMA(p=1, d=1, q=1, seasonal_order=(0, 0, 0, 0), trend=None, random_state=0, add_encoders=None)",
+            ),  # default value for a param
+        ]
+        for model, expected in model_expected_name_pairs:
+            self.assertEqual(expected, repr(model))
