@@ -544,18 +544,12 @@ class WindowTransformerTestCase(unittest.TestCase):
         expected_transformed_series = TimeSeries.from_times_and_values(
             times1,
             [100, 15, 30, 45, 60, 75, 90, 105, 120, 135],
-            columns=["rolling_TotalOperation_3_2_0"],
+            columns=["rolling_sum_3_2_0"],
         )
 
         # adds NaNs
         window_transformations = [
-            {
-                "function": "sum",
-                "function_name": "TotalOperation",
-                "mode": "rolling",
-                "window": 3,
-                "min_periods": 2,
-            }
+            {"function": "sum", "mode": "rolling", "window": 3, "min_periods": 2}
         ]
 
         def times_five(x):
