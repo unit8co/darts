@@ -623,7 +623,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         epochs: int = 0,
         max_samples_per_ts: Optional[int] = None,
         num_loader_workers: int = 0,
-        setup_only: bool = False,
     ):
         """Fit/train the model on one or multiple series.
 
@@ -681,18 +680,51 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             both for the training and validation loaders (if any).
             A larger number of workers can sometimes increase performance, but can also incur extra overheads
             and increase memory usage, as more batches are loaded in parallel.
-        setup_only
-            Boolean value indicating "setup_only" mode.
-            In th default ``False`` case, the training runs as usual.
-            In case it is set to ``True``, all the setup and preparation is done,
-            but the main training cycle is not run.
-            This can be used to set up the model for training and then access the tuner functions, like ``lr_find()``
-            and ``scale_batch_size()``.
 
         Returns
         -------
         self
             Fitted model.
+        """
+        return self.fit_from_dataset(
+            *self._setup_fit(
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                val_series=val_series,
+                val_past_covariates=val_past_covariates,
+                val_future_covariates=val_future_covariates,
+                trainer=trainer,
+                verbose=verbose,
+                epochs=epochs,
+                max_samples_per_ts=max_samples_per_ts,
+                num_loader_workers=num_loader_workers,
+            )
+        )
+
+    def _setup_fit(
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        trainer: Optional[pl.Trainer] = None,
+        verbose: Optional[bool] = None,
+        epochs: int = 0,
+        max_samples_per_ts: Optional[int] = None,
+        num_loader_workers: int = 0,
+    ) -> Tuple[
+        TrainingDataset,
+        Optional[TrainingDataset],
+        Optional[pl.Trainer],
+        Optional[bool],
+        int,
+        int,
+    ]:
+        """This method acts on TimeSeries inputs, performs sanity checks, and sets up / returns the datasets for
+        training the model with `fit_from_dataset()`.
         """
         # guarantee that all inputs are either list of `TimeSeries` or `None`
         series = series2seq(series)
@@ -800,15 +832,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             past_covariates=seq2series(past_covariates),
             future_covariates=seq2series(future_covariates),
         )
-
-        return self.fit_from_dataset(
+        return (
             train_dataset,
             val_dataset,
             trainer,
             verbose,
             epochs,
             num_loader_workers,
-            setup_only,
         )
 
     @random_method
@@ -820,7 +850,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: Optional[bool] = None,
         epochs: int = 0,
         num_loader_workers: int = 0,
-        setup_only: bool = False,
     ):
         """
         Train the model with a specific :class:`darts.utils.data.TrainingDataset` instance.
@@ -857,17 +886,36 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             both for the training and validation loaders (if any).
             A larger number of workers can sometimes increase performance, but can also incur extra overheads
             and increase memory usage, as more batches are loaded in parallel.
-        setup_only
-            Boolean value indicating "setup_only" mode. In the default ``False`` case, the training runs as usual.
-            In case it is set to ``True``, all the setup and preparation is done,
-            but the main training cycle is not run.
-            This can be used to set up the model for training and then access the tuner functions,
-            like ``lr_find()`` and ``scale_batch_size()``.
 
         Returns
         -------
         self
             Fitted model.
+        """
+
+        self._train(
+            *self._setup_fit_from_dataset(
+                train_dataset=train_dataset,
+                val_dataset=val_dataset,
+                trainer=trainer,
+                verbose=verbose,
+                epochs=epochs,
+                num_loader_workers=num_loader_workers,
+            )
+        )
+        return self
+
+    def _setup_fit_from_dataset(
+        self,
+        train_dataset: TrainingDataset,
+        val_dataset: Optional[TrainingDataset] = None,
+        trainer: Optional[pl.Trainer] = None,
+        verbose: Optional[bool] = None,
+        epochs: int = 0,
+        num_loader_workers: int = 0,
+    ) -> Tuple[DataLoader, Optional[DataLoader]]:
+        """This method acts on `TrainingDataset` inputs, performs sanity checks, and sets up / returns the dataset
+        loaders for training the model with `_train()`.
         """
         self._fit_called = True
         self._verify_train_dataset_type(train_dataset)
@@ -967,16 +1015,21 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 "best=False)`. Finally, train the model with `model.fit(..., epochs=new_epochs)` where "
                 "`new_epochs` is the sum of (epochs already trained + some additional epochs)."
             )
-        self.train_loader = train_loader
-        self.val_loader = val_loader
-
-        # Train model if not in "setup_only" mode
-        if not setup_only:
-            self._train(train_loader, val_loader)
-        return self
+        return train_loader, val_loader
 
     def lr_find(
         self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        trainer: Optional[pl.Trainer] = None,
+        verbose: Optional[bool] = None,
+        epochs: int = 0,
+        max_samples_per_ts: Optional[int] = None,
+        num_loader_workers: int = 0,
         min_lr: float = 1e-08,
         max_lr: float = 1,
         num_training: int = 100,
@@ -984,19 +1037,45 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         early_stop_threshold: float = 4.0,
     ):
         """
-        Helper function for accessing the `lr_find()` functionality of Lightning,
-        which according to the documentation 'Enables the user to do a range test of
-        good initial learning rates,
-        to reduce the amount of guesswork in picking a good starting learning rate.'
-        For more information on PyTorch Lightning Tuners check out
-        `this link
-        <https://pytorch-lightning.readthedocs.io/en/stable/api/pytorch_lightning.tuner.tuning.Tuner.html`_
-
-        This function presupposes, that the model was already initialized with running
-        `model.fit(...,setup_only=True)`, so a valid `train_dataloader` is available in it.
+        Helper function to access `lr_find()` method of a PyTorch Lightning Trainer, which according to the
+        documentation 'Enables the user to do a range test of good initial learning rates, to reduce the amount of
+        guesswork in picking a good starting learning rate.' For more information on PyTorch Lightning Tuners check out
+        `this link <https://pytorch-lightning.readthedocs.io/en/stable/api/pytorch_lightning.tuner.tuning.Tuner.html`_
 
         Parameters
         ----------
+        series
+            A series or sequence of series serving as target (i.e. what the model will be trained to forecast)
+        past_covariates
+            Optionally, a series or sequence of series specifying past-observed covariates
+        future_covariates
+            Optionally, a series or sequence of series specifying future-known covariates
+        val_series
+            Optionally, one or a sequence of validation target series, which will be used to compute the validation
+            loss throughout training and keep track of the best performing models.
+        val_past_covariates
+            Optionally, the past covariates corresponding to the validation series (must match ``covariates``)
+        val_future_covariates
+            Optionally, the future covariates corresponding to the validation series (must match ``covariates``)
+        trainer
+            Optionally, a custom PyTorch-Lightning Trainer object to perform training. Using a custom ``trainer`` will
+            override Darts' default trainer.
+        verbose
+            Optionally, whether to print progress.
+        epochs
+            If specified, will train the model for ``epochs`` (additional) epochs, irrespective of what ``n_epochs``
+            was provided to the model constructor.
+        max_samples_per_ts
+            Optionally, a maximum number of samples to use per time series. Models are trained in a supervised fashion
+            by constructing slices of (input, output) examples. On long time series, this can result in unnecessarily
+            large number of training samples. This parameter upper-bounds the number of training samples per time
+            series (taking only the most recent samples in each series). Leaving to None does not apply any
+            upper bound.
+        num_loader_workers
+            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
+            both for the training and validation loaders (if any).
+            A larger number of workers can sometimes increase performance, but can also incur extra overheads
+            and increase memory usage, as more batches are loaded in parallel.
         min_lr
             minimum learning rate to investigate
         max_lr
@@ -1018,24 +1097,27 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         lr_finder
             `_LRFinder` object of Lightning containing the results of the LR sweep.
         """
-        raise_if_not(
-            self._fit_called,
-            "The model is not yet initialized properly"
-            "Please call model.fit(...,setup_only=True)"
-            "before executing this call!",
-        )
 
-        train_dataloader = (
-            self.train_loader
-        )  # self.trainer._data_connector._train_dataloader_source.instance
-        val_dataloader = (
-            self.val_loader
-        )  # self.trainer._data_connector._val_dataloader_source.instance
+        train_loader, val_loader = self._setup_fit_from_dataset(
+            *self._setup_fit(
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                val_series=val_series,
+                val_past_covariates=val_past_covariates,
+                val_future_covariates=val_future_covariates,
+                trainer=trainer,
+                verbose=verbose,
+                epochs=epochs,
+                max_samples_per_ts=max_samples_per_ts,
+                num_loader_workers=num_loader_workers,
+            )
+        )
 
         lr_finder = self.trainer.tuner.lr_find(
             self.model,
-            train_dataloaders=train_dataloader,
-            val_dataloaders=val_dataloader,
+            train_dataloaders=train_loader,
+            val_dataloaders=val_loader,
             method="fit",
             min_lr=min_lr,
             max_lr=max_lr,
