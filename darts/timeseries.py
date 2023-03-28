@@ -268,6 +268,12 @@ class TimeSeries:
             # pre-compute grouping informations
             components_set = set(self.components)
             children = set(hierarchy.keys())
+
+            # convert string ancestors to list of strings
+            hierarchy = {
+                k: ([v] if isinstance(v, str) else v) for k, v in hierarchy.items()
+            }
+
             raise_if_not(
                 all(c in components_set for c in children),
                 "The keys of the hierarchy must be time series components",
@@ -2847,11 +2853,14 @@ class TimeSeries:
                 self._xa.values,
                 dims=self._xa.dims,
                 coords=self._xa.coords,
-                attrs={STATIC_COV_TAG: covariates, HIERARCHY_TAG: self.hierarchy},
+                attrs={
+                    STATIC_COV_TAG: covariates,
+                    HIERARCHY_TAG: self.hierarchy,
+                },
             )
         )
 
-    def with_hierarchy(self, hierarchy: Dict):
+    def with_hierarchy(self, hierarchy: Dict[str, Union[str, List[str]]]):
         """
         Adds a hierarchy to the TimeSeries.
 
@@ -2859,6 +2868,7 @@ class TimeSeries:
         ----------
         hierarchy
             A dictionary mapping components to a list of their parent(s) in the hierarchy.
+            Single parents may be specified as string or list containing one string.
             For example, assume the series contains the components
             ``["total", "a", "b", "x", "y", "ax", "ay", "bx", "by"]``,
             the following dictionary would encode the groupings shown on
@@ -2873,9 +2883,10 @@ class TimeSeries:
                              'by': ['b', 'y'],
                              'a': ['total'],
                              'b': ['total'],
-                             'x': ['total'],
-                             'y': ['total']}
+                             'x': 'total',  # or use a single string
+                             'y': 'total'}
             ..
+
 
         """
 
