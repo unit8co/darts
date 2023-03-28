@@ -35,7 +35,10 @@ from sklearn.linear_model import LinearRegression
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
-from darts.utils.data.tabularization import create_lagged_training_data
+from darts.utils.data.tabularization import (
+    create_lagged_components_names,
+    create_lagged_training_data,
+)
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import (
     _check_quantiles,
@@ -356,6 +359,32 @@ class RegressionModel(GlobalForecastingModel):
 
         return training_samples, training_labels
 
+    def _create_lagged_components_name(
+        self, target_series, past_covariates, future_covariates
+    ):
+        lags = self.lags.get("target")
+        lags_past_covariates = self.lags.get("past")
+        lags_future_covariates = self.lags.get("future")
+
+        features_cols_name, labels_cols_name = create_lagged_components_names(
+            target_series=target_series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            lags=lags,
+            lags_past_covariates=lags_past_covariates,
+            lags_future_covariates=lags_future_covariates,
+            output_chunk_length=self.output_chunk_length,
+            concatenate=False,
+        )
+
+        # adding the static covariates on the right of each features_cols_name
+        features_cols_name = self._add_static_covariates_name(
+            features_cols_name,
+            target_series,
+        )
+
+        return features_cols_name, labels_cols_name
+
     def _add_static_covariates(
         self,
         features: Union[np.array, Sequence[np.array]],
@@ -443,6 +472,41 @@ class RegressionModel(GlobalForecastingModel):
             features = features[0]
         return features
 
+    def _add_static_covariates_name(
+        self,
+        features_cols_name: List[List[str]],
+        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+    ) -> Union[np.array, Sequence[np.array]]:
+        """
+        Add static covariates names to the features name for RegressionModels.
+        Accounts for series with potentially different static covariates to accomodate for the maximum
+        number of available static_covariates in any of the given series in the sequence.
+
+        Parameters
+        ----------
+        features_cols_name
+            The name of the features of the numpy array(s) to which the static covariates will be added, generated with
+            `create_lagged_components_names()`
+        target_series
+            The target series from which to read the static covariates.
+
+        Returns
+        -------
+        features_cols_name
+            The features' name list with appended static covariates names on the right.
+        """
+        target_series = series2seq(target_series)
+
+        # collect static covariates info
+        static_covs_names = []
+        for ts in target_series:
+            if ts.has_static_covariates:
+                static_covs_names += list(ts.static_covariates.keys())
+
+        return [
+            feat_cols_name + static_covs_names for feat_cols_name in features_cols_name
+        ]
+
     def _fit_model(
         self,
         target_series,
@@ -467,6 +531,14 @@ class RegressionModel(GlobalForecastingModel):
         if len(training_labels.shape) == 2 and training_labels.shape[1] == 1:
             training_labels = training_labels.ravel()
         self.model.fit(training_samples, training_labels, **kwargs)
+
+        # generate and store the lagged components names (for feature importance analysis)
+        lagged_features_names, _ = self._create_lagged_components_name(
+            target_series=target_series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+        self.model.lagged_features_name_ = lagged_features_names
 
     def fit(
         self,
