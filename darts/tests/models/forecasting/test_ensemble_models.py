@@ -57,6 +57,29 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         new_model = model_ens.untrained_model()
         assert not new_model.models[0]._fit_called
 
+    def test_extreme_lag_inference(self):
+        ensemble = NaiveEnsembleModel([NaiveDrift()])
+        assert ensemble.extreme_lags == (
+            -1,
+            1,
+            None,
+            None,
+            None,
+        )  # test if default is okay
+
+        model1 = LinearRegressionModel(
+            lags=3, lags_past_covariates=[-3, -5], lags_future_covariates=[7, 8]
+        )
+        model2 = LinearRegressionModel(
+            lags=5, lags_past_covariates=6, lags_future_covariates=[6, 9]
+        )
+
+        ensemble = NaiveEnsembleModel(
+            [model1, model2]
+        )  # test if infers extreme lags is okay
+        expected = (-5, 1, -6, 6, 9)
+        assert expected == ensemble.extreme_lags
+
     def test_input_models_local_models(self):
         with self.assertRaises(ValueError):
             NaiveEnsembleModel([])

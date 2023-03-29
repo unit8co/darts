@@ -200,9 +200,9 @@ class EnsembleModel(GlobalForecastingModel):
     @property
     def extreme_lags(self):
         lag_aggregators = (min, max, min, min, max)
-        return [
+        return tuple(
             self._find_max_lag_or_none(i, agg) for i, agg in enumerate(lag_aggregators)
-        ]
+        )
 
     def _find_max_lag_or_none(self, lag_id, aggregator):
         max_lag = None
