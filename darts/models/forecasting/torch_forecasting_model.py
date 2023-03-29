@@ -861,7 +861,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Training is performed with a PyTorch Lightning Trainer. It uses a default Trainer object from presets and
         ``pl_trainer_kwargs`` used at model creation. You can also use a custom Trainer with optional parameter
         ``trainer``. For more information on PyTorch Lightning Trainers check out `this link
-        <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ .
+        <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_.
 
         This function can be called several times to do some extra training. If ``epochs`` is specified, the model
         will be trained for some (extra) ``epochs`` epochs.
@@ -1046,6 +1046,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.model = model
         self.trainer = trainer
 
+    @random_method
     def lr_find(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -1066,10 +1067,38 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         early_stop_threshold: float = 4.0,
     ):
         """
-        Helper function to access `lr_find()` method of a PyTorch Lightning Trainer, which according to the
-        documentation 'Enables the user to do a range test of good initial learning rates, to reduce the amount of
-        guesswork in picking a good starting learning rate.' For more information on PyTorch Lightning's Tuner check out
-        `this link <https://pytorch-lightning.readthedocs.io/en/stable/api/pytorch_lightning.tuner.tuning.Tuner.html`_
+        A wrapper around PyTorch Lightning's `Tuner.lr_find()`. Performs a range test of good initial learning rates,
+        to reduce the amount of guesswork in picking a good starting learning rate. For more information on PyTorch
+        Lightning's Tuner check out
+        `this link <https://pytorch-lightning.readthedocs.io/en/stable/api/pytorch_lightning.tuner.tuning.Tuner.html>`_.
+        It is recommended to increase the number of `epochs` if the tuner did not give satisfactory results.
+        Consider creating a new model object with the suggested learning rate for example using model creation
+        parameters `optimizer_cls`, `optimizer_kwards`, `lr_scheduler_cls`, and `lr_scheduler_kwargs`.
+
+        Example using a :class:`RNNModel`:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                import torch
+                from darts.datasets import AirPassengersDataset
+                from darts.models import NBEATSModel
+
+                series = AirPassengersDataset().load()
+                model = NBEATSModel(input_chunk_length=12, output_chunk_length=6, random_state=42)
+                # run the learning rate tuner
+                results = model.lr_find(series)
+                # plot the results
+                results.plot(suggest=True, show=True)
+                # create a new model with the suggested learning rate
+                model = NBEATSModel(
+                    input_chunk_length=12,
+                    output_chunk_length=6,
+                    random_state=42,
+                    optimizer_cls=torch.optim.Adam,
+                    optimizer_kwargs={"lr": results.suggestion()}
+                )
+            ..
 
         Parameters
         ----------
@@ -1119,7 +1148,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Threshold for stopping the search. If the loss at any point is larger
             than early_stop_threshold*best_loss then the search is stopped.
             To disable, set to `None`
-
 
         Returns
         -------

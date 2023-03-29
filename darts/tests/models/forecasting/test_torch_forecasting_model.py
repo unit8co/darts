@@ -3,7 +3,9 @@ import shutil
 import tempfile
 from unittest.mock import patch
 
+import numpy as np
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.logging import get_logger
@@ -14,6 +16,7 @@ logger = get_logger(__name__)
 
 try:
     import torch
+    from pytorch_lightning.tuner.lr_finder import _LRFinder
     from torchmetrics import (
         MeanAbsoluteError,
         MeanAbsolutePercentageError,
@@ -590,3 +593,45 @@ if TORCH_AVAILABLE:
                     12, "RNN", 10, 10, n_epochs=1, torch_metrics=torch_metrics
                 )
                 model.fit(self.series)
+
+        @pytest.mark.slow
+        def test_lr_find(self):
+            train_series, val_series = self.series[:-40], self.series[-40:]
+            model = RNNModel(12, "RNN", 10, 10, random_state=42)
+            # find the learining rate
+            res = model.lr_find(series=train_series, val_series=val_series, epochs=50)
+            assert isinstance(res, _LRFinder)
+            assert res.suggestion() is not None
+            res.plot(suggest=True, show=True)
+            # verify that learning rate finder bypasses the `fit` logic
+            assert model.model is None
+            assert not model._fit_called
+            # cannot predict with an untrained model
+            with pytest.raises(ValueError):
+                model.predict(n=3, series=self.series)
+
+            # check that results are reproducible
+            model = RNNModel(12, "RNN", 10, 10, random_state=42)
+            res2 = model.lr_find(series=train_series, val_series=val_series, epochs=50)
+            assert res.suggestion() == res2.suggestion()
+
+            # check that suggested learning rate is better than the worst
+            lr_worst = res.results["lr"][np.argmax(res.results["loss"])]
+            lr_suggested = res.suggestion()
+            scores = {}
+            for lr, lr_name in zip([lr_worst, lr_suggested], ["worst", "suggested"]):
+                model = RNNModel(
+                    12,
+                    "RNN",
+                    10,
+                    10,
+                    n_epochs=10,
+                    random_state=42,
+                    optimizer_cls=torch.optim.Adam,
+                    optimizer_kwargs={"lr": lr},
+                )
+                model.fit(train_series)
+                scores[lr_name] = mape(
+                    val_series, model.predict(len(val_series), series=train_series)
+                )
+            assert scores["worst"] > scores["suggested"]
