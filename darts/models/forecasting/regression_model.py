@@ -497,11 +497,13 @@ class RegressionModel(GlobalForecastingModel):
         """
         target_series = series2seq(target_series)
 
-        # collect static covariates info
+        # collect static covariates info, preserve the order
         static_covs_names = []
         for ts in target_series:
             if ts.has_static_covariates:
-                static_covs_names += list(ts.static_covariates.keys())
+                for static_cov_name in ts.static_covariates.keys():
+                    if static_cov_name not in static_covs_names:
+                        static_covs_names.append(static_cov_name)
 
         return [
             feat_cols_name + static_covs_names for feat_cols_name in features_cols_name

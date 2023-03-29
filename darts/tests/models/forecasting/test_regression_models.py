@@ -960,7 +960,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         )
         # Take only last sample:
         expected_X_pred = expected_X_pred[-1, :].reshape(1, -1)
-        # Number of static covss to add = difference in width between feature
+        # Number of static covs to add = difference in width between feature
         # matrix *with* static covs and feature matrix *without* static covs:
         scov_width = expected_X.shape[1] - expected_X_pred.shape[1]
         zeros_scovs = np.zeros((1, scov_width))
@@ -1156,6 +1156,21 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         pred_no_static_cov = model_no_static_cov.predict(
             n=period, series=fitting_series
         )
+        expected_features_in = [
+            [f"lag_{str(-i)}_smooth" for i in range(period // 2, 0, -1)],
+            [f"lag_{str(-i)}_irregular" for i in range(period // 2, 0, -1)],
+        ]
+        self.assertEqual(
+            model_no_static_cov.model.lagged_features_name_, expected_features_in
+        )
+        self.assertEqual(
+            len(model_no_static_cov.model.feature_importances_),
+            len(expected_features_in[0]),
+        )
+        self.assertEqual(
+            len(model_no_static_cov.model.feature_importances_),
+            len(expected_features_in[1]),
+        )
 
         fitting_series = [
             train_series_static_cov[0][: (60 - period)],
@@ -1163,6 +1178,26 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         ]
         model_static_cov = RandomForest(lags=period // 2, bootstrap=False)
         model_static_cov.fit(fitting_series)
+
+        series_static_cov_names = ["curve_type"]
+        expected_features_in = [
+            [f"lag_{str(-i)}_smooth" for i in range(period // 2, 0, -1)]
+            + series_static_cov_names,
+            [f"lag_{str(-i)}_irregular" for i in range(period // 2, 0, -1)]
+            + series_static_cov_names,
+        ]
+        self.assertEqual(
+            model_static_cov.model.lagged_features_name_, expected_features_in
+        )
+        self.assertEqual(
+            len(model_static_cov.model.feature_importances_),
+            len(expected_features_in[0]),
+        )
+        self.assertEqual(
+            len(model_static_cov.model.feature_importances_),
+            len(expected_features_in[1]),
+        )
+
         pred_static_cov = model_static_cov.predict(n=period, series=fitting_series)
 
         # then
