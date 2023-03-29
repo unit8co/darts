@@ -30,9 +30,6 @@ class NaiveMean(LocalForecastingModel):
         super().__init__()
         self.mean_val = None
 
-    def __str__(self):
-        return "Naive mean predictor model"
-
     def fit(self, series: TimeSeries):
         super().fit(series)
 
@@ -66,9 +63,6 @@ class NaiveSeasonal(LocalForecastingModel):
     def min_train_series_length(self):
         return max(self.K, 3)
 
-    def __str__(self):
-        return f"Naive seasonal model, with K={self.K}"
-
     def fit(self, series: TimeSeries):
         super().fit(series)
 
@@ -100,9 +94,6 @@ class NaiveDrift(LocalForecastingModel):
         .. math:: \\hat{y}_{T+h} = y_T + h\\left( \\frac{y_T - y_1}{T - 1} \\right)
         """
         super().__init__()
-
-    def __str__(self):
-        return "Naive drift model"
 
     def fit(self, series: TimeSeries):
         super().fit(series)
@@ -215,16 +206,12 @@ class NaiveEnsembleModel(EnsembleModel):
         predictions: Union[TimeSeries, Sequence[TimeSeries]],
         series: Optional[Sequence[TimeSeries]] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        def take_average(prediction: TimeSeries) -> TimeSeries:
+            series = prediction.pd_dataframe(copy=False).sum(axis=1) / len(self.models)
+            series.name = prediction.components[0]
+            return TimeSeries.from_series(series)
+
         if isinstance(predictions, Sequence):
-            return [
-                TimeSeries.from_series(
-                    p.pd_dataframe(copy=False).sum(axis=1) / len(self.models),
-                    static_covariates=p.static_covariates,
-                )
-                for p in predictions
-            ]
+            return [take_average(p) for p in predictions]
         else:
-            return TimeSeries.from_series(
-                predictions.pd_dataframe(copy=False).sum(axis=1) / len(self.models),
-                static_covariates=predictions.static_covariates,
-            )
+            return take_average(predictions)
