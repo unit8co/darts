@@ -353,8 +353,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # pl_module_params must be set in __init__ method of TorchForecastingModel subclass
         self.pl_module_params: Optional[dict] = None
-        self.train_loader = None
-        self.val_loader = None
 
     @classmethod
     def _validate_model_params(cls, **kwargs):
@@ -702,6 +700,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             max_samples_per_ts=max_samples_per_ts,
             num_loader_workers=num_loader_workers,
         )
+        # call super fit only if user is actually fitting the model
         super().fit(
             series=seq2series(series),
             past_covariates=seq2series(past_covariates),
@@ -730,8 +729,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         int,
         int,
     ]:
-        """This method acts on TimeSeries inputs, performs sanity checks, and sets up / returns the datasets for
-        training the model with `fit_from_dataset()`.
+        """This method acts on `TimeSeries` inputs. It performs sanity checks, and sets up / returns the datasets and
+        additional inputs required for training the model with `fit_from_dataset()`.
         """
         # guarantee that all inputs are either list of `TimeSeries` or `None`
         series = series2seq(series)
@@ -914,8 +913,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         epochs: int = 0,
         num_loader_workers: int = 0,
     ) -> Tuple[pl.Trainer, PLForecastingModule, DataLoader, Optional[DataLoader]]:
-        """This method acts on `TrainingDataset` inputs, performs sanity checks, and sets up / returns the trainer,
-        model, and dataset loaders for training the model with `_train()`.
+        """This method acts on `TrainingDataset` inputs. It performs sanity checks, and sets up / returns the trainer,
+        model, and dataset loaders required for training the model with `_train()`.
         """
         self._verify_train_dataset_type(train_dataset)
 
