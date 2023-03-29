@@ -573,14 +573,16 @@ def create_lagged_components_names(
         tabularization.create_lagged_data : generate the lagged features and labels as (list of) Arrays.
     """
     target_series = (
-        [target_series] if not isinstance(target_series, List) else target_series
+        [target_series] if not isinstance(target_series, Sequence) else target_series
     )
     past_covariates = (
-        [past_covariates] if not isinstance(past_covariates, List) else past_covariates
+        [past_covariates]
+        if not isinstance(past_covariates, Sequence)
+        else past_covariates
     )
     future_covariates = (
         [future_covariates]
-        if not isinstance(future_covariates, List)
+        if not isinstance(future_covariates, Sequence)
         else future_covariates
     )
 
