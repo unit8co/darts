@@ -602,7 +602,6 @@ if TORCH_AVAILABLE:
             res = model.lr_find(series=train_series, val_series=val_series, epochs=50)
             assert isinstance(res, _LRFinder)
             assert res.suggestion() is not None
-            res.plot(suggest=True, show=True)
             # verify that learning rate finder bypasses the `fit` logic
             assert model.model is None
             assert not model._fit_called
