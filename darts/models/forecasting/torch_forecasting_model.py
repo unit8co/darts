@@ -32,7 +32,6 @@ import pandas as pd
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning import loggers as pl_loggers
-from pytorch_lightning.tuner import Tuner
 from torch import Tensor
 from torch.utils.data import DataLoader
 
@@ -76,6 +75,16 @@ from darts.utils.likelihood_models import Likelihood
 from darts.utils.torch import random_method
 from darts.utils.utils import seq2series, series2seq
 
+# Check whether we are running pytorch-lightning >= 2.0.0 or not:
+tokens = pl.__version__.split(".")
+pl_200_or_above = int(tokens[0]) >= 2
+
+if pl_200_or_above:
+    from pytorch_lightning.tuner import Tuner
+else:
+    from pytorch_lightning.tuner.tuning import Tuner
+
+
 DEFAULT_DARTS_FOLDER = "darts_logs"
 CHECKPOINTS_FOLDER = "checkpoints"
 RUNS_FOLDER = "runs"
@@ -86,10 +95,6 @@ INIT_MODEL_NAME = "_model.pth.tar"
 TFM_ATTRS_NO_PICKLE = {"model": None, "trainer": None}
 
 logger = get_logger(__name__)
-
-# Check whether we are running pytorch-lightning >= 2.0.0 or not:
-tokens = pl.__version__.split(".")
-pl_200_or_above = int(tokens[0]) >= 2
 
 
 def _get_checkpoint_folder(work_dir, model_name):
