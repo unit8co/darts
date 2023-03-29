@@ -1073,7 +1073,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         `this link <https://pytorch-lightning.readthedocs.io/en/stable/api/pytorch_lightning.tuner.tuning.Tuner.html>`_.
         It is recommended to increase the number of `epochs` if the tuner did not give satisfactory results.
         Consider creating a new model object with the suggested learning rate for example using model creation
-        parameters `optimizer_cls`, `optimizer_kwards`, `lr_scheduler_cls`, and `lr_scheduler_kwargs`.
+        parameters `optimizer_cls`, `optimizer_kwargs`, `lr_scheduler_cls`, and `lr_scheduler_kwargs`.
 
         Example using a :class:`RNNModel`:
 
@@ -1085,9 +1085,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 from darts.models import NBEATSModel
 
                 series = AirPassengersDataset().load()
+                train, val = series[:-18], series[-18:]
                 model = NBEATSModel(input_chunk_length=12, output_chunk_length=6, random_state=42)
                 # run the learning rate tuner
-                results = model.lr_find(series)
+                results = model.lr_find(series=train, val_series=val)
                 # plot the results
                 results.plot(suggest=True, show=True)
                 # create a new model with the suggested learning rate
