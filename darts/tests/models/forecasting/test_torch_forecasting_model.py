@@ -598,7 +598,7 @@ if TORCH_AVAILABLE:
         def test_lr_find(self):
             train_series, val_series = self.series[:-40], self.series[-40:]
             model = RNNModel(12, "RNN", 10, 10, random_state=42)
-            # find the learining rate
+            # find the learning rate
             res = model.lr_find(series=train_series, val_series=val_series, epochs=50)
             assert isinstance(res, _LRFinder)
             assert res.suggestion() is not None
