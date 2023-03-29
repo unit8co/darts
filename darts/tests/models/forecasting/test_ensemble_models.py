@@ -98,7 +98,8 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         with self.assertRaises(Exception):
             naive_ensemble.predict(5)
         naive_ensemble.fit(self.series1)
-        naive_ensemble.predict(5)
+        pred1 = naive_ensemble.predict(5)
+        assert self.series1.components == pred1.components
 
     def test_call_backtest_local_models(self):
         naive_ensemble = NaiveEnsembleModel([NaiveSeasonal(5), Theta(2, 5)])

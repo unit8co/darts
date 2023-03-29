@@ -16,13 +16,16 @@ import lightgbm as lgb
 import numpy as np
 
 from darts.logging import get_logger
-from darts.models.forecasting.regression_model import RegressionModel, _LikelihoodMixin
+from darts.models.forecasting.regression_model import (
+    RegressionModelWithCategoricalCovariates,
+    _LikelihoodMixin,
+)
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
-class LightGBMModel(RegressionModel, _LikelihoodMixin):
+class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
     def __init__(
         self,
         lags: Union[int, list] = None,
@@ -34,6 +37,9 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
         quantiles: List[float] = None,
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
+        categorical_past_covariates: Optional[Union[str, List[str]]] = None,
+        categorical_future_covariates: Optional[Union[str, List[str]]] = None,
+        categorical_static_covariates: Optional[Union[str, List[str]]] = None,
         **kwargs,
     ):
         """LGBM Model
@@ -87,6 +93,20 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
+        categorical_past_covariates
+            Optionally, component name or list of component names specifying the past covariates that should be treated
+            as categorical by the underlying `lightgbm.LightGBMRegressor`. It's recommended that the components that
+            are treated as categorical are integer-encoded. For more information on how LightGBM handles categorical
+            features, visit: `Categorical feature support documentation
+            <https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`_
+        categorical_future_covariates
+            Optionally, component name or list of component names specifying the future covariates that should be
+            treated as categorical by the underlying `lightgbm.LightGBMRegressor`. It's recommended that the components
+            that are treated as categorical are integer-encoded.
+        categorical_static_covariates
+            Optionally, string or list of strings specifying the static covariates that should be treated as categorical
+            by the underlying `lightgbm.LightGBMRegressor`. It's recommended that the static covariates that are
+            treated as categorical are integer-encoded.
         **kwargs
             Additional keyword arguments passed to `lightgbm.LGBRegressor`.
         """
@@ -117,12 +137,10 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
             add_encoders=add_encoders,
             multi_models=multi_models,
             model=lgb.LGBMRegressor(**self.kwargs),
+            categorical_past_covariates=categorical_past_covariates,
+            categorical_future_covariates=categorical_future_covariates,
+            categorical_static_covariates=categorical_static_covariates,
         )
-
-    def __str__(self):
-        if self.likelihood:
-            return f"LGBModel(lags={self.lags}, likelihood={self.likelihood})"
-        return f"LGBModel(lags={self.lags})"
 
     def fit(
         self,
@@ -162,7 +180,6 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
          **kwargs
             Additional kwargs passed to `lightgbm.LGBRegressor.fit()`
         """
-
         if val_series is not None:
             kwargs["eval_set"] = self._create_lagged_data(
                 target_series=val_series,
