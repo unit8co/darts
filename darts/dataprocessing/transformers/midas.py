@@ -2,16 +2,15 @@
 Mixed-data sampling (MIDAS) Transformer
 ------------------
 """
-from typing import Iterator, Sequence, Tuple, Union
+from typing import Any, Mapping
 
 import numpy as np
 import pandas as pd
-from pandas import DateOffset, DatetimeIndex, Timedelta
+from pandas import DatetimeIndex
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.logging import get_logger, raise_log
-from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
 
@@ -85,25 +84,12 @@ class MIDAS(BaseDataTransformer):
         ----------
         .. [1] https://en.wikipedia.org/wiki/Mixed-data_sampling
         """
+        self._rule = rule
+        self._strip = strip
         super().__init__(name, n_jobs, verbose)
-        self.rule = rule
-        self.strip = strip
-
-    def _transform_iterator(
-        self, series: Sequence[TimeSeries]
-    ) -> Iterator[Tuple[TimeSeries]]:
-
-        series = series2seq(series)
-
-        for s in series:
-            yield s, self.rule, self.strip
 
     @staticmethod
-    def ts_transform(
-        series: TimeSeries,
-        rule: Union[DateOffset, Timedelta, str],
-        strip: bool = True,
-    ) -> TimeSeries:
+    def ts_transform(series: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
         """
         Transforms series from high to low frequency using a mixed-data sampling approach. Uses and relies on
         pandas.DataFrame.resample.
@@ -115,6 +101,7 @@ class MIDAS(BaseDataTransformer):
             (4) Transform every column of the high frequency series into multiple columns for the low frequency series
             (5) Transform the low frequency series back into a TimeSeries
         """
+        rule, strip = params["fixed"]["_rule"], params["fixed"]["_strip"]
         high_freq_datetime = series.freq_str
 
         # TimeSeries to pd.DataFrame
