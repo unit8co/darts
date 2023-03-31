@@ -460,3 +460,25 @@ def drop_after_index(
     """
 
     return slice_index(index, index[0], split_point)
+
+
+def get_single_series(
+    ts: Optional[Union[TimeSeries, Sequence[TimeSeries]]]
+) -> Optional[TimeSeries]:
+    """Returns a single (first) TimeSeries or `None` from `ts`. Returns `ts` if  `ts` is a TimeSeries, `ts[0]` if
+    `ts` is a Sequence of TimeSeries. Otherwise, returns `None`.
+
+    Parameters
+    ----------
+    ts
+        None, a single TimeSeries, or a sequence of TimeSeries.
+
+    Returns
+    -------
+        `ts` if  `ts` is a TimeSeries, `ts[0]` if `ts` is a Sequence of TimeSeries. Otherwise, returns `None`
+
+    """
+    if isinstance(ts, TimeSeries) or ts is None:
+        return ts
+    else:
+        return ts[0]
