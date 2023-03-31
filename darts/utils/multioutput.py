@@ -1,9 +1,8 @@
-from joblib import Parallel
 from sklearn.base import is_classifier
 from sklearn.multioutput import MultiOutputRegressor as sk_MultiOutputRegressor
 from sklearn.multioutput import _fit_estimator
-from sklearn.utils.fixes import delayed
 from sklearn.utils.multiclass import check_classification_targets
+from sklearn.utils.parallel import Parallel, delayed
 from sklearn.utils.validation import _check_fit_params, has_fit_parameter
 
 
