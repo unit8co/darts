@@ -1623,8 +1623,68 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def _assert_univariate(self, series: TimeSeries):
         if not series.is_univariate:
             raise_log(
-                ValueError("This model only supports univariate TimeSeries instances")
+                ValueError(
+                    f"Model `{self.__class__.__name__}` only supports univariate TimeSeries instances"
+                ),
+                logger=logger,
             )
+
+    def _assert_multivariate(self, series: TimeSeries):
+        if series.is_univariate:
+            raise_log(
+                ValueError(
+                    f"Model `{self.__class__.__name__}` only supports multivariate TimeSeries instances"
+                ),
+                logger=logger,
+            )
+
+    def __repr__(self):
+        """
+        Get full description for this estimator (includes all params).
+        """
+        return self._get_model_description_string(True)
+
+    def __str__(self):
+        """
+        Get short description for this estimator (only includes params with non-default values).
+        """
+        return self._get_model_description_string(False)
+
+    def _get_model_description_string(self, include_default_params):
+        """
+        Get model description string of structure `model_name`(`model_param_key_value_pairs`).
+
+        Parameters
+        ----------
+        include_default_params : bool,
+            If True, will include params with default values in the description.
+
+        Returns
+        -------
+        description : String
+            Model description.
+        """
+        default_model_params = self._get_default_model_params()
+        changed_model_params = [
+            (k, v)
+            for k, v in self.model_params.items()
+            if include_default_params or v != default_model_params.get(k, None)
+        ]
+
+        model_name = self.__class__.__name__
+        params_string = ", ".join([f"{k}={str(v)}" for k, v in changed_model_params])
+        return f"{model_name}({params_string})"
+
+    @classmethod
+    def _get_default_model_params(cls):
+        """Get parameter key : default_value pairs for the estimator"""
+        init_signature = inspect.signature(cls.__init__)
+        # Consider the constructor parameters excluding 'self'
+        return {
+            p.name: p.default
+            for p in init_signature.parameters.values()
+            if p.name != "self"
+        }
 
 
 class LocalForecastingModel(ForecastingModel, ABC):
