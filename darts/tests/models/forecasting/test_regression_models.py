@@ -2338,8 +2338,12 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
         # Check that mocked super.fit() method was called with correct categorical_feature argument
         args, kwargs = lgb_fit_patch.call_args
+        (
+            cat_praam_name,
+            cat_param_default,
+        ) = self.lgbm_w_categorical_covariates._categorical_fit_param
         self.assertEqual(
-            kwargs[self.lgbm_w_categorical_covariates._categorical_fit_param_name],
+            kwargs[cat_praam_name],
             [2, 3, 5],
         )
 
