@@ -371,7 +371,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     def _get_historical_forecastable_time_index(
         self,
-        series: Optional[TimeSeries] = None,
+        series: TimeSeries,
         past_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         is_training: Optional[bool] = False,
@@ -392,7 +392,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Parameters
         ----------
         series
-            Optionally, a target series.
+            A target series.
         past_covariates
             Optionally, a past covariates.
         future_covariates
@@ -440,20 +440,19 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             max_future_cov_lag,
         ) = self.extreme_lags
 
-        intersect_ = None
+        if min_target_lag is None:
+            min_target_lag = 0
 
-        # target longest possible time index
-        if (min_target_lag is not None) and (series is not None):
-            intersect_ = generate_index(
-                start=series.start_time()
-                - (min_target_lag - max_target_lag) * series.freq
-                if is_training
-                else series.start_time() - min_target_lag * series.freq,
-                end=series.end_time(),
-                freq=series.freq,
-            )
+        # longest possible time index for target
+        intersect_ = generate_index(
+            start=series.start_time() - (min_target_lag - max_target_lag) * series.freq
+            if is_training
+            else series.start_time() - min_target_lag * series.freq,
+            end=series.end_time(),
+            freq=series.freq,
+        )
 
-        # past covariates longest possible time index
+        # longest possible time index for past covariates
         if (min_past_cov_lag is not None) and (past_covariates is not None):
             tmp_ = generate_index(
                 start=past_covariates.start_time()
@@ -469,7 +468,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             else:
                 intersect_ = tmp_
 
-        # future covariates longest possible time index
+        # longest possible time index for future covariates
         if (min_future_cov_lag is not None) and (future_covariates is not None):
             tmp_ = generate_index(
                 start=future_covariates.start_time()
