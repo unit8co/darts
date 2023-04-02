@@ -448,10 +448,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # longest possible time index for target
         intersect_ = generate_index(
-            start=series.start_time() - (min_target_lag - max_target_lag) * series.freq
+            start=series.start_time()
+            + (max_target_lag - min_target_lag + 1) * series.freq
             if is_training
             else series.start_time() - min_target_lag * series.freq,
-            end=series.end_time(),
+            end=series.end_time() + 1 * series.freq,
             freq=series.freq,
         )
 
@@ -459,7 +460,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if (min_past_cov_lag is not None) and (past_covariates is not None):
             tmp_ = generate_index(
                 start=past_covariates.start_time()
-                - (min_past_cov_lag - max_target_lag) * past_covariates.freq
+                - (min_past_cov_lag - max_target_lag - 1) * past_covariates.freq
                 if is_training
                 else past_covariates.start_time()
                 - min_past_cov_lag * past_covariates.freq,
@@ -476,7 +477,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if (min_future_cov_lag is not None) and (future_covariates is not None):
             tmp_ = generate_index(
                 start=future_covariates.start_time()
-                - (min_future_cov_lag - max_target_lag) * future_covariates.freq
+                - (min_future_cov_lag - max_target_lag - 1) * future_covariates.freq
                 if is_training
                 else future_covariates.start_time()
                 - min_future_cov_lag * future_covariates.freq,
