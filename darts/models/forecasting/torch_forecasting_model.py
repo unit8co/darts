@@ -2100,7 +2100,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
     def extreme_lags(self):
         return (
             -self.input_chunk_length,
-            self.output_chunk_length,
+            self.output_chunk_length - 1,
             -self.input_chunk_length if self.uses_past_covariates else None,
             -1 if self.uses_past_covariates else None,
             None,
@@ -2189,7 +2189,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
     def extreme_lags(self):
         return (
             -self.input_chunk_length,
-            self.output_chunk_length,
+            self.output_chunk_length - 1,
             None,
             None,
             0 if self.uses_future_covariates else None,
@@ -2269,7 +2269,7 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
     def extreme_lags(self):
         return (
             -self.input_chunk_length,
-            self.output_chunk_length,
+            self.output_chunk_length - 1,
             None,
             None,
             -self.input_chunk_length if self.uses_future_covariates else None,
@@ -2346,7 +2346,7 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
     def extreme_lags(self):
         return (
             -self.input_chunk_length,
-            self.output_chunk_length,
+            self.output_chunk_length - 1,
             -self.input_chunk_length if self.uses_past_covariates else None,
             -1 if self.uses_past_covariates else None,
             -self.input_chunk_length if self.uses_future_covariates else None,
@@ -2424,7 +2424,7 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
     def extreme_lags(self):
         return (
             -self.input_chunk_length,
-            self.output_chunk_length,
+            self.output_chunk_length - 1,
             -self.input_chunk_length if self.uses_past_covariates else None,
             -1 if self.uses_past_covariates else None,
             0 if self.uses_future_covariates else None,

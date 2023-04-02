@@ -81,7 +81,7 @@ class NaiveSeasonal(LocalForecastingModel):
 
     @property
     def extreme_lags(self):
-        return -self.K, 1, None, None, None, None
+        return -self.K, 0, None, None, None, None
 
 
 class NaiveDrift(LocalForecastingModel):

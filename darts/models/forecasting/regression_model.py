@@ -276,7 +276,7 @@ class RegressionModel(GlobalForecastingModel):
     @property
     def extreme_lags(self):
         min_target_lag = self.lags.get("target")[0] if "target" in self.lags else None
-        max_target_lag = self.output_chunk_length
+        max_target_lag = self.output_chunk_length - 1
         min_past_cov_lag = self.lags.get("past")[0] if "past" in self.lags else None
         max_past_cov_lag = self.lags.get("past")[-1] if "past" in self.lags else None
         min_future_cov_lag = (

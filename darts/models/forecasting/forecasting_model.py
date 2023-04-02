@@ -343,8 +343,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         ) = self.extreme_lags
 
         return max(
-            max_target_lag,
-            max_future_cov_lag if max_future_cov_lag else 0,
+            max_target_lag + 1,
+            max_future_cov_lag + 1 if max_future_cov_lag else 0,
         ) - min(
             min_target_lag if min_target_lag else 0,
             min_past_cov_lag if min_past_cov_lag else 0,
@@ -354,9 +354,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     @property
     def _predict_sample_time_index_length(self) -> int:
         """
-        Required time_index length for one predict sample, for any model.
-         A predict sample is the minimum required set of series and covariates chunks to be able to predict
-         a single point.
+        Required time_index length for one `predict` function call, for any model.
         """
         (
             min_target_lag,
@@ -367,7 +365,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             max_future_cov_lag,
         ) = self.extreme_lags
 
-        return (max_future_cov_lag if max_future_cov_lag else 0) - min(
+        return (max_future_cov_lag + 1 if max_future_cov_lag else 0) - min(
             min_target_lag if min_target_lag else 0,
             min_past_cov_lag if min_past_cov_lag else 0,
             min_future_cov_lag if min_future_cov_lag else 0,
@@ -2305,4 +2303,4 @@ class TransferableFutureCovariatesLocalForecastingModel(
 
     @property
     def extreme_lags(self):
-        return -1, 1, None, None, 0, 0
+        return -1, 0, None, None, 0, 0
