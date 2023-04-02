@@ -301,7 +301,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         Notes
         -----
-        maximum target lag (second value) cannot be `None` and is always larger or equal than 0.
+        maximum target lag (second value) cannot be `None` and is always larger than or equal to 0.
         Examples
         --------
         >>> model = LinearRegressionModel(lags=3, output_chunk_length=2)
