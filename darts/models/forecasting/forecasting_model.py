@@ -278,52 +278,54 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Optional[int],
         Optional[int],
         Optional[int],
+        Optional[int],
     ]:
         """
-        A 5-tuple containing in order:
-        (minimum target lag, maximum target lag, min past covariate lag, min future covariate lag, max future covariate
-        lag). If 0 is the index of the first prediction, then all lags are relative to this index, except for the
-        maximum target lag, which is relative to the last element of the time series before the first prediction.
+        A 6-tuple containing in order:
+        (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate
+        lag, max future covariate lag). If 0 is the index of the first prediction, then all lags are relative to this
+        index.
+
         See examples below.
 
         If the model wasn't fitted with:
-            - target lag (concerning RegressionModels only) the first element should be `None`.
+            - target (concerning RegressionModels only): then the first element should be `None`.
 
-            - past covariates, the third element should be `None`.
+            - past covariates: then the third and fourth elements should be `None`.
 
-            - future covariates, the fourth and fifth elements should be `None`.
+            - future covariates: then the fifth and sixth elements should be `None`.
 
         Should be overridden by models that use past or future covariates, and/or for model that have minimum target
-        lag and maximum target lags potentially different from -1 and 1.
+        lag and maximum target lags potentially different from -1 and 0.
 
         Notes
         -----
-        maximum target lag (second value) cannot be `None` and is always larger than 1.
+        maximum target lag (second value) cannot be `None` and is always larger than or equal to 0.
         Examples
         --------
         >>> model = LinearRegressionModel(lags=3, output_chunk_length=2)
         >>> model.fit(train_series)
         >>> model.extreme_lags
-        (-3, 2, None, None, None)
-        >>> model = LinearRegressionModel(lags=[3, 5], past_covariates_lags = 4, output_chunk_length=7)
+        (-3, 1, None, None, None, None)
+        >>> model = LinearRegressionModel(lags=[-3, -5], lags_past_covariates = 4, output_chunk_length=7)
         >>> model.fit(train_series, past_covariates=past_covariates)
         >>> model.extreme_lags
-        (-5, 7, -4, None, None)
-        >>> model = LinearRegressionModel(lags=[3, 5], future_covariates_lags = [4, 6], output_chunk_length=7)
+        (-5, 6, -4, -1,  None, None)
+        >>> model = LinearRegressionModel(lags=[3, 5], lags_future_covariates = [4, 6], output_chunk_length=7)
         >>> model.fit(train_series, future_covariates=future_covariates)
         >>> model.extreme_lags
-        (-5, 7, None, 4, 6)
+        (-5, 6, None, None, 4, 6)
         >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7)
         >>> model.fit(train_series)
         >>> model.extreme_lags
-        (-10, 7, None, None, None)
-        >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7, future_covariates_lags=[4, 6])
+        (-10, 6, None, None, None, None)
+        >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7, lags_future_covariates=[4, 6])
         >>> model.fit(train_series, future_covariates)
         >>> model.extreme_lags
-        (-10, 7, None, 4, 6)
+        (-10, 6, None, None, 4, 6)
         """
 
-        return (-1, 1, None, None, None)
+        return -1, 0, None, None, None, None
 
     @property
     def _training_sample_time_index_length(self) -> int:
@@ -334,13 +336,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             min_target_lag,
             max_target_lag,
             min_past_cov_lag,
+            max_past_cov_lag,
             min_future_cov_lag,
             max_future_cov_lag,
         ) = self.extreme_lags
 
         return max(
-            max_target_lag,
-            max_future_cov_lag if max_future_cov_lag else 0,
+            max_target_lag + 1,
+            max_future_cov_lag + 1 if max_future_cov_lag else 0,
         ) - min(
             min_target_lag if min_target_lag else 0,
             min_past_cov_lag if min_past_cov_lag else 0,
@@ -350,19 +353,18 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     @property
     def _predict_sample_time_index_length(self) -> int:
         """
-        Required time_index length for one predict sample, for any model.
-         A predict sample is the minimum required set of series and covariates chunks to be able to predict
-         a single point.
+        Required time_index length for one `predict` function call, for any model.
         """
         (
             min_target_lag,
             max_target_lag,
             min_past_cov_lag,
+            max_past_cov_lag,
             min_future_cov_lag,
             max_future_cov_lag,
         ) = self.extreme_lags
 
-        return (max_future_cov_lag if max_future_cov_lag else 0) - min(
+        return (max_future_cov_lag + 1 if max_future_cov_lag else 0) - min(
             min_target_lag if min_target_lag else 0,
             min_past_cov_lag if min_past_cov_lag else 0,
             min_future_cov_lag if min_future_cov_lag else 0,
@@ -370,7 +372,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     def _get_historical_forecastable_time_index(
         self,
-        series: Optional[TimeSeries] = None,
+        series: TimeSeries,
         past_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         is_training: Optional[bool] = False,
@@ -391,7 +393,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Parameters
         ----------
         series
-            Optionally, a target series.
+            A target series.
         past_covariates
             Optionally, a past covariates.
         future_covariates
@@ -435,32 +437,34 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             min_target_lag,
             max_target_lag,
             min_past_cov_lag,
+            max_past_cov_lag,
             min_future_cov_lag,
             max_future_cov_lag,
         ) = self.extreme_lags
 
-        intersect_ = None
+        if min_target_lag is None:
+            min_target_lag = 0
 
-        # target longest possible time index
-        if (min_target_lag is not None) and (series is not None):
-            intersect_ = generate_index(
-                start=series.start_time()
-                - (min_target_lag - max_target_lag) * series.freq
-                if is_training
-                else series.start_time() - min_target_lag * series.freq,
-                end=series.end_time(),
-                freq=series.freq,
-            )
+        # longest possible time index for target
+        intersect_ = generate_index(
+            start=series.start_time()
+            + (max_target_lag - min_target_lag + 1) * series.freq
+            if is_training
+            else series.start_time() - min_target_lag * series.freq,
+            end=series.end_time() + 1 * series.freq,
+            freq=series.freq,
+        )
 
-        # past covariates longest possible time index
+        # longest possible time index for past covariates
         if (min_past_cov_lag is not None) and (past_covariates is not None):
             tmp_ = generate_index(
                 start=past_covariates.start_time()
-                - (min_past_cov_lag - max_target_lag) * past_covariates.freq
+                - (min_past_cov_lag - max_target_lag - 1) * past_covariates.freq
                 if is_training
                 else past_covariates.start_time()
                 - min_past_cov_lag * past_covariates.freq,
-                end=past_covariates.end_time(),
+                end=past_covariates.end_time()
+                - max_past_cov_lag * past_covariates.freq,
                 freq=past_covariates.freq,
             )
             if intersect_ is not None:
@@ -468,16 +472,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             else:
                 intersect_ = tmp_
 
-        # future covariates longest possible time index
+        # longest possible time index for future covariates
         if (min_future_cov_lag is not None) and (future_covariates is not None):
             tmp_ = generate_index(
                 start=future_covariates.start_time()
-                - (min_future_cov_lag - max_target_lag) * future_covariates.freq
+                - (min_future_cov_lag - max_target_lag - 1) * future_covariates.freq
                 if is_training
                 else future_covariates.start_time()
                 - min_future_cov_lag * future_covariates.freq,
                 end=future_covariates.end_time()
-                - (max_future_cov_lag - 1) * future_covariates.freq,
+                - max_future_cov_lag * future_covariates.freq,
                 freq=future_covariates.freq,
             )
 
@@ -2383,4 +2387,4 @@ class TransferableFutureCovariatesLocalForecastingModel(
 
     @property
     def extreme_lags(self):
-        return (-1, 1, None, 0, 0)
+        return -1, 0, None, None, 0, 0
