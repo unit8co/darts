@@ -283,48 +283,47 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     ]:
         """
         A 6-tuple containing in order:
-        (minimum target lag, maximum target lag, min past covariate lag, max past covariate lag, min future covariate
+        (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate
         lag, max future covariate lag). If 0 is the index of the first prediction, then all lags are relative to this
-        index, except for the maximum target lag, which is relative to the last element of the time series before the
-        first prediction.
+        index.
 
         See examples below.
 
         If the model wasn't fitted with:
-            - target lag (concerning RegressionModels only) the first element should be `None`.
+            - target (concerning RegressionModels only): then the first element should be `None`.
 
-            - past covariates, the third and fourth elements should be `None`.
+            - past covariates: then the third and fourth elements should be `None`.
 
-            - future covariates, the fifth and sixth elements should be `None`.
+            - future covariates: then the fifth and sixth elements should be `None`.
 
         Should be overridden by models that use past or future covariates, and/or for model that have minimum target
-        lag and maximum target lags potentially different from -1 and 1.
+        lag and maximum target lags potentially different from -1 and 0.
 
         Notes
         -----
-        maximum target lag (second value) cannot be `None` and is always larger than 1.
+        maximum target lag (second value) cannot be `None` and is always larger or equal than 0.
         Examples
         --------
         >>> model = LinearRegressionModel(lags=3, output_chunk_length=2)
         >>> model.fit(train_series)
         >>> model.extreme_lags
-        (-3, 2, None, None, None)
+        (-3, 1, None, None, None)
         >>> model = LinearRegressionModel(lags=[3, 5], past_covariates_lags = 4, output_chunk_length=7)
         >>> model.fit(train_series, past_covariates=past_covariates)
         >>> model.extreme_lags
-        (-5, 7, -4, None, None)
+        (-5, 6, -4, None, None)
         >>> model = LinearRegressionModel(lags=[3, 5], future_covariates_lags = [4, 6], output_chunk_length=7)
         >>> model.fit(train_series, future_covariates=future_covariates)
         >>> model.extreme_lags
-        (-5, 7, None, 4, 6)
+        (-5, 6, None, 4, 6)
         >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7)
         >>> model.fit(train_series)
         >>> model.extreme_lags
-        (-10, 7, None, None, None)
+        (-10, 6, None, None, None)
         >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7, future_covariates_lags=[4, 6])
         >>> model.fit(train_series, future_covariates)
         >>> model.extreme_lags
-        (-10, 7, None, 4, 6)
+        (-10, 6, None, 4, 6)
         """
 
         return -1, 1, None, None, None, None
