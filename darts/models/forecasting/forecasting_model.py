@@ -323,7 +323,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7, lags_future_covariates=[4, 6])
         >>> model.fit(train_series, future_covariates)
         >>> model.extreme_lags
-        (-10, 6,None, None, 4, 6)
+        (-10, 6, None, None, 4, 6)
         """
 
         return -1, 0, None, None, None, None
