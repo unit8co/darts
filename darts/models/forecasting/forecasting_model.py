@@ -326,7 +326,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         (-10, 6, None, 4, 6)
         """
 
-        return -1, 1, None, None, None, None
+        return -1, 0, None, None, None, None
 
     @property
     def _training_sample_time_index_length(self) -> int:
