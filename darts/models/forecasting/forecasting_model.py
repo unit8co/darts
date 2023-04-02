@@ -279,20 +279,23 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Optional[int],
         Optional[int],
         Optional[int],
+        Optional[int],
     ]:
         """
-        A 5-tuple containing in order:
-        (minimum target lag, maximum target lag, min past covariate lag, min future covariate lag, max future covariate
-        lag). If 0 is the index of the first prediction, then all lags are relative to this index, except for the
-        maximum target lag, which is relative to the last element of the time series before the first prediction.
+        A 6-tuple containing in order:
+        (minimum target lag, maximum target lag, min past covariate lag, max past covariate lag, min future covariate
+        lag, max future covariate lag). If 0 is the index of the first prediction, then all lags are relative to this
+        index, except for the maximum target lag, which is relative to the last element of the time series before the
+        first prediction.
+
         See examples below.
 
         If the model wasn't fitted with:
             - target lag (concerning RegressionModels only) the first element should be `None`.
 
-            - past covariates, the third element should be `None`.
+            - past covariates, the third and fourth elements should be `None`.
 
-            - future covariates, the fourth and fifth elements should be `None`.
+            - future covariates, the fifth and sixth elements should be `None`.
 
         Should be overridden by models that use past or future covariates, and/or for model that have minimum target
         lag and maximum target lags potentially different from -1 and 1.
@@ -324,7 +327,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         (-10, 7, None, 4, 6)
         """
 
-        return (-1, 1, None, None, None)
+        return -1, 1, None, None, None, None
 
     @property
     def _training_sample_time_index_length(self) -> int:
@@ -359,6 +362,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             min_target_lag,
             max_target_lag,
             min_past_cov_lag,
+            max_past_cov_lag,
             min_future_cov_lag,
             max_future_cov_lag,
         ) = self.extreme_lags
@@ -436,6 +440,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             min_target_lag,
             max_target_lag,
             min_past_cov_lag,
+            max_past_cov_lag,
             min_future_cov_lag,
             max_future_cov_lag,
         ) = self.extreme_lags
@@ -460,7 +465,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 if is_training
                 else past_covariates.start_time()
                 - min_past_cov_lag * past_covariates.freq,
-                end=past_covariates.end_time(),
+                end=past_covariates.end_time()
+                - max_past_cov_lag * past_covariates.freq,
                 freq=past_covariates.freq,
             )
             if intersect_ is not None:
@@ -477,7 +483,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 else future_covariates.start_time()
                 - min_future_cov_lag * future_covariates.freq,
                 end=future_covariates.end_time()
-                - (max_future_cov_lag - 1) * future_covariates.freq,
+                - max_future_cov_lag * future_covariates.freq,
                 freq=future_covariates.freq,
             )
 
@@ -2299,4 +2305,4 @@ class TransferableFutureCovariatesLocalForecastingModel(
 
     @property
     def extreme_lags(self):
-        return (-1, 1, None, 0, 0)
+        return -1, 1, None, None, 0, 0

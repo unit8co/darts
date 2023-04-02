@@ -278,6 +278,7 @@ class RegressionModel(GlobalForecastingModel):
         min_target_lag = self.lags.get("target")[0] if "target" in self.lags else None
         max_target_lag = self.output_chunk_length
         min_past_cov_lag = self.lags.get("past")[0] if "past" in self.lags else None
+        max_past_cov_lag = self.lags.get("past")[-1] if "past" in self.lags else None
         min_future_cov_lag = (
             self.lags.get("future")[0] if "future" in self.lags else None
         )
@@ -289,6 +290,7 @@ class RegressionModel(GlobalForecastingModel):
             min_target_lag,
             max_target_lag,
             min_past_cov_lag,
+            max_past_cov_lag,
             min_future_cov_lag,
             max_future_cov_lag,
         )

@@ -81,7 +81,7 @@ class NaiveSeasonal(LocalForecastingModel):
 
     @property
     def extreme_lags(self):
-        return (-self.K, 1, None, None, None)
+        return -self.K, 1, None, None, None, None
 
 
 class NaiveDrift(LocalForecastingModel):
@@ -182,7 +182,6 @@ class NaiveEnsembleModel(EnsembleModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     ):
-
         super().fit(
             series=series,
             past_covariates=past_covariates,
