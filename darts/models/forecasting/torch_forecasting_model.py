@@ -145,7 +145,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         pl_trainer_kwargs: Optional[dict] = None,
         show_warnings: bool = False,
     ):
-
         """Pytorch Lightning (PL)-based Forecasting Model.
 
         This class is meant to be inherited to create a new PL-based forecasting model.
@@ -1346,7 +1345,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         num_loader_workers: int = 0,
         mc_dropout: bool = False,
     ) -> Sequence[TimeSeries]:
-
         """
         This method allows for predicting with a specific :class:`darts.utils.data.InferenceDataset` instance.
         These datasets implement a PyTorch ``Dataset``, and specify how the target and covariates are sliced
@@ -2021,7 +2019,6 @@ def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
 
 
 class PastCovariatesTorchModel(TorchForecastingModel, ABC):
-
     supports_future_covariates = False
 
     def _build_train_dataset(
@@ -2031,7 +2028,6 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         future_covariates: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
     ) -> PastCovariatesTrainingDataset:
-
         raise_if_not(
             future_covariates is None,
             "Specified future_covariates for a PastCovariatesModel (only past_covariates are expected).",
@@ -2053,7 +2049,6 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
     ) -> PastCovariatesInferenceDataset:
-
         raise_if_not(
             future_covariates is None,
             "Specified future_covariates for a PastCovariatesModel (only past_covariates are expected).",
@@ -2105,15 +2100,15 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
     def extreme_lags(self):
         return (
             -self.input_chunk_length,
-            self.output_chunk_length,
+            self.output_chunk_length - 1,
             -self.input_chunk_length if self.uses_past_covariates else None,
+            -1 if self.uses_past_covariates else None,
             None,
             None,
         )
 
 
 class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
-
     supports_past_covariates = False
 
     def _build_train_dataset(
@@ -2194,10 +2189,11 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
     def extreme_lags(self):
         return (
             -self.input_chunk_length,
-            self.output_chunk_length,
+            self.output_chunk_length - 1,
+            None,
             None,
             0 if self.uses_future_covariates else None,
-            self.output_chunk_length if self.uses_future_covariates else None,
+            self.output_chunk_length - 1 if self.uses_future_covariates else None,
         )
 
 
@@ -2211,7 +2207,6 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
         future_covariates: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
     ) -> DualCovariatesTrainingDataset:
-
         return DualCovariatesSequentialDataset(
             target_series=target,
             covariates=future_covariates,
@@ -2228,7 +2223,6 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
     ) -> DualCovariatesInferenceDataset:
-
         return DualCovariatesInferenceDataset(
             target_series=target,
             covariates=future_covariates,
@@ -2275,10 +2269,11 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
     def extreme_lags(self):
         return (
             -self.input_chunk_length,
-            self.output_chunk_length,
+            self.output_chunk_length - 1,
+            None,
             None,
             -self.input_chunk_length if self.uses_future_covariates else None,
-            self.output_chunk_length if self.uses_future_covariates else None,
+            self.output_chunk_length - 1 if self.uses_future_covariates else None,
         )
 
 
@@ -2290,7 +2285,6 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         future_covariates: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
     ) -> MixedCovariatesTrainingDataset:
-
         return MixedCovariatesSequentialDataset(
             target_series=target,
             past_covariates=past_covariates,
@@ -2308,7 +2302,6 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
     ) -> MixedCovariatesInferenceDataset:
-
         return MixedCovariatesInferenceDataset(
             target_series=target,
             past_covariates=past_covariates,
@@ -2353,10 +2346,11 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
     def extreme_lags(self):
         return (
             -self.input_chunk_length,
-            self.output_chunk_length,
+            self.output_chunk_length - 1,
             -self.input_chunk_length if self.uses_past_covariates else None,
+            -1 if self.uses_past_covariates else None,
             -self.input_chunk_length if self.uses_future_covariates else None,
-            self.output_chunk_length if self.uses_future_covariates else None,
+            self.output_chunk_length - 1 if self.uses_future_covariates else None,
         )
 
 
@@ -2368,7 +2362,6 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         future_covariates: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
     ) -> SplitCovariatesTrainingDataset:
-
         return SplitCovariatesSequentialDataset(
             target_series=target,
             past_covariates=past_covariates,
@@ -2386,7 +2379,6 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
     ) -> SplitCovariatesInferenceDataset:
-
         return SplitCovariatesInferenceDataset(
             target_series=target,
             past_covariates=past_covariates,
@@ -2432,8 +2424,9 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
     def extreme_lags(self):
         return (
             -self.input_chunk_length,
-            self.output_chunk_length,
+            self.output_chunk_length - 1,
             -self.input_chunk_length if self.uses_past_covariates else None,
+            -1 if self.uses_past_covariates else None,
             0 if self.uses_future_covariates else None,
-            self.output_chunk_length if self.uses_future_covariates else None,
+            self.output_chunk_length - 1 if self.uses_future_covariates else None,
         )
