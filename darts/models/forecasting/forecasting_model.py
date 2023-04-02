@@ -338,6 +338,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             min_target_lag,
             max_target_lag,
             min_past_cov_lag,
+            max_past_cov_lag,
             min_future_cov_lag,
             max_future_cov_lag,
         ) = self.extreme_lags
