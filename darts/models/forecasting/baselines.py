@@ -30,9 +30,6 @@ class NaiveMean(LocalForecastingModel):
         super().__init__()
         self.mean_val = None
 
-    def __str__(self):
-        return "Naive mean predictor model"
-
     def fit(self, series: TimeSeries):
         super().fit(series)
 
@@ -66,9 +63,6 @@ class NaiveSeasonal(LocalForecastingModel):
     def min_train_series_length(self):
         return max(self.K, 3)
 
-    def __str__(self):
-        return f"Naive seasonal model, with K={self.K}"
-
     def fit(self, series: TimeSeries):
         super().fit(series)
 
@@ -87,7 +81,7 @@ class NaiveSeasonal(LocalForecastingModel):
 
     @property
     def extreme_lags(self):
-        return (-self.K, 1, None, None, None)
+        return -self.K, 0, None, None, None, None
 
 
 class NaiveDrift(LocalForecastingModel):
@@ -100,9 +94,6 @@ class NaiveDrift(LocalForecastingModel):
         .. math:: \\hat{y}_{T+h} = y_T + h\\left( \\frac{y_T - y_1}{T - 1} \\right)
         """
         super().__init__()
-
-    def __str__(self):
-        return "Naive drift model"
 
     def fit(self, series: TimeSeries):
         super().fit(series)
@@ -123,6 +114,57 @@ class NaiveDrift(LocalForecastingModel):
         return self._build_forecast_series(forecast)
 
 
+class NaiveMovingAverage(LocalForecastingModel):
+    def __init__(self, input_chunk_length: int = 1):
+        """Naive Moving Average Model
+
+        This model forecasts using an auto-regressive moving average (ARMA).
+
+        Parameters
+        ----------
+        input_chunk_length
+            The size of the sliding window used to calculate the moving average
+        """
+        super().__init__()
+        self.input_chunk_length = input_chunk_length
+        self.rolling_window = None
+
+    @property
+    def min_train_series_length(self):
+        return self.input_chunk_length
+
+    def __str__(self):
+        return f"NaiveMovingAverage({self.input_chunk_length})"
+
+    def fit(self, series: TimeSeries):
+        super().fit(series)
+        raise_if_not(
+            series.is_deterministic,
+            "This model expects deterministic time series",
+            logger,
+        )
+
+        self.rolling_window = series[-self.input_chunk_length :].values(copy=False)
+        return self
+
+    def predict(self, n: int, num_samples: int = 1, verbose: bool = False):
+        super().predict(n, num_samples)
+
+        predictions_with_observations = np.concatenate(
+            (self.rolling_window, np.zeros(shape=(n, self.rolling_window.shape[1]))),
+            axis=0,
+        )
+        rolling_sum = sum(self.rolling_window)
+
+        chunk_length = self.input_chunk_length
+        for i in range(chunk_length, chunk_length + n):
+            prediction = rolling_sum / chunk_length
+            predictions_with_observations[i] = prediction
+            lost_value = predictions_with_observations[i - chunk_length]
+            rolling_sum += prediction - lost_value
+        return self._build_forecast_series(predictions_with_observations[-n:])
+
+
 class NaiveEnsembleModel(EnsembleModel):
     def __init__(
         self, models: Union[List[LocalForecastingModel], List[GlobalForecastingModel]]
@@ -140,7 +182,6 @@ class NaiveEnsembleModel(EnsembleModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     ):
-
         super().fit(
             series=series,
             past_covariates=past_covariates,
@@ -164,16 +205,12 @@ class NaiveEnsembleModel(EnsembleModel):
         predictions: Union[TimeSeries, Sequence[TimeSeries]],
         series: Optional[Sequence[TimeSeries]] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        def take_average(prediction: TimeSeries) -> TimeSeries:
+            series = prediction.pd_dataframe(copy=False).sum(axis=1) / len(self.models)
+            series.name = prediction.components[0]
+            return TimeSeries.from_series(series)
+
         if isinstance(predictions, Sequence):
-            return [
-                TimeSeries.from_series(
-                    p.pd_dataframe(copy=False).sum(axis=1) / len(self.models),
-                    static_covariates=p.static_covariates,
-                )
-                for p in predictions
-            ]
+            return [take_average(p) for p in predictions]
         else:
-            return TimeSeries.from_series(
-                predictions.pd_dataframe(copy=False).sum(axis=1) / len(self.models),
-                static_covariates=predictions.static_covariates,
-            )
+            return take_average(predictions)

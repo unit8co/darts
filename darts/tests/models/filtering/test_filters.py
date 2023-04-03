@@ -7,7 +7,7 @@ from darts import TimeSeries
 from darts.metrics import rmse
 from darts.models.filtering.gaussian_process_filter import GaussianProcessFilter
 from darts.models.filtering.kalman_filter import KalmanFilter
-from darts.models.filtering.moving_average import MovingAverage
+from darts.models.filtering.moving_average_filter import MovingAverageFilter
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 
@@ -137,7 +137,7 @@ class KalmanFilterTestCase(FilterBaseTestClass):
 
 class MovingAverageTestCase(FilterBaseTestClass):
     def test_moving_average_univariate(self):
-        ma = MovingAverage(window=3, centered=False)
+        ma = MovingAverageFilter(window=3, centered=False)
         sine_ts = tg.sine_timeseries(length=30, value_frequency=0.1)
         sine_filtered = ma.filter(sine_ts)
         self.assertGreater(
@@ -145,7 +145,7 @@ class MovingAverageTestCase(FilterBaseTestClass):
         )
 
     def test_moving_average_multivariate(self):
-        ma = MovingAverage(window=3)
+        ma = MovingAverageFilter(window=3)
         sine_ts = tg.sine_timeseries(length=30, value_frequency=0.1)
         noise_ts = tg.gaussian_timeseries(length=30) * 0.1
         ts = sine_ts.stack(noise_ts)
@@ -173,9 +173,9 @@ class GaussianProcessFilterTestCase(FilterBaseTestClass):
         noise = TimeSeries.from_values(np.random.normal(0, 0.4, len(testing_signal)))
         testing_signal_with_noise = testing_signal + noise
 
-        kernel = ExpSineSquared()
+        kernel = ExpSineSquared(length_scale_bounds=(1e-3, 1e3))
         gpf = GaussianProcessFilter(
-            kernel=kernel, alpha=0.2, n_restarts_optimizer=100, random_state=42
+            kernel=kernel, alpha=0.2, n_restarts_optimizer=10, random_state=42
         )
         filtered_ts = gpf.filter(testing_signal_with_noise, num_samples=1)
 
@@ -205,7 +205,8 @@ class GaussianProcessFilterTestCase(FilterBaseTestClass):
     def test_gaussian_process_missing_values(self):
         ts = TimeSeries.from_values(np.ones(6))
 
-        gpf = GaussianProcessFilter(RBF())
+        kernel = RBF(length_scale_bounds=(1e-3, 1e10))
+        gpf = GaussianProcessFilter(kernel=kernel)
         filtered_values = gpf.filter(ts).values()
         np.testing.assert_allclose(filtered_values, np.ones_like(filtered_values))
 

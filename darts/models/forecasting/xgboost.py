@@ -137,11 +137,6 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             model=xgb.XGBRegressor(**self.kwargs),
         )
 
-    def __str__(self):
-        if self.likelihood:
-            return f"XGBModel(lags={self.lags}, likelihood={self.likelihood})"
-        return f"XGBModel(lags={self.lags})"
-
     def fit(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],

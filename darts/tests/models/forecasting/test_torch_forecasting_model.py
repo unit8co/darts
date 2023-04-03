@@ -3,16 +3,20 @@ import shutil
 import tempfile
 from unittest.mock import patch
 
+import numpy as np
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.logging import get_logger
+from darts.metrics import mape
 from darts.tests.base_test_class import DartsBaseTestClass
 
 logger = get_logger(__name__)
 
 try:
     import torch
+    from pytorch_lightning.tuner.lr_finder import _LRFinder
     from torchmetrics import (
         MeanAbsoluteError,
         MeanAbsolutePercentageError,
@@ -87,6 +91,7 @@ if TORCH_AVAILABLE:
         def test_manual_save_and_load(self):
             """validate manual save with automatic save files by comparing output between the two"""
 
+            model_dir = os.path.join(self.temp_work_dir)
             manual_name = "test_save_manual"
             auto_name = "test_save_automatic"
             model_manual_save = RNNModel(
@@ -110,10 +115,26 @@ if TORCH_AVAILABLE:
                 random_state=42,
             )
 
+            # save model without training
+            no_training_ckpt = "no_training.pth.tar"
+            no_training_ckpt_path = os.path.join(model_dir, no_training_ckpt)
+            model_manual_save.save(no_training_ckpt_path)
+            # check that model object file was created
+            self.assertTrue(os.path.exists(no_training_ckpt_path))
+            # check that the PyTorch Ligthning ckpt does not exist
+            self.assertFalse(os.path.exists(no_training_ckpt_path + ".ckpt"))
+            # informative exception about `fit()` not called
+            with self.assertRaises(
+                ValueError,
+                msg="The model must be fit before calling predict(). "
+                "For global models, if predict() is called without specifying a series, "
+                "the model must have been fit on a single training series.",
+            ):
+                no_train_model = RNNModel.load(no_training_ckpt_path)
+                no_train_model.predict(n=4)
+
             model_manual_save.fit(self.series, epochs=1)
             model_auto_save.fit(self.series, epochs=1)
-
-            model_dir = os.path.join(self.temp_work_dir)
 
             # check that file was not created with manual save
             self.assertFalse(
@@ -162,6 +183,37 @@ if TORCH_AVAILABLE:
             # compare loaded checkpoint with manual save
             self.assertEqual(
                 model_manual_save.predict(n=4), model_auto_save1.predict(n=4)
+            )
+
+            # save() model directly after load_from_checkpoint()
+            checkpoint_file_name_2 = "checkpoint_1.pth.tar"
+            checkpoint_file_name_cpkt_2 = checkpoint_file_name_2 + ".ckpt"
+
+            model_path_manual_2 = os.path.join(
+                checkpoint_path_manual, checkpoint_file_name_2
+            )
+            model_path_manual_ckpt_2 = os.path.join(
+                checkpoint_path_manual, checkpoint_file_name_cpkt_2
+            )
+            model_auto_save2 = RNNModel.load_from_checkpoint(
+                model_name=auto_name,
+                work_dir=self.temp_work_dir,
+                best=False,
+                map_location="cpu",
+            )
+            # save model directly after loading, model has no trainer
+            model_auto_save2.save(model_path_manual_2)
+
+            # assert original .ckpt checkpoint was correctly copied
+            self.assertTrue(os.path.exists(model_path_manual_ckpt_2))
+
+            model_chained_load_save = RNNModel.load(
+                model_path_manual_2, map_location="cpu"
+            )
+
+            # compare chained load_from_checkpoint() save() with manual save
+            self.assertEqual(
+                model_chained_load_save.predict(n=4), model_manual_save.predict(n=4)
             )
 
         def test_create_instance_new_model_no_name_set(self):
@@ -289,6 +341,135 @@ if TORCH_AVAILABLE:
 
             model1.fit(self.series, epochs=15)
             self.assertEqual(15, model1.epochs_trained)
+
+        def test_load_weights_from_checkpoint(self):
+            ts_training = self.series[:90]
+            ts_test = self.series[90:]
+            original_model_name = "original"
+            retrained_model_name = "retrained"
+            # original model, checkpoints are saved
+            model = RNNModel(
+                12,
+                "RNN",
+                5,
+                1,
+                n_epochs=5,
+                work_dir=self.temp_work_dir,
+                save_checkpoints=True,
+                model_name=original_model_name,
+                random_state=1,
+            )
+            model.fit(ts_training)
+            original_preds = model.predict(10)
+            original_mape = mape(original_preds, ts_test)
+
+            # load last checkpoint of original model, train it for 2 additional epochs
+            model_rt = RNNModel(
+                12,
+                "RNN",
+                5,
+                1,
+                n_epochs=5,
+                work_dir=self.temp_work_dir,
+                model_name=retrained_model_name,
+                random_state=1,
+            )
+            model_rt.load_weights_from_checkpoint(
+                model_name=original_model_name, work_dir=self.temp_work_dir, best=False
+            )
+
+            # must indicate series otherwise self.training_series must be saved in checkpoint
+            loaded_preds = model_rt.predict(10, ts_training)
+            # save/load checkpoint should produce identical predictions
+            self.assertEqual(original_preds, loaded_preds)
+
+            model_rt.fit(ts_training)
+            retrained_preds = model_rt.predict(10)
+            retrained_mape = mape(retrained_preds, ts_test)
+            self.assertTrue(
+                retrained_mape < original_mape,
+                f"Retrained model has a greater error (mape) than the original model, "
+                f"respectively {retrained_mape} and {original_mape}",
+            )
+
+            # raise Exception when trying to load ckpt weights in different architecture
+            with self.assertRaises(ValueError):
+                model_rt = RNNModel(
+                    12,
+                    "RNN",
+                    10,  # loaded model has only 5 hidden_layers
+                    5,
+                )
+                model_rt.load_weights_from_checkpoint(
+                    model_name=original_model_name,
+                    work_dir=self.temp_work_dir,
+                    best=False,
+                )
+
+            # raise Exception when trying to pass `weights_only`=True to `torch.load()`
+            with self.assertRaises(ValueError):
+                model_rt = RNNModel(
+                    12,
+                    "RNN",
+                    5,
+                    5,
+                )
+                model_rt.load_weights_from_checkpoint(
+                    model_name=original_model_name,
+                    work_dir=self.temp_work_dir,
+                    best=False,
+                    weights_only=True,
+                )
+
+        def test_load_weights(self):
+            ts_training = self.series[:90]
+            ts_test = self.series[90:]
+            original_model_name = "original"
+            retrained_model_name = "retrained"
+            # original model, checkpoints are saved
+            model = RNNModel(
+                12,
+                "RNN",
+                5,
+                1,
+                n_epochs=5,
+                work_dir=self.temp_work_dir,
+                save_checkpoints=False,
+                model_name=original_model_name,
+                random_state=1,
+            )
+            model.fit(ts_training)
+            path_manual_save = os.path.join(self.temp_work_dir, "RNN_manual_save.pt")
+            model.save(path_manual_save)
+            original_preds = model.predict(10)
+            original_mape = mape(original_preds, ts_test)
+
+            # load last checkpoint of original model, train it for 2 additional epochs
+            model_rt = RNNModel(
+                12,
+                "RNN",
+                5,
+                1,
+                n_epochs=5,
+                work_dir=self.temp_work_dir,
+                model_name=retrained_model_name,
+                random_state=1,
+            )
+            model_rt.load_weights(path=path_manual_save)
+
+            # must indicate series otherwise self.training_series must be saved in checkpoint
+            loaded_preds = model_rt.predict(10, ts_training)
+            # save/load checkpoint should produce identical predictions
+            self.assertEqual(original_preds, loaded_preds)
+
+            model_rt.fit(ts_training)
+            retrained_preds = model_rt.predict(10)
+            retrained_mape = mape(retrained_preds, ts_test)
+            self.assertTrue(
+                retrained_mape < original_mape,
+                f"Retrained model has a greater mape error than the original model, "
+                f"respectively {retrained_mape} and {original_mape}",
+            )
 
         def test_resume_training_from_checkpoint(self):
             model = RNNModel(
@@ -437,3 +618,44 @@ if TORCH_AVAILABLE:
                     12, "RNN", 10, 10, n_epochs=1, torch_metrics=torch_metrics
                 )
                 model.fit(self.series)
+
+        @pytest.mark.slow
+        def test_lr_find(self):
+            train_series, val_series = self.series[:-40], self.series[-40:]
+            model = RNNModel(12, "RNN", 10, 10, random_state=42)
+            # find the learning rate
+            res = model.lr_find(series=train_series, val_series=val_series, epochs=50)
+            assert isinstance(res, _LRFinder)
+            assert res.suggestion() is not None
+            # verify that learning rate finder bypasses the `fit` logic
+            assert model.model is None
+            assert not model._fit_called
+            # cannot predict with an untrained model
+            with pytest.raises(ValueError):
+                model.predict(n=3, series=self.series)
+
+            # check that results are reproducible
+            model = RNNModel(12, "RNN", 10, 10, random_state=42)
+            res2 = model.lr_find(series=train_series, val_series=val_series, epochs=50)
+            assert res.suggestion() == res2.suggestion()
+
+            # check that suggested learning rate is better than the worst
+            lr_worst = res.results["lr"][np.argmax(res.results["loss"])]
+            lr_suggested = res.suggestion()
+            scores = {}
+            for lr, lr_name in zip([lr_worst, lr_suggested], ["worst", "suggested"]):
+                model = RNNModel(
+                    12,
+                    "RNN",
+                    10,
+                    10,
+                    n_epochs=10,
+                    random_state=42,
+                    optimizer_cls=torch.optim.Adam,
+                    optimizer_kwargs={"lr": lr},
+                )
+                model.fit(train_series)
+                scores[lr_name] = mape(
+                    val_series, model.predict(len(val_series), series=train_series)
+                )
+            assert scores["worst"] > scores["suggested"]

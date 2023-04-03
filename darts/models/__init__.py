@@ -10,7 +10,12 @@ logger = get_logger(__name__)
 # Forecasting
 from darts.models.forecasting.arima import ARIMA
 from darts.models.forecasting.auto_arima import AutoARIMA
-from darts.models.forecasting.baselines import NaiveDrift, NaiveMean, NaiveSeasonal
+from darts.models.forecasting.baselines import (
+    NaiveDrift,
+    NaiveMean,
+    NaiveMovingAverage,
+    NaiveSeasonal,
+)
 from darts.models.forecasting.exponential_smoothing import ExponentialSmoothing
 from darts.models.forecasting.fft import FFT
 from darts.models.forecasting.kalman_forecaster import KalmanForecaster
@@ -90,12 +95,15 @@ except ModuleNotFoundError:
 try:
     from darts.models.forecasting.croston import Croston
     from darts.models.forecasting.sf_auto_arima import StatsForecastAutoARIMA
-    from darts.models.forecasting.sf_ets import StatsForecastETS
+    from darts.models.forecasting.sf_auto_ces import StatsForecastAutoCES
+    from darts.models.forecasting.sf_auto_ets import StatsForecastAutoETS
+    from darts.models.forecasting.sf_auto_theta import StatsForecastAutoTheta
+
 except ImportError:
     logger.warning(
         "The statsforecast module could not be imported. "
         "To enable support for the StatsForecastAutoARIMA, "
-        "StatsForecastETS and Croston models, please consider "
+        "StatsForecastAutoETS and Croston models, please consider "
         "installing it."
     )
 
@@ -104,10 +112,10 @@ except ImportError:
 
     StatsForecastAutoARIMA = NotImportedStatsForecastAutoARIMA()
 
-    class NotImportedStatsForecastETS:
+    class NotImportedStatsForecastAutoETS:
         usable = False
 
-    StatsForecastETS = NotImportedStatsForecastETS()
+    StatsForecastAutoETS = NotImportedStatsForecastAutoETS()
 
     class NotImportedCroston:
         usable = False
@@ -131,7 +139,7 @@ from darts.models.filtering.gaussian_process_filter import GaussianProcessFilter
 from darts.models.filtering.kalman_filter import KalmanFilter
 
 # Filtering
-from darts.models.filtering.moving_average import MovingAverage
+from darts.models.filtering.moving_average_filter import MovingAverageFilter
 from darts.models.forecasting.baselines import NaiveEnsembleModel
 
 # Ensembling

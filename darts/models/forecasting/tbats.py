@@ -193,9 +193,6 @@ class _BaseBatsTbatsModel(LocalForecastingModel, ABC):
         self.model = None
         np.random.seed(random_state)
 
-    def __str__(self):
-        return "(T)BATS"
-
     @abstractmethod
     def _create_model(self):
         pass

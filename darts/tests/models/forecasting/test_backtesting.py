@@ -7,9 +7,17 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries
+from darts.datasets import AirPassengersDataset, MonthlyMilkDataset
 from darts.logging import get_logger
 from darts.metrics import mape, r2_score
-from darts.models import ARIMA, FFT, ExponentialSmoothing, NaiveDrift, Theta
+from darts.models import (
+    ARIMA,
+    FFT,
+    ExponentialSmoothing,
+    NaiveDrift,
+    NaiveSeasonal,
+    Theta,
+)
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.timeseries_generation import gaussian_timeseries as gt
 from darts.utils.timeseries_generation import linear_timeseries as lt
@@ -107,6 +115,22 @@ class BacktestingTestCase(DartsBaseTestClass):
             metric=r2_score,
         )
         self.assertEqual(score, 1.0)
+
+        # univariate model + univariate series + historical_forecasts precalculated
+        forecasts = NaiveDrift().historical_forecasts(
+            linear_series,
+            start=pd.Timestamp("20000201"),
+            forecast_horizon=3,
+            last_points_only=False,
+        )
+        precalculated_forecasts_score = NaiveDrift().backtest(
+            linear_series,
+            historical_forecasts=forecasts,
+            start=pd.Timestamp("20000201"),
+            forecast_horizon=3,
+            metric=r2_score,
+        )
+        self.assertEqual(score, precalculated_forecasts_score)
 
         # very large train length should not affect the backtest
         score = NaiveDrift().backtest(
@@ -209,6 +233,17 @@ class BacktestingTestCase(DartsBaseTestClass):
             tcn_model = TCNModel(
                 input_chunk_length=12, output_chunk_length=1, batch_size=1, n_epochs=1
             )
+            # cannot perform historical forecasts with `retrain=False` and untrained model
+            with pytest.raises(ValueError):
+                _ = tcn_model.historical_forecasts(
+                    linear_series,
+                    start=pd.Timestamp("20000125"),
+                    forecast_horizon=3,
+                    verbose=False,
+                    last_points_only=True,
+                    retrain=False,
+                )
+
             pred = tcn_model.historical_forecasts(
                 linear_series,
                 start=pd.Timestamp("20000125"),
@@ -226,7 +261,6 @@ class BacktestingTestCase(DartsBaseTestClass):
                 start=pd.Timestamp("20000125"),
                 forecast_horizon=3,
                 verbose=False,
-                retrain=False,
             )
 
             # univariate model
@@ -256,6 +290,25 @@ class BacktestingTestCase(DartsBaseTestClass):
             )
             self.assertEqual(pred.width, 2)
             self.assertEqual(pred.end_time(), linear_series.end_time())
+
+    def test_backtest_multiple_series(self):
+        series = [AirPassengersDataset().load(), MonthlyMilkDataset().load()]
+        model = NaiveSeasonal(K=1)
+
+        error = model.backtest(
+            series,
+            train_length=30,
+            forecast_horizon=2,
+            stride=1,
+            retrain=True,
+            last_points_only=False,
+            verbose=False,
+        )
+
+        expected = [11.63104, 6.09458]
+        self.assertEqual(len(error), 2)
+        self.assertAlmostEqual(error[0], expected[0], places=4)
+        self.assertAlmostEqual(error[1], expected[1], places=4)
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_backtest_regression(self):

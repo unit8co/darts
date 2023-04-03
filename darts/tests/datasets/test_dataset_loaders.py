@@ -1,5 +1,7 @@
 import os
 
+import pytest
+
 from darts import TimeSeries
 from darts.datasets import (
     _DEFAULT_PATH,
@@ -128,6 +130,7 @@ class DatasetLoaderTestCase(DartsBaseTestClass):
             os.remove(os.path.join(default_directory, f))
         os.rmdir(DatasetLoader._DEFAULT_DIRECTORY)
 
+    @pytest.mark.slow
     def test_ok_dataset(self):
         for width, dataset_cls in zip(width_datasets, datasets):
             dataset = dataset_cls()

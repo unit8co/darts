@@ -1,6 +1,8 @@
 import unittest
 
 import numpy as np
+import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
@@ -179,7 +181,6 @@ if TORCH_AVAILABLE:
     ]
 
     class HistoricalforecastTestCase(DartsBaseTestClass):
-
         np.random.seed(42)
         torch.manual_seed(42)
 
@@ -225,17 +226,6 @@ if TORCH_AVAILABLE:
             start=ts_pass_val.start_time() + 5 * ts_pass_val.freq,
         )
 
-        ts_past_cov_valid_bef_end = tg.gaussian_timeseries(
-            length=len(ts_pass_val) - 7,
-            freq=ts_pass_val.freq_str,
-            start=ts_pass_val.start_time(),
-        )
-        ts_past_cov_valid_aft_end = tg.gaussian_timeseries(
-            length=len(ts_pass_val) + 15,
-            freq=ts_pass_val.freq_str,
-            start=ts_pass_val.start_time(),
-        )
-
         ts_fut_cov_valid_same_start = tg.gaussian_timeseries(
             length=len(ts_pass_val),
             freq=ts_pass_val.freq_str,
@@ -251,17 +241,6 @@ if TORCH_AVAILABLE:
             length=len(ts_pass_val) - 7,
             freq=ts_pass_val.freq_str,
             start=ts_pass_val.start_time() + 7 * ts_pass_val.freq,
-        )
-
-        ts_fut_cov_valid_bef_end = tg.gaussian_timeseries(
-            length=len(ts_pass_val) - 7,
-            freq=ts_pass_val.freq_str,
-            start=ts_pass_val.start_time(),
-        )
-        ts_fut_cov_valid_aft_end = tg.gaussian_timeseries(
-            length=len(ts_pass_val) + 15,
-            freq=ts_pass_val.freq_str,
-            start=ts_pass_val.start_time(),
         )
 
         # RangeIndex timeseries
@@ -469,6 +448,7 @@ if TORCH_AVAILABLE:
                     "of retrain=True and overlap_end=False, and a time index of type DateTimeIndex.",
                 )
 
+        @pytest.mark.slow
         @unittest.skipUnless(
             TORCH_AVAILABLE,
             "Torch not available. auto start and multiple time series for torch models will be skipped.",
@@ -635,6 +615,7 @@ if TORCH_AVAILABLE:
                     " retrain=True and overlap_end=False",
                 )
 
+        @pytest.mark.slow
         @unittest.skipUnless(
             TORCH_AVAILABLE,
             "Torch not available. auto start and multiple time series for torch models and covariates "
@@ -699,20 +680,19 @@ if TORCH_AVAILABLE:
 
                 # we substract the shift of the past_cov_val ts (-5)
                 self.assertTrue(
-                    len(forecasts[0]) == 72 - (bounds[0] + bounds[1] + 1) - 10 + 1 - 5,
+                    len(forecasts[0]) == 72 - (bounds[0] + bounds[1]) - 10 - 5,
                     f"Model {model_cls} does not return the right number of historical forecasts in case "
                     " of retrain=True and overlap_end=False and past_covariates with different start",
                 )
 
                 self.assertTrue(
-                    len(forecasts[1]) == 72 - (bounds[0] + bounds[1] + 1) - 10 + 1,
+                    len(forecasts[1]) == 72 - (bounds[0] + bounds[1]) - 10,
                     f"Model {model_cls} does not return the right number of historical forecasts in case "
                     " of retrain=True and overlap_end=False and past_covariates starting before.",
                 )
 
             # Past and future covariates
             for model_cls, kwargs, bounds, type in models_torch_cls_kwargs:
-
                 if not type == "MixedCovariates":
                     continue
 
@@ -743,21 +723,20 @@ if TORCH_AVAILABLE:
                 )
 
                 self.assertTrue(
-                    len(forecasts[0]) == 72 - (bounds[0] + bounds[1] + 1) - 10 + 1 - 10,
+                    len(forecasts[0]) == 72 - (bounds[0] + bounds[1]) - 10 - 5 - 4,
                     f"Model {model_cls} does not return the right number of historical forecasts in case "
                     " of retrain=True and overlap_end=False and past_covariates and future_covariates with "
                     "different start",
                 )
 
                 self.assertTrue(
-                    len(forecasts[1]) == 72 - (bounds[0] + bounds[1] + 1) - 10 + 1 - 3,
+                    len(forecasts[1]) == 72 - (bounds[0] + bounds[1]) - 10 - 2,
                     f"Model {model_cls} does not return the right number of historical forecasts in case "
                     " of retrain=True and overlap_end=False and past_covariates with different start",
                 )
 
             # Future covariates only
             for model_cls, kwargs, bounds, type in models_torch_cls_kwargs:
-
                 # todo case of DualCovariates (RNN)
                 if type == "PastCovariates" or type == "DualCovariates":
                     continue
@@ -787,15 +766,49 @@ if TORCH_AVAILABLE:
                 )
 
                 self.assertTrue(
-                    len(forecasts[0]) == 72 - (bounds[0] + bounds[1] + 1) - 10 + 1 - 10,
+                    len(forecasts[0]) == 72 - (bounds[0] + bounds[1]) - 10 - 9,
                     f"Model {model_cls} does not return the right number of historical forecasts in case "
                     " of retrain=True and overlap_end=False and no past_covariates and future_covariates with different"
                     " start",
                 )
 
                 self.assertTrue(
-                    len(forecasts[1]) == 72 - (bounds[0] + bounds[1] + 1) - 10 + 1 - 3,
+                    len(forecasts[1]) == 72 - (bounds[0] + bounds[1]) - 10 - 2,
                     f"Model {model_cls} does not return the right number of historical forecasts in case "
                     " of retrain=True and overlap_end=False and no past_covariates and future_covariates with different"
                     " start",
                 )
+
+        def test_retrain(self):
+            """test historical_forecasts for an untrained model with different retrain values."""
+
+            def helper_hist_forecasts(retrain_val):
+                model = LinearRegressionModel(lags=4)
+                model.historical_forecasts(
+                    self.ts_passengers, start=0.9, retrain=retrain_val, verbose=False
+                )
+
+            def retrain_f_invalid(pred_time, train_series):
+                return False
+
+            def retrain_f_valid(pred_time, train_series):
+                # only retrain once in first iteration
+                if pred_time == pd.Timestamp("1959-09-01 00:00:00"):
+                    return True
+                else:
+                    return False
+
+            # test callable
+            with pytest.raises(ValueError):
+                helper_hist_forecasts(retrain_f_invalid)
+            helper_hist_forecasts(retrain_f_valid)
+
+            # test int
+            with pytest.raises(ValueError):
+                helper_hist_forecasts(0)
+            helper_hist_forecasts(10)
+
+            # test bool
+            with pytest.raises(ValueError):
+                helper_hist_forecasts(False)
+            helper_hist_forecasts(True)

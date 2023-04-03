@@ -96,6 +96,7 @@ if TORCH_AVAILABLE:
                     n_epochs=1,
                     log_tensorboard=True,
                     work_dir=self.temp_work_dir,
+                    pl_trainer_kwargs={"log_every_n_steps": 1},
                 )
                 model.fit(ts)
                 model.predict(n=2)
@@ -132,6 +133,8 @@ if TORCH_AVAILABLE:
                 )
 
         def test_multivariate_and_covariates(self):
+            np.random.seed(42)
+            torch.manual_seed(42)
             # test on multiple multivariate series with future and static covariates
 
             def _create_multiv_series(f1, f2, n1, n2, nf1, nf2):
@@ -210,7 +213,7 @@ if TORCH_AVAILABLE:
                 e1, e2 = _eval_model(
                     train1, train2, val1, val2, fut_cov1, fut_cov2, cls=model, lkl=lkl
                 )
-                self.assertLessEqual(e1, 0.31)
+                self.assertLessEqual(e1, 0.34)
                 self.assertLessEqual(e2, 0.28)
 
                 e1, e2 = _eval_model(

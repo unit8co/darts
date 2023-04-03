@@ -279,52 +279,54 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Optional[int],
         Optional[int],
         Optional[int],
+        Optional[int],
     ]:
         """
-        A 5-tuple containing in order:
-        (minimum target lag, maximum target lag, min past covariate lag, min future covariate lag, max future covariate
-        lag). If 0 is the index of the first prediction, then all lags are relative to this index, except for the
-        maximum target lag, which is relative to the last element of the time series before the first prediction.
+        A 6-tuple containing in order:
+        (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate
+        lag, max future covariate lag). If 0 is the index of the first prediction, then all lags are relative to this
+        index.
+
         See examples below.
 
         If the model wasn't fitted with:
-            - target lag (concerning RegressionModels only) the first element should be `None`.
+            - target (concerning RegressionModels only): then the first element should be `None`.
 
-            - past covariates, the third element should be `None`.
+            - past covariates: then the third and fourth elements should be `None`.
 
-            - future covariates, the fourth and fifth elements should be `None`.
+            - future covariates: then the fifth and sixth elements should be `None`.
 
         Should be overridden by models that use past or future covariates, and/or for model that have minimum target
-        lag and maximum target lags potentially different from -1 and 1.
+        lag and maximum target lags potentially different from -1 and 0.
 
         Notes
         -----
-        maximum target lag (second value) cannot be `None` and is always larger than 1.
+        maximum target lag (second value) cannot be `None` and is always larger than or equal to 0.
         Examples
         --------
         >>> model = LinearRegressionModel(lags=3, output_chunk_length=2)
         >>> model.fit(train_series)
         >>> model.extreme_lags
-        (-3, 2, None, None, None)
-        >>> model = LinearRegressionModel(lags=[3, 5], past_covariates_lags = 4, output_chunk_length=7)
+        (-3, 1, None, None, None, None)
+        >>> model = LinearRegressionModel(lags=[-3, -5], lags_past_covariates = 4, output_chunk_length=7)
         >>> model.fit(train_series, past_covariates=past_covariates)
         >>> model.extreme_lags
-        (-5, 7, -4, None, None)
-        >>> model = LinearRegressionModel(lags=[3, 5], future_covariates_lags = [4, 6], output_chunk_length=7)
+        (-5, 6, -4, -1,  None, None)
+        >>> model = LinearRegressionModel(lags=[3, 5], lags_future_covariates = [4, 6], output_chunk_length=7)
         >>> model.fit(train_series, future_covariates=future_covariates)
         >>> model.extreme_lags
-        (-5, 7, None, 4, 6)
+        (-5, 6, None, None, 4, 6)
         >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7)
         >>> model.fit(train_series)
         >>> model.extreme_lags
-        (-10, 7, None, None, None)
-        >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7, future_covariates_lags=[4, 6])
+        (-10, 6, None, None, None, None)
+        >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7, lags_future_covariates=[4, 6])
         >>> model.fit(train_series, future_covariates)
         >>> model.extreme_lags
-        (-10, 7, None, 4, 6)
+        (-10, 6, None, None, 4, 6)
         """
 
-        return (-1, 1, None, None, None)
+        return -1, 0, None, None, None, None
 
     @property
     def _training_sample_time_index_length(self) -> int:
@@ -335,13 +337,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             min_target_lag,
             max_target_lag,
             min_past_cov_lag,
+            max_past_cov_lag,
             min_future_cov_lag,
             max_future_cov_lag,
         ) = self.extreme_lags
 
         return max(
-            max_target_lag,
-            max_future_cov_lag if max_future_cov_lag else 0,
+            max_target_lag + 1,
+            max_future_cov_lag + 1 if max_future_cov_lag else 0,
         ) - min(
             min_target_lag if min_target_lag else 0,
             min_past_cov_lag if min_past_cov_lag else 0,
@@ -351,19 +354,18 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     @property
     def _predict_sample_time_index_length(self) -> int:
         """
-        Required time_index length for one predict sample, for any model.
-         A predict sample is the minimum required set of series and covariates chunks to be able to predict
-         a single point.
+        Required time_index length for one `predict` function call, for any model.
         """
         (
             min_target_lag,
             max_target_lag,
             min_past_cov_lag,
+            max_past_cov_lag,
             min_future_cov_lag,
             max_future_cov_lag,
         ) = self.extreme_lags
 
-        return (max_future_cov_lag if max_future_cov_lag else 0) - min(
+        return (max_future_cov_lag + 1 if max_future_cov_lag else 0) - min(
             min_target_lag if min_target_lag else 0,
             min_past_cov_lag if min_past_cov_lag else 0,
             min_future_cov_lag if min_future_cov_lag else 0,
@@ -371,7 +373,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     def _get_historical_forecastable_time_index(
         self,
-        series: Optional[TimeSeries] = None,
+        series: TimeSeries,
         past_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         is_training: Optional[bool] = False,
@@ -392,7 +394,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Parameters
         ----------
         series
-            Optionally, a target series.
+            A target series.
         past_covariates
             Optionally, a past covariates.
         future_covariates
@@ -436,32 +438,34 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             min_target_lag,
             max_target_lag,
             min_past_cov_lag,
+            max_past_cov_lag,
             min_future_cov_lag,
             max_future_cov_lag,
         ) = self.extreme_lags
 
-        intersect_ = None
+        if min_target_lag is None:
+            min_target_lag = 0
 
-        # target longest possible time index
-        if (min_target_lag is not None) and (series is not None):
-            intersect_ = generate_index(
-                start=series.start_time()
-                - (min_target_lag - max_target_lag) * series.freq
-                if is_training
-                else series.start_time() - min_target_lag * series.freq,
-                end=series.end_time(),
-                freq=series.freq,
-            )
+        # longest possible time index for target
+        intersect_ = generate_index(
+            start=series.start_time()
+            + (max_target_lag - min_target_lag + 1) * series.freq
+            if is_training
+            else series.start_time() - min_target_lag * series.freq,
+            end=series.end_time() + 1 * series.freq,
+            freq=series.freq,
+        )
 
-        # past covariates longest possible time index
+        # longest possible time index for past covariates
         if (min_past_cov_lag is not None) and (past_covariates is not None):
             tmp_ = generate_index(
                 start=past_covariates.start_time()
-                - (min_past_cov_lag - max_target_lag) * past_covariates.freq
+                - (min_past_cov_lag - max_target_lag - 1) * past_covariates.freq
                 if is_training
                 else past_covariates.start_time()
                 - min_past_cov_lag * past_covariates.freq,
-                end=past_covariates.end_time(),
+                end=past_covariates.end_time()
+                - max_past_cov_lag * past_covariates.freq,
                 freq=past_covariates.freq,
             )
             if intersect_ is not None:
@@ -469,11 +473,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             else:
                 intersect_ = tmp_
 
-        # future covariates longest possible time index
+        # longest possible time index for future covariates
         if (min_future_cov_lag is not None) and (future_covariates is not None):
             tmp_ = generate_index(
                 start=future_covariates.start_time()
-                - (min_future_cov_lag - max_target_lag) * future_covariates.freq
+                - (min_future_cov_lag - max_target_lag - 1) * future_covariates.freq
                 if is_training
                 else future_covariates.start_time()
                 - min_future_cov_lag * future_covariates.freq,
@@ -559,7 +563,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:
-
         """Compute the historical forecasts that would have been obtained by this model on
         (potentially multiple) `series`.
 
@@ -725,6 +728,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         else:
             outer_iterator = _build_tqdm_iterator(series, verbose)
 
+        model: Optional[ForecastingModel] = None
         forecasts_list = []
         for idx, series_ in enumerate(outer_iterator):
             past_covariates_ = past_covariates[idx] if past_covariates else None
@@ -805,13 +809,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         logger,
                     )
 
-            # build the prediction times in advance (to be able to use tqdm)
+            # Take into account overlap_end, and forecast_horizon.
             last_valid_pred_time = self._get_last_prediction_time(
                 series_,
                 forecast_horizon,
                 overlap_end,
             )
 
+            # The historical_forecasts_time_index end (which was just model dependent so far) is readjusted
+            # by function parameters overlap_end and forecast_horizon.
             historical_forecasts_time_index = drop_after_index(
                 historical_forecasts_time_index, last_valid_pred_time
             )
@@ -843,7 +849,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 if train_length and len(train_series) > train_length:
                     train_series = train_series[-train_length:]
 
-                if (not self._fit_called) or retrain_func(
+                if retrain_func(
                     counter=_counter,
                     pred_time=pred_time,
                     train_series=train_series,
@@ -858,6 +864,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         )
                     )
                     if future_covariates_
+                    and ("future_covariates" in retrain_func_signature)
                     else None,
                 ):
                     # avoid fitting the same model multiple times
@@ -868,7 +875,19 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         future_covariates=future_covariates_,
                     )
                 else:
-                    model = self
+                    # model must be fit before the first prediction
+                    if not _counter and not self._fit_called:
+                        raise_log(
+                            ValueError(
+                                f"`retrain` is `False` in first iteration at prediction point (in time) `{pred_time}` "
+                                f"and the model has not been fit before. Either call `fit()` before "
+                                f"`historical_forecasts()`, or use a different `retrain` value / modify the function "
+                                f"to return `True` in first iteration."
+                            ),
+                            logger,
+                        )
+                    # use retrained model if `retrain` is not training every step
+                    model = model if model is not None else self
 
                 forecast = model._predict_wrapper(
                     n=forecast_horizon,
@@ -907,6 +926,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def backtest(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
+        historical_forecasts: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
@@ -924,16 +944,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         reduction: Union[Callable[[np.ndarray], float], None] = np.mean,
         verbose: bool = False,
     ) -> Union[float, List[float], Sequence[float], List[Sequence[float]]]:
-
         """Compute error values that the model would have produced when
         used on (potentially multiple) `series`.
 
-        It repeatedly builds a training set from the beginning of `series`. It trains the
-        current model on the training set, emits a forecast of length equal to forecast_horizon, and then moves
-        the end of the
-        training set forward by `stride` time steps. A metric (given by the `metric` function) is then evaluated
-        on the forecast and the actual values. Finally, the method returns a `reduction` (the mean by default)
-        of all these metric scores.
+        If `historical_forecasts` are provided, the metric (given by the `metric` function) is evaluated directly on
+        the forecast and the actual values. Otherwise, it repeatedly builds a training set from the beginning of
+        `series`. It trains the current model on the training set, emits a forecast of length equal to
+        `forecast_horizon`, and then moves the end of the training set forward by `stride` time steps. The metric is
+        then evaluated on the forecast and the actual values. Finally, the method returns a `reduction` (the mean by
+        default) of all these metric scores.
 
         By default, this method uses each historical forecast (whole) to compute error scores.
         If `last_points_only` is set to True, it will use only the last point of each historical
@@ -950,6 +969,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         ----------
         series
             The (or a sequence of) target time series to use to successively train and evaluate the historical forecasts
+        historical_forecasts
+            Optionally, the (or a sequence of) historical forecasts time series to be evaluated. Corresponds to
+            the output of :meth:`historical_forecasts() <ForecastingModel.historical_forecasts>`. If provided, will
+            skip historical forecasting and ignore parameters `num_samples`, `train_length`, `start`,
+            `forecast_horizon`, `stride`, `retrain`, `overlap_end`, and `last_points_only`.
         past_covariates
             Optionally, one (or a sequence of) past-observed covariate series.
             This applies only if the model supports past covariates.
@@ -1021,21 +1045,23 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             The (sequence of) error score on a series, or list of list containing error scores for each
             provided series and each sample.
         """
-
-        forecasts = self.historical_forecasts(
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            num_samples=num_samples,
-            train_length=train_length,
-            start=start,
-            forecast_horizon=forecast_horizon,
-            stride=stride,
-            retrain=retrain,
-            overlap_end=overlap_end,
-            last_points_only=last_points_only,
-            verbose=verbose,
-        )
+        if historical_forecasts is None:
+            forecasts = self.historical_forecasts(
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                num_samples=num_samples,
+                train_length=train_length,
+                start=start,
+                forecast_horizon=forecast_horizon,
+                stride=stride,
+                retrain=retrain,
+                overlap_end=overlap_end,
+                last_points_only=last_points_only,
+                verbose=verbose,
+            )
+        else:
+            forecasts = historical_forecasts
 
         series = series2seq(series)
         if len(series) == 1:
@@ -1052,11 +1078,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     errors = errors[0]
                 backtest_list.append(errors)
             else:
-
                 errors = [
-                    [metric_f(series, f) for metric_f in metric]
+                    [metric_f(target_ts, f) for metric_f in metric]
                     if len(metric) > 1
-                    else metric[0](series, f)
+                    else metric[0](target_ts, f)
                     for f in forecasts[idx]
                 ]
 
@@ -1533,7 +1558,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     @classmethod
     def _default_save_path(cls) -> str:
-        return f"{cls.__name__}_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}"
+        return f"{cls.__name__}_{datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')}"
 
     def save(self, path: Optional[Union[str, BinaryIO]] = None, **pkl_kwargs) -> None:
         """
@@ -1556,8 +1581,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         ----------
         path
             Path or file handle under which to save the model at its current state. If no path is specified, the model
-            is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pkl"``.
-            E.g., ``"RegressionModel_2020-01-01_12:00:00.pkl"``.
+            is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.pkl"``.
+            E.g., ``"RegressionModel_2020-01-01_12_00_00.pkl"``.
         pkl_kwargs
             Keyword arguments passed to `pickle.dump()`
         """
@@ -1595,7 +1620,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             with open(path, "rb") as handle:
                 model = pickle.load(file=handle)
         else:
-
             model = pickle.load(file=path)
 
         return model
@@ -1603,8 +1627,68 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def _assert_univariate(self, series: TimeSeries):
         if not series.is_univariate:
             raise_log(
-                ValueError("This model only supports univariate TimeSeries instances")
+                ValueError(
+                    f"Model `{self.__class__.__name__}` only supports univariate TimeSeries instances"
+                ),
+                logger=logger,
             )
+
+    def _assert_multivariate(self, series: TimeSeries):
+        if series.is_univariate:
+            raise_log(
+                ValueError(
+                    f"Model `{self.__class__.__name__}` only supports multivariate TimeSeries instances"
+                ),
+                logger=logger,
+            )
+
+    def __repr__(self):
+        """
+        Get full description for this estimator (includes all params).
+        """
+        return self._get_model_description_string(True)
+
+    def __str__(self):
+        """
+        Get short description for this estimator (only includes params with non-default values).
+        """
+        return self._get_model_description_string(False)
+
+    def _get_model_description_string(self, include_default_params):
+        """
+        Get model description string of structure `model_name`(`model_param_key_value_pairs`).
+
+        Parameters
+        ----------
+        include_default_params : bool,
+            If True, will include params with default values in the description.
+
+        Returns
+        -------
+        description : String
+            Model description.
+        """
+        default_model_params = self._get_default_model_params()
+        changed_model_params = [
+            (k, v)
+            for k, v in self.model_params.items()
+            if include_default_params or v != default_model_params.get(k, None)
+        ]
+
+        model_name = self.__class__.__name__
+        params_string = ", ".join([f"{k}={str(v)}" for k, v in changed_model_params])
+        return f"{model_name}({params_string})"
+
+    @classmethod
+    def _get_default_model_params(cls):
+        """Get parameter key : default_value pairs for the estimator"""
+        init_signature = inspect.signature(cls.__init__)
+        # Consider the constructor parameters excluding 'self'
+        return {
+            p.name: p.default
+            for p in init_signature.parameters.values()
+            if p.name != "self"
+        }
 
 
 class LocalForecastingModel(ForecastingModel, ABC):
@@ -2220,4 +2304,4 @@ class TransferableFutureCovariatesLocalForecastingModel(
 
     @property
     def extreme_lags(self):
-        return (-1, 1, None, 0, 0)
+        return -1, 0, None, None, 0, 0
