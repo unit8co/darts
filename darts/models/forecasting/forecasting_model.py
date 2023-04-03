@@ -621,7 +621,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         stride
             The number of time steps between two consecutive predictions.
         retrain
-            Whether and/or on which condition to retrain the model before predicting. Defaults: ``True``.
+            Whether and/or on which condition to retrain the model before predicting.
             This parameter supports 3 different datatypes: ``bool``, (positive) ``int``, and
             ``Callable`` (returning a ``bool``).
             In the case of ``bool``: retrain the model at each step (`True`), or never retrains the model (`False`).
@@ -636,8 +636,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 - `future_covariates (TimeSeries)`: future_covariates series up
                   to `min(pred_time + series.freq * forecast_horizon, series.end_time())`
 
-            Note: if an optionnal *_covariates arguments is not passed to `historical_forecast`,
-            ``None`` will be passed to the retrain function.
+            Note: if any optional `*_covariates` are not passed to `historical_forecast`, ``None`` will be passed
+            to the corresponding retrain function argument.
             Note: some models do require being retrained every time
             and do not support anything else than `retrain=True`.
         overlap_end
@@ -694,28 +694,26 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         if isinstance(retrain, bool) or (isinstance(retrain, int) and retrain >= 0):
 
-            def helper_retrain_func(
+            def retrain_func(
                 counter, pred_time, train_series, past_covariates, future_covariates
             ):
                 return counter % int(retrain) == 0 if retrain else False
-
-            retrain_func = helper_retrain_func
         elif isinstance(retrain, Callable):
             retrain_func = retrain
 
             # check that the signature matches the documentation
-            expected_arguments = {
+            expected_arguments = [
                 "counter",
                 "pred_time",
                 "train_series",
                 "past_covariates",
                 "future_covariates",
-            }
-            passed_arguments = set(inspect.signature(retrain_func).parameters.keys())
+            ]
+            passed_arguments = list(inspect.signature(retrain_func).parameters.keys())
             raise_if(
-                len(expected_arguments - passed_arguments) > 0,
-                f"the Callable retrain argument is missing the following positional arguments: "
-                f"{list(expected_arguments-passed_arguments)}.",
+                expected_arguments != passed_arguments,
+                f"the Callable `retrain` must have a signature/arguments matching the following positional arguments: "
+                f"{expected_arguments}.",
                 logger,
             )
 
@@ -779,9 +777,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             if historical_forecasts_time_index_predict is None:
                 raise_log(
                     ValueError(
-                        "Given the provided model, series and covariates, there is no timestamps "
-                        f" where we can make a prediction with the model (series index: {idx}). "
-                        "Please check the time indexes of the series and covariates."
+                        "Cannot build a single input for prediction with the provided model, "
+                        f"`series` and `*_covariates` at series index: {idx}. The minimum "
+                        "prediction input time index requirements were not met. "
+                        "Please check the time index of `series` and `*_covariates`."
                     ),
                     logger,
                 )
