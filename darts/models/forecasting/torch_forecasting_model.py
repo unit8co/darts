@@ -1001,10 +1001,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 collate_fn=self._batch_collate_fn,
             )
         )
-
-        # We need to set the number of epochs to train for, based on the number of epochs already trained for
-        # (if any), and the number of epochs to train for in this call (if any).
-        train_num_epochs = self._get_max_number_of_epochs(epochs)
+        # Fetch max_epochs to pass to the trainer
+        train_num_epochs = (
+            max(self.epochs_trained, epochs)
+            if epochs
+            else max(self.epochs_trained, self.n_epochs)
+        )
 
         # setup trainer
         trainer = self._setup_trainer(trainer, model, verbose, train_num_epochs)
@@ -1187,32 +1189,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             early_stop_threshold=early_stop_threshold,
             update_attr=False,
         )
-
-    def _get_max_number_of_epochs(self, extra_epochs_to_train: int) -> int:
-        """
-        Returns the maximum number of epochs the model can be trained for. This number will be used to set the
-        `max_epochs` parameter of the PyTorch Lightning trainer.
-
-        There are three cases:
-        1. The model has not been trained yet and `load_ckpt_path` is None. In this case, the maximum number of epochs
-            is the maximum of the number of (additional) epochs passed to the fit() call and the n_epochs with which
-            the model was initialized.
-        2. We are continuing training from a checkpoint. In this case, the maximum number of epochs is the number of
-            epochs passed to the fit() call + the number of epochs the model has already trained + 1. The +1 is because
-            the epoch counter starts at 0.
-        3. We are training a model that has already been trained. In this case, the maximum number of epochs is the
-            number of epochs passed to the fit() call + the number of epochs the model has already trained.
-        """
-        if self.epochs_trained == 0 and not self.load_ckpt_path:
-            train_num_epochs = max(extra_epochs_to_train, self.n_epochs)
-        elif self.epochs_trained == 0 and self.load_ckpt_path:
-            train_num_epochs = (
-                extra_epochs_to_train + torch.load(self.load_ckpt_path)["epoch"] + 1
-            )
-        else:
-            train_num_epochs = extra_epochs_to_train + self.epochs_trained
-
-        return train_num_epochs
 
     @random_method
     def predict(
@@ -1888,7 +1864,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     @property
     def epochs_trained(self) -> int:
-        return self.model.epochs_trained if self.model_created else 0
+        if not self.model_created:
+            return 0
+        elif self.load_ckpt_path:
+            return (
+                self.model.epochs_trained + torch.load(self.load_ckpt_path)["epoch"] + 1
+            )
+        else:
+            return self.model.epochs_trained
 
     @property
     def likelihood(self) -> Likelihood:
