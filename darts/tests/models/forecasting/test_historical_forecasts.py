@@ -853,13 +853,23 @@ if TORCH_AVAILABLE:
             ):
                 return False
 
-            def retrain_f_invalid_args(
+            def retrain_f_missing_arg(
                 counter, train_series, past_covariates, future_covariates
             ):
                 if len(train_series) % 2 == 0:
                     return True
                 else:
                     return False
+
+            def retrain_f_invalid_ouput_int(
+                counter, pred_time, train_series, past_covariates, future_covariates
+            ):
+                return 1
+
+            def retrain_f_invalid_ouput_str(
+                counter, pred_time, train_series, past_covariates, future_covariates
+            ):
+                return "True"
 
             def retrain_f_valid(
                 counter, pred_time, train_series, past_covariates, future_covariates
@@ -877,7 +887,13 @@ if TORCH_AVAILABLE:
                 helper_hist_forecasts(retrain_f_invalid)
             # missing the `pred_time` positional argument
             with pytest.raises(ValueError):
-                helper_hist_forecasts(retrain_f_invalid_args)
+                helper_hist_forecasts(retrain_f_missing_arg)
+            # returning a non-bool value (int)
+            with pytest.raises(ValueError):
+                helper_hist_forecasts(retrain_f_invalid_ouput_int)
+            # returning a non-bool value (str)
+            with pytest.raises(ValueError):
+                helper_hist_forecasts(retrain_f_invalid_ouput_str)
 
             # test int
             with pytest.raises(ValueError):
