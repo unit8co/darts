@@ -41,7 +41,12 @@ from darts.utils.timeseries_generation import (
     _generate_new_dates,
     generate_index,
 )
-from darts.utils.utils import drop_after_index, drop_before_index, series2seq
+from darts.utils.utils import (
+    drop_after_index,
+    drop_before_index,
+    get_single_series,
+    series2seq,
+)
 
 logger = get_logger(__name__)
 
@@ -698,6 +703,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 counter, pred_time, train_series, past_covariates, future_covariates
             ):
                 return counter % int(retrain) == 0 if retrain else False
+
         elif isinstance(retrain, Callable):
             retrain_func = retrain
 
@@ -720,7 +726,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             # passing dummy values to check the type of the output
             result = retrain_func(
                 counter=0,
-                pred_time=series.time_index[-1],
+                pred_time=get_single_series(series).time_index[-1],
                 train_series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
@@ -741,15 +747,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series = series2seq(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
-
-        # If the model has never been fitted before using historical_forecasts,
-        # we need to know if it uses past or future covariates. The only possible assumption is that
-        # the user is using the same covariates as they would in the fit method.
-        if self._fit_called is False:
-            if past_covariates is not None:
-                self._uses_past_covariates = True
-            if future_covariates is not None:
-                self._uses_future_covariates = True
 
         if len(series) == 1:
             # Use tqdm on the outer loop only if there's more than one series to iterate over
@@ -800,9 +797,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             ) and historical_forecasts_time_index_train is None:
                 raise_log(
                     ValueError(
-                        "Given the provided model, series and covariates, there is no timestamps "
-                        f" where we can make train the model (series index: {idx}). "
-                        "Please check the time indexes of the series and covariates."
+                        "Cannot build a single input for training with the provided untrained model, "
+                        f"`series` and `*_covariates` at series index: {idx}. The minimum "
+                        "training input time index requirements were not met. "
+                        "Please check the time index of `series` and `*_covariates`."
                     ),
                     logger,
                 )
@@ -922,24 +920,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     train_series = train_series[-train_length:]
 
                 # retrain_func processes the series that would be used for training
-                if (
-                    retrain_func(
-                        counter=_counter,
-                        pred_time=pred_time,
-                        train_series=train_series,
-                        past_covariates=past_covariates_.drop_after(pred_time)
-                        if past_covariates_
-                        else None,
-                        future_covariates=future_covariates_.drop_after(
-                            min(
-                                pred_time + train_series.freq * forecast_horizon,
-                                series_.end_time(),
-                            )
-                        )
-                        if future_covariates_
-                        else None,
-                    )
-                    and pred_time in historical_forecasts_time_index_train
+                if pred_time in historical_forecasts_time_index_train and retrain_func(
+                    counter=_counter,
+                    pred_time=pred_time,
+                    train_series=train_series,
+                    past_covariates=past_covariates_ if past_covariates_ else None,
+                    future_covariates=future_covariates_
+                    if future_covariates_
+                    else None,
                 ):
                     # avoid fitting the same model multiple times
                     model = self.untrained_model()
