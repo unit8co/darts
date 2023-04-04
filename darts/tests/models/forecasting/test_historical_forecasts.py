@@ -49,25 +49,25 @@ if TORCH_AVAILABLE:
     models_reg_cov_cls_kwargs = [
         # target + past covariates
         (LinearRegressionModel, {"lags": 4, "lags_past_covariates": 6}, (6, 1)),
-        # target + past covariates + outputchunk > 3
+        # target + past covariates + outputchunk > 3, 6 > 3
         (
             LinearRegressionModel,
-            {"lags": 4, "lags_past_covariates": 6, "output_chunk_length": 4},
-            (6, 4),
+            {"lags": 3, "lags_past_covariates": 6, "output_chunk_length": 5},
+            (6, 5),
         ),
-        # target + future covariates
+        # target + future covariates, 2 because to predict x, require x and x+1
         (LinearRegressionModel, {"lags": 4, "lags_future_covariates": [0, 1]}, (4, 2)),
-        # target + fut cov + output_chunk_length > 3
+        # target + fut cov + output_chunk_length > 3,
         (
             LinearRegressionModel,
-            {"lags": 2, "lags_future_covariates": [0, 1], "output_chunk_length": 6},
-            (3, 6),  # 3 = "0" of the fut cov + "-1" and "-2" from lags?
+            {"lags": 2, "lags_future_covariates": [1, 2], "output_chunk_length": 5},
+            (2, 5),
         ),
-        # fut cov + output_chunk_length > 3
+        # fut cov + output_chunk_length > 3, 5 > 2
         (
             LinearRegressionModel,
-            {"lags_future_covariates": [0, 1], "output_chunk_length": 6},
-            (1, 6),  # 1 = "0" of fut cov?
+            {"lags_future_covariates": [0, 1], "output_chunk_length": 5},
+            (0, 5),
         ),
         # past cov only
         (LinearRegressionModel, {"lags_past_covariates": 6}, (6, 1)),
@@ -605,7 +605,9 @@ if TORCH_AVAILABLE:
                     == self.ts_val_length - bounds[0]
                 )
 
-        def test_regression_auto_start_multiple_with_cov(self):
+        def test_regression_auto_start_multiple_with_cov_retrain(self):
+
+            forecast_hrz = 10
 
             for model_cls, kwargs, bounds in models_reg_cov_cls_kwargs:
                 model = model_cls(
@@ -613,7 +615,7 @@ if TORCH_AVAILABLE:
                     **kwargs,
                 )
 
-                forecasts = model.historical_forecasts(
+                forecasts_retrain = model.historical_forecasts(
                     series=[self.ts_pass_val, self.ts_pass_val],
                     past_covariates=[
                         self.ts_past_cov_valid_same_start,
@@ -627,26 +629,148 @@ if TORCH_AVAILABLE:
                     ]
                     if "lags_future_covariates" in kwargs
                     else None,
-                    forecast_horizon=10,
+                    forecast_horizon=forecast_hrz,
                     stride=1,
                     retrain=True,
                     overlap_end=False,
                 )
 
                 self.assertTrue(
-                    len(forecasts) == 2,
+                    len(forecasts_retrain) == 2,
                     f"Model {model_cls} did not return a list of historical forecasts",
                 )
 
-                theorical_forecast_length = (
-                    self.ts_val_length - (bounds[0] + bounds[1] + 1) - 10 + 1
+                (
+                    min_target_lag,
+                    max_target_lag,
+                    min_past_cov_lag,
+                    max_past_cov_lag,
+                    min_future_cov_lag,
+                    max_future_cov_lag,
+                ) = model.extreme_lags
+
+                past_lag = min(
+                    min_target_lag if min_target_lag else 0,
+                    min_past_cov_lag if min_past_cov_lag else 0,
+                    min_future_cov_lag if min_future_cov_lag else 0,
                 )
+
+                future_lag = (
+                    max_future_cov_lag
+                    if max_future_cov_lag is not None and max_future_cov_lag > 0
+                    else 0
+                )
+
+                # length input - biggest past lag - biggest future lag - forecast horizon - output_chunk_length
+                theorical_retrain_forecast_length = len(self.ts_pass_val) - (
+                    -past_lag
+                    + future_lag
+                    + forecast_hrz
+                    + kwargs.get("output_chunk_length", 1)
+                )
+
                 self.assertTrue(
-                    len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length,
+                    len(forecasts_retrain[0])
+                    == len(forecasts_retrain[1])
+                    == theorical_retrain_forecast_length,
                     f"Model {model_cls} does not return the right number of historical forecasts in the case of "
                     f"retrain=True and overlap_end=False. "
-                    f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}",
+                    f"Expected {theorical_retrain_forecast_length}, got {len(forecasts_retrain[0])} "
+                    f"and {len(forecasts_retrain[1])}",
                 )
+
+                # start is shifted by biggest past lag + training timestamps (forecast horizon + output_chunk_length)
+                expected_start = (
+                    self.ts_pass_val.start_time()
+                    + (-past_lag + forecast_hrz + kwargs.get("output_chunk_length", 1))
+                    * self.ts_pass_val.freq
+                )
+                self.assertEqual(forecasts_retrain[0].start_time(), expected_start)
+
+                # end is shifted by the biggest future lag
+                expected_end = (
+                    self.ts_pass_val.end_time() - future_lag * self.ts_pass_val.freq
+                )
+                self.assertEqual(forecasts_retrain[0].end_time(), expected_end)
+
+        def test_regression_auto_start_multiple_with_cov_no_retrain(self):
+
+            forecast_hrz = 10
+
+            for model_cls, kwargs, bounds in models_reg_cov_cls_kwargs:
+                model = model_cls(
+                    random_state=0,
+                    **kwargs,
+                )
+
+                model.fit(
+                    series=[self.ts_pass_val, self.ts_pass_val],
+                    past_covariates=[
+                        self.ts_past_cov_valid_same_start,
+                        self.ts_past_cov_valid_same_start,
+                    ]
+                    if "lags_past_covariates" in kwargs
+                    else None,
+                    future_covariates=[
+                        self.ts_past_cov_valid_same_start,
+                        self.ts_past_cov_valid_same_start,
+                    ]
+                    if "lags_future_covariates" in kwargs
+                    else None,
+                )
+                forecasts_no_retrain = model.historical_forecasts(
+                    series=[self.ts_pass_val, self.ts_pass_val],
+                    past_covariates=[
+                        self.ts_past_cov_valid_same_start,
+                        self.ts_past_cov_valid_same_start,
+                    ]
+                    if "lags_past_covariates" in kwargs
+                    else None,
+                    future_covariates=[
+                        self.ts_past_cov_valid_same_start,
+                        self.ts_past_cov_valid_same_start,
+                    ]
+                    if "lags_future_covariates" in kwargs
+                    else None,
+                    forecast_horizon=forecast_hrz,
+                    stride=1,
+                    retrain=False,
+                    overlap_end=False,
+                )
+
+                (
+                    min_target_lag,
+                    max_target_lag,
+                    min_past_cov_lag,
+                    max_past_cov_lag,
+                    min_future_cov_lag,
+                    max_future_cov_lag,
+                ) = model.extreme_lags
+
+                past_lag = min(
+                    min_target_lag if min_target_lag else 0,
+                    min_past_cov_lag if min_past_cov_lag else 0,
+                    min_future_cov_lag if min_future_cov_lag else 0,
+                )
+
+                future_lag = (
+                    max_future_cov_lag
+                    if max_future_cov_lag is not None and max_future_cov_lag > 0
+                    else 0
+                )
+
+                # start is shifted by the biggest past lag plus the forecast horizon
+                expected_start = (
+                    self.ts_pass_val.start_time()
+                    + (-past_lag + forecast_hrz - 1) * self.ts_pass_val.freq
+                )
+                self.assertEqual(forecasts_no_retrain[0].start_time(), expected_start)
+
+                # end is shifted by the biggest future lag
+                expected_end = (
+                    self.ts_pass_val.end_time() - future_lag * self.ts_pass_val.freq
+                )
+                self.assertEqual(forecasts_no_retrain[0].end_time(), expected_end)
 
         @pytest.mark.slow
         @unittest.skipUnless(
