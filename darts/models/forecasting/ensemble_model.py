@@ -167,13 +167,14 @@ class EnsembleModel(GlobalForecastingModel):
             future_covariates=future_covariates,
             num_samples=num_samples,
         )
-        return self.ensemble(predictions, series=series)
+        return self.ensemble(predictions, series=series, num_samples=num_samples)
 
     @abstractmethod
     def ensemble(
         self,
         predictions: Union[TimeSeries, Sequence[TimeSeries]],
         series: Optional[Sequence[TimeSeries]] = None,
+        num_samples: int = 1,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         Defines how to ensemble the individual models' predictions to produce a single prediction.

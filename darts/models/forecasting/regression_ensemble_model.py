@@ -157,6 +157,7 @@ class RegressionEnsembleModel(EnsembleModel):
         self,
         predictions: Union[TimeSeries, Sequence[TimeSeries]],
         series: Optional[Sequence[TimeSeries]] = None,
+        num_samples: int = 1,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
 
         is_single_series = isinstance(series, TimeSeries) or series is None
@@ -165,7 +166,12 @@ class RegressionEnsembleModel(EnsembleModel):
 
         ensembled = [
             self.regression_model.predict(
-                n=len(prediction), series=serie, future_covariates=prediction
+                n=len(prediction),
+                series=serie,
+                future_covariates=prediction,
+                num_samples=num_samples
+                if self.regression_model._is_probabilistic()
+                else 1,
             )
             for serie, prediction in zip(series, predictions)
         ]
