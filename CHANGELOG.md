@@ -13,7 +13,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - `LightGBM` model now supports native categorical feature handling as described
    [here](https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features).
    [#1585](https://github.com/unit8co/darts/pull/1585) by [Rijk van der Meulen](https://github.com/rijkvandermeulen)
-- Fix issue when resuming training from checkpoint Torch models 
+- Fix issue with Torch models not resuming training correctly from checkpoints and updated behavior of the epochs parameter in fit() so that the model is trained for a specified number of *additional* epochs regardless of the number of epochs previously trained.
    [#1495](https://github.com/unit8co/darts/pull/1495) by [Rijk van der Meulen](https://github.com/rijkvandermeulen)
 
 ## [0.23.1](https://github.com/unit8co/darts/tree/0.23.1) (2023-01-12)
