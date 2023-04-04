@@ -28,7 +28,7 @@ class WassersteinScorer(FittableAnomalyScorer):
         self,
         window: int = 10,
         component_wise: bool = False,
-        window_transform: bool = True,
+        window_agg: bool = True,
         diff_fn="abs_diff",
     ) -> None:
         """
@@ -94,12 +94,11 @@ class WassersteinScorer(FittableAnomalyScorer):
             Boolean value indicating if the score needs to be computed for each component independently (True)
             or by concatenating the component in the considered window to compute one score (False).
             Default: False
-        window_transform
-            Boolean value indicates if the scorer needs to post-process its output when the `window` parameter
-            exceeds 1. If set to True, the scores for each point can be assigned by aggregating the anomaly
-            scores for each window the point is included in. It returns a point-wise anomaly score. If set to
-            False, the score is returned without this post-processing step and is a window-wise anomaly score.
-            Default: True
+        window_agg
+            Boolean indicating whether the anomaly score for each time step is computed by
+            averaging the anomaly scores for all windows this point is included in.
+            If False, the anomaly score for each point is the anomaly score of its trailing window.
+            Default: True.
         diff_fn
             Optionally, reduced function to use if two series are given. It will transform the two series into one.
             This allows the WassersteinScorer to compute the Wasserstein distance on the original series or on its
@@ -135,7 +134,7 @@ class WassersteinScorer(FittableAnomalyScorer):
             univariate_scorer=(not component_wise),
             window=window,
             diff_fn=diff_fn,
-            window_transform=window_transform,
+            window_agg=window_agg,
         )
 
     def __str__(self):
@@ -199,7 +198,7 @@ class WassersteinScorer(FittableAnomalyScorer):
                 list_series, list_np_anomaly_score
             )
 
-        if self.window > 1 and self.window_transform:
-            return self._fun_window_transform(list_anomaly_score, self.window)
+        if self.window > 1 and self.window_agg:
+            return self._fun_window_agg(list_anomaly_score, self.window)
         else:
             return list_anomaly_score

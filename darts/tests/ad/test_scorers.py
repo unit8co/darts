@@ -33,7 +33,7 @@ list_NonFittableAnomalyScorer = [
 list_FittableAnomalyScorer = [
     PyODScorer(model=KNN()),
     KMeansScorer(),
-    WassersteinScorer(window_transform=False),
+    WassersteinScorer(window_agg=False),
 ]
 
 list_NLLScorer = [
@@ -850,7 +850,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         self.expects_deterministic_input(WassersteinScorer)
 
         # test plotting (just call the functions)
-        scorer = WassersteinScorer(window=2, window_transform=False)
+        scorer = WassersteinScorer(window=2, window_agg=False)
         scorer.fit(self.train)
         scorer.show_anomalies(self.test, self.anomalies)
         with self.assertRaises(ValueError):
@@ -910,7 +910,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # test model with window of 10
-        scorer_10 = WassersteinScorer(window=10, window_transform=False)
+        scorer_10 = WassersteinScorer(window=10, window_agg=False)
         scorer_10.fit(train_wasserstein)
         auc_roc_w10 = scorer_10.eval_accuracy(
             anomalies_wasserstein, test_wasserstein, metric="AUC_ROC"
@@ -920,7 +920,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # test model with window of 20
-        scorer_20 = WassersteinScorer(window=20, window_transform=False)
+        scorer_20 = WassersteinScorer(window=20, window_agg=False)
         scorer_20.fit(train_wasserstein)
         auc_roc_w20 = scorer_20.eval_accuracy(
             anomalies_wasserstein, test_wasserstein, metric="AUC_ROC"
@@ -989,7 +989,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # test scorer with component_wise=False
         scorer_w10_cwfalse = WassersteinScorer(
-            window=10, component_wise=False, window_transform=False
+            window=10, component_wise=False, window_agg=False
         )
         scorer_w10_cwfalse.fit(mts_train_wasserstein)
         auc_roc_cwfalse = scorer_w10_cwfalse.eval_accuracy(
@@ -998,7 +998,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # test scorer with component_wise=True
         scorer_w10_cwtrue = WassersteinScorer(
-            window=10, component_wise=True, window_transform=False
+            window=10, component_wise=True, window_agg=False
         )
         scorer_w10_cwtrue.fit(mts_train_wasserstein)
         auc_roc_cwtrue = scorer_w10_cwtrue.eval_accuracy(
@@ -1154,7 +1154,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         kmeans_scorer_w1 = KMeansScorer(k=4, window=1)
         kmeans_scorer_w1.fit(ts_train)
 
-        kmeans_scorer_w2 = KMeansScorer(k=8, window=2, window_transform=False)
+        kmeans_scorer_w2 = KMeansScorer(k=8, window=2, window_agg=False)
         kmeans_scorer_w2.fit(ts_train)
 
         auc_roc_w1 = kmeans_scorer_w1.eval_accuracy(
@@ -1232,7 +1232,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # test scorer with component_wise=False
         scorer_w10_cwfalse = KMeansScorer(
-            window=10, component_wise=False, n_init=10, window_transform=False
+            window=10, component_wise=False, n_init=10, window_agg=False
         )
         scorer_w10_cwfalse.fit(mts_train_kmeans)
         auc_roc_cwfalse = scorer_w10_cwfalse.eval_accuracy(
@@ -1241,7 +1241,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         # test scorer with component_wise=True
         scorer_w10_cwtrue = KMeansScorer(
-            window=10, component_wise=True, n_init=10, window_transform=False
+            window=10, component_wise=True, n_init=10, window_agg=False
         )
         scorer_w10_cwtrue.fit(mts_train_kmeans)
         auc_roc_cwtrue = scorer_w10_cwtrue.eval_accuracy(
@@ -1453,7 +1453,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             model=KNN(n_neighbors=10),
             component_wise=False,
             window=2,
-            window_transform=False,
+            window_agg=False,
         )
         pyod_scorer_w2.fit(ts_train)
 
@@ -1532,7 +1532,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             model=KNN(n_neighbors=10),
             component_wise=False,
             window=10,
-            window_transform=False,
+            window_agg=False,
         )
         scorer_w10_cwfalse.fit(mts_train_PyOD)
         auc_roc_cwfalse = scorer_w10_cwfalse.eval_accuracy(
@@ -1544,7 +1544,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             model=KNN(n_neighbors=10),
             component_wise=True,
             window=10,
-            window_transform=False,
+            window_agg=False,
         )
         scorer_w10_cwtrue.fit(mts_train_PyOD)
         auc_roc_cwtrue = scorer_w10_cwtrue.eval_accuracy(
@@ -1730,26 +1730,26 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         NLL_real_values = [-np.log(poisson.pmf(value, mu=1)) for value in values]
         self.NLL_test(PoissonNLLScorer, distribution, values, NLL_real_values)
 
-    def test_window_transform(self):
+    def test_window_agg(self):
 
         # transform_window parameter is set to True (default value)
         # and window>1
 
-        # parameter window_transform must be Boolean
+        # parameter window_agg must be Boolean
         with self.assertRaises(ValueError):
-            KMeansScorer(window=2, window_transform=2)
-            WassersteinScorer(window=2, window_transform=[True])
-            PyODScorer(window=2, window_transform="fe")
+            KMeansScorer(window=2, window_agg=2)
+            WassersteinScorer(window=2, window_agg=[True])
+            PyODScorer(window=2, window_agg="fe")
 
         kwargs = {"random_state": 42}
 
-        # window_transform set to True with window=1
+        # window_agg set to True with window=1
         KMeansScorer_T_w1 = KMeansScorer(window=1, **kwargs)
         PyODScorer_T_w1 = PyODScorer(model=KNN(), window=1)
 
-        # window_transform set to False with window=1
-        KMeansScorer_F_w1 = KMeansScorer(window=1, window_transform=False, **kwargs)
-        PyODScorer_F_w1 = PyODScorer(model=KNN(), window=1, window_transform=False)
+        # window_agg set to False with window=1
+        KMeansScorer_F_w1 = KMeansScorer(window=1, window_agg=False, **kwargs)
+        PyODScorer_F_w1 = PyODScorer(model=KNN(), window=1, window_agg=False)
 
         for scorer_F, scorer_T in zip(
             [KMeansScorer_F_w1, PyODScorer_F_w1], [KMeansScorer_T_w1, PyODScorer_T_w1]
@@ -1770,26 +1770,20 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
                 )
 
                 # if window==1, the models must return the same results,
-                # regardless of the parameter window_transform
+                # regardless of the parameter window_agg
                 self.assertTrue(auc_roc_T == auc_roc_F)
 
         for window in [2, 10, 39]:
 
-            # window_transform set to True with window>1
+            # window_agg set to True with window>1
             KMeansScorer_T = KMeansScorer(window=window, **kwargs)
             WassersteinScorer_T = WassersteinScorer(window=window)
             PyODScorer_T = PyODScorer(model=KNN(), window=window)
 
-            # window_transform set to False with window>1
-            KMeansScorer_F = KMeansScorer(
-                window=window, window_transform=False, **kwargs
-            )
-            WassersteinScorer_F = WassersteinScorer(
-                window=window, window_transform=False
-            )
-            PyODScorer_F = PyODScorer(
-                model=KNN(), window=window, window_transform=False
-            )
+            # window_agg set to False with window>1
+            KMeansScorer_F = KMeansScorer(window=window, window_agg=False, **kwargs)
+            WassersteinScorer_F = WassersteinScorer(window=window, window_agg=False)
+            PyODScorer_F = PyODScorer(model=KNN(), window=window, window_agg=False)
 
             scorers_T = [KMeansScorer_T, WassersteinScorer_T, PyODScorer_T]
             scorers_F = [KMeansScorer_F, WassersteinScorer_F, PyODScorer_F]

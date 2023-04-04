@@ -106,7 +106,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         list_FittableAnomalyScorer = [
             PyODScorer(model=KNN()),
             KMeansScorer(),
-            WassersteinScorer(window_transform=False),
+            WassersteinScorer(window_agg=False),
         ]
 
         for scorers in list_FittableAnomalyScorer:
@@ -283,7 +283,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             ForecastingAnomalyModel(
                 model=RegressionModel(lags=10),
-                scorer=KMeansScorer(window=50, window_transform=False),
+                scorer=KMeansScorer(window=50, window_agg=False),
             ).fit(series=self.train, start=0.9)
 
         # forecasting model that cannot be trained on a list of series
@@ -338,7 +338,7 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
         # max window size is len(series.drop_before(series.get_timestamp_at_point(start))) + 1 for score()
         anomaly_model = ForecastingAnomalyModel(
             model=RegressionModel(lags=10),
-            scorer=KMeansScorer(window=30, window_transform=False),
+            scorer=KMeansScorer(window=30, window_agg=False),
         )
         anomaly_model.fit(self.train, allow_model_training=True)
         with self.assertRaises(ValueError):
@@ -375,13 +375,13 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
 
         am3 = ForecastingAnomalyModel(
             model=RegressionModel(lags=10),
-            scorer=[NormScorer(), WassersteinScorer(window_transform=False)],
+            scorer=[NormScorer(), WassersteinScorer(window_agg=False)],
         )
         am3.fit(self.train, allow_model_training=True)
 
         am4 = FilteringAnomalyModel(
             model=MovingAverageFilter(window=20),
-            scorer=[NormScorer(), WassersteinScorer(window_transform=False)],
+            scorer=[NormScorer(), WassersteinScorer(window_agg=False)],
         )
         am4.fit(self.train)
 
@@ -601,12 +601,12 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             scorer=[
                 NormScorer(),
                 Difference(),
-                WassersteinScorer(window_transform=False),
+                WassersteinScorer(window_agg=False),
                 KMeansScorer(k=5),
-                KMeansScorer(window=10, window_transform=False),
+                KMeansScorer(window=10, window_agg=False),
                 PyODScorer(model=KNN()),
-                PyODScorer(model=KNN(), window=10, window_transform=False),
-                WassersteinScorer(window=15, window_transform=False),
+                PyODScorer(model=KNN(), window=10, window_agg=False),
+                WassersteinScorer(window=15, window_agg=False),
             ],
         )
 
@@ -725,12 +725,12 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             scorer=[
                 NormScorer(),
                 Difference(),
-                WassersteinScorer(window_transform=False),
+                WassersteinScorer(window_agg=False),
                 KMeansScorer(),
-                KMeansScorer(window=10, window_transform=False),
+                KMeansScorer(window=10, window_agg=False),
                 PyODScorer(model=KNN()),
-                PyODScorer(model=KNN(), window=10, window_transform=False),
-                WassersteinScorer(window=15, window_transform=False),
+                PyODScorer(model=KNN(), window=10, window_agg=False),
+                WassersteinScorer(window=15, window_agg=False),
             ],
         )
         anomaly_model.fit(train_series_noise)
@@ -850,12 +850,12 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             scorer=[
                 NormScorer(),
                 Difference(),
-                WassersteinScorer(window_transform=False),
+                WassersteinScorer(window_agg=False),
                 KMeansScorer(k=4),
-                KMeansScorer(k=7, window=10, window_transform=False),
+                KMeansScorer(k=7, window=10, window_agg=False),
                 PyODScorer(model=KNN()),
-                PyODScorer(model=KNN(), window=10, window_transform=False),
-                WassersteinScorer(window=15, window_transform=False),
+                PyODScorer(model=KNN(), window=10, window_agg=False),
+                WassersteinScorer(window=15, window_agg=False),
             ],
         )
 
@@ -998,12 +998,12 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             model=MovingAverageFilter(window=10),
             scorer=[
                 NormScorer(component_wise=False),
-                WassersteinScorer(window_transform=False),
-                WassersteinScorer(window=12, window_transform=False),
+                WassersteinScorer(window_agg=False),
+                WassersteinScorer(window=12, window_agg=False),
                 KMeansScorer(),
-                KMeansScorer(window=5, window_transform=False),
+                KMeansScorer(window=5, window_agg=False),
                 PyODScorer(model=KNN()),
-                PyODScorer(model=KNN(), window=5, window_transform=False),
+                PyODScorer(model=KNN(), window=5, window_agg=False),
             ],
         )
         anomaly_model.fit(mts_series_train)
@@ -1083,15 +1083,13 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             scorer=[
                 NormScorer(component_wise=True),
                 Difference(),
-                WassersteinScorer(component_wise=True, window_transform=False),
-                WassersteinScorer(
-                    window=12, component_wise=True, window_transform=False
-                ),
+                WassersteinScorer(component_wise=True, window_agg=False),
+                WassersteinScorer(window=12, component_wise=True, window_agg=False),
                 KMeansScorer(component_wise=True),
-                KMeansScorer(window=5, component_wise=True, window_transform=False),
+                KMeansScorer(window=5, component_wise=True, window_agg=False),
                 PyODScorer(model=KNN(), component_wise=True),
                 PyODScorer(
-                    model=KNN(), window=5, component_wise=True, window_transform=False
+                    model=KNN(), window=5, component_wise=True, window_agg=False
                 ),
             ],
         )
@@ -1230,12 +1228,12 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             model=RegressionModel(lags=10),
             scorer=[
                 NormScorer(component_wise=False),
-                WassersteinScorer(window_transform=False),
-                WassersteinScorer(window=20, window_transform=False),
+                WassersteinScorer(window_agg=False),
+                WassersteinScorer(window=20, window_agg=False),
                 KMeansScorer(),
-                KMeansScorer(window=20, window_transform=False),
+                KMeansScorer(window=20, window_agg=False),
                 PyODScorer(model=KNN()),
-                PyODScorer(model=KNN(), window=10, window_transform=False),
+                PyODScorer(model=KNN(), window=10, window_agg=False),
             ],
         )
         anomaly_model.fit(mts_series_train, allow_model_training=True, start=0.1)
@@ -1315,15 +1313,13 @@ class ADAnomalyModelTestCase(DartsBaseTestClass):
             scorer=[
                 NormScorer(component_wise=True),
                 Difference(),
-                WassersteinScorer(component_wise=True, window_transform=False),
-                WassersteinScorer(
-                    window=20, component_wise=True, window_transform=False
-                ),
+                WassersteinScorer(component_wise=True, window_agg=False),
+                WassersteinScorer(window=20, component_wise=True, window_agg=False),
                 KMeansScorer(component_wise=True),
-                KMeansScorer(window=20, component_wise=True, window_transform=False),
+                KMeansScorer(window=20, component_wise=True, window_agg=False),
                 PyODScorer(model=KNN(), component_wise=True),
                 PyODScorer(
-                    model=KNN(), window=10, component_wise=True, window_transform=False
+                    model=KNN(), window=10, component_wise=True, window_agg=False
                 ),
             ],
         )

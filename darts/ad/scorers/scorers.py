@@ -170,7 +170,7 @@ class AnomalyScorer(ABC):
             + f" (number of samples must be higher than 1, found: {series.n_samples}).",
         )
 
-    def _assert_deterministic(self, series: TimeSeries, name_series: str):
+    def _extract_deterministic(self, series: TimeSeries, name_series: str):
         "Checks if the series is deterministic (number of samples is equal to one)."
 
         if not series.is_deterministic:
@@ -392,7 +392,7 @@ class FittableAnomalyScorer(AnomalyScorer):
     """Base class of scorers that do need training."""
 
     def __init__(
-        self, univariate_scorer, window, window_transform, diff_fn="abs_diff"
+        self, univariate_scorer, window, window_agg, diff_fn="abs_diff"
     ) -> None:
         super().__init__(univariate_scorer=univariate_scorer, window=window)
 
@@ -409,12 +409,12 @@ class FittableAnomalyScorer(AnomalyScorer):
             raise ValueError(f"Metric should be 'diff' or 'abs_diff', found {diff_fn}")
 
         raise_if_not(
-            type(window_transform) is bool,
-            f"Parameter `window_transform` must be Boolean, found type: {type(window_transform)}.",
+            type(window_agg) is bool,
+            f"Parameter `window_agg` must be Boolean, found type: {type(window_agg)}.",
         )
-        self.window_transform = window_transform
+        self.window_agg = window_agg
 
-    def _fun_window_transform(
+    def _fun_window_agg(
         self, list_scores: Sequence[TimeSeries], window: int
     ) -> Sequence[TimeSeries]:
         """
@@ -422,7 +422,7 @@ class FittableAnomalyScorer(AnomalyScorer):
 
         When using a window of size `W`, a scorer will return an anomaly score
         with values that represent how anomalous each past `W` is. If the parameter
-        `window_transform` is set to True (default value), the scores for each point
+        `window_agg` is set to True (default value), the scores for each point
         can be assigned by aggregating the anomaly scores for each window the point
         is included in. This post-processing step is equivalent to rolling a window
         on the reversed series and computing the mean function. The return anomaly
@@ -431,7 +431,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         list_scores_point_wise = []
         for score in list_scores:
 
-            series_reversed = TimeSeries.from_values(score.all_values()[::-1])
+            series_reversed = TimeSeries.from_values(score.all_values(copy=False)[::-1])
 
             score_point_wise = TimeSeries.from_times_and_values(
                 score.time_index,
@@ -442,7 +442,7 @@ class FittableAnomalyScorer(AnomalyScorer):
                         "mode": "rolling",
                         "min_periods": 0,
                     },
-                ).all_values()[::-1],
+                ).all_values(copy=False)[::-1],
             )
 
             list_scores_point_wise.append(score_point_wise)
@@ -495,7 +495,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         self._check_univariate_scorer(actual_anomalies)
         anomaly_score = self.score(series)
 
-        if self.window_transform:
+        if self.window_agg:
             window = 1
         else:
             window = self.window
@@ -532,19 +532,9 @@ class FittableAnomalyScorer(AnomalyScorer):
             _assert_timeseries(s)
             self._check_window_size(s)
 
-        list_series = [self._assert_deterministic(s, "series") for s in list_series]
+        list_series = [self._extract_deterministic(s, "series") for s in list_series]
 
         anomaly_scores = self._score_core(list_series)
-
-        """
-        anomaly_scores = []
-        for s in list_series:
-            _assert_timeseries(s)
-            self._check_window_size(s)
-            anomaly_scores.append(
-                self._score_core(self._assert_deterministic(s, "series"))
-            )
-        """
 
         if len(anomaly_scores) == 1 and not isinstance(series, Sequence):
             return anomaly_scores[0]
@@ -612,7 +602,7 @@ class FittableAnomalyScorer(AnomalyScorer):
         if scorer_name is None:
             scorer_name = f"anomaly score by {self.__str__()}"
 
-        if self.window_transform:
+        if self.window_agg:
             window = 1
         else:
             window = self.window
@@ -666,8 +656,8 @@ class FittableAnomalyScorer(AnomalyScorer):
         anomaly_scores = []
         for (s1, s2) in zip(list_actual_series, list_pred_series):
             _sanity_check_two_series(s1, s2)
-            s1 = self._assert_deterministic(s1, "actual_series")
-            s2 = self._assert_deterministic(s2, "pred_series")
+            s1 = self._extract_deterministic(s1, "actual_series")
+            s2 = self._extract_deterministic(s2, "pred_series")
             diff = self._diff_series(s1, s2)
             self._check_window_size(diff)
             anomaly_scores.append(self.score(diff))
@@ -717,7 +707,7 @@ class FittableAnomalyScorer(AnomalyScorer):
                 )
             self._check_window_size(s)
 
-            self._assert_deterministic(s, "series")
+            s = self._extract_deterministic(s, "series")
 
         self._fit_core(list_series)
         self._fit_called = True
@@ -759,8 +749,8 @@ class FittableAnomalyScorer(AnomalyScorer):
         list_fit_series = []
         for s1, s2 in zip(list_actual_series, list_pred_series):
             _sanity_check_two_series(s1, s2)
-            s1 = self._assert_deterministic(s1, "actual_series")
-            s2 = self._assert_deterministic(s2, "pred_series")
+            s1 = self._extract_deterministic(s1, "actual_series")
+            s2 = self._extract_deterministic(s2, "pred_series")
             list_fit_series.append(self._diff_series(s1, s2))
 
         self.fit(list_fit_series)
@@ -834,7 +824,7 @@ class NLLScorer(NonFittableAnomalyScorer):
         -------
         TimeSeries
         """
-        actual_series = self._assert_deterministic(actual_series, "actual_series")
+        actual_series = self._extract_deterministic(actual_series, "actual_series")
         self._assert_stochastic(pred_series, "pred_series")
 
         np_actual_series = actual_series.all_values(copy=False)
