@@ -204,6 +204,7 @@ class NaiveEnsembleModel(EnsembleModel):
         self,
         predictions: Union[TimeSeries, Sequence[TimeSeries]],
         series: Optional[Sequence[TimeSeries]] = None,
+        num_samples: int = 1,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         def take_average(prediction: TimeSeries) -> TimeSeries:
             series = prediction.pd_dataframe(copy=False).sum(axis=1) / len(self.models)
