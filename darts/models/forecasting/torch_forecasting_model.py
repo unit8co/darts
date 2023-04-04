@@ -1003,7 +1003,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
         # Fetch max_epochs to pass to the trainer
         train_num_epochs = (
-            max(self.epochs_trained, epochs)
+            self.epochs_trained + epochs
             if epochs
             else max(self.epochs_trained, self.n_epochs)
         )

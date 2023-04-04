@@ -340,7 +340,7 @@ if TORCH_AVAILABLE:
             self.assertEqual(10, model1.epochs_trained)
 
             model1.fit(self.series, epochs=15)
-            self.assertEqual(15, model1.epochs_trained)
+            self.assertEqual(25, model1.epochs_trained)
 
         def test_load_weights_from_checkpoint(self):
             ts_training = self.series[:90]
@@ -493,7 +493,8 @@ if TORCH_AVAILABLE:
             # epochs_trained is still 10 when loading from checkpoint
             self.assertEqual(10, model_from_checkpoint.epochs_trained)
 
-            model_from_checkpoint.fit(self.series, epochs=15)
+            # training for 5 more epochs
+            model_from_checkpoint.fit(self.series, epochs=5)
             self.assertEqual(15, model_from_checkpoint.epochs_trained)
 
         def test_optimizers(self):
