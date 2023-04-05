@@ -505,9 +505,7 @@ class RegressionModel(GlobalForecastingModel):
                     if static_cov_name not in static_covs_names:
                         static_covs_names.append(static_cov_name)
 
-        return [
-            feat_cols_name + static_covs_names for feat_cols_name in features_cols_name
-        ]
+        return features_cols_name + static_covs_names
 
     def _fit_model(
         self,
