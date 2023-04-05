@@ -837,12 +837,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     - self._training_sample_time_index_length * series_.freq
                 )
 
-            # only look at the lags requirements in the past (target is not required)
-            min_timestamp_predict = (
-                historical_forecasts_time_index_predict[0]
-                - self._predict_sample_time_index_past_length * series_.freq
-            )
-
             if isinstance(retrain, Callable):
                 # retain the longer time index, anything can happen
                 if (
@@ -934,6 +928,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             last_points_times = []
             last_points_values = []
+            _counter_train = 0
 
             # iterate and forecast
             for _counter, pred_time in enumerate(iterator):
@@ -948,56 +943,67 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 if train_length and len(train_series) > train_length:
                     train_series = train_series[-train_length:]
 
-                # retrain_func processes the series that would be used for training
                 if (
                     historical_forecasts_time_index_train is not None
                     and pred_time in historical_forecasts_time_index_train
-                    and retrain_func(
-                        counter=_counter,
+                ):
+                    # retrain_func processes the series that would be used for training
+                    if retrain_func(
+                        counter=_counter_train,
                         pred_time=pred_time,
                         train_series=train_series,
-                        past_covariates=past_covariates_ if past_covariates_ else None,
-                        future_covariates=future_covariates_
-                        if future_covariates_
-                        else None,
-                    )
-                ):
-                    # avoid fitting the same model multiple times
-                    model = self.untrained_model()
-                    model._fit_wrapper(
-                        series=train_series,
                         past_covariates=past_covariates_,
                         future_covariates=future_covariates_,
-                    )
-                else:
-                    # model must be fit before the first prediction
-                    if not _counter and not self._fit_called:
+                    ):
+                        # avoid fitting the same model multiple times
+                        model = self.untrained_model()
+                        model._fit_wrapper(
+                            series=train_series,
+                            past_covariates=past_covariates_,
+                            future_covariates=future_covariates_,
+                        )
+
+                    # untrained model was not trained on the first trainable timestamp
+                    if _counter_train == 0 and model is None and not self._fit_called:
                         raise_log(
                             ValueError(
-                                f"`retrain` is `False` in first iteration at prediction point (in time) `{pred_time}` "
-                                f"and the model has not been fit before. Either call `fit()` before "
-                                f"`historical_forecasts()`, or use a different `retrain` value / modify the function "
+                                f"`retrain` is `False` in the first train iteration at prediction point (in time) "
+                                f"`{pred_time}` and the model has not been fit before. Either call `fit()` before  "
+                                f"`historical_forecasts()`, use a different `retrain` value or modify the function "
                                 f"to return `True` in first iteration."
                             ),
                             logger,
                         )
+                    _counter_train += 1
+                else:
+                    # model must be fit before the first prediction
+                    # `historical_forecasts_time_index_train` is known to be not None
+                    if not _counter and not self._fit_called:
+                        raise_log(
+                            ValueError(
+                                f"Model has not been fit before the first predict iteration at prediction point "
+                                f"(in time) `{pred_time}`. Either call `fit()` before `historical_forecasts()`, "
+                                f"set `retrain=True`, modify the function to return `True` at least once before "
+                                f"`{pred_time}`, or use a different `start` value. The first 'predictable' "
+                                f"timestamp with re-training inside `historical_forecasts` is: "
+                                f"{historical_forecasts_time_index_train[0]} (potential `start` value)."
+                            ),
+                            logger,
+                        )
+
                     # use retrained model if `retrain` is not training every step
                     model = model if model is not None else self
-
                     # slice the series for prediction without retraining
-                    if min_timestamp_predict > series_.time_index[0]:
-                        train_series = series_.drop_before(
-                            min_timestamp_predict - 1 * series_.freq
-                        ).drop_after(pred_time)
-                    else:
-                        train_series = series_.drop_after(pred_time)
+                    train_series = series_.drop_after(pred_time)
 
-                # if the first predictable timestamp is also the first timestamp of the series, create dummy ts
+                # for regression models with lags=None, lags_past_covariates=None and min(lags_future_covariates)>=0,
+                # the first predictable timestamp is the first timestamp of the series, a dummy ts must be created
+                # to support `predict()`
                 if len(train_series) == 0:
                     train_series = TimeSeries.from_times_and_values(
-                        times=pd.date_range(
+                        times=generate_index(
                             start=pred_time - 1 * series_.freq,
-                            periods=1,
+                            length=1,
                             freq=series_.freq,
                         ),
                         values=[np.NaN],
