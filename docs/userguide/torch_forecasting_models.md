@@ -17,10 +17,14 @@ We assume that you already know about covariates in Darts. If you're new to the 
     - [Forecast / Prediction](#forecastprediction)
 
 3. Advanced functionnalities section provides some example of TFMs advanced features:
-    - [Saving checkpoints in the cloud](#automatic-checkpoints)
-    - [Load weights only for fine-tuning](#re-training-or-finetuning-a-models-weights)
-    - [Train & save on GPU, load on CPU](#mixed-devices-train-on-gpu-load-on-cpu)
-    - [Use custom callbacks during training](#custom-callbacks)
+    - [Model saving and loading](#saving-and-loading-model-states)
+      - [Checkpoint saving / loading](#automatic-checkpointing)
+      - [Manual saving / loading](#manual-saving--loading)
+      - [Train & save on GPU, load on CPU](#trainingsaving-on-gpu-and-loading-on-cpu)
+      - [Load pre-trained model for fine-tuning](#re-training-or-fine-tuning-a-pre-trained-model)
+    - [Callbacks](#callbacks)
+      - [Early Stopping](#example-with-early-stopping)
+      - [Custom Callback](#example-of-custom-callback-to-store-losses)
 
 4. [Performance optimisation section](#performance-recommendations) lists tricks to speed up the computation during training.
 
@@ -290,7 +294,7 @@ model = SomeTorchForecastingModel(...,
 model.fit(...)
 ```
 
-#### Manual Saving
+#### Manual saving / loading
 
 You can also manually save the model at its current state and load it:
 
@@ -301,7 +305,7 @@ loaded_model = model.load("/your/path/to/save/model.pt")
 
 #### Training/Saving on GPU and loading on CPU
 
-You can laod a model to CPU that was trained and saved on GPU (see detailed [documentation](https://unit8co.github.io/darts/userguide/gpu_and_tpu_usage.html)):
+You can load a model to CPU that was trained and saved on GPU (see detailed [documentation](https://unit8co.github.io/darts/userguide/gpu_and_tpu_usage.html)):
 
 ```python
 # define a model using gpu as accelerator
@@ -334,9 +338,9 @@ loaded_model.to_cpu()
 ```
 
 
-#### Re-training or finetuning a model's weights
+#### Re-training or fine-tuning a pre-trained model
 
-To retrain or fine-tune a model using a different optimizer and/or learning rate scheduler, you can load the weights from the automatic checkpoints into a new model:
+To re-train or fine-tune a model using a different optimizer and/or learning rate scheduler, you can load the weights from the automatic checkpoints into a new model:
 
 ```python
 # model with identical architecture but different optimizer (default: torch.optim.Adam) 
@@ -362,7 +366,7 @@ model_finetune = SomeTorchForecastingModel(...,  # use identical parameters & va
 model_finetune.load_weights("/your/path/to/save/model.pt")
 ```
 
-### Custom callbacks
+### Callbacks
 
 Callbacks are a powerful way to monitor or control the behavior of the model during the training process. Some examples:
 - Performance Monitoring: compute additional metrics (in addition of the default losses)
@@ -375,9 +379,9 @@ The code is triggered once the process execution reaches the corresponding hooks
 - beginning / end of train / validation step
 - ...
 
-Some useful predefined PyTorch Lightning callbacks can be found [here](https://lightning.ai/docs/pytorch/stable/extensions/callbacks.html#built-in-callbacks)
+Some useful predefined PyTorch Lightning callbacks can be found [here](https://lightning.ai/docs/pytorch/stable/extensions/callbacks.html#built-in-callbacks).
 
-#### Example with early stopping
+#### Example with Early Stopping
 Early stopping is an efficient way to avoid overfitting and reduce training time. 
 It will exit the training process once the validation loss has not significantly improved over some epochs.   
 
@@ -431,14 +435,19 @@ model.fit(
 
 To use early-stopping and pruning in the context of hyperparameter optimization, check out [this guide](https://unit8co.github.io/darts/userguide/hyperparameter_optimization.html).
 
-### Example of custom callback to store losses
+#### Example of custom callback to store losses
 
-Training and validation loss are automatically logged by Darts in a folder called `darts_logs` and can be visualised using the [tensorboard library](https://www.tensorflow.org/tensorboard) using the following command (after installing the package) in the command line:
+Training and validation loss can be automatically logged with [tensorboard](https://www.tensorflow.org/tensorboard). When activated, Darts will by default store the logs to a folder `darts_logs` in the current working directory. You can change this with model parameters `work_dir`, and `model_name`.
+```python
+model = SomeTorchForecastingModel(..., log_tensorboad, save_checkpoints=True)
+model.fit(...)
+```
+After installing the tensorboard library, you can visualize the logs from the command line:
 ```bash
 tensorboad --log_dir darts_logs
 ```
 
-It's however also possible to have them directly available in a Python object:
+Let's check out how to implement a **custom callback** to make the model losses accessible in Python.
 ```python
 from pytorch_lightning.callbacks import Callback
 
@@ -467,7 +476,7 @@ model = SomeTorchForecastingModel(
 model.fit(...)
 ```
 
-*Note* : The callback will give one more element in the loss_logger.val_loss as the model's trainer performs a validation sanity check before the training begins.
+*Note* : The callback will give one more element in the `loss_logger.val_loss` as the model trainer performs a validation sanity check before the training begins.
 
 ## Performance Recommendations
 This section recaps the main factors impacting the performance when
