@@ -36,7 +36,7 @@ from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
 from darts.utils.data.tabularization import (
-    create_lagged_components_names,
+    create_lagged_component_names,
     create_lagged_training_data,
 )
 from darts.utils.multioutput import MultiOutputRegressor
@@ -361,26 +361,23 @@ class RegressionModel(GlobalForecastingModel):
 
         return training_samples, training_labels
 
-    def _create_lagged_components_name(
+    def _create_lagged_component_names(
         self, target_series, past_covariates, future_covariates
     ):
-        lags = self.lags.get("target")
-        lags_past_covariates = self.lags.get("past")
-        lags_future_covariates = self.lags.get("future")
 
-        features_cols_name, labels_cols_name = create_lagged_components_names(
+        features_cols_name, labels_cols_name = create_lagged_component_names(
             target_series=target_series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            lags=lags,
-            lags_past_covariates=lags_past_covariates,
-            lags_future_covariates=lags_future_covariates,
+            lags=self.lags.get("target"),
+            lags_past_covariates=self.lags.get("past"),
+            lags_future_covariates=self.lags.get("future"),
             output_chunk_length=self.output_chunk_length,
             concatenate=False,
         )
 
         # adding the static covariates on the right of each features_cols_name
-        features_cols_name = self._add_static_covariates_name(
+        features_cols_name = self._add_static_covariate_names(
             features_cols_name,
             target_series,
         )
@@ -474,7 +471,7 @@ class RegressionModel(GlobalForecastingModel):
             features = features[0]
         return features
 
-    def _add_static_covariates_name(
+    def _add_static_covariate_names(
         self,
         features_cols_name: List[List[str]],
         target_series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -488,7 +485,7 @@ class RegressionModel(GlobalForecastingModel):
         ----------
         features_cols_name
             The name of the features of the numpy array(s) to which the static covariates will be added, generated with
-            `create_lagged_components_names()`
+            `create_lagged_component_names()`
         target_series
             The target series from which to read the static covariates.
 
@@ -535,12 +532,12 @@ class RegressionModel(GlobalForecastingModel):
         self.model.fit(training_samples, training_labels, **kwargs)
 
         # generate and store the lagged components names (for feature importance analysis)
-        lagged_features_names, _ = self._create_lagged_components_name(
+        lagged_feature_names, _ = self._create_lagged_component_names(
             target_series=target_series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
-        self.model.lagged_features_name_ = lagged_features_names
+        self.model.lagged_features_name_ = lagged_feature_names
 
     def fit(
         self,

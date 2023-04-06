@@ -1,6 +1,5 @@
 import warnings
 from functools import reduce
-from itertools import chain
 from math import inf
 from typing import List, Optional, Sequence, Tuple, Union
 
@@ -232,7 +231,7 @@ def create_lagged_data(
 
     See Also
     --------
-        tabularization.create_lagged_components_names : return the lagged features names as a list of strings.
+        tabularization.create_lagged_component_names : return the lagged features names as a list of strings.
 
     """
     raise_if(
@@ -437,7 +436,7 @@ def create_lagged_prediction_data(
     check_inputs: bool = True,
     use_moving_windows: bool = True,
     concatenate: bool = True,
-) -> Tuple[ArrayOrArraySequence, Union[None, ArrayOrArraySequence], Sequence[pd.Index]]:
+) -> Tuple[ArrayOrArraySequence, Sequence[pd.Index]]:
     """
     Creates the features array `X` to produce a series of prediction from an already-trained regression model; the
     time index values of each observation is also returned.
@@ -534,7 +533,7 @@ def create_lagged_prediction_data(
     return X, times
 
 
-def create_lagged_components_names(
+def create_lagged_component_names(
     target_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
@@ -582,70 +581,51 @@ def create_lagged_components_names(
     --------
         tabularization.create_lagged_data : generate the lagged features and labels as (list of) Arrays.
     """
-    target_series = (
-        [target_series] if not isinstance(target_series, Sequence) else target_series
-    )
-    past_covariates = (
-        [past_covariates]
-        if not isinstance(past_covariates, Sequence)
-        else past_covariates
-    )
-    future_covariates = (
-        [future_covariates]
-        if not isinstance(future_covariates, Sequence)
-        else future_covariates
-    )
+    target_series = series2seq(target_series)
+    past_covariates = series2seq(past_covariates)
+    future_covariates = series2seq(future_covariates)
 
-    covariates_specs = []
+    lagged_feature_names = []
+    label_feature_names = []
     for variate, variate_lags, variate_type in zip(
         [target_series, past_covariates, future_covariates],
         [lags, lags_past_covariates, lags_future_covariates],
         ["target", "past_cov", "future_cov"],
     ):
-        unique_components_names = set(
-            chain.from_iterable(
-                [list(ts.components) for ts in variate if ts is not None]
-            )
-        )
-        # variate is None
-        if len(unique_components_names) == 0:
-            pass
-        elif variate_lags:
-            # using first ts components names
-            if len(unique_components_names) == variate[0].n_components:
-                covariates_specs.append((variate[0].components, variate_lags))
-            # create generic feature names
-            else:
-                covariates_specs.append(
-                    (
-                        [
-                            f"comp{i}_{variate_type}"
-                            for i in range(variate[0].n_components)
-                        ],
-                        variate_lags,
-                    )
-                )
-    # using the same convention as the explainability module
-    features_cols_name = [
-        f"{comp_name}_lag{lag_idx}"
-        for variate_components, variates_lags in covariates_specs
-        for lag_idx in variates_lags
-        for comp_name in variate_components
-    ]
+        if variate is None or variate_lags is None:
+            continue
 
-    if target_series[0] and lags:
-        labels_cols_name = [
-            f"lag_{lag_idx}_{comp_name}"
-            for lag_idx in range(0, output_chunk_length)
-            for comp_name in covariates_specs[0][0]
+        use_specific_component_names = True
+        components = variate[0].components
+        # terminate early if we find any variates with different component names
+        for ts in variate:
+            if not components.equals(ts.components):
+                use_specific_component_names = False
+                break
+
+        if use_specific_component_names:
+            names = components.tolist()
+        else:
+            names = [f"comp{i}_{variate_type}" for i in range(len(components))]
+
+        # using the same convention as the explainability module
+        lagged_feature_names += [
+            f"{comp_name}_lag{lag_idx}"
+            for lag_idx in variate_lags
+            for comp_name in names
         ]
-    else:
-        labels_cols_name = []
+
+        if variate_type == "target" and lags:
+            label_feature_names = [
+                f"lag_{lag_idx}_{comp_name}"
+                for lag_idx in range(output_chunk_length)
+                for comp_name in names
+            ]
 
     if concatenate:
-        features_cols_name += labels_cols_name
+        lagged_feature_names += label_feature_names
 
-    return features_cols_name, labels_cols_name
+    return lagged_feature_names, label_feature_names
 
 
 def _create_lagged_data_by_moving_window(
@@ -713,6 +693,8 @@ def _create_lagged_data_by_moving_window(
     start_time = times[0]
     # Construct features array X:
     X = []
+    start_time_idx = None
+    target_start_time_idx = None
     for i, (series_i, lags_i, min_lag_i, max_lag_i) in enumerate(
         zip(
             [target_series, past_covariates, future_covariates],
@@ -823,7 +805,7 @@ def _extract_lagged_vals_from_windows(
     # windows.shape = (num_windows, window_len, num_components, num_samples):
     windows = np.moveaxis(windows, (0, 3, 1, 2), (0, 1, 2, 3))
     # lagged_vals.shape = (num_windows, num_components*window_len, num_samples):
-    lagged_vals = windows.reshape(windows.shape[0], -1, windows.shape[-1])
+    lagged_vals = windows.reshape((windows.shape[0], -1, windows.shape[-1]))
     return lagged_vals
 
 
@@ -875,6 +857,8 @@ def _create_lagged_data_by_intersecting_times(
     if len(shared_times) > max_samples_per_ts:
         shared_times = shared_times[-max_samples_per_ts:]
     X = []
+    shared_time_idx = None
+    label_shared_time_idx = None
     for i, (series_i, lags_i, min_lag_i) in enumerate(
         zip(
             [target_series, past_covariates, future_covariates],
@@ -940,10 +924,12 @@ def _create_lagged_data_by_intersecting_times(
 
 # For convenience, define following types for `_get_feature_times`:
 FeatureTimes = Tuple[
-    Union[pd.Index, None], Union[pd.Index, None], Union[pd.Index, None]
+    Optional[Union[pd.Index, pd.DatetimeIndex, pd.RangeIndex]],
+    Optional[Union[pd.Index, pd.DatetimeIndex, pd.RangeIndex]],
+    Optional[Union[pd.Index, pd.DatetimeIndex, pd.RangeIndex]],
 ]
-MinLags = Tuple[Union[int, None], Union[int, None], Union[int, None]]
-MaxLags = Tuple[Union[int, None], Union[int, None], Union[int, None]]
+MinLags = Tuple[Optional[int], Optional[int], Optional[int]]
+MaxLags = Tuple[Optional[int], Optional[int], Optional[int]]
 
 
 def _get_feature_times(
@@ -1178,7 +1164,7 @@ def _get_feature_times(
 
 
 def get_shared_times(
-    *series_or_times: Sequence[Union[TimeSeries, pd.Index, None]], sort: bool = True
+    *series_or_times: Union[TimeSeries, pd.Index, None], sort: bool = True
 ) -> pd.Index:
     """
     Returns the times shared by all of the specified `TimeSeries` or time indexes (i.e. the intersection of all
@@ -1440,7 +1426,7 @@ def _extend_time_index(
     return time_index
 
 
-def _get_freqs(*series: Sequence[Union[TimeSeries, None]]):
+def _get_freqs(*series: Union[TimeSeries, None]):
     """
     Returns list with the frequency of all of the specified (i.e. non-`None`) `series`.
     """
@@ -1451,7 +1437,7 @@ def _get_freqs(*series: Sequence[Union[TimeSeries, None]]):
     return freqs
 
 
-def _all_equal_freq(*series: Sequence[Union[TimeSeries, None]]) -> bool:
+def _all_equal_freq(*series: Union[TimeSeries, None]) -> bool:
     """
     Returns `True` is all of the specified (i.e. non-`None`) `series` have the same frequency.
     """
@@ -1499,6 +1485,7 @@ def _check_series_length(
     is_target = name == "target_series"
     is_label_series = is_training and is_target
     lags_specified = lags is not None
+    minimum_len, minimum_len_str = None, None
     if is_label_series:
         minimum_len_str = (
             "-min(lags) + output_chunk_length"
