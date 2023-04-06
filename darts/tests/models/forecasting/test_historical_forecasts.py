@@ -966,7 +966,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
         """test historical_forecasts for an untrained model with different retrain values."""
 
         def helper_hist_forecasts(retrain_val):
-            model = LinearRegressionModel(lags=4)
+            model = LinearRegressionModel(lags=4, output_chunk_length=4)
             model.historical_forecasts(
                 self.ts_passengers, start=0.9, retrain=retrain_val, verbose=False
             )
@@ -1003,27 +1003,53 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             else:
                 return False
 
+        def retrain_f_delayed_true(
+            counter, pred_time, train_series, past_covariates, future_covariates
+        ):
+            if counter > 1:
+                return True
+            else:
+                return False
+
         # test callable
         helper_hist_forecasts(retrain_f_valid)
-        # always return False with not-trained model
-        with pytest.raises(ValueError):
-            helper_hist_forecasts(retrain_f_invalid)
         # missing the `pred_time` positional argument
-        with pytest.raises(ValueError):
+        expected_msg = "the Callable `retrain` must have a signature/arguments matching the following positional"
+        with pytest.raises(ValueError) as error_msg:
             helper_hist_forecasts(retrain_f_missing_arg)
+        self.assertTrue(str(error_msg.value).startswith(expected_msg))
         # returning a non-bool value (int)
-        with pytest.raises(ValueError):
+        expected_msg = "Return value of `retrain` must be bool, received <class 'int'>"
+        with pytest.raises(ValueError) as error_msg:
             helper_hist_forecasts(retrain_f_invalid_ouput_int)
+        self.assertTrue(str(error_msg.value).startswith(expected_msg))
         # returning a non-bool value (str)
-        with pytest.raises(ValueError):
+        expected_msg = "Return value of `retrain` must be bool, received <class 'str'>"
+        with pytest.raises(ValueError) as error_msg:
             helper_hist_forecasts(retrain_f_invalid_ouput_str)
+        self.assertTrue(str(error_msg.value).startswith(expected_msg))
+        # predict fails but model could have been trained before the predict round
+        expected_msg = "`retrain` is `False` in the first train iteration at prediction point (in time)"
+        with pytest.raises(ValueError) as error_msg:
+            helper_hist_forecasts(retrain_f_delayed_true)
+        self.assertTrue(str(error_msg.value).startswith(expected_msg))
+        # always returns False, treated slightly differenty than `retrain=False` and `retrain=0`
+        with pytest.raises(ValueError) as error_msg:
+            helper_hist_forecasts(retrain_f_invalid)
+        self.assertTrue(str(error_msg.value).startswith(expected_msg))
 
         # test int
-        with pytest.raises(ValueError):
-            helper_hist_forecasts(0)
         helper_hist_forecasts(10)
+        expected_msg = "Model has not been fit before the first predict iteration at prediction point (in time)"
+        # `retrain=0` with not-trained model, encountering directly a predictable time index
+        with pytest.raises(ValueError) as error_msg:
+            helper_hist_forecasts(0)
+        self.assertTrue(str(error_msg.value).startswith(expected_msg))
 
         # test bool
-        with pytest.raises(ValueError):
-            helper_hist_forecasts(False)
         helper_hist_forecasts(True)
+        # `retrain=False` with not-trained model, encountering directly a predictable time index
+        expected_msg = "Model has not been fit before the first predict iteration at prediction point (in time)"
+        with pytest.raises(ValueError) as error_msg:
+            helper_hist_forecasts(False)
+        self.assertTrue(str(error_msg.value).startswith(expected_msg))

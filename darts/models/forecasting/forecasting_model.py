@@ -664,8 +664,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             Note: if any optional `*_covariates` are not passed to `historical_forecast`, ``None`` will be passed
             to the corresponding retrain function argument.
-            Note: some models do require being retrained every time
-            and do not support anything else than `retrain=True`.
+            Note: some models do require being retrained every time and do not support anything else
+            than `retrain=True`.
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not
         last_points_only
@@ -865,7 +865,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     series_.get_timestamp_at_point(start),
                 )
             else:
-                if (retrain is not False) or (not self._fit_called):
+                if retrain or (not self._fit_called):
                     if train_length:
                         historical_forecasts_time_index = drop_before_index(
                             historical_forecasts_time_index,
@@ -943,8 +943,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 if train_length and len(train_series) > train_length:
                     train_series = train_series[-train_length:]
 
+                # testing `retrain` to exclude `False` and `0`
                 if (
-                    historical_forecasts_time_index_train is not None
+                    retrain
+                    and historical_forecasts_time_index_train is not None
                     and pred_time in historical_forecasts_time_index_train
                 ):
                     # retrain_func processes the series that would be used for training
@@ -964,13 +966,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         )
 
                     # untrained model was not trained on the first trainable timestamp
-                    if _counter_train == 0 and model is None and not self._fit_called:
+                    if not _counter_train and model is None and (not self._fit_called):
                         raise_log(
                             ValueError(
                                 f"`retrain` is `False` in the first train iteration at prediction point (in time) "
-                                f"`{pred_time}` and the model has not been fit before. Either call `fit()` before  "
+                                f"`{pred_time}` and the model has not been fit before. Either call `fit()` before "
                                 f"`historical_forecasts()`, use a different `retrain` value or modify the function "
-                                f"to return `True` in first iteration."
+                                f"to return `True` at or before this timestamp."
                             ),
                             logger,
                         )
@@ -990,7 +992,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             ),
                             logger,
                         )
-
                     # use retrained model if `retrain` is not training every step
                     model = model if model is not None else self
                     # slice the series for prediction without retraining
