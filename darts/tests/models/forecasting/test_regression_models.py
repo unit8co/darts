@@ -1159,7 +1159,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         # multiple series with different components names ("smooth" and "irregular"),
         # triggers creation of generic feature names
         expected_features_in = [
-            f"lag_{str(-i)}_target_0" for i in range(period // 2, 0, -1)
+            f"comp0_target_lag{str(-i)}" for i in range(period // 2, 0, -1)
         ]
 
         self.assertEqual(
@@ -1179,7 +1179,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
         # multiple univariates series with different names with same static cov
         expected_features_in = [
-            f"lag_{str(-i)}_target_0" for i in range(period // 2, 0, -1)
+            f"comp0_target_lag{str(-i)}" for i in range(period // 2, 0, -1)
         ] + ["curve_type"]
 
         self.assertEqual(

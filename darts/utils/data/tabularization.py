@@ -546,20 +546,27 @@ def create_lagged_components_names(
 ) -> Tuple[List[List[str]], List[List[str]]]:
     """
     Helper function called to retrieve the name of the features and labels arrays created with
-    `create_lagged_data()`. The convention are the following:
+    `create_lagged_data()`. The order of the features is the following:
 
     Along the `n_lagged_features` axis, `X` has the following structure (for `*_lags=[-2,-1]` and
     `*_series.n_components = 2`):
         lagged_target | lagged_past_covariates | lagged_future_covariates
     where each `lagged_*` has the following structure:
-        lag_-2_comp_1_* | lag_-2_comp_2_* | lag_-1_comp_1_* | lag_-1_comp_2_*
+        comp0_*_lag-2 | comp1_*_lag-2 | comp0_*_lag_-1 | comp1_*_lag-1
 
     Along the `n_lagged_labels` axis, `y` has the following structure (for `output_chunk_length=4` and
     `target_series.n_components=2`):
-        lag_+0_comp_1_target | lag_+0_comp_2_target | ... | lag_+3_comp_1_target | lag_+3_comp_2_target
+        comp0_target_lag0 | comp1_target_lag0 | ... | comp0_target_lag3 | comp1_target_lag3
 
     Note : if `target_series`, `past_covariates` or `future_covariates` contain series with different
     components name, generic feature names will be created (independently for each variate).
+
+    The component name convention is ``"{name}_lag{idx}"``, where:
+
+        - ``{name}`` is the original component name if it shared across all the TimeSeries, or generic
+          names ``"comp{i}_{cov_type}`` where {i} is the index of the component and {cov_type} one of
+          ``"target"``, ``"past_cov"`` or ``"future_cov"``.
+        - ``{idx}`` is the lag index.
 
     Returns
     -------
@@ -590,7 +597,7 @@ def create_lagged_components_names(
     )
 
     covariates_specs = []
-    for variate, variate_lags, prefix in zip(
+    for variate, variate_lags, variate_type in zip(
         [target_series, past_covariates, future_covariates],
         [lags, lags_past_covariates, lags_future_covariates],
         ["target", "past_cov", "future_cov"],
@@ -600,6 +607,7 @@ def create_lagged_components_names(
                 [list(ts.components) for ts in variate if ts is not None]
             )
         )
+        # variate is None
         if len(unique_components_names) == 0:
             pass
         elif variate_lags:
@@ -610,13 +618,16 @@ def create_lagged_components_names(
             else:
                 covariates_specs.append(
                     (
-                        [f"{prefix}_{i}" for i in range(variate[0].n_components)],
+                        [
+                            f"comp{i}_{variate_type}"
+                            for i in range(variate[0].n_components)
+                        ],
                         variate_lags,
                     )
                 )
-
+    # using the same convention as the explainability module
     features_cols_name = [
-        f"lag_{lag_idx}_{comp_name}"
+        f"{comp_name}_lag{lag_idx}"
         for variate_components, variates_lags in covariates_specs
         for lag_idx in variates_lags
         for comp_name in variate_components

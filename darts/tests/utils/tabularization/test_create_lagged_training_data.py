@@ -1851,7 +1851,7 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
         )
 
         # target no static covariate
-        expected_lagged_features = ["lag_-2_no_static", "lag_-1_no_static"]
+        expected_lagged_features = ["no_static_lag-2", "no_static_lag-1"]
         created_lagged_features, _ = create_lagged_components_names(
             target_series=target_with_no_cov,
             past_covariates=None,
@@ -1865,10 +1865,10 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
 
         # target with static covariate (not handled by this function)
         expected_lagged_features = [
-            "lag_-4_static_0",
-            "lag_-4_static_1",
-            "lag_-1_static_0",
-            "lag_-1_static_1",
+            "static_0_lag-4",
+            "static_1_lag-4",
+            "static_0_lag-1",
+            "static_1_lag-1",
         ]
         created_lagged_features, _ = create_lagged_components_names(
             target_series=target_with_static_cov,
@@ -1883,11 +1883,11 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
 
         # target + past
         expected_lagged_features = [
-            "lag_-4_no_static",
-            "lag_-3_no_static",
-            "lag_-1_past_0",
-            "lag_-1_past_1",
-            "lag_-1_past_2",
+            "no_static_lag-4",
+            "no_static_lag-3",
+            "past_0_lag-1",
+            "past_1_lag-1",
+            "past_2_lag-1",
         ]
         created_lagged_features, _ = create_lagged_components_names(
             target_series=target_with_no_cov,
@@ -1902,12 +1902,12 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
 
         # target + future
         expected_lagged_features = [
-            "lag_-2_no_static",
-            "lag_-1_no_static",
-            "lag_3_future_0",
-            "lag_3_future_1",
-            "lag_3_future_2",
-            "lag_3_future_3",
+            "no_static_lag-2",
+            "no_static_lag-1",
+            "future_0_lag3",
+            "future_1_lag3",
+            "future_2_lag3",
+            "future_3_lag3",
         ]
         created_lagged_features, _ = create_lagged_components_names(
             target_series=target_with_no_cov,
@@ -1922,13 +1922,13 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
 
         # past + future
         expected_lagged_features = [
-            "lag_-1_past_0",
-            "lag_-1_past_1",
-            "lag_-1_past_2",
-            "lag_2_future_0",
-            "lag_2_future_1",
-            "lag_2_future_2",
-            "lag_2_future_3",
+            "past_0_lag-1",
+            "past_1_lag-1",
+            "past_2_lag-1",
+            "future_0_lag2",
+            "future_1_lag2",
+            "future_2_lag2",
+            "future_3_lag2",
         ]
         created_lagged_features, _ = create_lagged_components_names(
             target_series=target_with_no_cov,
@@ -1943,17 +1943,17 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
 
         # target with static + past + future
         expected_lagged_features = [
-            "lag_-2_static_0",
-            "lag_-2_static_1",
-            "lag_-1_static_0",
-            "lag_-1_static_1",
-            "lag_-1_past_0",
-            "lag_-1_past_1",
-            "lag_-1_past_2",
-            "lag_2_future_0",
-            "lag_2_future_1",
-            "lag_2_future_2",
-            "lag_2_future_3",
+            "static_0_lag-2",
+            "static_1_lag-2",
+            "static_0_lag-1",
+            "static_1_lag-1",
+            "past_0_lag-1",
+            "past_1_lag-1",
+            "past_2_lag-1",
+            "future_0_lag2",
+            "future_1_lag2",
+            "future_2_lag2",
+            "future_3_lag2",
         ]
         created_lagged_features, _ = create_lagged_components_names(
             target_series=target_with_static_cov,
@@ -1968,15 +1968,15 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
 
         # multiple series with same components, including past/future covariates
         expected_lagged_features = [
-            "lag_-3_static_0",
-            "lag_-3_static_1",
-            "lag_-1_past_0",
-            "lag_-1_past_1",
-            "lag_-1_past_2",
-            "lag_2_future_0",
-            "lag_2_future_1",
-            "lag_2_future_2",
-            "lag_2_future_3",
+            "static_0_lag-3",
+            "static_1_lag-3",
+            "past_0_lag-1",
+            "past_1_lag-1",
+            "past_2_lag-1",
+            "future_0_lag2",
+            "future_1_lag2",
+            "future_2_lag2",
+            "future_3_lag2",
         ]
         created_lagged_features, _ = create_lagged_components_names(
             target_series=[target_with_static_cov, target_with_static_cov],
@@ -1991,17 +1991,17 @@ class CreateLaggedTrainingDataTestCase(DartsBaseTestClass):
 
         # multiple series with different components, same past, different future
         expected_lagged_features = [
-            "lag_-2_target_0",
-            "lag_-2_target_1",
-            "lag_-1_target_0",
-            "lag_-1_target_1",
-            "lag_-1_past_0",
-            "lag_-1_past_1",
-            "lag_-1_past_2",
-            "lag_2_future_cov_0",
-            "lag_2_future_cov_1",
-            "lag_2_future_cov_2",
-            "lag_2_future_cov_3",
+            "comp0_target_lag-2",
+            "comp1_target_lag-2",
+            "comp0_target_lag-1",
+            "comp1_target_lag-1",
+            "past_0_lag-1",
+            "past_1_lag-1",
+            "past_2_lag-1",
+            "comp0_future_cov_lag2",
+            "comp1_future_cov_lag2",
+            "comp2_future_cov_lag2",
+            "comp3_future_cov_lag2",
         ]
         created_lagged_features, _ = create_lagged_components_names(
             target_series=[
