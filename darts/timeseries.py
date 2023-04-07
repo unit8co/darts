@@ -2853,7 +2853,10 @@ class TimeSeries:
                 self._xa.values,
                 dims=self._xa.dims,
                 coords=self._xa.coords,
-                attrs={STATIC_COV_TAG: covariates, HIERARCHY_TAG: self.hierarchy},
+                attrs={
+                    STATIC_COV_TAG: covariates,
+                    HIERARCHY_TAG: self.hierarchy,
+                },
             )
         )
 
