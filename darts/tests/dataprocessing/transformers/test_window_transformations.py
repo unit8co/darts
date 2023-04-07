@@ -442,6 +442,8 @@ class WindowTransformerTestCase(unittest.TestCase):
 
     times = pd.date_range("20130101", "20130110")
     target = TimeSeries.from_times_and_values(times, range(1, 11))
+    times_hourly = pd.date_range(start="20130101", freq="1H", periods=10)
+    target_hourly = TimeSeries.from_times_and_values(times_hourly, range(1, 11))
 
     series_multi_prob = (
         (target + 10)
@@ -481,6 +483,46 @@ class WindowTransformerTestCase(unittest.TestCase):
         self.assertEqual(
             transformed_ts_list[1].n_timesteps, self.series_multi_det.n_timesteps
         )
+
+    def test_window_transformer_offset_parameter(self):
+        """
+        Test that the window parameter can support offset of pandas.Timedelta
+        """
+        base_parameters = {
+            "function": "mean",
+            "components": ["0"],
+            "mode": "rolling",
+        }
+
+        offset_parameters = base_parameters.copy()
+        offset_parameters.update({"window": pd.Timedelta(hours=4)})
+        offset_transformer = WindowTransformer(
+            transforms=offset_parameters,
+        )
+        offset_transformed = offset_transformer.transform(self.target_hourly)
+
+        integer_parameters = base_parameters.copy()
+        integer_parameters.update({"window": 4})
+        integer_transformer = WindowTransformer(
+            transforms=integer_parameters,
+        )
+        integer_transformed = integer_transformer.transform(self.target_hourly)
+        np.testing.assert_equal(
+            integer_transformed.values(), offset_transformed.values()
+        )
+        self.assertEqual(
+            offset_transformed.components[0], "rolling_mean_0 days 04:00:00_0"
+        )
+        self.assertEqual(integer_transformed.components[0], "rolling_mean_4_0")
+
+        invalid_parameters = base_parameters.copy()
+        invalid_parameters.update({"window": pd.DateOffset(hours=4)})
+        invalid_transformer = WindowTransformer(
+            transforms=invalid_parameters,
+        )
+        # if pd.DateOffset, raise ValueError of non-fixed frequency
+        with self.assertRaises(ValueError):
+            invalid_transformer.transform(self.target_hourly)
 
     def test_transformers_pipeline(self):
         """
