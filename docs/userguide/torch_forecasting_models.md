@@ -95,11 +95,11 @@ Under the hood, Darts has 5 types of `{X}CovariatesModel` classes implemented to
 
 | Class                   | past covariates | future past covariates | future covariates | historic future covariates |
 |-------------------------|:---------------:|:----------------------:|:-----------------:|:--------------------------:|
-| `PastCovariatesModel`   | ✅              | ✅                     | ❌                | ❌                         |
-| `FutureCovariatesModel` | ❌              | ❌                     | ✅                | ❌                         |
-| `DualCovariatesModel`   | ❌              | ❌                     | ✅                | ✅                         |
+| `PastCovariatesModel`   | ✅              | ✅                     |                  |                           |
+| `FutureCovariatesModel` |                |                       | ✅                |                           |
+| `DualCovariatesModel`   |                |                       | ✅                | ✅                         |
 | `MixedCovariatesModel`  | ✅              | ✅                     | ✅                | ✅                         |
-| `SplitCovariatesModel`  | ✅              | ✅                     | ✅                | ❌                         |
+| `SplitCovariatesModel`  | ✅              | ✅                     | ✅                |                           |
 
 **Table 1: Darts' "{X}CovariatesModels" covariate support**
 
@@ -107,12 +107,12 @@ Each Torch Forecasting Model inherits from one `{X}CovariatesModel` (covariate c
 
 | TFM                | `Past` | `Future` | `Dual` | `Mixed` | `Split` |
 |--------------------|:------:|:--------:|:------:|:-------:|:-------:|
-| `RNNModel`         | ❌     | ❌       | ✅     | ❌      | ❌      |
-| `BlockRNNModel`    | ✅     | ❌       | ❌     | ❌      | ❌      |
-| `NBEATSModel`      | ✅     | ❌       | ❌     | ❌      | ❌      |
-| `TCNModel`         | ✅     | ❌       | ❌     | ❌      | ❌      |
-| `TransformerModel` | ✅     | ❌       | ❌     | ❌      | ❌      |
-| `TFTModel`         | ❌     | ❌       | ❌     | ✅      | ❌      |
+| `RNNModel`         |       |         | ✅     |        |        |
+| `BlockRNNModel`    | ✅     |         |       |        |        |
+| `NBEATSModel`      | ✅     |         |       |        |        |
+| `TCNModel`         | ✅     |         |       |        |        |
+| `TransformerModel` | ✅     |         |       |        |        |
+| `TFTModel`         |       |         |       | ✅      |        |
 
 **Table 2: Darts' Torch Forecasting Model covariate support**
 
@@ -272,26 +272,6 @@ model.fit(...)
 
 # load the model state that performed best on validation set
 best_model = model.load_from_checkpoint(model_name='my_model', best=True)
-```
-
-The checkpoints can also be saved directly to remote file systems, including cloud storage providers such as S3 on AWS, GCA on Google Cloud and ADL on Azure (see [detailed documentation](https://lightning.ai/docs/pytorch/latest/common/checkpointing_advanced.html)):
-
-```python
-# indicate AWS S3 bucket address
-model = SomeTorchForecastingModel(...,
-                                  model_name='my_model',
-                                  save_checkpoints=True,
-                                  pl_trainer_kwargs={"default_root_dir":"s3://my_bucket/data/"})
-
-model.fit(...)
-
-# resume training using a checkpoint stored in a AWS S3 bucket
-model = SomeTorchForecastingModel(...,
-                                  model_name='my_model',
-                                  save_checkpoints=True,
-                                  pl_trainer_kwargs={"ckpt_path":"s3://my_bucket/data/"})
-
-model.fit(...)
 ```
 
 #### Manual saving / loading
