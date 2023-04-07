@@ -61,7 +61,8 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         ensemble = NaiveEnsembleModel([NaiveDrift()])
         assert ensemble.extreme_lags == (
             -1,
-            1,
+            0,
+            None,
             None,
             None,
             None,
@@ -77,7 +78,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         ensemble = NaiveEnsembleModel(
             [model1, model2]
         )  # test if infers extreme lags is okay
-        expected = (-5, 1, -6, 6, 9)
+        expected = (-5, 0, -6, -1, 6, 9)
         assert expected == ensemble.extreme_lags
 
     def test_input_models_local_models(self):

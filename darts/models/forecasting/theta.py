@@ -181,7 +181,7 @@ class Theta(LocalForecastingModel):
 
     @property
     def extreme_lags(self):
-        return (-self.min_train_series_length, 1, None, None, None)
+        return (-self.min_train_series_length, 0, None, None, None, None)
 
 
 class FourTheta(LocalForecastingModel):
@@ -483,4 +483,4 @@ class FourTheta(LocalForecastingModel):
 
     @property
     def extreme_lags(self):
-        return (-self.min_train_series_length, 1, None, None, None)
+        return (-self.min_train_series_length, 0, None, None, None, None)
