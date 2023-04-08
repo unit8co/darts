@@ -237,12 +237,12 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
         start=ts_pass_val.start_time(),
     )
 
-    ts_past_cov_valid_bef_start = tg.gaussian_timeseries(
+    ts_past_cov_valid_10_bef_start = tg.gaussian_timeseries(
         length=len(ts_pass_val) + 10,
         freq=ts_pass_val.freq_str,
         start=ts_pass_val.start_time() - 10 * ts_pass_val.freq,
     )
-    ts_past_cov_valid_aft_start = tg.gaussian_timeseries(
+    ts_past_cov_valid_5_aft_start = tg.gaussian_timeseries(
         length=len(ts_pass_val) - 5,
         freq=ts_pass_val.freq_str,
         start=ts_pass_val.start_time() + 5 * ts_pass_val.freq,
@@ -254,12 +254,12 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
         start=ts_pass_val.start_time(),
     )
 
-    ts_fut_cov_valid_bef_start = tg.gaussian_timeseries(
+    ts_fut_cov_valid_16_bef_start = tg.gaussian_timeseries(
         length=len(ts_pass_val) + 16,
         freq=ts_pass_val.freq_str,
         start=ts_pass_val.start_time() - 16 * ts_pass_val.freq,
     )
-    ts_fut_cov_valid_aft_start = tg.gaussian_timeseries(
+    ts_fut_cov_valid_7_aft_start = tg.gaussian_timeseries(
         length=len(ts_pass_val) - 7,
         freq=ts_pass_val.freq_str,
         start=ts_pass_val.start_time() + 7 * ts_pass_val.freq,
@@ -606,9 +606,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             )
 
     def test_regression_auto_start_multiple_with_cov_retrain(self):
-
         forecast_hrz = 10
-
         for model_cls, kwargs, bounds in models_reg_cov_cls_kwargs:
             model = model_cls(
                 random_state=0,
@@ -629,6 +627,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 ]
                 if "lags_future_covariates" in kwargs
                 else None,
+                last_points_only=True,
                 forecast_horizon=forecast_hrz,
                 stride=1,
                 retrain=True,
@@ -652,7 +651,9 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             past_lag = min(
                 min_target_lag if min_target_lag else 0,
                 min_past_cov_lag if min_past_cov_lag else 0,
-                min_future_cov_lag if min_future_cov_lag else 0,
+                min_future_cov_lag
+                if min_future_cov_lag is not None and min_future_cov_lag < 0
+                else 0,
             )
 
             future_lag = (
@@ -679,7 +680,8 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 f"and {len(forecasts_retrain[1])}",
             )
 
-            # start is shifted by biggest past lag + training timestamps (forecast horizon + output_chunk_length)
+            # with last_points_only=True: start is shifted by biggest past lag + training timestamps
+            # (forecast horizon + output_chunk_length)
             expected_start = (
                 self.ts_pass_val.start_time()
                 + (-past_lag + forecast_hrz + kwargs.get("output_chunk_length", 1))
@@ -687,16 +689,14 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             )
             self.assertEqual(forecasts_retrain[0].start_time(), expected_start)
 
-            # end is shifted by the biggest future lag
+            # end is shifted back by the biggest future lag
             expected_end = (
                 self.ts_pass_val.end_time() - future_lag * self.ts_pass_val.freq
             )
             self.assertEqual(forecasts_retrain[0].end_time(), expected_end)
 
     def test_regression_auto_start_multiple_with_cov_no_retrain(self):
-
         forecast_hrz = 10
-
         for model_cls, kwargs, bounds in models_reg_cov_cls_kwargs:
             model = model_cls(
                 random_state=0,
@@ -732,6 +732,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 ]
                 if "lags_future_covariates" in kwargs
                 else None,
+                last_points_only=True,
                 forecast_horizon=forecast_hrz,
                 stride=1,
                 retrain=False,
@@ -759,7 +760,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 else 0
             )
 
-            # start is shifted by the biggest past lag plus the forecast horizon
+            # with last_points_only=True: start is shifted by the biggest past lag plus the forecast horizon
             expected_start = (
                 self.ts_pass_val.start_time()
                 + (-past_lag + forecast_hrz - 1) * self.ts_pass_val.freq
@@ -779,7 +780,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
         "will be skipped.",
     )
     def test_torch_auto_start_with_cov(self):
-
+        forecast_hrz = 10
         # Past covariates only
         for model_cls, kwargs, bounds, type in models_torch_cls_kwargs:
 
@@ -799,7 +800,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                     self.ts_past_cov_valid_same_start,
                     self.ts_past_cov_valid_same_start,
                 ],
-                forecast_horizon=10,
+                forecast_horizon=forecast_hrz,
                 stride=1,
                 retrain=True,
                 overlap_end=False,
@@ -810,12 +811,12 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 f"Model {model_cls} did not return a list of historical forecasts",
             )
             theorical_forecast_length = (
-                self.ts_val_length - (bounds[0] + bounds[1] + 1) - 10 + 1
+                self.ts_val_length - (bounds[0] + bounds[1] + 1) - forecast_hrz + 1
             )
             self.assertTrue(
                 len(forecasts[0]) == theorical_forecast_length,
                 f"Model {model_cls} does not return the right number of historical forecasts in case "
-                f"of retrain=True and overlap_end=False and past_covariates with different start. "
+                f"of retrain=True and overlap_end=False and past_covariates with same start. "
                 f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}",
             )
 
@@ -829,31 +830,36 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             forecasts = model.historical_forecasts(
                 series=[self.ts_pass_val, self.ts_pass_val],
                 past_covariates=[
-                    self.ts_past_cov_valid_aft_start,
-                    self.ts_past_cov_valid_bef_start,
+                    self.ts_past_cov_valid_5_aft_start,
+                    self.ts_past_cov_valid_10_bef_start,
                 ],
-                forecast_horizon=10,
+                forecast_horizon=forecast_hrz,
                 stride=1,
                 retrain=True,
                 overlap_end=False,
             )
 
-            # we substract the shift of the past_cov_val ts (-5)
+            # we subtract the shift of the past_cov_val ts (-5)
+            # -0 explanation: past covs are not required in output chunk,
+            # we can predict up until end with any `forecast_hrz`
             theorical_forecast_length = (
-                self.ts_val_length - (bounds[0] + bounds[1]) - 10 - 5
+                self.ts_val_length - (bounds[0] + bounds[1]) - forecast_hrz - 5 - 0
             )
             self.assertTrue(
                 len(forecasts[0]) == theorical_forecast_length,
                 f"Model {model_cls} does not return the right number of historical forecasts in case "
-                f"of retrain=True and overlap_end=False and past_covariates with different start. "
+                f"of retrain=True and overlap_end=False and past_covariates starting after. "
                 f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}",
             )
 
+            # all cov starts are good: no shift (-0)
+            # -0 explanation: past covs are not required in output chunk,
+            # we can predict up until end with any `forecast_hrz`
             theorical_forecast_length = (
-                self.ts_val_length - (bounds[0] + bounds[1]) - 10
+                self.ts_val_length - (bounds[0] + bounds[1]) - forecast_hrz - 0 - 0
             )
             self.assertTrue(
-                len(forecasts[1]) == self.ts_val_length - (bounds[0] + bounds[1]) - 10,
+                len(forecasts[1]) == theorical_forecast_length,
                 f"Model {model_cls} does not return the right number of historical forecasts in case "
                 f"of retrain=True and overlap_end=False and past_covariates starting before. "
                 f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}",
@@ -877,21 +883,24 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             forecasts = model.historical_forecasts(
                 series=[self.ts_pass_val, self.ts_pass_val],
                 past_covariates=[
-                    self.ts_past_cov_valid_aft_start,
+                    self.ts_past_cov_valid_5_aft_start,
                     self.ts_past_cov_valid_same_start,
                 ],
                 future_covariates=[
-                    self.ts_fut_cov_valid_aft_start,
-                    self.ts_fut_cov_valid_bef_start,
+                    self.ts_fut_cov_valid_7_aft_start,
+                    self.ts_fut_cov_valid_16_bef_start,
                 ],
-                forecast_horizon=10,
+                forecast_horizon=forecast_hrz,
                 stride=1,
                 retrain=True,
                 overlap_end=False,
             )
 
+            # max shift is from future covs starting 7 after
+            # -2 explanation: future covs are required in output chunk;
+            # it is the difference between forecast_hrz = 10 and output_chunk_length = 12
             theorical_forecast_length = (
-                self.ts_val_length - (bounds[0] + bounds[1]) - 10 - 5 - 4
+                self.ts_val_length - (bounds[0] + bounds[1]) - forecast_hrz - 7 - 2
             )
             self.assertTrue(
                 len(forecasts[0]) == theorical_forecast_length,
@@ -900,8 +909,11 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 f"different start. "
                 f"Expected {theorical_forecast_length}, got {len(forecasts[0])}",
             )
+            # all covariate starts are good, no shift (0) required
+            # -2 explanation: future covs are required in output chunk;
+            # it is the difference between forecast_hrz = 10 and output_chunk_length = 12
             theorical_forecast_length = (
-                self.ts_val_length - (bounds[0] + bounds[1]) - 10 - 2
+                self.ts_val_length - (bounds[0] + bounds[1]) - forecast_hrz - 0 - 2
             )
             self.assertTrue(
                 len(forecasts[1]) == theorical_forecast_length,
@@ -926,10 +938,10 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             forecasts = model.historical_forecasts(
                 series=[self.ts_pass_val, self.ts_pass_val],
                 future_covariates=[
-                    self.ts_fut_cov_valid_aft_start,
-                    self.ts_fut_cov_valid_bef_start,
+                    self.ts_fut_cov_valid_7_aft_start,
+                    self.ts_fut_cov_valid_16_bef_start,
                 ],
-                forecast_horizon=10,
+                forecast_horizon=forecast_hrz,
                 stride=1,
                 retrain=True,
                 overlap_end=False,
@@ -940,8 +952,11 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 f"Model {model_cls} did not return a list of historical forecasts",
             )
 
+            # max shift is from future covs starting 7 after
+            # -2 explanation: future covs are required in output chunk;
+            # it is the difference between forecast_hrz = 10 and output_chunk_length = 12
             theorical_forecast_length = (
-                self.ts_val_length - (bounds[0] + bounds[1]) - 10 - 9
+                self.ts_val_length - (bounds[0] + bounds[1]) - forecast_hrz - 7 - 2
             )
             self.assertTrue(
                 len(forecasts[0]) == theorical_forecast_length,
@@ -951,8 +966,11 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 f"Expected {theorical_forecast_length}, got {len(forecasts[0])}",
             )
 
+            # all covariate starts are good, no shift (0) required
+            # -2 explanation: future covs are required in output chunk;
+            # it is the difference between forecast_hrz = 10 and output_chunk_length = 12
             theorical_forecast_length = (
-                self.ts_val_length - (bounds[0] + bounds[1]) - 10 - 2
+                self.ts_val_length - (bounds[0] + bounds[1]) - forecast_hrz - 0 - 2
             )
             self.assertTrue(
                 len(forecasts[1]) == theorical_forecast_length,
@@ -1033,7 +1051,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
         with pytest.raises(ValueError) as error_msg:
             helper_hist_forecasts(retrain_f_delayed_true)
         self.assertTrue(str(error_msg.value).startswith(expected_msg))
-        # always returns False, treated slightly differenty than `retrain=False` and `retrain=0`
+        # always returns False, treated slightly different than `retrain=False` and `retrain=0`
         with pytest.raises(ValueError) as error_msg:
             helper_hist_forecasts(retrain_f_invalid)
         self.assertTrue(str(error_msg.value).startswith(expected_msg))
