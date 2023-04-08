@@ -41,7 +41,12 @@ from darts.utils.timeseries_generation import (
     _generate_new_dates,
     generate_index,
 )
-from darts.utils.utils import drop_after_index, drop_before_index, series2seq
+from darts.utils.utils import (
+    drop_after_index,
+    drop_before_index,
+    get_single_series,
+    series2seq,
+)
 
 logger = get_logger(__name__)
 
@@ -278,52 +283,54 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Optional[int],
         Optional[int],
         Optional[int],
+        Optional[int],
     ]:
         """
-        A 5-tuple containing in order:
-        (minimum target lag, maximum target lag, min past covariate lag, min future covariate lag, max future covariate
-        lag). If 0 is the index of the first prediction, then all lags are relative to this index, except for the
-        maximum target lag, which is relative to the last element of the time series before the first prediction.
+        A 6-tuple containing in order:
+        (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate
+        lag, max future covariate lag). If 0 is the index of the first prediction, then all lags are relative to this
+        index.
+
         See examples below.
 
         If the model wasn't fitted with:
-            - target lag (concerning RegressionModels only) the first element should be `None`.
+            - target (concerning RegressionModels only): then the first element should be `None`.
 
-            - past covariates, the third element should be `None`.
+            - past covariates: then the third and fourth elements should be `None`.
 
-            - future covariates, the fourth and fifth elements should be `None`.
+            - future covariates: then the fifth and sixth elements should be `None`.
 
         Should be overridden by models that use past or future covariates, and/or for model that have minimum target
-        lag and maximum target lags potentially different from -1 and 1.
+        lag and maximum target lags potentially different from -1 and 0.
 
         Notes
         -----
-        maximum target lag (second value) cannot be `None` and is always larger than 1.
+        maximum target lag (second value) cannot be `None` and is always larger than or equal to 0.
         Examples
         --------
         >>> model = LinearRegressionModel(lags=3, output_chunk_length=2)
         >>> model.fit(train_series)
         >>> model.extreme_lags
-        (-3, 2, None, None, None)
-        >>> model = LinearRegressionModel(lags=[3, 5], past_covariates_lags = 4, output_chunk_length=7)
+        (-3, 1, None, None, None, None)
+        >>> model = LinearRegressionModel(lags=[-3, -5], lags_past_covariates = 4, output_chunk_length=7)
         >>> model.fit(train_series, past_covariates=past_covariates)
         >>> model.extreme_lags
-        (-5, 7, -4, None, None)
-        >>> model = LinearRegressionModel(lags=[3, 5], future_covariates_lags = [4, 6], output_chunk_length=7)
+        (-5, 6, -4, -1,  None, None)
+        >>> model = LinearRegressionModel(lags=[3, 5], lags_future_covariates = [4, 6], output_chunk_length=7)
         >>> model.fit(train_series, future_covariates=future_covariates)
         >>> model.extreme_lags
-        (-5, 7, None, 4, 6)
+        (-5, 6, None, None, 4, 6)
         >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7)
         >>> model.fit(train_series)
         >>> model.extreme_lags
-        (-10, 7, None, None, None)
-        >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7, future_covariates_lags=[4, 6])
+        (-10, 6, None, None, None, None)
+        >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7, lags_future_covariates=[4, 6])
         >>> model.fit(train_series, future_covariates)
         >>> model.extreme_lags
-        (-10, 7, None, 4, 6)
+        (-10, 6, None, None, 4, 6)
         """
 
-        return (-1, 1, None, None, None)
+        return -1, 0, None, None, None, None
 
     @property
     def _training_sample_time_index_length(self) -> int:
@@ -334,13 +341,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             min_target_lag,
             max_target_lag,
             min_past_cov_lag,
+            max_past_cov_lag,
             min_future_cov_lag,
             max_future_cov_lag,
         ) = self.extreme_lags
 
         return max(
-            max_target_lag,
-            max_future_cov_lag if max_future_cov_lag else 0,
+            max_target_lag + 1,
+            max_future_cov_lag + 1 if max_future_cov_lag else 0,
         ) - min(
             min_target_lag if min_target_lag else 0,
             min_past_cov_lag if min_past_cov_lag else 0,
@@ -350,19 +358,38 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     @property
     def _predict_sample_time_index_length(self) -> int:
         """
-        Required time_index length for one predict sample, for any model.
-         A predict sample is the minimum required set of series and covariates chunks to be able to predict
-         a single point.
+        Required time_index length for one `predict` function call, for any model.
         """
         (
             min_target_lag,
             max_target_lag,
             min_past_cov_lag,
+            max_past_cov_lag,
             min_future_cov_lag,
             max_future_cov_lag,
         ) = self.extreme_lags
 
-        return (max_future_cov_lag if max_future_cov_lag else 0) - min(
+        return (max_future_cov_lag + 1 if max_future_cov_lag else 0) - min(
+            min_target_lag if min_target_lag else 0,
+            min_past_cov_lag if min_past_cov_lag else 0,
+            min_future_cov_lag if min_future_cov_lag else 0,
+        )
+
+    @property
+    def _predict_sample_time_index_past_length(self) -> int:
+        """
+        Required time_index length in the past for one `predict` function call, for any model.
+        """
+        (
+            min_target_lag,
+            max_target_lag,
+            min_past_cov_lag,
+            max_past_cov_lag,
+            min_future_cov_lag,
+            max_future_cov_lag,
+        ) = self.extreme_lags
+
+        return -min(
             min_target_lag if min_target_lag else 0,
             min_past_cov_lag if min_past_cov_lag else 0,
             min_future_cov_lag if min_future_cov_lag else 0,
@@ -370,7 +397,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     def _get_historical_forecastable_time_index(
         self,
-        series: Optional[TimeSeries] = None,
+        series: TimeSeries,
         past_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         is_training: Optional[bool] = False,
@@ -391,7 +418,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Parameters
         ----------
         series
-            Optionally, a target series.
+            A target series.
         past_covariates
             Optionally, a past covariates.
         future_covariates
@@ -435,32 +462,34 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             min_target_lag,
             max_target_lag,
             min_past_cov_lag,
+            max_past_cov_lag,
             min_future_cov_lag,
             max_future_cov_lag,
         ) = self.extreme_lags
 
-        intersect_ = None
+        if min_target_lag is None:
+            min_target_lag = 0
 
-        # target longest possible time index
-        if (min_target_lag is not None) and (series is not None):
-            intersect_ = generate_index(
-                start=series.start_time()
-                - (min_target_lag - max_target_lag) * series.freq
-                if is_training
-                else series.start_time() - min_target_lag * series.freq,
-                end=series.end_time(),
-                freq=series.freq,
-            )
+        # longest possible time index for target
+        intersect_ = generate_index(
+            start=series.start_time()
+            + (max_target_lag - min_target_lag + 1) * series.freq
+            if is_training
+            else series.start_time() - min_target_lag * series.freq,
+            end=series.end_time() + 1 * series.freq,
+            freq=series.freq,
+        )
 
-        # past covariates longest possible time index
+        # longest possible time index for past covariates
         if (min_past_cov_lag is not None) and (past_covariates is not None):
             tmp_ = generate_index(
                 start=past_covariates.start_time()
-                - (min_past_cov_lag - max_target_lag) * past_covariates.freq
+                - (min_past_cov_lag - max_target_lag - 1) * past_covariates.freq
                 if is_training
                 else past_covariates.start_time()
                 - min_past_cov_lag * past_covariates.freq,
-                end=past_covariates.end_time(),
+                end=past_covariates.end_time()
+                - max_past_cov_lag * past_covariates.freq,
                 freq=past_covariates.freq,
             )
             if intersect_ is not None:
@@ -468,16 +497,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             else:
                 intersect_ = tmp_
 
-        # future covariates longest possible time index
+        # longest possible time index for future covariates
         if (min_future_cov_lag is not None) and (future_covariates is not None):
             tmp_ = generate_index(
                 start=future_covariates.start_time()
-                - (min_future_cov_lag - max_target_lag) * future_covariates.freq
+                - (min_future_cov_lag - max_target_lag - 1) * future_covariates.freq
                 if is_training
                 else future_covariates.start_time()
                 - min_future_cov_lag * future_covariates.freq,
                 end=future_covariates.end_time()
-                - (max_future_cov_lag - 1) * future_covariates.freq,
+                - max_future_cov_lag * future_covariates.freq,
                 freq=future_covariates.freq,
             )
 
@@ -612,12 +641,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                  - the first trainable point if `retrain` is True and `train_length` is None
 
                  - the first trainable point + `train_length` otherwise
+            Note: If the value provided does not meet the lags requirements, it will be ignored.
         forecast_horizon
             The forecast horizon for the predictions
         stride
             The number of time steps between two consecutive predictions.
         retrain
-            Whether and/or on which condition to retrain the model before predicting. Defaults: ``True``.
+            Whether and/or on which condition to retrain the model before predicting.
             This parameter supports 3 different datatypes: ``bool``, (positive) ``int``, and
             ``Callable`` (returning a ``bool``).
             In the case of ``bool``: retrain the model at each step (`True`), or never retrains the model (`False`).
@@ -632,10 +662,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 - `future_covariates (TimeSeries)`: future_covariates series up
                   to `min(pred_time + series.freq * forecast_horizon, series.end_time())`
 
-            Note: if an optionnal *_covariates arguments is not passed to `historical_forecast`,
-            ``None`` will be passed to the retrain function.
-            Note: some models do require being retrained every time
-            and do not support anything else than `retrain=True`.
+            Note: if any optional `*_covariates` are not passed to `historical_forecast`, ``None`` will be passed
+            to the corresponding retrain function argument.
+            Note: some models do require being retrained every time and do not support anything else
+            than `retrain=True`.
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not
         last_points_only
@@ -690,35 +720,34 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         if isinstance(retrain, bool) or (isinstance(retrain, int) and retrain >= 0):
 
-            def helper_retrain_func(
+            def retrain_func(
                 counter, pred_time, train_series, past_covariates, future_covariates
             ):
                 return counter % int(retrain) == 0 if retrain else False
 
-            retrain_func = helper_retrain_func
         elif isinstance(retrain, Callable):
             retrain_func = retrain
 
             # check that the signature matches the documentation
-            expected_arguments = {
+            expected_arguments = [
                 "counter",
                 "pred_time",
                 "train_series",
                 "past_covariates",
                 "future_covariates",
-            }
-            passed_arguments = set(inspect.signature(retrain_func).parameters.keys())
+            ]
+            passed_arguments = list(inspect.signature(retrain_func).parameters.keys())
             raise_if(
-                len(expected_arguments - passed_arguments) > 0,
-                f"the Callable retrain argument is missing the following positional arguments: "
-                f"{list(expected_arguments-passed_arguments)}.",
+                expected_arguments != passed_arguments,
+                f"the Callable `retrain` must have a signature/arguments matching the following positional arguments: "
+                f"{expected_arguments}.",
                 logger,
             )
 
             # passing dummy values to check the type of the output
             result = retrain_func(
                 counter=0,
-                pred_time=series.time_index[-1],
+                pred_time=get_single_series(series).time_index[-1],
                 train_series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
@@ -739,15 +768,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series = series2seq(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
-
-        # If the model has never been fitted before using historical_forecasts,
-        # we need to know if it uses past or future covariates. The only possible assumption is that
-        # the user is using the same covariates as they would in the fit method.
-        if self._fit_called is False:
-            if past_covariates is not None:
-                self._uses_past_covariates = True
-            if future_covariates is not None:
-                self._uses_future_covariates = True
 
         if len(series) == 1:
             # Use tqdm on the outer loop only if there's more than one series to iterate over
@@ -775,9 +795,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             if historical_forecasts_time_index_predict is None:
                 raise_log(
                     ValueError(
-                        "Given the provided model, series and covariates, there is no timestamps "
-                        f" where we can make a prediction with the model (series index: {idx}). "
-                        "Please check the time indexes of the series and covariates."
+                        "Cannot build a single input for prediction with the provided model, "
+                        f"`series` and `*_covariates` at series index: {idx}. The minimum "
+                        "prediction input time index requirements were not met. "
+                        "Please check the time index of `series` and `*_covariates`."
                     ),
                     logger,
                 )
@@ -797,27 +818,30 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             ) and historical_forecasts_time_index_train is None:
                 raise_log(
                     ValueError(
-                        "Given the provided model, series and covariates, there is no timestamps "
-                        f" where we can make train the model (series index: {idx}). "
-                        "Please check the time indexes of the series and covariates."
+                        "Cannot build a single input for training with the provided untrained model, "
+                        f"`series` and `*_covariates` at series index: {idx}. The minimum "
+                        "training input time index requirements were not met. "
+                        "Please check the time index of `series` and `*_covariates`."
                     ),
                     logger,
                 )
 
             # We need the first value timestamp to be used in order to properly shift the series
-            min_timestamp_train = (
-                historical_forecasts_time_index_train[0]
-                - self._training_sample_time_index_length * series_.freq
-            )
-            min_timestamp_predict = (
-                historical_forecasts_time_index_predict[0]
-                - self._predict_sample_time_index_length * series_.freq
-            )
+            if historical_forecasts_time_index_train is None:
+                # dummy value, should not impact the downstream operations
+                min_timestamp_train = series_.time_index[0]
+            else:
+                # look at both past and future, since the target lags must be taken in consideration
+                min_timestamp_train = (
+                    historical_forecasts_time_index_train[0]
+                    - self._training_sample_time_index_length * series_.freq
+                )
 
             if isinstance(retrain, Callable):
                 # retain the longer time index, anything can happen
                 if (
-                    historical_forecasts_time_index_train[0]
+                    historical_forecasts_time_index_train is not None
+                    and historical_forecasts_time_index_train[0]
                     < historical_forecasts_time_index_predict[0]
                 ):
                     historical_forecasts_time_index = (
@@ -841,7 +865,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     series_.get_timestamp_at_point(start),
                 )
             else:
-                if (retrain is not False) or (not self._fit_called):
+                if retrain or (not self._fit_called):
                     if train_length:
                         historical_forecasts_time_index = drop_before_index(
                             historical_forecasts_time_index,
@@ -904,6 +928,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             last_points_times = []
             last_points_values = []
+            _counter_train = 0
 
             # iterate and forecast
             for _counter, pred_time in enumerate(iterator):
@@ -918,55 +943,72 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 if train_length and len(train_series) > train_length:
                     train_series = train_series[-train_length:]
 
-                # retrain_func processes the series that would be used for training
+                # testing `retrain` to exclude `False` and `0`
                 if (
-                    retrain_func(
-                        counter=_counter,
-                        pred_time=pred_time,
-                        train_series=train_series,
-                        past_covariates=past_covariates_.drop_after(pred_time)
-                        if past_covariates_
-                        else None,
-                        future_covariates=future_covariates_.drop_after(
-                            min(
-                                pred_time + train_series.freq * forecast_horizon,
-                                series_.end_time(),
-                            )
-                        )
-                        if future_covariates_
-                        else None,
-                    )
+                    retrain
+                    and historical_forecasts_time_index_train is not None
                     and pred_time in historical_forecasts_time_index_train
                 ):
-                    # avoid fitting the same model multiple times
-                    model = self.untrained_model()
-                    model._fit_wrapper(
-                        series=train_series,
+                    # retrain_func processes the series that would be used for training
+                    if retrain_func(
+                        counter=_counter_train,
+                        pred_time=pred_time,
+                        train_series=train_series,
                         past_covariates=past_covariates_,
                         future_covariates=future_covariates_,
-                    )
+                    ):
+                        # avoid fitting the same model multiple times
+                        model = self.untrained_model()
+                        model._fit_wrapper(
+                            series=train_series,
+                            past_covariates=past_covariates_,
+                            future_covariates=future_covariates_,
+                        )
+
+                    # untrained model was not trained on the first trainable timestamp
+                    if not _counter_train and model is None and (not self._fit_called):
+                        raise_log(
+                            ValueError(
+                                f"`retrain` is `False` in the first train iteration at prediction point (in time) "
+                                f"`{pred_time}` and the model has not been fit before. Either call `fit()` before "
+                                f"`historical_forecasts()`, use a different `retrain` value or modify the function "
+                                f"to return `True` at or before this timestamp."
+                            ),
+                            logger,
+                        )
+                    _counter_train += 1
                 else:
                     # model must be fit before the first prediction
+                    # `historical_forecasts_time_index_train` is known to be not None
                     if not _counter and not self._fit_called:
                         raise_log(
                             ValueError(
-                                f"`retrain` is `False` in first iteration at prediction point (in time) `{pred_time}` "
-                                f"and the model has not been fit before. Either call `fit()` before "
-                                f"`historical_forecasts()`, or use a different `retrain` value / modify the function "
-                                f"to return `True` in first iteration."
+                                f"Model has not been fit before the first predict iteration at prediction point "
+                                f"(in time) `{pred_time}`. Either call `fit()` before `historical_forecasts()`, "
+                                f"set `retrain=True`, modify the function to return `True` at least once before "
+                                f"`{pred_time}`, or use a different `start` value. The first 'predictable' "
+                                f"timestamp with re-training inside `historical_forecasts` is: "
+                                f"{historical_forecasts_time_index_train[0]} (potential `start` value)."
                             ),
                             logger,
                         )
                     # use retrained model if `retrain` is not training every step
                     model = model if model is not None else self
-
                     # slice the series for prediction without retraining
-                    if min_timestamp_predict > series_.time_index[0]:
-                        train_series = series_.drop_before(
-                            min_timestamp_predict - 1 * series_.freq
-                        ).drop_after(pred_time)
-                    else:
-                        train_series = series_.drop_after(pred_time)
+                    train_series = series_.drop_after(pred_time)
+
+                # for regression models with lags=None, lags_past_covariates=None and min(lags_future_covariates)>=0,
+                # the first predictable timestamp is the first timestamp of the series, a dummy ts must be created
+                # to support `predict()`
+                if len(train_series) == 0:
+                    train_series = TimeSeries.from_times_and_values(
+                        times=generate_index(
+                            start=pred_time - 1 * series_.freq,
+                            length=1,
+                            freq=series_.freq,
+                        ),
+                        values=[np.NaN],
+                    )
 
                 forecast = model._predict_wrapper(
                     n=forecast_horizon,
@@ -2383,4 +2425,4 @@ class TransferableFutureCovariatesLocalForecastingModel(
 
     @property
     def extreme_lags(self):
-        return (-1, 1, None, 0, 0)
+        return -1, 0, None, None, 0, 0

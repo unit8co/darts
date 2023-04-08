@@ -249,7 +249,7 @@ def _historical_forecasts_general_checks(series, kwargs):
                 logger,
             )
             raise_if(
-                start == serie.start_time(),
+                n.retrain is not False and start == serie.start_time(),
                 "`start` corresponds to the first timestamp of the series {}, resulting "
                 "in empty training set".format(idx),
                 logger,
