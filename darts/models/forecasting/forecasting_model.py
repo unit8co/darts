@@ -989,18 +989,18 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             past_covariates=past_covariates_,
                             future_covariates=future_covariates_,
                         )
-
-                    # untrained model was not trained on the first trainable timestamp
-                    if not _counter_train and not model._fit_called:
-                        raise_log(
-                            ValueError(
-                                f"`retrain` is `False` in the first train iteration at prediction point (in time) "
-                                f"`{pred_time}` and the model has not been fit before. Either call `fit()` before "
-                                f"`historical_forecasts()`, use a different `retrain` value or modify the function "
-                                f"to return `True` at or before this timestamp."
-                            ),
-                            logger,
-                        )
+                    else:
+                        # untrained model was not trained on the first trainable timestamp
+                        if not _counter_train and not model._fit_called:
+                            raise_log(
+                                ValueError(
+                                    f"`retrain` is `False` in the first train iteration at prediction point (in time) "
+                                    f"`{pred_time}` and the model has not been fit before. Either call `fit()` before "
+                                    f"`historical_forecasts()`, use a different `retrain` value or modify the function "
+                                    f"to return `True` at or before this timestamp."
+                                ),
+                                logger,
+                            )
                     _counter_train += 1
                 else:
                     # model must be fit before the first prediction
