@@ -664,7 +664,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             Note: if any optional `*_covariates` are not passed to `historical_forecast`, ``None`` will be passed
             to the corresponding retrain function argument.
-            Note: some models do require being retrained every time and do not support anything else
+            Note: some models do require being retrained every time and do not support anything other
             than `retrain=True`.
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not
@@ -686,13 +686,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             In this last case, the outer list is over the series provided in the input sequence,
             and the inner lists contain the different historical forecasts.
         """
-
-        # only GlobalForecastingModels support historical forecastings without retraining the model
-        base_class_name = self.__class__.__base__.__name__
+        model: ForecastingModel = self
+        # only GlobalForecastingModels support historical forecasting without retraining the model
+        base_class_name = model.__class__.__base__.__name__
         raise_if(
             (isinstance(retrain, Callable) or int(retrain) != 1)
-            and (not self._supports_non_retrainable_historical_forecasts()),
-            f"{base_class_name} does not support historical forecastings with `retrain` set to `False`. "
+            and (not model._supports_non_retrainable_historical_forecasts()),
+            f"{base_class_name} does not support historical forecasting with `retrain` set to `False`. "
             f"For now, this is only supported with GlobalForecastingModels such as TorchForecastingModels. "
             f"For more information, read the documentation for `retrain` in `historical_forecasts()`",
             logger,
@@ -710,7 +710,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
         elif (
             train_length is not None
-        ) and train_length < self._training_sample_time_index_length:
+        ) and train_length < model._training_sample_time_index_length:
             raise_log(
                 ValueError(
                     "train_length is too small for the training requirements of this model"
@@ -776,7 +776,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         else:
             outer_iterator = _build_tqdm_iterator(series, verbose)
 
-        model: Optional[ForecastingModel] = None
         forecasts_list = []
         for idx, series_ in enumerate(outer_iterator):
             past_covariates_ = past_covariates[idx] if past_covariates else None
@@ -784,7 +783,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             # Prediction
             historical_forecasts_time_index_predict = (
-                self._get_historical_forecastable_time_index(
+                model._get_historical_forecastable_time_index(
                     series_,
                     past_covariates_,
                     future_covariates_,
@@ -805,7 +804,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             # Train
             historical_forecasts_time_index_train = (
-                self._get_historical_forecastable_time_index(
+                model._get_historical_forecastable_time_index(
                     series_,
                     past_covariates_,
                     future_covariates_,
@@ -814,7 +813,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
 
             if (
-                (retrain is not False) or (not self._fit_called)
+                (retrain is not False) or (not model._fit_called)
             ) and historical_forecasts_time_index_train is None:
                 raise_log(
                     ValueError(
@@ -834,7 +833,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 # look at both past and future, since the target lags must be taken in consideration
                 min_timestamp_train = (
                     historical_forecasts_time_index_train[0]
-                    - self._training_sample_time_index_length * series_.freq
+                    - model._training_sample_time_index_length * series_.freq
                 )
 
             if isinstance(retrain, Callable):
@@ -865,7 +864,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     series_.get_timestamp_at_point(start),
                 )
             else:
-                if retrain or (not self._fit_called):
+                if retrain or (not model._fit_called):
                     if train_length:
                         historical_forecasts_time_index = drop_before_index(
                             historical_forecasts_time_index,
@@ -873,7 +872,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             + max(
                                 (
                                     train_length
-                                    - self._training_sample_time_index_length
+                                    - model._training_sample_time_index_length
                                 ),
                                 0,
                             )
@@ -893,7 +892,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     # it means that the entire backtesting will be based on a set of two training samples
                     # at the first step, so we warn the user.
                     raise_if(
-                        (not self._fit_called)
+                        (not model._fit_called)
                         and (retrain is False)
                         and (not train_length),
                         "The model has not been fitted yet, and `start` and train_length are not specified. "
@@ -903,7 +902,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     )
 
             # Take into account overlap_end, and forecast_horizon.
-            last_valid_pred_time = self._get_last_prediction_time(
+            last_valid_pred_time = model._get_last_prediction_time(
                 series_,
                 forecast_horizon,
                 overlap_end,
@@ -958,7 +957,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         future_covariates=future_covariates_,
                     ):
                         # avoid fitting the same model multiple times
-                        model = self.untrained_model()
+                        model = model.untrained_model()
                         model._fit_wrapper(
                             series=train_series,
                             past_covariates=past_covariates_,
@@ -966,7 +965,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         )
 
                     # untrained model was not trained on the first trainable timestamp
-                    if not _counter_train and model is None and (not self._fit_called):
+                    if not _counter_train and not model._fit_called:
                         raise_log(
                             ValueError(
                                 f"`retrain` is `False` in the first train iteration at prediction point (in time) "
@@ -980,7 +979,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 else:
                     # model must be fit before the first prediction
                     # `historical_forecasts_time_index_train` is known to be not None
-                    if not _counter and not self._fit_called:
+                    if not _counter and not model._fit_called:
                         raise_log(
                             ValueError(
                                 f"Model has not been fit before the first predict iteration at prediction point "
@@ -992,8 +991,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             ),
                             logger,
                         )
-                    # use retrained model if `retrain` is not training every step
-                    model = model if model is not None else self
                     # slice the series for prediction without retraining
                     train_series = series_.drop_after(pred_time)
 
@@ -1007,7 +1004,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             length=1,
                             freq=series_.freq,
                         ),
-                        values=[np.NaN],
+                        values=np.array([np.NaN]),
                     )
 
                 forecast = model._predict_wrapper(
@@ -1031,8 +1028,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         generate_index(
                             start=last_points_times[0],
                             end=last_points_times[-1],
-                            freq=series_.freq,
-                        )[::stride],
+                            freq=series_.freq * stride,
+                        ),
                         np.array(last_points_values),
                         columns=series_.columns,
                         static_covariates=series_.static_covariates,
