@@ -269,10 +269,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     @property
     def min_train_series_length(self) -> int:
         """
-        Class property defining the minimum required length for the training series.
-        This function/property should be overridden if a value higher than 3 is required.
+        The minimum required length for the training series.
         """
         return 3
+
+    @property
+    def min_train_samples(self) -> int:
+        """
+        The minimum number of samples for training the model.
+        """
+        return 1
 
     @property
     def extreme_lags(
@@ -886,15 +892,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             historical_forecasts_time_index[0]
                             + step_ahead * series_.freq,
                         )
-                # if not we start training right away, but with 2 minimum points, so we start
-                # 1 time step after the first trainable point.
-                # (sklearn check that there are at least 2 points in the training set and it seems
-                # rather reasonable)
+                # if not we start training right away; some models (sklearn) require more than 1
+                # training samples, so we start after the first trainable point.
                 else:
-                    historical_forecasts_time_index = drop_before_index(
-                        historical_forecasts_time_index,
-                        historical_forecasts_time_index[0] + 1 * series_.freq,
-                    )
+                    if self.min_train_samples > 1:
+                        historical_forecasts_time_index = drop_before_index(
+                            historical_forecasts_time_index,
+                            historical_forecasts_time_index[0]
+                            + (self.min_train_samples - 1) * series_.freq,
+                        )
 
             # Take into account overlap_end, and forecast_horizon.
             last_valid_pred_time = model._get_last_prediction_time(
