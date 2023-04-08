@@ -603,9 +603,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         By default, this method always re-trains the models on the entire available history,
         corresponding to an expanding window strategy.
-        If `retrain` is set to False, the model will only be trained on the initial training window
-        (up to `start` time stamp), and only if it has not been trained before. This is not
-        supported by all models.
+        If `retrain` is set to False, the model must have been fit before. This is not supported by all models.
 
         Parameters
         ----------
@@ -622,26 +620,27 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
         train_length
-            Number of time steps in our training set (size of backtesting window to train on).
-            Default is set to train_length=None where it takes all available time steps up until prediction time,
-            otherwise the moving window strategy is used. If larger than the number of time steps available, all steps
-            up until prediction time are used, as in default case. Needs to be at least min_train_series_length.
+            Number of time steps in our training set (size of backtesting window to train on). Only effective when
+            `retrain` is not ``False``. Default is set to train_length=None where it takes all available time steps up
+            until prediction time, otherwise the moving window strategy is used. If larger than the number of time
+            steps available, all steps up until prediction time are used, as in default case. Needs to be at least
+            min_train_series_length.
         start
-            The first point of time at which a prediction is computed for a future time.
-            This parameter supports 3 different data types: ``float``, ``int`` and ``pandas.Timestamp``.
-            In the case of ``float``, the parameter will be treated as the proportion of the time series
+            Optionally, the first point in time at which a prediction is computed for a future time.
+            This parameter supports: ``float``, ``int`` and ``pandas.Timestamp``, and ``None``.
+            If a ``float``, the parameter will be treated as the proportion of the time series
             that should lie before the first prediction point.
-            In the case of ``int``, the parameter will be treated as an integer index to the time index of
+            If an ``int``, the parameter will be treated as an integer index to the time index of
             `series` that will be used as first prediction time.
-            In case of ``pandas.Timestamp``, this time stamp will be used to determine the first prediction time
+            If a ``pandas.Timestamp``, the time stamp will be used to determine the first prediction time
             directly.
-            If `start` is not specified, the first prediction time will automatically be set to :
-                 - the first predictable point if `retrain` is False
+            If ``None``, the first prediction time will automatically be set to:
+                 - the first predictable point if `retrain` is False or a Callable.
 
-                 - the first trainable point if `retrain` is True and `train_length` is None
+                 - the first trainable point if `retrain` is True or an integer and `train_length` is None
 
                  - the first trainable point + `train_length` otherwise
-            Note: If the value provided does not meet the lags requirements, it will be ignored.
+            Note: Raises a ValueError if the provided value is outside of the possible historical forecasting times.
         forecast_horizon
             The forecast horizon for the predictions
         stride
@@ -671,7 +670,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         last_points_only
             Whether to retain only the last point of each historical forecast.
             If set to True, the method returns a single ``TimeSeries`` containing the successive point forecasts.
-            Otherwise returns a list of historical ``TimeSeries`` forecasts.
+            Otherwise, returns a list of historical ``TimeSeries`` forecasts.
         verbose
             Whether to print progress
         Returns
@@ -689,6 +688,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         model: ForecastingModel = self
         # only GlobalForecastingModels support historical forecasting without retraining the model
         base_class_name = model.__class__.__base__.__name__
+
+        # we can directly abort if retrain is False and fit hasn't been called before
+        raise_if(
+            not model._fit_called and retrain is False,
+            "The model has not been fitted yet, and `retrain` is ``False``. "
+            "Either call `fit()` before `historical_forecasts()`, or set `retrain` "
+            "to something different than ``False``.",
+            logger,
+        )
+
         raise_if(
             (isinstance(retrain, Callable) or int(retrain) != 1)
             and (not model._supports_non_retrainable_historical_forecasts()),
@@ -713,8 +722,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         ) and train_length < model._training_sample_time_index_length:
             raise_log(
                 ValueError(
-                    "train_length is too small for the training requirements of this model"
+                    "train_length is too small for the training requirements of this model. "
+                    f"Must be `>={model._training_sample_time_index_length}`."
                 ),
+                logger,
+            )
+        if train_length is not None and retrain is False:
+            raise_log(
+                ValueError("cannot use `train_length` when `retrain=False`."),
                 logger,
             )
 
@@ -758,6 +773,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 logger,
             )
         else:
+            retrain_func = None
             raise_log(
                 ValueError(
                     "`retrain` argument must be either `bool`, positive `int` or `Callable` (returning `bool`)"
@@ -857,48 +873,27 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     historical_forecasts_time_index_predict
                 )
 
-            # prepare the start parameter -> pd.Timestamp
-            if start is not None:
-                historical_forecasts_time_index = drop_before_index(
-                    historical_forecasts_time_index,
-                    series_.get_timestamp_at_point(start),
-                )
-            else:
-                if retrain or (not model._fit_called):
-                    if train_length:
+            # compute the maximum forecasts time index assuming that `start=None`
+            if retrain or (not model._fit_called):
+                if train_length:
+                    # we have to start later for larger `train_length`
+                    step_ahead = max(
+                        train_length - model._training_sample_time_index_length, 0
+                    )
+                    if step_ahead:
                         historical_forecasts_time_index = drop_before_index(
                             historical_forecasts_time_index,
                             historical_forecasts_time_index[0]
-                            + max(
-                                (
-                                    train_length
-                                    - model._training_sample_time_index_length
-                                ),
-                                0,
-                            )
-                            * series_.freq,
+                            + step_ahead * series_.freq,
                         )
-                    # if not we start training right away, but with 2 minimum points, so we start
-                    # 1 time step after the first trainable point.
-                    # (sklearn check that there are at least 2 points in the training set and it seems
-                    # rather reasonable)
-                    else:
-                        historical_forecasts_time_index = drop_before_index(
-                            historical_forecasts_time_index,
-                            historical_forecasts_time_index[0] + 1 * series_.freq,
-                        )
-
-                    # if retrain is False, fit hasn't been called yet and train_length None,
-                    # it means that the entire backtesting will be based on a set of two training samples
-                    # at the first step, so we warn the user.
-                    raise_if(
-                        (not model._fit_called)
-                        and (retrain is False)
-                        and (not train_length),
-                        "The model has not been fitted yet, and `start` and train_length are not specified. "
-                        "The model is not retraining during the historical forecasts. Hence the "
-                        "first and only training would be done on 2 samples.",
-                        logger,
+                # if not we start training right away, but with 2 minimum points, so we start
+                # 1 time step after the first trainable point.
+                # (sklearn check that there are at least 2 points in the training set and it seems
+                # rather reasonable)
+                else:
+                    historical_forecasts_time_index = drop_before_index(
+                        historical_forecasts_time_index,
+                        historical_forecasts_time_index[0] + 1 * series_.freq,
                     )
 
             # Take into account overlap_end, and forecast_horizon.
@@ -913,6 +908,31 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             historical_forecasts_time_index = drop_after_index(
                 historical_forecasts_time_index, last_valid_pred_time
             )
+
+            # adjust maximum index with optional `start` value
+            if start is not None:
+                start_time_ = series_.get_timestamp_at_point(start)
+                if (
+                    not historical_forecasts_time_index[0]
+                    <= start_time_
+                    <= historical_forecasts_time_index[-1]
+                ):
+                    if not isinstance(start, pd.Timestamp):
+                        start_value_msg = f"value `{start}` corresponding to timestamp `{start_time_}`"
+                    else:
+                        start_value_msg = f"time `{start_time_}`"
+                    raise_log(
+                        ValueError(
+                            f"Invalid `start` {start_value_msg} for series at index: {idx}. The start time "
+                            f"must be in the range "
+                            f"{historical_forecasts_time_index[0], historical_forecasts_time_index[-1]}"
+                        ),
+                        logger,
+                    )
+                historical_forecasts_time_index = drop_before_index(
+                    historical_forecasts_time_index,
+                    start_time_,
+                )
 
             if len(series) == 1:
                 # Only use tqdm if there's no outer loop

@@ -983,10 +983,10 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
     def test_retrain(self):
         """test historical_forecasts for an untrained model with different retrain values."""
 
-        def helper_hist_forecasts(retrain_val):
+        def helper_hist_forecasts(retrain_val, start):
             model = LinearRegressionModel(lags=4, output_chunk_length=4)
-            model.historical_forecasts(
-                self.ts_passengers, start=0.9, retrain=retrain_val, verbose=False
+            return model.historical_forecasts(
+                self.ts_passengers, start=start, retrain=retrain_val, verbose=False
             )
 
         def retrain_f_invalid(
@@ -1030,44 +1030,64 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 return False
 
         # test callable
-        helper_hist_forecasts(retrain_f_valid)
+        helper_hist_forecasts(retrain_f_valid, 0.9)
         # missing the `pred_time` positional argument
         expected_msg = "the Callable `retrain` must have a signature/arguments matching the following positional"
         with pytest.raises(ValueError) as error_msg:
-            helper_hist_forecasts(retrain_f_missing_arg)
+            helper_hist_forecasts(retrain_f_missing_arg, 0.9)
         self.assertTrue(str(error_msg.value).startswith(expected_msg))
         # returning a non-bool value (int)
         expected_msg = "Return value of `retrain` must be bool, received <class 'int'>"
         with pytest.raises(ValueError) as error_msg:
-            helper_hist_forecasts(retrain_f_invalid_ouput_int)
+            helper_hist_forecasts(retrain_f_invalid_ouput_int, 0.9)
         self.assertTrue(str(error_msg.value).startswith(expected_msg))
         # returning a non-bool value (str)
         expected_msg = "Return value of `retrain` must be bool, received <class 'str'>"
         with pytest.raises(ValueError) as error_msg:
-            helper_hist_forecasts(retrain_f_invalid_ouput_str)
+            helper_hist_forecasts(retrain_f_invalid_ouput_str, 0.9)
         self.assertTrue(str(error_msg.value).startswith(expected_msg))
         # predict fails but model could have been trained before the predict round
         expected_msg = "`retrain` is `False` in the first train iteration at prediction point (in time)"
         with pytest.raises(ValueError) as error_msg:
-            helper_hist_forecasts(retrain_f_delayed_true)
+            helper_hist_forecasts(retrain_f_delayed_true, 0.9)
         self.assertTrue(str(error_msg.value).startswith(expected_msg))
         # always returns False, treated slightly different than `retrain=False` and `retrain=0`
         with pytest.raises(ValueError) as error_msg:
-            helper_hist_forecasts(retrain_f_invalid)
+            helper_hist_forecasts(retrain_f_invalid, 0.9)
         self.assertTrue(str(error_msg.value).startswith(expected_msg))
 
         # test int
-        helper_hist_forecasts(10)
+        helper_hist_forecasts(10, 0.9)
         expected_msg = "Model has not been fit before the first predict iteration at prediction point (in time)"
         # `retrain=0` with not-trained model, encountering directly a predictable time index
         with pytest.raises(ValueError) as error_msg:
-            helper_hist_forecasts(0)
+            helper_hist_forecasts(0, 0.9)
         self.assertTrue(str(error_msg.value).startswith(expected_msg))
 
         # test bool
-        helper_hist_forecasts(True)
+        helper_hist_forecasts(True, 0.9)
         # `retrain=False` with not-trained model, encountering directly a predictable time index
-        expected_msg = "Model has not been fit before the first predict iteration at prediction point (in time)"
+        expected_msg = "The model has not been fitted yet, and `retrain` is ``False``."
         with pytest.raises(ValueError) as error_msg:
-            helper_hist_forecasts(False)
+            helper_hist_forecasts(False, 0.9)
         self.assertTrue(str(error_msg.value).startswith(expected_msg))
+
+        # test bool with invalid start
+        expected_msg = (
+            "Invalid `start` time `1949-09-01 00:00:00` for series at index: 0. "
+            "The start time must be in the range ("
+            "Timestamp('1949-10-01 00:00:00', freq='MS'), "
+            "Timestamp('1960-12-01 00:00:00', freq='MS')"
+            ")"
+        )
+        with pytest.raises(ValueError) as error_msg:
+            helper_hist_forecasts(True, pd.Timestamp("1949-09-01 00:00:00"))
+        self.assertTrue(str(error_msg.value).startswith(expected_msg))
+
+        # test if suggested start values are correct
+        res = helper_hist_forecasts(True, pd.Timestamp("1949-10-01 00:00:00"))
+        assert res.time_index[0] == pd.Timestamp("1949-10-01 00:00:00")
+        res = helper_hist_forecasts(True, pd.Timestamp("1960-12-01 00:00:00"))
+        assert (
+            res.time_index[0] == pd.Timestamp("1960-12-01 00:00:00") and len(res) == 1
+        )

@@ -220,13 +220,15 @@ def _historical_forecasts_general_checks(series, kwargs):
     if hasattr(n, "start"):
         if isinstance(n.start, float):
             raise_if_not(
-                0.0 <= n.start < 1.0, "`start` should be between 0.0 and 1.0.", logger
+                0.0 <= n.start <= 1.0, "`start` should be between 0.0 and 1.0.", logger
             )
         elif isinstance(n.start, (int, np.int64)):
-            raise_if_not(n.start >= 0, logger=logger)
+            raise_if_not(
+                n.start >= 0, "if `start` is an integer, must be `>= 0`.", logger
+            )
             raise_if(
-                any([n.start > len(serie) for serie in series]),
-                "`start` index should be smaller than length of the series",
+                any([n.start >= len(series_) for series_ in series]),
+                "if `start` is an integer, must be smaller than length of the series",
                 logger,
             )
         elif n.start and not isinstance(n.start, pd.Timestamp):
@@ -238,31 +240,49 @@ def _historical_forecasts_general_checks(series, kwargs):
             )
 
     if n.start is not None:
-        for idx, serie in enumerate(series):
-
-            start = serie.get_timestamp_at_point(n.start)
-
+        for idx, series_ in enumerate(series):
+            start = series_.get_timestamp_at_point(n.start)
+            if not isinstance(n.start, pd.Timestamp):
+                start_value_msg = (
+                    f"`start` value `{n.start}` corresponding to timestamp `{start}`"
+                )
+            else:
+                start_value_msg = f"`start` time `{start}`"
             # check start parameter
-            raise_if(
-                start == serie.end_time(),
-                f"`start` timestamp is the last timestamp of the series {idx}.",
-                logger,
-            )
-            raise_if(
-                n.retrain is not False and start == serie.start_time(),
-                "`start` corresponds to the first timestamp of the series {}, resulting "
-                "in empty training set".format(idx),
-                logger,
-            )
+            if start < series_.start_time():
+                raise_log(
+                    ValueError(
+                        f"{start_value_msg} is smaller than the first timestamp of the series at index: {idx}."
+                    ),
+                    logger,
+                )
+
+            if start > series_.end_time():
+                raise_log(
+                    ValueError(
+                        f"{start_value_msg} is larger than the last timestamp of the series at index: {idx}."
+                    ),
+                    logger,
+                )
+            if n.retrain is not False and start == series_.start_time():
+                raise_log(
+                    ValueError(
+                        f"`start` corresponds to the first timestamp of the series {idx}, resulting in empty "
+                        f"training set"
+                    ),
+                    logger,
+                )
 
             # check that overlap_end and start together form a valid combination
             overlap_end = n.overlap_end
-
-            if not overlap_end:
-                raise_if_not(
-                    start + serie.freq * forecast_horizon in serie,
-                    "`start` timestamp is too late in the series {} to make any predictions with"
-                    "`overlap_end` set to `False`.".format(idx),
+            if not overlap_end and not (
+                start + (series_.freq * (forecast_horizon - 1)) in series_
+            ):
+                raise_log(
+                    ValueError(
+                        f"`start` timestamp is too late in the series {idx} to make any predictions with "
+                        f"`overlap_end` set to `False`."
+                    ),
                     logger,
                 )
 
