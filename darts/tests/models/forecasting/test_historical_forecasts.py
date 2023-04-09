@@ -37,8 +37,8 @@ except ImportError:
     TORCH_AVAILABLE = False
 
 models_reg_no_cov_cls_kwargs = [
-    (LinearRegressionModel, {"lags": 4}, (4, 1)),
-    (CatBoostModel, {"lags": 4}, (4, 1)),
+    (LinearRegressionModel, {"lags": 8}, (8, 1)),
+    (CatBoostModel, {"lags": 6}, (6, 1)),
     (LightGBMModel, {"lags": 4}, (4, 1)),
 ]
 
@@ -286,8 +286,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
     )
 
     def test_historical_forecasts(self):
-
-        train_length = 7
+        train_length = 10
         forecast_horizon = 8
         # if no fit and retrain=false, should fit at fist iteration
         for model_cls, kwargs, bounds in models_reg_no_cov_cls_kwargs:
@@ -308,8 +307,13 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             theorical_forecast_length = (
                 self.ts_val_length
                 - max(
-                    (bounds[0] + bounds[1]), train_length
-                )  # because we train we have enough data
+                    [
+                        (
+                            bounds[0] + bounds[1] + 1
+                        ),  # +1 as sklearn models require min 2 train samples
+                        train_length,
+                    ]
+                )  # because we train
                 - forecast_horizon  # because we have overlap_end = False
                 + 1  # because we include the first element
             )
@@ -353,8 +357,13 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                     (
                         self.ts_val_length
                         - max(
-                            (bounds[0] + bounds[1]), train_length
-                        )  # because we train we have enough data
+                            [
+                                (
+                                    bounds[0] + bounds[1] + 1
+                                ),  # +1 as sklearn models require min 2 train samples
+                                train_length,
+                            ]
+                        )  # because we train
                         - forecast_horizon  # because we have overlap_end = False
                         + 1  # because we include the first element
                     )
@@ -386,8 +395,13 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                     (
                         self.ts_val_length
                         - max(
-                            (bounds[0] + bounds[1]), train_length
-                        )  # because we train we have enough data
+                            [
+                                (
+                                    bounds[0] + bounds[1] + 1
+                                ),  # +1 as sklearn models require min 2 train samples
+                                train_length,
+                            ]
+                        )  # because we train
                         - forecast_horizon  # because we have overlap_end = False
                         + 1  # because we include the first element
                     )
@@ -419,8 +433,13 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             theorical_forecast_length = (
                 self.ts_val_length
                 - max(
-                    (bounds[0] + bounds[1]), train_length
-                )  # because we train we have enough data
+                    [
+                        (
+                            bounds[0] + bounds[1] + 1
+                        ),  # +1 as sklearn models require min 2 train samples
+                        train_length,
+                    ]
+                )  # because we train
                 - forecast_horizon  # because we have overlap_end = False
                 + 1  # because we include the first element
             )
@@ -439,7 +458,8 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             )
 
     def test_regression_auto_start_multiple_no_cov(self):
-
+        train_length = 15
+        forecast_horizon = 10
         for model_cls, kwargs, bounds in models_reg_no_cov_cls_kwargs:
             model = model_cls(
                 **kwargs,
@@ -448,8 +468,8 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
 
             forecasts = model.historical_forecasts(
                 series=[self.ts_pass_val, self.ts_pass_val],
-                forecast_horizon=10,
-                train_length=15,
+                forecast_horizon=forecast_horizon,
+                train_length=train_length,
                 stride=1,
                 retrain=True,
                 overlap_end=False,
@@ -463,9 +483,14 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             theorical_forecast_length = (
                 self.ts_val_length
                 - max(
-                    (bounds[0] + bounds[1]), 15
-                )  # because we train we have enough data
-                - 10  # because we have overlap_end = False
+                    [
+                        (
+                            bounds[0] + bounds[1] + 1
+                        ),  # +1 as sklearn models require min 2 train samples
+                        train_length,
+                    ]
+                )  # because we train
+                - forecast_horizon  # because we have overlap_end = False
                 + 1  # because we include the first element
             )
 
@@ -482,7 +507,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
         "Torch not available. auto start and multiple time series for torch models will be skipped.",
     )
     def test_torch_auto_start_multiple_no_cov(self):
-
+        forecast_hrz = 10
         for model_cls, kwargs, bounds, _ in models_torch_cls_kwargs:
             model = model_cls(
                 random_state=0,
@@ -494,7 +519,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             # retrain True and overlap_end False
             forecasts = model.historical_forecasts(
                 series=[self.ts_pass_val, self.ts_pass_val],
-                forecast_horizon=10,
+                forecast_horizon=forecast_hrz,
                 stride=1,
                 retrain=True,
                 overlap_end=False,
@@ -503,16 +528,18 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 len(forecasts) == 2,
                 f"Model {model_cls} did not return a list of historical forecasts",
             )
-
             # If retrain=True and overlap_end=False, as ts has 72 values, we can only forecast
-            # 72-(input_chunk_length+output_chunk_length+1) - 10 + 1
-            # indeed we start to predict after the first trainable point (input_chunk_length+output_chunk_length+1)
-            # and we stop in this case (overlap_end=False) at the end_time (-10),
-            # and the predictable point is the index -10 instead of index -1, so we
-            # have to add 1 to -10.
-            # Let's note that output_chunk_length is necessarily 1 for RNN.
+            # (target length)-(training length=input_chunk_length+output_chunk_length) - (horizon - 1)
+            # indeed we start to predict after the first trainable point (input_chunk_length+output_chunk_length)
+            # and we stop in this case (overlap_end=False) at the end_time:
+            # target.end_time() - (horizon - 1) * target.freq
+
+            # explanation:
+            # (bounds): train sample length
+            # (horizon - 1): with overlap_end=False, if entire horizon is available (overlap_end=False),
+            # we can predict 1
             theorical_forecast_length = (
-                self.ts_val_length - (bounds[0] + bounds[1] + 1) - 10 + 1
+                self.ts_val_length - (bounds[0] + bounds[1]) - (forecast_hrz - 1)
             )
             self.assertTrue(
                 len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length,
@@ -531,7 +558,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             # retrain True and overlap_end True
             forecasts = model.historical_forecasts(
                 series=[self.ts_pass_val, self.ts_pass_val],
-                forecast_horizon=10,
+                forecast_horizon=forecast_hrz,
                 stride=1,
                 retrain=True,
                 overlap_end=True,
@@ -541,11 +568,11 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 len(forecasts) == 2,
                 f"Model {model_cls} did not return a list of historical forecasts",
             )
-
-            # If retrain=True and overlap_end=True, as ts has 72 values, we can only forecast
-            # 72-(input_chunk_length+output_chunk_length+1)
-            # We are not limited thanks to overlap_end=True
-            theorical_forecast_length = self.ts_val_length - (bounds[0] + bounds[1] + 1)
+            theorical_forecast_length = (
+                self.ts_val_length
+                - (bounds[0] + bounds[1])  # train sample length
+                - 0  # with overlap_end=True, we are not restricted by the end of the series or horizon
+            )
             self.assertTrue(
                 len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length
             )
@@ -559,7 +586,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             # retrain False and overlap_end False
             forecasts = model.historical_forecasts(
                 series=[self.ts_pass_val, self.ts_pass_val],
-                forecast_horizon=10,
+                forecast_horizon=forecast_hrz,
                 stride=1,
                 retrain=False,
                 overlap_end=False,
@@ -569,13 +596,15 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 len(forecasts) == 2,
                 f"Model {model_cls} did not return a list of historical forecasts",
             )
-
-            # If retrain=False and overlap_end=False  as ts has 72 values, we can forecast
-            # 72-input_chunk_length - 10 + 1 = 39 values
+            theorical_forecast_length = (
+                self.ts_val_length
+                - bounds[0]  # prediction input sample length
+                - (
+                    forecast_hrz - 1
+                )  # overlap_end=False -> if entire horizon is available, we can predict 1
+            )
             self.assertTrue(
-                len(forecasts[0])
-                == len(forecasts[1])
-                == self.ts_val_length - bounds[0] - 10 + 1
+                len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length
             )
 
             model = model_cls(
@@ -587,7 +616,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             # retrain False and overlap_end True
             forecasts = model.historical_forecasts(
                 series=[self.ts_pass_val, self.ts_pass_val],
-                forecast_horizon=10,
+                forecast_horizon=forecast_hrz,
                 stride=1,
                 retrain=False,
                 overlap_end=True,
@@ -597,12 +626,13 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 len(forecasts) == 2,
                 f"Model {model_cls} did not return a list of historical forecasts",
             )
-
-            # If retrain=False and overlap_end=False  as ts has 72 values, we can forecast
-            # 72-input_chunk_length
-            # We are not limited thanks to overlap_end=True
+            theorical_forecast_length = (
+                self.ts_val_length
+                - bounds[0]  # prediction input sample length
+                - 0  # overlap_end=False -> we are not restricted by the end of the series or horizon
+            )
             self.assertTrue(
-                len(forecasts[0]) == len(forecasts[1]) == self.ts_val_length - bounds[0]
+                len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length
             )
 
     def test_regression_auto_start_multiple_with_cov_retrain(self):
@@ -810,11 +840,16 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 len(forecasts) == 2,
                 f"Model {model_cls} did not return a list of historical forecasts",
             )
+
             theorical_forecast_length = (
-                self.ts_val_length - (bounds[0] + bounds[1] + 1) - forecast_hrz + 1
+                self.ts_val_length
+                - (bounds[0] + bounds[1])  # train sample length
+                - (forecast_hrz - 1)  # if entire horizon is available, we can predict 1
+                - 0  # past covs have same start as target -> no shift
+                - 0  # we don't have future covs in output chunk -> no shift
             )
             self.assertTrue(
-                len(forecasts[0]) == theorical_forecast_length,
+                len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length,
                 f"Model {model_cls} does not return the right number of historical forecasts in case "
                 f"of retrain=True and overlap_end=False and past_covariates with same start. "
                 f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}",
@@ -838,31 +873,31 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 retrain=True,
                 overlap_end=False,
             )
-
-            # we subtract the shift of the past_cov_val ts (-5)
-            # -0 explanation: past covs are not required in output chunk,
-            # we can predict up until end with any `forecast_hrz`
             theorical_forecast_length = (
-                self.ts_val_length - (bounds[0] + bounds[1]) - forecast_hrz - 5 - 0
+                self.ts_val_length
+                - (bounds[0] + bounds[1])  # train sample length
+                - (forecast_hrz - 1)  # if entire horizon is available, we can predict 1
+                - 5  # past covs start 5 later -> shift
+                - 0  # we don't have future covs in output chunk -> no shift
             )
             self.assertTrue(
                 len(forecasts[0]) == theorical_forecast_length,
                 f"Model {model_cls} does not return the right number of historical forecasts in case "
                 f"of retrain=True and overlap_end=False and past_covariates starting after. "
-                f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}",
+                f"Expected {theorical_forecast_length}, got {len(forecasts[0])}",
             )
-
-            # all cov starts are good: no shift (-0)
-            # -0 explanation: past covs are not required in output chunk,
-            # we can predict up until end with any `forecast_hrz`
             theorical_forecast_length = (
-                self.ts_val_length - (bounds[0] + bounds[1]) - forecast_hrz - 0 - 0
+                self.ts_val_length
+                - (bounds[0] + bounds[1])  # train sample length
+                - (forecast_hrz - 1)  # if entire horizon is available, we can predict 1
+                - 0  # past covs have same start as target -> no shift
+                - 0  # we don't have future covs in output chunk -> no shift
             )
             self.assertTrue(
                 len(forecasts[1]) == theorical_forecast_length,
                 f"Model {model_cls} does not return the right number of historical forecasts in case "
                 f"of retrain=True and overlap_end=False and past_covariates starting before. "
-                f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}",
+                f"Expected {theorical_forecast_length}, got {len(forecasts[1])}",
             )
 
         # Past and future covariates
@@ -895,12 +930,12 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 retrain=True,
                 overlap_end=False,
             )
-
-            # max shift is from future covs starting 7 after
-            # -2 explanation: future covs are required in output chunk;
-            # it is the difference between forecast_hrz = 10 and output_chunk_length = 12
             theorical_forecast_length = (
-                self.ts_val_length - (bounds[0] + bounds[1]) - forecast_hrz - 7 - 2
+                self.ts_val_length
+                - (bounds[0] + bounds[1])  # train sample length
+                - (forecast_hrz - 1)  # if entire horizon is available, we can predict 1
+                - 7  # future covs start 7 after target (more than past covs) -> shift
+                - 2  # future covs in output chunk -> difference between horizon=10 and output_chunk_length=12
             )
             self.assertTrue(
                 len(forecasts[0]) == theorical_forecast_length,
@@ -909,11 +944,14 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 f"different start. "
                 f"Expected {theorical_forecast_length}, got {len(forecasts[0])}",
             )
-            # all covariate starts are good, no shift (0) required
-            # -2 explanation: future covs are required in output chunk;
-            # it is the difference between forecast_hrz = 10 and output_chunk_length = 12
             theorical_forecast_length = (
-                self.ts_val_length - (bounds[0] + bounds[1]) - forecast_hrz - 0 - 2
+                self.ts_val_length
+                - (bounds[0] + bounds[1])  # train sample length
+                - (
+                    forecast_hrz - 1
+                )  # if entire horizon is available, we can predict 1,
+                - 0  # all covs start at the same time as target -> no shift,
+                - 2  # future covs in output chunk -> difference between horizon=10 and output_chunk_length=12
             )
             self.assertTrue(
                 len(forecasts[1]) == theorical_forecast_length,
@@ -951,12 +989,14 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 len(forecasts) == 2,
                 f"Model {model_cls} did not return a list of historical forecasts",
             )
-
-            # max shift is from future covs starting 7 after
-            # -2 explanation: future covs are required in output chunk;
-            # it is the difference between forecast_hrz = 10 and output_chunk_length = 12
             theorical_forecast_length = (
-                self.ts_val_length - (bounds[0] + bounds[1]) - forecast_hrz - 7 - 2
+                self.ts_val_length
+                - (bounds[0] + bounds[1])  # train sample length
+                - (
+                    forecast_hrz - 1
+                )  # (horizon - 1): if entire horizon is available, we can predict 1,
+                - 7  # future covs start 7 after target (more than past covs) -> shift
+                - 2  # future covs in output chunk -> difference between horizon=10 and output_chunk_length=12
             )
             self.assertTrue(
                 len(forecasts[0]) == theorical_forecast_length,
@@ -965,12 +1005,12 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 f"with different start. "
                 f"Expected {theorical_forecast_length}, got {len(forecasts[0])}",
             )
-
-            # all covariate starts are good, no shift (0) required
-            # -2 explanation: future covs are required in output chunk;
-            # it is the difference between forecast_hrz = 10 and output_chunk_length = 12
             theorical_forecast_length = (
-                self.ts_val_length - (bounds[0] + bounds[1]) - forecast_hrz - 0 - 2
+                self.ts_val_length
+                - (bounds[0] + bounds[1])  # train sample length
+                - (forecast_hrz - 1)  # if entire horizon is available, we can predict 1
+                - 0  # all covs start at the same time as target -> no shift
+                - 2  # future covs in output chunk -> difference between horizon=10 and output_chunk_length=12
             )
             self.assertTrue(
                 len(forecasts[1]) == theorical_forecast_length,
