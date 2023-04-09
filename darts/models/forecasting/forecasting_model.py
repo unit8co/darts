@@ -590,6 +590,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         overlap_end: bool = False,
         last_points_only: bool = True,
         verbose: bool = False,
+        show_warnings: bool = False,
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:
@@ -679,6 +680,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Otherwise, returns a list of historical ``TimeSeries`` forecasts.
         verbose
             Whether to print progress
+        show_warnings
+            Whether to show warnings related to `start` parameter.
+
         Returns
         -------
         TimeSeries or List[TimeSeries] or List[List[TimeSeries]]
@@ -924,7 +928,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     not historical_forecasts_time_index[0]
                     <= start_time_
                     <= historical_forecasts_time_index[-1]
-                ):
+                ) and show_warnings:
                     if not isinstance(start, pd.Timestamp):
                         start_value_msg = f"value `{start}` corresponding to timestamp `{start_time_}`"
                     else:
@@ -1096,6 +1100,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         ] = metrics.mape,
         reduction: Union[Callable[[np.ndarray], float], None] = np.mean,
         verbose: bool = False,
+        show_warnings: bool = True,
     ) -> Union[float, List[float], Sequence[float], List[Sequence[float]]]:
         """Compute error values that the model would have produced when
         used on (potentially multiple) `series`.
@@ -1192,6 +1197,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Set to ``np.mean`` by default.
         verbose
             Whether to print progress
+        show_warnings
+            Whether to show warnings related to `start` parameter.
+
         Returns
         -------
         float or List[float] or List[List[float]]
@@ -1212,6 +1220,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 overlap_end=overlap_end,
                 last_points_only=last_points_only,
                 verbose=verbose,
+                show_warnings=show_warnings,
             )
         else:
             forecasts = historical_forecasts
@@ -1470,6 +1479,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         forecast_horizon: int = 1,
         retrain: bool = True,
         verbose: bool = False,
+        show_warnings: bool = True,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Compute the residuals produced by this model on a (or sequence of) univariate  time series.
 
@@ -1501,6 +1511,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             If False, the model is not trained at all. Default: True
         verbose
             Whether to print progress.
+        show_warnings
+            Whether to show warnings related to `start` parameter.
+
         Returns
         -------
         TimeSeries (or Sequence[TimeSeries])
@@ -1534,6 +1547,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 retrain=retrain,
                 last_points_only=True,
                 verbose=verbose,
+                show_warnings=show_warnings,
             )
             series_trimmed = target_ts.slice_intersect(forecasts)
             residuals_list.append(

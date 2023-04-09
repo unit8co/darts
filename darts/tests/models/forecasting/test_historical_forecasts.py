@@ -691,7 +691,6 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 if max_future_cov_lag is not None and max_future_cov_lag > 0
                 else 0
             )
-
             # length input - biggest past lag - biggest future lag - forecast horizon - output_chunk_length
             theorical_retrain_forecast_length = len(self.ts_pass_val) - (
                 -past_lag
@@ -1112,22 +1111,14 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             helper_hist_forecasts(False, 0.9)
         self.assertTrue(str(error_msg.value).startswith(expected_msg))
 
-        # test bool with invalid start
-        expected_msg = (
-            "Invalid `start` time `1949-09-01 00:00:00` for series at index: 0. "
-            "The start time must be in the range ("
-            "Timestamp('1949-10-01 00:00:00', freq='MS'), "
-            "Timestamp('1960-12-01 00:00:00', freq='MS')"
-            ")"
-        )
-        with pytest.raises(ValueError) as error_msg:
-            helper_hist_forecasts(True, pd.Timestamp("1949-09-01 00:00:00"))
-        self.assertTrue(str(error_msg.value).startswith(expected_msg))
-
-        # test if suggested start values are correct
-        res = helper_hist_forecasts(True, pd.Timestamp("1949-10-01 00:00:00"))
-        assert res.time_index[0] == pd.Timestamp("1949-10-01 00:00:00")
-        res = helper_hist_forecasts(True, pd.Timestamp("1960-12-01 00:00:00"))
-        assert (
-            res.time_index[0] == pd.Timestamp("1960-12-01 00:00:00") and len(res) == 1
-        )
+        expected_start = pd.Timestamp("1949-10-01 00:00:00")
+        # start before first trainable time index should still work
+        res = helper_hist_forecasts(True, pd.Timestamp("1949-09-01 00:00:00"))
+        self.assertTrue(res.time_index[0] == expected_start)
+        # start at first trainable time index should still work
+        res = helper_hist_forecasts(True, expected_start)
+        self.assertTrue(res.time_index[0] == expected_start)
+        # start at last trainable time index should still work
+        expected_end = pd.Timestamp("1960-12-01 00:00:00")
+        res = helper_hist_forecasts(True, expected_end)
+        self.assertTrue(res.time_index[0] == expected_end)
