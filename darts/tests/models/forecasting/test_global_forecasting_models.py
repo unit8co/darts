@@ -644,4 +644,5 @@ if TORCH_AVAILABLE:
                 n_epochs=2,
             )
 
-            model.residuals(ts)
+            res = model.residuals(ts)
+            assert len(res) == 38 - (24 + 12)

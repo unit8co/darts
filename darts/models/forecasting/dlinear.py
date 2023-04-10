@@ -8,9 +8,9 @@ from typing import Optional, Tuple
 import torch
 import torch.nn as nn
 
+from darts.logging import raise_if
 from darts.models.forecasting.pl_forecasting_module import PLMixedCovariatesModule
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
-from darts.utils.utils import raise_if
 
 MixedCovariatesTrainTensorType = Tuple[
     torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
