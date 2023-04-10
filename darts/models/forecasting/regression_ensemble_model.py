@@ -178,4 +178,4 @@ class RegressionEnsembleModel(EnsembleModel):
         Optional[int],
     ]:
         extreme_lags_ = super().extreme_lags
-        return tuple((extreme_lags_[0] - self.train_n_points, *extreme_lags_[1:]))
+        return (extreme_lags_[0] - self.train_n_points,) + extreme_lags_[1:]
