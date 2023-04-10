@@ -36,7 +36,6 @@ except ImportError:
 
 
 class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
-
     RANDOM_SEED = 111
 
     sine_series = tg.sine_timeseries(
@@ -198,6 +197,19 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         ensemble = RegressionEnsembleModel(ensemble_models, 10)
         ensemble.fit(self.seq1, self.cov1)
         ensemble.predict(10, self.seq2, self.cov2)
+
+    def test_train_predict_models_with_future_covariates(self):
+        ensemble_models = [
+            LinearRegressionModel(lags=1, lags_future_covariates=[1]),
+            RandomForest(lags=1, lags_future_covariates=[1]),
+        ]
+        ensemble = RegressionEnsembleModel(ensemble_models, 10)
+        ensemble.fit(self.sine_series, future_covariates=self.ts_cov1)
+        # expected number of coefs is lags*components -> we have 1 lag for each target (1 comp)
+        # and future covs (2 comp)
+        expected_coefs = len(self.sine_series.components) + len(self.ts_cov1.components)
+        assert len(ensemble_models[0].model.coef_) == expected_coefs
+        ensemble.predict(10, self.sine_series, future_covariates=self.ts_cov1)
 
     def test_predict_with_target(self):
         series_long = self.combined
