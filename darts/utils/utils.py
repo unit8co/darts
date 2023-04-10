@@ -262,8 +262,7 @@ def _historical_forecasts_general_checks(series, kwargs):
                 if (
                     series_.has_datetime_index
                     or (series_.has_range_index and series_.freq == 1)
-                    and n.start >= len(series_)
-                ):
+                ) and n.start >= len(series_):
                     raise_log(
                         ValueError(
                             f"`start` index `{n.start}` is out of bounds for series of length {len(series_)} "
