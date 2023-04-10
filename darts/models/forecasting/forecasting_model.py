@@ -2035,8 +2035,6 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             ):
                 self.static_covariates = series.static_covariates
         else:
-            self.static_covariates = series[0].static_covariates
-
             if past_covariates is not None:
                 self._expect_past_covariates = True
             if future_covariates is not None:
@@ -2046,6 +2044,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
                 and self.supports_static_covariates
                 and self._considers_static_covariates
             ):
+                self.static_covariates = series[0].static_covariates
                 self._expect_static_covariates = True
 
         if past_covariates is not None:
@@ -2113,18 +2112,28 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             a sequence where each element contains the corresponding `n` points forecasts.
         """
         super().predict(n, num_samples)
-        if self._expect_past_covariates and past_covariates is None:
+        if self.uses_past_covariates and past_covariates is None:
             raise_log(
                 ValueError(
                     "The model has been trained with past covariates. Some matching past_covariates "
                     "have to be provided to `predict()`."
                 )
             )
-        if self._expect_future_covariates and future_covariates is None:
+        if self.uses_future_covariates and future_covariates is None:
             raise_log(
                 ValueError(
                     "The model has been trained with future covariates. Some matching future_covariates "
                     "have to be provided to `predict()`."
+                )
+            )
+        if (
+            self.uses_static_covariates
+            and get_single_series(series).static_covariates is None
+        ):
+            raise_log(
+                ValueError(
+                    "The model has been trained with static covariates. Some matching static covariates "
+                    "must be embedded in the target `series` passed to `predict()`."
                 )
             )
 

@@ -52,6 +52,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         quantiles: List[float] = None,
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
+        use_static_covariates: bool = True,
         **kwargs,
     ):
         """XGBoost Model
@@ -105,6 +106,9 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
+        use_static_covariates
+            Whether the model should use static covariate information in case the input series contain static
+            covariates.
         **kwargs
             Additional keyword arguments passed to `xgb.XGBRegressor`.
         """
@@ -135,6 +139,7 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             add_encoders=add_encoders,
             multi_models=multi_models,
             model=xgb.XGBRegressor(**self.kwargs),
+            use_static_covariates=use_static_covariates,
         )
 
     def fit(

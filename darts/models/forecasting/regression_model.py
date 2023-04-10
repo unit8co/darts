@@ -364,10 +364,11 @@ class RegressionModel(GlobalForecastingModel):
             features[i] = X_i[:, :, 0]
             labels[i] = y_i[:, :, 0]
 
-        features = self._add_static_covariates(
-            features,
-            target_series,
-        )
+        if self.uses_static_covariates:
+            features = self._add_static_covariates(
+                features,
+                target_series,
+            )
 
         training_samples = np.concatenate(features, axis=0)
         training_labels = np.concatenate(labels, axis=0)
@@ -808,7 +809,8 @@ class RegressionModel(GlobalForecastingModel):
             # static covariates can be added to each block; valid since
             # each block contains same number of observations:
             X_blocks = np.split(X, len(series), axis=0)
-            X_blocks = self._add_static_covariates(X_blocks, series)
+            if self.uses_static_covariates:
+                X_blocks = self._add_static_covariates(X_blocks, series)
             X = np.concatenate(X_blocks, axis=0)
 
             # X has shape (n_series * n_samples, n_regression_features)
@@ -1069,6 +1071,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         add_encoders: Optional[dict] = None,
         model=None,
         multi_models: Optional[bool] = True,
+        use_static_covariates: bool = True,
         categorical_past_covariates: Optional[Union[str, List[str]]] = None,
         categorical_future_covariates: Optional[Union[str, List[str]]] = None,
         categorical_static_covariates: Optional[Union[str, List[str]]] = None,
@@ -1122,6 +1125,9 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
+        use_static_covariates
+            Whether the model should use static covariate information in case the input series contain static
+            covariates.
         categorical_past_covariates
             Optionally, component name or list of component names specifying the past covariates that should be treated
             as categorical.
@@ -1140,6 +1146,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             add_encoders=add_encoders,
             model=model,
             multi_models=multi_models,
+            use_static_covariates=use_static_covariates,
         )
         self.categorical_past_covariates = (
             [categorical_past_covariates]

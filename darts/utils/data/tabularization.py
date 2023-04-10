@@ -308,7 +308,6 @@ def create_lagged_training_data(
     check_inputs: bool = True,
     use_moving_windows: bool = True,
     concatenate: bool = True,
-    use_static_covariates: bool = True,
 ) -> Tuple[ArrayOrArraySequence, Union[None, ArrayOrArraySequence], Sequence[pd.Index]]:
     """
     Creates the features array `X` and labels array `y` to train a lagged-variables regression model (e.g. an

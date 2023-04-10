@@ -37,6 +37,7 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         quantiles: List[float] = None,
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
+        use_static_covariates: bool = True,
         categorical_past_covariates: Optional[Union[str, List[str]]] = None,
         categorical_future_covariates: Optional[Union[str, List[str]]] = None,
         categorical_static_covariates: Optional[Union[str, List[str]]] = None,
@@ -93,6 +94,9 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
+        use_static_covariates
+            Whether the model should use static covariate information in case the input series contain static
+            covariates.
         categorical_past_covariates
             Optionally, component name or list of component names specifying the past covariates that should be treated
             as categorical by the underlying `lightgbm.LightGBMRegressor`. It's recommended that the components that
@@ -137,6 +141,7 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
             add_encoders=add_encoders,
             multi_models=multi_models,
             model=lgb.LGBMRegressor(**self.kwargs),
+            use_static_covariates=use_static_covariates,
             categorical_past_covariates=categorical_past_covariates,
             categorical_future_covariates=categorical_future_covariates,
             categorical_static_covariates=categorical_static_covariates,
