@@ -281,6 +281,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return 1
 
     @property
+    @abstractmethod
     def extreme_lags(
         self,
     ) -> Tuple[
@@ -335,8 +336,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         >>> model.extreme_lags
         (-10, 6, None, None, 4, 6)
         """
-
-        return -1, 0, None, None, None, None
+        pass
 
     @property
     def _training_sample_time_index_length(self) -> int:
@@ -1914,6 +1914,23 @@ class LocalForecastingModel(ForecastingModel, ABC):
         super().fit(series)
         series._assert_deterministic()
 
+    @property
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+    ]:
+        # TODO: LocalForecastingModels do not yet handle extreme lags properly. Especially
+        #  TransferableFutureCovariatesLocalForecastingModel, where there is a difference between fit and predict mode)
+        #  do not yet. In general, Local models train on the entire series (input=output), different to Global models
+        #  that use an input to predict an output.
+        return -self.min_train_series_length, -1, None, None, None, None
+
 
 class GlobalForecastingModel(ForecastingModel, ABC):
     """The base class for "global" forecasting models, handling several time series and optional covariates.
@@ -2315,6 +2332,23 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         """Controls wether encodings should be generated in :func:`FutureCovariatesLocalForecastingModel.predict()``"""
         return False
 
+    @property
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+    ]:
+        # TODO: LocalForecastingModels do not yet handle extreme lags properly. Especially
+        #  TransferableFutureCovariatesLocalForecastingModel, where there is a difference between fit and predict mode)
+        #  do not yet. In general, Local models train on the entire series (input=output), different to Global models
+        #  that use an input to predict an output.
+        return -self.min_train_series_length, -1, None, None, 0, 0
+
 
 class TransferableFutureCovariatesLocalForecastingModel(
     FutureCovariatesLocalForecastingModel, ABC
@@ -2492,7 +2526,3 @@ class TransferableFutureCovariatesLocalForecastingModel(
     @property
     def _supress_generate_predict_encoding(self) -> bool:
         return True
-
-    @property
-    def extreme_lags(self):
-        return -1, 0, None, None, 0, 0
