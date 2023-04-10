@@ -228,7 +228,7 @@ def _historical_forecasts_general_checks(series, kwargs):
             )
             raise_if(
                 any([n.start >= len(series_) for series_ in series]),
-                "if `start` is an integer, must be smaller than length of the series",
+                "if `start` is an integer (index position), must be smaller than length of the series",
                 logger,
             )
         elif n.start and not isinstance(n.start, pd.Timestamp):
@@ -248,14 +248,6 @@ def _historical_forecasts_general_checks(series, kwargs):
                 )
             else:
                 start_value_msg = f"`start` time `{start}`"
-            # check start parameter
-            if start < series_.start_time():
-                raise_log(
-                    ValueError(
-                        f"{start_value_msg} is smaller than the first timestamp of the series at index: {idx}."
-                    ),
-                    logger,
-                )
 
             if start > series_.end_time():
                 raise_log(
