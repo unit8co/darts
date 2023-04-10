@@ -67,6 +67,7 @@ class RegressionModel(GlobalForecastingModel):
         add_encoders: Optional[dict] = None,
         model=None,
         multi_models: Optional[bool] = True,
+        use_static_covariates: bool = True,
     ):
         """Regression Model
         Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.
@@ -114,10 +115,12 @@ class RegressionModel(GlobalForecastingModel):
             support multi-output regression for multivariate timeseries, in which case one regressor
             will be used per component in the multivariate series.
             If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.
-
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
+        use_static_covariates
+            Whether the model should use static covariate information in case the input series contain static
+            covariates.
         """
 
         super().__init__(add_encoders=add_encoders)
@@ -127,6 +130,7 @@ class RegressionModel(GlobalForecastingModel):
         self.output_chunk_length = None
         self.input_dim = None
         self.multi_models = multi_models
+        self._considers_static_covariates = use_static_covariates
 
         # model checks
         if self.model is None:
@@ -524,6 +528,12 @@ class RegressionModel(GlobalForecastingModel):
             self._uses_past_covariates = True
         if future_covariates is not None:
             self._uses_future_covariates = True
+        if (
+            get_single_series(series).static_covariates is not None
+            and self.supports_static_covariates
+            and self._considers_static_covariates
+        ):
+            self._uses_static_covariates = True
 
         for covs, name in zip([past_covariates, future_covariates], ["past", "future"]):
             raise_if(
@@ -825,8 +835,8 @@ class RegressionModel(GlobalForecastingModel):
     def __str__(self):
         return self.model.__str__()
 
-    @staticmethod
-    def _supports_static_covariates() -> bool:
+    @property
+    def supports_static_covariates(self) -> bool:
         return True
 
 

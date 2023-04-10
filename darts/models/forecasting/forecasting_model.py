@@ -120,6 +120,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         self._expect_past_covariates, self._uses_past_covariates = False, False
         self._expect_future_covariates, self._uses_future_covariates = False, False
+        # for static covariates there is the option to consider static covariates or ignore them
+        self._considers_static_covariates = False
         self._expect_static_covariates, self._uses_static_covariates = False, False
 
         # state; whether the model has been fit (on a single time series)
@@ -193,18 +195,24 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     @property
     def supports_past_covariates(self):
+        """
+        Whether model supports past covariates
+        """
         return "past_covariates" in inspect.signature(self.fit).parameters.keys()
 
     @property
     def supports_future_covariates(self):
+        """
+        Whether model supports future covariates
+        """
         return "future_covariates" in inspect.signature(self.fit).parameters.keys()
 
     @property
-    def supports_static_covariates(self):
-        return (
-            "use_static_covariates"
-            in inspect.signature(self.__init__).parameters.keys()
-        )
+    def supports_static_covariates(self) -> bool:
+        """
+        Whether model supports static covariates
+        """
+        return False
 
     @property
     def uses_past_covariates(self):
@@ -222,7 +230,17 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     @property
     def uses_static_covariates(self):
+        """
+        Whether the model uses static covariates, once fitted.
+        """
         return self._uses_static_covariates
+
+    @property
+    def considers_static_covariates(self):
+        """
+        Whether the model considers static covariates, if there are any.
+        """
+        return self._considers_static_covariates
 
     @abstractmethod
     def predict(self, n: int, num_samples: int = 1) -> TimeSeries:
@@ -1989,11 +2007,16 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         if isinstance(series, TimeSeries):
             # if only one series is provided, save it for prediction time (including covariates, if available)
             self.training_series = series
-            self.static_covariates = series.static_covariates
             if past_covariates is not None:
                 self.past_covariate_series = past_covariates
             if future_covariates is not None:
                 self.future_covariate_series = future_covariates
+            if (
+                series.static_covariates is not None
+                and self.supports_static_covariates
+                and self._considers_static_covariates
+            ):
+                self.static_covariates = series.static_covariates
         else:
             self.static_covariates = series[0].static_covariates
 
@@ -2001,14 +2024,23 @@ class GlobalForecastingModel(ForecastingModel, ABC):
                 self._expect_past_covariates = True
             if future_covariates is not None:
                 self._expect_future_covariates = True
-            if series[0].static_covariates is not None:
+            if (
+                get_single_series(series).static_covariates is not None
+                and self.supports_static_covariates
+                and self._considers_static_covariates
+            ):
                 self._expect_static_covariates = True
 
         if past_covariates is not None:
             self._uses_past_covariates = True
         if future_covariates is not None:
             self._uses_future_covariates = True
-
+        if (
+            get_single_series(series).static_covariates is not None
+            and self.supports_static_covariates
+            and self._considers_static_covariates
+        ):
+            self._uses_static_covariates = True
         self._fit_called = True
 
     @abstractmethod

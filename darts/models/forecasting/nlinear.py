@@ -402,6 +402,6 @@ class NLinearModel(MixedCovariatesTorchModel):
             **self.pl_module_params,
         )
 
-    @staticmethod
-    def _supports_static_covariates() -> bool:
+    @property
+    def supports_static_covariates(self) -> bool:
         return True
