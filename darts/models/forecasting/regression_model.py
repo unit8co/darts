@@ -307,6 +307,10 @@ class RegressionModel(GlobalForecastingModel):
             else self.output_chunk_length,
         )
 
+    @property
+    def min_train_samples(self) -> int:
+        return 2
+
     def get_multioutput_estimator(self, horizon, target_dim):
         raise_if_not(
             isinstance(self.model, MultiOutputRegressor),
