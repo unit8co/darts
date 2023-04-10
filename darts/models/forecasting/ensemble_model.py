@@ -197,12 +197,9 @@ class EnsembleModel(GlobalForecastingModel):
     def min_train_series_length(self) -> int:
         return max(model.min_train_series_length for model in self.models)
 
-    # @property
-    # def extreme_lags(self):
-    #     lag_aggregators = (min, max, min, max, min, max)
-    #     return tuple(
-    #         self._find_max_lag_or_none(i, agg) for i, agg in enumerate(lag_aggregators)
-    #     )
+    @property
+    def min_train_samples(self) -> int:
+        return max(model.min_train_samples for model in self.models)
 
     @property
     def extreme_lags(
