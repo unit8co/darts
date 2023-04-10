@@ -15,6 +15,7 @@ from darts.models import (
     RandomForest,
     RegressionEnsembleModel,
     RegressionModel,
+    Theta,
 )
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.tests.models.forecasting.test_ensemble_models import _make_ts
@@ -348,3 +349,17 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
         ensemble = RegressionEnsembleModel(ensemble_models, horizon)
         self.helper_test_models_accuracy(ensemble, horizon, ts_sum2, ts_cov2, 3)
+
+    def test_call_backtest_regression_ensemble_local_models(self):
+        series = tg.sine_timeseries(
+            value_frequency=(1 / 5), value_y_offset=10, length=50
+        )
+        regr_train_n = 10
+        ensemble = RegressionEnsembleModel(
+            [NaiveSeasonal(5), Theta(2, 5)], regression_train_n_points=regr_train_n
+        )
+        ensemble.fit(series)
+        assert max(m_.min_train_series_length for m_ in ensemble.models) == 10
+        # -10 comes from the maximum minimum train series length of all models
+        assert ensemble.extreme_lags == (-10 - regr_train_n, 0, None, None, None, None)
+        ensemble.backtest(series)

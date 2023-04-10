@@ -165,3 +165,17 @@ class RegressionEnsembleModel(EnsembleModel):
             for serie, prediction in zip(series, predictions)
         ]
         return seq2series(ensembled) if is_single_series else ensembled
+
+    @property
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+    ]:
+        extreme_lags_ = super().extreme_lags
+        return extreme_lags_[0] - self.train_n_points, *extreme_lags_[1:]
