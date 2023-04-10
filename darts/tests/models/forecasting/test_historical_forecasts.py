@@ -8,6 +8,7 @@ from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
 from darts.datasets import AirPassengersDataset
 from darts.logging import get_logger
+from darts.models import CatBoostModel, LightGBMModel, LinearRegressionModel
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 
@@ -16,9 +17,6 @@ try:
 
     from darts.models import (
         BlockRNNModel,
-        CatBoostModel,
-        LightGBMModel,
-        LinearRegressionModel,
         NBEATSModel,
         NLinearModel,
         RNNModel,
