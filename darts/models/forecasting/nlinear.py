@@ -183,6 +183,7 @@ class NLinearModel(MixedCovariatesTorchModel):
         shared_weights: bool = False,
         const_init: bool = True,
         normalize: bool = False,
+        use_static_covariates: bool = True,
         **kwargs,
     ):
         """An implementation of the NLinear model, as presented in [1]_.
@@ -216,7 +217,9 @@ class NLinearModel(MixedCovariatesTorchModel):
             .. note::
                 This cannot be applied to probabilistic models.
             ..
-
+        use_static_covariates
+            Whether the model should use static covariate information in case the input series contain static
+            covariates.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -356,6 +359,7 @@ class NLinearModel(MixedCovariatesTorchModel):
         self.shared_weights = shared_weights
         self.const_init = const_init
         self.normalize = normalize
+        self._considers_static_covariates = use_static_covariates
 
         raise_if(
             "likelihood" in self.model_params
