@@ -114,8 +114,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         self.future_covariate_series: Optional[TimeSeries] = None
         self.static_covariates: Optional[pd.DataFrame] = None
 
-        self._expect_past_covariates, self._expect_future_covariates = False, False
-        self._uses_past_covariates, self._uses_future_covariates = False, False
+        self._expect_past_covariates, self._uses_past_covariates = False, False
+        self._expect_future_covariates, self._uses_future_covariates = False, False
+        self._expect_static_covariates, self._uses_static_covariates = False, False
 
         # state; whether the model has been fit (on a single time series)
         self._fit_called = False
@@ -195,6 +196,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return "future_covariates" in inspect.signature(self.fit).parameters.keys()
 
     @property
+    def supports_static_covariates(self):
+        return (
+            "use_static_covariates"
+            in inspect.signature(self.__init__).parameters.keys()
+        )
+
+    @property
     def uses_past_covariates(self):
         """
         Whether the model uses past covariates, once fitted.
@@ -207,6 +215,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Whether the model uses future covariates, once fitted.
         """
         return self._uses_future_covariates
+
+    @property
+    def uses_static_covariates(self):
+        return self._uses_static_covariates
 
     @abstractmethod
     def predict(self, n: int, num_samples: int = 1) -> TimeSeries:
@@ -1798,6 +1810,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
                 self._expect_past_covariates = True
             if future_covariates is not None:
                 self._expect_future_covariates = True
+            if series[0].static_covariates is not None:
+                self._expect_static_covariates = True
 
         if past_covariates is not None:
             self._uses_past_covariates = True
