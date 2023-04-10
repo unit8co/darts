@@ -141,9 +141,8 @@ class RegressionEnsembleModel(EnsembleModel):
 
         for model in self.models:
             kwargs = dict(series=series)
-            if self.is_global_ensemble:
-                if model.supports_past_covariates:
-                    kwargs["past_covariates"] = past_covariates
+            if model.supports_past_covariates:
+                kwargs["past_covariates"] = past_covariates
             if model.supports_future_covariates:
                 kwargs["future_covariates"] = future_covariates
             model.fit(**kwargs)

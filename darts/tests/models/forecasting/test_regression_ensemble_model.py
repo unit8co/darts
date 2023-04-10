@@ -204,6 +204,10 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         ]
         ensemble = RegressionEnsembleModel(ensemble_models, 10)
         ensemble.fit(self.sine_series, future_covariates=self.ts_cov1)
+        # expected number of coefs is lags*components -> we have 1 lag for each target (1 comp)
+        # and future covs (2 comp)
+        expected_coefs = len(self.sine_series.components) + len(self.ts_cov1.components)
+        assert len(ensemble_models[0].model.coef_) == expected_coefs
         ensemble.predict(10, self.sine_series, future_covariates=self.ts_cov1)
 
     def test_predict_with_target(self):
