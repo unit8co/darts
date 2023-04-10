@@ -2095,7 +2095,16 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         )
 
     @property
-    def extreme_lags(self):
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+    ]:
         return (
             -self.input_chunk_length,
             self.output_chunk_length - 1,
@@ -2184,7 +2193,16 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
         )
 
     @property
-    def extreme_lags(self):
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+    ]:
         return (
             -self.input_chunk_length,
             self.output_chunk_length - 1,
@@ -2264,7 +2282,16 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
         )
 
     @property
-    def extreme_lags(self):
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+    ]:
         return (
             -self.input_chunk_length,
             self.output_chunk_length - 1,
@@ -2341,7 +2368,16 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         )
 
     @property
-    def extreme_lags(self):
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+    ]:
         return (
             -self.input_chunk_length,
             self.output_chunk_length - 1,
@@ -2419,7 +2455,16 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         )
 
     @property
-    def extreme_lags(self):
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+    ]:
         return (
             -self.input_chunk_length,
             self.output_chunk_length - 1,
