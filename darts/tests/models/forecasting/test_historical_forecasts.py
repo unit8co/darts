@@ -457,6 +457,62 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 f"retrain=True and overlap_end=False, and last_points_only=False",
             )
 
+    def test_sanity_check_invalid_start(self):
+        timeidx_ = tg.linear_timeseries(length=10)
+        rangeidx_step1 = tg.linear_timeseries(start=0, length=10, freq=1)
+        rangeidx_step2 = tg.linear_timeseries(start=0, length=10, freq=2)
+
+        # index too large
+        with pytest.raises(ValueError) as msg:
+            LinearRegressionModel(lags=1).historical_forecasts(timeidx_, start=11)
+        assert str(msg.value).startswith("`start` index `11` is out of bounds")
+        with pytest.raises(ValueError) as msg:
+            LinearRegressionModel(lags=1).historical_forecasts(rangeidx_step1, start=11)
+        assert str(msg.value).startswith("`start` index `11` is out of bounds")
+        with pytest.raises(ValueError) as msg:
+            LinearRegressionModel(lags=1).historical_forecasts(rangeidx_step2, start=11)
+        assert str(msg.value).startswith("The provided point is not a valid index")
+
+        # value too low
+        with pytest.raises(ValueError) as msg:
+            LinearRegressionModel(lags=1).historical_forecasts(
+                timeidx_, start=timeidx_.start_time() - timeidx_.freq
+            )
+        assert str(msg.value).startswith(
+            "`start` time `1999-12-31 00:00:00` is before the first timestamp `2000-01-01 00:00:00`"
+        )
+        with pytest.raises(ValueError) as msg:
+            LinearRegressionModel(lags=1).historical_forecasts(
+                rangeidx_step1, start=rangeidx_step1.start_time() - rangeidx_step1.freq
+            )
+        assert str(msg.value).startswith("if `start` is an integer, must be `>= 0`")
+        with pytest.raises(ValueError) as msg:
+            LinearRegressionModel(lags=1).historical_forecasts(
+                rangeidx_step2, start=rangeidx_step2.start_time() - rangeidx_step2.freq
+            )
+        assert str(msg.value).startswith("if `start` is an integer, must be `>= 0`")
+
+        # value too high
+        with pytest.raises(ValueError) as msg:
+            LinearRegressionModel(lags=1).historical_forecasts(
+                timeidx_, start=timeidx_.end_time() + timeidx_.freq
+            )
+        assert str(msg.value).startswith(
+            "`start` time `2000-01-11 00:00:00` is after the last timestamp `2000-01-10 00:00:00`"
+        )
+        with pytest.raises(ValueError) as msg:
+            LinearRegressionModel(lags=1).historical_forecasts(
+                rangeidx_step1, start=rangeidx_step1.end_time() + rangeidx_step1.freq
+            )
+        assert str(msg.value).startswith("`start` index `10` is out of bounds")
+        with pytest.raises(ValueError) as msg:
+            LinearRegressionModel(lags=1).historical_forecasts(
+                rangeidx_step2, start=rangeidx_step2.end_time() + rangeidx_step2.freq
+            )
+        assert str(msg.value).startswith(
+            "`start` index `20` is larger than the last index `18`"
+        )
+
     def test_regression_auto_start_multiple_no_cov(self):
         train_length = 15
         forecast_horizon = 10
