@@ -4,7 +4,7 @@ Ensemble Model Base Class
 
 from abc import abstractmethod
 from functools import reduce
-from typing import List, Optional, Sequence, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.forecasting_model import (
@@ -196,6 +196,36 @@ class EnsembleModel(GlobalForecastingModel):
     @property
     def min_train_series_length(self) -> int:
         return max(model.min_train_series_length for model in self.models)
+
+    @property
+    def min_train_samples(self) -> int:
+        return max(model.min_train_samples for model in self.models)
+
+    @property
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+    ]:
+        def find_max_lag_or_none(lag_id, aggregator) -> Optional[int]:
+            max_lag = None
+            for model in self.models:
+                curr_lag = model.extreme_lags[lag_id]
+                if max_lag is None:
+                    max_lag = curr_lag
+                elif curr_lag is not None:
+                    max_lag = aggregator(max_lag, curr_lag)
+            return max_lag
+
+        lag_aggregators = (min, max, min, max, min, max)
+        return tuple(
+            find_max_lag_or_none(i, agg) for i, agg in enumerate(lag_aggregators)
+        )
 
     def _is_probabilistic(self) -> bool:
         return all([model._is_probabilistic() for model in self.models])

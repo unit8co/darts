@@ -171,16 +171,16 @@ class BacktestingTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             NaiveDrift().backtest(
                 linear_series,
-                start=pd.Timestamp("20000217"),
+                start=pd.Timestamp("20000218"),
                 forecast_horizon=3,
                 overlap_end=False,
             )
         NaiveDrift().backtest(
-            linear_series, start=pd.Timestamp("20000216"), forecast_horizon=3
+            linear_series, start=pd.Timestamp("20000217"), forecast_horizon=3
         )
         NaiveDrift().backtest(
             linear_series,
-            start=pd.Timestamp("20000217"),
+            start=pd.Timestamp("20000218"),
             forecast_horizon=3,
             overlap_end=True,
         )

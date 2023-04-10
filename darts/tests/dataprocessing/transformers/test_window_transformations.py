@@ -148,6 +148,23 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
             ],
         )
 
+        # test customized function name that overwrites the pandas builtin transformation
+        transforms = {
+            "function": "sum",
+            "mode": "rolling",
+            "window": 1,
+            "function_name": "customized_name",
+        }
+        transformed_ts = self.series_univ_det.window_transform(transforms=transforms)
+        self.assertEqual(
+            transformed_ts.components.to_list(),
+            [
+                f"{transforms['mode']}_{transforms['function_name']}_{str(transforms['window'])}_{comp}"
+                for comp in self.series_univ_det.components
+            ],
+        )
+        del transforms["function_name"]
+
         # multivariate deterministic input
         # transform one component
         transforms.update({"components": "0"})
@@ -241,6 +258,39 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
         # multivariate probabilistic input
         transformed_ts = self.series_multi_prob.window_transform(transforms=transforms)
         self.assertEqual(transformed_ts.n_samples, 2)
+
+    def test_user_defined_function_behavior(self):
+        def count_above_mean(array):
+            mean = np.mean(array)
+            return np.where(array > mean)[0].size
+
+        transformation = {
+            "function": count_above_mean,
+            "mode": "rolling",
+            "window": 5,
+        }
+        transformed_ts = self.target.window_transform(
+            transformation,
+        )
+        expected_transformed_series = TimeSeries.from_times_and_values(
+            self.times,
+            [0, 1, 1, 2, 2, 2, 2, 2, 2, 2],
+            columns=["rolling_udf_5_0"],
+        )
+        self.assertEqual(transformed_ts, expected_transformed_series)
+
+        # test if a customized function name is provided
+        transformation.update({"function_name": "count_above_mean"})
+        transformed_ts = self.target.window_transform(
+            transformation,
+        )
+        self.assertEqual(
+            transformed_ts.components.to_list(),
+            [
+                f"{transformation['mode']}_{transformation['function_name']}_{str(transformation['window'])}_{comp}"
+                for comp in self.target.components
+            ],
+        )
 
     def test_ts_windowtransf_output_nabehavior(self):
         window_transformations = {
@@ -442,6 +492,8 @@ class WindowTransformerTestCase(unittest.TestCase):
 
     times = pd.date_range("20130101", "20130110")
     target = TimeSeries.from_times_and_values(times, range(1, 11))
+    times_hourly = pd.date_range(start="20130101", freq="1H", periods=10)
+    target_hourly = TimeSeries.from_times_and_values(times_hourly, range(1, 11))
 
     series_multi_prob = (
         (target + 10)
@@ -481,6 +533,46 @@ class WindowTransformerTestCase(unittest.TestCase):
         self.assertEqual(
             transformed_ts_list[1].n_timesteps, self.series_multi_det.n_timesteps
         )
+
+    def test_window_transformer_offset_parameter(self):
+        """
+        Test that the window parameter can support offset of pandas.Timedelta
+        """
+        base_parameters = {
+            "function": "mean",
+            "components": ["0"],
+            "mode": "rolling",
+        }
+
+        offset_parameters = base_parameters.copy()
+        offset_parameters.update({"window": pd.Timedelta(hours=4)})
+        offset_transformer = WindowTransformer(
+            transforms=offset_parameters,
+        )
+        offset_transformed = offset_transformer.transform(self.target_hourly)
+
+        integer_parameters = base_parameters.copy()
+        integer_parameters.update({"window": 4})
+        integer_transformer = WindowTransformer(
+            transforms=integer_parameters,
+        )
+        integer_transformed = integer_transformer.transform(self.target_hourly)
+        np.testing.assert_equal(
+            integer_transformed.values(), offset_transformed.values()
+        )
+        self.assertEqual(
+            offset_transformed.components[0], "rolling_mean_0 days 04:00:00_0"
+        )
+        self.assertEqual(integer_transformed.components[0], "rolling_mean_4_0")
+
+        invalid_parameters = base_parameters.copy()
+        invalid_parameters.update({"window": pd.DateOffset(hours=4)})
+        invalid_transformer = WindowTransformer(
+            transforms=invalid_parameters,
+        )
+        # if pd.DateOffset, raise ValueError of non-fixed frequency
+        with self.assertRaises(ValueError):
+            invalid_transformer.transform(self.target_hourly)
 
     def test_transformers_pipeline(self):
         """
