@@ -60,8 +60,8 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
     def test_extreme_lag_inference(self):
         ensemble = NaiveEnsembleModel([NaiveDrift()])
         assert ensemble.extreme_lags == (
+            -3,
             -1,
-            0,
             None,
             None,
             None,
