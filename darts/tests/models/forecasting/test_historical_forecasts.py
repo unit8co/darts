@@ -8,7 +8,14 @@ from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
 from darts.datasets import AirPassengersDataset
 from darts.logging import get_logger
-from darts.models import CatBoostModel, LightGBMModel, LinearRegressionModel
+from darts.models import (
+    ARIMA,
+    AutoARIMA,
+    CatBoostModel,
+    LightGBMModel,
+    LinearRegressionModel,
+    NaiveSeasonal,
+)
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 
@@ -282,6 +289,68 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
         freq=ts_pass_val_range.freq_str,
         start=ts_pass_val_range.start_time(),
     )
+
+    def test_historical_forecasts_transferrable_future_cov_local_models(self):
+        model = ARIMA()
+        assert model.min_train_series_length == 30
+        series = tg.sine_timeseries(length=31)
+        res = model.historical_forecasts(
+            series, future_covariates=series, retrain=True, forecast_horizon=1
+        )
+        # ARIMA has a minimum train length of 30, with horizon=1, we expect one forecast at last point
+        # (series has length 31)
+        assert len(res) == 1
+        assert series.end_time() == res.time_index[0]
+
+        model.fit(series, future_covariates=series)
+        res = model.historical_forecasts(
+            series, future_covariates=series, retrain=False, forecast_horizon=1
+        )
+        # currently even though transferrable local models would allow , the models currently still take the
+        # min_train_length as input for historical forecast predictions (due to extreme_lags not differentiating
+        # between fit and predict)
+        # (series has length 31)
+        assert len(res) == 1
+        assert series.end_time() == res.time_index[0]
+
+    def test_historical_forecasts_future_cov_local_models(self):
+        model = AutoARIMA()
+        assert model.min_train_series_length == 10
+        series = tg.sine_timeseries(length=11)
+        res = model.historical_forecasts(
+            series, future_covariates=series, retrain=True, forecast_horizon=1
+        )
+        # AutoARIMA has a minimum train length of 10, with horizon=1, we expect one forecast at last point
+        # (series has length 11)
+        assert len(res) == 1
+        assert series.end_time() == res.time_index[0]
+
+        model.fit(series, future_covariates=series)
+        with pytest.raises(ValueError) as msg:
+            model.historical_forecasts(
+                series, future_covariates=series, retrain=False, forecast_horizon=1
+            )
+        assert str(msg.value).startswith(
+            "FutureCovariatesLocalForecastingModel does not support historical forecasting "
+            "with `retrain` set to `False`"
+        )
+
+    def test_historical_forecasts_local_models(self):
+        model = NaiveSeasonal()
+        assert model.min_train_series_length == 3
+        series = tg.sine_timeseries(length=4)
+        res = model.historical_forecasts(series, retrain=True, forecast_horizon=1)
+        # NaiveSeasonal has a minimum train length of 3, with horizon=1, we expect one forecast at last point
+        # (series has length 4)
+        assert len(res) == 1
+        assert series.end_time() == res.time_index[0]
+
+        model.fit(series)
+        with pytest.raises(ValueError) as msg:
+            model.historical_forecasts(series, retrain=False, forecast_horizon=1)
+        assert str(msg.value).startswith(
+            "LocalForecastingModel does not support historical forecasting with `retrain` set to `False`"
+        )
 
     def test_historical_forecasts(self):
         train_length = 10
