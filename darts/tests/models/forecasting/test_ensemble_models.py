@@ -102,10 +102,29 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         pred1 = naive_ensemble.predict(5)
         assert self.series1.components == pred1.components
 
-    def test_call_backtest_local_models(self):
-        naive_ensemble = NaiveEnsembleModel([NaiveSeasonal(5), Theta(2, 5)])
-        naive_ensemble.fit(self.series1)
-        naive_ensemble.backtest(self.series1)
+    def test_call_backtest_naive_ensemble_local_models(self):
+        ensemble = NaiveEnsembleModel([NaiveSeasonal(5), Theta(2, 5)])
+        ensemble.fit(self.series1)
+        assert ensemble.extreme_lags == (-10, 0, None, None, None, None)
+        ensemble.backtest(self.series1)
+
+    def test_call_backtest_regression_ensemble_local_models(self):
+        regr_train_n = 10
+        ensemble = RegressionEnsembleModel(
+            [NaiveSeasonal(5), Theta(2, 5)], regression_train_n_points=regr_train_n
+        )
+        ensemble.fit(self.series1)
+        assert ensemble.extreme_lags == (-10 - regr_train_n, 0, None, None, None, None)
+        ensemble.backtest(self.series1)
+
+    def test_thisthat(self):
+        from darts.models import ARIMA
+
+        # from darts.models import AutoARIMA
+
+        model = ARIMA()
+        # model.fit(self.series1)
+        model.backtest(self.series1, retrain=False)
 
     def test_predict_ensemble_local_models(self):
         naive = NaiveSeasonal(K=5)

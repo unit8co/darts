@@ -1723,6 +1723,19 @@ class LocalForecastingModel(ForecastingModel, ABC):
         super().fit(series)
         series._assert_deterministic()
 
+    @property
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+    ]:
+        return -self.min_train_series_length, 0, None, None, None, None
+
 
 class GlobalForecastingModel(ForecastingModel, ABC):
     """The base class for "global" forecasting models, handling several time series and optional covariates.
@@ -2303,5 +2316,14 @@ class TransferableFutureCovariatesLocalForecastingModel(
         return True
 
     @property
-    def extreme_lags(self):
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+    ]:
         return -1, 0, None, None, 0, 0
