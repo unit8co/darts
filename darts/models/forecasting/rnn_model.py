@@ -457,7 +457,7 @@ class RNNModel(DualCovariatesTorchModel):
             length=self.training_length,
             shift=1,
             max_samples_per_ts=max_samples_per_ts,
-            use_static_covariates=self._supports_static_covariates(),
+            use_static_covariates=self.uses_static_covariates,
         )
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
@@ -473,7 +473,3 @@ class RNNModel(DualCovariatesTorchModel):
     @property
     def min_train_series_length(self) -> int:
         return self.training_length + 1
-
-    @staticmethod
-    def _supports_static_covariates() -> bool:
-        return False

@@ -566,7 +566,3 @@ class TransformerModel(PastCovariatesTorchModel):
             custom_decoder=self.custom_decoder,
             **self.pl_module_params,
         )
-
-    @staticmethod
-    def _supports_static_covariates() -> bool:
-        return False
