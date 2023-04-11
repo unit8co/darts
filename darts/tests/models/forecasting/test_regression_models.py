@@ -872,9 +872,9 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         model_static_cov = RandomForest(lags=period // 2, bootstrap=False)
         model_static_cov.fit(fitting_series)
 
-        # multiple univariates series with different names with same static cov
+        # multiple univariates series with different names with same static cov, will take name of first series
         expected_features_in = [
-            f"comp0_target_lag{str(-i)}" for i in range(period // 2, 0, -1)
+            f"smooth_target_lag{str(-i)}" for i in range(period // 2, 0, -1)
         ] + ["curve_type_statcov_target_smooth"]
 
         self.assertEqual(model_static_cov.lagged_feature_names, expected_features_in)
