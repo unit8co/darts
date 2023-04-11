@@ -120,7 +120,8 @@ class RegressionModel(GlobalForecastingModel):
             trained to predict at step 'output_chunk_length' in the future. Default: True.
         use_static_covariates
             Whether the model should use static covariate information in case the input series contain static
-            covariates.
+            covariates. If ``True``, and static covariates are available at fitting time, will enforce that all target
+            `series` have the same static covariate dimensionality in ``fit()`` and ``predict()`.
         """
 
         super().__init__(add_encoders=add_encoders)
@@ -131,6 +132,7 @@ class RegressionModel(GlobalForecastingModel):
         self.input_dim = None
         self.multi_models = multi_models
         self._considers_static_covariates = use_static_covariates
+        self._static_covariates_shape: Optional[Tuple[int, int]] = None
 
         # model checks
         if self.model is None:
@@ -364,11 +366,13 @@ class RegressionModel(GlobalForecastingModel):
             features[i] = X_i[:, :, 0]
             labels[i] = y_i[:, :, 0]
 
-        if self.uses_static_covariates:
-            features = self._add_static_covariates(
-                features,
-                target_series,
-            )
+        features, static_covariates_shape = self._add_static_covariates(
+            features,
+            target_series,
+            uses_static_covariates=self.uses_static_covariates,
+            last_shape=None,
+        )
+        self._static_covariates_shape = static_covariates_shape
 
         training_samples = np.concatenate(features, axis=0)
         training_labels = np.concatenate(labels, axis=0)
@@ -379,11 +383,13 @@ class RegressionModel(GlobalForecastingModel):
         self,
         features: Union[np.array, Sequence[np.array]],
         target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        uses_static_covariates: bool = True,
+        last_shape: Optional[Tuple[int, int]] = None,
     ) -> Union[np.array, Sequence[np.array]]:
         """
         Add static covariates to the features' table for RegressionModels.
-        Accounts for series with potentially different static covariates by padding with 0 to accomodate for the maximum
-        number of available static_covariates in any of the given series in the sequence.
+        Accounts for series with potentially different static covariates by padding with 0 to accommodate for the
+        maximum number of available static_covariates in any of the given series in the sequence.
 
         If no static covariates are provided for a given series, its corresponding features are padded with 0.
         Accounts for the case where the model is trained with series with static covariates and then used to predict
@@ -398,69 +404,69 @@ class RegressionModel(GlobalForecastingModel):
             each feature matrix in this `Sequence`.
         target_series
             The target series from which to read the static covariates.
+        uses_static_covariates
+            Whether the model uses/expects static covariates. If `True`, it enforces that static covariates must
+            have identical shapes across all of target series.
+        last_shape
+            Optionally, the last observed shape of the static covariates. This is ``None`` before fitting, or when
+            `uses_static_covariates` is ``False``.
 
         Returns
         -------
-        features
+        (features, last_shape)
             The features' array(s) with appended static covariates columns. If the `features` input was passed as a
             `Sequence` of `np.array`s, then a `Sequence` is also returned; if `features` was passed as an `np.array`,
             a `np.array` is returned.
+            `last_shape` is the shape of the static covariates.
+
         """
+        # uses_static_covariates=True enforces that all series must have static covs of same dimensionality
+        if not uses_static_covariates:
+            return features, last_shape
 
         input_not_list = not isinstance(features, Sequence)
         if input_not_list:
             features = [features]
         target_series = series2seq(target_series)
-        # collect static covariates info
-        scovs_map = {
-            "covs_exist": False,
-            "vals": [],  # Stores values of static cov arrays in each timeseries
-            "sizes": {},  # Stores sizes of static cov arrays in each timeseries
-        }
-        for ts in target_series:
-            if ts.has_static_covariates:
-                scovs_map["covs_exist"] = True
-                # Each static covariate either adds 1 extra columns or
-                # `n_component` extra columns:
-                vals_i = {}
-                for name, row in ts.static_covariates.items():
-                    vals_i[name] = row
-                    scovs_map["sizes"][name] = row.size
-                scovs_map["vals"].append(vals_i)
-            else:
-                scovs_map["vals"].append(None)
 
-        if (
-            not scovs_map["covs_exist"]
-            and hasattr(self.model, "n_features_in_")
-            and (self.model.n_features_in_ is not None)
-            and (self.model.n_features_in_ > features[0].shape[1])
-        ):
-            # for when series in prediction do not have static covariates but some of the training series did
-            num_static_components = self.model.n_features_in_ - features[0].shape[1]
-            for i, features_i in enumerate(features):
-                padding = np.zeros((features_i.shape[0], num_static_components))
-                features[i] = np.hstack([features_i, padding])
-        elif scovs_map["covs_exist"]:
-            scov_width = sum(scovs_map["sizes"].values())
-            for i, features_i in enumerate(features):
-                vals = scovs_map["vals"][i]
-                if vals:
-                    scov_arrays = []
-                    for name, size in scovs_map["sizes"].items():
-                        scov_arrays.append(
-                            vals[name] if name in vals else np.zeros((size,))
-                        )
-                    scov_array = np.concatenate(scov_arrays)
-                    scovs = np.broadcast_to(
-                        scov_array, (features_i.shape[0], scov_width)
+        # go through series, check static covariates, and stack them to the right of the lagged features
+        # try to abort early in case there is a mismatch in static covariates
+        for idx, ts in enumerate(target_series):
+            if not ts.has_static_covariates:
+                raise_log(
+                    ValueError(
+                        "Static covariates mismatch across the sequence of target series. Some of the series "
+                        "contain static covariates and others do not."
+                    ),
+                    logger,
+                )
+            else:
+                if last_shape is None:
+                    last_shape = ts.static_covariates.shape
+                if ts.static_covariates.shape != last_shape:
+                    raise_log(
+                        ValueError(
+                            "Static covariates dimension mismatch across the sequence of target series. The static "
+                            "covariates must have the same number of columns and rows across all target series."
+                        ),
+                        logger,
                     )
-                else:
-                    scovs = np.zeros((features_i.shape[0], scov_width))
-                features[i] = np.hstack([features_i, scovs])
+                # flatten static covariates along columns -> results in [scov0_comp0, scov0_comp1, scov1_comp0, ...]
+                static_covs = ts.static_covariates.values.flatten(order="F")
+                # we stack the static covariates to the right of lagged features
+                # the broadcasting repeats the static covariates along axis=0 to match the number of feature rows
+                features[idx] = np.hstack(
+                    [
+                        features[idx],
+                        np.broadcast_to(
+                            static_covs, (len(features[idx]), len(static_covs))
+                        ),
+                    ]
+                )
+
         if input_not_list:
             features = features[0]
-        return features
+        return features, last_shape
 
     def _fit_model(
         self,
@@ -809,8 +815,12 @@ class RegressionModel(GlobalForecastingModel):
             # static covariates can be added to each block; valid since
             # each block contains same number of observations:
             X_blocks = np.split(X, len(series), axis=0)
-            if self.uses_static_covariates:
-                X_blocks = self._add_static_covariates(X_blocks, series)
+            X_blocks, _ = self._add_static_covariates(
+                X_blocks,
+                series,
+                uses_static_covariates=self.uses_static_covariates,
+                last_shape=self._static_covariates_shape,
+            )
             X = np.concatenate(X_blocks, axis=0)
 
             # X has shape (n_series * n_samples, n_regression_features)
@@ -1127,7 +1137,8 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             trained to predict at step 'output_chunk_length' in the future. Default: True.
         use_static_covariates
             Whether the model should use static covariate information in case the input series contain static
-            covariates.
+            covariates. If ``True``, and static covariates are available at fitting time, will enforce that all target
+            `series` have the same static covariate dimensionality in ``fit()`` and ``predict()`.
         categorical_past_covariates
             Optionally, component name or list of component names specifying the past covariates that should be treated
             as categorical.

@@ -1201,7 +1201,9 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         )
 
         fitting_series = [
-            train_series_static_cov[0][: (60 - period)],
+            train_series_static_cov[0][: (60 - period)].with_static_covariates(
+                pd.DataFrame(data={"alpha": [0.5], "beta": [1.0]})
+            ),
             train_series_static_cov[1][:60],
         ]
         model_static_cov = RandomForest(lags=period // 2, bootstrap=False)

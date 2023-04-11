@@ -90,7 +90,8 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             trained to predict at step 'output_chunk_length' in the future. Default: True.
         use_static_covariates
             Whether the model should use static covariate information in case the input series contain static
-            covariates.
+            covariates. If ``True``, and static covariates are available at fitting time, will enforce that all target
+            `series` have the same static covariate dimensionality in ``fit()`` and ``predict()`.
         **kwargs
             Additional keyword arguments passed to `sklearn.linear_model.LinearRegression` (by default), to
             `sklearn.linear_model.PoissonRegressor` (if `likelihood="poisson"`), or to
