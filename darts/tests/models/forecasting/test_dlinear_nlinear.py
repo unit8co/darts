@@ -4,6 +4,7 @@ from itertools import product
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts import concatenate
 from darts.logging import get_logger
@@ -252,3 +253,41 @@ if TORCH_AVAILABLE:
                 )
                 self.assertLessEqual(e1, 0.40)
                 self.assertLessEqual(e2, 0.34)
+
+        def test_optional_static_covariates(self):
+            series = tg.sine_timeseries(length=20).with_static_covariates(
+                pd.DataFrame({"a": [1]})
+            )
+            for model_cls in [NLinearModel, DLinearModel]:
+                # training model with static covs and predicting without will raise an error
+                model = model_cls(
+                    input_chunk_length=12,
+                    output_chunk_length=6,
+                    use_static_covariates=True,
+                    n_epochs=1,
+                )
+                model.fit(series)
+                with pytest.raises(ValueError):
+                    model.predict(n=2, series=series.with_static_covariates(None))
+
+                # with `use_static_covariates=False`, static covariates are ignored and prediction works
+                model = model_cls(
+                    input_chunk_length=12,
+                    output_chunk_length=6,
+                    use_static_covariates=False,
+                    n_epochs=1,
+                )
+                model.fit(series)
+                preds = model.predict(n=2, series=series.with_static_covariates(None))
+                assert preds.static_covariates is None
+
+                # with `use_static_covariates=False`, static covariates are ignored and prediction works
+                model = model_cls(
+                    input_chunk_length=12,
+                    output_chunk_length=6,
+                    use_static_covariates=False,
+                    n_epochs=1,
+                )
+                model.fit(series.with_static_covariates(None))
+                preds = model.predict(n=2, series=series)
+                assert preds.static_covariates.equals(series.static_covariates)

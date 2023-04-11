@@ -236,6 +236,7 @@ class DLinearModel(MixedCovariatesTorchModel):
         shared_weights: bool = False,
         kernel_size: int = 25,
         const_init: bool = True,
+        use_static_covariates: bool = True,
         **kwargs,
     ):
         """An implementation of the DLinear model, as presented in [1]_.
@@ -265,6 +266,10 @@ class DLinearModel(MixedCovariatesTorchModel):
         const_init
             Whether to initialize the weights to 1/in_len. If False, the default PyTorch
             initialization is used (default='True').
+        use_static_covariates
+            Whether the model should use static covariate information in case the input `series` passed to ``fit()``
+            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
+            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()`.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -406,6 +411,7 @@ class DLinearModel(MixedCovariatesTorchModel):
         self.shared_weights = shared_weights
         self.kernel_size = kernel_size
         self.const_init = const_init
+        self._considers_static_covariates = use_static_covariates
 
     def _create_model(
         self, train_sample: MixedCovariatesTrainTensorType
@@ -446,6 +452,6 @@ class DLinearModel(MixedCovariatesTorchModel):
             **self.pl_module_params,
         )
 
-    @staticmethod
-    def _supports_static_covariates() -> bool:
+    @property
+    def supports_static_covariates(self) -> bool:
         return True
