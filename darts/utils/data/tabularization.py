@@ -14,7 +14,7 @@ from numpy.lib.stride_tricks import as_strided
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
-from darts.utils.utils import series2seq
+from darts.utils.utils import get_single_series, series2seq
 
 logger = get_logger(__name__)
 
@@ -630,6 +630,7 @@ def create_lagged_component_names(
     lags_future_covariates: Optional[Sequence[int]] = None,
     output_chunk_length: int = 1,
     concatenate: bool = True,
+    use_static_covariates: bool = False,
 ) -> Tuple[List[List[str]], List[List[str]]]:
     """
     Helper function called to retrieve the name of the features and labels arrays created with
@@ -637,23 +638,30 @@ def create_lagged_component_names(
 
     Along the `n_lagged_features` axis, `X` has the following structure (for `*_lags=[-2,-1]` and
     `*_series.n_components = 2`):
-        lagged_target | lagged_past_covariates | lagged_future_covariates
+        lagged_target | lagged_past_covariates | lagged_future_covariates | static covariates
     where each `lagged_*` has the following structure:
         comp0_*_lag-2 | comp1_*_lag-2 | comp0_*_lag_-1 | comp1_*_lag-1
+    and for static covariates (2 static covariates acting on 2 target components):
+        cov0_*_target_comp0 | cov0_*_target_comp1 | cov1_*_target_comp0 | cov1_*_target_comp1
 
     Along the `n_lagged_labels` axis, `y` has the following structure (for `output_chunk_length=4` and
     `target_series.n_components=2`):
         comp0_target_lag0 | comp1_target_lag0 | ... | comp0_target_lag3 | comp1_target_lag3
 
-    Note : if `target_series`, `past_covariates` or `future_covariates` contain series with different
-    components name, generic feature names will be created (independently for each variate).
+    Note : will only use the component names of the first series from `target_series`, `past_covariates`,
+    `future_covariates`, and static_covariates.
 
-    The component name convention is ``"{name}_lag{idx}"``, where:
+    The naming convention for target, past and future covariates is: ``"{name}_{type}_lag{i}"``, where:
 
-        - ``{name}`` is the original component name if it shared across all the TimeSeries, or generic
-          names ``"comp{i}_{cov_type}`` where {i} is the index of the component and {cov_type} one of
-          ``"target"``, ``"past_cov"`` or ``"future_cov"``.
-        - ``{idx}`` is the lag index.
+        - ``{name}`` the component name of the (first) series
+        - ``{type}`` is the feature type, one of "target", "pastcov", and "futcov"
+        - ``{i}`` is the lag value
+
+    The naming convention for static covariates is: ``"{name}_statcov_target_{comp}"``, where:
+
+        - ``{name}`` the static covariate name of the (first) series
+        - ``{comp}`` the target component name of the (first) that the static covariate act on. If the static
+            covariate acts globally on a multivariate target series, will show "global".
 
     Returns
     -------
@@ -678,37 +686,35 @@ def create_lagged_component_names(
     for variate, variate_lags, variate_type in zip(
         [target_series, past_covariates, future_covariates],
         [lags, lags_past_covariates, lags_future_covariates],
-        ["target", "past_cov", "future_cov"],
+        ["target", "pastcov", "futcov"],
     ):
         if variate is None or variate_lags is None:
             continue
 
-        use_specific_component_names = True
-        components = variate[0].components
-        # terminate early if we find any variates with different component names
-        for ts in variate:
-            if not components.equals(ts.components):
-                use_specific_component_names = False
-                break
-
-        if use_specific_component_names:
-            names = components.tolist()
-        else:
-            names = [f"comp{i}_{variate_type}" for i in range(len(components))]
-
-        # using the same convention as the explainability module
+        components = get_single_series(variate).components.tolist()
         lagged_feature_names += [
-            f"{comp_name}_lag{lag_idx}"
-            for lag_idx in variate_lags
-            for comp_name in names
+            f"{name}_{variate_type}_lag{lag}"
+            for lag in variate_lags
+            for name in components
         ]
 
         if variate_type == "target" and lags:
             label_feature_names = [
-                f"lag_{lag_idx}_{comp_name}"
-                for lag_idx in range(output_chunk_length)
-                for comp_name in names
+                f"{name}_target_lag{lag}"
+                for lag in range(output_chunk_length)
+                for name in components
             ]
+
+    # static covariates
+    if use_static_covariates:
+        static_covs = get_single_series(target_series).static_covariates
+        # static covariate names
+        names = static_covs.columns.tolist()
+        # target components that the static covariates reference to
+        comps = static_covs.index.tolist()
+        lagged_feature_names += [
+            f"{name}_statcov_target_{comp}" for name in names for comp in comps
+        ]
 
     if concatenate:
         lagged_feature_names += label_feature_names

@@ -137,6 +137,7 @@ class RegressionModel(GlobalForecastingModel):
         self.multi_models = multi_models
         self._considers_static_covariates = use_static_covariates
         self._static_covariates_shape: Optional[Tuple[int, int]] = None
+        self._lagged_feature_names: Optional[List[str]] = None
 
         # model checks
         if self.model is None:
@@ -383,64 +384,6 @@ class RegressionModel(GlobalForecastingModel):
 
         return training_samples, training_labels
 
-    def _create_lagged_component_names(
-        self, target_series, past_covariates, future_covariates
-    ):
-
-        features_cols_name, labels_cols_name = create_lagged_component_names(
-            target_series=target_series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            lags=self.lags.get("target"),
-            lags_past_covariates=self.lags.get("past"),
-            lags_future_covariates=self.lags.get("future"),
-            output_chunk_length=self.output_chunk_length,
-            concatenate=False,
-        )
-
-        # adding the static covariates on the right of each features_cols_name
-        features_cols_name = self._add_static_covariate_names(
-            features_cols_name,
-            target_series,
-        )
-
-        return features_cols_name, labels_cols_name
-
-    def _add_static_covariate_names(
-        self,
-        features_cols_name: List[List[str]],
-        target_series: Union[TimeSeries, Sequence[TimeSeries]],
-    ) -> Union[np.array, Sequence[np.array]]:
-        """
-        Add static covariates names to the features name for RegressionModels.
-        Accounts for series with potentially different static covariates to accomodate for the maximum
-        number of available static_covariates in any of the given series in the sequence.
-
-        Parameters
-        ----------
-        features_cols_name
-            The name of the features of the numpy array(s) to which the static covariates will be added, generated with
-            `create_lagged_component_names()`
-        target_series
-            The target series from which to read the static covariates.
-
-        Returns
-        -------
-        features_cols_name
-            The features' name list with appended static covariates names on the right.
-        """
-        target_series = series2seq(target_series)
-
-        # collect static covariates info, preserve the order
-        static_covs_names = []
-        for ts in target_series:
-            if ts.has_static_covariates:
-                for static_cov_name in ts.static_covariates.keys():
-                    if static_cov_name not in static_covs_names:
-                        static_covs_names.append(static_cov_name)
-
-        return features_cols_name + static_covs_names
-
     def _fit_model(
         self,
         target_series,
@@ -467,12 +410,17 @@ class RegressionModel(GlobalForecastingModel):
         self.model.fit(training_samples, training_labels, **kwargs)
 
         # generate and store the lagged components names (for feature importance analysis)
-        lagged_feature_names, _ = self._create_lagged_component_names(
+        self._lagged_feature_names, _ = create_lagged_component_names(
             target_series=target_series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
+            lags=self.lags.get("target"),
+            lags_past_covariates=self.lags.get("past"),
+            lags_future_covariates=self.lags.get("future"),
+            output_chunk_length=self.output_chunk_length,
+            concatenate=False,
+            use_static_covariates=self.uses_static_covariates,
         )
-        self.model.lagged_features_name_ = lagged_feature_names
 
     def fit(
         self,
@@ -832,6 +780,24 @@ class RegressionModel(GlobalForecastingModel):
         k = x.shape[0]
 
         return prediction.reshape(k, self.pred_dim, -1)
+
+    @property
+    def lagged_feature_names(self) -> Optional[List[str]]:
+        """The lagged feature names the model has been trained on.
+
+        The naming convention for target, past and future covariates is: ``"{name}_{type}_lag{i}"``, where:
+
+            - ``{name}`` the component name of the (first) series
+            - ``{type}`` is the feature type, one of "target", "pastcov", and "futcov"
+            - ``{i}`` is the lag value
+
+        The naming convention for static covariates is: ``"{name}_statcov_target_{comp}"``, where:
+
+            - ``{name}`` the static covariate name of the (first) series
+            - ``{comp}`` the target component name of the (first) that the static covariate act on. If the static
+                covariate acts globally on a multivariate target series, will show "global".
+        """
+        return self._lagged_feature_names
 
     def __str__(self):
         return self.model.__str__()
