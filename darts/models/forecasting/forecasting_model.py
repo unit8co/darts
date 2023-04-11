@@ -2031,7 +2031,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             if (
                 series.static_covariates is not None
                 and self.supports_static_covariates
-                and self._considers_static_covariates
+                and self.considers_static_covariates
             ):
                 self.static_covariates = series.static_covariates
         else:
@@ -2042,7 +2042,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             if (
                 get_single_series(series).static_covariates is not None
                 and self.supports_static_covariates
-                and self._considers_static_covariates
+                and self.considers_static_covariates
             ):
                 self.static_covariates = series[0].static_covariates
                 self._expect_static_covariates = True
@@ -2054,7 +2054,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         if (
             get_single_series(series).static_covariates is not None
             and self.supports_static_covariates
-            and self._considers_static_covariates
+            and self.considers_static_covariates
         ):
             self._uses_static_covariates = True
         self._fit_called = True

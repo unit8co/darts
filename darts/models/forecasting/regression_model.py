@@ -460,7 +460,7 @@ class RegressionModel(GlobalForecastingModel):
         if (
             get_single_series(series).static_covariates is not None
             and self.supports_static_covariates
-            and self._considers_static_covariates
+            and self.considers_static_covariates
         ):
             self._uses_static_covariates = True
 
