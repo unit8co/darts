@@ -60,13 +60,18 @@ if TORCH_AVAILABLE:
             large_ts = tg.constant_timeseries(length=100, value=1000)
             small_ts = tg.constant_timeseries(length=100, value=10)
 
-            for model_cls in [DLinearModel, NLinearModel]:
+            for (model_cls, kwargs) in [
+                (DLinearModel, {"kernel_size": 5}),
+                (DLinearModel, {"kernel_size": 6}),
+                (NLinearModel, {}),
+            ]:
                 # Test basic fit and predict
                 model = model_cls(
                     input_chunk_length=1,
                     output_chunk_length=1,
                     n_epochs=10,
                     random_state=42,
+                    **kwargs
                 )
                 model.fit(large_ts[:98])
                 pred = model.predict(n=2).values()[0]
