@@ -834,7 +834,6 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         model_static_cov = RandomForest(lags=period // 2, bootstrap=False)
         model_static_cov.fit(fitting_series)
         pred_static_cov = model_static_cov.predict(n=period, series=fitting_series)
-
         # then
         for series, ps_no_st, ps_st_cat in zip(
             train_series_static_cov, pred_no_static_cov, pred_static_cov
@@ -856,14 +855,11 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             n=period, series=fitting_series
         )
         # multiple series with different components names ("smooth" and "irregular"),
-        # triggers creation of generic feature names
+        # will take first target name
         expected_features_in = [
-            f"comp0_target_lag{str(-i)}" for i in range(period // 2, 0, -1)
+            f"smooth_target_lag{str(-i)}" for i in range(period // 2, 0, -1)
         ]
-
-        self.assertEqual(
-            model_no_static_cov.model.lagged_features_name_, expected_features_in
-        )
+        self.assertEqual(model_no_static_cov.lagged_feature_names, expected_features_in)
         self.assertEqual(
             len(model_no_static_cov.model.feature_importances_),
             len(expected_features_in),
@@ -879,11 +875,9 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         # multiple univariates series with different names with same static cov
         expected_features_in = [
             f"comp0_target_lag{str(-i)}" for i in range(period // 2, 0, -1)
-        ] + ["curve_type"]
+        ] + ["curve_type_statcov_target_smooth"]
 
-        self.assertEqual(
-            model_static_cov.model.lagged_features_name_, expected_features_in
-        )
+        self.assertEqual(model_static_cov.lagged_feature_names, expected_features_in)
         self.assertEqual(
             len(model_static_cov.model.feature_importances_),
             len(expected_features_in),
