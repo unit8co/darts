@@ -122,9 +122,9 @@ class RegressionModel(GlobalForecastingModel):
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
         use_static_covariates
-            Whether the model should use static covariate information in case the input series contain static
-            covariates. If ``True``, and static covariates are available at fitting time, will enforce that all target
-            `series` have the same static covariate dimensionality in ``fit()`` and ``predict()`.
+            Whether the model should use static covariate information in case the input `series` passed to ``fit()``
+            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
+            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()`.
         """
 
         super().__init__(add_encoders=add_encoders)
@@ -1050,9 +1050,9 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
         use_static_covariates
-            Whether the model should use static covariate information in case the input series contain static
-            covariates. If ``True``, and static covariates are available at fitting time, will enforce that all target
-            `series` have the same static covariate dimensionality in ``fit()`` and ``predict()`.
+            Whether the model should use static covariate information in case the input `series` passed to ``fit()``
+            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
+            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()`.
         categorical_past_covariates
             Optionally, component name or list of component names specifying the past covariates that should be treated
             as categorical.
