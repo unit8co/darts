@@ -32,8 +32,6 @@ from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 from darts.utils.data.tabularization import create_lagged_training_data
-
-# from sklearn.multioutput import MultiOutputRegressor
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import series2seq
 
@@ -742,6 +740,23 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             model.fit(series)
             with pytest.raises(ValueError):
                 model.predict(n=2, series=series.with_static_covariates(None))
+
+            # with `use_static_covariates=True`, all series must have static covs
+            model = model_cls(lags=4, use_static_covariates=True)
+            with pytest.raises(ValueError):
+                model.fit([series, series.with_static_covariates(None)])
+
+            # with `use_static_covariates=True`, all static covs must have same shape
+            model = model_cls(lags=4, use_static_covariates=True)
+            with pytest.raises(ValueError):
+                model.fit(
+                    [
+                        series,
+                        series.with_static_covariates(
+                            pd.DataFrame({"a": [1], "b": [2]})
+                        ),
+                    ]
+                )
 
             # with `use_static_covariates=False`, static covariates are ignored and prediction works
             model = model_cls(lags=4, use_static_covariates=False)
