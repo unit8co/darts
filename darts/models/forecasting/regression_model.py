@@ -27,7 +27,7 @@ When static covariates are present, they are appended to the lagged features. Wh
 if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.
 """
 from collections import OrderedDict
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import Any, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
@@ -277,7 +277,16 @@ class RegressionModel(GlobalForecastingModel):
         )
 
     @property
-    def extreme_lags(self):
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+    ]:
         min_target_lag = self.lags.get("target")[0] if "target" in self.lags else None
         max_target_lag = self.output_chunk_length - 1
         min_past_cov_lag = self.lags.get("past")[0] if "past" in self.lags else None
@@ -288,7 +297,6 @@ class RegressionModel(GlobalForecastingModel):
         max_future_cov_lag = (
             self.lags.get("future")[-1] if "future" in self.lags else None
         )
-
         return (
             min_target_lag,
             max_target_lag,
@@ -306,6 +314,10 @@ class RegressionModel(GlobalForecastingModel):
             if "target" in self.lags
             else self.output_chunk_length,
         )
+
+    @property
+    def min_train_samples(self) -> int:
+        return 2
 
     def get_multioutput_estimator(self, horizon, target_dim):
         raise_if_not(
@@ -1228,12 +1240,12 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         )
 
     @property
-    def _categorical_fit_param_name(self) -> str:
+    def _categorical_fit_param(self) -> Tuple[str, Any]:
         """
-        Returns the name of the parameter of the model's `fit` method that specifies the categorical features.
+        Returns the name, and default value of the categorical features parameter from model's `fit` method .
         Can be overridden in subclasses.
         """
-        return "categorical_feature"
+        return "categorical_feature", "auto"
 
     def _validate_categorical_covariates(
         self,
@@ -1392,7 +1404,10 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             future_covariates,
         )
 
-        kwargs[self._categorical_fit_param_name] = cat_col_indices
+        cat_param_name, cat_param_default = self._categorical_fit_param
+        kwargs[cat_param_name] = (
+            cat_col_indices if cat_col_indices else cat_param_default
+        )
         super()._fit_model(
             target_series=target_series,
             past_covariates=past_covariates,
