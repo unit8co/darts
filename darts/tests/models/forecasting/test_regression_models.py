@@ -730,6 +730,31 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     [44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0],
                 )
 
+    def test_optional_static_covariates(self):
+        series = (
+            tg.linear_timeseries(length=6)
+            .with_static_covariates(pd.DataFrame({"a": [1]}))
+            .astype(np.float32)
+        )
+        for model_cls in self.models:
+            # training model with static covs and predicting without will raise an error
+            model = model_cls(lags=4, use_static_covariates=True)
+            model.fit(series)
+            with pytest.raises(ValueError):
+                model.predict(n=2, series=series.with_static_covariates(None))
+
+            # with `use_static_covariates=False`, static covariates are ignored and prediction works
+            model = model_cls(lags=4, use_static_covariates=False)
+            model.fit(series)
+            preds = model.predict(n=2, series=series.with_static_covariates(None))
+            assert preds.static_covariates is None
+
+            # with `use_static_covariates=False`, static covariates are ignored and prediction works
+            model = model_cls(lags=4, use_static_covariates=False)
+            model.fit(series.with_static_covariates(None))
+            preds = model.predict(n=2, series=series)
+            assert preds.static_covariates.equals(series.static_covariates)
+
     @staticmethod
     def helper_get_static_covs_expected_X(
         target_series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -1164,53 +1189,6 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         model_static_cov = RandomForest(lags=period // 2, bootstrap=False)
         model_static_cov.fit(fitting_series)
         pred_static_cov = model_static_cov.predict(n=period, series=fitting_series)
-
-        # then
-        for series, ps_no_st, ps_st_cat in zip(
-            train_series_static_cov, pred_no_static_cov, pred_static_cov
-        ):
-            rmses = [rmse(series, ps) for ps in [ps_no_st, ps_st_cat]]
-            self.assertLess(rmses[1], rmses[0])
-
-        # different series length and different number of static covs
-        # when
-        alpha = 0.5
-        linear_vals = np.expand_dims(np.linspace(1, -1, num=19) * alpha ** (0.5), -1)
-
-        sine_vals[21:40] = linear_vals
-        sine_vals[61:80] = linear_vals
-        irregular_series = TimeSeries.from_times_and_values(
-            values=sine_vals, times=sine_series.time_index, columns=["irregular"]
-        )
-
-        train_series_no_cov = [sine_series[period:], irregular_series]
-
-        irregular_series_st_cat = irregular_series.with_static_covariates(
-            pd.DataFrame(data={"alpha": [0.5]})
-        )
-        train_series_static_cov = [sine_series[period:], irregular_series_st_cat]
-
-        fitting_series = [
-            train_series_no_cov[0][: (60 - period)],
-            train_series_no_cov[1][:60],
-        ]
-        model_no_static_cov = RandomForest(lags=period // 2, bootstrap=False)
-        model_no_static_cov.fit(fitting_series)
-        pred_no_static_cov = model_no_static_cov.predict(
-            n=period, series=fitting_series
-        )
-
-        fitting_series = [
-            train_series_static_cov[0][: (60 - period)].with_static_covariates(
-                pd.DataFrame(data={"alpha": [0.5], "beta": [1.0]})
-            ),
-            train_series_static_cov[1][:60],
-        ]
-        model_static_cov = RandomForest(lags=period // 2, bootstrap=False)
-        model_static_cov.fit(fitting_series)
-        pred_static_cov = model_static_cov.predict(
-            n=int(period / 2), series=fitting_series
-        )
 
         # then
         for series, ps_no_st, ps_st_cat in zip(

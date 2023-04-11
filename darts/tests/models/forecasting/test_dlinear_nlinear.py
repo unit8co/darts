@@ -266,7 +266,7 @@ if TORCH_AVAILABLE:
                     model.predict(n=2, series=series.with_static_covariates(None))
 
                 # with `use_static_covariates=False`, static covariates are ignored and prediction works
-                model = DLinearModel(
+                model = model_cls(
                     input_chunk_length=12,
                     output_chunk_length=6,
                     use_static_covariates=False,
@@ -277,7 +277,7 @@ if TORCH_AVAILABLE:
                 assert preds.static_covariates is None
 
                 # with `use_static_covariates=False`, static covariates are ignored and prediction works
-                model = DLinearModel(
+                model = model_cls(
                     input_chunk_length=12,
                     output_chunk_length=6,
                     use_static_covariates=False,
