@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 from numpy.lib.stride_tricks import as_strided
 
-from darts.logging import get_logger, raise_if, raise_if_not
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
 from darts.utils.utils import series2seq
 
@@ -531,6 +531,94 @@ def create_lagged_prediction_data(
         concatenate=concatenate,
     )
     return X, times
+
+
+def add_static_covariates_to_lagged_data(
+    features: Union[np.array, Sequence[np.array]],
+    target_series: Union[TimeSeries, Sequence[TimeSeries]],
+    uses_static_covariates: bool = True,
+    last_shape: Optional[Tuple[int, int]] = None,
+) -> Union[np.array, Sequence[np.array]]:
+    """
+    Add static covariates to the features' table for RegressionModels.
+    If `uses_static_covariates=True`, all target series used in `fit()` and `predict()` must have static
+    covariates with identical dimensionality. Otherwise, will not consider static covariates.
+
+    The static covariates are added to the right of the lagged features following the convention:
+    with a 2 component series, and 2 static covariates per component ->
+    scov_1_comp_1 | scov_1_comp_2 | scov_2_comp_1 | scov_2_comp_2
+
+    Parameters
+    ----------
+    features
+        The features' numpy array(s) to which the static covariates will be added. Can either be a lone feature
+        matrix or a `Sequence` of feature matrices; in the latter case, static covariates will be appended to
+        each feature matrix in this `Sequence`.
+    target_series
+        The target series from which to read the static covariates.
+    uses_static_covariates
+        Whether the model uses/expects static covariates. If `True`, it enforces that static covariates must
+        have identical shapes across all of target series.
+    last_shape
+        Optionally, the last observed shape of the static covariates. This is ``None`` before fitting, or when
+        `uses_static_covariates` is ``False``.
+
+    Returns
+    -------
+    (features, last_shape)
+        The features' array(s) with appended static covariates columns. If the `features` input was passed as a
+        `Sequence` of `np.array`s, then a `Sequence` is also returned; if `features` was passed as an `np.array`,
+        a `np.array` is returned.
+        `last_shape` is the shape of the static covariates.
+
+    """
+    # uses_static_covariates=True enforces that all series must have static covs of same dimensionality
+    if not uses_static_covariates:
+        return features, last_shape
+
+    input_not_list = not isinstance(features, Sequence)
+    if input_not_list:
+        features = [features]
+    target_series = series2seq(target_series)
+
+    # go through series, check static covariates, and stack them to the right of the lagged features
+    # try to abort early in case there is a mismatch in static covariates
+    for idx, ts in enumerate(target_series):
+        if not ts.has_static_covariates:
+            raise_log(
+                ValueError(
+                    "Static covariates mismatch across the sequence of target series. Some of the series "
+                    "contain static covariates and others do not."
+                ),
+                logger,
+            )
+        else:
+            if last_shape is None:
+                last_shape = ts.static_covariates.shape
+            if ts.static_covariates.shape != last_shape:
+                raise_log(
+                    ValueError(
+                        "Static covariates dimension mismatch across the sequence of target series. The static "
+                        "covariates must have the same number of columns and rows across all target series."
+                    ),
+                    logger,
+                )
+            # flatten static covariates along columns -> results in [scov0_comp0, scov0_comp1, scov1_comp0, ...]
+            static_covs = ts.static_covariates.values.flatten(order="F")
+            # we stack the static covariates to the right of lagged features
+            # the broadcasting repeats the static covariates along axis=0 to match the number of feature rows
+            features[idx] = np.hstack(
+                [
+                    features[idx],
+                    np.broadcast_to(
+                        static_covs, (len(features[idx]), len(static_covs))
+                    ),
+                ]
+            )
+
+    if input_not_list:
+        features = features[0]
+    return features, last_shape
 
 
 def create_lagged_component_names(
