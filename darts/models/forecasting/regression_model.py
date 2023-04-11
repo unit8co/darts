@@ -388,13 +388,12 @@ class RegressionModel(GlobalForecastingModel):
     ) -> Union[np.array, Sequence[np.array]]:
         """
         Add static covariates to the features' table for RegressionModels.
-        Accounts for series with potentially different static covariates by padding with 0 to accommodate for the
-        maximum number of available static_covariates in any of the given series in the sequence.
+        If `uses_static_covariates=True`, all target series used in `fit()` and `predict()` must have static
+        covariates with identical dimensionality. Otherwise, will not consider static covariates.
 
-        If no static covariates are provided for a given series, its corresponding features are padded with 0.
-        Accounts for the case where the model is trained with series with static covariates and then used to predict
-        on series without static covariates by padding with 0 the corresponding features of the series without
-        static covariates.
+        The static covariates are added to the right of the lagged features following the convention:
+        with a 2 component series, and 2 static covariates per component ->
+        scov_1_comp_1 | scov_1_comp_2 | scov_2_comp_1 | scov_2_comp_2
 
         Parameters
         ----------
