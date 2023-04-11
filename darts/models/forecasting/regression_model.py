@@ -37,6 +37,7 @@ from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
 from darts.utils.data.tabularization import (
     add_static_covariates_to_lagged_data,
+    create_lagged_component_names,
     create_lagged_training_data,
 )
 from darts.utils.multioutput import MultiOutputRegressor
@@ -136,6 +137,7 @@ class RegressionModel(GlobalForecastingModel):
         self.multi_models = multi_models
         self._considers_static_covariates = use_static_covariates
         self._static_covariates_shape: Optional[Tuple[int, int]] = None
+        self._lagged_feature_names: Optional[List[str]] = None
 
         # model checks
         if self.model is None:
@@ -406,6 +408,19 @@ class RegressionModel(GlobalForecastingModel):
         if len(training_labels.shape) == 2 and training_labels.shape[1] == 1:
             training_labels = training_labels.ravel()
         self.model.fit(training_samples, training_labels, **kwargs)
+
+        # generate and store the lagged components names (for feature importance analysis)
+        self._lagged_feature_names, _ = create_lagged_component_names(
+            target_series=target_series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            lags=self.lags.get("target"),
+            lags_past_covariates=self.lags.get("past"),
+            lags_future_covariates=self.lags.get("future"),
+            output_chunk_length=self.output_chunk_length,
+            concatenate=False,
+            use_static_covariates=self.uses_static_covariates,
+        )
 
     def fit(
         self,
@@ -765,6 +780,24 @@ class RegressionModel(GlobalForecastingModel):
         k = x.shape[0]
 
         return prediction.reshape(k, self.pred_dim, -1)
+
+    @property
+    def lagged_feature_names(self) -> Optional[List[str]]:
+        """The lagged feature names the model has been trained on.
+
+        The naming convention for target, past and future covariates is: ``"{name}_{type}_lag{i}"``, where:
+
+            - ``{name}`` the component name of the (first) series
+            - ``{type}`` is the feature type, one of "target", "pastcov", and "futcov"
+            - ``{i}`` is the lag value
+
+        The naming convention for static covariates is: ``"{name}_statcov_target_{comp}"``, where:
+
+            - ``{name}`` the static covariate name of the (first) series
+            - ``{comp}`` the target component name of the (first) that the static covariate act on. If the static
+                covariate acts globally on a multivariate target series, will show "global".
+        """
+        return self._lagged_feature_names
 
     def __str__(self):
         return self.model.__str__()

@@ -772,7 +772,11 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             assert not model.uses_static_covariates
             assert model._static_covariates_shape is None
             preds = model.predict(n=2, series=series)
-            assert preds.static_covariates.equals(series.static_covariates)
+            # there seem to be some dtype issues with python=3.7
+            np.testing.assert_almost_equal(
+                preds.static_covariates.values,
+                series.static_covariates.values,
+            )
 
             # with `use_static_covariates=True`, static covariates are included
             model = model_cls(lags=4, use_static_covariates=True)
@@ -780,9 +784,11 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             assert model.uses_static_covariates
             assert model._static_covariates_shape == series.static_covariates.shape
             preds = model.predict(n=2, series=[series, series])
-            assert all(
-                [p.static_covariates.equals(series.static_covariates) for p in preds]
-            )
+            for pred in preds:
+                np.testing.assert_almost_equal(
+                    pred.static_covariates.values,
+                    series.static_covariates.values,
+                )
 
     def test_static_cov_accuracy(self):
         """
@@ -834,7 +840,6 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         model_static_cov = RandomForest(lags=period // 2, bootstrap=False)
         model_static_cov.fit(fitting_series)
         pred_static_cov = model_static_cov.predict(n=period, series=fitting_series)
-
         # then
         for series, ps_no_st, ps_st_cat in zip(
             train_series_static_cov, pred_no_static_cov, pred_static_cov
@@ -855,6 +860,16 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         pred_no_static_cov = model_no_static_cov.predict(
             n=period, series=fitting_series
         )
+        # multiple series with different components names ("smooth" and "irregular"),
+        # will take first target name
+        expected_features_in = [
+            f"smooth_target_lag{str(-i)}" for i in range(period // 2, 0, -1)
+        ]
+        self.assertEqual(model_no_static_cov.lagged_feature_names, expected_features_in)
+        self.assertEqual(
+            len(model_no_static_cov.model.feature_importances_),
+            len(expected_features_in),
+        )
 
         fitting_series = [
             train_series_static_cov[0][: (60 - period)],
@@ -862,6 +877,18 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         ]
         model_static_cov = RandomForest(lags=period // 2, bootstrap=False)
         model_static_cov.fit(fitting_series)
+
+        # multiple univariates series with different names with same static cov, will take name of first series
+        expected_features_in = [
+            f"smooth_target_lag{str(-i)}" for i in range(period // 2, 0, -1)
+        ] + ["curve_type_statcov_target_smooth"]
+
+        self.assertEqual(model_static_cov.lagged_feature_names, expected_features_in)
+        self.assertEqual(
+            len(model_static_cov.model.feature_importances_),
+            len(expected_features_in),
+        )
+
         pred_static_cov = model_static_cov.predict(n=period, series=fitting_series)
 
         # then
