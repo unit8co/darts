@@ -3856,6 +3856,7 @@ class TimeSeries:
 
         plt.legend()
         plt.title(self._xa.name)
+        return fig
 
     def with_columns_renamed(
         self, col_names: Union[List[str], str], col_names_new: Union[List[str], str]
