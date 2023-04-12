@@ -2,7 +2,7 @@
 # Changelog
 
 We do our best to avoid the introduction of breaking changes,
-but cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
+but cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "🔴".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 [Full Changelog](https://github.com/unit8co/darts/compare/0.24.0...master)
@@ -11,37 +11,39 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ### For users of the library:
 
 **Improved**
+- General model improvements:
+  - New baseline forecasting model `NaiveMovingAverage`. [#1557](https://github.com/unit8co/darts/pull/1557) by [Janek Fidor](https://github.com/JanFidor).
+  - New models `StatsForecastAutoCES`, and `StatsForecastAutoTheta` from Nixtla's statsforecasts library as local forecasting models without covariates support. AutoTheta supports probabilistic forecasts. [#1476](https://github.com/unit8co/darts/pull/1476) by [Boyd Biersteker](https://github.com/Beerstabr).
+  - Added support for future covariates, and probabilistic forecasts to `StatsForecastAutoETS`. [#1476](https://github.com/unit8co/darts/pull/1476) by [Boyd Biersteker](https://github.com/Beerstabr).
+  - Added support for logistic growth to `Prophet` with parameters `growth`, `cap`, `floor`. [#1419](https://github.com/unit8co/darts/pull/1419) by [David Kleindienst](https://github.com/DavidKleindienst). 
+  - Improved the model string / object representation style similar to scikit-learn models. [#1590](https://github.com/unit8co/darts/pull/1590) by [Janek Fidor](https://github.com/JanFidor).
+  - 🔴 Renamed `MovingAverage` to `MovingAverageFilter` to avoid confusion with new `NaiveMovingAverage` model. [#1557](https://github.com/unit8co/darts/pull/1557) by [Janek Fidor](https://github.com/JanFidor).
+- Improvements to `RegressionModel`:
+    - Optimized lagged data creation for fit/predict sets achieving a drastic speed-up. [#1399](https://github.com/unit8co/darts/pull/1399) by [Matt Bilton](https://github.com/mabilton).
+    - Added support for categorical past/future/static covariates to `LightGBMModel` with model creation parameters `categorical_*_covariates`. [#1585](https://github.com/unit8co/darts/pull/1585) by [Rijk van der Meulen](https://github.com/rijkvandermeulen).
+    - Added lagged feature names for better interpretability; accessible with model property `lagged_feature_names`. [#1679](https://github.com/unit8co/darts/pull/1679) by [Antoine Madrona](https://github.com/madtoinou).
+    - 🔴 New `use_static_covariates` option for all models: When True (default), models use static covariates if available at fitting time and enforce identical static covariate shapes across all target `series` used for training or prediction; when False, models ignore static covariates. [#1700](https://github.com/unit8co/darts/pull/1700) by [Dennis Bader](https://github.com/dennisbader).
+- Improvements to `TorchForecastingModel`:
+  - New methods `load_weights()` and `load_weights_from_checkpoint()` for loading only the weights from a manually saved model or checkpoint. This allows to fine-tune the pre-trained models with different optimizers or learning rate schedulers. [#1501](https://github.com/unit8co/darts/pull/1501) by [Antoine Madrona](https://github.com/madtoinou).
+  - New method `lr_find()` that helps to find a good initial learning rate for your forecasting problem. [#1609](https://github.com/unit8co/darts/pull/1609) by [Levente Szabados](https://github.com/solalatus) and [Dennis Bader](https://github.com/dennisbader).
+  - Improved the [user guide](https://unit8co.github.io/darts/userguide/torch_forecasting_models.html) and added new sections about saving/loading (checkpoints, manual save/load, loading weights only), and callbacks. [#1661](https://github.com/unit8co/darts/pull/1661) by [Antoine Madrona](https://github.com/madtoinou).
+  - 🔴 Replaced `":"` in save file names with `"_"` to avoid issues on some operating systems. For loading models saved on earlier Darts versions, try to rename the file names by replacing `":"` with `"_"`. [#1501](https://github.com/unit8co/darts/pull/1501) by [Antoine Madrona](https://github.com/madtoinou).
+  - 🔴 New `use_static_covariates` option for `TFTModel`, `DLinearModel` and `NLinearModel`: When True (default), models use static covariates if available at fitting time and enforce identical static covariate shapes across all target `series` used for training or prediction; when False, models ignore static covariates. [#1700](https://github.com/unit8co/darts/pull/1700) by [Dennis Bader](https://github.com/dennisbader).
 - Improvements to `TimeSeries`:
   - Added support for integer indexed input to `from_*` factory methods, if index can be converted to a pandas.RangeIndex. [#1527](https://github.com/unit8co/darts/pull/1527) by [Dennis Bader](https://github.com/dennisbader).
   - Added support for integer indexed input with step sizes (freq) other than 1. [#1527](https://github.com/unit8co/darts/pull/1527) by [Dennis Bader](https://github.com/dennisbader).
   - Optimized time series creation with `fill_missing_dates=True` achieving a drastic speed-up . [#1527](https://github.com/unit8co/darts/pull/1527) by [Dennis Bader](https://github.com/dennisbader).
   - `from_group_dataframe()` now warns the user if there is suspicion of a "bad" time index (monotonically increasing). [#1628](https://github.com/unit8co/darts/pull/1628) by [Dennis Bader](https://github.com/dennisbader).
-- General model improvemts:
-  - New baseline forecasting model `NaiveMovingAverage`. [#1557](https://github.com/unit8co/darts/pull/1557) by [Janek Fidor](https://github.com/JanFidor).
-  - New models `StatsForecastAutoCES`, and `StatsForecastAutoTheta` from Nixtla's statsforecasts library as local forecasting models without covariates support. AutoTheta supports probabilistic forecasts. [#1476](https://github.com/unit8co/darts/pull/1476) by [Boyd Biersteker](https://github.com/Beerstabr).
-  - Added support for future covariates, and probabilistic forecasts to `StatsForecastAutoETS`. [#1476](https://github.com/unit8co/darts/pull/1476) by [Boyd Biersteker](https://github.com/Beerstabr).
-  - Added support for categorical past/future/static covariates to `LightGBMModel` with model creation parameters `categorical_*_covariates`. [#1585](https://github.com/unit8co/darts/pull/1585) by [Rijk van der Meulen](https://github.com/rijkvandermeulen).
-  - Added support for logistic growth to `Prophet` with parameters `growth`, `cap`, `floor`. [#1419](https://github.com/unit8co/darts/pull/1419) by [David Kleindienst](https://github.com/DavidKleindienst).
-  - Optimized lagged data creation for `RegressionModel`s achieving a drastic speed-up. [#1399](https://github.com/unit8co/darts/pull/1399) by [Matt Bilton](https://github.com/mabilton).
-  - Added lagged feature names to `RegressionModel`s for better interpretability; accessible with property `RegressionModel.lagged_feature_names`. [#1679](https://github.com/unit8co/darts/pull/1679) by [Antoine Madrona](https://github.com/madtoinou).  
-  - Improved the model string / object representation style similar to scikit-learn models. [#1399](https://github.com/unit8co/darts/pull/1399) by [Janek Fidor](https://github.com/JanFidor).
-  - 🔴 New `use_static_covariates` option for all models supporting static covariates: When True (default), models use static covariates if available at fitting time and enforce identical static covariate shapes across all target `series` used for training or prediction; when False, models ignore static covariates. [#1700](https://github.com/unit8co/darts/pull/1700) by [Dennis Bader](https://github.com/dennisbader).
-  - 🔴 Renamed `MovingAverage` to `MovingAverageFilter` to avoid confusion with new `NaiveMovingAverage` model. [#1557](https://github.com/unit8co/darts/pull/1557) by [Janek Fidor](https://github.com/JanFidor).
-- Improvements to `TorchForecastingModel`:
-  - New methods `load_weights()` and `load_weights_from_checkpoint()` for loading only the weights from a manually saved model or checkpoint. This allows to fine-tune the pre-trained models with different optimizers or learning rate schedulers. [#1501](https://github.com/unit8co/darts/pull/1501) by [Antoine Madrona](https://github.com/madtoinou).
-  - New method `lr_find()` that helps to find a good initial learning rate for your forecasting problem. [#1609](https://github.com/unit8co/darts/pull/1609) by [Levente Szabados](https://github.com/solalatus) and [Dennis Bader](https://github.com/dennisbader).
-  - Improved the [user guide](https://unit8co.github.io/darts/userguide/torch_forecasting_models.html) and added new sections about saving/loading (checkpoints, manual save/load, loading weights only), and callbacks. [#1661](https://github.com/unit8co/darts/pull/1661) by [Antoine Madrona](https://github.com/madtoinou).
-  - 🔴 Replaced `":"` in save file names with `"_"` to avoid issues on some operating systems. For loading models saved on earlier Darts versions, try to replace `":"` with `"_"`. [#1501](https://github.com/unit8co/darts/pull/1501) by [Antoine Madrona](https://github.com/madtoinou).
 - Added a parameter to give a custom function name to the transformed output of `WindowTransformer`; improved the explanation of the `window` parameter. [#1676](https://github.com/unit8co/darts/pull/1676) and [#1666](https://github.com/unit8co/darts/pull/1666) by [Jing Qiang Goh](https://github.com/JQGoh).
-- Added `historical_forecasts` parameter for `backtest()` allows to use precomputed historical forecasts from `historical_forecasts()`. [#1597](https://github.com/unit8co/darts/pull/1597) by [Janek Fidor](https://github.com/JanFidor).
+- Added `historical_forecasts` parameter to `backtest()` that allows to use precomputed historical forecasts from `historical_forecasts()`. [#1597](https://github.com/unit8co/darts/pull/1597) by [Janek Fidor](https://github.com/JanFidor).
 - Added feature values and SHAP object to `ShapExplainabilityResult`, giving easy user access to all SHAP-specific explainability results. [#1545](https://github.com/unit8co/darts/pull/1545) by [Rijk van der Meulen](https://github.com/rijkvandermeulen).
 - New `quantile_loss()` (pinball loss) metric for probabilistic forecasts. [#1559](https://github.com/unit8co/darts/pull/1559) by [Janek Fidor](https://github.com/JanFidor).
 
 **Fixed**
-- Fixed an issue in `BottomUp/TopDownRevonciliator` where the order of the series components was not taken into account. [#1592](https://github.com/unit8co/darts/pull/1492) by [David Kleindienst](https://github.com/DavidKleindienst).
+- Fixed an issue in `BottomUp/TopDownReconciliator` where the order of the series components was not taken into account. [#1592](https://github.com/unit8co/darts/pull/1592) by [David Kleindienst](https://github.com/DavidKleindienst).
 - Fixed an issue with `DLinearModel` not supporting even numbered `kernel_size`. [#1695](https://github.com/unit8co/darts/pull/1695) by [Antoine Madrona](https://github.com/madtoinou).
 - Fixed an issue with `RegressionEnsembleModel` not using future covariates during training. [#1660](https://github.com/unit8co/darts/pull/1660) by [Rajesh Balakrishnan](https://github.com/Rajesh4AI).
-- Fixed an issue where `NaiveEnsembleModel` prediction did not transfer the component name. [#1602](https://github.com/unit8co/darts/pull/1602) by [David Kleindienst](https://github.com/DavidKleindienst).
+- Fixed an issue where `NaiveEnsembleModel` prediction did not transfer the series' component name. [#1602](https://github.com/unit8co/darts/pull/1602) by [David Kleindienst](https://github.com/DavidKleindienst).
 - Fixed an issue in `TorchForecastingModel` that prevented from using multi GPU training. [#1509](https://github.com/unit8co/darts/pull/1509) by [Levente Szabados](https://github.com/solalatus).
 - Fixed a bug when saving a `FFT` model with `trend=None`. [#1594](https://github.com/unit8co/darts/pull/1594) by [Antoine Madrona](https://github.com/madtoinou).
 - Fixed some issues with PyTorch-Lightning version 2.0.0. [#1651](https://github.com/unit8co/darts/pull/1651) by [Dennis Bader](https://github.com/dennisbader).
