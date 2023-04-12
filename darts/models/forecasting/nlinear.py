@@ -183,6 +183,7 @@ class NLinearModel(MixedCovariatesTorchModel):
         shared_weights: bool = False,
         const_init: bool = True,
         normalize: bool = False,
+        use_static_covariates: bool = True,
         **kwargs,
     ):
         """An implementation of the NLinear model, as presented in [1]_.
@@ -216,7 +217,10 @@ class NLinearModel(MixedCovariatesTorchModel):
             .. note::
                 This cannot be applied to probabilistic models.
             ..
-
+        use_static_covariates
+            Whether the model should use static covariate information in case the input `series` passed to ``fit()``
+            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
+            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()`.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -248,10 +252,10 @@ class NLinearModel(MixedCovariatesTorchModel):
             Number of epochs over which to train the model. Default: ``100``.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part
+            defaults to the following string ``"YYYY-mm-dd_HH_MM_SS_torch_model_run_PID"``, where the initial part
             of the name is formatted with the local date and time, while PID is the processed ID (preventing models
             spawned at the same time by different processes to share the same model_name). E.g.,
-            ``"2021-06-14_09:53:32_torch_model_run_44607"``.
+            ``"2021-06-14_09_53_32_torch_model_run_44607"``.
         work_dir
             Path of the working directory, where to save checkpoints and Tensorboard summaries.
             Default: current working directory.
@@ -269,7 +273,7 @@ class NLinearModel(MixedCovariatesTorchModel):
             To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where
             :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
             :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
-            :func:`save_model()` and loaded using :func:`load_model()`. Default: ``False``.
+            :func:`save()` and loaded using :func:`load()`. Default: ``False``.
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -356,6 +360,7 @@ class NLinearModel(MixedCovariatesTorchModel):
         self.shared_weights = shared_weights
         self.const_init = const_init
         self.normalize = normalize
+        self._considers_static_covariates = use_static_covariates
 
         raise_if(
             "likelihood" in self.model_params
@@ -402,6 +407,6 @@ class NLinearModel(MixedCovariatesTorchModel):
             **self.pl_module_params,
         )
 
-    @staticmethod
-    def _supports_static_covariates() -> bool:
+    @property
+    def supports_static_covariates(self) -> bool:
         return True

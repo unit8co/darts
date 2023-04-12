@@ -26,12 +26,15 @@ from darts.models import (
     LinearRegressionModel,
     NaiveDrift,
     NaiveMean,
+    NaiveMovingAverage,
     NaiveSeasonal,
     Prophet,
     RandomForest,
     RegressionModel,
     StatsForecastAutoARIMA,
-    StatsForecastETS,
+    StatsForecastAutoCES,
+    StatsForecastAutoETS,
+    StatsForecastAutoTheta,
     Theta,
 )
 from darts.models.forecasting.forecasting_model import (
@@ -51,7 +54,9 @@ models = [
     (ARIMA(12, 2, 1), 5.2),
     (ARIMA(1, 1, 1), 24),
     (StatsForecastAutoARIMA(season_length=12), 4.6),
-    (StatsForecastETS(season_length=12, model="AAZ"), 4.1),
+    (StatsForecastAutoTheta(season_length=12), 5.5),
+    (StatsForecastAutoCES(season_length=12, model="Z"), 7.3),
+    (StatsForecastAutoETS(season_length=12, model="AAZ"), 4.1),
     (Croston(version="classic"), 23),
     (Croston(version="tsb", alpha_d=0.1, alpha_p=0.1), 23),
     (Theta(), 11),
@@ -80,12 +85,13 @@ multivariate_models = [
     (NaiveSeasonal(), 32),
     (NaiveMean(), 37),
     (NaiveDrift(), 39),
+    (NaiveMovingAverage(input_chunk_length=5), 34),
 ]
 
 dual_models = [
     ARIMA(),
     StatsForecastAutoARIMA(season_length=12),
-    StatsForecastETS(season_length=12),
+    StatsForecastAutoETS(season_length=12),
     Prophet(),
     AutoARIMA(),
 ]
@@ -122,6 +128,11 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
     # real multivariate timeseries for functionality tests
     ts_ice_heater = IceCreamHeaterDataset().load()
     ts_ice_heater_train, ts_ice_heater_val = ts_ice_heater.split_after(split_point=0.7)
+
+    def retrain_func(
+        counter, pred_time, train_series, past_covariates, future_covariates
+    ):
+        return len(train_series) % 2 == 0
 
     def setUp(self):
         self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
@@ -353,6 +364,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
         self.assertEqual(pred.start_time(), pd.Timestamp("20130121"))
         self.assertEqual(pred.end_time(), pd.Timestamp("20130125"))
 
+    @pytest.mark.slow
     def test_statsmodels_future_models(self):
 
         # same tests, but VARIMA requires to work on a multivariate target series
@@ -457,14 +469,9 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             pred3 = model.predict(n=pred_len, future_covariates=exog1)
 
             self.assertTrue(np.array_equal(pred1.values(), pred3.values()))
-
-            # check backtesting with retrain=False
-            model: TransferableFutureCovariatesLocalForecastingModel = model_cls(
-                **kwargs
-            )
             model.backtest(series1, future_covariates=exog1, start=0.5, retrain=False)
 
-    @patch("typing.Callable")
+    @patch("typing.Callable", autospec=retrain_func, return_value=True)
     def test_backtest_retrain(
         self,
         patch_retrain_func,
@@ -579,3 +586,38 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                         if isinstance(retrain, Mock):
                             # check that patch_retrain_func has been called at each iteration
                             assert retrain.call_count > 1
+
+    def test_model_str_call(self):
+        model_expected_name_pairs = [
+            (ExponentialSmoothing(), "ExponentialSmoothing()"),  # no params changed
+            (ARIMA(1, 1, 1), "ARIMA(p=1, q=1)"),  # default value for a param
+            (
+                Prophet(
+                    add_encoders={"cyclic": {"past": ["month"]}}
+                ),  # data structure param
+                "Prophet(add_encoders={'cyclic': {'past': ['month']}})",
+            ),
+            (
+                TBATS(
+                    use_trend=True, use_arma_errors=True, use_box_cox=True
+                ),  # params in wrong order
+                "TBATS(use_box_cox=True, use_trend=True)",
+            ),
+        ]
+        for model, expected in model_expected_name_pairs:
+            self.assertEqual(expected, str(model))
+
+    def test_model_repr_call(self):
+        model_expected_name_pairs = [
+            (
+                ExponentialSmoothing(),
+                "ExponentialSmoothing(trend=ModelMode.ADDITIVE, damped=False, seasonal=SeasonalityMode.ADDITIVE, "
+                + "seasonal_periods=None, random_state=0)",
+            ),  # no params changed
+            (
+                ARIMA(1, 1, 1),
+                "ARIMA(p=1, d=1, q=1, seasonal_order=(0, 0, 0, 0), trend=None, random_state=0, add_encoders=None)",
+            ),  # default value for a param
+        ]
+        for model, expected in model_expected_name_pairs:
+            self.assertEqual(expected, repr(model))

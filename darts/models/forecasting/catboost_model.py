@@ -31,6 +31,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         quantiles: List = None,
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
+        use_static_covariates: bool = True,
         **kwargs,
     ):
         """CatBoost Model
@@ -87,6 +88,10 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
+        use_static_covariates
+            Whether the model should use static covariate information in case the input `series` passed to ``fit()``
+            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
+            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()`.
         **kwargs
             Additional keyword arguments passed to `catboost.CatBoostRegressor`.
         """
@@ -132,10 +137,8 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             add_encoders=add_encoders,
             multi_models=multi_models,
             model=CatBoostRegressor(**kwargs),
+            use_static_covariates=use_static_covariates,
         )
-
-    def __str__(self):
-        return f"CatBoostModel(lags={self.lags})"
 
     def fit(
         self,

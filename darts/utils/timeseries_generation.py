@@ -20,7 +20,7 @@ def generate_index(
     start: Optional[Union[pd.Timestamp, int]] = None,
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
-    freq: str = None,
+    freq: Union[str, int] = None,
     name: str = None,
 ) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
     """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
@@ -44,6 +44,8 @@ def generate_index(
         By default, "D" (daily) is used.
         If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
         The freq is optional for generating an integer index (if not specified, 1 is used).
+    name
+        Optionally, an index name.
     """
     constructors = [
         arg_name
@@ -87,7 +89,7 @@ def constant_timeseries(
     start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
-    freq: str = None,
+    freq: Union[str, int] = None,
     column_name: Optional[str] = "constant",
     dtype: np.dtype = np.float64,
 ) -> TimeSeries:
@@ -139,7 +141,7 @@ def linear_timeseries(
     start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
-    freq: str = None,
+    freq: Union[str, int] = None,
     column_name: Optional[str] = "linear",
     dtype: np.dtype = np.float64,
 ) -> TimeSeries:
@@ -197,7 +199,7 @@ def sine_timeseries(
     start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
-    freq: str = None,
+    freq: Union[str, int] = None,
     column_name: Optional[str] = "sine",
     dtype: np.dtype = np.float64,
 ) -> TimeSeries:
@@ -262,7 +264,7 @@ def gaussian_timeseries(
     start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
-    freq: str = None,
+    freq: Union[str, int] = None,
     column_name: Optional[str] = "gaussian",
     dtype: np.dtype = np.float64,
 ) -> TimeSeries:
@@ -338,7 +340,7 @@ def random_walk_timeseries(
     start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
-    freq: str = None,
+    freq: Union[str, int] = None,
     column_name: Optional[str] = "random_walk",
     dtype: np.dtype = np.float64,
 ) -> TimeSeries:
@@ -393,7 +395,7 @@ def autoregressive_timeseries(
     start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
-    freq: str = None,
+    freq: Union[str, int] = None,
     column_name: Optional[str] = "autoregressive",
 ) -> TimeSeries:
     """
@@ -570,7 +572,7 @@ def holidays_timeseries(
 
     time_index = _extend_time_index_until(time_index, until, add_length)
     scope = range(time_index[0].year, (time_index[-1] + pd.Timedelta(days=1)).year)
-    country_holidays = holidays.CountryHoliday(
+    country_holidays = holidays.country_holidays(
         country_code, prov=prov, state=state, years=scope
     )
     index_series = pd.Series(time_index, index=time_index)

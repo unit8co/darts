@@ -3,7 +3,7 @@ Fast Fourier Transform
 ----------------------
 """
 
-from typing import Optional
+from typing import Callable, Optional
 
 import numpy as np
 import pandas as pd
@@ -238,7 +238,7 @@ class FFT(LocalForecastingModel):
             pd.Timestamp attributes that are relevant for the seasonality automatically.
         trend
             If set, indicates what kind of detrending will be applied before performing DFT.
-            Possible values: 'poly' or 'exp', for polynomial trend, or exponential trend, respectively.
+            Possible values: 'poly', 'exp' or None, for polynomial trend, exponential trend or no trend, respectively.
         trend_poly_degree
             The degree of the polynomial that will be used for detrending, if `trend='poly'`.
 
@@ -260,14 +260,19 @@ class FFT(LocalForecastingModel):
         self.trend = trend
         self.trend_poly_degree = trend_poly_degree
 
-    def __str__(self):
-        return (
-            "FFT(nr_freqs_to_keep="
-            + str(self.nr_freqs_to_keep)
-            + ", trend="
-            + str(self.trend)
-            + ")"
+    def _exp_trend(self, x) -> Callable:
+        """Helper function, used to make FFT model pickable."""
+        return np.exp(self.trend_coefficients[1]) * np.exp(
+            self.trend_coefficients[0] * x
         )
+
+    def _poly_trend(self, trend_coefficients) -> Callable:
+        """Helper function, for consistency with the other trends"""
+        return np.poly1d(trend_coefficients)
+
+    def _null_trend(self, x) -> Callable:
+        """Helper function, used to make FFT model pickable."""
+        return 0
 
     def fit(self, series: TimeSeries):
         series = fill_missing_values(series)
@@ -277,19 +282,18 @@ class FFT(LocalForecastingModel):
 
         # determine trend
         if self.trend == "poly":
-            trend_coefficients = np.polyfit(
+            self.trend_coefficients = np.polyfit(
                 range(len(series)), series.univariate_values(), self.trend_poly_degree
             )
-            self.trend_function = np.poly1d(trend_coefficients)
+            self.trend_function = self._poly_trend(self.trend_coefficients)
         elif self.trend == "exp":
-            trend_coefficients = np.polyfit(
+            self.trend_coefficients = np.polyfit(
                 range(len(series)), np.log(series.univariate_values()), 1
             )
-            self.trend_function = lambda x: np.exp(trend_coefficients[1]) * np.exp(
-                trend_coefficients[0] * x
-            )
+            self.trend_function = self._exp_trend
         else:
-            self.trend_function = lambda x: 0
+            self.trend_coefficients = None
+            self.trend_function = self._null_trend
 
         # subtract trend
         detrended_values = series.univariate_values() - self.trend_function(

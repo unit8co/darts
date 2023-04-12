@@ -35,6 +35,7 @@ class RandomForest(RegressionModel):
         n_estimators: Optional[int] = 100,
         max_depth: Optional[int] = None,
         multi_models: Optional[bool] = True,
+        use_static_covariates: bool = True,
         **kwargs,
     ):
         """Random Forest Model
@@ -85,6 +86,10 @@ class RandomForest(RegressionModel):
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
+        use_static_covariates
+            Whether the model should use static covariate information in case the input `series` passed to ``fit()``
+            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
+            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()`.
         **kwargs
             Additional keyword arguments passed to `sklearn.ensemble.RandomForest`.
         """
@@ -102,10 +107,5 @@ class RandomForest(RegressionModel):
             add_encoders=add_encoders,
             multi_models=multi_models,
             model=RandomForestRegressor(**kwargs),
-        )
-
-    def __str__(self):
-        return (
-            f"RandomForest(lags={self.lags}, "
-            f"n_estimators={self.n_estimators}, max_depth={self.max_depth})"
+            use_static_covariates=use_static_covariates,
         )

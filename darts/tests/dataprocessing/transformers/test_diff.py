@@ -27,6 +27,7 @@ class DiffTestCase(unittest.TestCase):
         equal_nan: bool,
         to_compare: Optional[np.ndarray] = None,
     ):
+
         """
         Helper to compare series differenced by `Diff`.
 
@@ -38,7 +39,7 @@ class DiffTestCase(unittest.TestCase):
                 Second `TimeSeries` object to compare.
             equal_nan
                 Whether to compare `NaN` values as equal (see `help(np.testing.assert_allclose)`); should set
-                `equal_nan=~dropna` (i.e. should throw error if there are `NaN` values when user has requested
+                `equal_nan=(not dropna)` (i.e. should throw error if there are `NaN` values when user has requested
                 for them to be dropped).
             to_compare
                 boolean `np.ndarray` which specifies which subset of columns should be compared in `series1` and
@@ -70,12 +71,12 @@ class DiffTestCase(unittest.TestCase):
             if not dropna:
                 expected_transform = expected_transform.prepend_values([np.nan])
             self.assert_series_equal(
-                expected_transform, transformed_series, equal_nan=~dropna
+                expected_transform, transformed_series, equal_nan=(not dropna)
             )
             self.assert_series_equal(
-                quad_series,
-                diff.inverse_transform(transformed_series),
-                equal_nan=~dropna,
+                series1=quad_series,
+                series2=diff.inverse_transform(transformed_series),
+                equal_nan=(not dropna),
             )
 
     def test_diff_inverse_transform_beyond_fit_data(self):
@@ -109,7 +110,9 @@ class DiffTestCase(unittest.TestCase):
             # Should be able to undifference entire series even though only fitted
             # to truncated series:
             self.assert_series_equal(
-                self.sine_series, diff.inverse_transform(to_undiff), equal_nan=~dropna
+                series1=self.sine_series,
+                series2=diff.inverse_transform(to_undiff),
+                equal_nan=(not dropna),
             )
 
     def test_diff_multi_ts(self):
@@ -140,19 +143,19 @@ class DiffTestCase(unittest.TestCase):
                 self.assert_series_equal(
                     self.sine_series,
                     transformed[0],
-                    equal_nan=~dropna,
+                    equal_nan=(not dropna),
                     to_compare=~mask,
                 )
                 self.assert_series_equal(
                     self.sine_series,
                     transformed[1],
-                    equal_nan=~dropna,
+                    equal_nan=(not dropna),
                     to_compare=~mask,
                 )
             # Should recover original sine_series:
             back = diff.inverse_transform(transformed, component_mask=mask)
-            self.assert_series_equal(self.sine_series, back[0], equal_nan=~dropna)
-            self.assert_series_equal(self.sine_series, back[1], equal_nan=~dropna)
+            self.assert_series_equal(self.sine_series, back[0], equal_nan=(not dropna))
+            self.assert_series_equal(self.sine_series, back[1], equal_nan=(not dropna))
 
     def test_diff_stochastic_series(self):
         """
@@ -174,7 +177,7 @@ class DiffTestCase(unittest.TestCase):
             new_series = transformer.fit_transform(series)
             series_back = transformer.inverse_transform(new_series)
             # Should recover original series:
-            self.assert_series_equal(series, series_back, equal_nan=~dropna)
+            self.assert_series_equal(series, series_back, equal_nan=(not dropna))
 
     def test_diff_dropna_and_component_mask_specified(self):
         """
@@ -186,7 +189,11 @@ class DiffTestCase(unittest.TestCase):
         with self.assertRaises(ValueError) as e:
             diff.fit(self.sine_series, component_mask=np.array([1, 0, 1], dtype=bool))
         self.assertEqual(
-            "Cannot specify `component_mask` with `dropna = True`.",
+            (
+                "Cannot specify `component_mask` with `dropna = True`, "
+                "since differenced and undifferenced components will be "
+                "of different lengths."
+            ),
             str(e.exception),
         )
 
@@ -228,7 +235,7 @@ class DiffTestCase(unittest.TestCase):
                 diff.inverse_transform(series2_diffed)
             expected_start = (
                 series1.start_time()
-                if not dropna
+                if (not dropna)
                 else series1.start_time() + series1.freq
             )
             self.assertEqual(

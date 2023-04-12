@@ -12,6 +12,7 @@ from .metrics import (
     mase,
     mse,
     ope,
+    quantile_loss,
     r2_score,
     rho_risk,
     rmse,

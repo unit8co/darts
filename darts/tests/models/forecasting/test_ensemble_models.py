@@ -57,6 +57,30 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         new_model = model_ens.untrained_model()
         assert not new_model.models[0]._fit_called
 
+    def test_extreme_lag_inference(self):
+        ensemble = NaiveEnsembleModel([NaiveDrift()])
+        assert ensemble.extreme_lags == (
+            -3,
+            -1,
+            None,
+            None,
+            None,
+            None,
+        )  # test if default is okay
+
+        model1 = LinearRegressionModel(
+            lags=3, lags_past_covariates=[-3, -5], lags_future_covariates=[7, 8]
+        )
+        model2 = LinearRegressionModel(
+            lags=5, lags_past_covariates=6, lags_future_covariates=[6, 9]
+        )
+
+        ensemble = NaiveEnsembleModel(
+            [model1, model2]
+        )  # test if infers extreme lags is okay
+        expected = (-5, 0, -6, -1, 6, 9)
+        assert expected == ensemble.extreme_lags
+
     def test_input_models_local_models(self):
         with self.assertRaises(ValueError):
             NaiveEnsembleModel([])
@@ -75,7 +99,14 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         with self.assertRaises(Exception):
             naive_ensemble.predict(5)
         naive_ensemble.fit(self.series1)
-        naive_ensemble.predict(5)
+        pred1 = naive_ensemble.predict(5)
+        assert self.series1.components == pred1.components
+
+    def test_call_backtest_naive_ensemble_local_models(self):
+        ensemble = NaiveEnsembleModel([NaiveSeasonal(5), Theta(2, 5)])
+        ensemble.fit(self.series1)
+        assert ensemble.extreme_lags == (-10, 0, None, None, None, None)
+        ensemble.backtest(self.series1)
 
     def test_predict_ensemble_local_models(self):
         naive = NaiveSeasonal(K=5)

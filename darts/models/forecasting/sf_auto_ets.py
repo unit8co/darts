@@ -1,19 +1,25 @@
 """
-StatsForecastETS
+StatsForecastAutoETS
 -----------
 """
 
 from typing import Optional
 
-from statsforecast.models import ETS
+from statsforecast.models import AutoETS as SFAutoETS
 
 from darts import TimeSeries
+from darts.models import LinearRegressionModel
+from darts.models.components.statsforecast_utils import (
+    create_normal_samples,
+    one_sigma_rule,
+    unpack_sf_dict,
+)
 from darts.models.forecasting.forecasting_model import (
     FutureCovariatesLocalForecastingModel,
 )
 
 
-class StatsForecastETS(FutureCovariatesLocalForecastingModel):
+class StatsForecastAutoETS(FutureCovariatesLocalForecastingModel):
     def __init__(self, *ets_args, add_encoders: Optional[dict] = None, **ets_kwargs):
         """ETS based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
@@ -24,6 +30,12 @@ class StatsForecastETS(FutureCovariatesLocalForecastingModel):
 
         This model accepts the same arguments as the `statsforecast ETS
         <https://nixtla.github.io/statsforecast/models.html#ets>`_. package.
+
+        In addition to the StatsForecast implementation, this model can handle future covariates. It does so by first
+        regressing the series against the future covariates using the :class:'LinearRegressionModel' model and then
+        running StatsForecast's AutoETS on the in-sample residuals from this original regression. This approach was
+        inspired by 'this post of Stephan Kolassa< https://stats.stackexchange.com/q/220885>'_.
+
 
         Parameters
         ----------
@@ -64,25 +76,39 @@ class StatsForecastETS(FutureCovariatesLocalForecastingModel):
         Examples
         --------
         >>> from darts.datasets import AirPassengersDataset
-        >>> from darts.models import StatsForecastETS
+        >>> from darts.models import StatsForecastAutoETS
         >>> series = AirPassengersDataset().load()
-        >>> model = StatsForecastETS(season_length=12, model="AZZ")
+        >>> model = StatsForecastAutoETS(season_length=12, model="AZZ")
         >>> model.fit(series[:-36])
         >>> pred = model.predict(36)
         """
         super().__init__(add_encoders=add_encoders)
-        self.model = ETS(*ets_args, **ets_kwargs)
-
-    def __str__(self):
-        return "ETS-Statsforecasts"
+        self.model = SFAutoETS(*ets_args, **ets_kwargs)
+        self._linreg = None
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         super()._fit(series, future_covariates)
         self._assert_univariate(series)
         series = self.training_series
+
+        if future_covariates is not None:
+            # perform OLS and get in-sample residuals
+            linreg = LinearRegressionModel(lags_future_covariates=[0])
+            linreg.fit(series, future_covariates=future_covariates)
+            fitted_values = linreg.model.predict(
+                X=future_covariates.slice_intersect(series).values(copy=False)
+            )
+            fitted_values_ts = TimeSeries.from_times_and_values(
+                times=series.time_index, values=fitted_values
+            )
+            resids = series - fitted_values_ts
+            self._linreg = linreg
+            target = resids
+        else:
+            target = series
+
         self.model.fit(
-            series.values(copy=False).flatten(),
-            X=future_covariates.values(copy=False) if future_covariates else None,
+            target.values(copy=False).flatten(),
         )
         return self
 
@@ -94,12 +120,27 @@ class StatsForecastETS(FutureCovariatesLocalForecastingModel):
         verbose: bool = False,
     ):
         super()._predict(n, future_covariates, num_samples)
-        forecast_df = self.model.predict(
+        forecast_dict = self.model.predict(
             h=n,
-            X=future_covariates.values(copy=False) if future_covariates else None,
+            level=(one_sigma_rule,),  # ask one std for the confidence interval
         )
 
-        return self._build_forecast_series(forecast_df["mean"])
+        mu_ets, std = unpack_sf_dict(forecast_dict)
+
+        if future_covariates is not None:
+            mu_linreg = self._linreg.predict(n, future_covariates=future_covariates)
+            mu_linreg_values = mu_linreg.values(copy=False).reshape(
+                n,
+            )
+            mu = mu_ets + mu_linreg_values
+        else:
+            mu = mu_ets
+
+        if num_samples > 1:
+            samples = create_normal_samples(mu, std, num_samples, n)
+        else:
+            samples = mu
+        return self._build_forecast_series(samples)
 
     @property
     def min_train_series_length(self) -> int:
@@ -109,4 +150,4 @@ class StatsForecastETS(FutureCovariatesLocalForecastingModel):
         return True
 
     def _is_probabilistic(self) -> bool:
-        return False
+        return True
