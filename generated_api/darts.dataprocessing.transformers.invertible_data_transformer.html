@@ -355,6 +355,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.diff.html">
+       Differencing Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
        Fittable Data Transformer Base Class
       </a>
@@ -464,6 +469,11 @@
    </i>
   </label>
   <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.models.components.statsforecast_utils.html">
+     StatsForecast utils
+    </a>
+   </li>
    <li class="toctree-l2 has-children">
     <a class="reference internal" href="darts.models.filtering.html">
      Filtering Models
@@ -485,7 +495,7 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.filtering.moving_average.html">
+      <a class="reference internal" href="darts.models.filtering.moving_average_filter.html">
        Moving Average
       </a>
      </li>
@@ -607,12 +617,22 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_ets.html">
-       StatsForecastETS
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
+       StatsForecastAutoCES
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tbats.html">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
+       StatsForecastAutoETS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
+       StatsForecastAutoTheta
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tbats_model.html">
        BATS and TBATS
       </a>
      </li>
@@ -784,12 +804,21 @@
 <h1>Invertible Data Transformer Base Class<a class="headerlink" href="#invertible-data-transformer-base-class" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.invertible_data_transformer.</span></span><span class="sig-name descname"><span class="pre">InvertibleDataTransformer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'InvertibleDataTransformer'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/invertible_data_transformer.html#InvertibleDataTransformer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.invertible_data_transformer.</span></span><span class="sig-name descname"><span class="pre">InvertibleDataTransformer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'InvertibleDataTransformer'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parallel_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask_components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/invertible_data_transformer.html#InvertibleDataTransformer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer" title="darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer</span></code></a></p>
 <p>Abstract class for invertible transformers.</p>
-<p>All the deriving classes have to implement the static methods
-<a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> and <a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_inverse_transform()</span></code></a>.
-This class takes care of parallelizing the transformation on multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> when possible.</p>
+<p>All the deriving classes have to implement the static methods <a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> and
+<a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_inverse_transform()</span></code></a>. For information on how to implement the <a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method,
+please refer to the <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer" title="darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseDataTransformer</span></code></a> documentation.</p>
+<p>The <a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_inverse_transform()</span></code></a> method should be implemented in a virtually identical way to the
+<a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method: it should accept a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> as a first argument, and a dictionary
+of fixed parameters (as well as fitted parameters if the transformation also inherits from
+<cite>FittableDataTransformer</cite>) as a second argument. Additionally, <a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_inverse_transform()</span></code></a> should
+also accept <cite>*args</cite> and <cite>**kwargs</cite> if additional positional/keyword arguments are expected to be
+passed. The only difference between <a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_inverse_transform()</span></code></a> and <a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a>
+is that the former should ‘undo’ the transformation made to a <cite>TimeSeries</cite> by the latter. Please
+refer to the <a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_inverse_transform()</span></code></a> documentation for further information.</p>
+<p>This class takes care of parallelizing the transformation on multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> when possible.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -800,6 +829,21 @@ Setting the parameter to <cite>-1</cite> means using all the available processor
 Note: for a small amount of data, the parallelisation overhead could end up increasing the total
 required amount of time.</p></li>
 <li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>parallel_params</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]) – Optionally, specifies which fixed parameters (i.e. the attributes initialized in the child-most
+class’s <cite>__init__</cite>) take on different values for different parallel jobs. Fixed parameters specified
+by <cite>parallel_params</cite> are assumed to be a <cite>Sequence</cite> of values that should be used for that parameter
+in each parallel job; the length of this <cite>Sequence</cite> should equal the number of parallel jobs. If
+<cite>parallel_params=True</cite>, every fixed parameter will take on a different value for each
+parallel job. If <cite>parallel_params=False</cite>, every fixed parameter will take on the same value for
+each parallel job. If <cite>parallel_params</cite> is a <cite>Sequence</cite> of fixed attribute names, only those
+attribute names specified will take on different values between different parallel jobs.</p></li>
+<li><p><strong>mask_components</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether or not to automatically apply any provided <cite>component_mask`s to the
+`TimeSeries</cite> inputs passed to <cite>transform</cite>, <cite>fit</cite>, <cite>inverse_transform</cite>, or <cite>fit_transform</cite>.
+If <cite>True</cite>, any specified <cite>component_mask</cite> will be applied to each input timeseries
+before passing them to the called method; the masked components will also be automatically
+‘unmasked’ in the returned <cite>TimeSeries</cite>. If <cite>False</cite>, then <cite>component_mask</cite> (if provided) will
+be passed as a keyword argument, but won’t automatically be applied to the input timeseries.
+See <cite>apply_component_mask</cite> method of <cite>BaseDataTransformer</cite> for further details.</p></li>
 </ul>
 </dd>
 </dl>
@@ -809,6 +853,107 @@ static methods instead of instance methods to allow an efficient parallelisation
 scaler instance is storing a non-negligible amount of data. Using instance methods would imply
 copying the instance’s data through multiple processes, which can easily introduce a bottleneck
 and nullify parallelisation benefits.</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">InvertibleDataTransformer</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="n">linear_timeseries</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">class</span> <span class="nc">SimpleTransform</span><span class="p">(</span><span class="n">InvertibleDataTransformer</span><span class="p">):</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">a</span><span class="p">):</span>
+<span class="gp">&gt;&gt;&gt; </span>            <span class="bp">self</span><span class="o">.</span><span class="n">_a</span> <span class="o">=</span> <span class="n">a</span>
+<span class="gp">&gt;&gt;&gt; </span>            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="nd">@staticmethod</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="k">def</span> <span class="nf">ts_transform</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="gp">&gt;&gt;&gt; </span>            <span class="n">a</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;fixed&#39;</span><span class="p">][</span><span class="s1">&#39;_a&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span>            <span class="n">b</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;b&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span>            <span class="k">return</span> <span class="n">a</span><span class="o">*</span><span class="n">series</span> <span class="o">+</span> <span class="n">b</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="nd">@staticmethod</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="k">def</span> <span class="nf">ts_inverse_transform</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="gp">&gt;&gt;&gt; </span>            <span class="n">a</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;fixed&#39;</span><span class="p">][</span><span class="s1">&#39;_a&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span>            <span class="n">b</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;b&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span>            <span class="k">return</span> <span class="p">(</span><span class="n">series</span> <span class="o">-</span> <span class="n">b</span><span class="p">)</span> <span class="o">/</span> <span class="n">a</span>
+<span class="go">&gt;&gt;&gt;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span> <span class="o">=</span> <span class="n">linear_timeseries</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+<span class="go">&lt;TimeSeries (DataArray) (time: 5, component: 1, sample: 1)&gt;</span>
+<span class="go">array([[[0.  ]],</span>
+</pre></div>
+</div>
+<blockquote>
+<div><p>[[0.25]],</p>
+<p>[[0.5 ]],</p>
+<p>[[0.75]],</p>
+<p>[[1.  ]]])</p>
+</div></blockquote>
+<p>Coordinates:
+* time       (time) datetime64[ns] 2000-01-01 2000-01-02 … 2000-01-05
+* component  (component) object ‘linear’
+Dimensions without coordinates: sample
+.. attribute:: static_covariates</p>
+<blockquote>
+<div><p>None</p>
+</div></blockquote>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.hierarchy">
+<span class="sig-name descname"><span class="pre">hierarchy</span></span><a class="headerlink" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.hierarchy" title="Permalink to this definition">¶</a></dt>
+<dd><p>None</p>
+</dd></dl>
+
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">transform</span> <span class="o">=</span> <span class="n">SimpleTransform</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span> <span class="o">=</span> <span class="n">transform</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+<span class="go">&lt;TimeSeries (DataArray) (time: 5, component: 1, sample: 1)&gt;</span>
+<span class="go">array([[[3. ]],</span>
+</pre></div>
+</div>
+<blockquote>
+<div><p>[[3.5]],</p>
+<p>[[4. ]],</p>
+<p>[[4.5]],</p>
+<p>[[5. ]]])</p>
+</div></blockquote>
+<p>Coordinates:
+* time       (time) datetime64[ns] 2000-01-01 2000-01-02 … 2000-01-05
+* component  (component) object ‘linear’
+Dimensions without coordinates: sample
+.. attribute:: static_covariates</p>
+<blockquote>
+<div><p>None</p>
+</div></blockquote>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">hierarchy</span></span><a class="headerlink" href="#id0" title="Permalink to this definition">¶</a></dt>
+<dd><p>None</p>
+</dd></dl>
+
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">series</span> <span class="o">=</span> <span class="n">transform</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+<span class="go">&lt;TimeSeries (DataArray) (time: 5, component: 1, sample: 1)&gt;</span>
+<span class="go">array([[[0.  ]],</span>
+</pre></div>
+</div>
+<blockquote>
+<div><p>[[0.25]],</p>
+<p>[[0.5 ]],</p>
+<p>[[0.75]],</p>
+<p>[[1.  ]]])</p>
+</div></blockquote>
+<p>Coordinates:
+* time       (time) datetime64[ns] 2000-01-01 2000-01-02 … 2000-01-05
+* component  (component) object ‘linear’
+Dimensions without coordinates: sample
+.. attribute:: static_covariates</p>
+<blockquote>
+<div><p>None</p>
+</div></blockquote>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-name descname"><span class="pre">hierarchy</span></span><a class="headerlink" href="#id1" title="Permalink to this definition">¶</a></dt>
+<dd><p>None</p>
+</dd></dl>
+
 <p class="rubric">Attributes</p>
 <table class="longtable table autosummary">
 <colgroup>
@@ -828,44 +973,80 @@ and nullify parallelisation benefits.</p>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.inverse_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.inverse_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">inverse_transform</span></code></a>(series, *args, **kwargs)</p></td>
-<td><p>Inverse-transform a (sequence of) series.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.apply_component_mask" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.apply_component_mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">apply_component_mask</span></code></a>(series[, ...])</p></td>
+<td><p>Extracts components specified by <cite>component_mask</cite> from <cite>series</cite></p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.set_n_jobs" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.set_n_jobs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_n_jobs</span></code></a>(value)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.inverse_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.inverse_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">inverse_transform</span></code></a>(series, *args[, ...])</p></td>
+<td><p>Inverse transforms a (sequence of) series by calling the user-implemented <cite>ts_inverse_transform</cite> method.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.set_n_jobs" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.set_n_jobs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_n_jobs</span></code></a>(value)</p></td>
 <td><p>Set the number of processors to be used by the transformer while processing multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.set_verbose" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.set_verbose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_verbose</span></code></a>(value)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.set_verbose" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.set_verbose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_verbose</span></code></a>(value)</p></td>
 <td><p>Set the verbosity status.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform</span></code></a>(series, *args, **kwargs)</p></td>
-<td><p>Transform a (sequence of) of series.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.stack_samples" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.stack_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stack_samples</span></code></a>(vals)</p></td>
+<td><p>Creates an array of shape <cite>(n_timesteps * n_samples, n_components)</cite> from either a <cite>TimeSeries</cite> or the <cite>array_values</cite> of a <cite>TimeSeries</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_inverse_transform</span></code></a>(series)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform</span></code></a>(series, *args[, component_mask])</p></td>
+<td><p>Transforms a (sequence of) of series by calling the user-implemeneted <cite>ts_transform</cite> method.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_inverse_transform</span></code></a>(series, params)</p></td>
 <td><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.inverse_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">inverse_transform()</span></code></a> is called.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_transform</span></code></a>(series)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_transform</span></code></a>(series, params)</p></td>
 <td><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a> is called.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.unapply_component_mask" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.unapply_component_mask"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unapply_component_mask</span></code></a>(series, vals[, ...])</p></td>
+<td><p>Adds back components previously removed by <cite>component_mask</cite> in <cite>apply_component_mask</cite> method.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.unstack_samples" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.unstack_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unstack_samples</span></code></a>(vals[, n_timesteps, ...])</p></td>
+<td><p>Reshapes the 2D array returned by <cite>stack_samples</cite> back into an array of shape <cite>(n_timesteps, n_components, n_samples)</cite>; this 'undoes' the reshaping of <cite>stack_samples</cite>.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.apply_component_mask">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">apply_component_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_ts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.apply_component_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extracts components specified by <cite>component_mask</cite> from <cite>series</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – input TimeSeries to be fed into transformer.</p></li>
+<li><p><strong>component_mask</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – Optionally, np.ndarray boolean mask of shape (n_components, 1) specifying which components to
+extract from <cite>series</cite>. The <cite>i`th component of `series</cite> is kept only if <cite>component_mask[i] = True</cite>.
+If not specified, no masking is performed.</p></li>
+<li><p><strong>return_ts</strong> – Optionally, specifies that a <cite>TimeSeries</cite> should be returned, rather than an <cite>np.ndarray</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><cite>TimeSeries</cite> (if <cite>return_ts = True</cite>) or <cite>np.ndarray</cite> (if <cite>return_ts = False</cite>) with only those components
+specified by <cite>component_mask</cite> remaining.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>masked</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.inverse_transform">
-<span class="sig-name descname"><span class="pre">inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/invertible_data_transformer.html#InvertibleDataTransformer.inverse_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.inverse_transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>Inverse-transform a (sequence of) series.</p>
-<p>In case a sequence is passed as input data, this function takes care of
-parallelising the transformation of multiple series in the sequence at the same time.</p>
+<span class="sig-name descname"><span class="pre">inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/invertible_data_transformer.html#InvertibleDataTransformer.inverse_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.inverse_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inverse transforms a (sequence of) series by calling the user-implemented <cite>ts_inverse_transform</cite> method.</p>
+<p>In case a sequence is passed as input data, this function takes care of parallelising the
+transformation of multiple series in the sequence at the same time. Additionally,
+if the <cite>mask_components</cite> attribute was set to <cite>True</cite> when instantiating <cite>InvertibleDataTransformer</cite>,
+then any provided <cite>component_mask`s will be automatically applied to each input `TimeSeries</cite>;
+please refer to ‘Notes’ for further details on component masking.</p>
+<p>Any additionally specified <cite>*args</cite> and <cite>**kwargs</cite> are automatically passed to <cite>ts_inverse_transform</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – the (sequence of) series be inverse-transformed.</p></li>
 <li><p><strong>args</strong> – Additional positional arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_inverse_transform()</span></code></a> method</p></li>
-<li><p><strong>kwargs</strong> – <p>Additional keyword arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_inverse_transform()</span></code></a> method</p>
-<dl class="simple">
-<dt>component_mask<span class="classifier">Optional[np.ndarray] = None</span></dt><dd><p>Optionally, a 1-D boolean np.ndarray of length <code class="docutils literal notranslate"><span class="pre">series.n_components</span></code> that specifies
-which components of the underlying <cite>series</cite> the Scaler should consider.</p>
-</dd>
-</dl>
-</p></li>
+<li><p><strong>component_mask</strong> (<em>Optional</em><em>[</em><em>np.ndarray</em><em>] </em><em>= None</em>) – Optionally, a 1-D boolean np.ndarray of length <code class="docutils literal notranslate"><span class="pre">series.n_components</span></code> that specifies
+which components of the underlying <cite>series</cite> the inverse transform should consider.</p></li>
+<li><p><strong>kwargs</strong> – Additional keyword arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_inverse_transform()</span></code></a> method</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -875,6 +1056,21 @@ which components of the underlying <cite>series</cite> the Scaler should conside
 <dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, List[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
 </dd>
 </dl>
+<p class="rubric">Notes</p>
+<p>If the <cite>mask_components</cite> attribute was set to <cite>True</cite> when instantiating <cite>InvertibleDataTransformer</cite>,
+then any provided <cite>component_mask`s will be automatically applied to each `TimeSeries</cite> input to
+transform; <cite>component_mask`s are simply boolean arrays of shape `(series.n_components,)</cite> that
+specify which components of each <cite>series</cite> should be transformed using <cite>ts_inverse_transform</cite> and which
+components should not. If <cite>component_mask[i]</cite> is <cite>True</cite>, then the <cite>i`th component of each
+`series</cite> will be transformed by <cite>ts_inverse_transform</cite>. Conversely, if <cite>component_mask[i]</cite> is <cite>False</cite>,
+the <cite>i`th component will be removed from each `series</cite> before being passed to <cite>ts_inverse_transform</cite>;
+after transforming this masked series, the untransformed <cite>i`th component will be ‘added back’
+to the output. Note that automatic `component_mask`ing can only be performed if the `ts_inverse_transform</cite>
+does <em>not</em> change the number of timesteps in each series; if this were to happen, then the transformed
+and untransformed components are unable to be concatenated back together along the component axis.</p>
+<p>If <cite>mask_components</cite> was set to <cite>False</cite> when instantiating <cite>InvertibleDataTransformer</cite>, then any provided
+<cite>component_masks</cite> will be passed as a keyword argument <cite>ts_inverse_transform</cite>; the user can then manually
+specify how the <cite>component_mask</cite> should be applied to each series.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -908,16 +1104,55 @@ which components of the underlying <cite>series</cite> the Scaler should conside
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.stack_samples">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">stack_samples</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vals</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.stack_samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates an array of shape <cite>(n_timesteps * n_samples, n_components)</cite> from
+either a <cite>TimeSeries</cite> or the <cite>array_values</cite> of a <cite>TimeSeries</cite>.</p>
+<p>Each column of the returned array corresponds to a component (dimension)
+of the series and is formed by concatenating all of the samples associated
+with that component together. More specifically, the <cite>i`th column is formed
+by concatenating
+`[component_i_sample_1, component_i_sample_2, …, component_i_sample_n]</cite>.</p>
+<p>Stacking is useful when implementing a transformation that applies the exact same
+change to every timestep in the timeseries. In such cases, the samples of each
+component can be stacked together into a single column, and the transformation can then be
+applied to each column, thereby ‘vectorising’ the transformation over all samples of that component;
+the <cite>unstack_samples</cite> method can then be used to reshape the output. For transformations that depend
+on the <cite>time_index</cite> or the temporal ordering of the observations, stacking should <em>not</em> be employed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>vals</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – <cite>Timeseries</cite> or <cite>np.ndarray</cite> of shape <cite>(n_timesteps, n_components, n_samples)</cite> to be ‘stacked’.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><cite>np.ndarray</cite> of shape <cite>(n_timesteps * n_samples, n_components)</cite>, where the <cite>i`th column is formed
+by concatenating all of the samples of the `i`th component in `vals</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>stacked</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.transform">
-<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>Transform a (sequence of) of series.</p>
-<p>In case a <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> is passed as input data, this function takes care of
-parallelising the transformation of multiple series in the sequence at the same time.</p>
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transforms a (sequence of) of series by calling the user-implemeneted <cite>ts_transform</cite> method.</p>
+<p>In case a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is passed as input data, this function takes care of
+parallelising the transformation of multiple series in the sequence at the same time. Additionally,
+if the <cite>mask_components</cite> attribute was set to <cite>True</cite> when instantiating <cite>BaseDataTransformer</cite>,
+then any provided <cite>component_mask`s will be automatically applied to each input `TimeSeries</cite>;
+please refer to ‘Notes’ for further details on component masking.</p>
+<p>Any additionally specified <cite>*args</cite> and <cite>**kwargs</cite> are automatically passed to <cite>ts_transform</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – (sequence of) series to be transformed.</p></li>
 <li><p><strong>args</strong> – Additional positional arguments for each <a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method call</p></li>
+<li><p><strong>component_mask</strong> (<em>Optional</em><em>[</em><em>np.ndarray</em><em>] </em><em>= None</em>) – Optionally, a 1-D boolean np.ndarray of length <code class="docutils literal notranslate"><span class="pre">series.n_components</span></code> that specifies which
+components of the underlying <cite>series</cite> the transform should consider. If the <cite>mask_components</cite>
+attribute was set to <cite>True</cite> when instantiating <cite>BaseDataTransformer</cite>, then the component mask
+will be automatically applied to each <cite>TimeSeries</cite> input. Otherwise, <cite>component_mask</cite> will be
+provided as an addition keyword argument to <cite>ts_transform</cite>. See ‘Notes’ for further details.</p></li>
 <li><p><strong>kwargs</strong> – Additional keyword arguments for each <a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method call</p></li>
 </ul>
 </dd>
@@ -928,20 +1163,79 @@ parallelising the transformation of multiple series in the sequence at the same 
 <dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, List[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
 </dd>
 </dl>
+<p class="rubric">Notes</p>
+<p>If the <cite>mask_components</cite> attribute was set to <cite>True</cite> when instantiating <cite>BaseDataTransformer</cite>,
+then any provided <cite>component_mask`s will be automatically applied to each `TimeSeries</cite> input to
+transform; <cite>component_mask`s are simply boolean arrays of shape `(series.n_components,)</cite> that
+specify which components of each <cite>series</cite> should be transformed using <cite>ts_transform</cite> and which
+components should not. If <cite>component_mask[i]</cite> is <cite>True</cite>, then the <cite>i`th component of each
+`series</cite> will be transformed by <cite>ts_transform</cite>. Conversely, if <cite>component_mask[i]</cite> is <cite>False</cite>,
+the <cite>i`th component will be removed from each `series</cite> before being passed to <cite>ts_transform</cite>;
+after transforming this masked series, the untransformed <cite>i`th component will be ‘added back’
+to the output. Note that automatic `component_mask`ing can only be performed if the `ts_transform</cite>
+does <em>not</em> change the number of timesteps in each series; if this were to happen, then the transformed
+and untransformed components are unable to be concatenated back together along the component axis.</p>
+<p>If <cite>mask_components</cite> was set to <cite>False</cite> when instantiating <cite>BaseDataTransformer</cite>, then any provided
+<cite>component_masks</cite> will be passed as a keyword argument <cite>ts_transform</cite>; the user can then manually specify
+how the <cite>component_mask</cite> should be applied to each series.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ts_inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/invertible_data_transformer.html#InvertibleDataTransformer.ts_inverse_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ts_inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/invertible_data_transformer.html#InvertibleDataTransformer.ts_inverse_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_inverse_transform" title="Permalink to this definition">¶</a></dt>
 <dd><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.inverse_transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">inverse_transform()</span></code></a> is called.</p>
-<p>The function must take as first argument a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object, and return the transformed
-<code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object. Additional parameters can be added if necessary, but in this case,
-<code class="xref py py-func docutils literal notranslate"><span class="pre">_inverse_transform_iterator()</span></code> should be redefined accordingly, to yield the necessary
-arguments to this function (See <code class="xref py py-func docutils literal notranslate"><span class="pre">_inverse_transform_iterator()</span></code> for further details)</p>
+<p>The function must take as first argument a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object and, as a second argument, a
+dictionary containing the fixed and/or fitted parameters of the transformation; this function
+should then return an inverse transformed <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object (i.e. <cite>ts_inverse_transform</cite> should
+‘undo’ the transformation performed by <cite>ts_transform</cite>).</p>
+<dl class="simple">
+<dt>The <cite>params</cite> dictionary <em>can</em> contain up to two keys:</dt><dd><p>1. <cite>params[‘fixed’]</cite> stores the fixed parameters of the transformation (i.e. attributed
+defined in the <cite>__init__</cite> method of the child-most class <em>before</em> <cite>super().__init__</cite> is called);
+<cite>params[‘fixed’]</cite> is a dictionary itself, whose keys are the names of the fixed parameter
+attributes. For example, if <cite>_my_fixed_param</cite> is defined as an attribute in the child-most
+class, then this fixed parameter value can be accessed through <cite>params[‘fixed’][‘_my_fixed_param’]</cite>.
+2. If the transform inherits from the <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">FittableDataTransformer</span></code></a> class, then <cite>params[‘fitted’]</cite>
+will store the fitted parameters of the transformation; the fitted parameters are simply the output(s)
+returned by the <cite>ts_fit</cite> function, whatever those output(s) may be. See <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">FittableDataTransformer</span></code></a>
+for further details about fitted parameters.</p>
+</dd>
+</dl>
+<p>Any positional/keyword argument supplied to the <cite>transform</cite> method are passed as positional/keyword arguments
+to <cite>ts_inverse_transform</cite>; hence, <cite>ts_inverse_transform</cite> should also accept <cite>*args</cite> and/or <cite>**kwargs</cite> if
+positional/keyword arguments are passed to <cite>transform</cite>. Note that if the <cite>mask_components</cite> attribute of
+<cite>InvertibleDataTransformer</cite> is set to <cite>False</cite>, then the <cite>component_mask</cite> provided to <cite>transform</cite> will be passed
+as an additional keyword argument to <cite>ts_inverse_transform</cite>.</p>
+<p>The <cite>BaseDataTransformer</cite> class, from which <cite>InvertibleDataTransformer</cite> inherits, includes some helper methods
+which may prove useful when implementing a <cite>ts_inverse_transform</cite> function:</p>
+<blockquote>
+<div><p>1. The <cite>apply_component_mask</cite> and <cite>unapply_component_mask</cite> methods, which apply and ‘unapply’
+<cite>component_mask`s to a `TimeSeries</cite> respectively; these methods are automatically called in <cite>transform</cite> if
+the <cite>mask_component</cite> attribute of <cite>InvertibleDataTransformer</cite> is set to <cite>True</cite>, but you may want to manually
+call them if you set <cite>mask_components</cite> to <cite>False</cite> and wish to manually specify how <cite>component_mask`s are
+applied to a `TimeSeries</cite>.
+2. The <cite>stack_samples</cite> method, which stacks all the samples in a <cite>TimeSeries</cite> along
+the component axis, so that the <cite>TimeSeries</cite> goes from shape <cite>(n_timesteps, n_components, n_samples)</cite> to
+shape <cite>(n_timesteps, n_components * n_samples)</cite>. This stacking is useful if a pointwise inverse transform
+is being implemented (i.e. transforming the value at time <cite>t</cite> depends only on the value of the series at
+that time <cite>t</cite>). Once transformed, the stacked <cite>TimeSeries</cite> can be ‘unstacked’ using the <cite>unstack_samples</cite>
+method.</p>
+</div></blockquote>
 <p>This method is not implemented in the base class and must be implemented in the deriving classes.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>(</strong><strong>TimeSeries</strong><strong>)</strong> (<em>series</em>) – TimeSeries which will be transformed.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – series to be transformed.</p></li>
+<li><p><strong>params</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]) – Dictionary containing the parameters of the transformation function. Fixed parameters
+(i.e. attributes defined in the child-most class of the transformation prior to
+calling <cite>super.__init__()</cite>) are stored under the <cite>‘fixed’</cite> key. If the transformation
+inherits from the <cite>FittableDataTransformer</cite> class, then the fitted parameters of the
+transformation (i.e. the values returned by <cite>ts_fit</cite>) are stored under the
+<cite>‘fitted’</cite> key.</p></li>
+<li><p><strong>args</strong> – Any additional keyword arguments provided to <cite>inverse_transform</cite>.</p></li>
+<li><p><strong>kwargs</strong> – Any additional keyword arguments provided to <cite>inverse_transform</cite>. Note that if the <cite>mask_component</cite>
+attribute of <cite>InvertibleDataTransformer</cite> is set to <cite>False</cite>, then <cite>component_mask</cite> will
+be passed as a keyword argument.</p></li>
+</ul>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
@@ -958,16 +1252,58 @@ bottleneck and nullify parallelisation benefits.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_transform">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ts_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_transform" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ts_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.ts_transform" title="Permalink to this definition">¶</a></dt>
 <dd><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.transform" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a> is called.</p>
-<p>The function must take as first argument a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object, and return the transformed <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>
-object. If more parameters are added as input in the derived classes, the <code class="docutils literal notranslate"><span class="pre">_transform_iterator()</span></code> should be
-redefined accordingly, to yield the necessary arguments to this function (See <code class="docutils literal notranslate"><span class="pre">_transform_iterator()</span></code> for
-further details).</p>
 <p>This method is not implemented in the base class and must be implemented in the deriving classes.</p>
+<p>The function must take as first argument a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object and, as a second argument, a
+dictionary containing the fixed and/or fitted parameters of the transformation; this function
+should then return a transformed <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object.</p>
+<dl class="simple">
+<dt>The <cite>params</cite> dictionary <em>can</em> contain up to two keys:</dt><dd><p>1. <cite>params[‘fixed’]</cite> stores the fixed parameters of the transformation (i.e. attributed
+defined in the <cite>__init__</cite> method of the child-most class <em>before</em> <cite>super().__init__</cite> is called);
+<cite>params[‘fixed’]</cite> is a dictionary itself, whose keys are the names of the fixed parameter
+attributes. For example, if <cite>_my_fixed_param</cite> is defined as an attribute in the child-most
+class, then this fixed parameter value can be accessed through <cite>params[‘fixed’][‘_my_fixed_param’]</cite>.
+2. If the transform inherits from the <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">FittableDataTransformer</span></code></a> class, then <cite>params[‘fitted’]</cite>
+will store the fitted parameters of the transformation; the fitted parameters are simply the output(s)
+returned by the <cite>ts_fit</cite> function, whatever those output(s) may be. See <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">FittableDataTransformer</span></code></a>
+for further details about fitted parameters.</p>
+</dd>
+</dl>
+<p>Any positional/keyword argument supplied to the <cite>transform</cite> method are passed as positional/keyword arguments
+to <cite>ts_transform</cite>; hence, <cite>ts_transform</cite> should also accept <cite>*args</cite> and/or <cite>**kwargs</cite> if positional/keyword
+arguments are passed to <cite>transform</cite>. Note that if the <cite>mask_components</cite> attribute of <cite>BaseDataTransformer</cite>
+is set to <cite>False</cite>, then the <cite>component_mask</cite> provided to <cite>transform</cite> will be passed as an additional keyword
+argument to <cite>ts_transform</cite>.</p>
+<p>The <cite>BaseDataTransformer</cite> class includes some helper methods which may prove useful when implementing a
+<cite>ts_transform</cite> function:</p>
+<blockquote>
+<div><p>1. The <cite>apply_component_mask</cite> and <cite>unapply_component_mask</cite> methods, which apply and ‘unapply’
+<cite>component_mask`s to a `TimeSeries</cite> respectively; these methods are automatically called in <cite>transform</cite>
+if the <cite>mask_component</cite> attribute of <cite>BaseDataTransformer</cite> is set to <cite>True</cite>, but you may want to manually
+call them if you set <cite>mask_components</cite> to <cite>False</cite> and wish to manually specify how <cite>component_mask`s are
+applied to a `TimeSeries</cite>.
+2. The <cite>stack_samples</cite> method, which stacks all the samples in a <cite>TimeSeries</cite> along
+the component axis, so that the <cite>TimeSeries</cite> goes from shape <cite>(n_timesteps, n_components, n_samples)</cite> to
+shape <cite>(n_timesteps, n_components * n_samples)</cite>. This stacking is useful if a pointwise transform is being
+implemented (i.e. transforming the value at time <cite>t</cite> depends only on the value of the series at that
+time <cite>t</cite>). Once transformed, the stacked <cite>TimeSeries</cite> can be ‘unstacked’ using the <cite>unstack_samples</cite> method.</p>
+</div></blockquote>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – series to be transformed.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – series to be transformed.</p></li>
+<li><p><strong>params</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]) – Dictionary containing the parameters of the transformation function. Fixed parameters
+(i.e. attributes defined in the child-most class of the transformation prior to
+calling <cite>super.__init__()</cite>) are stored under the <cite>‘fixed’</cite> key. If the transformation
+inherits from the <cite>FittableDataTransformer</cite> class, then the fitted parameters of the
+transformation (i.e. the values returned by <cite>ts_fit</cite>) are stored under the
+<cite>‘fitted’</cite> key.</p></li>
+<li><p><strong>args</strong> – Any poisitional arguments provided in addition to <cite>series</cite> when</p></li>
+<li><p><strong>kwargs</strong> – Any additional keyword arguments provided to <cite>transform</cite>. Note that if the <cite>mask_component</cite>
+attribute of <cite>BaseDataTransformer</cite> is set to <cite>False</cite>, then <cite>component_mask</cite> will
+be passed as a keyword argument.</p></li>
+</ul>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
@@ -978,6 +1314,57 @@ bottleneck and nullify parallelisation benefits.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.unapply_component_mask">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">unapply_component_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.unapply_component_mask" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds back components previously removed by <cite>component_mask</cite> in <cite>apply_component_mask</cite> method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – input TimeSeries that was fed into transformer.</p></li>
+<li><p><strong>vals</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – <cite>np.ndarray</cite> or <cite>TimeSeries</cite> to ‘unmask’</p></li>
+<li><p><strong>component_mask</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – Optionally, np.ndarray boolean mask of shape (n_components, 1) specifying which components were extracted
+from <cite>series</cite>. If given, insert <cite>vals</cite> back into the columns of the original array. If not specified,
+nothing is ‘unmasked’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><cite>TimeSeries</cite> (if <cite>vals</cite> is a <cite>TimeSeries</cite>) or <cite>np.ndarray</cite> (if <cite>vals</cite> is an <cite>np.ndarray</cite>) with those
+components previously removed by <cite>component_mask</cite> now ‘added back’.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>unmasked</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.unstack_samples">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">unstack_samples</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_timesteps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.unstack_samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reshapes the 2D array returned by <cite>stack_samples</cite> back into an array of shape
+<cite>(n_timesteps, n_components, n_samples)</cite>; this ‘undoes’ the reshaping of
+<cite>stack_samples</cite>. Either <cite>n_components</cite>, <cite>n_samples</cite>, or <cite>series</cite> must be specified.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vals</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – <cite>np.ndarray</cite> of shape <cite>(n_timesteps * n_samples, n_components)</cite> to be ‘unstacked’.</p></li>
+<li><p><strong>n_timesteps</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, the number of timesteps in the array originally passed to <cite>stack_samples</cite>.
+Does <em>not</em> need to be provided if <cite>series</cite> is specified.</p></li>
+<li><p><strong>n_samples</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, the number of samples in the array originally passed to <cite>stack_samples</cite>.
+Does <em>not</em> need to be provided if <cite>series</cite> is specified.</p></li>
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – Optionally, the <cite>TimeSeries</cite> object used to create <cite>vals</cite>; <cite>n_samples</cite> is inferred
+from this.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><cite>np.ndarray</cite> of shape <cite>(n_timesteps, n_components, n_samples)</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>unstacked</p>
 </dd>
 </dl>
 </dd></dl>

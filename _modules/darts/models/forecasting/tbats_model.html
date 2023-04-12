@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>darts.models.forecasting.tbats &#8212; darts  documentation</title>
+    <title>darts.models.forecasting.tbats_model &#8212; darts  documentation</title>
     
   <link href="../../../../_static/css/theme.css" rel="stylesheet">
   <link href="../../../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -164,7 +164,7 @@
               
               <div>
                 
-  <h1>Source code for darts.models.forecasting.tbats</h1><div class="highlight"><pre>
+  <h1>Source code for darts.models.forecasting.tbats_model</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">BATS and TBATS</span>
 <span class="sd">--------------</span>
@@ -360,9 +360,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">random_state</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="s2">&quot;(T)BATS&quot;</span>
-
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">pass</span>
@@ -405,12 +402,12 @@
         <span class="k">return</span> <span class="mi">3</span>
 
 
-<div class="viewcode-block" id="TBATS"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.tbats.html#darts.models.forecasting.tbats.TBATS">[docs]</a><span class="k">class</span> <span class="nc">TBATS</span><span class="p">(</span><span class="n">_BaseBatsTbatsModel</span><span class="p">):</span>
+<div class="viewcode-block" id="TBATS"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.tbats_model.html#darts.models.forecasting.tbats_model.TBATS">[docs]</a><span class="k">class</span> <span class="nc">TBATS</span><span class="p">(</span><span class="n">_BaseBatsTbatsModel</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">tbats_TBATS</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="BATS"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.tbats.html#darts.models.forecasting.tbats.BATS">[docs]</a><span class="k">class</span> <span class="nc">BATS</span><span class="p">(</span><span class="n">_BaseBatsTbatsModel</span><span class="p">):</span>
+<div class="viewcode-block" id="BATS"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.tbats_model.html#darts.models.forecasting.tbats_model.BATS">[docs]</a><span class="k">class</span> <span class="nc">BATS</span><span class="p">(</span><span class="n">_BaseBatsTbatsModel</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">tbats_BATS</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span></div>
 </pre></div>

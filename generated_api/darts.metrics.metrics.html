@@ -357,6 +357,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.diff.html">
+       Differencing Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
        Fittable Data Transformer Base Class
       </a>
@@ -466,6 +471,11 @@
    </i>
   </label>
   <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.models.components.statsforecast_utils.html">
+     StatsForecast utils
+    </a>
+   </li>
    <li class="toctree-l2 has-children">
     <a class="reference internal" href="darts.models.filtering.html">
      Filtering Models
@@ -487,7 +497,7 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.filtering.moving_average.html">
+      <a class="reference internal" href="darts.models.filtering.moving_average_filter.html">
        Moving Average
       </a>
      </li>
@@ -609,12 +619,22 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_ets.html">
-       StatsForecastETS
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
+       StatsForecastAutoCES
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tbats.html">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
+       StatsForecastAutoETS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
+       StatsForecastAutoTheta
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tbats_model.html">
        BATS and TBATS
       </a>
      </li>
@@ -1122,6 +1142,43 @@ passed as input, parallelising operations regarding different <code class="docut
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="darts.metrics.metrics.quantile_loss">
+<span class="sig-prename descclassname"><span class="pre">darts.metrics.metrics.</span></span><span class="sig-name descname"><span class="pre">quantile_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tau=0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intersect=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inter_reduction=&lt;function</span> <span class="pre">&lt;lambda&gt;&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#quantile_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.metrics.metrics.quantile_loss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Also known as Pinball Loss, given a time series of actual values <span class="math notranslate nohighlight">\(y\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>
+and a time series of stochastic predictions (containing N samples) <span class="math notranslate nohighlight">\(y'\)</span> of shape <span class="math notranslate nohighlight">\(T  x N\)</span>
+quantile loss is a metric that quantifies the accuracy of a specific quantile <span class="math notranslate nohighlight">\(tau\)</span>
+from the predicted value distribution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>actual_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) actual series.</p></li>
+<li><p><strong>pred_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) predicted series.</p></li>
+<li><p><strong>tau</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The quantile (float [0, 1]) of interest for the loss.</p></li>
+<li><p><strong>intersect</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – For time series that are overlapping in time without having the same time index, setting <cite>True</cite>
+will consider the values only over their common time interval (intersection in time).</p></li>
+<li><p><strong>reduction</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – Function taking as input a <code class="docutils literal notranslate"><span class="pre">np.ndarray</span></code> and returning a scalar value. This function is used to aggregate
+the metrics of different components in case of multivariate <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instances.</p></li>
+<li><p><strong>inter_reduction</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]]) – Function taking as input a <code class="docutils literal notranslate"><span class="pre">np.ndarray</span></code> and returning either a scalar value or a <code class="docutils literal notranslate"><span class="pre">np.ndarray</span></code>.
+This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
+<code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code>. Defaults to the identity function, which returns the pairwise metrics for each pair
+of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> received in input. Example: <code class="docutils literal notranslate"><span class="pre">inter_reduction=np.mean</span></code>, will return the average of the
+pairwise metrics.</p></li>
+<li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
+passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The quantile loss metric</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
 </dd>
 </dl>
 </dd></dl>

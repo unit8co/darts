@@ -1379,6 +1379,83 @@
 
     <span class="n">rho_loss</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">z_true</span> <span class="o">-</span> <span class="n">z_hat_rho</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">rho</span> <span class="o">*</span> <span class="n">pred_below</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">rho</span><span class="p">)</span> <span class="o">*</span> <span class="n">pred_above</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">rho_loss</span> <span class="o">/</span> <span class="n">z_true</span></div>
+
+
+<span class="c1"># Quantile Loss (Pinball Loss)</span>
+<div class="viewcode-block" id="quantile_loss"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.quantile_loss">[docs]</a><span class="nd">@multi_ts_support</span>
+<span class="nd">@multivariate_support</span>
+<span class="k">def</span> <span class="nf">quantile_loss</span><span class="p">(</span>
+    <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">tau</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span>
+    <span class="n">inter_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span>
+    <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Also known as Pinball Loss, given a time series of actual values :math:`y` of length :math:`T`</span>
+<span class="sd">    and a time series of stochastic predictions (containing N samples) :math:`y&#39;` of shape :math:`T  x N`</span>
+<span class="sd">    quantile loss is a metric that quantifies the accuracy of a specific quantile :math:`tau`</span>
+<span class="sd">    from the predicted value distribution.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    actual_series</span>
+<span class="sd">        The (sequence of) actual series.</span>
+<span class="sd">    pred_series</span>
+<span class="sd">        The (sequence of) predicted series.</span>
+<span class="sd">    tau</span>
+<span class="sd">        The quantile (float [0, 1]) of interest for the loss.</span>
+<span class="sd">    intersect</span>
+<span class="sd">        For time series that are overlapping in time without having the same time index, setting `True`</span>
+<span class="sd">        will consider the values only over their common time interval (intersection in time).</span>
+<span class="sd">    reduction</span>
+<span class="sd">        Function taking as input a ``np.ndarray`` and returning a scalar value. This function is used to aggregate</span>
+<span class="sd">        the metrics of different components in case of multivariate ``TimeSeries`` instances.</span>
+<span class="sd">    inter_reduction</span>
+<span class="sd">        Function taking as input a ``np.ndarray`` and returning either a scalar value or a ``np.ndarray``.</span>
+<span class="sd">        This function can be used to aggregate the metrics of different series in case the metric is evaluated on a</span>
+<span class="sd">        ``Sequence[TimeSeries]``. Defaults to the identity function, which returns the pairwise metrics for each pair</span>
+<span class="sd">        of ``TimeSeries`` received in input. Example: ``inter_reduction=np.mean``, will return the average of the</span>
+<span class="sd">        pairwise metrics.</span>
+<span class="sd">    n_jobs</span>
+<span class="sd">        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is</span>
+<span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
+<span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
+<span class="sd">    verbose</span>
+<span class="sd">        Optionally, whether to print operations progress</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        The quantile loss metric</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">raise_if_not</span><span class="p">(</span>
+        <span class="n">pred_series</span><span class="o">.</span><span class="n">is_stochastic</span><span class="p">,</span>
+        <span class="s2">&quot;quantile (pinball) loss should only be computed for stochastic predicted TimeSeries.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">y</span><span class="p">,</span> <span class="n">y_hat</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span>
+        <span class="n">actual_series</span><span class="p">,</span>
+        <span class="n">pred_series</span><span class="p">,</span>
+        <span class="n">intersect</span><span class="p">,</span>
+        <span class="n">stochastic_quantile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">remove_nan_union</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">ts_length</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">sample_size</span> <span class="o">=</span> <span class="n">y_hat</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">ts_length</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">sample_size</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">y_hat</span> <span class="o">=</span> <span class="n">y_hat</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+        <span class="n">ts_length</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">sample_size</span>
+    <span class="p">)</span>  <span class="c1"># make sure y shape == y_hat shape</span>
+
+    <span class="n">errors</span> <span class="o">=</span> <span class="n">y</span> <span class="o">-</span> <span class="n">y_hat</span>
+    <span class="n">losses</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">((</span><span class="n">tau</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">errors</span><span class="p">,</span> <span class="n">tau</span> <span class="o">*</span> <span class="n">errors</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">losses</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span></div>
 </pre></div>
 
               </div>

@@ -355,6 +355,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.diff.html">
+       Differencing Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
        Fittable Data Transformer Base Class
       </a>
@@ -464,6 +469,11 @@
    </i>
   </label>
   <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.models.components.statsforecast_utils.html">
+     StatsForecast utils
+    </a>
+   </li>
    <li class="toctree-l2 has-children">
     <a class="reference internal" href="darts.models.filtering.html">
      Filtering Models
@@ -485,7 +495,7 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.filtering.moving_average.html">
+      <a class="reference internal" href="darts.models.filtering.moving_average_filter.html">
        Moving Average
       </a>
      </li>
@@ -607,12 +617,22 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_ets.html">
-       StatsForecastETS
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
+       StatsForecastAutoCES
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tbats.html">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
+       StatsForecastAutoETS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
+       StatsForecastAutoTheta
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tbats_model.html">
        BATS and TBATS
       </a>
      </li>
@@ -879,6 +899,24 @@
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>Union[pd.RangeIndex, pd.DatetimeIndex]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="darts.utils.utils.get_single_series">
+<span class="sig-prename descclassname"><span class="pre">darts.utils.utils.</span></span><span class="sig-name descname"><span class="pre">get_single_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/utils.html#get_single_series"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.utils.get_single_series" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a single (first) TimeSeries or <cite>None</cite> from <cite>ts</cite>. Returns <cite>ts</cite> if  <cite>ts</cite> is a TimeSeries, <cite>ts[0]</cite> if
+<cite>ts</cite> is a Sequence of TimeSeries. Otherwise, returns <cite>None</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>ts</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – None, a single TimeSeries, or a sequence of TimeSeries.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><cite>ts</cite> if  <cite>ts</cite> is a TimeSeries, <cite>ts[0]</cite> if <cite>ts</cite> is a Sequence of TimeSeries. Otherwise, returns <cite>None</cite></p>
 </dd>
 </dl>
 </dd></dl>

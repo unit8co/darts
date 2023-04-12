@@ -183,13 +183,16 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.regression_model</span> <span class="kn">import</span> <span class="n">RegressionModel</span><span class="p">,</span> <span class="n">_LikelihoodMixin</span>
+<span class="kn">from</span> <span class="nn">darts.models.forecasting.regression_model</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">RegressionModelWithCategoricalCovariates</span><span class="p">,</span>
+    <span class="n">_LikelihoodMixin</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="LightGBMModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel">[docs]</a><span class="k">class</span> <span class="nc">LightGBMModel</span><span class="p">(</span><span class="n">RegressionModel</span><span class="p">,</span> <span class="n">_LikelihoodMixin</span><span class="p">):</span>
+<div class="viewcode-block" id="LightGBMModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel">[docs]</a><span class="k">class</span> <span class="nc">LightGBMModel</span><span class="p">(</span><span class="n">RegressionModelWithCategoricalCovariates</span><span class="p">,</span> <span class="n">_LikelihoodMixin</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">lags</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -201,6 +204,10 @@
         <span class="n">quantiles</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">multi_models</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">categorical_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">categorical_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">categorical_static_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;LGBM Model</span>
@@ -254,6 +261,24 @@
 <span class="sd">        multi_models</span>
 <span class="sd">            If True, a separate model will be trained for each future lag to predict. If False, a single model is</span>
 <span class="sd">            trained to predict at step &#39;output_chunk_length&#39; in the future. Default: True.</span>
+<span class="sd">        use_static_covariates</span>
+<span class="sd">            Whether the model should use static covariate information in case the input `series` passed to ``fit()``</span>
+<span class="sd">            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce</span>
+<span class="sd">            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()`.</span>
+<span class="sd">        categorical_past_covariates</span>
+<span class="sd">            Optionally, component name or list of component names specifying the past covariates that should be treated</span>
+<span class="sd">            as categorical by the underlying `lightgbm.LightGBMRegressor`. It&#39;s recommended that the components that</span>
+<span class="sd">            are treated as categorical are integer-encoded. For more information on how LightGBM handles categorical</span>
+<span class="sd">            features, visit: `Categorical feature support documentation</span>
+<span class="sd">            &lt;https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features&gt;`_</span>
+<span class="sd">        categorical_future_covariates</span>
+<span class="sd">            Optionally, component name or list of component names specifying the future covariates that should be</span>
+<span class="sd">            treated as categorical by the underlying `lightgbm.LightGBMRegressor`. It&#39;s recommended that the components</span>
+<span class="sd">            that are treated as categorical are integer-encoded.</span>
+<span class="sd">        categorical_static_covariates</span>
+<span class="sd">            Optionally, string or list of strings specifying the static covariates that should be treated as categorical</span>
+<span class="sd">            by the underlying `lightgbm.LightGBMRegressor`. It&#39;s recommended that the static covariates that are</span>
+<span class="sd">            treated as categorical are integer-encoded.</span>
 <span class="sd">        **kwargs</span>
 <span class="sd">            Additional keyword arguments passed to `lightgbm.LGBRegressor`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -284,12 +309,11 @@
             <span class="n">add_encoders</span><span class="o">=</span><span class="n">add_encoders</span><span class="p">,</span>
             <span class="n">multi_models</span><span class="o">=</span><span class="n">multi_models</span><span class="p">,</span>
             <span class="n">model</span><span class="o">=</span><span class="n">lgb</span><span class="o">.</span><span class="n">LGBMRegressor</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">),</span>
+            <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
+            <span class="n">categorical_past_covariates</span><span class="o">=</span><span class="n">categorical_past_covariates</span><span class="p">,</span>
+            <span class="n">categorical_future_covariates</span><span class="o">=</span><span class="n">categorical_future_covariates</span><span class="p">,</span>
+            <span class="n">categorical_static_covariates</span><span class="o">=</span><span class="n">categorical_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
-
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="p">:</span>
-            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;LGBModel(lags=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="si">}</span><span class="s2">, likelihood=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="si">}</span><span class="s2">)&quot;</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;LGBModel(lags=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="si">}</span><span class="s2">)&quot;</span>
 
 <div class="viewcode-block" id="LightGBMModel.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -329,7 +353,6 @@
 <span class="sd">         **kwargs</span>
 <span class="sd">            Additional kwargs passed to `lightgbm.LGBRegressor.fit()`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="k">if</span> <span class="n">val_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;eval_set&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_lagged_data</span><span class="p">(</span>
                 <span class="n">target_series</span><span class="o">=</span><span class="n">val_series</span><span class="p">,</span>

@@ -182,7 +182,7 @@
 <span class="kn">from</span> <span class="nn">tqdm.notebook</span> <span class="kn">import</span> <span class="n">tqdm</span> <span class="k">as</span> <span class="n">tqdm_notebook</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="n">generate_index</span>
 
 <span class="k">try</span><span class="p">:</span>
@@ -368,68 +368,106 @@
     <span class="n">n</span> <span class="o">=</span> <span class="n">SimpleNamespace</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="c1"># check forecast horizon</span>
-    <span class="n">forecast_horizon</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">forecast_horizon</span>
     <span class="n">raise_if_not</span><span class="p">(</span>
-        <span class="n">forecast_horizon</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">n</span><span class="o">.</span><span class="n">forecast_horizon</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
         <span class="s2">&quot;The provided forecasting horizon must be a positive integer.&quot;</span><span class="p">,</span>
         <span class="n">logger</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="c1"># check stride</span>
-    <span class="n">stride</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">stride</span>
     <span class="n">raise_if_not</span><span class="p">(</span>
-        <span class="n">stride</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;The provided stride parameter must be a positive integer.&quot;</span><span class="p">,</span> <span class="n">logger</span>
+        <span class="n">n</span><span class="o">.</span><span class="n">stride</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s2">&quot;The provided stride parameter must be a positive integer.&quot;</span><span class="p">,</span>
+        <span class="n">logger</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="n">series</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
 
-    <span class="c1"># check start parameter</span>
-    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="s2">&quot;start&quot;</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
-            <span class="n">raise_if_not</span><span class="p">(</span>
-                <span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">n</span><span class="o">.</span><span class="n">start</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">&quot;`start` should be between 0.0 and 1.0.&quot;</span><span class="p">,</span> <span class="n">logger</span>
-            <span class="p">)</span>
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)):</span>
-            <span class="n">raise_if_not</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">start</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">)</span>
-            <span class="n">raise_if</span><span class="p">(</span>
-                <span class="nb">any</span><span class="p">([</span><span class="n">n</span><span class="o">.</span><span class="n">start</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">serie</span><span class="p">)</span> <span class="k">for</span> <span class="n">serie</span> <span class="ow">in</span> <span class="n">series</span><span class="p">]),</span>
-                <span class="s2">&quot;`start` index should be smaller than length of the series&quot;</span><span class="p">,</span>
-                <span class="n">logger</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">elif</span> <span class="n">n</span><span class="o">.</span><span class="n">start</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">n</span><span class="o">.</span><span class="n">start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># check start parameter in general (non series dependent)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">)):</span>
             <span class="n">raise_log</span><span class="p">(</span>
                 <span class="ne">TypeError</span><span class="p">(</span>
                     <span class="s2">&quot;`start` needs to be either `float`, `int`, `pd.Timestamp` or `None`&quot;</span>
                 <span class="p">),</span>
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">n</span><span class="o">.</span><span class="n">start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">serie</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">series</span><span class="p">):</span>
-
-            <span class="n">start</span> <span class="o">=</span> <span class="n">serie</span><span class="o">.</span><span class="n">get_timestamp_at_point</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">start</span><span class="p">)</span>
-
-            <span class="c1"># check start parameter</span>
-            <span class="n">raise_if</span><span class="p">(</span>
-                <span class="n">start</span> <span class="o">==</span> <span class="n">serie</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span>
-                <span class="sa">f</span><span class="s2">&quot;`start` timestamp is the last timestamp of the series </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
-                <span class="n">logger</span><span class="p">,</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+            <span class="n">raise_if_not</span><span class="p">(</span>
+                <span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">n</span><span class="o">.</span><span class="n">start</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">&quot;`start` should be between 0.0 and 1.0.&quot;</span><span class="p">,</span> <span class="n">logger</span>
             <span class="p">)</span>
-            <span class="n">raise_if</span><span class="p">(</span>
-                <span class="n">start</span> <span class="o">==</span> <span class="n">serie</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span>
-                <span class="s2">&quot;`start` corresponds to the first timestamp of the series </span><span class="si">{}</span><span class="s2">, resulting &quot;</span>
-                <span class="s2">&quot;in empty training set&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">idx</span><span class="p">),</span>
-                <span class="n">logger</span><span class="p">,</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)):</span>
+            <span class="n">raise_if_not</span><span class="p">(</span>
+                <span class="n">n</span><span class="o">.</span><span class="n">start</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;if `start` is an integer, must be `&gt;= 0`.&quot;</span><span class="p">,</span> <span class="n">logger</span>
             <span class="p">)</span>
+
+        <span class="c1"># verbose error messages</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">):</span>
+            <span class="n">start_value_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;`start` value `</span><span class="si">{</span><span class="n">n</span><span class="o">.</span><span class="n">start</span><span class="si">}</span><span class="s2">` corresponding to timestamp&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">start_value_msg</span> <span class="o">=</span> <span class="s2">&quot;`start` time&quot;</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">series_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">series</span><span class="p">):</span>
+            <span class="c1"># check specifically for int and Timestamp as error by `get_timestamp_at_point` is too generic</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">n</span><span class="o">.</span><span class="n">start</span> <span class="o">&gt;</span> <span class="n">series_</span><span class="o">.</span><span class="n">end_time</span><span class="p">():</span>
+                    <span class="n">raise_log</span><span class="p">(</span>
+                        <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;`start` time `</span><span class="si">{</span><span class="n">n</span><span class="o">.</span><span class="n">start</span><span class="si">}</span><span class="s2">` is after the last timestamp `</span><span class="si">{</span><span class="n">series_</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span><span class="si">}</span><span class="s2">` of the &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;series at index: </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">.&quot;</span>
+                        <span class="p">),</span>
+                        <span class="n">logger</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">elif</span> <span class="n">n</span><span class="o">.</span><span class="n">start</span> <span class="o">&lt;</span> <span class="n">series_</span><span class="o">.</span><span class="n">start_time</span><span class="p">():</span>
+                    <span class="n">raise_log</span><span class="p">(</span>
+                        <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;`start` time `</span><span class="si">{</span><span class="n">n</span><span class="o">.</span><span class="n">start</span><span class="si">}</span><span class="s2">` is before the first timestamp `</span><span class="si">{</span><span class="n">series_</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span><span class="si">}</span><span class="s2">` of the &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;series at index: </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">.&quot;</span>
+                        <span class="p">),</span>
+                        <span class="n">logger</span><span class="p">,</span>
+                    <span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">series_</span><span class="o">.</span><span class="n">has_datetime_index</span>
+                    <span class="ow">or</span> <span class="p">(</span><span class="n">series_</span><span class="o">.</span><span class="n">has_range_index</span> <span class="ow">and</span> <span class="n">series_</span><span class="o">.</span><span class="n">freq</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="p">)</span> <span class="ow">and</span> <span class="n">n</span><span class="o">.</span><span class="n">start</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series_</span><span class="p">):</span>
+                    <span class="n">raise_log</span><span class="p">(</span>
+                        <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;`start` index `</span><span class="si">{</span><span class="n">n</span><span class="o">.</span><span class="n">start</span><span class="si">}</span><span class="s2">` is out of bounds for series of length </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">series_</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;at index: </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">.&quot;</span>
+                        <span class="p">),</span>
+                        <span class="n">logger</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">elif</span> <span class="p">(</span>
+                    <span class="n">series_</span><span class="o">.</span><span class="n">has_range_index</span> <span class="ow">and</span> <span class="n">series_</span><span class="o">.</span><span class="n">freq</span> <span class="o">&gt;</span> <span class="mi">1</span>
+                <span class="p">)</span> <span class="ow">and</span> <span class="n">n</span><span class="o">.</span><span class="n">start</span> <span class="o">&gt;</span> <span class="n">series_</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="n">raise_log</span><span class="p">(</span>
+                        <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;`start` index `</span><span class="si">{</span><span class="n">n</span><span class="o">.</span><span class="n">start</span><span class="si">}</span><span class="s2">` is larger than the last index `</span><span class="si">{</span><span class="n">series_</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">` &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;for series at index: </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">.&quot;</span>
+                        <span class="p">),</span>
+                        <span class="n">logger</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+            <span class="n">start</span> <span class="o">=</span> <span class="n">series_</span><span class="o">.</span><span class="n">get_timestamp_at_point</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">start</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">n</span><span class="o">.</span><span class="n">retrain</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span> <span class="ow">and</span> <span class="n">start</span> <span class="o">==</span> <span class="n">series_</span><span class="o">.</span><span class="n">start_time</span><span class="p">():</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">start_value_msg</span><span class="si">}</span><span class="s2"> `</span><span class="si">{</span><span class="n">start</span><span class="si">}</span><span class="s2">` is the first timestamp of the series </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">, resulting in an &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;empty training set.&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
 
             <span class="c1"># check that overlap_end and start together form a valid combination</span>
             <span class="n">overlap_end</span> <span class="o">=</span> <span class="n">n</span><span class="o">.</span><span class="n">overlap_end</span>
-
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">overlap_end</span><span class="p">:</span>
-                <span class="n">raise_if_not</span><span class="p">(</span>
-                    <span class="n">start</span> <span class="o">+</span> <span class="n">serie</span><span class="o">.</span><span class="n">freq</span> <span class="o">*</span> <span class="n">forecast_horizon</span> <span class="ow">in</span> <span class="n">serie</span><span class="p">,</span>
-                    <span class="s2">&quot;`start` timestamp is too late in the series </span><span class="si">{}</span><span class="s2"> to make any predictions with&quot;</span>
-                    <span class="s2">&quot;`overlap_end` set to `False`.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">idx</span><span class="p">),</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">overlap_end</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span>
+                <span class="n">start</span> <span class="o">+</span> <span class="p">(</span><span class="n">series_</span><span class="o">.</span><span class="n">freq</span> <span class="o">*</span> <span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">forecast_horizon</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span> <span class="ow">in</span> <span class="n">series_</span>
+            <span class="p">):</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">start_value_msg</span><span class="si">}</span><span class="s2"> `</span><span class="si">{</span><span class="n">start</span><span class="si">}</span><span class="s2">` is too late in the series </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2"> to make any predictions with &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;`overlap_end` set to `False`.&quot;</span>
+                    <span class="p">),</span>
                     <span class="n">logger</span><span class="p">,</span>
                 <span class="p">)</span>
 
@@ -486,25 +524,6 @@
         <span class="s2">&quot;quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles &quot;</span>
         <span class="s2">&quot;higher than `q=0.5`&quot;</span><span class="p">,</span>
     <span class="p">)</span>
-
-
-<span class="k">def</span> <span class="nf">_retrain_wrapper</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Utility function that keeps original signature in `retrain` function param in `historical_forecasts` method&quot;&quot;&quot;</span>
-
-    <span class="nd">@wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-
-        <span class="n">original_signature</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">signature</span><span class="p">(</span><span class="n">func</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span>
-            <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">original_signature</span><span class="p">}</span>
-        <span class="p">)</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
-            <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Return value of `retrain` must be bool&quot;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">result</span>
-
-    <span class="k">return</span> <span class="n">wrapper</span>
 
 
 <div class="viewcode-block" id="series2seq"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.series2seq">[docs]</a><span class="k">def</span> <span class="nf">series2seq</span><span class="p">(</span>
@@ -646,6 +665,28 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">return</span> <span class="n">slice_index</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">split_point</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_single_series"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.get_single_series">[docs]</a><span class="k">def</span> <span class="nf">get_single_series</span><span class="p">(</span>
+    <span class="n">ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a single (first) TimeSeries or `None` from `ts`. Returns `ts` if  `ts` is a TimeSeries, `ts[0]` if</span>
+<span class="sd">    `ts` is a Sequence of TimeSeries. Otherwise, returns `None`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ts</span>
+<span class="sd">        None, a single TimeSeries, or a sequence of TimeSeries.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">        `ts` if  `ts` is a TimeSeries, `ts[0]` if `ts` is a Sequence of TimeSeries. Otherwise, returns `None`</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="ow">or</span> <span class="n">ts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ts</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span></div>
 </pre></div>
 
               </div>

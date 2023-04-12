@@ -1,0 +1,4 @@
+
+.. automodule:: darts.models.filtering.moving_average_filter
+   :members:
+   :undoc-members:

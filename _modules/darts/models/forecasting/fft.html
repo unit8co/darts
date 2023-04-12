@@ -170,7 +170,7 @@
 <span class="sd">----------------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -405,7 +405,7 @@
 <span class="sd">            pd.Timestamp attributes that are relevant for the seasonality automatically.</span>
 <span class="sd">        trend</span>
 <span class="sd">            If set, indicates what kind of detrending will be applied before performing DFT.</span>
-<span class="sd">            Possible values: &#39;poly&#39; or &#39;exp&#39;, for polynomial trend, or exponential trend, respectively.</span>
+<span class="sd">            Possible values: &#39;poly&#39;, &#39;exp&#39; or None, for polynomial trend, exponential trend or no trend, respectively.</span>
 <span class="sd">        trend_poly_degree</span>
 <span class="sd">            The degree of the polynomial that will be used for detrending, if `trend=&#39;poly&#39;`.</span>
 
@@ -427,14 +427,19 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">trend</span> <span class="o">=</span> <span class="n">trend</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">trend_poly_degree</span> <span class="o">=</span> <span class="n">trend_poly_degree</span>
 
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="p">(</span>
-            <span class="s2">&quot;FFT(nr_freqs_to_keep=&quot;</span>
-            <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nr_freqs_to_keep</span><span class="p">)</span>
-            <span class="o">+</span> <span class="s2">&quot;, trend=&quot;</span>
-            <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trend</span><span class="p">)</span>
-            <span class="o">+</span> <span class="s2">&quot;)&quot;</span>
+    <span class="k">def</span> <span class="nf">_exp_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Helper function, used to make FFT model pickable.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trend_coefficients</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trend_coefficients</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">x</span>
         <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_poly_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trend_coefficients</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Helper function, for consistency with the other trends&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">poly1d</span><span class="p">(</span><span class="n">trend_coefficients</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_null_trend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Helper function, used to make FFT model pickable.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mi">0</span>
 
 <div class="viewcode-block" id="FFT.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.fft.html#darts.models.forecasting.fft.FFT.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
         <span class="n">series</span> <span class="o">=</span> <span class="n">fill_missing_values</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
@@ -444,19 +449,18 @@
 
         <span class="c1"># determine trend</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">trend</span> <span class="o">==</span> <span class="s2">&quot;poly&quot;</span><span class="p">:</span>
-            <span class="n">trend_coefficients</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trend_coefficients</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span>
                 <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)),</span> <span class="n">series</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">trend_poly_degree</span>
             <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">trend_function</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">poly1d</span><span class="p">(</span><span class="n">trend_coefficients</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trend_function</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_poly_trend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trend_coefficients</span><span class="p">)</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">trend</span> <span class="o">==</span> <span class="s2">&quot;exp&quot;</span><span class="p">:</span>
-            <span class="n">trend_coefficients</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trend_coefficients</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span>
                 <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()),</span> <span class="mi">1</span>
             <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">trend_function</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">trend_coefficients</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span>
-                <span class="n">trend_coefficients</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">x</span>
-            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trend_function</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exp_trend</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">trend_function</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="mi">0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trend_coefficients</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trend_function</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_null_trend</span>
 
         <span class="c1"># subtract trend</span>
         <span class="n">detrended_values</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">trend_function</span><span class="p">(</span>

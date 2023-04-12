@@ -215,6 +215,13 @@
   <a class="reference internal nav-link" href="#use-a-gpu">
    Use a GPU
   </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#multi-gpu-support">
+     Multi GPU support
+    </a>
+   </li>
+  </ul>
  </li>
  <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#use-a-tpu">
@@ -354,6 +361,32 @@
 </pre></div>
 </div>
 <p>From the output we can see that the GPU is both available and used. The rest of the code doesn’t require any change, i.e. it’s irrelevant if we are using a GPU or CPU.</p>
+<section id="multi-gpu-support">
+<h3>Multi GPU support<a class="headerlink" href="#multi-gpu-support" title="Permalink to this headline">¶</a></h3>
+<p>Darts utilizes <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_intermediate.html">Lightning’s multi GPU capabilities</a> to be able to capitalize on scalable hardware.</p>
+<p>Multiple parallelization strategies exist for multiple GPU training, which - because of different strategies for multiprocessing and data handling - interact strongly with the execution environment.</p>
+<p>Currently in Darts the <code class="docutils literal notranslate"><span class="pre">ddp_spawn</span></code> distribution strategy is tested.</p>
+<p>As per the description of the <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_intermediate.html#distributed-data-parallel-spawn">Lightning documentation</a> has some noteworthy limitations, eg. it <strong>can not run</strong> in:</p>
+<ul class="simple">
+<li><p>Jupyter Notebook, Google COLAB, Kaggle, etc.</p></li>
+<li><p>In case you have a nested script without a root package</p></li>
+</ul>
+<p>This in practice means, that execution has to happen in a separate <code class="docutils literal notranslate"><span class="pre">.py</span></code> script, that has the following general context around the code executing the training:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+
+    <span class="n">torch</span><span class="o">.</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">freeze_support</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The <strong>main</strong> pattern is necessary (see <a class="reference external" href="https://pytorch.org/docs/stable/notes/windows.html#multiprocessing-error-without-if-clause-protection">this</a>) even when your execution <strong>does not</strong> happen in a windows environment.</p>
+<p>Beyond this, no other major modification to your models is necessary other than allowing multi GPU training in the <code class="docutils literal notranslate"><span class="pre">pl_trainer_args</span></code> for example like</p>
+<p><code class="docutils literal notranslate"><span class="pre">pl_trainer_kwargs</span> <span class="pre">=</span> <span class="pre">{&quot;accelerator&quot;:</span> <span class="pre">&quot;gpu&quot;,</span> <span class="pre">&quot;devices&quot;:</span> <span class="pre">-1,</span> <span class="pre">&quot;auto_select_gpus&quot;:</span> <span class="pre">True}</span></code></p>
+<p>This method automatically selects all available GPUs for training. Manual setting of the number of devices is also possible.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">ddp</span></code> family of strategies creates indiviual subprocesses for each GPU, so contents of the memory (notably the <code class="docutils literal notranslate"><span class="pre">Dataloder</span></code>) gets copied over. Thus, as per the <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_intermediate.html#distributed-data-parallel">description of lightning docs</a> caution is advised in setting the <code class="docutils literal notranslate"><span class="pre">Dataloader(num_workers=N)</span></code> too high, since according to it:</p>
+<p>“Dataloader(num_workers=N), where N is large, bottlenecks training with DDP… ie: it will be VERY slow or won’t work at all. This is a PyTorch limitation.”</p>
+<p>Usage of other distribution strategies with Darts currently <em>might</em> very well work, but are yet untested and subject to individual setup / experimentation.</p>
+</section>
 </section>
 <section id="use-a-tpu">
 <h2>Use a TPU<a class="headerlink" href="#use-a-tpu" title="Permalink to this headline">¶</a></h2>

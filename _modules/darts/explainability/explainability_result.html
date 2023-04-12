@@ -173,8 +173,9 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
 
+<span class="kn">import</span> <span class="nn">shap</span>
 <span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">integer</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
@@ -196,7 +197,6 @@
             <span class="n">Sequence</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">integer</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]]],</span>
         <span class="p">],</span>
     <span class="p">):</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">explained_forecasts</span> <span class="o">=</span> <span class="n">explained_forecasts</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">explained_forecasts</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">available_horizons</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">explained_forecasts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
@@ -222,7 +222,54 @@
 <span class="sd">            The component for which to return the explanation. Does not</span>
 <span class="sd">            need to be specified for univariate series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_query_explainability_result</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">explained_forecasts</span><span class="p">,</span> <span class="n">horizon</span><span class="p">,</span> <span class="n">component</span>
+        <span class="p">)</span></div>
 
+    <span class="k">def</span> <span class="nf">_query_explainability_result</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">attr</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="n">Dict</span><span class="p">[</span><span class="n">integer</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">integer</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span>
+        <span class="p">],</span>
+        <span class="n">horizon</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">component</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Helper that extracts and returns the explainability result attribute for a specified horizon and component from</span>
+<span class="sd">        the input attribute.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        attr</span>
+<span class="sd">            An explainability result attribute from which to extract the content for a certain horizon and component.</span>
+<span class="sd">        horizon</span>
+<span class="sd">            The horizon for which to return the content of the attribute.</span>
+<span class="sd">        component</span>
+<span class="sd">            The component for which to return the content of the attribute. Does not</span>
+<span class="sd">            need to be specified for univariate series.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_input_for_querying_explainability_result</span><span class="p">(</span><span class="n">horizon</span><span class="p">,</span> <span class="n">component</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">component</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">component</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_components</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">attr</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">horizon</span><span class="p">][</span><span class="n">component</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">attr</span><span class="p">))]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">attr</span><span class="p">[</span><span class="n">horizon</span><span class="p">][</span><span class="n">component</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_validate_input_for_querying_explainability_result</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">horizon</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">component</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Helper that validates the input parameters of a method that queries the ExplainabilityResult.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        horizon</span>
+<span class="sd">            The horizon for which to return the explanation.</span>
+<span class="sd">        component</span>
+<span class="sd">            The component for which to return the explanation. Does not</span>
+<span class="sd">            need to be specified for univariate series.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">raise_if</span><span class="p">(</span>
             <span class="n">component</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">available_components</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">,</span>
             <span class="ne">ValueError</span><span class="p">(</span>
@@ -246,15 +293,73 @@
             <span class="s2">&quot;Component </span><span class="si">{}</span><span class="s2"> is not available. Available components are: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                 <span class="n">component</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_components</span>
             <span class="p">),</span>
-        <span class="p">)</span>
+        <span class="p">)</span></div>
 
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">explained_forecasts</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-            <span class="k">return</span> <span class="p">[</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">explained_forecasts</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">horizon</span><span class="p">][</span><span class="n">component</span><span class="p">]</span>
-                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">explained_forecasts</span><span class="p">))</span>
-            <span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">explained_forecasts</span><span class="p">[</span><span class="n">horizon</span><span class="p">][</span><span class="n">component</span><span class="p">]</span></div></div>
+
+<div class="viewcode-block" id="ShapExplainabilityResult"><a class="viewcode-back" href="../../../generated_api/darts.explainability.explainability_result.html#darts.explainability.explainability_result.ShapExplainabilityResult">[docs]</a><span class="k">class</span> <span class="nc">ShapExplainabilityResult</span><span class="p">(</span><span class="n">ExplainabilityResult</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Stores the explainability results of a :class:`ShapExplainer`</span>
+<span class="sd">    with convenient access to the results. It extends the :class:`ExplainabilityResult` and carries additional</span>
+<span class="sd">    information specific to the Shap explainers. In particular, in addition to the `explained_forecasts` (which in</span>
+<span class="sd">    the case of the :class:`ShapExplainer` are the shap values), it also provides access to the corresponding</span>
+<span class="sd">    `feature_values` and the underlying `shap.Explanation` object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">explained_forecasts</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="n">Dict</span><span class="p">[</span><span class="n">integer</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]],</span>
+            <span class="n">Sequence</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">integer</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]]],</span>
+        <span class="p">],</span>
+        <span class="n">feature_values</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="n">Dict</span><span class="p">[</span><span class="n">integer</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]],</span>
+            <span class="n">Sequence</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">integer</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]]],</span>
+        <span class="p">],</span>
+        <span class="n">shap_explanation_object</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="n">Dict</span><span class="p">[</span><span class="n">integer</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">shap</span><span class="o">.</span><span class="n">Explanation</span><span class="p">]],</span>
+            <span class="n">Sequence</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">integer</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">shap</span><span class="o">.</span><span class="n">Explanation</span><span class="p">]]],</span>
+        <span class="p">],</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">explained_forecasts</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feature_values</span> <span class="o">=</span> <span class="n">feature_values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shap_explanation_object</span> <span class="o">=</span> <span class="n">shap_explanation_object</span>
+
+<div class="viewcode-block" id="ShapExplainabilityResult.get_feature_values"><a class="viewcode-back" href="../../../generated_api/darts.explainability.explainability_result.html#darts.explainability.explainability_result.ShapExplainabilityResult.get_feature_values">[docs]</a>    <span class="k">def</span> <span class="nf">get_feature_values</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">horizon</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">component</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns one or several `TimeSeries` representing the feature values</span>
+<span class="sd">        for a given horizon and component.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        horizon</span>
+<span class="sd">            The horizon for which to return the feature values.</span>
+<span class="sd">        component</span>
+<span class="sd">            The component for which to return the feature values. Does not</span>
+<span class="sd">            need to be specified for univariate series.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_query_explainability_result</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">feature_values</span><span class="p">,</span> <span class="n">horizon</span><span class="p">,</span> <span class="n">component</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="ShapExplainabilityResult.get_shap_explanation_object"><a class="viewcode-back" href="../../../generated_api/darts.explainability.explainability_result.html#darts.explainability.explainability_result.ShapExplainabilityResult.get_shap_explanation_object">[docs]</a>    <span class="k">def</span> <span class="nf">get_shap_explanation_object</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">horizon</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">component</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">shap</span><span class="o">.</span><span class="n">Explanation</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">shap</span><span class="o">.</span><span class="n">Explanation</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the underlying `shap.Explanation` object for a given horizon and component.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        horizon</span>
+<span class="sd">            The horizon for which to return the `shap.Explanation` object.</span>
+<span class="sd">        component</span>
+<span class="sd">            The component for which to return the `shap.Explanation` object. Does not</span>
+<span class="sd">            need to be specified for univariate series.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_query_explainability_result</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">shap_explanation_object</span><span class="p">,</span> <span class="n">horizon</span><span class="p">,</span> <span class="n">component</span>
+        <span class="p">)</span></div></div>
 </pre></div>
 
               </div>

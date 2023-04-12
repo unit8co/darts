@@ -789,10 +789,10 @@
 <span class="sd">            Number of epochs over which to train the model. Default: ``100``.</span>
 <span class="sd">        model_name</span>
 <span class="sd">            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,</span>
-<span class="sd">            defaults to the following string ``&quot;YYYY-mm-dd_HH:MM:SS_torch_model_run_PID&quot;``, where the initial part</span>
+<span class="sd">            defaults to the following string ``&quot;YYYY-mm-dd_HH_MM_SS_torch_model_run_PID&quot;``, where the initial part</span>
 <span class="sd">            of the name is formatted with the local date and time, while PID is the processed ID (preventing models</span>
 <span class="sd">            spawned at the same time by different processes to share the same model_name). E.g.,</span>
-<span class="sd">            ``&quot;2021-06-14_09:53:32_torch_model_run_44607&quot;``.</span>
+<span class="sd">            ``&quot;2021-06-14_09_53_32_torch_model_run_44607&quot;``.</span>
 <span class="sd">        work_dir</span>
 <span class="sd">            Path of the working directory, where to save checkpoints and Tensorboard summaries.</span>
 <span class="sd">            Default: current working directory.</span>
@@ -810,7 +810,7 @@
 <span class="sd">            To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where</span>
 <span class="sd">            :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,</span>
 <span class="sd">            :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using</span>
-<span class="sd">            :func:`save_model()` and loaded using :func:`load_model()`. Default: ``False``.</span>
+<span class="sd">            :func:`save()` and loaded using :func:`load()`. Default: ``False``.</span>
 <span class="sd">        add_encoders</span>
 <span class="sd">            A large number of past and future covariates can be automatically generated with `add_encoders`.</span>
 <span class="sd">            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that</span>
@@ -921,10 +921,6 @@
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">layer_widths</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">layer_widths</span> <span class="o">=</span> <span class="p">[</span><span class="n">layer_widths</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_stacks</span>
-
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_supports_static_covariates</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">False</span>
 
     <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
         <span class="c1"># samples are made of (past_target, past_covariates, future_target)</span>

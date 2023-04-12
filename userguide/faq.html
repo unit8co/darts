@@ -226,8 +226,7 @@
 <h1>Frequently Asked Questions<a class="headerlink" href="#frequently-asked-questions" title="Permalink to this headline">¶</a></h1>
 <ul>
 <li><p><em>Is Darts just a wrapper around other libraries?</em></p>
-<p>No. When it makes sense, we reuse existing implementations (e.g. from statsforecasts), but we often write our
-own implementations (e.g., of neural networks). Furthermore, Darts models often have more features than their original counter-parts. For instance, unlike the original version, our implementation of N-BEATS supports multivariate time series, past covariates, and probabilistic forecasts.</p>
+<p>No. When it makes sense, we reuse existing implementations (e.g. from statsforecasts), but we often write our own implementations (e.g., of neural networks). Furthermore, Darts models often have more features than their original counter-parts. For instance, unlike the original version, our implementation of N-BEATS supports multivariate time series, past covariates, and probabilistic forecasts.</p>
 </li>
 <li><p><em>Darts looks like an awesome project, can I contribute?</em></p>
 <p>Absolutely! We are constantly welcoming contributions from the community. If you contribute, you will be acknowledged in the <a class="reference external" href="https://github.com/unit8co/darts/blob/master/CHANGELOG.md">wall of fame (a.k.a the changelog)</a>! Contributions don’t have to be code only but can also be e.g., documentation. In addition, we’re also happy to receive suggestions in the form of issues on Github. The best place to start for contributors is the <a class="reference external" href="https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md">contribution guidelines</a>.</p>
@@ -244,10 +243,8 @@ own implementations (e.g., of neural networks). Furthermore, Darts models often 
 <li><p><em>I’m getting some NaNs in my forecasts, what should I do?</em></p>
 <p>Usually this means one of two things:</p>
 <ul class="simple">
-<li><p>You have some NaNs in your training data (targets or covariates). This is the most frequent situation, and it will lead most models
-to always forecast NaNs.</p></li>
-<li><p>Training the model causes some numerical divergence. If you’re working with neural networks, make sure your data is properly scaled, and if the issue
-persists, try reducing the learning rate.</p></li>
+<li><p>You have some NaNs in your training <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> (targets or covariates). This is the most frequent situation, and it will lead most models to always forecast NaNs. Note that NaNs can be introduced when you convert data from a <code class="docutils literal notranslate"><span class="pre">pd.DataFrame</span></code> into a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> if some dates are missing and the <code class="docutils literal notranslate"><span class="pre">freq</span></code> argument is incorrectly set.</p></li>
+<li><p>Training the model causes some numerical divergence. If you’re working with neural networks, make sure your data is properly scaled, and if the issue persists, try reducing the learning rate.</p></li>
 </ul>
 </li>
 <li><p><em>My forecasting models give bad results, can you help?</em></p>

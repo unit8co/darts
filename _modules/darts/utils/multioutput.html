@@ -165,13 +165,18 @@
               <div>
                 
   <h1>Source code for darts.utils.multioutput</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">joblib</span> <span class="kn">import</span> <span class="n">Parallel</span>
-<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">is_classifier</span>
+<span></span><span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">is_classifier</span>
 <span class="kn">from</span> <span class="nn">sklearn.multioutput</span> <span class="kn">import</span> <span class="n">MultiOutputRegressor</span> <span class="k">as</span> <span class="n">sk_MultiOutputRegressor</span>
 <span class="kn">from</span> <span class="nn">sklearn.multioutput</span> <span class="kn">import</span> <span class="n">_fit_estimator</span>
-<span class="kn">from</span> <span class="nn">sklearn.utils.fixes</span> <span class="kn">import</span> <span class="n">delayed</span>
 <span class="kn">from</span> <span class="nn">sklearn.utils.multiclass</span> <span class="kn">import</span> <span class="n">check_classification_targets</span>
 <span class="kn">from</span> <span class="nn">sklearn.utils.validation</span> <span class="kn">import</span> <span class="n">_check_fit_params</span><span class="p">,</span> <span class="n">has_fit_parameter</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="c1"># delayed was moved from sklearn.utils.fixes to sklearn.utils.parallel in v1.3</span>
+    <span class="kn">from</span> <span class="nn">sklearn.utils.parallel</span> <span class="kn">import</span> <span class="n">Parallel</span><span class="p">,</span> <span class="n">delayed</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">joblib</span> <span class="kn">import</span> <span class="n">Parallel</span>
+    <span class="kn">from</span> <span class="nn">sklearn.utils.fixes</span> <span class="kn">import</span> <span class="n">delayed</span>
 
 
 <div class="viewcode-block" id="MultiOutputRegressor"><a class="viewcode-back" href="../../../generated_api/darts.utils.multioutput.html#darts.utils.multioutput.MultiOutputRegressor">[docs]</a><span class="k">class</span> <span class="nc">MultiOutputRegressor</span><span class="p">(</span><span class="n">sk_MultiOutputRegressor</span><span class="p">):</span>

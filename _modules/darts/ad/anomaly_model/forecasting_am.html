@@ -319,6 +319,9 @@
         <span class="n">model_fit_kwargs</span><span class="p">[</span><span class="s2">&quot;past_covariates&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">list_past_covariates</span>
         <span class="n">model_fit_kwargs</span><span class="p">[</span><span class="s2">&quot;future_covariates&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">list_future_covariates</span>
 
+        <span class="c1"># remove None elements from dictionary</span>
+        <span class="n">model_fit_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">model_fit_kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span><span class="p">}</span>
+
         <span class="c1"># fit forecasting model</span>
         <span class="k">if</span> <span class="n">allow_model_training</span><span class="p">:</span>
             <span class="c1"># the model has not been trained yet</span>

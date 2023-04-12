@@ -1226,7 +1226,7 @@ MAPE = 7.58%
 </section>
 <section id="Backtesting-with-Covariates">
 <h2>Backtesting with Covariates<a class="headerlink" href="#Backtesting-with-Covariates" title="Permalink to this headline">¶</a></h2>
-<p>We can also backtest the models using covariates. Say for instance we are interested in evaluating the running accuracy with a horizon of 12 months, starting at 75% of the air series:</p>
+<p>We can also backtest the models using covariates. Say for instance we are interested in evaluating the running accuracy with a horizon of 12 months, starting at 60% of the air series:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
@@ -1304,7 +1304,7 @@ MAPE (RNNModel with future covariates) = 15.21%
 have a sufficient span, otherwise Darts will complain.</p>
 <p>As explained above, <code class="docutils literal notranslate"><span class="pre">TCNModel</span></code>, <code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code>, <code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code>, <code class="docutils literal notranslate"><span class="pre">TransformerModel</span></code> use past covariates (they will complain if you try using <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code>). If these past covariates happen to also be known into the future, then these models are also able to produce forecasts for <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">output_chunk_length</span></code> (as shown above for <code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code>) in an auto-regressive way.</p>
 <p>By contrast, <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> uses future covariates (it will complain if you try specifying <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code>). This means that prediction with this model requires the covariates (at least) <code class="docutils literal notranslate"><span class="pre">n</span></code> time steps into the future after prediction time.</p>
-<p>Past and future covariates (as well as the way they are consummed by the different models) an important but non-trivial topic, and we plan to dedicate a future notebook (or article) to explain this further.</p>
+<p>Past and future covariates (as well as the way they are consumed by the different models) are an important but non-trivial topic, and we plan to dedicate a future notebook (or article) to explain this further.</p>
 <section id="Training-and-Forecasting-Multivariate-TimeSeries">
 <h3>Training and Forecasting Multivariate TimeSeries<a class="headerlink" href="#Training-and-Forecasting-Multivariate-TimeSeries" title="Permalink to this headline">¶</a></h3>
 <p>Now, instead of having to forecast only one variable, we would like to forecast several of them at once. In constrast of the multi-series training, where two different univariate datasets were used to train a single model, the training set consists in a single serie containing observations for several variables (called <code class="docutils literal notranslate"><span class="pre">components</span></code>). These <code class="docutils literal notranslate"><span class="pre">components</span></code> usually present the same nature (measurement of the same metric) but this is not necessarily the case.</p>

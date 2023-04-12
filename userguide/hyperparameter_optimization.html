@@ -260,6 +260,7 @@ using PyTorch Lightning callbacks for pruning experiments.
 For the sake of the example, we train a <code class="docutils literal notranslate"><span class="pre">TCNModel</span></code> on a single series, and optimize (probably overfitting) its hyperparameters by minimizing the prediction error on a validation set.
 You can also have a look at <a class="reference external" href="https://github.com/unit8co/darts/blob/master/examples/17-hyperparameter-optimization.ipynb">this notebook</a>
 for a more complete example.</p>
+<p><em>Note (2023-19-02): Optuna’s ``PyTorchLightningPruningCallback`` raises an error with pytorch-lightning&gt;=1.8. Until this fixed, a workaround is proposed `here &lt;https://github.com/optuna/optuna-examples/issues/166#issuecomment-1403112861&gt;`_.</em></p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">optuna</span>
 <span class="kn">import</span> <span class="nn">torch</span>

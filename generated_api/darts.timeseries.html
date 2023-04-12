@@ -357,6 +357,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.diff.html">
+       Differencing Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
        Fittable Data Transformer Base Class
       </a>
@@ -466,6 +471,11 @@
    </i>
   </label>
   <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.models.components.statsforecast_utils.html">
+     StatsForecast utils
+    </a>
+   </li>
    <li class="toctree-l2 has-children">
     <a class="reference internal" href="darts.models.filtering.html">
      Filtering Models
@@ -487,7 +497,7 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.filtering.moving_average.html">
+      <a class="reference internal" href="darts.models.filtering.moving_average_filter.html">
        Moving Average
       </a>
      </li>
@@ -609,12 +619,22 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_ets.html">
-       StatsForecastETS
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
+       StatsForecastAutoCES
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tbats.html">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
+       StatsForecastAutoETS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
+       StatsForecastAutoTheta
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tbats_model.html">
        BATS and TBATS
       </a>
      </li>
@@ -802,15 +822,17 @@ and <cite>samples</cite> are samples of stochastic series.</p>
 </dl>
 <p>Each series also stores a <cite>time_index</cite>, which contains either datetimes (<code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DateTimeIndex</span></code>)
 or integer indices (<code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.RangeIndex</span></code>).</p>
-<dl class="simple">
+<dl>
 <dt><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> are guaranteed to:</dt><dd><ul class="simple">
-<li><p>Have a monotically increasing time index, without holes (without missing dates)</p></li>
+<li><p>Have a monotonically increasing time index, without holes (without missing dates)</p></li>
 <li><p>Contain numeric types only</p></li>
 <li><p>Have distinct components/columns names</p></li>
-<li><p>Have a well defined frequency (for <code class="docutils literal notranslate"><span class="pre">DateTimeIndex</span></code>)</p></li>
-<li><p>Have static covariates consistent with their components, or no static covariates</p></li>
-<li><p>Have a hierarchy consistent with their components, or no hierarchy</p></li>
+<li><p>Have a well defined frequency (</p></li>
 </ul>
+<p><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases">date offset aliases</a>
+for <code class="docutils literal notranslate"><span class="pre">DateTimeIndex</span></code>, and step size for <code class="docutils literal notranslate"><span class="pre">RangeIndex</span></code>)
+- Have static covariates consistent with their components, or no static covariates
+- Have a hierarchy consistent with their components, or no hierarchy</p>
 </dd>
 </dl>
 <p><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can contain global or component-specific static covariate data. Static covariates in <cite>darts</cite> refers
@@ -1574,15 +1596,18 @@ and a list of columns <cite>value_cols</cite> can be used to indicate the values
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>filepath_or_buffer</strong> – The path to the CSV file, or the file object; consistent with the argument of <cite>pandas.read_csv</cite> function</p></li>
 <li><p><strong>time_col</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains
-timestamps) or a RangeIndex with step size of 1 (if it contains integers).
+timestamps) or a RangeIndex (if it contains integers).
 If not set, the pandas RangeIndex will be used.</p></li>
-<li><p><strong>value_cols</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A string or list of strings representing the value column(s) to be extracted from the CSV file. If set to
+<li><p><strong>value_cols</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A string or list of strings representing the value column(s) to be extracted from the CSV file. If set to
 <cite>None</cite>, all columns from the CSV file will be used (except for the time_col, if specified)</p></li>
-<li><p><strong>fill_missing_dates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
-either a provided <cite>freq</cite> or the possibility to infer the frequency from the provided timestamps. See
-<code class="xref py py-meth docutils literal notranslate"><span class="pre">_fill_missing_dates()</span></code> for more info.</p></li>
-<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, a string representing the frequency of the Pandas DateTimeIndex. This is useful in order to
-fill in missing values if some dates are missing and <cite>fill_missing_dates</cite> is set to <cite>True</cite>.</p></li>
+<li><p><strong>fill_missing_dates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
+with NaN values. This requires either a provided <cite>freq</cite> or the possibility to infer the frequency from the
+provided timestamps. See <code class="xref py py-meth docutils literal notranslate"><span class="pre">_fill_missing_dates()</span></code> for more info.</p></li>
+<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
+to fill in missing values if some dates are missing and <cite>fill_missing_dates</cite> is set to <cite>True</cite>.
+If a string, represents the frequency of the pandas DatetimeIndex (see <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases">offset aliases</a> for more info on
+supported frequencies).
+If an integer, represents the step size of the pandas Index or pandas RangeIndex.</p></li>
 <li><p><strong>fillna_value</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – Optionally, a numeric value to fill missing values (NaNs) with.</p></li>
 <li><p><strong>static_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a set of static covariates to be added to the TimeSeries. Either a pandas Series or a pandas
 DataFrame. If a Series, the index represents the static variables. The covariates are globally ‘applied’
@@ -1634,18 +1659,23 @@ and a list of columns <cite>value_cols</cite> has to represent the values for th
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>df</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>) – The DataFrame</p></li>
 <li><p><strong>time_col</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains
-timestamps) or a RangeIndex with step size of 1 (if it contains integers).
+timestamps) or a RangeIndex (if it contains integers).
 If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is
-either a pandas DatetimeIndex or a pandas RangeIndex. If a DatetimeIndex is
-used, it is better if it has no holes; alternatively setting <cite>fill_missing_dates</cite> can in some casees solve
-these issues (filling holes with NaN, or with the provided <cite>fillna_value</cite> numeric value, if any).</p></li>
-<li><p><strong>value_cols</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A string or list of strings representing the value column(s) to be extracted from the DataFrame. If set to
+either a pandas DatetimeIndex, a pandas RangeIndex, or a pandas Index that can be converted to a
+RangeIndex. It is better if the index has no holes; alternatively setting <cite>fill_missing_dates</cite> can in some
+cases solve these issues (filling holes with NaN, or with the provided <cite>fillna_value</cite> numeric value, if
+any).</p></li>
+<li><p><strong>value_cols</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A string or list of strings representing the value column(s) to be extracted from the DataFrame. If set to
 <cite>None</cite>, the whole DataFrame will be used.</p></li>
-<li><p><strong>fill_missing_dates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
-either a provided <cite>freq</cite> or the possibility to infer the frequency from the provided timestamps. See
-<code class="xref py py-meth docutils literal notranslate"><span class="pre">_fill_missing_dates()</span></code> for more info.</p></li>
-<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, a string representing the frequency of the Pandas DateTimeIndex. This is useful in order to
-fill in missing values if some dates are missing and <cite>fill_missing_dates</cite> is set to <cite>True</cite>.</p></li>
+<li><p><strong>fill_missing_dates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
+with NaN values. This requires either a provided <cite>freq</cite> or the possibility to infer the frequency from the
+provided timestamps. See <code class="xref py py-meth docutils literal notranslate"><span class="pre">_fill_missing_dates()</span></code> for more info.</p></li>
+<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – <p>Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
+to fill in missing values if some dates are missing and <cite>fill_missing_dates</cite> is set to <cite>True</cite>.
+If a string, represents the frequency of the pandas DatetimeIndex (see <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases">offset aliases</a> for more info on
+supported frequencies).
+If an integer, represents the step size of the pandas Index or pandas RangeIndex.</p>
+</p></li>
 <li><p><strong>fillna_value</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – Optionally, a numeric value to fill missing values (NaNs) with.</p></li>
 <li><p><strong>static_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a set of static covariates to be added to the TimeSeries. Either a pandas Series or a pandas
 DataFrame. If a Series, the index represents the static variables. The covariates are globally ‘applied’
@@ -1702,22 +1732,28 @@ TimeSeries objects. These can be viewed with <cite>my_series.static_covariates</
 <li><p><strong>group_cols</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – A string or list of strings representing the columns from the DataFrame by which to extract the
 individual TimeSeries groups.</p></li>
 <li><p><strong>time_col</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains
-timestamps) or a RangeIndex with step size of 1 (if it contains integers).
+timestamps) or a RangeIndex (if it contains integers).
 If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is
-either a pandas DatetimeIndex or a pandas RangeIndex. If a DatetimeIndex is
-used, it is better if it has no holes; alternatively setting <cite>fill_missing_dates</cite> can in some casees solve
-these issues (filling holes with NaN, or with the provided <cite>fillna_value</cite> numeric value, if any).</p></li>
-<li><p><strong>value_cols</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A string or list of strings representing the value column(s) to be extracted from the DataFrame. If set to
+either a pandas DatetimeIndex, a pandas RangeIndex, or a pandas Index that can be converted to a
+RangeIndex. Be aware that the index must represents the actual index of each individual time series group
+(can contain non-unique values). It is better if the index has no holes; alternatively setting
+<cite>fill_missing_dates</cite> can in some cases solve these issues (filling holes with NaN, or with the provided
+<cite>fillna_value</cite> numeric value, if any).</p></li>
+<li><p><strong>value_cols</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A string or list of strings representing the value column(s) to be extracted from the DataFrame. If set to
 <cite>None</cite>, the whole DataFrame will be used.</p></li>
-<li><p><strong>static_cols</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A string or list of strings representing static variable columns from the DataFrame that should be
+<li><p><strong>static_cols</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A string or list of strings representing static variable columns from the DataFrame that should be
 appended as static covariates to the resulting TimeSeries groups. Different to <cite>group_cols</cite>, the
 DataFrame is not grouped by these columns. Note that for every group, there must be exactly one
 unique value.</p></li>
-<li><p><strong>fill_missing_dates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
-either a provided <cite>freq</cite> or the possibility to infer the frequency from the provided timestamps. See
-<code class="xref py py-meth docutils literal notranslate"><span class="pre">_fill_missing_dates()</span></code> for more info.</p></li>
-<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, a string representing the frequency of the Pandas DateTimeIndex. This is useful in order to
-fill in missing values if some dates are missing and <cite>fill_missing_dates</cite> is set to <cite>True</cite>.</p></li>
+<li><p><strong>fill_missing_dates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
+with NaN values. This requires either a provided <cite>freq</cite> or the possibility to infer the frequency from the
+provided timestamps. See <code class="xref py py-meth docutils literal notranslate"><span class="pre">_fill_missing_dates()</span></code> for more info.</p></li>
+<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – <p>Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
+to fill in missing values if some dates are missing and <cite>fill_missing_dates</cite> is set to <cite>True</cite>.
+If a string, represents the frequency of the pandas DatetimeIndex (see <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases">offset aliases</a> for more info on
+supported frequencies).
+If an integer, represents the step size of the pandas Index or pandas RangeIndex.</p>
+</p></li>
 <li><p><strong>fillna_value</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – Optionally, a numeric value to fill missing values (NaNs) with.</p></li>
 </ul>
 </dd>
@@ -1725,7 +1761,7 @@ fill in missing values if some dates are missing and <cite>fill_missing_dates</c
 <dd class="field-even"><p>A list containing a univariate or multivariate deterministic TimeSeries per group in the DataFrame.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+<dd class="field-odd"><p>List[<a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1794,10 +1830,10 @@ different levels are consistent), see <a class="reference external" href="https:
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>Xarray docs <a class="reference internal" href="#rd1cfb1bd8a16-1" id="id3">[1]</a> suggest not using pickle as a long-term data storage.</p>
+<p>Xarray docs <a class="reference internal" href="#rd1cfb1bd8a16-1" id="id5">[1]</a> suggest not using pickle as a long-term data storage.</p>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="rd1cfb1bd8a16-1"><span class="brackets"><a class="fn-backref" href="#id3">1</a></span></dt>
+<dt class="label" id="rd1cfb1bd8a16-1"><span class="brackets"><a class="fn-backref" href="#id5">1</a></span></dt>
 <dd><p><a class="reference external" href="http://xarray.pydata.org/en/stable/user-guide/io.html#pickle">http://xarray.pydata.org/en/stable/user-guide/io.html#pickle</a></p>
 </dd>
 </dl>
@@ -1807,19 +1843,23 @@ different levels are consistent), see <a class="reference external" href="https:
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.from_series">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pd_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_missing_dates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fillna_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.from_series"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.from_series" title="Permalink to this definition">¶</a></dt>
 <dd><p>Build a univariate deterministic series from a pandas Series.</p>
-<p>The series must contain an index that is
-either a pandas DatetimeIndex or a pandas RangeIndex. If a DatetimeIndex is
-used, it is better if it has no holes; alternatively setting <cite>fill_missing_dates</cite> can in some cases solve
-these issues (filling holes with NaN, or with the provided <cite>fillna_value</cite> numeric value, if any).</p>
+<p>The series must contain an index that is either a pandas DatetimeIndex, a pandas RangeIndex, or a pandas Index
+that can be converted into a RangeIndex. It is better if the index has no holes; alternatively setting
+<cite>fill_missing_dates</cite> can in some cases solve these issues (filling holes with NaN, or with the provided
+<cite>fillna_value</cite> numeric value, if any).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>pd_series</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code>) – The pandas Series instance.</p></li>
-<li><p><strong>fill_missing_dates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
-either a provided <cite>freq</cite> or the possibility to infer the frequency from the provided timestamps. See
-<code class="xref py py-meth docutils literal notranslate"><span class="pre">_fill_missing_dates()</span></code> for more info.</p></li>
-<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, a string representing the frequency of the Pandas DateTimeIndex. This is useful in order to
-fill in missing values if some dates are missing and <cite>fill_missing_dates</cite> is set to <cite>True</cite>.</p></li>
+<li><p><strong>fill_missing_dates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
+with NaN values. This requires either a provided <cite>freq</cite> or the possibility to infer the frequency from the
+provided timestamps. See <code class="xref py py-meth docutils literal notranslate"><span class="pre">_fill_missing_dates()</span></code> for more info.</p></li>
+<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – <p>Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
+to fill in missing values if some dates are missing and <cite>fill_missing_dates</cite> is set to <cite>True</cite>.
+If a string, represents the frequency of the pandas DatetimeIndex (see <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases">offset aliases</a> for more info on
+supported frequencies).
+If an integer, represents the step size of the pandas Index or pandas RangeIndex.</p>
+</p></li>
 <li><p><strong>fillna_value</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – Optionally, a numeric value to fill missing values (NaNs) with.</p></li>
 <li><p><strong>static_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a set of static covariates to be added to the TimeSeries. Either a pandas Series or a
 single-row pandas DataFrame. If a Series, the index represents the static variables. If a DataFrame, the
@@ -1842,18 +1882,22 @@ columns represent the static variables and the single row represents the univari
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>times</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>]) – A <cite>pandas.DateTimeIndex</cite> or <cite>pandas.RangeIndex</cite> representing the time axis
-for the time series. If a DatetimeIndex is used, it is better if it has no holes; alternatively setting
-<cite>fill_missing_dates</cite> can in some cases solve these issues (filling holes with NaN, or with the
-provided <cite>fillna_value</cite> numeric value, if any).</p></li>
+<li><p><strong>times</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RangeIndex</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code>]) – A pandas DateTimeIndex, RangeIndex, or Index that can be converted to a RangeIndex representing the time
+axis for the time series. It is better if the index has no holes; alternatively setting
+<cite>fill_missing_dates</cite> can in some cases solve these issues (filling holes with NaN, or with the provided
+<cite>fillna_value</cite> numeric value, if any).</p></li>
 <li><p><strong>values</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – A Numpy array of values for the TimeSeries. Both 2-dimensional arrays, for deterministic series,
 and 3-dimensional arrays, for probabilistic series, are accepted. In the former case the dimensions
 should be (time, component), and in the latter case (time, component, sample).</p></li>
-<li><p><strong>fill_missing_dates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
-either a provided <cite>freq</cite> or the possibility to infer the frequency from the provided timestamps. See
-<code class="xref py py-meth docutils literal notranslate"><span class="pre">_fill_missing_dates()</span></code> for more info.</p></li>
-<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, a string representing the frequency of the Pandas DateTimeIndex. This is useful in order to
-fill in missing values if some dates are missing and <cite>fill_missing_dates</cite> is set to <cite>True</cite>.</p></li>
+<li><p><strong>fill_missing_dates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
+with NaN values. This requires either a provided <cite>freq</cite> or the possibility to infer the frequency from the
+provided timestamps. See <code class="xref py py-meth docutils literal notranslate"><span class="pre">_fill_missing_dates()</span></code> for more info.</p></li>
+<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – <p>Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
+to fill in missing values if some dates are missing and <cite>fill_missing_dates</cite> is set to <cite>True</cite>.
+If a string, represents the frequency of the pandas DatetimeIndex (see <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases">offset aliases</a> for more info on
+supported frequencies).
+If an integer, represents the step size of the pandas Index or pandas RangeIndex.</p>
+</p></li>
 <li><p><strong>columns</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">range</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Columns to be used by the underlying pandas DataFrame.</p></li>
 <li><p><strong>fillna_value</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – Optionally, a numeric value to fill missing values (NaNs) with.</p></li>
 <li><p><strong>static_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a set of static covariates to be added to the TimeSeries. Either a pandas Series or a pandas
@@ -1953,9 +1997,10 @@ The dimensions of the DataArray have to be (time, component, sample), in this or
 dimension can have an arbitrary name, but component and sample must be named “component” and “sample”,
 respectively.</p>
 <p>The first dimension (time), and second dimension (component) must be indexed (i.e., have coordinates).
-The time must be indexed either with a pandas DatetimeIndex or a pandas RangeIndex. If a DatetimeIndex is
-used, it is better if it has no holes; alternatively setting <cite>fill_missing_dates</cite> can in some cases solve
-these issues (filling holes with NaN, or with the provided <cite>fillna_value</cite> numeric value, if any).</p>
+The time must be indexed either with a pandas DatetimeIndex, a pandas RangeIndex, or a pandas Index that can
+be converted to a RangeIndex. It is better if the index has no holes; alternatively setting
+<cite>fill_missing_dates</cite> can in some cases solve these issues (filling holes with NaN, or with the provided
+<cite>fillna_value</cite> numeric value, if any).</p>
 <p>If two components have the same name or are not strings, this method will disambiguate the components
 names by appending a suffix of the form “&lt;name&gt;_N” to the N-th column with name “name”.
 The component names in the static covariates and hierarchy (if any) are <em>not</em> disambiguated.</p>
@@ -1963,11 +2008,15 @@ The component names in the static covariates and hierarchy (if any) are <em>not<
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>xa</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">DataArray</span></code>) – The xarray DataArray</p></li>
-<li><p><strong>fill_missing_dates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
-either a provided <cite>freq</cite> or the possibility to infer the frequency from the provided timestamps. See
-<code class="xref py py-meth docutils literal notranslate"><span class="pre">_fill_missing_dates()</span></code> for more info.</p></li>
-<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, a string representing the frequency of the Pandas DateTimeIndex. This is useful in order to
-fill in missing values if some dates are missing and <cite>fill_missing_dates</cite> is set to <cite>True</cite>.</p></li>
+<li><p><strong>fill_missing_dates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
+with NaN values. This requires either a provided <cite>freq</cite> or the possibility to infer the frequency from the
+provided timestamps. See <code class="xref py py-meth docutils literal notranslate"><span class="pre">_fill_missing_dates()</span></code> for more info.</p></li>
+<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – <p>Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
+to fill in missing values if some dates are missing and <cite>fill_missing_dates</cite> is set to <cite>True</cite>.
+If a string, represents the frequency of the pandas DatetimeIndex (see <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases">offset aliases</a> for more info on
+supported frequencies).
+If an integer, represents the step size of the pandas Index or pandas RangeIndex.</p>
+</p></li>
 <li><p><strong>fillna_value</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – Optionally, a numeric value to fill missing values (NaNs) with.</p></li>
 </ul>
 </dd>
@@ -3046,10 +3095,10 @@ a deterministic <code class="docutils literal notranslate"><span class="pre">Tim
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.to_csv">
 <span class="sig-name descname"><span class="pre">to_csv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.to_csv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.to_csv" title="Permalink to this definition">¶</a></dt>
 <dd><p>Writes this deterministic series to a CSV file.
-For a list of parameters, refer to the documentation of <code class="xref py py-func docutils literal notranslate"><span class="pre">pandas.DataFrame.to_csv()</span></code> <a class="reference internal" href="#r27685d4f6729-1" id="id6">[1]</a>.</p>
+For a list of parameters, refer to the documentation of <code class="xref py py-func docutils literal notranslate"><span class="pre">pandas.DataFrame.to_csv()</span></code> <a class="reference internal" href="#r27685d4f6729-1" id="id11">[1]</a>.</p>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r27685d4f6729-1"><span class="brackets"><a class="fn-backref" href="#id6">1</a></span></dt>
+<dt class="label" id="r27685d4f6729-1"><span class="brackets"><a class="fn-backref" href="#id11">1</a></span></dt>
 <dd><p><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_csv.html?highlight=to_csv">https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_csv.html?highlight=to_csv</a></p>
 </dd>
 </dl>
@@ -3086,10 +3135,10 @@ covariates can be added with input argument <cite>static_covariates</cite>.</p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
-<p>Xarray docs <a class="reference internal" href="#r49f1ae5c3069-1" id="id7">[1]</a> suggest not using pickle as a long-term data storage.</p>
+<p>Xarray docs <a class="reference internal" href="#r49f1ae5c3069-1" id="id12">[1]</a> suggest not using pickle as a long-term data storage.</p>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r49f1ae5c3069-1"><span class="brackets"><a class="fn-backref" href="#id7">1</a></span></dt>
+<dt class="label" id="r49f1ae5c3069-1"><span class="brackets"><a class="fn-backref" href="#id12">1</a></span></dt>
 <dd><p><a class="reference external" href="http://xarray.pydata.org/en/stable/user-guide/io.html#pickle">http://xarray.pydata.org/en/stable/user-guide/io.html#pickle</a></p>
 </dd>
 </dl>
@@ -3236,6 +3285,15 @@ More information on pandas windowing operations can be found in the <a class="re
 transformation should be applied. If not specified, the transformation will be
 applied on all components.</p>
 </dd>
+<dt class="field-even"><code class="docutils literal notranslate"><span class="pre">&quot;function_name&quot;</span></code></dt>
+<dd class="field-even"><p>Optional. A string specifying the function name referenced as part of
+the transformation output name. For example, given a user-provided function
+transformation on rolling window size of 5 on the component “comp”, the
+default transformation output name is “rolling_udf_5_comp” whereby “udf”
+refers to “user defined function”. If specified, the <code class="docutils literal notranslate"><span class="pre">&quot;function_name&quot;</span></code> will
+replace the default name “udf”. Similarly, the <code class="docutils literal notranslate"><span class="pre">&quot;function_name&quot;</span></code> will replace
+the name of the pandas builtin transformation function name in the output name.</p>
+</dd>
 </dl>
 <p>All other dictionary items provided will be treated as keyword arguments for the windowing mode
 (i.e., <code class="docutils literal notranslate"><span class="pre">rolling/ewm/expanding</span></code>) or for the specific function
@@ -3248,7 +3306,8 @@ example:</p>
 <dt class="field-odd"><code class="docutils literal notranslate"><span class="pre">&quot;window&quot;</span></code></dt>
 <dd class="field-odd"><p>Size of the moving window for the “rolling” mode.
 If an integer, the fixed number of observations used for each window.
-If an offset, the time period of each window.</p>
+If an offset, the time period of each window with data type <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.Timedelta</span></code>
+representing a fixed duration.</p>
 </dd>
 </dl>
 </li>
@@ -3380,7 +3439,8 @@ adapts the names in the hierarchy, if any.</p>
 <dd><p>Adds a hierarchy to the TimeSeries.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>hierarchy</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>) – <p>A dictionary mapping components to a list of their parent(s) in the hierarchy.
+<dd class="field-odd"><p><strong>hierarchy</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]]) – <p>A dictionary mapping components to a list of their parent(s) in the hierarchy.
+Single parents may be specified as string or list containing one string.
 For example, assume the series contains the components
 <code class="docutils literal notranslate"><span class="pre">[&quot;total&quot;,</span> <span class="pre">&quot;a&quot;,</span> <span class="pre">&quot;b&quot;,</span> <span class="pre">&quot;x&quot;,</span> <span class="pre">&quot;y&quot;,</span> <span class="pre">&quot;ax&quot;,</span> <span class="pre">&quot;ay&quot;,</span> <span class="pre">&quot;bx&quot;,</span> <span class="pre">&quot;by&quot;]</span></code>,
 the following dictionary would encode the groupings shown on
@@ -3391,8 +3451,8 @@ the following dictionary would encode the groupings shown on
              <span class="s1">&#39;by&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">],</span>
              <span class="s1">&#39;a&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;total&#39;</span><span class="p">],</span>
              <span class="s1">&#39;b&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;total&#39;</span><span class="p">],</span>
-             <span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;total&#39;</span><span class="p">],</span>
-             <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;total&#39;</span><span class="p">]}</span>
+             <span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="s1">&#39;total&#39;</span><span class="p">,</span>  <span class="c1"># or use a single string</span>
+             <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="s1">&#39;total&#39;</span><span class="p">}</span>
 </pre></div>
 </div>
 </p>

@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>darts.models.forecasting.sf_ets &#8212; darts  documentation</title>
+    <title>darts.models.forecasting.sf_auto_ets &#8212; darts  documentation</title>
     
   <link href="../../../../_static/css/theme.css" rel="stylesheet">
   <link href="../../../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -164,23 +164,29 @@
               
               <div>
                 
-  <h1>Source code for darts.models.forecasting.sf_ets</h1><div class="highlight"><pre>
+  <h1>Source code for darts.models.forecasting.sf_auto_ets</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">StatsForecastETS</span>
+<span class="sd">StatsForecastAutoETS</span>
 <span class="sd">-----------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
 
-<span class="kn">from</span> <span class="nn">statsforecast.models</span> <span class="kn">import</span> <span class="n">ETS</span>
+<span class="kn">from</span> <span class="nn">statsforecast.models</span> <span class="kn">import</span> <span class="n">AutoETS</span> <span class="k">as</span> <span class="n">SFAutoETS</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">LinearRegressionModel</span>
+<span class="kn">from</span> <span class="nn">darts.models.components.statsforecast_utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">create_normal_samples</span><span class="p">,</span>
+    <span class="n">one_sigma_rule</span><span class="p">,</span>
+    <span class="n">unpack_sf_dict</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.forecasting_model</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">FutureCovariatesLocalForecastingModel</span><span class="p">,</span>
 <span class="p">)</span>
 
 
-<div class="viewcode-block" id="StatsForecastETS"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sf_ets.html#darts.models.forecasting.sf_ets.StatsForecastETS">[docs]</a><span class="k">class</span> <span class="nc">StatsForecastETS</span><span class="p">(</span><span class="n">FutureCovariatesLocalForecastingModel</span><span class="p">):</span>
+<div class="viewcode-block" id="StatsForecastAutoETS"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sf_auto_ets.html#darts.models.forecasting.sf_auto_ets.StatsForecastAutoETS">[docs]</a><span class="k">class</span> <span class="nc">StatsForecastAutoETS</span><span class="p">(</span><span class="n">FutureCovariatesLocalForecastingModel</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">ets_args</span><span class="p">,</span> <span class="n">add_encoders</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">ets_kwargs</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;ETS based on `Statsforecasts package</span>
 <span class="sd">        &lt;https://github.com/Nixtla/statsforecast&gt;`_.</span>
@@ -191,6 +197,12 @@
 
 <span class="sd">        This model accepts the same arguments as the `statsforecast ETS</span>
 <span class="sd">        &lt;https://nixtla.github.io/statsforecast/models.html#ets&gt;`_. package.</span>
+
+<span class="sd">        In addition to the StatsForecast implementation, this model can handle future covariates. It does so by first</span>
+<span class="sd">        regressing the series against the future covariates using the :class:&#39;LinearRegressionModel&#39; model and then</span>
+<span class="sd">        running StatsForecast&#39;s AutoETS on the in-sample residuals from this original regression. This approach was</span>
+<span class="sd">        inspired by &#39;this post of Stephan Kolassa&lt; https://stats.stackexchange.com/q/220885&gt;&#39;_.</span>
+
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -231,25 +243,39 @@
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
 <span class="sd">        &gt;&gt;&gt; from darts.datasets import AirPassengersDataset</span>
-<span class="sd">        &gt;&gt;&gt; from darts.models import StatsForecastETS</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import StatsForecastAutoETS</span>
 <span class="sd">        &gt;&gt;&gt; series = AirPassengersDataset().load()</span>
-<span class="sd">        &gt;&gt;&gt; model = StatsForecastETS(season_length=12, model=&quot;AZZ&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; model = StatsForecastAutoETS(season_length=12, model=&quot;AZZ&quot;)</span>
 <span class="sd">        &gt;&gt;&gt; model.fit(series[:-36])</span>
 <span class="sd">        &gt;&gt;&gt; pred = model.predict(36)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">add_encoders</span><span class="o">=</span><span class="n">add_encoders</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">ETS</span><span class="p">(</span><span class="o">*</span><span class="n">ets_args</span><span class="p">,</span> <span class="o">**</span><span class="n">ets_kwargs</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="s2">&quot;ETS-Statsforecasts&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">SFAutoETS</span><span class="p">(</span><span class="o">*</span><span class="n">ets_args</span><span class="p">,</span> <span class="o">**</span><span class="n">ets_kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_linreg</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="nf">_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_fit</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
         <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span>
+
+        <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># perform OLS and get in-sample residuals</span>
+            <span class="n">linreg</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">linreg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">)</span>
+            <span class="n">fitted_values</span> <span class="o">=</span> <span class="n">linreg</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+                <span class="n">X</span><span class="o">=</span><span class="n">future_covariates</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">series</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">fitted_values_ts</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+                <span class="n">times</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">fitted_values</span>
+            <span class="p">)</span>
+            <span class="n">resids</span> <span class="o">=</span> <span class="n">series</span> <span class="o">-</span> <span class="n">fitted_values_ts</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_linreg</span> <span class="o">=</span> <span class="n">linreg</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="n">resids</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="n">series</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
-            <span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
-            <span class="n">X</span><span class="o">=</span><span class="n">future_covariates</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">if</span> <span class="n">future_covariates</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">target</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span>
 
@@ -261,12 +287,27 @@
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
-        <span class="n">forecast_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+        <span class="n">forecast_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
             <span class="n">h</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
-            <span class="n">X</span><span class="o">=</span><span class="n">future_covariates</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">if</span> <span class="n">future_covariates</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">level</span><span class="o">=</span><span class="p">(</span><span class="n">one_sigma_rule</span><span class="p">,),</span>  <span class="c1"># ask one std for the confidence interval</span>
         <span class="p">)</span>
 
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_forecast_series</span><span class="p">(</span><span class="n">forecast_df</span><span class="p">[</span><span class="s2">&quot;mean&quot;</span><span class="p">])</span>
+        <span class="n">mu_ets</span><span class="p">,</span> <span class="n">std</span> <span class="o">=</span> <span class="n">unpack_sf_dict</span><span class="p">(</span><span class="n">forecast_dict</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mu_linreg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_linreg</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">)</span>
+            <span class="n">mu_linreg_values</span> <span class="o">=</span> <span class="n">mu_linreg</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+                <span class="n">n</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">mu</span> <span class="o">=</span> <span class="n">mu_ets</span> <span class="o">+</span> <span class="n">mu_linreg_values</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mu</span> <span class="o">=</span> <span class="n">mu_ets</span>
+
+        <span class="k">if</span> <span class="n">num_samples</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">samples</span> <span class="o">=</span> <span class="n">create_normal_samples</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">std</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">samples</span> <span class="o">=</span> <span class="n">mu</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_forecast_series</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">min_train_series_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
@@ -276,7 +317,7 @@
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="k">def</span> <span class="nf">_is_probabilistic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">False</span></div>
+        <span class="k">return</span> <span class="kc">True</span></div>
 </pre></div>
 
               </div>

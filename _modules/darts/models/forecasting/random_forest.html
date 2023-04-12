@@ -202,6 +202,7 @@
         <span class="n">n_estimators</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
         <span class="n">max_depth</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">multi_models</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Random Forest Model</span>
@@ -252,6 +253,10 @@
 <span class="sd">        multi_models</span>
 <span class="sd">            If True, a separate model will be trained for each future lag to predict. If False, a single model is</span>
 <span class="sd">            trained to predict at step &#39;output_chunk_length&#39; in the future. Default: True.</span>
+<span class="sd">        use_static_covariates</span>
+<span class="sd">            Whether the model should use static covariate information in case the input `series` passed to ``fit()``</span>
+<span class="sd">            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce</span>
+<span class="sd">            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()`.</span>
 <span class="sd">        **kwargs</span>
 <span class="sd">            Additional keyword arguments passed to `sklearn.ensemble.RandomForest`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -269,12 +274,7 @@
             <span class="n">add_encoders</span><span class="o">=</span><span class="n">add_encoders</span><span class="p">,</span>
             <span class="n">multi_models</span><span class="o">=</span><span class="n">multi_models</span><span class="p">,</span>
             <span class="n">model</span><span class="o">=</span><span class="n">RandomForestRegressor</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
-        <span class="p">)</span>
-
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;RandomForest(lags=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="si">}</span><span class="s2">, &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;n_estimators=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_estimators</span><span class="si">}</span><span class="s2">, max_depth=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">max_depth</span><span class="si">}</span><span class="s2">)&quot;</span>
+            <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span></div>
 </pre></div>
 

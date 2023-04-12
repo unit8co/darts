@@ -171,12 +171,13 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">xarray</span> <span class="k">as</span> <span class="nn">xr</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span>
 <span class="kn">from</span> <span class="nn">darts.utils</span> <span class="kn">import</span> <span class="n">_build_tqdm_iterator</span><span class="p">,</span> <span class="n">_parallel_apply</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -184,18 +185,37 @@
 
 <div class="viewcode-block" id="BaseDataTransformer"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer">[docs]</a><span class="k">class</span> <span class="nc">BaseDataTransformer</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;BaseDataTransformer&quot;</span><span class="p">,</span> <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;BaseDataTransformer&quot;</span><span class="p">,</span>
+        <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">parallel_params</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">mask_components</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Abstract class for data transformers.</span>
 
-<span class="sd">        All the deriving classes have to implement the static method :func:`ts_transform`.</span>
-<span class="sd">        The class offers the method :func:`transform()`, for applying a transformation to a ``TimeSeries`` or</span>
-<span class="sd">        ``Sequence[TimeSeries]``. This class takes care of parallelizing the transformation of multiple ``TimeSeries``</span>
-<span class="sd">        when possible.</span>
+<span class="sd">        All the deriving classes have to implement the static method :func:`ts_transform`; this implemented</span>
+<span class="sd">        method can then be applied to ``TimeSeries`` or ``Sequence[TimeSeries]`` inputs by calling the</span>
+<span class="sd">        :func:`transform()` method. Internally, :func:`transform()` parallelizes func:`ts_transform` over all</span>
+<span class="sd">        of the ``TimeSeries`` inputs passed to it. See the func:`ts_transform` method documentation</span>
+<span class="sd">        for further details on how to implement this method in a user-defined class.</span>
 
 <span class="sd">        Data transformers requiring to be fit first before calling :func:`transform` should derive</span>
-<span class="sd">        from :class:`.FittableDataTransformer` instead.</span>
-<span class="sd">        Data transformers that are invertible should derive from :class:`.InvertibleDataTransformer` instead.</span>
+<span class="sd">        from :class:`.FittableDataTransformer` instead. Data transformers that are invertible should derive</span>
+<span class="sd">        from :class:`.InvertibleDataTransformer` instead. Transformers which are both fittable and invertible</span>
+<span class="sd">        should inherit from both :class:`.FittableDataTransformer` and :class:`.InvertibleDataTransformer`.</span>
+
+<span class="sd">        All Data Transformers can store *fixed parameters* that are automatically passed to func:`ts_transform`;</span>
+<span class="sd">        the fixed parameters of a data transformer object are taken to be all those attributes defined</span>
+<span class="sd">        in the `__init__` method of the child-most class *before* `super().__init__` is called. The fixed parameter</span>
+<span class="sd">        values can then be accessed within the func:`ts_transform` method through the `params` dictionary</span>
+<span class="sd">        argument. More specifically, `params[&#39;fixed&#39;]` stores a dictionary with all of the fixed parameter</span>
+<span class="sd">        values, where the keys are simply the attribute names of each fixed parameter (e.g. the `self._my_param`</span>
+<span class="sd">        fixed parameter attribute is accessed through `params[&#39;fixed&#39;][&#39;_my_param&#39;]`).</span>
+
+<span class="sd">        Data Transformers which inherit from :class:`.FittableDataTransformer` can also store fitted parameters</span>
+<span class="sd">        alongside fixed parameters; please refer to the :class:`.FittableDataTransformer` documentation for</span>
+<span class="sd">        further details.</span>
 
 <span class="sd">        Note: the :func:`ts_transform` method is designed to be a static method instead of a instance method to allow an</span>
 <span class="sd">        efficient parallelisation also when the scaler instance is storing a non-negligible amount of data. Using</span>
@@ -214,7 +234,92 @@
 <span class="sd">            required amount of time.</span>
 <span class="sd">        verbose</span>
 <span class="sd">            Optionally, whether to print operations progress</span>
+<span class="sd">        parallel_params</span>
+<span class="sd">            Optionally, specifies which fixed parameters (i.e. the attributes initialized in the child-most</span>
+<span class="sd">            class&#39;s `__init__`) take on different values for different parallel jobs. Fixed parameters specified</span>
+<span class="sd">            by `parallel_params` are assumed to be a `Sequence` of values that should be used for that parameter</span>
+<span class="sd">            in each parallel job; the length of this `Sequence` should equal the number of parallel jobs. If</span>
+<span class="sd">            `parallel_params=True`, every fixed parameter will take on a different value for each</span>
+<span class="sd">            parallel job. If `parallel_params=False`, every fixed parameter will take on the same value for</span>
+<span class="sd">            each parallel job. If `parallel_params` is a `Sequence` of fixed attribute names, only those</span>
+<span class="sd">            attribute names specified will take on different values between different parallel jobs.</span>
+<span class="sd">        mask_components</span>
+<span class="sd">            Optionally, whether or not to automatically apply any provided `component_mask`s to the</span>
+<span class="sd">            `TimeSeries` inputs passed to `transform`, `fit`, `inverse_transform`, or `fit_transform`.</span>
+<span class="sd">            If `True`, any specified `component_mask` will be applied to each input timeseries</span>
+<span class="sd">            before passing them to the called method; the masked components will also be automatically</span>
+<span class="sd">            &#39;unmasked&#39; in the returned `TimeSeries`. If `False`, then `component_mask` (if provided) will</span>
+<span class="sd">            be passed as a keyword argument, but won&#39;t automatically be applied to the input timeseries.</span>
+<span class="sd">            See `apply_component_mask` for further details.</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; from darts.dataprocessing.transformers import BaseDataTransformer</span>
+<span class="sd">        &gt;&gt;&gt; from darts.utils.timeseries_generation import linear_timeseries</span>
+<span class="sd">        &gt;&gt;&gt;</span>
+<span class="sd">        &gt;&gt;&gt; class SimpleTransform(BaseDataTransformer):</span>
+<span class="sd">        &gt;&gt;&gt;</span>
+<span class="sd">        &gt;&gt;&gt;         def __init__(self, a):</span>
+<span class="sd">        &gt;&gt;&gt;             self._a = a</span>
+<span class="sd">        &gt;&gt;&gt;             super().__init__()</span>
+<span class="sd">        &gt;&gt;&gt;</span>
+<span class="sd">        &gt;&gt;&gt;         @staticmethod</span>
+<span class="sd">        &gt;&gt;&gt;         def ts_transform(series, params, **kwargs):</span>
+<span class="sd">        &gt;&gt;&gt;             a = params[&#39;fixed&#39;][&#39;_a&#39;]</span>
+<span class="sd">        &gt;&gt;&gt;             b = kwargs.pop(&#39;b&#39;)</span>
+<span class="sd">        &gt;&gt;&gt;             return a*series + b</span>
+<span class="sd">        &gt;&gt;&gt;</span>
+<span class="sd">        &gt;&gt;&gt; series = linear_timeseries(length=5)</span>
+<span class="sd">        &gt;&gt;&gt; print(series)</span>
+<span class="sd">        &lt;TimeSeries (DataArray) (time: 5, component: 1, sample: 1)&gt;</span>
+<span class="sd">        array([[[0.  ]],</span>
+
+<span class="sd">            [[0.25]],</span>
+
+<span class="sd">            [[0.5 ]],</span>
+
+<span class="sd">            [[0.75]],</span>
+
+<span class="sd">            [[1.  ]]])</span>
+<span class="sd">        Coordinates:</span>
+<span class="sd">        * time       (time) datetime64[ns] 2000-01-01 2000-01-02 ... 2000-01-05</span>
+<span class="sd">        * component  (component) object &#39;linear&#39;</span>
+<span class="sd">        Dimensions without coordinates: sample</span>
+<span class="sd">        Attributes:</span>
+<span class="sd">            static_covariates:  None</span>
+<span class="sd">            hierarchy:          None</span>
+<span class="sd">        &gt;&gt;&gt; series = SimpleTransform(a=2).transform(series, b=3)</span>
+<span class="sd">        &gt;&gt;&gt; print(series)</span>
+<span class="sd">        &lt;TimeSeries (DataArray) (time: 5, component: 1, sample: 1)&gt;</span>
+<span class="sd">        array([[[3. ]],</span>
+
+<span class="sd">            [[3.5]],</span>
+
+<span class="sd">            [[4. ]],</span>
+
+<span class="sd">            [[4.5]],</span>
+
+<span class="sd">            [[5. ]]])</span>
+<span class="sd">        Coordinates:</span>
+<span class="sd">        * time       (time) datetime64[ns] 2000-01-01 2000-01-02 ... 2000-01-05</span>
+<span class="sd">        * component  (component) object &#39;linear&#39;</span>
+<span class="sd">        Dimensions without coordinates: sample</span>
+<span class="sd">        Attributes:</span>
+<span class="sd">            static_covariates:  None</span>
+<span class="sd">            hierarchy:          None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Assume `super().__init__` called at *very end* of</span>
+        <span class="c1"># child-most class&#39;s `__init__`, so `vars(self)` contains</span>
+        <span class="c1"># only attributes of this child-most class:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fixed_params</span> <span class="o">=</span> <span class="nb">vars</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="c1"># If `parallel_params = True`, but not a list of key values:</span>
+        <span class="k">if</span> <span class="n">parallel_params</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parallel_params</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
+            <span class="n">parallel_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fixed_params</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="c1"># If `parallel_params = False`:</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">parallel_params</span><span class="p">:</span>
+            <span class="n">parallel_params</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parallel_params</span> <span class="o">=</span> <span class="n">parallel_params</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mask_components</span> <span class="o">=</span> <span class="n">mask_components</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span> <span class="o">=</span> <span class="n">verbose</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_n_jobs</span> <span class="o">=</span> <span class="n">n_jobs</span>
@@ -248,20 +353,62 @@
 
 <div class="viewcode-block" id="BaseDataTransformer.ts_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer.ts_transform">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">ts_transform</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">ts_transform</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The function that will be applied to each series when :func:`transform()` is called.</span>
 
-<span class="sd">        The function must take as first argument a ``TimeSeries`` object, and return the transformed ``TimeSeries``</span>
-<span class="sd">        object. If more parameters are added as input in the derived classes, the ``_transform_iterator()`` should be</span>
-<span class="sd">        redefined accordingly, to yield the necessary arguments to this function (See ``_transform_iterator()`` for</span>
-<span class="sd">        further details).</span>
-
 <span class="sd">        This method is not implemented in the base class and must be implemented in the deriving classes.</span>
+
+<span class="sd">        The function must take as first argument a ``TimeSeries`` object and, as a second argument, a</span>
+<span class="sd">        dictionary containing the fixed and/or fitted parameters of the transformation; this function</span>
+<span class="sd">        should then return a transformed ``TimeSeries`` object.</span>
+
+<span class="sd">        The `params` dictionary *can* contain up to two keys:</span>
+<span class="sd">            1. `params[&#39;fixed&#39;]` stores the fixed parameters of the transformation (i.e. attributed</span>
+<span class="sd">            defined in the `__init__` method of the child-most class *before* `super().__init__` is called);</span>
+<span class="sd">            `params[&#39;fixed&#39;]` is a dictionary itself, whose keys are the names of the fixed parameter</span>
+<span class="sd">            attributes. For example, if `_my_fixed_param` is defined as an attribute in the child-most</span>
+<span class="sd">            class, then this fixed parameter value can be accessed through `params[&#39;fixed&#39;][&#39;_my_fixed_param&#39;]`.</span>
+<span class="sd">            2. If the transform inherits from the :class:`.FittableDataTransformer` class, then `params[&#39;fitted&#39;]`</span>
+<span class="sd">            will store the fitted parameters of the transformation; the fitted parameters are simply the output(s)</span>
+<span class="sd">            returned by the `ts_fit` function, whatever those output(s) may be. See :class:`.FittableDataTransformer`</span>
+<span class="sd">            for further details about fitted parameters.</span>
+
+<span class="sd">        Any positional/keyword argument supplied to the `transform` method are passed as positional/keyword arguments</span>
+<span class="sd">        to `ts_transform`; hence, `ts_transform` should also accept `*args` and/or `**kwargs` if positional/keyword</span>
+<span class="sd">        arguments are passed to `transform`. Note that if the `mask_components` attribute of `BaseDataTransformer`</span>
+<span class="sd">        is set to `False`, then the `component_mask` provided to `transform` will be passed as an additional keyword</span>
+<span class="sd">        argument to `ts_transform`.</span>
+
+<span class="sd">        The `BaseDataTransformer` class includes some helper methods which may prove useful when implementing a</span>
+<span class="sd">        `ts_transform` function:</span>
+<span class="sd">            1. The `apply_component_mask` and `unapply_component_mask` methods, which apply and &#39;unapply&#39;</span>
+<span class="sd">            `component_mask`s to a `TimeSeries` respectively; these methods are automatically called in `transform`</span>
+<span class="sd">            if the `mask_component` attribute of `BaseDataTransformer` is set to `True`, but you may want to manually</span>
+<span class="sd">            call them if you set `mask_components` to `False` and wish to manually specify how `component_mask`s are</span>
+<span class="sd">            applied to a `TimeSeries`.</span>
+<span class="sd">            2. The `stack_samples` method, which stacks all the samples in a `TimeSeries` along</span>
+<span class="sd">            the component axis, so that the `TimeSeries` goes from shape `(n_timesteps, n_components, n_samples)` to</span>
+<span class="sd">            shape `(n_timesteps, n_components * n_samples)`. This stacking is useful if a pointwise transform is being</span>
+<span class="sd">            implemented (i.e. transforming the value at time `t` depends only on the value of the series at that</span>
+<span class="sd">            time `t`). Once transformed, the stacked `TimeSeries` can be &#39;unstacked&#39; using the `unstack_samples` method.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        series</span>
 <span class="sd">            series to be transformed.</span>
+<span class="sd">        params</span>
+<span class="sd">            Dictionary containing the parameters of the transformation function. Fixed parameters</span>
+<span class="sd">            (i.e. attributes defined in the child-most class of the transformation prior to</span>
+<span class="sd">            calling `super.__init__()`) are stored under the `&#39;fixed&#39;` key. If the transformation</span>
+<span class="sd">            inherits from the `FittableDataTransformer` class, then the fitted parameters of the</span>
+<span class="sd">            transformation (i.e. the values returned by `ts_fit`) are stored under the</span>
+<span class="sd">            `&#39;fitted&#39;` key.</span>
+<span class="sd">        args</span>
+<span class="sd">            Any poisitional arguments provided in addition to `series` when</span>
+<span class="sd">        kwargs</span>
+<span class="sd">            Any additional keyword arguments provided to `transform`. Note that if the `mask_component`</span>
+<span class="sd">            attribute of `BaseDataTransformer` is set to `False`, then `component_mask` will</span>
+<span class="sd">            be passed as a keyword argument.</span>
 
 <span class="sd">        Notes</span>
 <span class="sd">        -----</span>
@@ -272,51 +419,22 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
-    <span class="k">def</span> <span class="nf">_transform_iterator</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Return an ``Iterator`` object with tuples of inputs for each single call to :func:`ts_transform()`.</span>
-<span class="sd">        Additional `args` and `kwargs` from :func:`transform()` (constant across all the calls to</span>
-<span class="sd">        :func:`ts_transform()`) are already forwarded, and thus don&#39;t need to be included in this generator.</span>
-
-<span class="sd">        The basic implementation of this method returns ``zip(series)``, i.e., a generator of single-valued tuples,</span>
-<span class="sd">        each containing one ``TimeSeries`` object.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        series</span>
-<span class="sd">            Sequence of series received in input.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        Iterator[Tuple[TimeSeries]]</span>
-<span class="sd">            An iterator containing tuples of inputs for the :func:`ts_transform` method.</span>
-
-<span class="sd">        Examples</span>
-<span class="sd">        ________</span>
-
-<span class="sd">        class IncreasingAdder(BaseDataTransformer):</span>
-<span class="sd">            def __init__(self):</span>
-<span class="sd">                super().__init__()</span>
-
-<span class="sd">            @staticmethod</span>
-<span class="sd">            def ts_transform(series: TimeSeries, n: int) -&gt; TimeSeries:</span>
-<span class="sd">                return series + n</span>
-
-<span class="sd">            def _transform_iterator(self, series: Sequence[TimeSeries]) -&gt; Iterator[Tuple[TimeSeries, int]]:</span>
-<span class="sd">                return zip(series, (i for i in range(len(series))))</span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="nb">zip</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
-
 <div class="viewcode-block" id="BaseDataTransformer.transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="n">component_mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Transform a (sequence of) of series.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Transforms a (sequence of) of series by calling the user-implemeneted `ts_transform` method.</span>
 
-<span class="sd">        In case a ``Sequence`` is passed as input data, this function takes care of</span>
-<span class="sd">        parallelising the transformation of multiple series in the sequence at the same time.</span>
+<span class="sd">        In case a ``Sequence[TimeSeries]`` is passed as input data, this function takes care of</span>
+<span class="sd">        parallelising the transformation of multiple series in the sequence at the same time. Additionally,</span>
+<span class="sd">        if the `mask_components` attribute was set to `True` when instantiating `BaseDataTransformer`,</span>
+<span class="sd">        then any provided `component_mask`s will be automatically applied to each input `TimeSeries`;</span>
+<span class="sd">        please refer to &#39;Notes&#39; for further details on component masking.</span>
+
+<span class="sd">        Any additionally specified `*args` and `**kwargs` are automatically passed to `ts_transform`.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -324,6 +442,12 @@
 <span class="sd">            (sequence of) series to be transformed.</span>
 <span class="sd">        args</span>
 <span class="sd">            Additional positional arguments for each :func:`ts_transform()` method call</span>
+<span class="sd">        component_mask : Optional[np.ndarray] = None</span>
+<span class="sd">            Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies which</span>
+<span class="sd">            components of the underlying `series` the transform should consider. If the `mask_components`</span>
+<span class="sd">            attribute was set to `True` when instantiating `BaseDataTransformer`, then the component mask</span>
+<span class="sd">            will be automatically applied to each `TimeSeries` input. Otherwise, `component_mask` will be</span>
+<span class="sd">            provided as an addition keyword argument to `ts_transform`. See &#39;Notes&#39; for further details.</span>
 <span class="sd">        kwargs</span>
 <span class="sd">            Additional keyword arguments for each :func:`ts_transform()` method call</span>
 
@@ -331,17 +455,46 @@
 <span class="sd">        -------</span>
 <span class="sd">        Union[TimeSeries, List[TimeSeries]]</span>
 <span class="sd">            Transformed data.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        If the `mask_components` attribute was set to `True` when instantiating `BaseDataTransformer`,</span>
+<span class="sd">        then any provided `component_mask`s will be automatically applied to each `TimeSeries` input to</span>
+<span class="sd">        transform; `component_mask`s are simply boolean arrays of shape `(series.n_components,)` that</span>
+<span class="sd">        specify which components of each `series` should be transformed using `ts_transform` and which</span>
+<span class="sd">        components should not. If `component_mask[i]` is `True`, then the `i`th component of each</span>
+<span class="sd">        `series` will be transformed by `ts_transform`. Conversely, if `component_mask[i]` is `False`,</span>
+<span class="sd">        the `i`th component will be removed from each `series` before being passed to `ts_transform`;</span>
+<span class="sd">        after transforming this masked series, the untransformed `i`th component will be &#39;added back&#39;</span>
+<span class="sd">        to the output. Note that automatic `component_mask`ing can only be performed if the `ts_transform`</span>
+<span class="sd">        does *not* change the number of timesteps in each series; if this were to happen, then the transformed</span>
+<span class="sd">        and untransformed components are unable to be concatenated back together along the component axis.</span>
+
+<span class="sd">        If `mask_components` was set to `False` when instantiating `BaseDataTransformer`, then any provided</span>
+<span class="sd">        `component_masks` will be passed as a keyword argument `ts_transform`; the user can then manually specify</span>
+<span class="sd">        how the `component_mask` should be applied to each series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">desc</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Transform (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="si">}</span><span class="s2">)&quot;</span>
 
+        <span class="c1"># Take note of original input for unmasking purposes:</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
+            <span class="n">input_series</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span>
             <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
+            <span class="n">input_series</span> <span class="o">=</span> <span class="n">series</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">series</span>
 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_components</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">apply_component_mask</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="n">return_ts</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">ts</span> <span class="ow">in</span> <span class="n">data</span>
+            <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;component_mask&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">component_mask</span>
+
         <span class="n">input_iterator</span> <span class="o">=</span> <span class="n">_build_tqdm_iterator</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_transform_iterator</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
+            <span class="nb">zip</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_params</span><span class="p">(</span><span class="n">n_timeseries</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))),</span>
             <span class="n">verbose</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span><span class="p">,</span>
             <span class="n">desc</span><span class="o">=</span><span class="n">desc</span><span class="p">,</span>
             <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
@@ -351,21 +504,65 @@
             <span class="n">input_iterator</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">ts_transform</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_jobs</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span>
         <span class="p">)</span>
 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_components</span><span class="p">:</span>
+            <span class="n">unmasked</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">ts</span><span class="p">,</span> <span class="n">transformed_ts</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">input_series</span><span class="p">,</span> <span class="n">transformed_data</span><span class="p">):</span>
+                <span class="n">unmasked</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">unapply_component_mask</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">transformed_ts</span><span class="p">,</span> <span class="n">component_mask</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="n">transformed_data</span> <span class="o">=</span> <span class="n">unmasked</span>
+
         <span class="k">return</span> <span class="p">(</span>
             <span class="n">transformed_data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">else</span> <span class="n">transformed_data</span>
         <span class="p">)</span></div>
 
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_reshape_in</span><span class="p">(</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-        <span class="n">component_mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">flatten</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="k">def</span> <span class="nf">_get_params</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">n_timeseries</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates generator of dictionaries containing fixed parameter values</span>
+<span class="sd">        (i.e. attributes defined in the child-most class). Those fixed parameters</span>
+<span class="sd">        specified by `parallel_params` are given different values over each of the</span>
+<span class="sd">        parallel jobs. Called by `transform` and `inverse_transform`,</span>
+<span class="sd">        if `Transformer` does *not* inherit from `FittableTransformer`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_fixed_params</span><span class="p">(</span><span class="n">n_timeseries</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">params_generator</span><span class="p">(</span><span class="n">n_timeseries</span><span class="p">,</span> <span class="n">fixed_params</span><span class="p">,</span> <span class="n">parallel_params</span><span class="p">):</span>
+            <span class="n">fixed_params_copy</span> <span class="o">=</span> <span class="n">fixed_params</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_timeseries</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">parallel_params</span><span class="p">:</span>
+                    <span class="n">fixed_params_copy</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">fixed_params</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">fixed_params_copy</span><span class="p">:</span>
+                    <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;fixed&quot;</span><span class="p">:</span> <span class="n">fixed_params_copy</span><span class="p">}</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">params</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="k">yield</span> <span class="n">params</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="n">params_generator</span><span class="p">(</span><span class="n">n_timeseries</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fixed_params</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parallel_params</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_check_fixed_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_timeseries</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Raises `ValueError` if `self._parallel_params` specifies a `key` in</span>
+<span class="sd">        `self._fixed_params` that should be distributed, but</span>
+<span class="sd">        `len(self._fixed_params[key])` does not equal `n_timeseries`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parallel_params</span><span class="p">:</span>
+            <span class="n">raise_if</span><span class="p">(</span>
+                <span class="n">n_timeseries</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fixed_params</span><span class="p">[</span><span class="n">key</span><span class="p">]),</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">n_timeseries</span><span class="si">}</span><span class="s2"> TimeSeries were provided &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;but only </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fixed_params</span><span class="p">[</span><span class="n">key</span><span class="p">])</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> values &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;were specified upon initialising </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="BaseDataTransformer.apply_component_mask"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer.apply_component_mask">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">apply_component_mask</span><span class="p">(</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">component_mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">return_ts</span><span class="o">=</span><span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extracts specified components from series and reshapes these values into an appropriate input shape</span>
-<span class="sd">        for a transformer. If `flatten=True`, the output is a 2-D matrix where each row corresponds to a timestep,</span>
-<span class="sd">        each column corresponds to a component (dimension) of the series, and the columns&#39; values are the flattened</span>
-<span class="sd">        values over all samples. Conversely, if `flatten=False`, the output is a 3-D matrix (i.e. timesteps along</span>
-<span class="sd">        the zeroth axis, components along the first axis, and samples along the second axis).</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Extracts components specified by `component_mask` from `series`</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -373,93 +570,174 @@
 <span class="sd">            input TimeSeries to be fed into transformer.</span>
 <span class="sd">        component_mask</span>
 <span class="sd">            Optionally, np.ndarray boolean mask of shape (n_components, 1) specifying which components to</span>
-<span class="sd">            extract from `series`.</span>
-<span class="sd">        flatten</span>
-<span class="sd">            Optionally, bool specifying whether the samples for each component extracted by `component_mask`</span>
-<span class="sd">            should be flattened into a single column.</span>
+<span class="sd">            extract from `series`. The `i`th component of `series` is kept only if `component_mask[i] = True`.</span>
+<span class="sd">            If not specified, no masking is performed.</span>
+<span class="sd">        return_ts</span>
+<span class="sd">            Optionally, specifies that a `TimeSeries` should be returned, rather than an `np.ndarray`.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        masked</span>
+<span class="sd">            `TimeSeries` (if `return_ts = True`) or `np.ndarray` (if `return_ts = False`) with only those components</span>
+<span class="sd">            specified by `component_mask` remaining.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="k">if</span> <span class="n">component_mask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">component_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">n_components</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">isinstance</span><span class="p">(</span><span class="n">component_mask</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="n">component_mask</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="nb">bool</span><span class="p">,</span>
-            <span class="s2">&quot;`component_mask` must be a boolean np.ndarray`&quot;</span><span class="p">,</span>
-            <span class="n">logger</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="n">series</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">component_mask</span><span class="p">),</span>
-            <span class="s2">&quot;mismatch between number of components in `series` and length of `component_mask`&quot;</span><span class="p">,</span>
-            <span class="n">logger</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">vals</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[:,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="p">:]</span>
-
-        <span class="k">if</span> <span class="n">flatten</span><span class="p">:</span>
-            <span class="n">vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span>
-                <span class="p">[</span><span class="n">vals</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">component_mask</span><span class="o">.</span><span class="n">sum</span><span class="p">())],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span>
+            <span class="n">masked</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="n">return_ts</span> <span class="k">else</span> <span class="n">series</span><span class="o">.</span><span class="n">all_values</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">raise_if_not</span><span class="p">(</span>
+                <span class="nb">isinstance</span><span class="p">(</span><span class="n">component_mask</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="n">component_mask</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="nb">bool</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;`component_mask` must be a boolean `np.ndarray`, not a </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">component_mask</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
+            <span class="n">raise_if_not</span><span class="p">(</span>
+                <span class="n">series</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">component_mask</span><span class="p">),</span>
+                <span class="s2">&quot;mismatch between number of components in `series` and length of `component_mask`&quot;</span><span class="p">,</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">masked</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[:,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="k">if</span> <span class="n">return_ts</span><span class="p">:</span>
+                <span class="c1"># Remove masked components from coords:</span>
+                <span class="n">coords</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span>
+                <span class="n">coords</span><span class="p">[</span><span class="s2">&quot;component&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">coords</span><span class="p">[</span><span class="s2">&quot;component&quot;</span><span class="p">][</span><span class="n">component_mask</span><span class="p">]</span>
+                <span class="n">new_xa</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+                    <span class="n">masked</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">dims</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="n">coords</span><span class="p">,</span> <span class="n">attrs</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">attrs</span>
+                <span class="p">)</span>
+                <span class="n">masked</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">masked</span></div>
 
-        <span class="k">return</span> <span class="n">vals</span>
-
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_reshape_out</span><span class="p">(</span>
+<div class="viewcode-block" id="BaseDataTransformer.unapply_component_mask"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer.unapply_component_mask">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">unapply_component_mask</span><span class="p">(</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-        <span class="n">vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">vals</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">],</span>
         <span class="n">component_mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">flatten</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reshapes the 2-D or 3-D matrix coming out of a transformer into a 3-D matrix suitable to build a TimeSeries,</span>
-<span class="sd">        and adds back components previously removed by `component_mask` in `_reshape_in` method.</span>
-
-<span class="sd">        If `flatten=True`, the output is built by taking each column of the 2-D input matrix (the flattened components)</span>
-<span class="sd">        and reshaping them to (len(series), n_samples), then stacking them on 2nd axis. Conversely, if `flatten=False`,</span>
-<span class="sd">        the shape of the 3-D input matrix is left unchanged.</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adds back components previously removed by `component_mask` in `apply_component_mask` method.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        series</span>
 <span class="sd">            input TimeSeries that was fed into transformer.</span>
 <span class="sd">        vals:</span>
-<span class="sd">            transformer output</span>
+<span class="sd">            `np.ndarray` or `TimeSeries` to &#39;unmask&#39;</span>
 <span class="sd">        component_mask</span>
 <span class="sd">            Optionally, np.ndarray boolean mask of shape (n_components, 1) specifying which components were extracted</span>
-<span class="sd">            from `series`. If given, insert `vals` back into the columns of the original array.</span>
-<span class="sd">        flatten</span>
-<span class="sd">            Optionally, bool specifying whether `series` is a 2-D matrix. Should match value of `flatten` argument</span>
-<span class="sd">            provided to `_reshape_in` method.</span>
+<span class="sd">            from `series`. If given, insert `vals` back into the columns of the original array. If not specified,</span>
+<span class="sd">            nothing is &#39;unmasked&#39;.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        unmasked</span>
+<span class="sd">            `TimeSeries` (if `vals` is a `TimeSeries`) or `np.ndarray` (if `vals` is an `np.ndarray`) with those</span>
+<span class="sd">            components previously removed by `component_mask` now &#39;added back&#39;.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="n">component_mask</span> <span class="ow">is</span> <span class="kc">None</span>
-            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">component_mask</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
-            <span class="ow">and</span> <span class="n">component_mask</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="nb">bool</span><span class="p">,</span>
-            <span class="s2">&quot;If `component_mask` is given, must be a boolean np.ndarray`&quot;</span><span class="p">,</span>
-            <span class="n">logger</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">series_width</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">width</span> <span class="k">if</span> <span class="n">component_mask</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">component_mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">flatten</span><span class="p">:</span>
-            <span class="n">reshaped</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span>
-                <span class="p">[</span><span class="n">vals</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">series</span><span class="o">.</span><span class="n">n_samples</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">series_width</span><span class="p">)],</span>
-                <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">reshaped</span> <span class="o">=</span> <span class="n">vals</span>
-
         <span class="k">if</span> <span class="n">component_mask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">reshaped</span>
+            <span class="n">unmasked</span> <span class="o">=</span> <span class="n">vals</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">raise_if_not</span><span class="p">(</span>
+                <span class="nb">isinstance</span><span class="p">(</span><span class="n">component_mask</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="n">component_mask</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="nb">bool</span><span class="p">,</span>
+                <span class="s2">&quot;If `component_mask` is given, must be a boolean np.ndarray`&quot;</span><span class="p">,</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">raise_if_not</span><span class="p">(</span>
+                <span class="n">series</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">component_mask</span><span class="p">),</span>
+                <span class="s2">&quot;mismatch between number of components in `series` and length of `component_mask`&quot;</span><span class="p">,</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">unmasked</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">all_values</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
+                <span class="n">unmasked</span><span class="p">[:,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">all_values</span><span class="p">()</span>
+                <span class="c1"># Remove timepoints not present in transformed data:</span>
+                <span class="n">unmasked</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span><span class="o">.</span><span class="n">with_values</span><span class="p">(</span><span class="n">unmasked</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">unmasked</span><span class="p">[:,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">vals</span>
+        <span class="k">return</span> <span class="n">unmasked</span></div>
 
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="n">series</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">component_mask</span><span class="p">),</span>
-            <span class="s2">&quot;mismatch between number of components in `series` and length of `component_mask`&quot;</span><span class="p">,</span>
-            <span class="n">logger</span><span class="p">,</span>
-        <span class="p">)</span>
+<div class="viewcode-block" id="BaseDataTransformer.stack_samples"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer.stack_samples">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">stack_samples</span><span class="p">(</span><span class="n">vals</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates an array of shape `(n_timesteps * n_samples, n_components)` from</span>
+<span class="sd">        either a `TimeSeries` or the `array_values` of a `TimeSeries`.</span>
 
-        <span class="n">series_vals</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">series_vals</span><span class="p">[:,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">reshaped</span>
-        <span class="k">return</span> <span class="n">series_vals</span>
+<span class="sd">        Each column of the returned array corresponds to a component (dimension)</span>
+<span class="sd">        of the series and is formed by concatenating all of the samples associated</span>
+<span class="sd">        with that component together. More specifically, the `i`th column is formed</span>
+<span class="sd">        by concatenating</span>
+<span class="sd">        `[component_i_sample_1, component_i_sample_2, ..., component_i_sample_n]`.</span>
+
+<span class="sd">        Stacking is useful when implementing a transformation that applies the exact same</span>
+<span class="sd">        change to every timestep in the timeseries. In such cases, the samples of each</span>
+<span class="sd">        component can be stacked together into a single column, and the transformation can then be</span>
+<span class="sd">        applied to each column, thereby &#39;vectorising&#39; the transformation over all samples of that component;</span>
+<span class="sd">        the `unstack_samples` method can then be used to reshape the output. For transformations that depend</span>
+<span class="sd">        on the `time_index` or the temporal ordering of the observations, stacking should *not* be employed.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        vals</span>
+<span class="sd">            `Timeseries` or `np.ndarray` of shape `(n_timesteps, n_components, n_samples)` to be &#39;stacked&#39;.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        stacked</span>
+<span class="sd">            `np.ndarray` of shape `(n_timesteps * n_samples, n_components)`, where the `i`th column is formed</span>
+<span class="sd">            by concatenating all of the samples of the `i`th component in `vals`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">all_values</span><span class="p">()</span>
+        <span class="n">shape</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">new_shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">stacked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">new_shape</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">stacked</span></div>
+
+<div class="viewcode-block" id="BaseDataTransformer.unstack_samples"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer.unstack_samples">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">unstack_samples</span><span class="p">(</span>
+        <span class="n">vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">n_timesteps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">n_samples</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Reshapes the 2D array returned by `stack_samples` back into an array of shape</span>
+<span class="sd">        `(n_timesteps, n_components, n_samples)`; this &#39;undoes&#39; the reshaping of</span>
+<span class="sd">        `stack_samples`. Either `n_components`, `n_samples`, or `series` must be specified.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        vals</span>
+<span class="sd">            `np.ndarray` of shape `(n_timesteps * n_samples, n_components)` to be &#39;unstacked&#39;.</span>
+<span class="sd">        n_timesteps</span>
+<span class="sd">            Optionally, the number of timesteps in the array originally passed to `stack_samples`.</span>
+<span class="sd">            Does *not* need to be provided if `series` is specified.</span>
+<span class="sd">        n_samples</span>
+<span class="sd">            Optionally, the number of samples in the array originally passed to `stack_samples`.</span>
+<span class="sd">            Does *not* need to be provided if `series` is specified.</span>
+<span class="sd">        series</span>
+<span class="sd">            Optionally, the `TimeSeries` object used to create `vals`; `n_samples` is inferred</span>
+<span class="sd">            from this.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        unstacked</span>
+<span class="sd">            `np.ndarray` of shape `(n_timesteps, n_components, n_samples)`.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">n_samples</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">n_samples</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">raise_if</span><span class="p">(</span>
+                <span class="nb">all</span><span class="p">(</span><span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">[</span><span class="n">n_timesteps</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">]),</span>
+                <span class="s2">&quot;Must specify either `n_timesteps`, `n_samples`, or `series`.&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">n_components</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">n_timesteps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">reshaped_vals</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">n_timesteps</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_components</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">reshaped_vals</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">n_components</span><span class="p">)</span>
+        <span class="n">unstacked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="n">reshaped_vals</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">unstacked</span></div>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>

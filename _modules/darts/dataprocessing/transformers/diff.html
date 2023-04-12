@@ -165,7 +165,12 @@
               <div>
                 
   <h1>Source code for darts.dataprocessing.transformers.diff</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Differencing Transformer</span>
+<span class="sd">------------------------</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
@@ -267,19 +272,21 @@
 <span class="sd">        .. [3] https://otexts.com/fpp2/stationarity.html#second-order-differencing</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">lags</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
             <span class="n">lags</span> <span class="o">=</span> <span class="p">(</span><span class="n">lags</span><span class="p">,)</span>
+        <span class="c1"># Define fixed params (i.e. attributes defined before calling `super().__init__`):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_lags</span> <span class="o">=</span> <span class="n">lags</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_dropna</span> <span class="o">=</span> <span class="n">dropna</span>
-
-    <span class="k">def</span> <span class="nf">_fit_iterator</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">int</span><span class="p">]]:</span>
-        <span class="k">return</span> <span class="p">((</span><span class="n">ts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lags</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dropna</span><span class="p">)</span> <span class="k">for</span> <span class="n">ts</span> <span class="ow">in</span> <span class="n">series</span><span class="p">)</span>
+        <span class="c1"># Don&#39;t automatically apply `component_mask` - need to throw error when `dropna = True`</span>
+        <span class="c1"># and `component_mask` is specified:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span> <span class="n">mask_components</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
 
 <div class="viewcode-block" id="Diff.ts_fit"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.diff.html#darts.dataprocessing.transformers.diff.Diff.ts_fit">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">ts_fit</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">lags</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">dropna</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">ts_fit</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="n">lags</span><span class="p">,</span> <span class="n">dropna</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fixed&quot;</span><span class="p">][</span><span class="s2">&quot;_lags&quot;</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fixed&quot;</span><span class="p">][</span><span class="s2">&quot;_dropna&quot;</span><span class="p">]</span>
         <span class="n">lags_sum</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">lags</span><span class="p">)</span>
         <span class="n">raise_if</span><span class="p">(</span>
             <span class="n">series</span><span class="o">.</span><span class="n">n_timesteps</span> <span class="o">&lt;=</span> <span class="n">lags_sum</span><span class="p">,</span>
@@ -288,9 +295,10 @@
                 <span class="sa">f</span><span class="s2">&quot;to difference with lags </span><span class="si">{</span><span class="n">lags</span><span class="si">}</span><span class="s2">; series only has &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">series</span><span class="o">.</span><span class="n">n_timesteps</span><span class="si">}</span><span class="s2"> timesteps.&quot;</span>
             <span class="p">),</span>
+            <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">component_mask</span> <span class="o">=</span> <span class="n">Diff</span><span class="o">.</span><span class="n">_get_component_mask</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">dropna</span><span class="p">)</span>
-        <span class="n">vals</span> <span class="o">=</span> <span class="n">Diff</span><span class="o">.</span><span class="n">_reshape_in</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="n">flatten</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="n">Diff</span><span class="o">.</span><span class="n">apply_component_mask</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="n">return_ts</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="c1"># First `lags_sum` values of time series will be &#39;lost&#39; due to differencing;</span>
         <span class="c1"># need to remember these values to &#39;undifference&#39;:</span>
         <span class="n">start_vals</span> <span class="o">=</span> <span class="n">vals</span><span class="p">[:</span><span class="n">lags_sum</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
@@ -303,51 +311,35 @@
             <span class="n">cutoff</span> <span class="o">+=</span> <span class="n">lag</span>
         <span class="k">return</span> <span class="n">start_vals</span><span class="p">,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="n">series</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="n">series</span><span class="o">.</span><span class="n">freq</span></div>
 
-    <span class="k">def</span> <span class="nf">_transform_iterator</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]]:</span>
-        <span class="k">return</span> <span class="p">((</span><span class="n">subseries</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lags</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dropna</span><span class="p">)</span> <span class="k">for</span> <span class="n">subseries</span> <span class="ow">in</span> <span class="n">series</span><span class="p">)</span>
-
 <div class="viewcode-block" id="Diff.ts_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.diff.html#darts.dataprocessing.transformers.diff.Diff.ts_transform">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">ts_transform</span><span class="p">(</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">lags</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">dropna</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+        <span class="n">lags</span><span class="p">,</span> <span class="n">dropna</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fixed&quot;</span><span class="p">][</span><span class="s2">&quot;_lags&quot;</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fixed&quot;</span><span class="p">][</span><span class="s2">&quot;_dropna&quot;</span><span class="p">]</span>
         <span class="n">component_mask</span> <span class="o">=</span> <span class="n">Diff</span><span class="o">.</span><span class="n">_get_component_mask</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">dropna</span><span class="p">)</span>
-        <span class="n">diffed</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">component_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">diffed</span> <span class="o">=</span> <span class="n">diffed</span><span class="o">.</span><span class="n">drop_columns</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="o">~</span><span class="n">component_mask</span><span class="p">])</span>
+        <span class="n">diffed</span> <span class="o">=</span> <span class="n">Diff</span><span class="o">.</span><span class="n">apply_component_mask</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="n">return_ts</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="n">lags</span><span class="p">:</span>
             <span class="n">diffed</span> <span class="o">=</span> <span class="n">diffed</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">periods</span><span class="o">=</span><span class="n">lag</span><span class="p">,</span> <span class="n">dropna</span><span class="o">=</span><span class="n">dropna</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">component_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="c1"># Add back masked (i.e. undifferenced) components:</span>
-            <span class="n">diffed</span> <span class="o">=</span> <span class="n">Diff</span><span class="o">.</span><span class="n">_reshape_out</span><span class="p">(</span>
-                <span class="n">series</span><span class="p">,</span> <span class="n">diffed</span><span class="o">.</span><span class="n">all_values</span><span class="p">(),</span> <span class="n">component_mask</span><span class="p">,</span> <span class="n">flatten</span><span class="o">=</span><span class="kc">False</span>
-            <span class="p">)</span>
-            <span class="n">diffed</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">with_values</span><span class="p">(</span><span class="n">diffed</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">diffed</span></div>
-
-    <span class="k">def</span> <span class="nf">_inverse_transform_iterator</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
-        <span class="n">lags</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_lags</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)))</span>
-        <span class="n">dropna</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dropna</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)))</span>
-        <span class="k">return</span> <span class="nb">zip</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">lags</span><span class="p">,</span> <span class="n">dropna</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fitted_params</span><span class="p">)</span>
+        <span class="c1"># `series` needs same `n_timesteps` as `diffed` for `unapply_component_mask`</span>
+        <span class="k">if</span> <span class="n">dropna</span><span class="p">:</span>
+            <span class="n">series</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">drop_before</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">lags</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Diff</span><span class="o">.</span><span class="n">unapply_component_mask</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">diffed</span><span class="p">,</span> <span class="n">component_mask</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Diff.ts_inverse_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.diff.html#darts.dataprocessing.transformers.diff.Diff.ts_inverse_transform">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">ts_inverse_transform</span><span class="p">(</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-        <span class="n">lags</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
-        <span class="n">dropna</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-        <span class="n">fitted_params</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
+        <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
-        <span class="n">start_vals</span><span class="p">,</span> <span class="n">fit_component_mask</span><span class="p">,</span> <span class="n">start_time</span><span class="p">,</span> <span class="n">freq</span> <span class="o">=</span> <span class="n">fitted_params</span>
+        <span class="n">lags</span><span class="p">,</span> <span class="n">dropna</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fixed&quot;</span><span class="p">][</span><span class="s2">&quot;_lags&quot;</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fixed&quot;</span><span class="p">][</span><span class="s2">&quot;_dropna&quot;</span><span class="p">]</span>
+        <span class="n">start_vals</span><span class="p">,</span> <span class="n">fit_component_mask</span><span class="p">,</span> <span class="n">start_time</span><span class="p">,</span> <span class="n">freq</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fitted&quot;</span><span class="p">]</span>
         <span class="n">raise_if_not</span><span class="p">(</span>
             <span class="n">series</span><span class="o">.</span><span class="n">freq</span> <span class="o">==</span> <span class="n">freq</span><span class="p">,</span>
             <span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Series is of frequency </span><span class="si">{</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="si">}</span><span class="s2">, but &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;transform was fitted to data of frequency </span><span class="si">{</span><span class="n">freq</span><span class="si">}</span><span class="s2">.&quot;</span>
             <span class="p">),</span>
+            <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="c1"># Start dates &#39;missing&#39; from differenced series if dropna = True, so need to shift forward:</span>
         <span class="n">expected_start</span> <span class="o">=</span> <span class="n">start_time</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="n">lags</span><span class="p">)</span> <span class="o">*</span> <span class="n">series</span><span class="o">.</span><span class="n">freq</span> <span class="k">if</span> <span class="n">dropna</span> <span class="k">else</span> <span class="n">start_time</span>
@@ -357,6 +349,7 @@
                 <span class="sa">f</span><span class="s2">&quot;Expected series to begin at time </span><span class="si">{</span><span class="n">expected_start</span><span class="si">}</span><span class="s2">; &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;instead, it begins at time </span><span class="si">{</span><span class="n">series</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span><span class="si">}</span><span class="s2">.&quot;</span>
             <span class="p">),</span>
+            <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">component_mask</span> <span class="o">=</span> <span class="n">Diff</span><span class="o">.</span><span class="n">_get_component_mask</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">dropna</span><span class="p">)</span>
         <span class="n">raise_if_not</span><span class="p">(</span>
@@ -365,18 +358,20 @@
                 <span class="s2">&quot;Provided `component_mask` does not match &quot;</span>
                 <span class="s2">&quot;`component_mask` specified when `fit` was called.&quot;</span>
             <span class="p">),</span>
+            <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">dropna</span><span class="p">:</span>
             <span class="n">nan_shape</span> <span class="o">=</span> <span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">lags</span><span class="p">),</span> <span class="n">series</span><span class="o">.</span><span class="n">n_components</span><span class="p">,</span> <span class="n">series</span><span class="o">.</span><span class="n">n_samples</span><span class="p">)</span>
             <span class="n">nan_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">nan_shape</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
             <span class="n">series</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">prepend_values</span><span class="p">(</span><span class="n">nan_vals</span><span class="p">)</span>
-        <span class="n">vals</span> <span class="o">=</span> <span class="n">Diff</span><span class="o">.</span><span class="n">_reshape_in</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="n">flatten</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="n">Diff</span><span class="o">.</span><span class="n">apply_component_mask</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="n">return_ts</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">raise_if_not</span><span class="p">(</span>
             <span class="n">vals</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">start_vals</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
             <span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Expected series to have </span><span class="si">{</span><span class="n">start_vals</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> components; &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;instead, it has </span><span class="si">{</span><span class="n">vals</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">.&quot;</span>
             <span class="p">),</span>
+            <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">raise_if_not</span><span class="p">(</span>
             <span class="n">vals</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="n">start_vals</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
@@ -384,6 +379,7 @@
                 <span class="sa">f</span><span class="s2">&quot;Expected series to have </span><span class="si">{</span><span class="n">start_vals</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s2"> samples; &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;instead, it has </span><span class="si">{</span><span class="n">vals</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s2">.&quot;</span>
             <span class="p">),</span>
+            <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">cutoff</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">lags</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">lags</span><span class="p">):</span>
@@ -393,7 +389,7 @@
             <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">lag</span><span class="p">):</span>
                 <span class="n">to_undiff</span><span class="p">[</span><span class="n">i</span><span class="p">::</span><span class="n">lag</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">to_undiff</span><span class="p">[</span><span class="n">i</span><span class="p">::</span><span class="n">lag</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
             <span class="n">vals</span><span class="p">[</span><span class="n">cutoff</span><span class="p">:,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">to_undiff</span>
-        <span class="n">vals</span> <span class="o">=</span> <span class="n">Diff</span><span class="o">.</span><span class="n">_reshape_out</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">vals</span><span class="p">,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="n">flatten</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="n">Diff</span><span class="o">.</span><span class="n">unapply_component_mask</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">vals</span><span class="p">,</span> <span class="n">component_mask</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">with_values</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span></div>
 
     <span class="nd">@staticmethod</span>
@@ -401,7 +397,12 @@
         <span class="n">component_mask</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;component_mask&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="n">raise_if</span><span class="p">(</span>
             <span class="n">dropna</span> <span class="ow">and</span> <span class="p">(</span><span class="n">component_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">),</span>
-            <span class="s2">&quot;Cannot specify `component_mask` with `dropna = True`.&quot;</span><span class="p">,</span>
+            <span class="p">(</span>
+                <span class="s2">&quot;Cannot specify `component_mask` with `dropna = True`, &quot;</span>
+                <span class="s2">&quot;since differenced and undifferenced components will be &quot;</span>
+                <span class="s2">&quot;of different lengths.&quot;</span>
+            <span class="p">),</span>
+            <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">component_mask</span></div>
 </pre></div>

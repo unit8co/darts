@@ -355,6 +355,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.diff.html">
+       Differencing Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
        Fittable Data Transformer Base Class
       </a>
@@ -464,6 +469,11 @@
    </i>
   </label>
   <ul class="current">
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.models.components.statsforecast_utils.html">
+     StatsForecast utils
+    </a>
+   </li>
    <li class="toctree-l2 current active has-children">
     <a class="reference internal" href="darts.models.filtering.html">
      Filtering Models
@@ -607,12 +617,22 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_ets.html">
-       StatsForecastETS
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
+       StatsForecastAutoCES
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tbats.html">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
+       StatsForecastAutoETS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
+       StatsForecastAutoTheta
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tbats_model.html">
        BATS and TBATS
       </a>
      </li>
@@ -780,11 +800,11 @@
               
               <div>
                 
-  <span class="target" id="module-darts.models.filtering.moving_average"></span><section id="moving-average">
+  <span class="target" id="module-darts.models.filtering.moving_average_filter"></span><section id="moving-average">
 <h1>Moving Average<a class="headerlink" href="#moving-average" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
-<dt class="sig sig-object py" id="darts.models.filtering.moving_average.MovingAverage">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.filtering.moving_average.</span></span><span class="sig-name descname"><span class="pre">MovingAverage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">window</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">centered</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/filtering/moving_average.html#MovingAverage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.filtering.moving_average.MovingAverage" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.filtering.moving_average_filter.MovingAverageFilter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.filtering.moving_average_filter.</span></span><span class="sig-name descname"><span class="pre">MovingAverageFilter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">window</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">centered</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/filtering/moving_average_filter.html#MovingAverageFilter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.filtering.moving_average_filter.MovingAverageFilter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.models.filtering.filtering_model.html#darts.models.filtering.filtering_model.FilteringModel" title="darts.models.filtering.filtering_model.FilteringModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.filtering.filtering_model.FilteringModel</span></code></a></p>
 <p>A simple moving average filter. Works on deterministic and stochastic series.</p>
 <p class="rubric">Methods</p>
@@ -794,7 +814,7 @@
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.filtering.moving_average.MovingAverage.filter" title="darts.models.filtering.moving_average.MovingAverage.filter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filter</span></code></a>(series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.filtering.moving_average_filter.MovingAverageFilter.filter" title="darts.models.filtering.moving_average_filter.MovingAverageFilter.filter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filter</span></code></a>(series)</p></td>
 <td><p>Computes a moving average of this series' values and returns a new TimeSeries.</p></td>
 </tr>
 </tbody>
@@ -815,14 +835,14 @@ the original values.</p></li>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.filtering.moving_average.MovingAverage.filter" title="darts.models.filtering.moving_average.MovingAverage.filter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filter</span></code></a>(series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.filtering.moving_average_filter.MovingAverageFilter.filter" title="darts.models.filtering.moving_average_filter.MovingAverageFilter.filter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filter</span></code></a>(series)</p></td>
 <td><p>Computes a moving average of this series' values and returns a new TimeSeries.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.filtering.moving_average.MovingAverage.filter">
-<span class="sig-name descname"><span class="pre">filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/filtering/moving_average.html#MovingAverage.filter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.filtering.moving_average.MovingAverage.filter" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.filtering.moving_average_filter.MovingAverageFilter.filter">
+<span class="sig-name descname"><span class="pre">filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/filtering/moving_average_filter.html#MovingAverageFilter.filter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.filtering.moving_average_filter.MovingAverageFilter.filter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a moving average of this series’ values and returns a new TimeSeries.
 The returned series has the same length and time axis as <cite>series</cite>. (Note that this might create border effects).</p>
 <dl class="field-list simple">

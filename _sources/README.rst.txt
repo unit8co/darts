@@ -296,7 +296,7 @@ Features
 
 * 
   **Filtering Models:** Darts offers three filtering models: ``KalmanFilter``\ , ``GaussianProcessFilter``\ ,
-  and ``MovingAverage``\ , which allow to filter time series, and in some cases obtain probabilistic
+  and ``MovingAverageFilter``\ , which allow to filter time series, and in some cases obtain probabilistic
   inferences of the underlying states/values.
 
 * 
@@ -331,7 +331,7 @@ on bringing more models and features.
      - 
      - 
    * - ``VARIMA``
-     - ✅
+     - 
      - ✅
      - 
      - 
@@ -369,10 +369,19 @@ on bringing more models and features.
    * - ``StatsForecastETS``
      - ✅
      - 
-     - 
+     - ✅
      - 
      - 
      - ✅
+     - 
+     - `Nixtla's statsforecast <https://github.com/Nixtla/statsforecast>`_
+   * - ``StatsForecastAutoCES``
+     - ✅
+     - 
+     - 
+     - 
+     - 
+     - 
      - 
      - `Nixtla's statsforecast <https://github.com/Nixtla/statsforecast>`_
    * - ``BATS`` and ``TBATS``
@@ -393,6 +402,15 @@ on bringing more models and features.
      - 
      - 
      - `Theta <https://robjhyndman.com/papers/Theta.pdf>`_ & `4 Theta <https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R>`_
+   * - ``StatsForecastAutoTheta``
+     - ✅
+     - 
+     - ✅
+     - 
+     - 
+     - 
+     - 
+     - `Nixtla's statsforecast <https://github.com/Nixtla/statsforecast>`_
    * - ``Prophet`` (see `install notes <https://github.com/unit8co/darts/blob/master/INSTALL.md#enabling-support-for-facebook-prophet>`_\ )
      - ✅
      - 

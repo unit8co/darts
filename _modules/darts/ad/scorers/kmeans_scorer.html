@@ -277,6 +277,9 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">kmeans_kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kmeans_kwargs</span><span class="p">[</span><span class="s2">&quot;n_clusters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">k</span>
+        <span class="c1"># stop warning about default value of &quot;n_init&quot; changing from 10 to &quot;auto&quot; in sklearn 1.4</span>
+        <span class="k">if</span> <span class="s2">&quot;n_init&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">kmeans_kwargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kmeans_kwargs</span><span class="p">[</span><span class="s2">&quot;n_init&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">univariate_scorer</span><span class="o">=</span><span class="p">(</span><span class="ow">not</span> <span class="n">component_wise</span><span class="p">),</span> <span class="n">window</span><span class="o">=</span><span class="n">window</span><span class="p">,</span> <span class="n">diff_fn</span><span class="o">=</span><span class="n">diff_fn</span>

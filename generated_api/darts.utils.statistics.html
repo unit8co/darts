@@ -355,6 +355,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.diff.html">
+       Differencing Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
        Fittable Data Transformer Base Class
       </a>
@@ -464,6 +469,11 @@
    </i>
   </label>
   <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.models.components.statsforecast_utils.html">
+     StatsForecast utils
+    </a>
+   </li>
    <li class="toctree-l2 has-children">
     <a class="reference internal" href="darts.models.filtering.html">
      Filtering Models
@@ -485,7 +495,7 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.filtering.moving_average.html">
+      <a class="reference internal" href="darts.models.filtering.moving_average_filter.html">
        Moving Average
       </a>
      </li>
@@ -607,12 +617,22 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_ets.html">
-       StatsForecastETS
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
+       StatsForecastAutoCES
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tbats.html">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
+       StatsForecastAutoETS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
+       StatsForecastAutoTheta
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tbats_model.html">
        BATS and TBATS
       </a>
      </li>
@@ -817,7 +837,7 @@ and <cite>m</cite> is the seasonality period.</p>
 <li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The series to decompose</p></li>
 <li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The seasonality period to use.</p></li>
 <li><p><strong>model</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.SeasonalityMode" title="darts.utils.utils.SeasonalityMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SeasonalityMode</span></code></a>, <a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.ModelMode" title="darts.utils.utils.ModelMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelMode</span></code></a>]) – The type of decomposition to use.
-Must be <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">darts</span> <span class="pre">import</span> <span class="pre">ModelMode,</span> <span class="pre">SeasonalityMode</span></code> Enum member.
+Must be <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">darts.utils.utils</span> <span class="pre">import</span> <span class="pre">ModelMode,</span> <span class="pre">SeasonalityMode</span></code> Enum member.
 Either <code class="docutils literal notranslate"><span class="pre">MULTIPLICATIVE</span></code> or <code class="docutils literal notranslate"><span class="pre">ADDITIVE</span></code>.
 Defaults <code class="docutils literal notranslate"><span class="pre">ModelMode.MULTIPLICATIVE</span></code>.</p></li>
 <li><p><strong>method</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The method to be used to decompose the series.
@@ -1029,8 +1049,9 @@ Use e.g. to remove an additive or multiplicative trend from a series.</p>
 <li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries to be modified.</p></li>
 <li><p><strong>other</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries to remove.</p></li>
 <li><p><strong>model</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.SeasonalityMode" title="darts.utils.utils.SeasonalityMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SeasonalityMode</span></code></a>, <a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.ModelMode" title="darts.utils.utils.ModelMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelMode</span></code></a>]) – The type of model considered.
-Must be <cite>from darts import ModelMode, SeasonalityMode</cite> Enums member.
-Either MULTIPLICATIVE or ADDITIVE.</p></li>
+Must be <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">darts.utils.utils</span> <span class="pre">import</span> <span class="pre">ModelMode,</span> <span class="pre">SeasonalityMode</span></code> Enums member.
+Either <code class="docutils literal notranslate"><span class="pre">MULTIPLICATIVE</span></code> or <code class="docutils literal notranslate"><span class="pre">ADDITIVE</span></code>.
+Defaults <code class="docutils literal notranslate"><span class="pre">ModelMode.MULTIPLICATIVE</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1091,9 +1112,9 @@ Returns</p></li>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries to adjust.</p></li>
 <li><p><strong>model</strong> (<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.ModelMode" title="darts.utils.utils.ModelMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelMode</span></code></a>) – The type of decomposition to use.
-Must be a <cite>from darts import ModelMode</cite> Enum member.
-Either ModelMode.MULTIPLICATIVE or ModelMode.ADDITIVE.
-Defaults ModelMode.MULTIPLICATIVE.</p></li>
+Must be a <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">darts.utils.utils</span> <span class="pre">import</span> <span class="pre">ModelMode</span></code> Enum member.
+Either <code class="docutils literal notranslate"><span class="pre">MULTIPLICATIVE</span></code> or <code class="docutils literal notranslate"><span class="pre">ADDITIVE</span></code>.
+Defaults <code class="docutils literal notranslate"><span class="pre">ModelMode.MULTIPLICATIVE</span></code>.</p></li>
 <li><p><strong>method</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The method to be used to decompose the series.
 - “naive” : Seasonal decomposition using moving averages <a href="#id16"><span class="problematic" id="id8">[1]_</span></a>.
 - “STL” : Season-Trend decomposition using LOESS <a href="#id17"><span class="problematic" id="id9">[2]_</span></a>. Only compatible with <code class="docutils literal notranslate"><span class="pre">ADDITIVE</span></code> model type.

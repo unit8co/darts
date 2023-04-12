@@ -196,13 +196,11 @@
 <span class="kn">from</span> <span class="nn">sklearn.multioutput</span> <span class="kn">import</span> <span class="n">MultiOutputRegressor</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.explainability.explainability</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">ExplainabilityResult</span><span class="p">,</span>
-    <span class="n">ForecastingModelExplainer</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">darts.explainability.explainability</span> <span class="kn">import</span> <span class="n">ForecastingModelExplainer</span>
+<span class="kn">from</span> <span class="nn">darts.explainability.explainability_result</span> <span class="kn">import</span> <span class="n">ShapExplainabilityResult</span>
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.regression_model</span> <span class="kn">import</span> <span class="n">RegressionModel</span>
-<span class="kn">from</span> <span class="nn">darts.utils.data.tabularization</span> <span class="kn">import</span> <span class="n">_create_lagged_data</span>
+<span class="kn">from</span> <span class="nn">darts.utils.data.tabularization</span> <span class="kn">import</span> <span class="n">create_lagged_prediction_data</span>
 <span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">series2seq</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -304,6 +302,16 @@
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
 
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">model</span><span class="o">.</span><span class="n">multi_models</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Invalid `multi_models` value `False`. Currently, &quot;</span>
+                    <span class="s2">&quot;ShapExplainer only supports RegressionModels &quot;</span>
+                    <span class="s2">&quot;with `multi_models=True`.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">model</span><span class="p">,</span>
             <span class="n">background_series</span><span class="p">,</span>
@@ -354,7 +362,7 @@
         <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">horizons</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">target_components</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExplainabilityResult</span><span class="p">:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ShapExplainabilityResult</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">explain</span><span class="p">(</span>
             <span class="n">foreground_series</span><span class="p">,</span> <span class="n">foreground_past_covariates</span><span class="p">,</span> <span class="n">foreground_future_covariates</span>
         <span class="p">)</span>
@@ -383,7 +391,8 @@
         <span class="p">)</span>
 
         <span class="n">shap_values_list</span> <span class="o">=</span> <span class="p">[]</span>
-
+        <span class="n">feature_values_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">shap_explanation_object_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">foreground_ts</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">foreground_series</span><span class="p">):</span>
 
             <span class="n">foreground_past_cov_ts</span> <span class="o">=</span> <span class="kc">None</span>
@@ -407,22 +416,40 @@
             <span class="p">)</span>
 
             <span class="n">shap_values_dict</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">feature_values_dict</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">shap_explanation_object_dict</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">horizons</span><span class="p">:</span>
-                <span class="n">tmp</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">shap_values_dict_single_h</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">feature_values_dict_single_h</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">shap_explanation_object_dict_single_h</span> <span class="o">=</span> <span class="p">{}</span>
                 <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">target_names</span><span class="p">:</span>
-                    <span class="n">tmp</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+                    <span class="n">shap_values_dict_single_h</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
                         <span class="n">shap_</span><span class="p">[</span><span class="n">h</span><span class="p">][</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
                         <span class="n">shap_</span><span class="p">[</span><span class="n">h</span><span class="p">][</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
                         <span class="n">columns</span><span class="o">=</span><span class="n">shap_</span><span class="p">[</span><span class="n">h</span><span class="p">][</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">feature_names</span><span class="p">,</span>
                     <span class="p">)</span>
-                <span class="n">shap_values_dict</span><span class="p">[</span><span class="n">h</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span>
+                    <span class="n">feature_values_dict_single_h</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+                        <span class="n">shap_</span><span class="p">[</span><span class="n">h</span><span class="p">][</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
+                        <span class="n">shap_</span><span class="p">[</span><span class="n">h</span><span class="p">][</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+                        <span class="n">columns</span><span class="o">=</span><span class="n">shap_</span><span class="p">[</span><span class="n">h</span><span class="p">][</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">feature_names</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="n">shap_explanation_object_dict_single_h</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">shap_</span><span class="p">[</span><span class="n">h</span><span class="p">][</span><span class="n">t</span><span class="p">]</span>
+                <span class="n">shap_values_dict</span><span class="p">[</span><span class="n">h</span><span class="p">]</span> <span class="o">=</span> <span class="n">shap_values_dict_single_h</span>
+                <span class="n">feature_values_dict</span><span class="p">[</span><span class="n">h</span><span class="p">]</span> <span class="o">=</span> <span class="n">feature_values_dict_single_h</span>
+                <span class="n">shap_explanation_object_dict</span><span class="p">[</span><span class="n">h</span><span class="p">]</span> <span class="o">=</span> <span class="n">shap_explanation_object_dict_single_h</span>
 
             <span class="n">shap_values_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">shap_values_dict</span><span class="p">)</span>
+            <span class="n">feature_values_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">feature_values_dict</span><span class="p">)</span>
+            <span class="n">shap_explanation_object_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">shap_explanation_object_dict</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">shap_values_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">shap_values_list</span> <span class="o">=</span> <span class="n">shap_values_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">feature_values_list</span> <span class="o">=</span> <span class="n">feature_values_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">shap_explanation_object_list</span> <span class="o">=</span> <span class="n">shap_explanation_object_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
-        <span class="k">return</span> <span class="n">ExplainabilityResult</span><span class="p">(</span><span class="n">shap_values_list</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">ShapExplainabilityResult</span><span class="p">(</span>
+            <span class="n">shap_values_list</span><span class="p">,</span> <span class="n">feature_values_list</span><span class="p">,</span> <span class="n">shap_explanation_object_list</span>
+        <span class="p">)</span></div>
 
 <div class="viewcode-block" id="ShapExplainer.summary_plot"><a class="viewcode-back" href="../../../generated_api/darts.explainability.shap_explainer.html#darts.explainability.shap_explainer.ShapExplainer.summary_plot">[docs]</a>    <span class="k">def</span> <span class="nf">summary_plot</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -747,6 +774,7 @@
                                 <span class="p">:,</span> <span class="p">:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_dim</span> <span class="o">*</span> <span class="p">(</span><span class="n">h</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">t_idx</span>
                             <span class="p">]</span>
                         <span class="p">)</span>
+                        <span class="n">tmp_t</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">shap_explanation_tmp</span><span class="o">.</span><span class="n">data</span>
                         <span class="n">tmp_t</span><span class="o">.</span><span class="n">base_values</span> <span class="o">=</span> <span class="n">shap_explanation_tmp</span><span class="o">.</span><span class="n">base_values</span><span class="p">[</span>
                             <span class="p">:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_dim</span> <span class="o">*</span> <span class="p">(</span><span class="n">h</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">t_idx</span>
                         <span class="p">]</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
@@ -832,16 +860,18 @@
         <span class="n">lags_past_covariates_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">lags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;past&quot;</span><span class="p">)</span>
         <span class="n">lags_future_covariates_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">lags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;future&quot;</span><span class="p">)</span>
 
-        <span class="n">X</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">indexes</span> <span class="o">=</span> <span class="n">_create_lagged_data</span><span class="p">(</span>
-            <span class="n">target_series</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span>
-            <span class="n">past_covariates</span><span class="p">,</span>
-            <span class="n">future_covariates</span><span class="p">,</span>
-            <span class="n">lags_list</span><span class="p">,</span>
-            <span class="n">lags_past_covariates_list</span><span class="p">,</span>
-            <span class="n">lags_future_covariates_list</span><span class="p">,</span>
-            <span class="n">is_training</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">X</span><span class="p">,</span> <span class="n">indexes</span> <span class="o">=</span> <span class="n">create_lagged_prediction_data</span><span class="p">(</span>
+            <span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
+            <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+            <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+            <span class="n">lags</span><span class="o">=</span><span class="n">lags_list</span><span class="p">,</span>
+            <span class="n">lags_past_covariates</span><span class="o">=</span><span class="n">lags_past_covariates_list</span> <span class="k">if</span> <span class="n">past_covariates</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">lags_future_covariates</span><span class="o">=</span><span class="n">lags_future_covariates_list</span>
+            <span class="k">if</span> <span class="n">future_covariates</span>
+            <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
         <span class="p">)</span>
+        <span class="c1"># Remove sample axis:</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
 
         <span class="k">if</span> <span class="n">train</span><span class="p">:</span>
             <span class="n">X</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>

@@ -170,7 +170,12 @@
 <span class="sd">------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Literal</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -186,7 +191,7 @@
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="StaticCovariatesTransformer"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.static_covariates_transformer.html#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer">[docs]</a><span class="k">class</span> <span class="nc">StaticCovariatesTransformer</span><span class="p">(</span><span class="n">InvertibleDataTransformer</span><span class="p">,</span> <span class="n">FittableDataTransformer</span><span class="p">):</span>
+<div class="viewcode-block" id="StaticCovariatesTransformer"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.static_covariates_transformer.html#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer">[docs]</a><span class="k">class</span> <span class="nc">StaticCovariatesTransformer</span><span class="p">(</span><span class="n">FittableDataTransformer</span><span class="p">,</span> <span class="n">InvertibleDataTransformer</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">transformer_num</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -269,7 +274,7 @@
 <span class="sd">        comp2               1.0  2.0</span>
 <span class="sd">        comp3               0.5  1.0</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+        <span class="c1"># Define fixed params (i.e. attributes defined before calling `super().__init__`):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">transformer_num</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">MinMaxScaler</span><span class="p">()</span> <span class="k">if</span> <span class="n">transformer_num</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">transformer_num</span>
         <span class="p">)</span>
@@ -282,9 +287,9 @@
             <span class="p">[</span><span class="s2">&quot;transformer_num&quot;</span><span class="p">,</span> <span class="s2">&quot;transformer_cat&quot;</span><span class="p">],</span>
         <span class="p">):</span>
             <span class="k">if</span> <span class="p">(</span>
-                <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">transformer</span><span class="p">,</span> <span class="s2">&quot;fit&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
-                <span class="ow">or</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">transformer</span><span class="p">,</span> <span class="s2">&quot;transform&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
-                <span class="ow">or</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">transformer</span><span class="p">,</span> <span class="s2">&quot;inverse_transform&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+                <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">transformer</span><span class="p">,</span> <span class="s2">&quot;fit&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+                <span class="ow">or</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">transformer</span><span class="p">,</span> <span class="s2">&quot;transform&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+                <span class="ow">or</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">transformer</span><span class="p">,</span> <span class="s2">&quot;inverse_transform&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
             <span class="p">):</span>
                 <span class="n">raise_log</span><span class="p">(</span>
                     <span class="ne">ValueError</span><span class="p">(</span>
@@ -295,194 +300,275 @@
                 <span class="p">)</span>
 
         <span class="c1"># numeric/categorical cols will be inferred at fitting time, if user did not set them</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cols</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cols_num</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cols_cat</span> <span class="o">=</span> <span class="n">cols_num</span><span class="p">,</span> <span class="n">cols_cat</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">mask_num</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_cat</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
 
-        <span class="c1"># categoricals might need a mapping from input features to output (i.e. OneHotEncoding)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">col_map_cat</span> <span class="o">=</span> <span class="kc">None</span>
-
-<div class="viewcode-block" id="StaticCovariatesTransformer.fit"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.static_covariates_transformer.html#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;FittableDataTransformer&quot;</span><span class="p">:</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">True</span>
-
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">static_covariates</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">static_covariates</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">series</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cols</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span>
-
-        <span class="c1"># infer numeric and categorical columns if user didn&#39;t supply them at transformer construction</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cols_num</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">mask_num</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">)</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cols_num</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">mask_num</span><span class="p">]</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cols_cat</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">mask_cat</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">exclude</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">)</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cols_cat</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">mask_cat</span><span class="p">]</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">mask_num</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cols_num</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">mask_cat</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cols_cat</span><span class="p">)</span>
-
-        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_num</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">transformer_num</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_num</span><span class="p">])</span>
-        <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_cat</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">transformer_cat</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_cat</span><span class="p">])</span>
-            <span class="c1"># check how many features the transformer generates</span>
-            <span class="n">n_cat_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transformer_cat</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span>
-                <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_cat</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">n_cat_out</span> <span class="o">==</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_cat</span><span class="p">):</span>
-                <span class="c1"># transformer generates same number of features -&gt; make a 1-1 column map</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">col_map_cat</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">({</span><span class="n">col</span><span class="p">:</span> <span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cols_cat</span><span class="p">})</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="c1"># transformer generates more features (i.e. OneHotEncoder) -&gt; create a 1-many column map</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">col_map_cat</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
-                    <span class="p">{</span>
-                        <span class="n">col</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">cat</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">cat</span> <span class="ow">in</span> <span class="n">categories</span><span class="p">]</span>
-                        <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">categories</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">cols_cat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">transformer_cat</span><span class="o">.</span><span class="n">categories_</span>
-                        <span class="p">)</span>
-                    <span class="p">}</span>
-                <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">col_map_cat</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">return</span> <span class="bp">self</span></div>
-
-<div class="viewcode-block" id="StaticCovariatesTransformer.transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.static_covariates_transformer.html#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
-        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">val</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;component_mask&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_num</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_cat</span><span class="p">)</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;col_map_cat&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">col_map_cat</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;transform&quot;</span>
-        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="StaticCovariatesTransformer.inverse_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.static_covariates_transformer.html#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.inverse_transform">[docs]</a>    <span class="k">def</span> <span class="nf">inverse_transform</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
-
-        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">val</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
-
-        <span class="c1"># check how many categorical features were generated per categorical column after transforming the data</span>
-        <span class="n">cat_features</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span> <span class="k">for</span> <span class="n">vals</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">col_map_cat</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
-        <span class="n">component_mask_num</span><span class="p">,</span> <span class="n">component_mask_cat</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
-        <span class="n">cat_idx</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">is_num</span><span class="p">,</span> <span class="n">is_cat</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cols</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_num</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_cat</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">is_num</span><span class="p">:</span>
-                <span class="n">component_mask_num</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
-                <span class="n">component_mask_cat</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">is_cat</span><span class="p">:</span>
-                <span class="c1"># some categorical encoders (OneHotEncoder) generate more features and we need to keep track of that</span>
-                <span class="n">component_mask_num</span> <span class="o">+=</span> <span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">*</span> <span class="n">cat_features</span><span class="p">[</span><span class="n">cat_idx</span><span class="p">]</span>
-                <span class="n">component_mask_cat</span> <span class="o">+=</span> <span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">*</span> <span class="n">cat_features</span><span class="p">[</span><span class="n">cat_idx</span><span class="p">]</span>
-                <span class="n">cat_idx</span> <span class="o">+=</span> <span class="mi">1</span>
-            <span class="k">else</span><span class="p">:</span>  <span class="c1"># don&#39;t scale this feature/column</span>
-                <span class="n">component_mask_num</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-                <span class="n">component_mask_cat</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-
-        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;component_mask&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">component_mask_num</span><span class="p">),</span>
-            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">component_mask_cat</span><span class="p">),</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">,</span>
+            <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+            <span class="n">mask_components</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">global_fit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;col_map_cat&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
-            <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">names</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">col_map_cat</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">}</span>
-        <span class="p">)</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;inverse_transform&quot;</span>
-        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+    <span class="c1">#</span>
+    <span class="c1">#   Fitting Methods:</span>
+    <span class="c1">#</span>
 
 <div class="viewcode-block" id="StaticCovariatesTransformer.ts_fit"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.static_covariates_transformer.html#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_fit">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">ts_fit</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
-            <span class="s2">&quot;StaticCovariatesTransformer does not use method `ts_fit()`&quot;</span>
-        <span class="p">)</span></div>
+    <span class="k">def</span> <span class="nf">ts_fit</span><span class="p">(</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Collates static covariates of all provided `TimeSeries` and fits the following parameters:</span>
+<span class="sd">            1. `transformer_num`, the fitted numerical static covariate transformer.</span>
+<span class="sd">            2. `transformer_cat`, the fitted categorical static covariate transformer.</span>
+<span class="sd">            3. `mask_num`, a dictionary containing two boolean arrays: one that indicates which</span>
+<span class="sd">            components of the *untransformed* static covariates are numerical, and another that</span>
+<span class="sd">            indicates which components of the *transformed* static covariates are numerical.</span>
+<span class="sd">            4. `mask_cat`, a dictionary containing two boolean arrays: one that indicates which</span>
+<span class="sd">            components of the *untransformed* static covariates are categorical, and another that</span>
+<span class="sd">            indicates which components of the *transformed* static covariates are categorical.</span>
+<span class="sd">            5. `n_cat_cols`, a dictionary that stores the number of categorical columns</span>
+<span class="sd">            we should expect in the untransformed and in the transformed static covariates.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">fixed_params</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fixed&quot;</span><span class="p">]</span>
+        <span class="n">transformer_num</span> <span class="o">=</span> <span class="n">fixed_params</span><span class="p">[</span><span class="s2">&quot;transformer_num&quot;</span><span class="p">]</span>
+        <span class="n">transformer_cat</span> <span class="o">=</span> <span class="n">fixed_params</span><span class="p">[</span><span class="s2">&quot;transformer_cat&quot;</span><span class="p">]</span>
+        <span class="n">cols_num</span> <span class="o">=</span> <span class="n">fixed_params</span><span class="p">[</span><span class="s2">&quot;cols_num&quot;</span><span class="p">]</span>
+        <span class="n">cols_cat</span> <span class="o">=</span> <span class="n">fixed_params</span><span class="p">[</span><span class="s2">&quot;cols_cat&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Collate static covariates of all `series`:</span>
+        <span class="n">stat_covs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">s</span><span class="o">.</span><span class="n">static_covariates</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">series</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">cols_num</span><span class="p">,</span> <span class="n">cols_cat</span> <span class="o">=</span> <span class="n">StaticCovariatesTransformer</span><span class="o">.</span><span class="n">_infer_static_cov_dtypes</span><span class="p">(</span>
+            <span class="n">stat_covs</span><span class="p">,</span> <span class="n">cols_num</span><span class="p">,</span> <span class="n">cols_cat</span>
+        <span class="p">)</span>
+
+        <span class="n">mask_num</span><span class="p">,</span> <span class="n">mask_cat</span> <span class="o">=</span> <span class="n">StaticCovariatesTransformer</span><span class="o">.</span><span class="n">_create_component_masks</span><span class="p">(</span>
+            <span class="n">stat_covs</span><span class="p">,</span> <span class="n">cols_num</span><span class="p">,</span> <span class="n">cols_cat</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Fit numerical and categorical static covariate transformers:</span>
+        <span class="n">stat_covs</span> <span class="o">=</span> <span class="n">stat_covs</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">mask_num</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="n">transformer_num</span> <span class="o">=</span> <span class="n">transformer_num</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">stat_covs</span><span class="p">[:,</span> <span class="n">mask_num</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">mask_cat</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="n">transformer_cat</span> <span class="o">=</span> <span class="n">transformer_cat</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">stat_covs</span><span class="p">[:,</span> <span class="n">mask_cat</span><span class="p">])</span>
+
+        <span class="p">(</span>
+            <span class="n">cat_mapping</span><span class="p">,</span>
+            <span class="n">inv_cat_mapping</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="n">StaticCovariatesTransformer</span><span class="o">.</span><span class="n">_create_category_mappings</span><span class="p">(</span>
+            <span class="n">stat_covs</span><span class="p">,</span> <span class="n">transformer_cat</span><span class="p">,</span> <span class="n">mask_cat</span><span class="p">,</span> <span class="n">cols_cat</span>
+        <span class="p">)</span>
+
+        <span class="p">(</span>
+            <span class="n">inv_mask_num</span><span class="p">,</span>
+            <span class="n">inv_mask_cat</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="n">StaticCovariatesTransformer</span><span class="o">.</span><span class="n">_create_inv_component_masks</span><span class="p">(</span>
+            <span class="n">mask_num</span><span class="p">,</span> <span class="n">mask_cat</span><span class="p">,</span> <span class="n">cat_mapping</span><span class="p">,</span> <span class="n">cols_cat</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Store masks and category mappings for untransformed and transformed static covariates:</span>
+        <span class="n">mask_num_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;transform&quot;</span><span class="p">:</span> <span class="n">mask_num</span><span class="p">,</span> <span class="s2">&quot;inverse_transform&quot;</span><span class="p">:</span> <span class="n">inv_mask_num</span><span class="p">}</span>
+        <span class="n">mask_cat_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;transform&quot;</span><span class="p">:</span> <span class="n">mask_cat</span><span class="p">,</span> <span class="s2">&quot;inverse_transform&quot;</span><span class="p">:</span> <span class="n">inv_mask_cat</span><span class="p">}</span>
+        <span class="n">col_map_cat_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;transform&quot;</span><span class="p">:</span> <span class="n">cat_mapping</span><span class="p">,</span>
+            <span class="s2">&quot;inverse_transform&quot;</span><span class="p">:</span> <span class="n">inv_cat_mapping</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="c1"># Count number of categorical features in untransformed and transformed static covariates:</span>
+        <span class="n">n_cat_cols</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">method</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">col_map_cat_dict</span><span class="p">[</span><span class="n">method</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;transform&quot;</span><span class="p">,</span> <span class="s2">&quot;inverse_transform&quot;</span><span class="p">)</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;transformer_num&quot;</span><span class="p">:</span> <span class="n">transformer_num</span><span class="p">,</span>
+            <span class="s2">&quot;transformer_cat&quot;</span><span class="p">:</span> <span class="n">transformer_cat</span><span class="p">,</span>
+            <span class="s2">&quot;mask_num&quot;</span><span class="p">:</span> <span class="n">mask_num_dict</span><span class="p">,</span>
+            <span class="s2">&quot;mask_cat&quot;</span><span class="p">:</span> <span class="n">mask_cat_dict</span><span class="p">,</span>
+            <span class="s2">&quot;col_map_cat&quot;</span><span class="p">:</span> <span class="n">col_map_cat_dict</span><span class="p">,</span>
+            <span class="s2">&quot;n_cat_cols&quot;</span><span class="p">:</span> <span class="n">n_cat_cols</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_infer_static_cov_dtypes</span><span class="p">(</span>
+        <span class="n">stat_covs</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">cols_num</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+        <span class="n">cols_cat</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a list of names of numerical static covariates and a list</span>
+<span class="sd">        of names of categorical/ordinal static covariates.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">cols_num</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mask_num</span> <span class="o">=</span> <span class="n">stat_covs</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span>
+                <span class="n">stat_covs</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">)</span><span class="o">.</span><span class="n">columns</span>
+            <span class="p">)</span>
+            <span class="n">cols_num</span> <span class="o">=</span> <span class="n">stat_covs</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">mask_num</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">cols_cat</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mask_cat</span> <span class="o">=</span> <span class="n">stat_covs</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span>
+                <span class="n">stat_covs</span><span class="o">.</span><span class="n">select_dtypes</span><span class="p">(</span><span class="n">exclude</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">)</span><span class="o">.</span><span class="n">columns</span>
+            <span class="p">)</span>
+            <span class="n">cols_cat</span> <span class="o">=</span> <span class="n">stat_covs</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">mask_cat</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">cols_num</span><span class="p">,</span> <span class="n">cols_cat</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_create_component_masks</span><span class="p">(</span>
+        <span class="n">untransformed_stat_covs</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
+        <span class="n">cols_num</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">cols_cat</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a boolean array indicating which components of the UNTRANSFORMED</span>
+<span class="sd">        `stat_covs` are numerical and a boolean array indicating which components</span>
+<span class="sd">        of the UNTRANSFORMED `stat_covs` are categoical.</span>
+
+<span class="sd">        It&#39;s important to recognise that these masks only apply to the UNTRANSFORMED</span>
+<span class="sd">        static covariates since some transformations can generate multiple new components</span>
+<span class="sd">        from a single component (e.g. one-hot encoding).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">mask_num</span> <span class="o">=</span> <span class="n">untransformed_stat_covs</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">cols_num</span><span class="p">)</span>
+        <span class="n">mask_cat</span> <span class="o">=</span> <span class="n">untransformed_stat_covs</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">cols_cat</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">mask_num</span><span class="p">,</span> <span class="n">mask_cat</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_create_category_mappings</span><span class="p">(</span>
+        <span class="n">untransformed_stat_covs</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">transformer_cat</span><span class="p">,</span>
+        <span class="n">mask_cat</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">cols_cat</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns mapping from names of untransformed categorical static covariates names</span>
+<span class="sd">        and names of transformed categorical static covariate names (i.e. `col_map_cat`), as well</span>
+<span class="sd">        as a mapping from the transformed categorical static covariate names to the untransformed</span>
+<span class="sd">        ones (i.e. `inv_col_map_cat`).</span>
+
+<span class="sd">        These mappings will be many-to-one/one-to-many if a transformation that generates</span>
+<span class="sd">        multiple components from a single categorical variable is being used (e.g. one-hot</span>
+<span class="sd">        encoding).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">mask_cat</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="c1"># check how many features the transformer generates</span>
+            <span class="n">n_cat_out</span> <span class="o">=</span> <span class="n">transformer_cat</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">untransformed_stat_covs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">mask_cat</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="c1"># transformer generates same number of features -&gt; make a 1-1 column map</span>
+            <span class="k">if</span> <span class="n">n_cat_out</span> <span class="o">==</span> <span class="nb">sum</span><span class="p">(</span><span class="n">mask_cat</span><span class="p">):</span>
+                <span class="n">col_map_cat</span> <span class="o">=</span> <span class="n">inv_col_map_cat</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
+                    <span class="p">{</span><span class="n">col</span><span class="p">:</span> <span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cols_cat</span><span class="p">}</span>
+                <span class="p">)</span>
+            <span class="c1"># transformer generates more features (i.e. OneHotEncoder) -&gt; create a 1-many column map</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">col_map_cat</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+                <span class="n">inv_col_map_cat</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">categories</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">cols_cat</span><span class="p">,</span> <span class="n">transformer_cat</span><span class="o">.</span><span class="n">categories_</span><span class="p">):</span>
+                    <span class="n">col_map_cat_i</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">for</span> <span class="n">cat</span> <span class="ow">in</span> <span class="n">categories</span><span class="p">:</span>
+                        <span class="n">col_map_cat_i</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span>
+                        <span class="n">inv_col_map_cat</span><span class="p">[</span><span class="n">cat</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span><span class="p">]</span>
+                    <span class="n">col_map_cat</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">col_map_cat_i</span>
+        <span class="c1"># If we don&#39;t have any categorical static covariates, don&#39;t need to generate mapping:</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">col_map_cat</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">inv_col_map_cat</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">return</span> <span class="n">col_map_cat</span><span class="p">,</span> <span class="n">inv_col_map_cat</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_create_inv_component_masks</span><span class="p">(</span>
+        <span class="n">mask_num</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">mask_cat</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">cat_mapping</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+        <span class="n">cols_cat</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a boolean array indicating which components of the TRANSFORMED</span>
+<span class="sd">        `stat_covs` are numerical and a boolean array indicating which components</span>
+<span class="sd">        of the TRANSFORMED `stat_covs` are categoical.</span>
+
+<span class="sd">        It&#39;s important to recognise that these masks only apply to the UNTRANSFORMED</span>
+<span class="sd">        static covariates since some transformations can generate multiple new components</span>
+<span class="sd">        from a single component (e.g. one-hot encoding).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># check how many categorical features were generated per categorical column after transforming the data</span>
+        <span class="n">cat_idx</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">inv_mask_num</span><span class="p">,</span> <span class="n">inv_mask_cat</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">is_num</span><span class="p">,</span> <span class="n">is_cat</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">mask_num</span><span class="p">,</span> <span class="n">mask_cat</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">is_num</span><span class="p">:</span>
+                <span class="n">inv_mask_num</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">inv_mask_cat</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">is_cat</span><span class="p">:</span>
+                <span class="c1"># some categorical encoders (OneHotEncoder) generate more features and we need to keep track of that</span>
+                <span class="n">cat_name</span> <span class="o">=</span> <span class="n">cols_cat</span><span class="p">[</span><span class="n">cat_idx</span><span class="p">]</span>
+                <span class="n">num_cat_outputs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cat_mapping</span><span class="p">[</span><span class="n">cat_name</span><span class="p">])</span>
+                <span class="n">inv_mask_num</span> <span class="o">+=</span> <span class="n">num_cat_outputs</span> <span class="o">*</span> <span class="p">[</span><span class="kc">False</span><span class="p">]</span>
+                <span class="n">inv_mask_cat</span> <span class="o">+=</span> <span class="n">num_cat_outputs</span> <span class="o">*</span> <span class="p">[</span><span class="kc">True</span><span class="p">]</span>
+                <span class="n">cat_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># don&#39;t scale this feature/column</span>
+                <span class="n">inv_mask_num</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+                <span class="n">inv_mask_cat</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">inv_mask_num</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">inv_mask_num</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">inv_mask_cat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">inv_mask_cat</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">inv_mask_num</span><span class="p">,</span> <span class="n">inv_mask_cat</span>
+
+    <span class="c1">#</span>
+    <span class="c1">#   Transform and Inverse Transform Methods:</span>
+    <span class="c1">#</span>
 
 <div class="viewcode-block" id="StaticCovariatesTransformer.ts_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.static_covariates_transformer.html#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_transform">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">ts_transform</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
-        <span class="n">transformer_num</span><span class="p">,</span> <span class="n">transformer_cat</span> <span class="o">=</span> <span class="n">args</span>
-        <span class="n">component_mask_num</span><span class="p">,</span> <span class="n">component_mask_cat</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;component_mask&quot;</span><span class="p">)</span>
-        <span class="n">col_map_cat</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;col_map_cat&quot;</span><span class="p">)</span>
-        <span class="n">method</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;method&quot;</span><span class="p">)</span>  <span class="c1"># &quot;transform&quot; or &quot;inverse_transform&quot;</span>
+    <span class="k">def</span> <span class="nf">ts_transform</span><span class="p">(</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">StaticCovariatesTransformer</span><span class="o">.</span><span class="n">_transform_static_covs</span><span class="p">(</span>
+            <span class="n">series</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fitted&quot;</span><span class="p">],</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;transform&quot;</span>
+        <span class="p">)</span></div>
 
-        <span class="n">vals_num</span><span class="p">,</span> <span class="n">vals_cat</span> <span class="o">=</span> <span class="n">StaticCovariatesTransformer</span><span class="o">.</span><span class="n">_reshape_in</span><span class="p">(</span>
-            <span class="n">series</span><span class="p">,</span> <span class="n">component_mask</span><span class="o">=</span><span class="p">(</span><span class="n">component_mask_num</span><span class="p">,</span> <span class="n">component_mask_cat</span><span class="p">)</span>
+<div class="viewcode-block" id="StaticCovariatesTransformer.ts_inverse_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.static_covariates_transformer.html#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_inverse_transform">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">ts_inverse_transform</span><span class="p">(</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">StaticCovariatesTransformer</span><span class="o">.</span><span class="n">_transform_static_covs</span><span class="p">(</span>
+            <span class="n">series</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fitted&quot;</span><span class="p">],</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;inverse_transform&quot;</span>
+        <span class="p">)</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_transform_static_covs</span><span class="p">(</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">fitted_params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">method</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;transform&quot;</span><span class="p">,</span> <span class="s2">&quot;inverse_transform&quot;</span><span class="p">],</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Transforms the static covariates of a `series` if `method = &#39;transform&#39;`, and inverse</span>
+<span class="sd">        transforms the static covariates of a `series` if `method = &#39;inverse_transform&#39;`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Unpack parameters:</span>
+        <span class="n">transformer_num</span> <span class="o">=</span> <span class="n">fitted_params</span><span class="p">[</span><span class="s2">&quot;transformer_num&quot;</span><span class="p">]</span>
+        <span class="n">transformer_cat</span> <span class="o">=</span> <span class="n">fitted_params</span><span class="p">[</span><span class="s2">&quot;transformer_cat&quot;</span><span class="p">]</span>
+        <span class="n">mask_num</span> <span class="o">=</span> <span class="n">fitted_params</span><span class="p">[</span><span class="s2">&quot;mask_num&quot;</span><span class="p">][</span><span class="n">method</span><span class="p">]</span>
+        <span class="n">mask_cat</span> <span class="o">=</span> <span class="n">fitted_params</span><span class="p">[</span><span class="s2">&quot;mask_cat&quot;</span><span class="p">][</span><span class="n">method</span><span class="p">]</span>
+        <span class="n">col_map_cat</span> <span class="o">=</span> <span class="n">fitted_params</span><span class="p">[</span><span class="s2">&quot;col_map_cat&quot;</span><span class="p">][</span><span class="n">method</span><span class="p">]</span>
+        <span class="n">n_cat_cols</span> <span class="o">=</span> <span class="n">fitted_params</span><span class="p">[</span><span class="s2">&quot;n_cat_cols&quot;</span><span class="p">][</span><span class="n">method</span><span class="p">]</span>
+
+        <span class="n">vals_num</span><span class="p">,</span> <span class="n">vals_cat</span> <span class="o">=</span> <span class="n">StaticCovariatesTransformer</span><span class="o">.</span><span class="n">_extract_static_covs</span><span class="p">(</span>
+            <span class="n">series</span><span class="p">,</span> <span class="n">mask_num</span><span class="p">,</span> <span class="n">mask_cat</span>
         <span class="p">)</span>
-        <span class="n">tr_out_num</span><span class="p">,</span> <span class="n">tr_out_cat</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
-        <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">component_mask_num</span><span class="p">):</span>
-            <span class="n">tr_out_num</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">transformer_num</span><span class="p">,</span> <span class="n">method</span><span class="p">)(</span><span class="n">vals_num</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">component_mask_cat</span><span class="p">):</span>
-            <span class="n">tr_out_cat</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">transformer_cat</span><span class="p">,</span> <span class="n">method</span><span class="p">)(</span><span class="n">vals_cat</span><span class="p">)</span>
 
+        <span class="c1"># Transform static covs:</span>
+        <span class="n">tr_out_num</span><span class="p">,</span> <span class="n">tr_out_cat</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">mask_num</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="n">tr_out_num</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">transformer_num</span><span class="p">,</span> <span class="n">method</span><span class="p">)(</span><span class="n">vals_num</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">mask_cat</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="n">tr_out_cat</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">transformer_cat</span><span class="p">,</span> <span class="n">method</span><span class="p">)(</span><span class="n">vals_cat</span><span class="p">)</span>
             <span class="c1"># sparse one hot encoding to dense array</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tr_out_cat</span><span class="p">,</span> <span class="n">csr_matrix</span><span class="p">):</span>
                 <span class="n">tr_out_cat</span> <span class="o">=</span> <span class="n">tr_out_cat</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span>
 
-        <span class="n">transformed_df</span> <span class="o">=</span> <span class="n">StaticCovariatesTransformer</span><span class="o">.</span><span class="n">_reshape_out</span><span class="p">(</span>
-            <span class="n">series</span><span class="p">,</span>
-            <span class="p">(</span><span class="n">tr_out_num</span><span class="p">,</span> <span class="n">tr_out_cat</span><span class="p">),</span>
-            <span class="n">component_mask</span><span class="o">=</span><span class="p">(</span><span class="n">component_mask_num</span><span class="p">,</span> <span class="n">component_mask_cat</span><span class="p">),</span>
-            <span class="n">col_map_cat</span><span class="o">=</span><span class="n">col_map_cat</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">with_static_covariates</span><span class="p">(</span><span class="n">transformed_df</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="StaticCovariatesTransformer.ts_inverse_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.static_covariates_transformer.html#darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer.ts_inverse_transform">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">ts_inverse_transform</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
-        <span class="c1"># inverse transform will be called with kwarg method=&quot;inverse_transform&quot;</span>
-        <span class="k">return</span> <span class="n">StaticCovariatesTransformer</span><span class="o">.</span><span class="n">ts_transform</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
-
-    <span class="k">def</span> <span class="nf">_transform_iterator</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
-        <span class="c1"># use numerical and categorical transformers for &#39;ts_transform()&#39;</span>
-        <span class="k">return</span> <span class="nb">zip</span><span class="p">(</span>
-            <span class="n">series</span><span class="p">,</span>
-            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">transformer_num</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">),</span>
-            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">transformer_cat</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">),</span>
-        <span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">_inverse_transform_iterator</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
-        <span class="c1"># use numerical and categorical transformers for &#39;ts_inverse_transform()&#39;</span>
-        <span class="k">return</span> <span class="nb">zip</span><span class="p">(</span>
-            <span class="n">series</span><span class="p">,</span>
-            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">transformer_num</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">),</span>
-            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">transformer_cat</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">),</span>
-        <span class="p">)</span>
-
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_reshape_in</span><span class="p">(</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-        <span class="n">component_mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">]:</span>
-        <span class="c1"># we expect component mask to be (numeric component mask, categorical component mask)</span>
-        <span class="n">component_mask_num</span><span class="p">,</span> <span class="n">component_mask_cat</span> <span class="o">=</span> <span class="n">component_mask</span>
-
-        <span class="c1"># returns tuple of (numeric static covariates, categorical static covariates)</span>
-        <span class="n">vals</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">static_covariates_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">vals</span><span class="p">[:,</span> <span class="n">component_mask_num</span><span class="p">],</span> <span class="n">vals</span><span class="p">[:,</span> <span class="n">component_mask_cat</span><span class="p">]</span>
-
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_reshape_out</span><span class="p">(</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-        <span class="n">vals</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
-        <span class="n">component_mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">col_map_cat</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-        <span class="c1"># we expect component mask to be (numeric component mask, categorical component mask)</span>
-        <span class="n">component_mask_num</span><span class="p">,</span> <span class="n">component_mask_cat</span> <span class="o">=</span> <span class="n">component_mask</span>
-        <span class="n">vals_num</span><span class="p">,</span> <span class="n">vals_cat</span> <span class="o">=</span> <span class="n">vals</span>
-
-        <span class="c1"># infer the number of categorical output features</span>
-        <span class="c1"># `col_map_cat` contains information to which features the original categorical feature were mapped</span>
-        <span class="c1"># (i.e. 1-1 mapping for OrdinalEncoder, or 1-many mapping for OneHotEncoder).</span>
-        <span class="n">n_cat_cols</span> <span class="o">=</span> <span class="nb">len</span><span class="p">({</span><span class="n">name</span> <span class="k">for</span> <span class="n">names</span> <span class="ow">in</span> <span class="n">col_map_cat</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">})</span>
         <span class="c1"># quick check if everything is in order</span>
         <span class="n">n_vals_cat_cols</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">vals_cat</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">vals_cat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">n_vals_cat_cols</span> <span class="o">!=</span> <span class="n">n_cat_cols</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;inverse_transform&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">n_vals_cat_cols</span> <span class="o">!=</span> <span class="n">n_cat_cols</span><span class="p">):</span>
             <span class="n">raise_log</span><span class="p">(</span>
                 <span class="ne">ValueError</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Expected `</span><span class="si">{</span><span class="n">n_cat_cols</span><span class="si">}</span><span class="s2">` categorical value columns but only encountered `</span><span class="si">{</span><span class="n">n_vals_cat_cols</span><span class="si">}</span><span class="s2">`&quot;</span>
@@ -490,11 +576,43 @@
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
 
+        <span class="n">series</span> <span class="o">=</span> <span class="n">StaticCovariatesTransformer</span><span class="o">.</span><span class="n">_add_back_static_covs</span><span class="p">(</span>
+            <span class="n">series</span><span class="p">,</span> <span class="n">tr_out_num</span><span class="p">,</span> <span class="n">tr_out_cat</span><span class="p">,</span> <span class="n">mask_num</span><span class="p">,</span> <span class="n">mask_cat</span><span class="p">,</span> <span class="n">col_map_cat</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">series</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_extract_static_covs</span><span class="p">(</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">mask_num</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">mask_cat</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Extracts all static covariates from a `TimeSeries`, and then extracts the numerical</span>
+<span class="sd">        and categorical components to transform from these static covariates.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">static_covariates_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">vals</span><span class="p">[:,</span> <span class="n">mask_num</span><span class="p">],</span> <span class="n">vals</span><span class="p">[:,</span> <span class="n">mask_cat</span><span class="p">]</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_add_back_static_covs</span><span class="p">(</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">vals_num</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">vals_cat</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">mask_num</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">mask_cat</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">col_map_cat</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adds transformed static covariates back to original `TimeSeries`. The categorical component</span>
+<span class="sd">        mapping is used to correctly name categorical components with a one-to-many mapping</span>
+<span class="sd">        between their untransformed and transformed versions (e.g. components generated using</span>
+<span class="sd">        one-hot encoding).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">idx_num</span><span class="p">,</span> <span class="n">idx_cat</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
         <span class="n">static_cov_columns</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">is_num</span><span class="p">,</span> <span class="n">is_cat</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
-            <span class="n">series</span><span class="o">.</span><span class="n">static_covariates</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">component_mask_num</span><span class="p">,</span> <span class="n">component_mask_cat</span>
+            <span class="n">series</span><span class="o">.</span><span class="n">static_covariates</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">mask_num</span><span class="p">,</span> <span class="n">mask_cat</span>
         <span class="p">):</span>
             <span class="k">if</span> <span class="n">is_num</span><span class="p">:</span>  <span class="c1"># numeric scaled column</span>
                 <span class="n">data</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">vals_num</span><span class="p">[:,</span> <span class="n">idx_num</span><span class="p">]</span>
@@ -511,12 +629,13 @@
                 <span class="n">data</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">[</span><span class="n">col</span><span class="p">]</span>
                 <span class="n">static_cov_columns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
 
-        <span class="c1"># returns a pandas DataFrame of static covariates to be added to the series</span>
-        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+        <span class="n">transformed_static_covs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
             <span class="n">data</span><span class="p">,</span>
             <span class="n">columns</span><span class="o">=</span><span class="n">static_cov_columns</span><span class="p">,</span>
             <span class="n">index</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">static_covariates</span><span class="o">.</span><span class="n">index</span><span class="p">,</span>
-        <span class="p">)</span></div>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">with_static_covariates</span><span class="p">(</span><span class="n">transformed_static_covs</span><span class="p">)</span></div>
 </pre></div>
 
               </div>

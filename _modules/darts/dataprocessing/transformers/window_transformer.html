@@ -170,12 +170,11 @@
 <span class="sd">------------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">BaseDataTransformer</span>
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span>
 <span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">series2seq</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -221,6 +220,14 @@
 <span class="sd">                               transformation should be applied. If not specified, the transformation will be</span>
 <span class="sd">                               applied on all components.</span>
 
+<span class="sd">            :``&quot;function_name&quot;``: Optional. A string specifying the function name referenced as part of</span>
+<span class="sd">                                  the transformation output name. For example, given a user-provided function</span>
+<span class="sd">                                  transformation on rolling window size of 5 on the component &quot;comp&quot;, the</span>
+<span class="sd">                                  default transformation output name is &quot;rolling_udf_5_comp&quot; whereby &quot;udf&quot;</span>
+<span class="sd">                                  refers to &quot;user defined function&quot;. If specified, the ``&quot;function_name&quot;`` will</span>
+<span class="sd">                                  replace the default name &quot;udf&quot;. Similarly, the ``&quot;function_name&quot;`` will replace</span>
+<span class="sd">                                  the name of the pandas builtin transformation function name in the output name.</span>
+
 <span class="sd">            All other dictionary items provided will be treated as keyword arguments for the windowing mode</span>
 <span class="sd">            (i.e., ``rolling/ewm/expanding``) or for the specific function</span>
 <span class="sd">            in that mode (i.e., ``pandas.DataFrame.rolling.mean/std/max/min...`` or</span>
@@ -230,7 +237,8 @@
 
 <span class="sd">            * :``&quot;window&quot;``: Size of the moving window for the &quot;rolling&quot; mode.</span>
 <span class="sd">                            If an integer, the fixed number of observations used for each window.</span>
-<span class="sd">                            If an offset, the time period of each window.</span>
+<span class="sd">                            If an offset, the time period of each window with data type :class:`pandas.Timedelta`</span>
+<span class="sd">                            representing a fixed duration.</span>
 <span class="sd">            * :``&quot;min_periods&quot;``: The minimum number of observations in the window required to have a value (otherwise</span>
 <span class="sd">                NaN). Darts reuses pandas defaults of 1 for &quot;rolling&quot; and &quot;expanding&quot; modes and of 0 for &quot;ewm&quot; mode.</span>
 <span class="sd">            * :``&quot;win_type&quot;``: The type of weigthing to apply to the window elements.</span>
@@ -297,35 +305,20 @@
 <span class="sd">        verbose</span>
 <span class="sd">            Whether to print operations progress.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">n_jobs</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
 
         <span class="c1"># dictionary checks are implemented in TimeSeries.window_transform()</span>
 
+        <span class="c1"># Define fixed params (i.e. attributes defined before calling `super().__init__`):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">transforms</span> <span class="o">=</span> <span class="n">transforms</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">keep_non_transformed</span> <span class="o">=</span> <span class="n">keep_non_transformed</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">treat_na</span> <span class="o">=</span> <span class="n">treat_na</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_safe</span> <span class="o">=</span> <span class="n">forecasting_safe</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">include_current</span> <span class="o">=</span> <span class="n">include_current</span>
-
-    <span class="k">def</span> <span class="nf">_transform_iterator</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">]:</span>
-
-        <span class="n">series</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
-
-        <span class="n">kwargs_dict</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;transforms&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">transforms</span><span class="p">,</span>
-            <span class="s2">&quot;keep_non_transformed&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">keep_non_transformed</span><span class="p">,</span>
-            <span class="s2">&quot;treat_na&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">treat_na</span><span class="p">,</span>
-            <span class="s2">&quot;forecasting_safe&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_safe</span><span class="p">,</span>
-            <span class="s2">&quot;include_current&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">include_current</span><span class="p">,</span>
-        <span class="p">}</span>
-        <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">series</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">kwargs_dict</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">n_jobs</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
 
 <div class="viewcode-block" id="WindowTransformer.ts_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.window_transformer.html#darts.dataprocessing.transformers.window_transformer.WindowTransformer.ts_transform">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">ts_transform</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">kwargs_dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">window_transform</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs_dict</span><span class="p">)</span></div></div>
+    <span class="k">def</span> <span class="nf">ts_transform</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">window_transform</span><span class="p">(</span><span class="o">**</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;fixed&quot;</span><span class="p">])</span></div></div>
 </pre></div>
 
               </div>

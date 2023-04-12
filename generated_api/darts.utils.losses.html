@@ -357,6 +357,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.diff.html">
+       Differencing Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
        Fittable Data Transformer Base Class
       </a>
@@ -466,6 +471,11 @@
    </i>
   </label>
   <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.models.components.statsforecast_utils.html">
+     StatsForecast utils
+    </a>
+   </li>
    <li class="toctree-l2 has-children">
     <a class="reference internal" href="darts.models.filtering.html">
      Filtering Models
@@ -487,7 +497,7 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.filtering.moving_average.html">
+      <a class="reference internal" href="darts.models.filtering.moving_average_filter.html">
        Moving Average
       </a>
      </li>
@@ -609,12 +619,22 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_ets.html">
-       StatsForecastETS
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
+       StatsForecastAutoCES
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tbats.html">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
+       StatsForecastAutoETS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
+       StatsForecastAutoTheta
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tbats_model.html">
        BATS and TBATS
       </a>
      </li>
@@ -862,7 +882,7 @@ both of length <span class="math notranslate nohighlight">\(T\)</span>, it is co
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.modules" title="darts.utils.losses.MAELoss.modules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">modules</span></code></a>()</p></td>
 <td><p>Returns an iterator over all modules in the network.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.named_buffers" title="darts.utils.losses.MAELoss.named_buffers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_buffers</span></code></a>([prefix, recurse])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.named_buffers" title="darts.utils.losses.MAELoss.named_buffers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_buffers</span></code></a>([prefix, recurse, ...])</p></td>
 <td><p>Returns an iterator over module buffers, yielding both the name of the buffer as well as the buffer itself.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.named_children" title="darts.utils.losses.MAELoss.named_children"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_children</span></code></a>()</p></td>
@@ -871,7 +891,7 @@ both of length <span class="math notranslate nohighlight">\(T\)</span>, it is co
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.named_modules" title="darts.utils.losses.MAELoss.named_modules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_modules</span></code></a>([memo, prefix, remove_duplicate])</p></td>
 <td><p>Returns an iterator over all modules in the network, yielding both the name of the module as well as the module itself.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.named_parameters" title="darts.utils.losses.MAELoss.named_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_parameters</span></code></a>([prefix, recurse])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.named_parameters" title="darts.utils.losses.MAELoss.named_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_parameters</span></code></a>([prefix, recurse, ...])</p></td>
 <td><p>Returns an iterator over module parameters, yielding both the name of the parameter as well as the parameter itself.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.parameters" title="darts.utils.losses.MAELoss.parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameters</span></code></a>([recurse])</p></td>
@@ -883,23 +903,29 @@ both of length <span class="math notranslate nohighlight">\(T\)</span>, it is co
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_buffer" title="darts.utils.losses.MAELoss.register_buffer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_buffer</span></code></a>(name, tensor[, persistent])</p></td>
 <td><p>Adds a buffer to the module.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_forward_hook" title="darts.utils.losses.MAELoss.register_forward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_hook</span></code></a>(hook)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_forward_hook" title="darts.utils.losses.MAELoss.register_forward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_hook</span></code></a>(hook, *[, prepend, ...])</p></td>
 <td><p>Registers a forward hook on the module.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_forward_pre_hook" title="darts.utils.losses.MAELoss.register_forward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_pre_hook</span></code></a>(hook)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_forward_pre_hook" title="darts.utils.losses.MAELoss.register_forward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_pre_hook</span></code></a>(hook, *[, ...])</p></td>
 <td><p>Registers a forward pre-hook on the module.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_full_backward_hook" title="darts.utils.losses.MAELoss.register_full_backward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_hook</span></code></a>(hook)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_full_backward_hook" title="darts.utils.losses.MAELoss.register_full_backward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_hook</span></code></a>(hook[, prepend])</p></td>
 <td><p>Registers a backward hook on the module.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_load_state_dict_post_hook" title="darts.utils.losses.MAELoss.register_load_state_dict_post_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_load_state_dict_post_hook</span></code></a>(hook)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_full_backward_pre_hook" title="darts.utils.losses.MAELoss.register_full_backward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_pre_hook</span></code></a>(hook[, prepend])</p></td>
+<td><p>Registers a backward pre-hook on the module.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_load_state_dict_post_hook" title="darts.utils.losses.MAELoss.register_load_state_dict_post_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_load_state_dict_post_hook</span></code></a>(hook)</p></td>
 <td><p>Registers a post hook to be run after module's <code class="docutils literal notranslate"><span class="pre">load_state_dict</span></code> is called.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_module" title="darts.utils.losses.MAELoss.register_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_module</span></code></a>(name, module)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_module" title="darts.utils.losses.MAELoss.register_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_module</span></code></a>(name, module)</p></td>
 <td><p>Alias for <a class="reference internal" href="#darts.utils.losses.MAELoss.add_module" title="darts.utils.losses.MAELoss.add_module"><code class="xref py py-func docutils literal notranslate"><span class="pre">add_module()</span></code></a>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_parameter" title="darts.utils.losses.MAELoss.register_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_parameter</span></code></a>(name, param)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_parameter" title="darts.utils.losses.MAELoss.register_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_parameter</span></code></a>(name, param)</p></td>
 <td><p>Adds a parameter to the module.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.register_state_dict_pre_hook" title="darts.utils.losses.MAELoss.register_state_dict_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_state_dict_pre_hook</span></code></a>(hook)</p></td>
+<td><p>These hooks will be called with arguments: <code class="docutils literal notranslate"><span class="pre">self</span></code>, <code class="docutils literal notranslate"><span class="pre">prefix</span></code>, and <code class="docutils literal notranslate"><span class="pre">keep_vars</span></code> before calling <code class="docutils literal notranslate"><span class="pre">state_dict</span></code> on <code class="docutils literal notranslate"><span class="pre">self</span></code>.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MAELoss.requires_grad_" title="darts.utils.losses.MAELoss.requires_grad_"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_grad_</span></code></a>([requires_grad])</p></td>
 <td><p>Change if autograd should record operations on parameters in this module.</p></td>
@@ -1057,6 +1083,11 @@ are direct members of this module.</p>
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.losses.MAELoss.call_super_init">
+<span class="sig-name descname"><span class="pre">call_super_init</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#darts.utils.losses.MAELoss.call_super_init" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.MAELoss.children">
@@ -1240,7 +1271,7 @@ buffer</p>
 Implement this and a corresponding <a class="reference internal" href="#darts.utils.losses.MAELoss.set_extra_state" title="darts.utils.losses.MAELoss.set_extra_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_extra_state()</span></code></a> for your module
 if you need to store extra state. This function is called when building the
 module’s <cite>state_dict()</cite>.</p>
-<p>Note that extra state should be pickleable to ensure working serialization
+<p>Note that extra state should be picklable to ensure working serialization
 of the state_dict. We only provide provide backwards compatibility guarantees
 for serializing Tensors; other objects may break backwards compatibility if
 their serialized pickled form changes.</p>
@@ -1447,16 +1478,17 @@ example, <code class="docutils literal notranslate"><span class="pre">l</span></
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.MAELoss.named_buffers">
-<span class="sig-name descname"><span class="pre">named_buffers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recurse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MAELoss.named_buffers" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">named_buffers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recurse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_duplicate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MAELoss.named_buffers" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns an iterator over module buffers, yielding both the
 name of the buffer as well as the buffer itself.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>prefix</strong> (<em>str</em>) – prefix to prepend to all buffer names.</p></li>
-<li><p><strong>recurse</strong> (<em>bool</em>) – if True, then yields buffers of this module
+<li><p><strong>recurse</strong> (<em>bool</em><em>, </em><em>optional</em>) – if True, then yields buffers of this module
 and all submodules. Otherwise, yields only buffers that
-are direct members of this module.</p></li>
+are direct members of this module. Defaults to True.</p></li>
+<li><p><strong>remove_duplicate</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to remove the duplicated buffers in the result. Defaults to True.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Yields</dt>
@@ -1466,8 +1498,8 @@ are direct members of this module.</p></li>
 <p>Example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># xdoctest: +SKIP(&quot;undefined vars&quot;)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">buf</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">named_buffers</span><span class="p">():</span>
-<span class="gp">&gt;&gt;&gt; </span>   <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;running_var&#39;</span><span class="p">]:</span>
-<span class="gp">&gt;&gt;&gt; </span>       <span class="nb">print</span><span class="p">(</span><span class="n">buf</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;running_var&#39;</span><span class="p">]:</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="nb">print</span><span class="p">(</span><span class="n">buf</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
 </pre></div>
 </div>
 <dl class="field-list simple">
@@ -1541,7 +1573,7 @@ example, <code class="docutils literal notranslate"><span class="pre">l</span></
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.MAELoss.named_parameters">
-<span class="sig-name descname"><span class="pre">named_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recurse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MAELoss.named_parameters" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">named_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recurse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_duplicate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MAELoss.named_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns an iterator over module parameters, yielding both the
 name of the parameter as well as the parameter itself.</p>
 <dl class="field-list simple">
@@ -1551,6 +1583,8 @@ name of the parameter as well as the parameter itself.</p>
 <li><p><strong>recurse</strong> (<em>bool</em>) – if True, then yields parameters of this module
 and all submodules. Otherwise, yields only parameters that
 are direct members of this module.</p></li>
+<li><p><strong>remove_duplicate</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to remove the duplicated
+parameters in the result. Defaults to True.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Yields</dt>
@@ -1560,8 +1594,8 @@ are direct members of this module.</p></li>
 <p>Example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># xdoctest: +SKIP(&quot;undefined vars&quot;)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">named_parameters</span><span class="p">():</span>
-<span class="gp">&gt;&gt;&gt; </span>   <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;bias&#39;</span><span class="p">]:</span>
-<span class="gp">&gt;&gt;&gt; </span>       <span class="nb">print</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;bias&#39;</span><span class="p">]:</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="nb">print</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
 </pre></div>
 </div>
 <dl class="field-list simple">
@@ -1658,57 +1692,105 @@ the buffer is <strong>not</strong> included in the module’s <a class="referenc
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.MAELoss.register_forward_hook">
-<span class="sig-name descname"><span class="pre">register_forward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MAELoss.register_forward_hook" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">register_forward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MAELoss.register_forward_hook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Registers a forward hook on the module.</p>
-<p>The hook will be called every time after <a class="reference internal" href="#darts.utils.losses.MAELoss.forward" title="darts.utils.losses.MAELoss.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> has computed an output.
-It should have the following signature:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">modified</span> <span class="n">output</span>
+<p>The hook will be called every time after <a class="reference internal" href="#darts.utils.losses.MAELoss.forward" title="darts.utils.losses.MAELoss.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> has computed an output.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">with_kwargs</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code> or not specified, the input contains only
+the positional arguments given to the module. Keyword arguments won’t be
+passed to the hooks and only to the <code class="docutils literal notranslate"><span class="pre">forward</span></code>. The hook can modify the
+output. It can modify the input inplace but it will not have effect on
+forward since this is called after <a class="reference internal" href="#darts.utils.losses.MAELoss.forward" title="darts.utils.losses.MAELoss.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> is called. The hook
+should have the following signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">modified</span> <span class="n">output</span>
 </pre></div>
 </div>
-<p>The input contains only the positional arguments given to the module.
-Keyword arguments won’t be passed to the hooks and only to the <code class="docutils literal notranslate"><span class="pre">forward</span></code>.
-The hook can modify the output. It can modify the input inplace but
-it will not have effect on forward since this is called after
-<a class="reference internal" href="#darts.utils.losses.MAELoss.forward" title="darts.utils.losses.MAELoss.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> is called.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">with_kwargs</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, the forward hook will be passed the
+<code class="docutils literal notranslate"><span class="pre">kwargs</span></code> given to the forward function and be expected to return the
+output possibly modified. The hook should have the following signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">modified</span> <span class="n">output</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>a handle that can be used to remove the added hook by calling
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hook</strong> (<em>Callable</em>) – The user defined hook to be registered.</p></li>
+<li><p><strong>prepend</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired
+before all existing <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks on this
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks on
+this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+<code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks registered with
+<code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_forward_hook()</span></code> will fire before all hooks
+registered by this method.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p><strong>with_kwargs</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be passed the
+kwargs given to the forward function.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a handle that can be used to remove the added hook by calling
 <code class="docutils literal notranslate"><span class="pre">handle.remove()</span></code></p>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.hooks.RemovableHandle</span></code></p>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.hooks.RemovableHandle</span></code></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.MAELoss.register_forward_pre_hook">
-<span class="sig-name descname"><span class="pre">register_forward_pre_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MAELoss.register_forward_pre_hook" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">register_forward_pre_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MAELoss.register_forward_pre_hook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Registers a forward pre-hook on the module.</p>
-<p>The hook will be called every time before <a class="reference internal" href="#darts.utils.losses.MAELoss.forward" title="darts.utils.losses.MAELoss.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> is invoked.
-It should have the following signature:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="nb">input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">modified</span> <span class="nb">input</span>
+<p>The hook will be called every time before <a class="reference internal" href="#darts.utils.losses.MAELoss.forward" title="darts.utils.losses.MAELoss.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> is invoked.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">with_kwargs</span></code> is false or not specified, the input contains only
+the positional arguments given to the module. Keyword arguments won’t be
+passed to the hooks and only to the <code class="docutils literal notranslate"><span class="pre">forward</span></code>. The hook can modify the
+input. User can either return a tuple or a single modified value in the
+hook. We will wrap the value into a tuple if a single value is returned
+(unless that value is already a tuple). The hook should have the
+following signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">modified</span> <span class="nb">input</span>
 </pre></div>
 </div>
-<p>The input contains only the positional arguments given to the module.
-Keyword arguments won’t be passed to the hooks and only to the <code class="docutils literal notranslate"><span class="pre">forward</span></code>.
-The hook can modify the input. User can either return a tuple or a
-single modified value in the hook. We will wrap the value into a tuple
-if a single value is returned(unless that value is already a tuple).</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">with_kwargs</span></code> is true, the forward pre-hook will be passed the
+kwargs given to the forward function. And if the hook modifies the
+input, both the args and kwargs should be returned. The hook should have
+the following signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">a</span> <span class="nb">tuple</span> <span class="n">of</span> <span class="n">modified</span> <span class="nb">input</span> <span class="ow">and</span> <span class="n">kwargs</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>a handle that can be used to remove the added hook by calling
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hook</strong> (<em>Callable</em>) – The user defined hook to be registered.</p></li>
+<li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
+all existing <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks on this
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks
+on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+<code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks registered with
+<code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_forward_pre_hook()</span></code> will fire before all
+hooks registered by this method.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p><strong>with_kwargs</strong> (<em>bool</em>) – If true, the <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be passed the kwargs
+given to the forward function.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a handle that can be used to remove the added hook by calling
 <code class="docutils literal notranslate"><span class="pre">handle.remove()</span></code></p>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.hooks.RemovableHandle</span></code></p>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.hooks.RemovableHandle</span></code></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.MAELoss.register_full_backward_hook">
-<span class="sig-name descname"><span class="pre">register_full_backward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MAELoss.register_full_backward_hook" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">register_full_backward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MAELoss.register_full_backward_hook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Registers a backward hook on the module.</p>
 <p>The hook will be called every time the gradients with respect to a module
 are computed, i.e. the hook will execute if and only if the gradients with
@@ -1734,12 +1816,71 @@ of each Tensor returned by the Module’s forward function.</p>
 will raise an error.</p>
 </div>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>a handle that can be used to remove the added hook by calling
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hook</strong> (<em>Callable</em>) – The user-defined hook to be registered.</p></li>
+<li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
+all existing <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks on this
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks on
+this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+<code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks registered with
+<code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_full_backward_hook()</span></code> will fire before
+all hooks registered by this method.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a handle that can be used to remove the added hook by calling
 <code class="docutils literal notranslate"><span class="pre">handle.remove()</span></code></p>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.hooks.RemovableHandle</span></code></p>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.hooks.RemovableHandle</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.losses.MAELoss.register_full_backward_pre_hook">
+<span class="sig-name descname"><span class="pre">register_full_backward_pre_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MAELoss.register_full_backward_pre_hook" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registers a backward pre-hook on the module.</p>
+<p>The hook will be called every time the gradients for the module are computed.
+The hook should have the following signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span> <span class="ow">or</span> <span class="kc">None</span>
+</pre></div>
+</div>
+<p>The <code class="xref py py-attr docutils literal notranslate"><span class="pre">grad_output</span></code> is a tuple. The hook should
+not modify its arguments, but it can optionally return a new gradient with
+respect to the output that will be used in place of <code class="xref py py-attr docutils literal notranslate"><span class="pre">grad_output</span></code> in
+subsequent computations. Entries in <code class="xref py py-attr docutils literal notranslate"><span class="pre">grad_output</span></code> will be <code class="docutils literal notranslate"><span class="pre">None</span></code> for
+all non-Tensor arguments.</p>
+<p>For technical reasons, when this hook is applied to a Module, its forward function will
+receive a view of each Tensor passed to the Module. Similarly the caller will receive a view
+of each Tensor returned by the Module’s forward function.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Modifying inputs inplace is not allowed when using backward hooks and
+will raise an error.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hook</strong> (<em>Callable</em>) – The user-defined hook to be registered.</p></li>
+<li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
+all existing <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks on this
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks
+on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+<code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks registered with
+<code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_full_backward_pre_hook()</span></code> will fire before
+all hooks registered by this method.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a handle that can be used to remove the added hook by calling
+<code class="docutils literal notranslate"><span class="pre">handle.remove()</span></code></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.hooks.RemovableHandle</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1763,7 +1904,7 @@ is a <code class="docutils literal notranslate"><span class="pre">list</span></c
 <code class="docutils literal notranslate"><span class="pre">strict=True</span></code> are affected by modifications the hook makes to
 <code class="docutils literal notranslate"><span class="pre">missing_keys</span></code> or <code class="docutils literal notranslate"><span class="pre">unexpected_keys</span></code>, as expected. Additions to either
 set of keys will result in an error being thrown when <code class="docutils literal notranslate"><span class="pre">strict=True</span></code>, and
-clearning out both missing and unexpected keys will avoid an error.</p>
+clearing out both missing and unexpected keys will avoid an error.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p>a handle that can be used to remove the added hook by calling
@@ -1806,6 +1947,15 @@ module’s <a class="reference internal" href="#darts.utils.losses.MAELoss.state
 <dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.losses.MAELoss.register_state_dict_pre_hook">
+<span class="sig-name descname"><span class="pre">register_state_dict_pre_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MAELoss.register_state_dict_pre_hook" title="Permalink to this definition">¶</a></dt>
+<dd><p>These hooks will be called with arguments: <code class="docutils literal notranslate"><span class="pre">self</span></code>, <code class="docutils literal notranslate"><span class="pre">prefix</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">keep_vars</span></code> before calling <code class="docutils literal notranslate"><span class="pre">state_dict</span></code> on <code class="docutils literal notranslate"><span class="pre">self</span></code>. The registered
+hooks can be used to perform pre-processing before the <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>
+call is made.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -2106,7 +2256,7 @@ copied to that device</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.MAELoss.zero_grad">
-<span class="sig-name descname"><span class="pre">zero_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">set_to_none</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MAELoss.zero_grad" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">zero_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">set_to_none</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MAELoss.zero_grad" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets gradients of all model parameters to zero. See similar function
 under <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.Optimizer</span></code> for more context.</p>
 <dl class="field-list simple">
@@ -2202,7 +2352,7 @@ and not their direction.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.modules" title="darts.utils.losses.MapeLoss.modules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">modules</span></code></a>()</p></td>
 <td><p>Returns an iterator over all modules in the network.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.named_buffers" title="darts.utils.losses.MapeLoss.named_buffers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_buffers</span></code></a>([prefix, recurse])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.named_buffers" title="darts.utils.losses.MapeLoss.named_buffers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_buffers</span></code></a>([prefix, recurse, ...])</p></td>
 <td><p>Returns an iterator over module buffers, yielding both the name of the buffer as well as the buffer itself.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.named_children" title="darts.utils.losses.MapeLoss.named_children"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_children</span></code></a>()</p></td>
@@ -2211,7 +2361,7 @@ and not their direction.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.named_modules" title="darts.utils.losses.MapeLoss.named_modules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_modules</span></code></a>([memo, prefix, remove_duplicate])</p></td>
 <td><p>Returns an iterator over all modules in the network, yielding both the name of the module as well as the module itself.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.named_parameters" title="darts.utils.losses.MapeLoss.named_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_parameters</span></code></a>([prefix, recurse])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.named_parameters" title="darts.utils.losses.MapeLoss.named_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_parameters</span></code></a>([prefix, recurse, ...])</p></td>
 <td><p>Returns an iterator over module parameters, yielding both the name of the parameter as well as the parameter itself.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.parameters" title="darts.utils.losses.MapeLoss.parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameters</span></code></a>([recurse])</p></td>
@@ -2223,23 +2373,29 @@ and not their direction.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_buffer" title="darts.utils.losses.MapeLoss.register_buffer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_buffer</span></code></a>(name, tensor[, persistent])</p></td>
 <td><p>Adds a buffer to the module.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_forward_hook" title="darts.utils.losses.MapeLoss.register_forward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_hook</span></code></a>(hook)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_forward_hook" title="darts.utils.losses.MapeLoss.register_forward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_hook</span></code></a>(hook, *[, prepend, ...])</p></td>
 <td><p>Registers a forward hook on the module.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_forward_pre_hook" title="darts.utils.losses.MapeLoss.register_forward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_pre_hook</span></code></a>(hook)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_forward_pre_hook" title="darts.utils.losses.MapeLoss.register_forward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_pre_hook</span></code></a>(hook, *[, ...])</p></td>
 <td><p>Registers a forward pre-hook on the module.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_full_backward_hook" title="darts.utils.losses.MapeLoss.register_full_backward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_hook</span></code></a>(hook)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_full_backward_hook" title="darts.utils.losses.MapeLoss.register_full_backward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_hook</span></code></a>(hook[, prepend])</p></td>
 <td><p>Registers a backward hook on the module.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_load_state_dict_post_hook" title="darts.utils.losses.MapeLoss.register_load_state_dict_post_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_load_state_dict_post_hook</span></code></a>(hook)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_full_backward_pre_hook" title="darts.utils.losses.MapeLoss.register_full_backward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_pre_hook</span></code></a>(hook[, prepend])</p></td>
+<td><p>Registers a backward pre-hook on the module.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_load_state_dict_post_hook" title="darts.utils.losses.MapeLoss.register_load_state_dict_post_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_load_state_dict_post_hook</span></code></a>(hook)</p></td>
 <td><p>Registers a post hook to be run after module's <code class="docutils literal notranslate"><span class="pre">load_state_dict</span></code> is called.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_module" title="darts.utils.losses.MapeLoss.register_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_module</span></code></a>(name, module)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_module" title="darts.utils.losses.MapeLoss.register_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_module</span></code></a>(name, module)</p></td>
 <td><p>Alias for <a class="reference internal" href="#darts.utils.losses.MapeLoss.add_module" title="darts.utils.losses.MapeLoss.add_module"><code class="xref py py-func docutils literal notranslate"><span class="pre">add_module()</span></code></a>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_parameter" title="darts.utils.losses.MapeLoss.register_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_parameter</span></code></a>(name, param)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_parameter" title="darts.utils.losses.MapeLoss.register_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_parameter</span></code></a>(name, param)</p></td>
 <td><p>Adds a parameter to the module.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.register_state_dict_pre_hook" title="darts.utils.losses.MapeLoss.register_state_dict_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_state_dict_pre_hook</span></code></a>(hook)</p></td>
+<td><p>These hooks will be called with arguments: <code class="docutils literal notranslate"><span class="pre">self</span></code>, <code class="docutils literal notranslate"><span class="pre">prefix</span></code>, and <code class="docutils literal notranslate"><span class="pre">keep_vars</span></code> before calling <code class="docutils literal notranslate"><span class="pre">state_dict</span></code> on <code class="docutils literal notranslate"><span class="pre">self</span></code>.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.MapeLoss.requires_grad_" title="darts.utils.losses.MapeLoss.requires_grad_"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_grad_</span></code></a>([requires_grad])</p></td>
 <td><p>Change if autograd should record operations on parameters in this module.</p></td>
@@ -2397,6 +2553,11 @@ are direct members of this module.</p>
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.losses.MapeLoss.call_super_init">
+<span class="sig-name descname"><span class="pre">call_super_init</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#darts.utils.losses.MapeLoss.call_super_init" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.MapeLoss.children">
@@ -2580,7 +2741,7 @@ buffer</p>
 Implement this and a corresponding <a class="reference internal" href="#darts.utils.losses.MapeLoss.set_extra_state" title="darts.utils.losses.MapeLoss.set_extra_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_extra_state()</span></code></a> for your module
 if you need to store extra state. This function is called when building the
 module’s <cite>state_dict()</cite>.</p>
-<p>Note that extra state should be pickleable to ensure working serialization
+<p>Note that extra state should be picklable to ensure working serialization
 of the state_dict. We only provide provide backwards compatibility guarantees
 for serializing Tensors; other objects may break backwards compatibility if
 their serialized pickled form changes.</p>
@@ -2787,16 +2948,17 @@ example, <code class="docutils literal notranslate"><span class="pre">l</span></
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.MapeLoss.named_buffers">
-<span class="sig-name descname"><span class="pre">named_buffers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recurse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MapeLoss.named_buffers" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">named_buffers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recurse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_duplicate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MapeLoss.named_buffers" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns an iterator over module buffers, yielding both the
 name of the buffer as well as the buffer itself.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>prefix</strong> (<em>str</em>) – prefix to prepend to all buffer names.</p></li>
-<li><p><strong>recurse</strong> (<em>bool</em>) – if True, then yields buffers of this module
+<li><p><strong>recurse</strong> (<em>bool</em><em>, </em><em>optional</em>) – if True, then yields buffers of this module
 and all submodules. Otherwise, yields only buffers that
-are direct members of this module.</p></li>
+are direct members of this module. Defaults to True.</p></li>
+<li><p><strong>remove_duplicate</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to remove the duplicated buffers in the result. Defaults to True.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Yields</dt>
@@ -2806,8 +2968,8 @@ are direct members of this module.</p></li>
 <p>Example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># xdoctest: +SKIP(&quot;undefined vars&quot;)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">buf</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">named_buffers</span><span class="p">():</span>
-<span class="gp">&gt;&gt;&gt; </span>   <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;running_var&#39;</span><span class="p">]:</span>
-<span class="gp">&gt;&gt;&gt; </span>       <span class="nb">print</span><span class="p">(</span><span class="n">buf</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;running_var&#39;</span><span class="p">]:</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="nb">print</span><span class="p">(</span><span class="n">buf</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
 </pre></div>
 </div>
 <dl class="field-list simple">
@@ -2881,7 +3043,7 @@ example, <code class="docutils literal notranslate"><span class="pre">l</span></
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.MapeLoss.named_parameters">
-<span class="sig-name descname"><span class="pre">named_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recurse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MapeLoss.named_parameters" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">named_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recurse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_duplicate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MapeLoss.named_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns an iterator over module parameters, yielding both the
 name of the parameter as well as the parameter itself.</p>
 <dl class="field-list simple">
@@ -2891,6 +3053,8 @@ name of the parameter as well as the parameter itself.</p>
 <li><p><strong>recurse</strong> (<em>bool</em>) – if True, then yields parameters of this module
 and all submodules. Otherwise, yields only parameters that
 are direct members of this module.</p></li>
+<li><p><strong>remove_duplicate</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to remove the duplicated
+parameters in the result. Defaults to True.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Yields</dt>
@@ -2900,8 +3064,8 @@ are direct members of this module.</p></li>
 <p>Example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># xdoctest: +SKIP(&quot;undefined vars&quot;)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">named_parameters</span><span class="p">():</span>
-<span class="gp">&gt;&gt;&gt; </span>   <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;bias&#39;</span><span class="p">]:</span>
-<span class="gp">&gt;&gt;&gt; </span>       <span class="nb">print</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;bias&#39;</span><span class="p">]:</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="nb">print</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
 </pre></div>
 </div>
 <dl class="field-list simple">
@@ -2998,57 +3162,105 @@ the buffer is <strong>not</strong> included in the module’s <a class="referenc
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.MapeLoss.register_forward_hook">
-<span class="sig-name descname"><span class="pre">register_forward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MapeLoss.register_forward_hook" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">register_forward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MapeLoss.register_forward_hook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Registers a forward hook on the module.</p>
-<p>The hook will be called every time after <a class="reference internal" href="#darts.utils.losses.MapeLoss.forward" title="darts.utils.losses.MapeLoss.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> has computed an output.
-It should have the following signature:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">modified</span> <span class="n">output</span>
+<p>The hook will be called every time after <a class="reference internal" href="#darts.utils.losses.MapeLoss.forward" title="darts.utils.losses.MapeLoss.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> has computed an output.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">with_kwargs</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code> or not specified, the input contains only
+the positional arguments given to the module. Keyword arguments won’t be
+passed to the hooks and only to the <code class="docutils literal notranslate"><span class="pre">forward</span></code>. The hook can modify the
+output. It can modify the input inplace but it will not have effect on
+forward since this is called after <a class="reference internal" href="#darts.utils.losses.MapeLoss.forward" title="darts.utils.losses.MapeLoss.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> is called. The hook
+should have the following signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">modified</span> <span class="n">output</span>
 </pre></div>
 </div>
-<p>The input contains only the positional arguments given to the module.
-Keyword arguments won’t be passed to the hooks and only to the <code class="docutils literal notranslate"><span class="pre">forward</span></code>.
-The hook can modify the output. It can modify the input inplace but
-it will not have effect on forward since this is called after
-<a class="reference internal" href="#darts.utils.losses.MapeLoss.forward" title="darts.utils.losses.MapeLoss.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> is called.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">with_kwargs</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, the forward hook will be passed the
+<code class="docutils literal notranslate"><span class="pre">kwargs</span></code> given to the forward function and be expected to return the
+output possibly modified. The hook should have the following signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">modified</span> <span class="n">output</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>a handle that can be used to remove the added hook by calling
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hook</strong> (<em>Callable</em>) – The user defined hook to be registered.</p></li>
+<li><p><strong>prepend</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired
+before all existing <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks on this
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks on
+this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+<code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks registered with
+<code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_forward_hook()</span></code> will fire before all hooks
+registered by this method.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p><strong>with_kwargs</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be passed the
+kwargs given to the forward function.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a handle that can be used to remove the added hook by calling
 <code class="docutils literal notranslate"><span class="pre">handle.remove()</span></code></p>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.hooks.RemovableHandle</span></code></p>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.hooks.RemovableHandle</span></code></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.MapeLoss.register_forward_pre_hook">
-<span class="sig-name descname"><span class="pre">register_forward_pre_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MapeLoss.register_forward_pre_hook" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">register_forward_pre_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MapeLoss.register_forward_pre_hook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Registers a forward pre-hook on the module.</p>
-<p>The hook will be called every time before <a class="reference internal" href="#darts.utils.losses.MapeLoss.forward" title="darts.utils.losses.MapeLoss.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> is invoked.
-It should have the following signature:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="nb">input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">modified</span> <span class="nb">input</span>
+<p>The hook will be called every time before <a class="reference internal" href="#darts.utils.losses.MapeLoss.forward" title="darts.utils.losses.MapeLoss.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> is invoked.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">with_kwargs</span></code> is false or not specified, the input contains only
+the positional arguments given to the module. Keyword arguments won’t be
+passed to the hooks and only to the <code class="docutils literal notranslate"><span class="pre">forward</span></code>. The hook can modify the
+input. User can either return a tuple or a single modified value in the
+hook. We will wrap the value into a tuple if a single value is returned
+(unless that value is already a tuple). The hook should have the
+following signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">modified</span> <span class="nb">input</span>
 </pre></div>
 </div>
-<p>The input contains only the positional arguments given to the module.
-Keyword arguments won’t be passed to the hooks and only to the <code class="docutils literal notranslate"><span class="pre">forward</span></code>.
-The hook can modify the input. User can either return a tuple or a
-single modified value in the hook. We will wrap the value into a tuple
-if a single value is returned(unless that value is already a tuple).</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">with_kwargs</span></code> is true, the forward pre-hook will be passed the
+kwargs given to the forward function. And if the hook modifies the
+input, both the args and kwargs should be returned. The hook should have
+the following signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">a</span> <span class="nb">tuple</span> <span class="n">of</span> <span class="n">modified</span> <span class="nb">input</span> <span class="ow">and</span> <span class="n">kwargs</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>a handle that can be used to remove the added hook by calling
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hook</strong> (<em>Callable</em>) – The user defined hook to be registered.</p></li>
+<li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
+all existing <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks on this
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks
+on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+<code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks registered with
+<code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_forward_pre_hook()</span></code> will fire before all
+hooks registered by this method.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p><strong>with_kwargs</strong> (<em>bool</em>) – If true, the <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be passed the kwargs
+given to the forward function.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a handle that can be used to remove the added hook by calling
 <code class="docutils literal notranslate"><span class="pre">handle.remove()</span></code></p>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.hooks.RemovableHandle</span></code></p>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.hooks.RemovableHandle</span></code></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.MapeLoss.register_full_backward_hook">
-<span class="sig-name descname"><span class="pre">register_full_backward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MapeLoss.register_full_backward_hook" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">register_full_backward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MapeLoss.register_full_backward_hook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Registers a backward hook on the module.</p>
 <p>The hook will be called every time the gradients with respect to a module
 are computed, i.e. the hook will execute if and only if the gradients with
@@ -3074,12 +3286,71 @@ of each Tensor returned by the Module’s forward function.</p>
 will raise an error.</p>
 </div>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>a handle that can be used to remove the added hook by calling
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hook</strong> (<em>Callable</em>) – The user-defined hook to be registered.</p></li>
+<li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
+all existing <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks on this
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks on
+this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+<code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks registered with
+<code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_full_backward_hook()</span></code> will fire before
+all hooks registered by this method.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a handle that can be used to remove the added hook by calling
 <code class="docutils literal notranslate"><span class="pre">handle.remove()</span></code></p>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.hooks.RemovableHandle</span></code></p>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.hooks.RemovableHandle</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.losses.MapeLoss.register_full_backward_pre_hook">
+<span class="sig-name descname"><span class="pre">register_full_backward_pre_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MapeLoss.register_full_backward_pre_hook" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registers a backward pre-hook on the module.</p>
+<p>The hook will be called every time the gradients for the module are computed.
+The hook should have the following signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span> <span class="ow">or</span> <span class="kc">None</span>
+</pre></div>
+</div>
+<p>The <code class="xref py py-attr docutils literal notranslate"><span class="pre">grad_output</span></code> is a tuple. The hook should
+not modify its arguments, but it can optionally return a new gradient with
+respect to the output that will be used in place of <code class="xref py py-attr docutils literal notranslate"><span class="pre">grad_output</span></code> in
+subsequent computations. Entries in <code class="xref py py-attr docutils literal notranslate"><span class="pre">grad_output</span></code> will be <code class="docutils literal notranslate"><span class="pre">None</span></code> for
+all non-Tensor arguments.</p>
+<p>For technical reasons, when this hook is applied to a Module, its forward function will
+receive a view of each Tensor passed to the Module. Similarly the caller will receive a view
+of each Tensor returned by the Module’s forward function.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Modifying inputs inplace is not allowed when using backward hooks and
+will raise an error.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hook</strong> (<em>Callable</em>) – The user-defined hook to be registered.</p></li>
+<li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
+all existing <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks on this
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks
+on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+<code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks registered with
+<code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_full_backward_pre_hook()</span></code> will fire before
+all hooks registered by this method.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a handle that can be used to remove the added hook by calling
+<code class="docutils literal notranslate"><span class="pre">handle.remove()</span></code></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.hooks.RemovableHandle</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -3103,7 +3374,7 @@ is a <code class="docutils literal notranslate"><span class="pre">list</span></c
 <code class="docutils literal notranslate"><span class="pre">strict=True</span></code> are affected by modifications the hook makes to
 <code class="docutils literal notranslate"><span class="pre">missing_keys</span></code> or <code class="docutils literal notranslate"><span class="pre">unexpected_keys</span></code>, as expected. Additions to either
 set of keys will result in an error being thrown when <code class="docutils literal notranslate"><span class="pre">strict=True</span></code>, and
-clearning out both missing and unexpected keys will avoid an error.</p>
+clearing out both missing and unexpected keys will avoid an error.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p>a handle that can be used to remove the added hook by calling
@@ -3146,6 +3417,15 @@ module’s <a class="reference internal" href="#darts.utils.losses.MapeLoss.stat
 <dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.losses.MapeLoss.register_state_dict_pre_hook">
+<span class="sig-name descname"><span class="pre">register_state_dict_pre_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MapeLoss.register_state_dict_pre_hook" title="Permalink to this definition">¶</a></dt>
+<dd><p>These hooks will be called with arguments: <code class="docutils literal notranslate"><span class="pre">self</span></code>, <code class="docutils literal notranslate"><span class="pre">prefix</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">keep_vars</span></code> before calling <code class="docutils literal notranslate"><span class="pre">state_dict</span></code> on <code class="docutils literal notranslate"><span class="pre">self</span></code>. The registered
+hooks can be used to perform pre-processing before the <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>
+call is made.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -3446,7 +3726,7 @@ copied to that device</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.MapeLoss.zero_grad">
-<span class="sig-name descname"><span class="pre">zero_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">set_to_none</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MapeLoss.zero_grad" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">zero_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">set_to_none</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.MapeLoss.zero_grad" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets gradients of all model parameters to zero. See similar function
 under <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.Optimizer</span></code> for more context.</p>
 <dl class="field-list simple">
@@ -3548,7 +3828,7 @@ and not their direction.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.modules" title="darts.utils.losses.SmapeLoss.modules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">modules</span></code></a>()</p></td>
 <td><p>Returns an iterator over all modules in the network.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.named_buffers" title="darts.utils.losses.SmapeLoss.named_buffers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_buffers</span></code></a>([prefix, recurse])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.named_buffers" title="darts.utils.losses.SmapeLoss.named_buffers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_buffers</span></code></a>([prefix, recurse, ...])</p></td>
 <td><p>Returns an iterator over module buffers, yielding both the name of the buffer as well as the buffer itself.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.named_children" title="darts.utils.losses.SmapeLoss.named_children"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_children</span></code></a>()</p></td>
@@ -3557,7 +3837,7 @@ and not their direction.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.named_modules" title="darts.utils.losses.SmapeLoss.named_modules"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_modules</span></code></a>([memo, prefix, remove_duplicate])</p></td>
 <td><p>Returns an iterator over all modules in the network, yielding both the name of the module as well as the module itself.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.named_parameters" title="darts.utils.losses.SmapeLoss.named_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_parameters</span></code></a>([prefix, recurse])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.named_parameters" title="darts.utils.losses.SmapeLoss.named_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">named_parameters</span></code></a>([prefix, recurse, ...])</p></td>
 <td><p>Returns an iterator over module parameters, yielding both the name of the parameter as well as the parameter itself.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.parameters" title="darts.utils.losses.SmapeLoss.parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameters</span></code></a>([recurse])</p></td>
@@ -3569,23 +3849,29 @@ and not their direction.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_buffer" title="darts.utils.losses.SmapeLoss.register_buffer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_buffer</span></code></a>(name, tensor[, persistent])</p></td>
 <td><p>Adds a buffer to the module.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_forward_hook" title="darts.utils.losses.SmapeLoss.register_forward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_hook</span></code></a>(hook)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_forward_hook" title="darts.utils.losses.SmapeLoss.register_forward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_hook</span></code></a>(hook, *[, prepend, ...])</p></td>
 <td><p>Registers a forward hook on the module.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_forward_pre_hook" title="darts.utils.losses.SmapeLoss.register_forward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_pre_hook</span></code></a>(hook)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_forward_pre_hook" title="darts.utils.losses.SmapeLoss.register_forward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_forward_pre_hook</span></code></a>(hook, *[, ...])</p></td>
 <td><p>Registers a forward pre-hook on the module.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_full_backward_hook" title="darts.utils.losses.SmapeLoss.register_full_backward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_hook</span></code></a>(hook)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_full_backward_hook" title="darts.utils.losses.SmapeLoss.register_full_backward_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_hook</span></code></a>(hook[, prepend])</p></td>
 <td><p>Registers a backward hook on the module.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_load_state_dict_post_hook" title="darts.utils.losses.SmapeLoss.register_load_state_dict_post_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_load_state_dict_post_hook</span></code></a>(hook)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_full_backward_pre_hook" title="darts.utils.losses.SmapeLoss.register_full_backward_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_full_backward_pre_hook</span></code></a>(hook[, prepend])</p></td>
+<td><p>Registers a backward pre-hook on the module.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_load_state_dict_post_hook" title="darts.utils.losses.SmapeLoss.register_load_state_dict_post_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_load_state_dict_post_hook</span></code></a>(hook)</p></td>
 <td><p>Registers a post hook to be run after module's <code class="docutils literal notranslate"><span class="pre">load_state_dict</span></code> is called.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_module" title="darts.utils.losses.SmapeLoss.register_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_module</span></code></a>(name, module)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_module" title="darts.utils.losses.SmapeLoss.register_module"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_module</span></code></a>(name, module)</p></td>
 <td><p>Alias for <a class="reference internal" href="#darts.utils.losses.SmapeLoss.add_module" title="darts.utils.losses.SmapeLoss.add_module"><code class="xref py py-func docutils literal notranslate"><span class="pre">add_module()</span></code></a>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_parameter" title="darts.utils.losses.SmapeLoss.register_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_parameter</span></code></a>(name, param)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_parameter" title="darts.utils.losses.SmapeLoss.register_parameter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_parameter</span></code></a>(name, param)</p></td>
 <td><p>Adds a parameter to the module.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.register_state_dict_pre_hook" title="darts.utils.losses.SmapeLoss.register_state_dict_pre_hook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_state_dict_pre_hook</span></code></a>(hook)</p></td>
+<td><p>These hooks will be called with arguments: <code class="docutils literal notranslate"><span class="pre">self</span></code>, <code class="docutils literal notranslate"><span class="pre">prefix</span></code>, and <code class="docutils literal notranslate"><span class="pre">keep_vars</span></code> before calling <code class="docutils literal notranslate"><span class="pre">state_dict</span></code> on <code class="docutils literal notranslate"><span class="pre">self</span></code>.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.losses.SmapeLoss.requires_grad_" title="darts.utils.losses.SmapeLoss.requires_grad_"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requires_grad_</span></code></a>([requires_grad])</p></td>
 <td><p>Change if autograd should record operations on parameters in this module.</p></td>
@@ -3743,6 +4029,11 @@ are direct members of this module.</p>
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.losses.SmapeLoss.call_super_init">
+<span class="sig-name descname"><span class="pre">call_super_init</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#darts.utils.losses.SmapeLoss.call_super_init" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.SmapeLoss.children">
@@ -3926,7 +4217,7 @@ buffer</p>
 Implement this and a corresponding <a class="reference internal" href="#darts.utils.losses.SmapeLoss.set_extra_state" title="darts.utils.losses.SmapeLoss.set_extra_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">set_extra_state()</span></code></a> for your module
 if you need to store extra state. This function is called when building the
 module’s <cite>state_dict()</cite>.</p>
-<p>Note that extra state should be pickleable to ensure working serialization
+<p>Note that extra state should be picklable to ensure working serialization
 of the state_dict. We only provide provide backwards compatibility guarantees
 for serializing Tensors; other objects may break backwards compatibility if
 their serialized pickled form changes.</p>
@@ -4133,16 +4424,17 @@ example, <code class="docutils literal notranslate"><span class="pre">l</span></
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.SmapeLoss.named_buffers">
-<span class="sig-name descname"><span class="pre">named_buffers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recurse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.SmapeLoss.named_buffers" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">named_buffers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recurse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_duplicate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.SmapeLoss.named_buffers" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns an iterator over module buffers, yielding both the
 name of the buffer as well as the buffer itself.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>prefix</strong> (<em>str</em>) – prefix to prepend to all buffer names.</p></li>
-<li><p><strong>recurse</strong> (<em>bool</em>) – if True, then yields buffers of this module
+<li><p><strong>recurse</strong> (<em>bool</em><em>, </em><em>optional</em>) – if True, then yields buffers of this module
 and all submodules. Otherwise, yields only buffers that
-are direct members of this module.</p></li>
+are direct members of this module. Defaults to True.</p></li>
+<li><p><strong>remove_duplicate</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to remove the duplicated buffers in the result. Defaults to True.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Yields</dt>
@@ -4152,8 +4444,8 @@ are direct members of this module.</p></li>
 <p>Example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># xdoctest: +SKIP(&quot;undefined vars&quot;)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">buf</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">named_buffers</span><span class="p">():</span>
-<span class="gp">&gt;&gt;&gt; </span>   <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;running_var&#39;</span><span class="p">]:</span>
-<span class="gp">&gt;&gt;&gt; </span>       <span class="nb">print</span><span class="p">(</span><span class="n">buf</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;running_var&#39;</span><span class="p">]:</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="nb">print</span><span class="p">(</span><span class="n">buf</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
 </pre></div>
 </div>
 <dl class="field-list simple">
@@ -4227,7 +4519,7 @@ example, <code class="docutils literal notranslate"><span class="pre">l</span></
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.SmapeLoss.named_parameters">
-<span class="sig-name descname"><span class="pre">named_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recurse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.SmapeLoss.named_parameters" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">named_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recurse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_duplicate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.SmapeLoss.named_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns an iterator over module parameters, yielding both the
 name of the parameter as well as the parameter itself.</p>
 <dl class="field-list simple">
@@ -4237,6 +4529,8 @@ name of the parameter as well as the parameter itself.</p>
 <li><p><strong>recurse</strong> (<em>bool</em>) – if True, then yields parameters of this module
 and all submodules. Otherwise, yields only parameters that
 are direct members of this module.</p></li>
+<li><p><strong>remove_duplicate</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to remove the duplicated
+parameters in the result. Defaults to True.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Yields</dt>
@@ -4246,8 +4540,8 @@ are direct members of this module.</p></li>
 <p>Example:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># xdoctest: +SKIP(&quot;undefined vars&quot;)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">named_parameters</span><span class="p">():</span>
-<span class="gp">&gt;&gt;&gt; </span>   <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;bias&#39;</span><span class="p">]:</span>
-<span class="gp">&gt;&gt;&gt; </span>       <span class="nb">print</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;bias&#39;</span><span class="p">]:</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="nb">print</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">size</span><span class="p">())</span>
 </pre></div>
 </div>
 <dl class="field-list simple">
@@ -4344,57 +4638,105 @@ the buffer is <strong>not</strong> included in the module’s <a class="referenc
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.SmapeLoss.register_forward_hook">
-<span class="sig-name descname"><span class="pre">register_forward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.SmapeLoss.register_forward_hook" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">register_forward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.SmapeLoss.register_forward_hook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Registers a forward hook on the module.</p>
-<p>The hook will be called every time after <a class="reference internal" href="#darts.utils.losses.SmapeLoss.forward" title="darts.utils.losses.SmapeLoss.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> has computed an output.
-It should have the following signature:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">modified</span> <span class="n">output</span>
+<p>The hook will be called every time after <a class="reference internal" href="#darts.utils.losses.SmapeLoss.forward" title="darts.utils.losses.SmapeLoss.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> has computed an output.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">with_kwargs</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code> or not specified, the input contains only
+the positional arguments given to the module. Keyword arguments won’t be
+passed to the hooks and only to the <code class="docutils literal notranslate"><span class="pre">forward</span></code>. The hook can modify the
+output. It can modify the input inplace but it will not have effect on
+forward since this is called after <a class="reference internal" href="#darts.utils.losses.SmapeLoss.forward" title="darts.utils.losses.SmapeLoss.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> is called. The hook
+should have the following signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">modified</span> <span class="n">output</span>
 </pre></div>
 </div>
-<p>The input contains only the positional arguments given to the module.
-Keyword arguments won’t be passed to the hooks and only to the <code class="docutils literal notranslate"><span class="pre">forward</span></code>.
-The hook can modify the output. It can modify the input inplace but
-it will not have effect on forward since this is called after
-<a class="reference internal" href="#darts.utils.losses.SmapeLoss.forward" title="darts.utils.losses.SmapeLoss.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> is called.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">with_kwargs</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, the forward hook will be passed the
+<code class="docutils literal notranslate"><span class="pre">kwargs</span></code> given to the forward function and be expected to return the
+output possibly modified. The hook should have the following signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">modified</span> <span class="n">output</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>a handle that can be used to remove the added hook by calling
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hook</strong> (<em>Callable</em>) – The user defined hook to be registered.</p></li>
+<li><p><strong>prepend</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired
+before all existing <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks on this
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks on
+this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+<code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks registered with
+<code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_forward_hook()</span></code> will fire before all hooks
+registered by this method.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p><strong>with_kwargs</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be passed the
+kwargs given to the forward function.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a handle that can be used to remove the added hook by calling
 <code class="docutils literal notranslate"><span class="pre">handle.remove()</span></code></p>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.hooks.RemovableHandle</span></code></p>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.hooks.RemovableHandle</span></code></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.SmapeLoss.register_forward_pre_hook">
-<span class="sig-name descname"><span class="pre">register_forward_pre_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.SmapeLoss.register_forward_pre_hook" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">register_forward_pre_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.SmapeLoss.register_forward_pre_hook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Registers a forward pre-hook on the module.</p>
-<p>The hook will be called every time before <a class="reference internal" href="#darts.utils.losses.SmapeLoss.forward" title="darts.utils.losses.SmapeLoss.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> is invoked.
-It should have the following signature:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="nb">input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">modified</span> <span class="nb">input</span>
+<p>The hook will be called every time before <a class="reference internal" href="#darts.utils.losses.SmapeLoss.forward" title="darts.utils.losses.SmapeLoss.forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">forward()</span></code></a> is invoked.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">with_kwargs</span></code> is false or not specified, the input contains only
+the positional arguments given to the module. Keyword arguments won’t be
+passed to the hooks and only to the <code class="docutils literal notranslate"><span class="pre">forward</span></code>. The hook can modify the
+input. User can either return a tuple or a single modified value in the
+hook. We will wrap the value into a tuple if a single value is returned
+(unless that value is already a tuple). The hook should have the
+following signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">modified</span> <span class="nb">input</span>
 </pre></div>
 </div>
-<p>The input contains only the positional arguments given to the module.
-Keyword arguments won’t be passed to the hooks and only to the <code class="docutils literal notranslate"><span class="pre">forward</span></code>.
-The hook can modify the input. User can either return a tuple or a
-single modified value in the hook. We will wrap the value into a tuple
-if a single value is returned(unless that value is already a tuple).</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">with_kwargs</span></code> is true, the forward pre-hook will be passed the
+kwargs given to the forward function. And if the hook modifies the
+input, both the args and kwargs should be returned. The hook should have
+the following signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">a</span> <span class="nb">tuple</span> <span class="n">of</span> <span class="n">modified</span> <span class="nb">input</span> <span class="ow">and</span> <span class="n">kwargs</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>a handle that can be used to remove the added hook by calling
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hook</strong> (<em>Callable</em>) – The user defined hook to be registered.</p></li>
+<li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
+all existing <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks on this
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks
+on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+<code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks registered with
+<code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_forward_pre_hook()</span></code> will fire before all
+hooks registered by this method.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p><strong>with_kwargs</strong> (<em>bool</em>) – If true, the <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be passed the kwargs
+given to the forward function.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a handle that can be used to remove the added hook by calling
 <code class="docutils literal notranslate"><span class="pre">handle.remove()</span></code></p>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.hooks.RemovableHandle</span></code></p>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.hooks.RemovableHandle</span></code></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.SmapeLoss.register_full_backward_hook">
-<span class="sig-name descname"><span class="pre">register_full_backward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.SmapeLoss.register_full_backward_hook" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">register_full_backward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.SmapeLoss.register_full_backward_hook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Registers a backward hook on the module.</p>
 <p>The hook will be called every time the gradients with respect to a module
 are computed, i.e. the hook will execute if and only if the gradients with
@@ -4420,12 +4762,71 @@ of each Tensor returned by the Module’s forward function.</p>
 will raise an error.</p>
 </div>
 <dl class="field-list simple">
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>a handle that can be used to remove the added hook by calling
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hook</strong> (<em>Callable</em>) – The user-defined hook to be registered.</p></li>
+<li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
+all existing <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks on this
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks on
+this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+<code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks registered with
+<code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_full_backward_hook()</span></code> will fire before
+all hooks registered by this method.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a handle that can be used to remove the added hook by calling
 <code class="docutils literal notranslate"><span class="pre">handle.remove()</span></code></p>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.hooks.RemovableHandle</span></code></p>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.hooks.RemovableHandle</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.losses.SmapeLoss.register_full_backward_pre_hook">
+<span class="sig-name descname"><span class="pre">register_full_backward_pre_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.SmapeLoss.register_full_backward_pre_hook" title="Permalink to this definition">¶</a></dt>
+<dd><p>Registers a backward pre-hook on the module.</p>
+<p>The hook will be called every time the gradients for the module are computed.
+The hook should have the following signature:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tensor</span> <span class="ow">or</span> <span class="kc">None</span>
+</pre></div>
+</div>
+<p>The <code class="xref py py-attr docutils literal notranslate"><span class="pre">grad_output</span></code> is a tuple. The hook should
+not modify its arguments, but it can optionally return a new gradient with
+respect to the output that will be used in place of <code class="xref py py-attr docutils literal notranslate"><span class="pre">grad_output</span></code> in
+subsequent computations. Entries in <code class="xref py py-attr docutils literal notranslate"><span class="pre">grad_output</span></code> will be <code class="docutils literal notranslate"><span class="pre">None</span></code> for
+all non-Tensor arguments.</p>
+<p>For technical reasons, when this hook is applied to a Module, its forward function will
+receive a view of each Tensor passed to the Module. Similarly the caller will receive a view
+of each Tensor returned by the Module’s forward function.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Modifying inputs inplace is not allowed when using backward hooks and
+will raise an error.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hook</strong> (<em>Callable</em>) – The user-defined hook to be registered.</p></li>
+<li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
+all existing <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks on this
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks
+on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+<code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks registered with
+<code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_full_backward_pre_hook()</span></code> will fire before
+all hooks registered by this method.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a handle that can be used to remove the added hook by calling
+<code class="docutils literal notranslate"><span class="pre">handle.remove()</span></code></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.hooks.RemovableHandle</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -4449,7 +4850,7 @@ is a <code class="docutils literal notranslate"><span class="pre">list</span></c
 <code class="docutils literal notranslate"><span class="pre">strict=True</span></code> are affected by modifications the hook makes to
 <code class="docutils literal notranslate"><span class="pre">missing_keys</span></code> or <code class="docutils literal notranslate"><span class="pre">unexpected_keys</span></code>, as expected. Additions to either
 set of keys will result in an error being thrown when <code class="docutils literal notranslate"><span class="pre">strict=True</span></code>, and
-clearning out both missing and unexpected keys will avoid an error.</p>
+clearing out both missing and unexpected keys will avoid an error.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p>a handle that can be used to remove the added hook by calling
@@ -4492,6 +4893,15 @@ module’s <a class="reference internal" href="#darts.utils.losses.SmapeLoss.sta
 <dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.losses.SmapeLoss.register_state_dict_pre_hook">
+<span class="sig-name descname"><span class="pre">register_state_dict_pre_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.SmapeLoss.register_state_dict_pre_hook" title="Permalink to this definition">¶</a></dt>
+<dd><p>These hooks will be called with arguments: <code class="docutils literal notranslate"><span class="pre">self</span></code>, <code class="docutils literal notranslate"><span class="pre">prefix</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">keep_vars</span></code> before calling <code class="docutils literal notranslate"><span class="pre">state_dict</span></code> on <code class="docutils literal notranslate"><span class="pre">self</span></code>. The registered
+hooks can be used to perform pre-processing before the <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>
+call is made.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -4792,7 +5202,7 @@ copied to that device</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.losses.SmapeLoss.zero_grad">
-<span class="sig-name descname"><span class="pre">zero_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">set_to_none</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.SmapeLoss.zero_grad" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">zero_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">set_to_none</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.losses.SmapeLoss.zero_grad" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets gradients of all model parameters to zero. See similar function
 under <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.optim.Optimizer</span></code> for more context.</p>
 <dl class="field-list simple">

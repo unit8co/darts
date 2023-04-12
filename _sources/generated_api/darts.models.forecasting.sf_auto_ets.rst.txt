@@ -1,0 +1,4 @@
+
+.. automodule:: darts.models.forecasting.sf_auto_ets
+   :members:
+   :undoc-members:

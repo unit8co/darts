@@ -412,7 +412,7 @@ from R2-scores to Mean Absolute Scaled Error.</p></li>
 <li><p><strong>PyTorch Lightning Support:</strong> All deep learning models are implemented using PyTorch Lightning,
 supporting among other things custom callbacks, GPUs/TPUs training and custom trainers.</p></li>
 <li><p><strong>Filtering Models:</strong> Darts offers three filtering models: <code class="docutils literal notranslate"><span class="pre">KalmanFilter</span></code>, <code class="docutils literal notranslate"><span class="pre">GaussianProcessFilter</span></code>,
-and <code class="docutils literal notranslate"><span class="pre">MovingAverage</span></code>, which allow to filter time series, and in some cases obtain probabilistic
+and <code class="docutils literal notranslate"><span class="pre">MovingAverageFilter</span></code>, which allow to filter time series, and in some cases obtain probabilistic
 inferences of the underlying states/values.</p></li>
 <li><p><strong>Datasets</strong> The <code class="docutils literal notranslate"><span class="pre">darts.datasets</span></code> submodule contains some popular time series datasets for rapid
 and reproducible experimentation.</p></li>
@@ -458,7 +458,7 @@ on bringing more models and features.</p>
 <td></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">VARIMA</span></code></p></td>
-<td><p>✅</p></td>
+<td></td>
 <td><p>✅</p></td>
 <td></td>
 <td></td>
@@ -500,14 +500,24 @@ on bringing more models and features.</p>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">StatsForecastETS</span></code></p></td>
 <td><p>✅</p></td>
 <td></td>
-<td></td>
+<td><p>✅</p></td>
 <td></td>
 <td></td>
 <td><p>✅</p></td>
 <td></td>
 <td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">Nixtla’s statsforecast</a></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BATS</span></code> and <code class="docutils literal notranslate"><span class="pre">TBATS</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">StatsForecastAutoCES</span></code></p></td>
+<td><p>✅</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">Nixtla’s statsforecast</a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BATS</span></code> and <code class="docutils literal notranslate"><span class="pre">TBATS</span></code></p></td>
 <td><p>✅</p></td>
 <td></td>
 <td><p>✅</p></td>
@@ -517,7 +527,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p><a class="reference external" href="https://robjhyndman.com/papers/ComplexSeasonality.pdf">TBATS paper</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Theta</span></code> and <code class="docutils literal notranslate"><span class="pre">FourTheta</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Theta</span></code> and <code class="docutils literal notranslate"><span class="pre">FourTheta</span></code></p></td>
 <td><p>✅</p></td>
 <td></td>
 <td></td>
@@ -526,6 +536,16 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 <td><p><a class="reference external" href="https://robjhyndman.com/papers/Theta.pdf">Theta</a> &amp; <a class="reference external" href="https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R">4 Theta</a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">StatsForecastAutoTheta</span></code></p></td>
+<td><p>✅</p></td>
+<td></td>
+<td><p>✅</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">Nixtla’s statsforecast</a></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Prophet</span></code> (see <a class="reference external" href="https://github.com/unit8co/darts/blob/master/INSTALL.md#enabling-support-for-facebook-prophet">install notes</a>)</p></td>
 <td><p>✅</p></td>
@@ -732,7 +752,7 @@ on bringing more models and features.</p>
 </section>
 <section id="community-contact">
 <h2>Community &amp; Contact<a class="headerlink" href="#community-contact" title="Permalink to this headline">¶</a></h2>
-<p>Anyone is welcome to join our <a href="#id3"><span class="problematic" id="id4">:raw-html-m2r:`&lt;del&gt;\ `Discord server &lt;https://discord.gg/Um3jBTYFsA&gt;`_</span></a>&lt;/del&gt;`
+<p>Anyone is welcome to join our <a href="#id5"><span class="problematic" id="id6">:raw-html-m2r:`&lt;del&gt;\ `Discord server &lt;https://discord.gg/Um3jBTYFsA&gt;`_</span></a>&lt;/del&gt;`
 <a class="reference external" href="https://gitter.im/u8darts/darts">Gitter room</a> to
 ask questions, make proposals, discuss use-cases, and more. If you spot a bug or
 or have suggestions, GitHub issues are also welcome.</p>

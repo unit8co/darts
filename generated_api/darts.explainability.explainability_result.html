@@ -355,6 +355,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.diff.html">
+       Differencing Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
        Fittable Data Transformer Base Class
       </a>
@@ -464,6 +469,11 @@
    </i>
   </label>
   <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.models.components.statsforecast_utils.html">
+     StatsForecast utils
+    </a>
+   </li>
    <li class="toctree-l2 has-children">
     <a class="reference internal" href="darts.models.filtering.html">
      Filtering Models
@@ -485,7 +495,7 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.filtering.moving_average.html">
+      <a class="reference internal" href="darts.models.filtering.moving_average_filter.html">
        Moving Average
       </a>
      </li>
@@ -607,12 +617,22 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_ets.html">
-       StatsForecastETS
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
+       StatsForecastAutoCES
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tbats.html">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
+       StatsForecastAutoETS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
+       StatsForecastAutoTheta
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tbats_model.html">
        BATS and TBATS
       </a>
      </li>
@@ -816,6 +836,91 @@ need to be specified for univariate series.</p></li>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.explainability.explainability_result.ShapExplainabilityResult">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.explainability.explainability_result.</span></span><span class="sig-name descname"><span class="pre">ShapExplainabilityResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">explained_forecasts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shap_explanation_object</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/explainability/explainability_result.html#ShapExplainabilityResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.explainability.explainability_result.ShapExplainabilityResult" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#darts.explainability.explainability_result.ExplainabilityResult" title="darts.explainability.explainability_result.ExplainabilityResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.explainability.explainability_result.ExplainabilityResult</span></code></a></p>
+<p>Stores the explainability results of a <code class="xref py py-class docutils literal notranslate"><span class="pre">ShapExplainer</span></code>
+with convenient access to the results. It extends the <a class="reference internal" href="#darts.explainability.explainability_result.ExplainabilityResult" title="darts.explainability.explainability_result.ExplainabilityResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExplainabilityResult</span></code></a> and carries additional
+information specific to the Shap explainers. In particular, in addition to the <cite>explained_forecasts</cite> (which in
+the case of the <code class="xref py py-class docutils literal notranslate"><span class="pre">ShapExplainer</span></code> are the shap values), it also provides access to the corresponding
+<cite>feature_values</cite> and the underlying <cite>shap.Explanation</cite> object.</p>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.explainability.explainability_result.ShapExplainabilityResult.get_explanation" title="darts.explainability.explainability_result.ShapExplainabilityResult.get_explanation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_explanation</span></code></a>(horizon[, component])</p></td>
+<td><p>Returns one or several <cite>TimeSeries</cite> representing the explanations for a given horizon and component.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.explainability.explainability_result.ShapExplainabilityResult.get_feature_values" title="darts.explainability.explainability_result.ShapExplainabilityResult.get_feature_values"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_feature_values</span></code></a>(horizon[, component])</p></td>
+<td><p>Returns one or several <cite>TimeSeries</cite> representing the feature values for a given horizon and component.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.explainability.explainability_result.ShapExplainabilityResult.get_shap_explanation_object" title="darts.explainability.explainability_result.ShapExplainabilityResult.get_shap_explanation_object"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_shap_explanation_object</span></code></a>(horizon[, component])</p></td>
+<td><p>Returns the underlying <cite>shap.Explanation</cite> object for a given horizon and component.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.explainability.explainability_result.ShapExplainabilityResult.get_explanation">
+<span class="sig-name descname"><span class="pre">get_explanation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">horizon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.explainability.explainability_result.ShapExplainabilityResult.get_explanation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns one or several <cite>TimeSeries</cite> representing the explanations
+for a given horizon and component.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>horizon</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The horizon for which to return the explanation.</p></li>
+<li><p><strong>component</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The component for which to return the explanation. Does not
+need to be specified for univariate series.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.explainability.explainability_result.ShapExplainabilityResult.get_feature_values">
+<span class="sig-name descname"><span class="pre">get_feature_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">horizon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/explainability/explainability_result.html#ShapExplainabilityResult.get_feature_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.explainability.explainability_result.ShapExplainabilityResult.get_feature_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns one or several <cite>TimeSeries</cite> representing the feature values
+for a given horizon and component.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>horizon</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The horizon for which to return the feature values.</p></li>
+<li><p><strong>component</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The component for which to return the feature values. Does not
+need to be specified for univariate series.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.explainability.explainability_result.ShapExplainabilityResult.get_shap_explanation_object">
+<span class="sig-name descname"><span class="pre">get_shap_explanation_object</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">horizon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/explainability/explainability_result.html#ShapExplainabilityResult.get_shap_explanation_object"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.explainability.explainability_result.ShapExplainabilityResult.get_shap_explanation_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the underlying <cite>shap.Explanation</cite> object for a given horizon and component.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>horizon</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The horizon for which to return the <cite>shap.Explanation</cite> object.</p></li>
+<li><p><strong>component</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The component for which to return the <cite>shap.Explanation</cite> object. Does not
+need to be specified for univariate series.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Explanation</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Explanation</span></code>]]</p>
 </dd>
 </dl>
 </dd></dl>

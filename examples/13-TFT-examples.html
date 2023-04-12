@@ -651,7 +651,7 @@ div.rendered_html tbody tr:hover {
 </style>
 <section id="Temporal-Fusion-Transformer">
 <h1>Temporal Fusion Transformer<a class="headerlink" href="#Temporal-Fusion-Transformer" title="Permalink to this headline">¶</a></h1>
-<p>In this notebook, we show two examples of how two use Darts’ <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code>. If you are new to darts, we recommend you first follow the <code class="docutils literal notranslate"><span class="pre">darts-intro.ipynb</span></code> notebook.</p>
+<p>In this notebook, we show two examples of how two use Darts’ <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code>. If you are new to darts, we recommend you first follow the <a class="reference external" href="https://unit8co.github.io/darts/quickstart/00-quickstart.html">quick start</a> notebook.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
@@ -822,7 +822,7 @@ model.predict(*args, **kwargs, num_samples=1)
 <section id="Create-a-model">
 <h3>Create a model<a class="headerlink" href="#Create-a-model" title="Permalink to this headline">¶</a></h3>
 <p>If you want to produce deterministic forecasts rather than quantile forecasts, you can use a PyTorch loss function (i.e., set <code class="docutils literal notranslate"><span class="pre">loss_fn=torch.nn.MSELoss()</span></code> and <code class="docutils literal notranslate"><span class="pre">likelihood=None</span></code>).</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> can only be used if some future input is given. Optional parameters <code class="docutils literal notranslate"><span class="pre">add_encoders</span></code> and <code class="docutils literal notranslate"><span class="pre">add_relative_index</span></code> can be useful, especially if we don’t have any future input available. They generate endoded temporal data is used as future covariates.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> can only be used if some future input is given. Optional parameters <code class="docutils literal notranslate"><span class="pre">add_encoders</span></code> and <code class="docutils literal notranslate"><span class="pre">add_relative_index</span></code> can be useful, especially if we don’t have any future input available. They generate encoded temporal data that is used as future covariates.</p>
 <p>Since we already have future covariates defined in our example they are commented out.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:

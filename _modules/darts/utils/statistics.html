@@ -306,7 +306,7 @@
 <span class="sd">        The seasonality period to use.</span>
 <span class="sd">    model</span>
 <span class="sd">        The type of decomposition to use.</span>
-<span class="sd">        Must be ``from darts import ModelMode, SeasonalityMode`` Enum member.</span>
+<span class="sd">        Must be ``from darts.utils.utils import ModelMode, SeasonalityMode`` Enum member.</span>
 <span class="sd">        Either ``MULTIPLICATIVE`` or ``ADDITIVE``.</span>
 <span class="sd">        Defaults ``ModelMode.MULTIPLICATIVE``.</span>
 <span class="sd">    method</span>
@@ -390,8 +390,9 @@
 <span class="sd">        The TimeSeries to remove.</span>
 <span class="sd">    model</span>
 <span class="sd">        The type of model considered.</span>
-<span class="sd">        Must be `from darts import ModelMode, SeasonalityMode` Enums member.</span>
-<span class="sd">        Either MULTIPLICATIVE or ADDITIVE.</span>
+<span class="sd">        Must be ``from darts.utils.utils import ModelMode, SeasonalityMode`` Enums member.</span>
+<span class="sd">        Either ``MULTIPLICATIVE`` or ``ADDITIVE``.</span>
+<span class="sd">        Defaults ``ModelMode.MULTIPLICATIVE``.</span>
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    TimeSeries</span>
@@ -488,9 +489,9 @@
 <span class="sd">        The TimeSeries to adjust.</span>
 <span class="sd">    model</span>
 <span class="sd">        The type of decomposition to use.</span>
-<span class="sd">        Must be a `from darts import ModelMode` Enum member.</span>
-<span class="sd">        Either ModelMode.MULTIPLICATIVE or ModelMode.ADDITIVE.</span>
-<span class="sd">        Defaults ModelMode.MULTIPLICATIVE.</span>
+<span class="sd">        Must be a ``from darts.utils.utils import ModelMode`` Enum member.</span>
+<span class="sd">        Either ``MULTIPLICATIVE`` or ``ADDITIVE``.</span>
+<span class="sd">        Defaults ``ModelMode.MULTIPLICATIVE``.</span>
 <span class="sd">    method</span>
 <span class="sd">        The method to be used to decompose the series.</span>
 <span class="sd">        - &quot;naive&quot; : Seasonal decomposition using moving averages [1]_.</span>

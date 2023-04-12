@@ -171,10 +171,12 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">abstractmethod</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span>
 <span class="kn">from</span> <span class="nn">darts.utils</span> <span class="kn">import</span> <span class="n">_build_tqdm_iterator</span><span class="p">,</span> <span class="n">_parallel_apply</span>
 
 <span class="kn">from</span> <span class="nn">.base_data_transformer</span> <span class="kn">import</span> <span class="n">BaseDataTransformer</span>
@@ -188,8 +190,10 @@
         <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;FittableDataTransformer&quot;</span><span class="p">,</span>
         <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">parallel_params</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">mask_components</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">global_fit</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
-
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Base class for fittable transformers.</span>
 
 <span class="sd">        All the deriving classes have to implement the static methods</span>
@@ -209,27 +213,155 @@
 <span class="sd">            required amount of time.</span>
 <span class="sd">        verbose</span>
 <span class="sd">            Optionally, whether to print operations progress</span>
+<span class="sd">        parallel_params</span>
+<span class="sd">            Optionally, specifies which fixed parameters (i.e. the attributes initialized in the child-most</span>
+<span class="sd">            class&#39;s `__init__`) take on different values for different parallel jobs. Fixed parameters specified</span>
+<span class="sd">            by `parallel_params` are assumed to be a `Sequence` of values that should be used for that parameter</span>
+<span class="sd">            in each parallel job; the length of this `Sequence` should equal the number of parallel jobs. If</span>
+<span class="sd">            `parallel_params=True`, every fixed parameter will take on a different value for each</span>
+<span class="sd">            parallel job. If `parallel_params=False`, every fixed parameter will take on the same value for</span>
+<span class="sd">            each parallel job. If `parallel_params` is a `Sequence` of fixed attribute names, only those</span>
+<span class="sd">            attribute names specified will take on different values between different parallel jobs.</span>
+<span class="sd">        mask_components</span>
+<span class="sd">            Optionally, whether or not to automatically apply any provided `component_mask`s to the</span>
+<span class="sd">            `TimeSeries` inputs passed to `transform`, `fit`, `inverse_transform`, or `fit_transform`.</span>
+<span class="sd">            If `True`, any specified `component_mask` will be applied to each input timeseries</span>
+<span class="sd">            before passing them to the called method; the masked components will also be automatically</span>
+<span class="sd">            &#39;unmasked&#39; in the returned `TimeSeries`. If `False`, then `component_mask` (if provided) will</span>
+<span class="sd">            be passed as a keyword argument, but won&#39;t automatically be applied to the input timeseries.</span>
+<span class="sd">            See `apply_component_mask` method of `BaseDataTransformer` for further details.</span>
+<span class="sd">        global_fit</span>
+<span class="sd">            Optionally, whether all of the `TimeSeries` passed to the `fit()` method should be used to fit</span>
+<span class="sd">            a *single* set of parameters, or if a different set of parameters should be independently fitted</span>
+<span class="sd">            to each provided `TimeSeries`. If `True`, then a `Sequence[TimeSeries]` is passed to `ts_fit`</span>
+<span class="sd">            and a single set of parameters is fitted using all of the provided `TimeSeries`. If `False`, then</span>
+<span class="sd">            each `TimeSeries` is individually passed to `ts_fit`, and a different set of fitted parameters</span>
+<span class="sd">            if yielded for each of these fitting operations. See `ts_fit` for further details.</span>
 
 <span class="sd">        Notes</span>
 <span class="sd">        -----</span>
+<span class="sd">        If `global_fit` is `False` and `fit` is called with a `Sequence` containing `n` different `TimeSeries`,</span>
+<span class="sd">        then `n` sets of parameters will be fitted. When `transform` and/or `inverse_transform` is subsequently</span>
+<span class="sd">        called with a `Series[TimeSeries]`, the `i`th set of fitted parameter values will be passed to</span>
+<span class="sd">        `ts_transform`/`ts_inverse_transform` to transform the `i`th `TimeSeries` in this sequence. Conversely,</span>
+<span class="sd">        if `global_fit` is `True`, then only a single set of fitted values will be produced when `fit` is</span>
+<span class="sd">        provided with a `Sequence[TimeSeries]`. Consequently, if a `Sequence[TimeSeries]` is then passed to</span>
+<span class="sd">        `transform`/`inverse_transform`, each of these `TimeSeries` will be transformed using the exact same set</span>
+<span class="sd">        of fitted parameters.</span>
+
+<span class="sd">        Note that if an invertible *and* fittable data transformer is to be globally fitted, the data transformer</span>
+<span class="sd">        class should first inherit from `FittableDataTransformer` and then from `InveritibleDataTransformer`. In</span>
+<span class="sd">        other words, `MyTransformer(FittableDataTransformer, InveritibleDataTransformer)` is correct, but</span>
+<span class="sd">        `MyTransformer(InveritibleDataTransformer, FittableDataTransformer)` is **not**. If this is not implemented</span>
+<span class="sd">        correctly, then the `global_fit` parameter will not be correctly passed to `FittableDataTransformer`&#39;s</span>
+<span class="sd">        constructor.</span>
+
 <span class="sd">        The :func:`ts_transform()` and :func:`ts_fit()` methods are designed to be static methods instead of instance</span>
 <span class="sd">        methods to allow an efficient parallelisation also when the scaler instance is storing a non-negligible</span>
 <span class="sd">        amount of data. Using instance methods would imply copying the instance&#39;s data through multiple processes, which</span>
 <span class="sd">        can easily introduce a bottleneck and nullify parallelisation benefits.</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; from darts.dataprocessing.transformers import FittableDataTransformer</span>
+<span class="sd">        &gt;&gt;&gt; from darts.utils.timeseries_generation import linear_timeseries</span>
+<span class="sd">        &gt;&gt;&gt;</span>
+<span class="sd">        &gt;&gt;&gt; class SimpleRangeScaler(FittableDataTransformer):</span>
+<span class="sd">        &gt;&gt;&gt;</span>
+<span class="sd">        &gt;&gt;&gt;     def __init__(self, scale, position):</span>
+<span class="sd">        &gt;&gt;&gt;         self._scale = scale</span>
+<span class="sd">        &gt;&gt;&gt;         self._position = position</span>
+<span class="sd">        &gt;&gt;&gt;         super().__init__()</span>
+<span class="sd">        &gt;&gt;&gt;</span>
+<span class="sd">        &gt;&gt;&gt;     @staticmethod</span>
+<span class="sd">        &gt;&gt;&gt;     def ts_transform(series, params):</span>
+<span class="sd">        &gt;&gt;&gt;         vals = series.all_values(copy=False)</span>
+<span class="sd">        &gt;&gt;&gt;         fit_params = params[&#39;fitted&#39;]</span>
+<span class="sd">        &gt;&gt;&gt;         unit_scale = (vals - fit_params[&#39;position&#39;])/fit_params[&#39;scale&#39;]</span>
+<span class="sd">        &gt;&gt;&gt;         fix_params = params[&#39;fixed&#39;]</span>
+<span class="sd">        &gt;&gt;&gt;         rescaled = fix_params[&#39;_scale&#39;] * unit_scale + fix_params[&#39;_position&#39;]</span>
+<span class="sd">        &gt;&gt;&gt;         return series.from_values(rescaled)</span>
+<span class="sd">        &gt;&gt;&gt;</span>
+<span class="sd">        &gt;&gt;&gt;     @staticmethod</span>
+<span class="sd">        &gt;&gt;&gt;     def ts_fit(series, params):</span>
+<span class="sd">        &gt;&gt;&gt;         vals = series.all_values(copy=False)</span>
+<span class="sd">        &gt;&gt;&gt;         scale = vals.max() - vals.min()</span>
+<span class="sd">        &gt;&gt;&gt;         position = vals[0]</span>
+<span class="sd">        &gt;&gt;&gt;         return {&#39;scale&#39;: scale, &#39;position&#39;: position}</span>
+<span class="sd">        &gt;&gt;&gt;</span>
+<span class="sd">        &gt;&gt;&gt; series = linear_timeseries(length=5, start_value=1, end_value=5)</span>
+<span class="sd">        &gt;&gt;&gt; print(series)</span>
+<span class="sd">        &lt;TimeSeries (DataArray) (time: 5, component: 1, sample: 1)&gt;</span>
+<span class="sd">        array([[[1.]],</span>
+
+<span class="sd">            [[2.]],</span>
+
+<span class="sd">            [[3.]],</span>
+
+<span class="sd">            [[4.]],</span>
+
+<span class="sd">            [[5.]]])</span>
+<span class="sd">        Coordinates:</span>
+<span class="sd">        * time       (time) datetime64[ns] 2000-01-01 2000-01-02 ... 2000-01-05</span>
+<span class="sd">        * component  (component) object &#39;linear&#39;</span>
+<span class="sd">        Dimensions without coordinates: sample</span>
+<span class="sd">        Attributes:</span>
+<span class="sd">            static_covariates:  None</span>
+<span class="sd">            hierarchy:          None</span>
+<span class="sd">        &gt;&gt;&gt; series = SimpleRangeScaler(scale=2, position=-1).fit_transform(series)</span>
+<span class="sd">        &gt;&gt;&gt; print(series)</span>
+<span class="sd">        &lt;TimeSeries (DataArray) (time: 5, component: 1, sample: 1)&gt;</span>
+<span class="sd">        array([[[-1. ]],</span>
+
+<span class="sd">            [[-0.5]],</span>
+
+<span class="sd">            [[ 0. ]],</span>
+
+<span class="sd">            [[ 0.5]],</span>
+
+<span class="sd">            [[ 1. ]]])</span>
+<span class="sd">        Coordinates:</span>
+<span class="sd">        * time       (time) int64 0 1 2 3 4</span>
+<span class="sd">        * component  (component) &lt;U1 &#39;0&#39;</span>
+<span class="sd">        Dimensions without coordinates: sample</span>
+<span class="sd">        Attributes:</span>
+<span class="sd">            static_covariates:  None</span>
+<span class="sd">            hierarchy:          None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">,</span>
+            <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+            <span class="n">parallel_params</span><span class="o">=</span><span class="n">parallel_params</span><span class="p">,</span>
+            <span class="n">mask_components</span><span class="o">=</span><span class="n">mask_components</span><span class="p">,</span>
+        <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fitted_params</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># stores the fitted parameters/objects</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fitted_params</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># stores the fitted parameters/objects</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_global_fit</span> <span class="o">=</span> <span class="n">global_fit</span>
 
 <div class="viewcode-block" id="FittableDataTransformer.ts_fit"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer.ts_fit">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">ts_fit</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">ts_fit</span><span class="p">(</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The function that will be applied to each series when :func:`fit` is called.</span>
 
-<span class="sd">        The function must take as first argument a ``TimeSeries`` object, and return an object containing information</span>
-<span class="sd">        regarding the fitting phase (e.g., parameters, or external transformers objects). All these parameters will</span>
+<span class="sd">        If the `global_fit` attribute is set to `False`, then `ts_fit` should accept a `TimeSeries` as a first</span>
+<span class="sd">        argument and return a set of parameters that are fitted to this individual `TimeSeries`. Conversely, if the</span>
+<span class="sd">        `global_fit` attribute is set to `True`, then `ts_fit` should accept a `Sequence[TimeSeries]` and</span>
+<span class="sd">        return a set of parameters that are fitted to *all* of the provided `TimeSeries`. All these parameters will</span>
 <span class="sd">        be stored in ``self._fitted_params``, which can be later used during the transformation step.</span>
+
+<span class="sd">        Regardless of whether the `global_fit` attribute is set to `True` or `False`, `ts_fit` should also accept</span>
+<span class="sd">        a dictionary of fixed parameter values as a second argument (i.e. `params[&#39;fixed&#39;] contains the fixed</span>
+<span class="sd">        parameters of the data transformer).</span>
+
+<span class="sd">        Any additional positional and/or keyword arguments passed to the `fit` method will be passed as</span>
+<span class="sd">        positional/keyword arguments to `ts_fit`.</span>
 
 <span class="sd">        This method is not implemented in the base class and must be implemented in the deriving classes.</span>
 
@@ -239,7 +371,7 @@
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        series (TimeSeries)</span>
+<span class="sd">        series (Union[TimeSeries, Sequence[TimeSeries]])</span>
 <span class="sd">            `TimeSeries` against which the scaler will be fit.</span>
 
 <span class="sd">        Notes</span>
@@ -251,62 +383,22 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
-    <span class="k">def</span> <span class="nf">_fit_iterator</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Return an ``Iterator`` object with tuples of inputs for each single call to :func:`ts_fit()`.</span>
-<span class="sd">        Additional `args` and `kwargs` from :func:`fit()` (that don&#39;t change across the calls to :func:`ts_fit()`)</span>
-<span class="sd">        are already forwarded, and thus don&#39;t need to be included in this generator.</span>
-
-<span class="sd">        The basic implementation of this method returns ``zip(series)``, i.e., a generator of single-valued tuples,</span>
-<span class="sd">        each containing one ``TimeSeries`` object.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        series (Sequence[TimeSeries])</span>
-<span class="sd">            sequence of series received in input.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        Iterator[Tuple[TimeSeries]]</span>
-<span class="sd">            An iterator containing tuples of inputs for the :func:`ts_fit()` method.</span>
-
-<span class="sd">        Examples</span>
-<span class="sd">        ________</span>
-
-<span class="sd">        class IncreasingAdder(FittableDataTransformer):</span>
-<span class="sd">            def __init__(self):</span>
-<span class="sd">                super().__init__()</span>
-
-<span class="sd">            @staticmethod</span>
-<span class="sd">            def ts_transform(series: TimeSeries, n: int) -&gt; TimeSeries:</span>
-<span class="sd">                return series + n</span>
-
-<span class="sd">            @staticmethod</span>
-<span class="sd">            def ts_fit(series: TimeSeries, m: float) -&gt; TimeSeries:</span>
-<span class="sd">                return max(series.first_value(), m)</span>
-
-<span class="sd">            def _transform_iterator(self, series: Sequence[TimeSeries]) -&gt; Iterator[Tuple[TimeSeries, float]]:</span>
-<span class="sd">                # the increased quantity is the max between 0 and the first value in the series (stored into</span>
-<span class="sd">                # self._fitted params)</span>
-<span class="sd">                return zip(series, self._fitted_params)</span>
-
-<span class="sd">            def _fit_iterator(self, series: Sequence[TimeSeries]) -&gt; Iterator[Tuple[TimeSeries, int]]:</span>
-<span class="sd">                # the second generator is setting the m parameter of ts_fit() to 0 for each TimeSeries</span>
-<span class="sd">                return zip(series, (0 for i in range(len(series))))</span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="nb">zip</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
-
 <div class="viewcode-block" id="FittableDataTransformer.fit"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="n">component_mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;FittableDataTransformer&quot;</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fit the transformer to the provided series or sequence of series.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fits transformer to a (sequence of) `TimeSeries` by calling the user-implemented `ts_fit` method.</span>
 
-<span class="sd">        Fit the data and store the fitting parameters into ``self._fitted_params``. If a sequence is passed as input</span>
-<span class="sd">        data, this function takes care of parallelising the fitting of multiple series in the sequence at the same time</span>
-<span class="sd">        (in this case ``self._fitted_params`` will contain an array of fitted params, one for each series).</span>
+<span class="sd">        The fitted parameters returned by `ts_fit` are stored in the ``self._fitted_params`` attribute.</span>
+<span class="sd">        If a `Sequence[TimeSeries]` is passed as the `series` data, then one of two outcomes will occur:</span>
+<span class="sd">            1. If the `global_fit` attribute was set to `False`, then a different set of parameters will be</span>
+<span class="sd">            individually fitted to each `TimeSeries` in the `Sequence`. In this case, this function automatically</span>
+<span class="sd">            parallelises this fitting process over all of the multiple `TimeSeries` that have been passed.</span>
+<span class="sd">            2. If the `global_fit` attribute was set to `True`, then all of the `TimeSeries` objects will be used</span>
+<span class="sd">            fit a single set of parameters.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -314,12 +406,11 @@
 <span class="sd">            (sequence of) series to fit the transformer on.</span>
 <span class="sd">        args</span>
 <span class="sd">            Additional positional arguments for the :func:`ts_fit` method</span>
+<span class="sd">        component_mask : Optional[np.ndarray] = None</span>
+<span class="sd">            Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies which</span>
+<span class="sd">            components of the underlying `series` the transform should be fitted to.</span>
 <span class="sd">        kwargs</span>
 <span class="sd">            Additional keyword arguments for the :func:`ts_fit` method</span>
-
-<span class="sd">            component_mask : Optional[np.ndarray] = None</span>
-<span class="sd">                Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies which</span>
-<span class="sd">                components of the underlying `series` the Scaler should consider.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -335,8 +426,23 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">series</span>
 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_components</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">apply_component_mask</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="n">return_ts</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">ts</span> <span class="ow">in</span> <span class="n">data</span>
+            <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;component_mask&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">component_mask</span>
+
+        <span class="n">params_iterator</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_params</span><span class="p">(</span><span class="n">n_timeseries</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">calling_fit</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">fit_iterator</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">zip</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">params_iterator</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_global_fit</span>
+            <span class="k">else</span> <span class="nb">zip</span><span class="p">([</span><span class="n">data</span><span class="p">],</span> <span class="n">params_iterator</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">n_jobs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_global_fit</span> <span class="k">else</span> <span class="mi">1</span>
         <span class="n">input_iterator</span> <span class="o">=</span> <span class="n">_build_tqdm_iterator</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_fit_iterator</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="n">desc</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">fit_iterator</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_verbose</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="n">desc</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="n">n_jobs</span>
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_fitted_params</span> <span class="o">=</span> <span class="n">_parallel_apply</span><span class="p">(</span>
@@ -346,7 +452,11 @@
         <span class="k">return</span> <span class="bp">self</span></div>
 
 <div class="viewcode-block" id="FittableDataTransformer.fit_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer.fit_transform">[docs]</a>    <span class="k">def</span> <span class="nf">fit_transform</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="n">component_mask</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Fit the transformer to the (sequence of) series and return the transformed input.</span>
 
@@ -355,23 +465,90 @@
 <span class="sd">        series</span>
 <span class="sd">            the (sequence of) series to transform.</span>
 <span class="sd">        args</span>
-<span class="sd">            Additional positional arguments for the :func:`ts_transform` method</span>
+<span class="sd">            Additional positional arguments passed to the :func:`ts_transform` and :func:`ts_fit` methods.</span>
+<span class="sd">        component_mask : Optional[np.ndarray] = None</span>
+<span class="sd">            Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies which</span>
+<span class="sd">            components of the underlying `series` the transform should be fitted and applied to.</span>
 <span class="sd">        kwargs</span>
-<span class="sd">            Additional keyword arguments for the :func:`ts_transform` method:</span>
-
-<span class="sd">            component_mask : Optional[np.ndarray] = None</span>
-<span class="sd">                Optionally, a 1-D boolean np.ndarray of length ``series.n_components`` that specifies which</span>
-<span class="sd">                components of the underlying `series` the Scaler should consider.</span>
+<span class="sd">            Additional keyword arguments passed to the :func:`ts_transform` and :func:`ts_fit` methods.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        Union[TimeSeries, Sequence[TimeSeries]]</span>
 <span class="sd">            Transformed data.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">component_mask</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;component_mask&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">component_mask</span><span class="o">=</span><span class="n">component_mask</span><span class="p">)</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span>
-            <span class="n">series</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-        <span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+            <span class="n">series</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">component_mask</span><span class="o">=</span><span class="n">component_mask</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">component_mask</span><span class="o">=</span><span class="n">component_mask</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_params</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">n_timeseries</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">calling_fit</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Overrides `_get_params` of `BaseDataTransformer`. Creates generator of dictionaries containing</span>
+<span class="sd">        both the fixed parameter values (i.e. attributes defined in the child-most class), as well as</span>
+<span class="sd">        the fitted parameter values (only if `calling_fit = False`). Those fixed parameters</span>
+<span class="sd">        specified by `parallel_params` are given different values over each of the parallel jobs;</span>
+<span class="sd">        every fitted parameter is given a different value for each parallel job (since `self.fit`</span>
+<span class="sd">        returns a `Sequence` containing one fitted parameter value of each parallel job). Called by</span>
+<span class="sd">        `transform` and `inverse_transform`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Call `_check_fixed_params` of `BaseDataTransformer`:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_fixed_params</span><span class="p">(</span><span class="n">n_timeseries</span><span class="p">)</span>
+        <span class="n">fitted_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_fitted_params</span><span class="p">(</span><span class="n">n_timeseries</span><span class="p">,</span> <span class="n">calling_fit</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">params_generator</span><span class="p">(</span>
+            <span class="n">n_jobs</span><span class="p">,</span> <span class="n">fixed_params</span><span class="p">,</span> <span class="n">fitted_params</span><span class="p">,</span> <span class="n">parallel_params</span><span class="p">,</span> <span class="n">global_fit</span>
+        <span class="p">):</span>
+            <span class="n">fixed_params_copy</span> <span class="o">=</span> <span class="n">fixed_params</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_jobs</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">parallel_params</span><span class="p">:</span>
+                    <span class="n">fixed_params_copy</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">fixed_params</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">params</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">if</span> <span class="n">fixed_params_copy</span><span class="p">:</span>
+                    <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fixed&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fixed_params_copy</span>
+                <span class="k">if</span> <span class="n">fitted_params</span><span class="p">:</span>
+                    <span class="n">params</span><span class="p">[</span><span class="s2">&quot;fitted&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="n">fitted_params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">global_fit</span> <span class="k">else</span> <span class="n">fitted_params</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                    <span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">params</span><span class="p">:</span>
+                    <span class="n">params</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="k">yield</span> <span class="n">params</span>
+
+        <span class="n">n_jobs</span> <span class="o">=</span> <span class="n">n_timeseries</span> <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">calling_fit</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_global_fit</span><span class="p">)</span> <span class="k">else</span> <span class="mi">1</span>
+
+        <span class="k">return</span> <span class="n">params_generator</span><span class="p">(</span>
+            <span class="n">n_jobs</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_fixed_params</span><span class="p">,</span>
+            <span class="n">fitted_params</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_parallel_params</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_global_fit</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_fitted_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_timeseries</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">calling_fit</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns `self._fitted_params` if `calling_fit = False`, otherwise returns an empty</span>
+<span class="sd">        tuple. If `calling_fit = False`, also checks that `self._fitted_params`, which is a</span>
+<span class="sd">        sequence of values, contains exactly `n_timeseries` values; if not, a `ValueError` is thrown.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">calling_fit</span><span class="p">:</span>
+            <span class="n">raise_if_not</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span><span class="p">,</span>
+                <span class="p">(</span><span class="s2">&quot;Must call `fit` before calling `transform`/`inverse_transform`.&quot;</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="n">fitted_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fitted_params</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fitted_params</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_global_fit</span> <span class="ow">and</span> <span class="n">fitted_params</span><span class="p">:</span>
+            <span class="n">raise_if</span><span class="p">(</span>
+                <span class="n">n_timeseries</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">fitted_params</span><span class="p">),</span>
+                <span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">n_timeseries</span><span class="si">}</span><span class="s2"> TimeSeries were provided &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;but only </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">fitted_params</span><span class="p">)</span><span class="si">}</span><span class="s2"> TimeSeries &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;were specified upon training </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">fitted_params</span></div>
 </pre></div>
 
               </div>

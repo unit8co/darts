@@ -10,4 +10,4 @@
         darts.models.filtering.filtering_model
         darts.models.filtering.gaussian_process_filter
         darts.models.filtering.kalman_filter
-        darts.models.filtering.moving_average
+        darts.models.filtering.moving_average_filter

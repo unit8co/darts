@@ -679,7 +679,7 @@ div.rendered_html tbody tr:hover {
 <span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">SunspotsDataset</span>
 <span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">dtw_metric</span><span class="p">,</span> <span class="n">mae</span><span class="p">,</span> <span class="n">mape</span>
-<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">MovingAverage</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">MovingAverageFilter</span>
 <span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="kn">import</span> <span class="n">argrelextrema</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -740,7 +740,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">ts_smooth</span> <span class="o">=</span> <span class="n">MovingAverage</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span>
+<span></span><span class="n">ts_smooth</span> <span class="o">=</span> <span class="n">MovingAverageFilter</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span>
 
 <span class="n">minimums</span> <span class="o">=</span> <span class="n">argrelextrema</span><span class="p">(</span><span class="n">ts_smooth</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">(),</span> <span class="n">np</span><span class="o">.</span><span class="n">greater</span><span class="p">)</span>
 

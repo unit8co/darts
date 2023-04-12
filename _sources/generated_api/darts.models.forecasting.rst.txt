@@ -31,8 +31,10 @@
         darts.models.forecasting.regression_model
         darts.models.forecasting.rnn_model
         darts.models.forecasting.sf_auto_arima
-        darts.models.forecasting.sf_ets
-        darts.models.forecasting.tbats
+        darts.models.forecasting.sf_auto_ces
+        darts.models.forecasting.sf_auto_ets
+        darts.models.forecasting.sf_auto_theta
+        darts.models.forecasting.tbats_model
         darts.models.forecasting.tcn_model
         darts.models.forecasting.tft_model
         darts.models.forecasting.tft_submodels
