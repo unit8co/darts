@@ -1275,7 +1275,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if series is None:
             raise_if(
                 self.training_series is None,
-                "Input `series` must to be provided. This is the result either from fitting on multiple series, "
+                "Input `series` must be provided. This is the result either from fitting on multiple series, "
                 "or from not having fit the model yet.",
             )
             series = self.training_series
