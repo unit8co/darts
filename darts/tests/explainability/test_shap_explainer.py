@@ -90,6 +90,24 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         days, np.concatenate([x_1.reshape(-1, 1), x_2.reshape(-1, 1)], axis=1)
     ).with_columns_renamed(["0", "1"], ["price", "power"])
 
+    target_ts_with_static_covs = TimeSeries.from_times_and_values(days, x_1.reshape(-1, 1),
+                                                                  static_covariates=pd.DataFrame({"type":[0], "state": [1]})
+    ).with_columns_renamed(["0"], ["price"])
+    target_ts_with_static_covs_multiple_series = TimeSeries.from_times_and_values(days, np.concatenate([x_1.reshape(-1, 1), x_2.reshape(-1, 1)], axis=1),
+                                                                  static_covariates=pd.DataFrame(
+                                                                      {"type": [0,1], "state": [2,3]})
+                                                                  ).with_columns_renamed(["0", "1"], ["price", "power"])
+    target_ts_multiple_series_with_different_static_covs = [TimeSeries.from_times_and_values(days, x_1.reshape(-1, 1),
+                                                                  static_covariates=pd.DataFrame(
+                                                                      {"type": [0]})
+                                                                  ).with_columns_renamed(["0"], ["price"]),
+                                                            TimeSeries.from_times_and_values(days, x_2.reshape(-1, 1),
+                                                                                             static_covariates=pd.DataFrame(
+                                                                                                 {"state": [1]})
+                                                                                             ).with_columns_renamed(
+                                                                ["0"], ["price"]),
+                                                            ]
+
     past_cov_ts = TimeSeries.from_times_and_values(
         days_past_cov,
         np.concatenate(
@@ -670,3 +688,39 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             ),
             shap.Explanation,
         )
+
+    def test_shapley_with_static_cov(self):
+        model = LightGBMModel(
+            lags=4,
+            output_chunk_length=1,
+        )
+        model.fit(
+            series=self.target_ts_with_static_covs,
+        )
+        shap_explain = ShapExplainer(model)
+        explanation_results = shap_explain.explain()
+        test = 1
+
+    def test_shapley_with_static_cov_multiple_series(self):
+        model = LightGBMModel(
+            lags=4,
+            output_chunk_length=1,
+        )
+        model.fit(
+            series=self.target_ts_with_static_covs_multiple_series,
+        )
+        shap_explain = ShapExplainer(model)
+        explanation_results = shap_explain.explain()
+        test = 1
+
+    def test_shapley_multiple_series_with_different_static_covs(self):
+        model = LightGBMModel(
+            lags=4,
+            output_chunk_length=1,
+        )
+        model.fit(
+            series=self.target_ts_multiple_series_with_different_static_covs,
+        )
+        shap_explain = ShapExplainer(model, background_series=self.target_ts_multiple_series_with_different_static_covs)
+        explanation_results = shap_explain.explain()
+        test = 1

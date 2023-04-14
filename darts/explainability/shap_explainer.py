@@ -24,6 +24,7 @@ from typing import Dict, NewType, Optional, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 import shap
 from numpy import integer
 from sklearn.multioutput import MultiOutputRegressor
@@ -558,6 +559,95 @@ class _RegressionShapExplainers:
                 self.model.model, self.background_X, self.shap_method, **kwargs
             )
 
+    def _add_static_covariates_shap(
+        self,
+        features: Union[np.array, Sequence[np.array]],
+        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+    ) -> Union[np.array, Sequence[np.array]]:
+        """
+        Add static covariates to the features' table for RegressionModels.
+        Accounts for series with potentially different static covariates by padding with 0 to accomodate for the maximum
+        number of available static_covariates in any of the given series in the sequence.
+
+        If no static covariates are provided for a given series, its corresponding features are padded with 0.
+        Accounts for the case where the model is trained with series with static covariates and then used to predict
+        on series without static covariates by padding with 0 the corresponding features of the series without
+        static covariates.
+
+        Parameters
+        ----------
+        features
+            The features' numpy array(s) to which the static covariates will be added. Can either be a lone feature
+            matrix or a `Sequence` of feature matrices; in the latter case, static covariates will be appended to
+            each feature matrix in this `Sequence`.
+        target_series
+            The target series from which to read the static covariates.
+
+        Returns
+        -------
+        features
+            The features' array(s) with appended static covariates columns. If the `features` input was passed as a
+            `Sequence` of `np.array`s, then a `Sequence` is also returned; if `features` was passed as an `np.array`,
+            a `np.array` is returned.
+        """
+
+        input_not_list = not isinstance(features, Sequence)
+        if input_not_list:
+            features = [features]
+        target_series = series2seq(target_series)
+        # collect static covariates info
+        scovs_map = {
+            "covs_exist": False,
+            "vals": [],  # Stores values of static cov arrays in each timeseries
+            "sizes": {},  # Stores sizes of static cov arrays in each timeseries
+        }
+        scovs_list = []
+        for ts in target_series:
+            if ts.has_static_covariates:
+                scovs_map["covs_exist"] = True
+                scovs_list = scovs_list + ts.static_covariates.columns.tolist()
+                # Each static covariate either adds 1 extra columns or
+                # `n_component` extra columns:
+                vals_i = {}
+                for name, row in ts.static_covariates.items():
+                    vals_i[name] = row
+                    scovs_map["sizes"][name] = row.size
+                scovs_map["vals"].append(vals_i)
+            else:
+                scovs_map["vals"].append(None)
+
+        if (
+            not scovs_map["covs_exist"]
+            and hasattr(self.model, "n_features_in_")
+            and (self.model.n_features_in_ is not None)
+            and (self.model.n_features_in_ > features[0].shape[1])
+        ):
+            # for when series in prediction do not have static covariates but some of the training series did
+            num_static_components = self.model.n_features_in_ - features[0].shape[1]
+            for i, features_i in enumerate(features):
+                padding = np.zeros((features_i.shape[0], num_static_components))
+                features[i] = np.hstack([features_i, padding])
+        elif scovs_map["covs_exist"]:
+            scov_width = sum(scovs_map["sizes"].values())
+            for i, features_i in enumerate(features):
+                vals = scovs_map["vals"][i]
+                if vals:
+                    scov_arrays = []
+                    for name, size in scovs_map["sizes"].items():
+                        scov_arrays.append(
+                            vals[name] if name in vals else np.zeros((size,))
+                        )
+                    scov_array = np.concatenate(scov_arrays)
+                    scovs = np.broadcast_to(
+                        scov_array, (features_i.shape[0], scov_width)
+                    )
+                else:
+                    scovs = np.zeros((features_i.shape[0], scov_width))
+                features[i] = np.hstack([features_i, scovs])
+        if input_not_list:
+            features = features[0]
+        return features, scovs_list
+
     def shap_explanations(
         self,
         foreground_X,
@@ -706,6 +796,12 @@ class _RegressionShapExplainers:
         # Remove sample axis:
         X = X[:, :, 0]
 
+        # TODO test if it is possible in darts that one target series doesn't have static covariates and the other does
+        # TODO (related): test if works with multiple target series
+
+        X, static_covariates = self.model._add_static_covariates(X, target_series)
+
+
         if train:
             X = pd.DataFrame(X)
             if len(X) <= MIN_BACKGROUND_SAMPLE:
@@ -734,6 +830,11 @@ class _RegressionShapExplainers:
             for lag in lags_future_covariates_list:
                 for t_name in self.future_covariates_components:
                     lags_names_list.append(t_name + "_fut_cov_lag" + str(lag))
+        if static_covariates:
+            # TODO vgm gaat dit nu niet goed als je 2 timeseries hebt met verschillende components en verschillende static covariates
+            for static_cov_col in static_covariates:
+                for t_name in self.target_components:
+                    lags_names_list.append(t_name + "_" + static_cov_col)
 
         X = X.rename(
             columns={

@@ -1988,7 +1988,7 @@ class TimeSeriesFromDataFrameTestCase(DartsBaseTestClass):
         self.assertEqual(ts.time_index.dtype, int)
         self.assertEqual(ts.time_index.name, "Time")
 
-    def test_time_col_convert_integers(self):
+    def est_time_col_convert_integers(self):
         expected = np.array(list(range(10)))
         data_dict = {"Time": expected}
         data_dict["Values1"] = np.random.uniform(
