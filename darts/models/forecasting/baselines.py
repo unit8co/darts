@@ -79,10 +79,6 @@ class NaiveSeasonal(LocalForecastingModel):
         forecast = np.array([self.last_k_vals[i % self.K, :] for i in range(n)])
         return self._build_forecast_series(forecast)
 
-    @property
-    def extreme_lags(self):
-        return (-self.K, 1, None, None, None)
-
 
 class NaiveDrift(LocalForecastingModel):
     def __init__(self):
@@ -182,7 +178,6 @@ class NaiveEnsembleModel(EnsembleModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     ):
-
         super().fit(
             series=series,
             past_covariates=past_covariates,

@@ -140,17 +140,12 @@ class RegressionEnsembleModel(EnsembleModel):
         self.models = [model.untrained_model() for model in self.models]
 
         for model in self.models:
-            if self.is_global_ensemble:
-                kwargs = dict(series=series)
-                if model.supports_past_covariates:
-                    kwargs["past_covariates"] = past_covariates
-                if model.supports_future_covariates:
-                    kwargs["future_covariates"] = future_covariates
-                model.fit(**kwargs)
-
-            else:
-                model.fit(self.training_series)
-
+            kwargs = dict(series=series)
+            if model.supports_past_covariates:
+                kwargs["past_covariates"] = past_covariates
+            if model.supports_future_covariates:
+                kwargs["future_covariates"] = future_covariates
+            model.fit(**kwargs)
         return self
 
     def ensemble(
@@ -170,3 +165,17 @@ class RegressionEnsembleModel(EnsembleModel):
             for serie, prediction in zip(series, predictions)
         ]
         return seq2series(ensembled) if is_single_series else ensembled
+
+    @property
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+    ]:
+        extreme_lags_ = super().extreme_lags
+        return (extreme_lags_[0] - self.train_n_points,) + extreme_lags_[1:]

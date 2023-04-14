@@ -667,6 +667,7 @@ class TFTModel(MixedCovariatesTorchModel):
         loss_fn: Optional[nn.Module] = None,
         likelihood: Optional[Likelihood] = None,
         norm_type: Union[str, nn.Module] = "LayerNorm",
+        use_static_covariates: bool = True,
         **kwargs,
     ):
         """Temporal Fusion Transformers (TFT) for Interpretable Time Series Forecasting.
@@ -739,6 +740,10 @@ class TFTModel(MixedCovariatesTorchModel):
         norm_type: str | nn.Module
             The type of LayerNorm variant to use.  Default: ``LayerNorm``. Available options are
             ["LayerNorm", "RMSNorm", "LayerNormNoBias"], or provide a custom nn.Module.
+        use_static_covariates
+            Whether the model should use static covariate information in case the input `series` passed to ``fit()``
+            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
+            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()`.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -891,6 +896,7 @@ class TFTModel(MixedCovariatesTorchModel):
         self.add_relative_index = add_relative_index
         self.output_dim: Optional[Tuple[int, int]] = None
         self.norm_type = norm_type
+        self._considers_static_covariates = use_static_covariates
 
     def _create_model(self, train_sample: MixedCovariatesTrainTensorType) -> nn.Module:
         """
@@ -1107,7 +1113,7 @@ class TFTModel(MixedCovariatesTorchModel):
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             max_samples_per_ts=max_samples_per_ts,
-            use_static_covariates=self._supports_static_covariates(),
+            use_static_covariates=self.uses_static_covariates,
         )
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
@@ -1131,11 +1137,11 @@ class TFTModel(MixedCovariatesTorchModel):
             n=n,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
-            use_static_covariates=self._supports_static_covariates(),
+            use_static_covariates=self.uses_static_covariates,
         )
 
-    @staticmethod
-    def _supports_static_covariates() -> bool:
+    @property
+    def supports_static_covariates(self) -> bool:
         return True
 
     def predict(self, n, *args, **kwargs):

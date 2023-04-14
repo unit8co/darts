@@ -27,7 +27,7 @@ When static covariates are present, they are appended to the lagged features. Wh
 if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.
 """
 from collections import OrderedDict
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import Any, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
@@ -35,7 +35,11 @@ from sklearn.linear_model import LinearRegression
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
-from darts.utils.data.tabularization import create_lagged_training_data
+from darts.utils.data.tabularization import (
+    add_static_covariates_to_lagged_data,
+    create_lagged_component_names,
+    create_lagged_training_data,
+)
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import (
     _check_quantiles,
@@ -67,6 +71,7 @@ class RegressionModel(GlobalForecastingModel):
         add_encoders: Optional[dict] = None,
         model=None,
         multi_models: Optional[bool] = True,
+        use_static_covariates: bool = True,
     ):
         """Regression Model
         Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.
@@ -114,10 +119,13 @@ class RegressionModel(GlobalForecastingModel):
             support multi-output regression for multivariate timeseries, in which case one regressor
             will be used per component in the multivariate series.
             If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.
-
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
+        use_static_covariates
+            Whether the model should use static covariate information in case the input `series` passed to ``fit()``
+            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
+            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()`.
         """
 
         super().__init__(add_encoders=add_encoders)
@@ -127,6 +135,9 @@ class RegressionModel(GlobalForecastingModel):
         self.output_chunk_length = None
         self.input_dim = None
         self.multi_models = multi_models
+        self._considers_static_covariates = use_static_covariates
+        self._static_covariates_shape: Optional[Tuple[int, int]] = None
+        self._lagged_feature_names: Optional[List[str]] = None
 
         # model checks
         if self.model is None:
@@ -274,21 +285,31 @@ class RegressionModel(GlobalForecastingModel):
         )
 
     @property
-    def extreme_lags(self):
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+    ]:
         min_target_lag = self.lags.get("target")[0] if "target" in self.lags else None
-        max_target_lag = self.output_chunk_length
+        max_target_lag = self.output_chunk_length - 1
         min_past_cov_lag = self.lags.get("past")[0] if "past" in self.lags else None
+        max_past_cov_lag = self.lags.get("past")[-1] if "past" in self.lags else None
         min_future_cov_lag = (
             self.lags.get("future")[0] if "future" in self.lags else None
         )
         max_future_cov_lag = (
             self.lags.get("future")[-1] if "future" in self.lags else None
         )
-
         return (
             min_target_lag,
             max_target_lag,
             min_past_cov_lag,
+            max_past_cov_lag,
             min_future_cov_lag,
             max_future_cov_lag,
         )
@@ -301,6 +322,10 @@ class RegressionModel(GlobalForecastingModel):
             if "target" in self.lags
             else self.output_chunk_length,
         )
+
+    @property
+    def min_train_samples(self) -> int:
+        return 2
 
     def get_multioutput_estimator(self, horizon, target_dim):
         raise_if_not(
@@ -346,102 +371,18 @@ class RegressionModel(GlobalForecastingModel):
             features[i] = X_i[:, :, 0]
             labels[i] = y_i[:, :, 0]
 
-        features = self._add_static_covariates(
+        features, static_covariates_shape = add_static_covariates_to_lagged_data(
             features,
             target_series,
+            uses_static_covariates=self.uses_static_covariates,
+            last_shape=None,
         )
+        self._static_covariates_shape = static_covariates_shape
 
         training_samples = np.concatenate(features, axis=0)
         training_labels = np.concatenate(labels, axis=0)
 
         return training_samples, training_labels
-
-    def _add_static_covariates(
-        self,
-        features: Union[np.array, Sequence[np.array]],
-        target_series: Union[TimeSeries, Sequence[TimeSeries]],
-    ) -> Union[np.array, Sequence[np.array]]:
-        """
-        Add static covariates to the features' table for RegressionModels.
-        Accounts for series with potentially different static covariates by padding with 0 to accomodate for the maximum
-        number of available static_covariates in any of the given series in the sequence.
-
-        If no static covariates are provided for a given series, its corresponding features are padded with 0.
-        Accounts for the case where the model is trained with series with static covariates and then used to predict
-        on series without static covariates by padding with 0 the corresponding features of the series without
-        static covariates.
-
-        Parameters
-        ----------
-        features
-            The features' numpy array(s) to which the static covariates will be added. Can either be a lone feature
-            matrix or a `Sequence` of feature matrices; in the latter case, static covariates will be appended to
-            each feature matrix in this `Sequence`.
-        target_series
-            The target series from which to read the static covariates.
-
-        Returns
-        -------
-        features
-            The features' array(s) with appended static covariates columns. If the `features` input was passed as a
-            `Sequence` of `np.array`s, then a `Sequence` is also returned; if `features` was passed as an `np.array`,
-            a `np.array` is returned.
-        """
-
-        input_not_list = not isinstance(features, Sequence)
-        if input_not_list:
-            features = [features]
-        target_series = series2seq(target_series)
-        # collect static covariates info
-        scovs_map = {
-            "covs_exist": False,
-            "vals": [],  # Stores values of static cov arrays in each timeseries
-            "sizes": {},  # Stores sizes of static cov arrays in each timeseries
-        }
-        for ts in target_series:
-            if ts.has_static_covariates:
-                scovs_map["covs_exist"] = True
-                # Each static covariate either adds 1 extra columns or
-                # `n_component` extra columns:
-                vals_i = {}
-                for name, row in ts.static_covariates.items():
-                    vals_i[name] = row
-                    scovs_map["sizes"][name] = row.size
-                scovs_map["vals"].append(vals_i)
-            else:
-                scovs_map["vals"].append(None)
-
-        if (
-            not scovs_map["covs_exist"]
-            and hasattr(self.model, "n_features_in_")
-            and (self.model.n_features_in_ is not None)
-            and (self.model.n_features_in_ > features[0].shape[1])
-        ):
-            # for when series in prediction do not have static covariates but some of the training series did
-            num_static_components = self.model.n_features_in_ - features[0].shape[1]
-            for i, features_i in enumerate(features):
-                padding = np.zeros((features_i.shape[0], num_static_components))
-                features[i] = np.hstack([features_i, padding])
-        elif scovs_map["covs_exist"]:
-            scov_width = sum(scovs_map["sizes"].values())
-            for i, features_i in enumerate(features):
-                vals = scovs_map["vals"][i]
-                if vals:
-                    scov_arrays = []
-                    for name, size in scovs_map["sizes"].items():
-                        scov_arrays.append(
-                            vals[name] if name in vals else np.zeros((size,))
-                        )
-                    scov_array = np.concatenate(scov_arrays)
-                    scovs = np.broadcast_to(
-                        scov_array, (features_i.shape[0], scov_width)
-                    )
-                else:
-                    scovs = np.zeros((features_i.shape[0], scov_width))
-                features[i] = np.hstack([features_i, scovs])
-        if input_not_list:
-            features = features[0]
-        return features
 
     def _fit_model(
         self,
@@ -467,6 +408,19 @@ class RegressionModel(GlobalForecastingModel):
         if len(training_labels.shape) == 2 and training_labels.shape[1] == 1:
             training_labels = training_labels.ravel()
         self.model.fit(training_samples, training_labels, **kwargs)
+
+        # generate and store the lagged components names (for feature importance analysis)
+        self._lagged_feature_names, _ = create_lagged_component_names(
+            target_series=target_series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            lags=self.lags.get("target"),
+            lags_past_covariates=self.lags.get("past"),
+            lags_future_covariates=self.lags.get("future"),
+            output_chunk_length=self.output_chunk_length,
+            concatenate=False,
+            use_static_covariates=self.uses_static_covariates,
+        )
 
     def fit(
         self,
@@ -518,6 +472,12 @@ class RegressionModel(GlobalForecastingModel):
             self._uses_past_covariates = True
         if future_covariates is not None:
             self._uses_future_covariates = True
+        if (
+            get_single_series(series).static_covariates is not None
+            and self.supports_static_covariates
+            and self.considers_static_covariates
+        ):
+            self._uses_static_covariates = True
 
         for covs, name in zip([past_covariates, future_covariates], ["past", "future"]):
             raise_if(
@@ -784,7 +744,12 @@ class RegressionModel(GlobalForecastingModel):
             # static covariates can be added to each block; valid since
             # each block contains same number of observations:
             X_blocks = np.split(X, len(series), axis=0)
-            X_blocks = self._add_static_covariates(X_blocks, series)
+            X_blocks, _ = add_static_covariates_to_lagged_data(
+                X_blocks,
+                series,
+                uses_static_covariates=self.uses_static_covariates,
+                last_shape=self._static_covariates_shape,
+            )
             X = np.concatenate(X_blocks, axis=0)
 
             # X has shape (n_series * n_samples, n_regression_features)
@@ -816,11 +781,29 @@ class RegressionModel(GlobalForecastingModel):
 
         return prediction.reshape(k, self.pred_dim, -1)
 
+    @property
+    def lagged_feature_names(self) -> Optional[List[str]]:
+        """The lagged feature names the model has been trained on.
+
+        The naming convention for target, past and future covariates is: ``"{name}_{type}_lag{i}"``, where:
+
+            - ``{name}`` the component name of the (first) series
+            - ``{type}`` is the feature type, one of "target", "pastcov", and "futcov"
+            - ``{i}`` is the lag value
+
+        The naming convention for static covariates is: ``"{name}_statcov_target_{comp}"``, where:
+
+            - ``{name}`` the static covariate name of the (first) series
+            - ``{comp}`` the target component name of the (first) that the static covariate act on. If the static
+                covariate acts globally on a multivariate target series, will show "global".
+        """
+        return self._lagged_feature_names
+
     def __str__(self):
         return self.model.__str__()
 
-    @staticmethod
-    def _supports_static_covariates() -> bool:
+    @property
+    def supports_static_covariates(self) -> bool:
         return True
 
 
@@ -1045,6 +1028,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         add_encoders: Optional[dict] = None,
         model=None,
         multi_models: Optional[bool] = True,
+        use_static_covariates: bool = True,
         categorical_past_covariates: Optional[Union[str, List[str]]] = None,
         categorical_future_covariates: Optional[Union[str, List[str]]] = None,
         categorical_static_covariates: Optional[Union[str, List[str]]] = None,
@@ -1098,6 +1082,10 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
+        use_static_covariates
+            Whether the model should use static covariate information in case the input `series` passed to ``fit()``
+            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
+            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()`.
         categorical_past_covariates
             Optionally, component name or list of component names specifying the past covariates that should be treated
             as categorical.
@@ -1116,6 +1104,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             add_encoders=add_encoders,
             model=model,
             multi_models=multi_models,
+            use_static_covariates=use_static_covariates,
         )
         self.categorical_past_covariates = (
             [categorical_past_covariates]
@@ -1157,12 +1146,12 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         )
 
     @property
-    def _categorical_fit_param_name(self) -> str:
+    def _categorical_fit_param(self) -> Tuple[str, Any]:
         """
-        Returns the name of the parameter of the model's `fit` method that specifies the categorical features.
+        Returns the name, and default value of the categorical features parameter from model's `fit` method .
         Can be overridden in subclasses.
         """
-        return "categorical_feature"
+        return "categorical_feature", "auto"
 
     def _validate_categorical_covariates(
         self,
@@ -1321,7 +1310,10 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
             future_covariates,
         )
 
-        kwargs[self._categorical_fit_param_name] = cat_col_indices
+        cat_param_name, cat_param_default = self._categorical_fit_param
+        kwargs[cat_param_name] = (
+            cat_col_indices if cat_col_indices else cat_param_default
+        )
         super()._fit_model(
             target_series=target_series,
             past_covariates=past_covariates,
