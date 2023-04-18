@@ -14,7 +14,8 @@ to obtain forecasts for a desired number of time stamps into the future.
 import copy
 import datetime
 import inspect
-import os
+from os import PathLike
+from pathlib import Path
 import pickle
 import time
 from abc import ABC, ABCMeta, abstractmethod
@@ -1781,7 +1782,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def _default_save_path(cls) -> str:
         return f"{cls.__name__}_{datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')}"
 
-    def save(self, path: Optional[Union[str, BinaryIO]] = None, **pkl_kwargs) -> None:
+    def save(self, path: Optional[Union[str, PathLike, BinaryIO]] = None, **pkl_kwargs) -> None:
         """
         Saves the model under a given path or file handle.
 
@@ -1812,7 +1813,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             # default path
             path = self._default_save_path() + ".pkl"
 
-        if isinstance(path, str):
+        if isinstance(path, (str, PathLike)):
             # save the whole object using pickle
             with open(path, "wb") as handle:
                 pickle.dump(obj=self, file=handle, **pkl_kwargs)
@@ -1821,7 +1822,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             pickle.dump(obj=self, file=path, **pkl_kwargs)
 
     @staticmethod
-    def load(path: Union[str, BinaryIO, Path]) -> "ForecastingModel":
+    def load(path: Union[str, PathLike, BinaryIO]) -> "ForecastingModel":
         """
         Loads the model from a given path or file handle.
 
@@ -1831,7 +1832,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Path or file handle from which to load the model.
         """
 
-        if isinstance(path, (str, Path)):
+        if isinstance(path, (str, PathLike)):
             raise_if_not(
                 Path(path).exists(),
                 f"The file {path} doesn't exist",
