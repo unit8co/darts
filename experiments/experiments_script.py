@@ -1,3 +1,4 @@
+# flake8: noqa
 import argparse
 import json
 import os
@@ -9,7 +10,8 @@ from statistics import mean, stdev
 
 import numpy as np
 import torch
-from builders import MODEL_BUILDERS
+from model_builders import MODEL_BUILDERS
+from optuna_params import PARAMS_GENERATORS
 from ray import air, tune
 from ray.air import session
 from ray.tune.integration.pytorch_lightning import TuneReportCallback
@@ -30,27 +32,24 @@ from darts.datasets import (
 )
 from darts.metrics import mae, mape, mase, mse, rmse, smape
 from darts.models import (
-    CatBoostModel,
     DLinearModel,
     LightGBMModel,
     LinearRegressionModel,
-    NBEATSModel,
     NHiTSModel,
     NLinearModel,
     TCNModel,
-    XGBModel,
 )
 from darts.models.forecasting.regression_model import RegressionModel
 from darts.models.forecasting.torch_forecasting_model import (
     FutureCovariatesTorchModel,
     MixedCovariatesTorchModel,
-    PastCovariatesTorchModel,
     TorchForecastingModel,
 )
 from darts.utils import missing_values
 from darts.utils.utils import series2seq
 
 # experiment configuration
+RUNS = 5
 
 dataset_map = {
     "ETTh1": ETTh1Dataset,
@@ -192,122 +191,7 @@ encoders = (
     )
 )
 
-RUNS = 5
-
-IN_MIN = 5  # make argument?
-IN_MAX = 30
-
-
-def _params_NHITS(trial):
-    in_len = trial.suggest_int("in_len", IN_MIN * PERIOD_UNIT, IN_MAX * PERIOD_UNIT)
-
-    out_len = trial.suggest_int("out_len", 1, in_len - PERIOD_UNIT)
-
-    num_stacks = trial.suggest_int("num_stacks", 2, 5)
-    num_blocks = trial.suggest_int("num_blocks", 1, 3)
-    num_layers = trial.suggest_int("num_layers", 2, 5)
-    activation = trial.suggest_categorical(
-        "activation",
-        ["ReLU", "RReLU", "PReLU", "Softplus", "Tanh", "SELU", "LeakyReLU", "Sigmoid"],
-    )
-
-    MaxPool1d = trial.suggest_categorical("MaxPool1d", [False, True])
-    dropout = trial.suggest_float("dropout", 0.0, 0.4)
-
-    lr = trial.suggest_float("lr", 5e-5, 1e-3, log=True)
-    add_encoders = trial.suggest_categorical("add_encoders", [False, True])
-
-    constants = {
-        "layer_widths": 512,
-        "pooling_kernel_sizes": None,
-        "n_freq_downsample": None,
-    }
-
-    return constants
-
-
-def _params_NLINEAR(trial):
-    in_len = trial.suggest_int("in_len", IN_MIN * PERIOD_UNIT, IN_MAX * PERIOD_UNIT)
-
-    out_len = trial.suggest_int("out_len", 1, in_len - PERIOD_UNIT)
-
-    shared_weights = trial.suggest_categorical("shared_weights", [False, True])
-    const_init = trial.suggest_categorical("const_init", [False, True])
-    normalize = trial.suggest_categorical("normalize", [False, True])
-    lr = trial.suggest_float("lr", 5e-5, 1e-3, log=True)
-    add_encoders = trial.suggest_categorical("add_encoders", [False, True])
-
-    return None
-
-
-def _params_DLINEAR(trial):
-
-    in_len = trial.suggest_int("in_len", IN_MIN * PERIOD_UNIT, IN_MAX * PERIOD_UNIT)
-
-    out_len = trial.suggest_int("out_len", 1, in_len - PERIOD_UNIT)
-
-    kernel_size = trial.suggest_int("kernel_size", 5, 25)
-    shared_weights = trial.suggest_categorical("shared_weights", [False, True])
-    const_init = trial.suggest_categorical("const_init", [False, True])
-    lr = trial.suggest_float("lr", 5e-5, 1e-3, log=True)
-    add_encoders = trial.suggest_categorical("add_encoders", [False, True])
-
-    return None
-
-
-def _params_TCNMODEL(trial):
-
-    in_len = trial.suggest_int("in_len", IN_MIN * PERIOD_UNIT, IN_MAX * PERIOD_UNIT)
-
-    out_len = trial.suggest_int("out_len", 1, in_len - PERIOD_UNIT)
-
-    kernel_size = trial.suggest_int("kernel_size", 5, 25)
-    num_filters = trial.suggest_int("num_filters", 5, 25)
-    weight_norm = trial.suggest_categorical("weight_norm", [False, True])
-    dilation_base = trial.suggest_int("dilation_base", 2, 4)
-    dropout = trial.suggest_float("dropout", 0.0, 0.4)
-    lr = trial.suggest_float("lr", 5e-5, 1e-3, log=True)
-    add_encoders = trial.suggest_categorical("add_encoders", [False, True])
-
-    return None
-
-
-def _params_LGBMModel(trial):
-
-    lags = trial.suggest_int("lags", IN_MIN * PERIOD_UNIT, IN_MAX * PERIOD_UNIT)
-    out_len = trial.suggest_int("out_len", 1, lags - PERIOD_UNIT)
-
-    boosting = trial.suggest_categorical("boosting", ["gbdt", "dart"])
-    num_leaves = trial.suggest_int("num_leaves", 2, 50)
-    max_bin = trial.suggest_int("max_bin", 100, 500)
-    learning_rate = trial.suggest_float("learning_rate", 1e-8, 1e-1, log=True)
-    num_iterations = trial.suggest_int("num_iterations", 50, 500)
-    add_encoders = trial.suggest_categorical("add_encoders", [False, True])
-
-    return None
-
-
-def _params_LinearRegression(trial):
-
-    lags = trial.suggest_int("lags", IN_MIN * PERIOD_UNIT, IN_MAX * PERIOD_UNIT)
-    out_len = trial.suggest_int("out_len", 1, lags - PERIOD_UNIT)
-
-    add_encoders = trial.suggest_categorical("add_encoders", [False, True])
-
-    return None
-
-
-PARAMS_GENERATORS = {
-    TCNModel.__name__: _params_TCNMODEL,
-    DLinearModel.__name__: _params_DLINEAR,
-    NLinearModel.__name__: _params_NLINEAR,
-    NHiTSModel.__name__: _params_NHITS,
-    LightGBMModel.__name__: _params_LGBMModel,
-    LinearRegressionModel.__name__: _params_LinearRegression,
-}
-
-
-if __name__ == "__main__":
+if __name__ == "__main__" and False:
 
     # Fix random states
     # https://pytorch.org/docs/stable/notes/randomness.html
