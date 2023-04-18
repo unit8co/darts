@@ -1821,7 +1821,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             pickle.dump(obj=self, file=path, **pkl_kwargs)
 
     @staticmethod
-    def load(path: Union[str, BinaryIO]) -> "ForecastingModel":
+    def load(path: Union[str, BinaryIO, Path]) -> "ForecastingModel":
         """
         Loads the model from a given path or file handle.
 
@@ -1831,9 +1831,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Path or file handle from which to load the model.
         """
 
-        if isinstance(path, str):
+        if isinstance(path, (str, Path)):
             raise_if_not(
-                os.path.exists(path),
+                Path(path).exists(),
                 f"The file {path} doesn't exist",
                 logger,
             )
