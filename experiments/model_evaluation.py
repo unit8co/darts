@@ -1,11 +1,16 @@
 import logging
 import random
+from typing import Callable, Dict
 
 import numpy as np
 import torch
 
+from darts import TimeSeries
 from darts.metrics import mae
-from darts.models.forecasting.forecasting_model import LocalForecastingModel
+from darts.models.forecasting.forecasting_model import (
+    ForecastingModel,
+    LocalForecastingModel,
+)
 
 logging.getLogger("pytorch_lightning").setLevel(logging.WARNING)
 
@@ -18,35 +23,63 @@ def randommness(seed=0):
 
 
 def evaluate_model(
-    model_class,
-    dataset,
-    model_params=dict(),
-    metric=mae,
-    split=0.7,
-    past_cov=None,
-    future_cov=None,
+    model_class: ForecastingModel,
+    target_dataset: TimeSeries,
+    model_params: Dict = dict(),
+    metric: Callable[[TimeSeries, TimeSeries], float] = mae,
+    split: float = 0.8,
+    past_cov: TimeSeries = None,
+    future_cov: TimeSeries = None,
+    num_test_points: int = 20,
     **kwargs
 ):
+    """
+    _description_
+    This function is used to evaluate a given model on a dataset.
 
+    Parameters
+    ----------
+    model_class
+        The class of the model to be evaluated.
+    target_dataset
+        The dataset on which the model will be evaluated.
+    model_params
+        The parameters for instantiating the model class.
+    metric
+        A darts metric function.
+    split
+        The split ratio between training and validation.
+    past_cov
+        The past covariates for the model.
+    future_cov
+        The future covariates for the model.
+    num_test_points
+        The number of test points to be used for the evaluation.
+    """
+
+    # some checks and conversions
     model_uses_cov = model_params.get(
         "lags_future_covariates", False
     ) or model_params.get("lags_past_covariates", False)
+
     if model_uses_cov and not (past_cov or future_cov):
         raise ValueError("model uses covariates, but none were provided")
-    if past_cov and len(dataset) != len(past_cov):
+    if past_cov and len(target_dataset) != len(past_cov):
         raise ValueError("past_cov and dataset must have the same length")
-    if future_cov and len(dataset) != len(future_cov):
+    if future_cov and len(target_dataset) != len(future_cov):
         raise ValueError("future_cov and dataset must have the same length")
 
-    model = model_class(**model_params)
-    num_test_points = 20
-    stride = int((1 - split) * len(dataset) / num_test_points)
+    stride = int((1 - split) * len(target_dataset) / num_test_points)
     stride = max(stride, 1)
+
+    # now we performe the evaluation
+    model = model_class(**model_params)
+
     retrain = True
     if not isinstance(model, LocalForecastingModel):
         retrain = False
 
-        train = dataset.split_after(split)[0]
+        train = target_dataset.split_after(split)[0]
         train_past_cov = past_cov.split_after(split)[0] if past_cov else None
         train_future_cov = future_cov.split_after(split)[0] if future_cov else None
 
@@ -61,7 +94,7 @@ def evaluate_model(
 
     if model_uses_cov:
         return model.backtest(
-            dataset,
+            target_dataset,
             retrain=retrain,
             metric=metric,
             past_covariates=past_cov,
@@ -71,5 +104,5 @@ def evaluate_model(
         )
     else:
         return model.backtest(
-            dataset, retrain=retrain, metric=metric, start=split, stride=stride
+            target_dataset, retrain=retrain, metric=metric, start=split, stride=stride
         )

@@ -1,83 +1,104 @@
-# flake8: noqa
-import os
 import tempfile
-from statistics import mean, stdev
+from typing import Callable, Dict
 
-import numpy as np
-from model_builders import MODEL_BUILDERS
-from optuna_params import PARAMS_GENERATORS
+from model_evaluation import evaluate_model
+from param_space import FIXED_PARAMS, OPTUNA_SEARCH_SPACE
 from ray import air, tune
 from ray.air import session
-from ray.tune.integration.pytorch_lightning import TuneReportCallback
 from ray.tune.search.optuna import OptunaSearch
 from sklearn.preprocessing import MaxAbsScaler
-from tqdm import tqdm
 
 from darts.dataprocessing.transformers import Scaler
 
 # data and models
-from darts.datasets import ETTh1Dataset
-from darts.metrics import mae, mape, mase, mse, rmse, smape
-from darts.models.forecasting.regression_model import RegressionModel
-from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
+from darts.metrics import mae
+from darts.models.forecasting.torch_forecasting_model import (
+    ForecastingModel,
+    TorchForecastingModel,
+)
+from darts.timeseries import TimeSeries
 from darts.utils import missing_values
-from darts.utils.utils import series2seq
+
+encoders_dict = {
+    "datetime_attribute": {"future": ["month", "week", "hour", "dayofweek"]},
+    "cyclic": {"future": ["month", "week", "hour", "dayofweek"]},
+}
 
 
-def evaluation_step(config, model_cl, metric, encoders, fixed_params, train, val):
+def evaluation_step(
+    config,
+    model_class: ForecastingModel,
+    target_dataset: TimeSeries,
+    fixed_params: Dict = dict(),
+    metric: Callable[[TimeSeries, TimeSeries], float] = mae,
+    split: float = 0.85,
+    past_cov: TimeSeries = None,
+    future_cov: TimeSeries = None,
+    num_test_points: int = 20,
+):
 
-    len_train, len_val = len(train[0]), len(val[0])
+    model_params = {**fixed_params, **config}
+    # optuna does not support None or dict as parameters so we need to convert them from bools.
+    if "add_encoders" in model_params:
+        model_params["add_encoders"] = (
+            encoders_dict if model_params["add_encoders"] else None
+        )
 
-    model = MODEL_BUILDERS[model_cl.__name__](
-        config,
-        len_train,
-        len_val,
-        encoders=encoders,
-        fixed_params=fixed_params,
-        out_len=1,
-    )  # TODO: replace out_len fixed value
-
-    model.fit(series=train, max_samples_per_ts=fixed_params["MAX_SAMPLES_PER_TS"])
-
-    preds = model.predict(series=train, n=len_val)
-
-    if metric.__name__ == "mase":
-        metric_evals = metric(val, preds, train, n_jobs=-1, verbose=True)
-    else:
-        metric_evals = metric(val, preds, n_jobs=-1, verbose=True)
-
-    metric_evals_reduced = (
-        np.mean(metric_evals) if metric_evals != np.nan else float("inf")
+    result = evaluate_model(
+        model_class=model_class,
+        model_params=model_params,
+        target_dataset=target_dataset,
+        metric=metric,
+        split=split,
+        past_cov=past_cov,
+        future_cov=future_cov,
+        num_test_points=num_test_points,
     )
 
-    session.report({"metric": metric_evals_reduced})
+    session.report({"metric": result})
 
 
 def optuna_search(
-    data, model_map, model_name: str, metric, split: float = 0.8, optuna_dir=None
+    model_class: ForecastingModel,
+    target_dataset: TimeSeries,
+    fixed_params: Dict = None,
+    optuna_search_space: Callable = None,
+    metric: Callable[[TimeSeries, TimeSeries], float] = mae,
+    split: float = 0.85,
+    past_cov: TimeSeries = None,
+    future_cov: TimeSeries = None,
+    num_test_points: int = 20,
+    time_budget=60,
+    optuna_dir=None,
+    **kwargs,
 ):
-
-    model_class = model_map[model_name]
-
-    data = series2seq(data)
-    train, val = data_cleaning(data, split)
 
     if not optuna_dir:
         optuna_dir = tempfile.TemporaryDirectory()
 
+    dataset_data = {
+        "target_dataset": target_dataset,
+    }
+    fixed_params = fixed_params or FIXED_PARAMS[model_class.__name__](**dataset_data)
+    optuna_search_space = optuna_search_space or (
+        lambda trial: OPTUNA_SEARCH_SPACE[model_class.__name__](trial, **dataset_data)
+    )
+
     # building optuna objects
     trainable_object = tune.with_parameters(
         evaluation_step,
-        model_cl=model_class,
+        target_dataset=target_dataset,
+        model_class=model_class,
         metric=metric,
-        encoders=encoders,
         fixed_params=fixed_params,
-        train=train,
-        val=val,
+        split=split,
+        past_cov=past_cov,
+        future_cov=future_cov,
+        num_test_points=num_test_points,
     )
 
     search_alg = OptunaSearch(
-        space=PARAMS_GENERATORS[model_cl.__name__],
+        space=optuna_search_space,
         metric="metric",
         mode="min",
     )
@@ -88,10 +109,11 @@ def optuna_search(
             search_alg=search_alg,
             num_samples=-1,
             time_budget_s=time_budget,
+            max_concurrent_trials=4,
         ),
         run_config=air.RunConfig(
             local_dir=str(optuna_dir),
-            name=f"{model_cl.__name__}_tuner_{eval_metric.__name__}",
+            name=f"{model_class.__name__}_tuner_{metric.__name__}",
         ),
     )
 
@@ -100,19 +122,12 @@ def optuna_search(
 
     # get best results
     best_params = tuner_results.get_best_result(metric="metric", mode="min").config
-    print("best parameters:", best_params)
+    best_params = {**fixed_params, **best_params}
 
-    best_model = MODEL_BUILDERS[model_cl.__name__](
-        **best_params,
-        encoders=encoders,
-        fixed_params=fixed_params,
-        work_dir=optuna_dir,
-    )
-
-    return best_model
+    return best_params
 
 
-def data_cleaning(data, split):
+def data_cleaning(data, split, model_class):
 
     # split : train, validation , test (validation and test have same length)
 
@@ -144,7 +159,7 @@ def data_cleaning(data, split):
             missing_values.fill_missing_values(val_original[i])
 
     # scale data
-    if issubclass(model_cl, TorchForecastingModel):
+    if issubclass(model_class, TorchForecastingModel):
         scaler = Scaler(scaler=MaxAbsScaler())
         train = scaler.fit_transform(train_original)
         val = scaler.transform(val_original)

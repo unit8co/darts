@@ -1,5 +1,6 @@
 import pandas as pd
 from model_evaluation import evaluate_model
+from optuna_search import optuna_search
 from param_space import FIXED_PARAMS
 
 from darts import TimeSeries
@@ -87,8 +88,19 @@ ds = convert_to_ts(ExchangeRateDataset().load()["0"])
 datasets += [{"dataset": ds, "dataset_name": "ExchangeRate"}]
 ds = SunspotsDataset().load()["Sunspots"]
 datasets += [{"dataset": ds, "dataset_name": "Sunspots"}]
+
+
 ds = convert_to_ts(GasRateCO2Dataset().load()["CO2%"])
-datasets += [{"dataset": ds, "dataset_name": "GasRateCO2"}]
+datasets += [{"target_dataset": ds, "dataset_name": "GasRateCO2"}]
+fixed_params = FIXED_PARAMS[LinearRegressionModel.__name__](**datasets[0])
+config = optuna_search(
+    LinearRegressionModel, fixed_params=fixed_params, **datasets[0], time_budget=15
+)
+
+model_params = {**fixed_params, **config}
+LinearRegressionModel(**model_params)
+
+x = 1 / 0
 
 results = []
 for dataset in datasets:

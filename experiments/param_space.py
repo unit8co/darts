@@ -105,17 +105,19 @@ def _params_LGBMModel(trial):
     trial.suggest_int("num_iterations", 50, 500)
 
 
-def _params_LinearRegression(trial, dataset, **kwargs):
+def _params_LinearRegression(trial, target_dataset, **kwargs):
     # lag length as a ratio of the train data size
-    trial.suggest_float(
-        "lags", max(5, int(len(dataset) * 0.001)), max(6, int(len(dataset) * 0.2))
+    trial.suggest_int(
+        "lags",
+        max(5, int(len(target_dataset) * 0.001)),
+        max(6, int(len(target_dataset) * 0.2)),
     )
     trial.suggest_categorical("add_encoders", [False, True])
 
 
 def _fixed_params_LinearRegression(
-    dataset,
-    suggested_lags=None,
+    target_dataset,
+    suggested_lags: int = None,
     has_past_cov=False,
     lags_past_covariates=[-1],
     has_future_cov=False,
@@ -129,7 +131,7 @@ def _fixed_params_LinearRegression(
     if has_past_cov:
         output["lags_past_covariates"] = lags_past_covariates
     output["lags"] = (
-        suggested_lags if suggested_lags else max(5, int(len(dataset) * 0.05))
+        suggested_lags if suggested_lags else max(5, int(len(target_dataset) * 0.05))
     )
     return output
 
