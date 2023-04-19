@@ -762,12 +762,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         elif (
             train_length is not None
         ) and train_length < model._training_sample_time_index_length + (
-            self.min_train_samples - 1
+            model.min_train_samples - 1
         ):
             raise_log(
                 ValueError(
                     "train_length is too small for the training requirements of this model. "
-                    f"Must be `>={model._training_sample_time_index_length + (self.min_train_samples - 1)}`."
+                    f"Must be `>={model._training_sample_time_index_length + (model.min_train_samples - 1)}`."
                 ),
                 logger,
             )
@@ -944,11 +944,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         )
 
                     train_length_ = None
-                    if self.min_train_samples > 1:
+                    if model.min_train_samples > 1:
                         historical_forecasts_time_index = drop_before_index(
                             historical_forecasts_time_index,
                             historical_forecasts_time_index[0]
-                            + (self.min_train_samples - 1) * series_.freq,
+                            + (model.min_train_samples - 1) * series_.freq,
                         )
 
             # Take into account overlap_end, and forecast_horizon.
