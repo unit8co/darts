@@ -1006,7 +1006,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             # adjust the start of the series depending on whether we train (at some point), or predict only
             if min_timestamp_series > series_.time_index[0]:
-                series_ = series_.drop_before(min_timestamp_series - 1 * series_.freq)
+                series_ = series_.slice(min_timestamp_series, series_.end_time())
 
             if len(series) == 1:
                 # Only use tqdm if there's no outer loop
@@ -1026,7 +1026,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             # iterate and forecast
             for _counter, pred_time in enumerate(iterator):
                 # drop everything after `pred_time` to train on / predict with shifting input
-                train_series = series_.drop_after(pred_time)
+                train_series = series_.slice(min_timestamp_series, pred_time - series_.freq)
 
                 # optionally, apply moving window (instead of expanding window)
                 if train_length_ and len(train_series) > train_length_:
