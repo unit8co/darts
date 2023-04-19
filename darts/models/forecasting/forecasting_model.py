@@ -1065,23 +1065,20 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                                 logger,
                             )
                     _counter_train += 1
-                else:
+                elif not _counter and not model._fit_called:
                     # model must be fit before the first prediction
                     # `historical_forecasts_time_index_train` is known to be not None
-                    if not _counter and not model._fit_called:
-                        raise_log(
-                            ValueError(
-                                f"Model has not been fit before the first predict iteration at prediction point "
-                                f"(in time) `{pred_time}`. Either call `fit()` before `historical_forecasts()`, "
-                                f"set `retrain=True`, modify the function to return `True` at least once before "
-                                f"`{pred_time}`, or use a different `start` value. The first 'predictable' "
-                                f"timestamp with re-training inside `historical_forecasts` is: "
-                                f"{historical_forecasts_time_index_train[0]} (potential `start` value)."
-                            ),
-                            logger,
-                        )
-                    # slice the series for prediction without retraining
-                    train_series = series_.drop_after(pred_time)
+                    raise_log(
+                        ValueError(
+                            f"Model has not been fit before the first predict iteration at prediction point "
+                            f"(in time) `{pred_time}`. Either call `fit()` before `historical_forecasts()`, "
+                            f"set `retrain=True`, modify the function to return `True` at least once before "
+                            f"`{pred_time}`, or use a different `start` value. The first 'predictable' "
+                            f"timestamp with re-training inside `historical_forecasts` is: "
+                            f"{historical_forecasts_time_index_train[0]} (potential `start` value)."
+                        ),
+                        logger,
+                    )
 
                 # for regression models with lags=None, lags_past_covariates=None and min(lags_future_covariates)>=0,
                 # the first predictable timestamp is the first timestamp of the series, a dummy ts must be created
