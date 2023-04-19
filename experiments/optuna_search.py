@@ -152,13 +152,3 @@ def data_cleaning(data, split):
         train, val = train_original, val_original
 
     return train, val
-
-
-experiment_dir = os.path.join(os.getcwd(), f"test_0312")
-
-
-dataset = ETTh1Dataset
-data = dataset().load()
-
-
-optuna_search(data, "LinearRegression", mase, optuna_dir=experiment_dir)
