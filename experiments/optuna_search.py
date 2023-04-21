@@ -1,4 +1,5 @@
 import tempfile
+import warnings
 from typing import Callable, Dict
 
 from model_evaluation import evaluate_model
@@ -74,12 +75,21 @@ def optuna_search(
 ):
 
     if not optuna_dir:
-        optuna_dir = tempfile.TemporaryDirectory()
+        temp_dir = tempfile.TemporaryDirectory()
+        optuna_dir = temp_dir.name
 
     dataset_data = {
         "target_dataset": target_dataset,
     }
+
     fixed_params = fixed_params or FIXED_PARAMS[model_class.__name__](**dataset_data)
+
+    if not optuna_search_space and model_class.__name__ not in OPTUNA_SEARCH_SPACE:
+        warnings.warn(
+            "Optuna search space not found. skipping optuna search and returning fixed params instead."
+        )
+        return fixed_params
+
     optuna_search_space = optuna_search_space or (
         lambda trial: OPTUNA_SEARCH_SPACE[model_class.__name__](trial, **dataset_data)
     )
@@ -109,7 +119,7 @@ def optuna_search(
             search_alg=search_alg,
             num_samples=-1,
             time_budget_s=time_budget,
-            max_concurrent_trials=4,
+            max_concurrent_trials=2,
         ),
         run_config=air.RunConfig(
             local_dir=str(optuna_dir),

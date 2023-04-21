@@ -23,6 +23,7 @@ from darts.models import (
     Prophet,
     TCNModel,
 )
+from darts.utils import missing_values
 
 
 def convert_to_ts(ds: TimeSeries):
@@ -45,20 +46,14 @@ models = [
 ]
 
 datasets = []
-ds = ETTh1Dataset().load()
-datasets += [
-    {
-        "dataset_name": "ETTh1",
-        "dataset": ds["OT"],
-        "future_cov": ds[["HUFL", "HULL", "MUFL", "MULL", "LUFL", "LULL"]],
-        "has_future_cov": True,
-    }
-]
-ds = WeatherDataset().load().resample("1h")
+
+ds = convert_to_ts(GasRateCO2Dataset().load()["CO2%"])
+datasets += [{"target_dataset": ds, "dataset_name": "GasRateCO2"}]
+ds = missing_values.fill_missing_values(WeatherDataset().load().resample("1h"))
 datasets += [
     {
         "dataset_name": "Weather",
-        "dataset": ds["T (degC)"],
+        "target_dataset": ds["T (degC)"],
         "future_cov": ds[
             [
                 "p (mbar)",
@@ -83,33 +78,35 @@ datasets += [
         "has_future_cov": True,
     }
 ]
+ds = missing_values.fill_missing_values(ETTh1Dataset().load())
+datasets += [
+    {
+        "dataset_name": "ETTh1",
+        "target_dataset": ds["OT"],
+        "future_cov": ds[["HUFL", "HULL", "MUFL", "MULL", "LUFL", "LULL"]],
+        "has_future_cov": True,
+    }
+]
 
-ds = convert_to_ts(ExchangeRateDataset().load()["0"])
-datasets += [{"dataset": ds, "dataset_name": "ExchangeRate"}]
-ds = SunspotsDataset().load()["Sunspots"]
-datasets += [{"dataset": ds, "dataset_name": "Sunspots"}]
-
-
-ds = convert_to_ts(GasRateCO2Dataset().load()["CO2%"])
-datasets += [{"target_dataset": ds, "dataset_name": "GasRateCO2"}]
-fixed_params = FIXED_PARAMS[LinearRegressionModel.__name__](**datasets[0])
-config = optuna_search(
-    LinearRegressionModel, fixed_params=fixed_params, **datasets[0], time_budget=15
+ds = missing_values.fill_missing_values(
+    convert_to_ts(ExchangeRateDataset().load()["0"])
 )
-
-model_params = {**fixed_params, **config}
-LinearRegressionModel(**model_params)
-
-x = 1 / 0
+datasets += [{"target_dataset": ds, "dataset_name": "ExchangeRate"}]
+ds = SunspotsDataset().load()["Sunspots"]
+datasets += [{"target_dataset": ds, "dataset_name": "Sunspots"}]
 
 results = []
 for dataset in datasets:
     print("\n\n", dataset["dataset_name"])
     for model_class in models:
         fixed_params = FIXED_PARAMS[model_class.__name__](**dataset)
+        config = optuna_search(
+            model_class, fixed_params=fixed_params, **dataset, time_budget=60
+        )
         output = evaluate_model(
             model_class, **dataset, model_params=fixed_params, split=0.8
         )
         print(model_class.__name__, output)
         results.append((dataset["dataset_name"], model_class.__name__, output))
+
 print(results)

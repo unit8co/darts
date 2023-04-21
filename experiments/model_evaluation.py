@@ -64,10 +64,6 @@ def evaluate_model(
 
     if model_uses_cov and not (past_cov or future_cov):
         raise ValueError("model uses covariates, but none were provided")
-    if past_cov and len(target_dataset) != len(past_cov):
-        raise ValueError("past_cov and dataset must have the same length")
-    if future_cov and len(target_dataset) != len(future_cov):
-        raise ValueError("future_cov and dataset must have the same length")
 
     stride = int((1 - split) * len(target_dataset) / num_test_points)
     stride = max(stride, 1)
