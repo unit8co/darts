@@ -1,3 +1,6 @@
+"""
+This is the main file for the benchmarking experiment.
+"""
 import pandas as pd
 from model_evaluation import evaluate_model
 from optuna_search import optuna_search
