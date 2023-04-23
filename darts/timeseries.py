@@ -2308,9 +2308,7 @@ class TimeSeries:
             idx = pd.RangeIndex(effective_start_ts, effective_end_ts, step=self.freq)
             return self[idx]
 
-    def slice_n_points_after(
-        self, start_ts: Union[pd.Timestamp, int], n: int
-    ) -> Self:
+    def slice_n_points_after(self, start_ts: Union[pd.Timestamp, int], n: int) -> Self:
         """
         Return a new TimeSeries, starting a `start_ts` (inclusive) and having at most `n` points.
 
@@ -2343,9 +2341,7 @@ class TimeSeries:
                 ValueError("start_ts must be an int or a pandas Timestamp."), logger
             )
 
-    def slice_n_points_before(
-        self, end_ts: Union[pd.Timestamp, int], n: int
-    ) -> Self:
+    def slice_n_points_before(self, end_ts: Union[pd.Timestamp, int], n: int) -> Self:
         """
         Return a new TimeSeries, ending at `end_ts` (inclusive) and having at most `n` points.
 
