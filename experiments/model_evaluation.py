@@ -58,12 +58,11 @@ def evaluate_model(
     """
 
     # some checks and conversions
-    model_uses_cov = model_params.get(
-        "lags_future_covariates", False
-    ) or model_params.get("lags_past_covariates", False)
-
-    if model_uses_cov and not (past_cov or future_cov):
-        raise ValueError("model uses covariates, but none were provided")
+    model_uses_cov = (
+        model_params.get("lags_future_covariates", False)
+        or model_params.get("lags_past_covariates", False)
+        or model_params.get("add_encoders", False)
+    )
 
     stride = int((1 - split) * len(target_dataset) / num_test_points)
     stride = max(stride, 1)

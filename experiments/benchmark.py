@@ -1,6 +1,9 @@
 """
 This is the main file for the benchmarking experiment.
 """
+import logging
+import warnings
+
 import pandas as pd
 from model_evaluation import evaluate_model
 from optuna_search import optuna_search
@@ -18,15 +21,18 @@ from darts.metrics import mae
 from darts.models import (
     ARIMA,
     FFT,
-    CatBoostModel,
+    LightGBMModel,
     LinearRegressionModel,
     NaiveSeasonal,
     NBEATSModel,
     NHiTSModel,
+    NLinearModel,
     Prophet,
     TCNModel,
 )
 from darts.utils import missing_values
+
+warnings.filterwarnings("ignore")
 
 
 def convert_to_ts(ds: TimeSeries):
@@ -35,23 +41,26 @@ def convert_to_ts(ds: TimeSeries):
     )
 
 
+use_optuna = True
 metric = mae
 models = [
     NaiveSeasonal,
     FFT,
     Prophet,
-    ARIMA,
+    NLinearModel,
+    ARIMA,  # that one is trouble
+    LightGBMModel,  # some warnings for boosting and num_iterations overriding some parameters but it works
     TCNModel,
     NHiTSModel,
     NBEATSModel,
     LinearRegressionModel,
-    CatBoostModel,
 ]
 
 datasets = []
 
 ds = convert_to_ts(GasRateCO2Dataset().load()["CO2%"])
 datasets += [{"target_dataset": ds, "dataset_name": "GasRateCO2"}]
+
 ds = missing_values.fill_missing_values(WeatherDataset().load().resample("1h"))
 datasets += [
     {
@@ -98,18 +107,31 @@ datasets += [{"target_dataset": ds, "dataset_name": "ExchangeRate"}]
 ds = SunspotsDataset().load()["Sunspots"]
 datasets += [{"target_dataset": ds, "dataset_name": "Sunspots"}]
 
+
+# ray, optuna and pytorch: all are very verbose, so we need to silence them
+loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
+for logger in loggers:
+    logger.setLevel(logging.ERROR)
+
 results = []
-for dataset in datasets:
-    print("\n\n", dataset["dataset_name"])
-    for model_class in models:
-        fixed_params = FIXED_PARAMS[model_class.__name__](**dataset)
-        config = optuna_search(
-            model_class, fixed_params=fixed_params, **dataset, time_budget=60
-        )
-        output = evaluate_model(
-            model_class, **dataset, model_params=fixed_params, split=0.8
-        )
-        print(model_class.__name__, output)
-        results.append((dataset["dataset_name"], model_class.__name__, output))
+try:
+    for dataset in datasets[:2]:
+        print("\n\n", dataset["dataset_name"])
+        for model_class in models:
+
+            model_params = FIXED_PARAMS[model_class.__name__](**dataset)
+            if use_optuna:
+                model_params = optuna_search(
+                    model_class, fixed_params=model_params, **dataset, time_budget=120
+                )
+
+            output = evaluate_model(
+                model_class, **dataset, model_params=model_params, split=0.8
+            )
+            print("#####################################################")
+            print(model_class.__name__, output)
+            results.append((dataset["dataset_name"], model_class.__name__, output))
+except Exception as e:
+    print(e)
 
 print(results)

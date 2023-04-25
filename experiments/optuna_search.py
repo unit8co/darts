@@ -3,7 +3,7 @@ import warnings
 from typing import Callable, Dict
 
 from model_evaluation import evaluate_model
-from param_space import FIXED_PARAMS, OPTUNA_SEARCH_SPACE
+from param_space import FIXED_PARAMS, OPTUNA_SEARCH_SPACE, optuna2params
 from ray import air, tune
 from ray.air import session
 from ray.tune.search.optuna import OptunaSearch
@@ -20,11 +20,6 @@ from darts.models.forecasting.torch_forecasting_model import (
 from darts.timeseries import TimeSeries
 from darts.utils import missing_values
 
-encoders_dict = {
-    "datetime_attribute": {"future": ["month", "week", "hour", "dayofweek"]},
-    "cyclic": {"future": ["month", "week", "hour", "dayofweek"]},
-}
-
 
 def evaluation_step(
     config,
@@ -37,13 +32,9 @@ def evaluation_step(
     future_cov: TimeSeries = None,
     num_test_points: int = 20,
 ):
-
+    # convert optuna config to accept more complex params
+    config = optuna2params(config)
     model_params = {**fixed_params, **config}
-    # optuna does not support None or dict as parameters so we need to convert them from bools.
-    if "add_encoders" in model_params:
-        model_params["add_encoders"] = (
-            encoders_dict if model_params["add_encoders"] else None
-        )
 
     result = evaluate_model(
         model_class=model_class,
@@ -119,21 +110,21 @@ def optuna_search(
             search_alg=search_alg,
             num_samples=-1,
             time_budget_s=time_budget,
-            max_concurrent_trials=2,
+            max_concurrent_trials=4,
         ),
         run_config=air.RunConfig(
             local_dir=str(optuna_dir),
             name=f"{model_class.__name__}_tuner_{metric.__name__}",
+            verbose=1,
         ),
     )
 
-    tuner.fit()
     tuner_results = tuner.fit()
 
     # get best results
     best_params = tuner_results.get_best_result(metric="metric", mode="min").config
+    best_params = optuna2params(best_params)
     best_params = {**fixed_params, **best_params}
-
     return best_params
 
 
