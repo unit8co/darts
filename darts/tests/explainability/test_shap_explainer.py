@@ -730,3 +730,4 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         explanation_results = shap_explain.explain()
 
         self.assertTrue(len(explanation_results.feature_values) == 2)
+        # test black
