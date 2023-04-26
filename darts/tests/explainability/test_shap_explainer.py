@@ -90,23 +90,24 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         days, np.concatenate([x_1.reshape(-1, 1), x_2.reshape(-1, 1)], axis=1)
     ).with_columns_renamed(["0", "1"], ["price", "power"])
 
-    target_ts_with_static_covs = TimeSeries.from_times_and_values(days, x_1.reshape(-1, 1),
-                                                                  static_covariates=pd.DataFrame({"type":[0], "state": [1]})
+    target_ts_with_static_covs = TimeSeries.from_times_and_values(
+        days,
+        x_1.reshape(-1, 1),
+        static_covariates=pd.DataFrame({"type": [0], "state": [1]}),
     ).with_columns_renamed(["0"], ["price"])
-    target_ts_with_static_covs_multiple_series = TimeSeries.from_times_and_values(days, np.concatenate([x_1.reshape(-1, 1), x_2.reshape(-1, 1)], axis=1),
-                                                                  static_covariates=pd.DataFrame(
-                                                                      {"type": [0,1], "state": [2,3]})
-                                                                  ).with_columns_renamed(["0", "1"], ["price", "power"])
-    target_ts_multiple_series_with_different_static_covs = [TimeSeries.from_times_and_values(days, x_1.reshape(-1, 1),
-                                                                  static_covariates=pd.DataFrame(
-                                                                      {"type": [0]})
-                                                                  ).with_columns_renamed(["0"], ["price"]),
-                                                            TimeSeries.from_times_and_values(days, x_2.reshape(-1, 1),
-                                                                                             static_covariates=pd.DataFrame(
-                                                                                                 {"state": [1]})
-                                                                                             ).with_columns_renamed(
-                                                                ["0"], ["price"]),
-                                                            ]
+    target_ts_with_static_covs_multiple_series = TimeSeries.from_times_and_values(
+        days,
+        np.concatenate([x_1.reshape(-1, 1), x_2.reshape(-1, 1)], axis=1),
+        static_covariates=pd.DataFrame({"type": [0, 1], "state": [2, 3]}),
+    ).with_columns_renamed(["0", "1"], ["price", "power"])
+    target_ts_multiple_series_with_different_static_covs = [
+        TimeSeries.from_times_and_values(
+            days, x_1.reshape(-1, 1), static_covariates=pd.DataFrame({"type": [0]})
+        ).with_columns_renamed(["0"], ["price"]),
+        TimeSeries.from_times_and_values(
+            days, x_2.reshape(-1, 1), static_covariates=pd.DataFrame({"state": [1]})
+        ).with_columns_renamed(["0"], ["price"]),
+    ]
 
     past_cov_ts = TimeSeries.from_times_and_values(
         days_past_cov,
@@ -699,7 +700,9 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         )
         shap_explain = ShapExplainer(model)
         explanation_results = shap_explain.explain()
-        assert len(explanation_results.explained_forecasts[1]['price'].columns) == (-(min(model.lags['target'])) + model.static_covariates.shape[1])
+        assert len(explanation_results.explained_forecasts[1]["price"].columns) == (
+            -(min(model.lags["target"])) + model.static_covariates.shape[1]
+        )
 
         model.fit(
             series=self.target_ts_with_static_covs_multiple_series,
@@ -707,9 +710,10 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         shap_explain = ShapExplainer(model)
         explanation_results = shap_explain.explain()
         assert len(explanation_results.feature_values[1]) == 2
-        assert len(explanation_results.explained_forecasts[1]['price'].columns) == (-(min(model.lags['target']))*model.input_dim['target'] + model.input_dim['target']*model.static_covariates.shape[1])
-
-
+        assert len(explanation_results.explained_forecasts[1]["price"].columns) == (
+            -(min(model.lags["target"])) * model.input_dim["target"]
+            + model.input_dim["target"] * model.static_covariates.shape[1]
+        )
 
     def test_shapley_multiple_series_with_different_static_covs(self):
         model = LightGBMModel(
@@ -719,7 +723,10 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         model.fit(
             series=self.target_ts_multiple_series_with_different_static_covs,
         )
-        shap_explain = ShapExplainer(model, background_series=self.target_ts_multiple_series_with_different_static_covs)
+        shap_explain = ShapExplainer(
+            model,
+            background_series=self.target_ts_multiple_series_with_different_static_covs,
+        )
         explanation_results = shap_explain.explain()
 
-        self.assertTrue(1==1)
+        self.assertTrue(len(explanation_results.feature_values) == 2)
