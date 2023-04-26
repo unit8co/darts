@@ -670,3 +670,4 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             ),
             shap.Explanation,
         )
+        # test black
