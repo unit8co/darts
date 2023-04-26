@@ -15,8 +15,7 @@ from darts.dataprocessing.encoders import (
     FutureCyclicEncoder,
     PastDatetimeAttributeEncoder,
 )
-from darts.dataprocessing.transformers import StaticCovariatesTransformer
-from darts.explainability import ShapExplainer
+
 from darts.logging import get_logger
 from darts.metrics import mae, rmse
 from darts.models import (
