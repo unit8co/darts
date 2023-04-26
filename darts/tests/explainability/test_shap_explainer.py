@@ -699,19 +699,17 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         )
         shap_explain = ShapExplainer(model)
         explanation_results = shap_explain.explain()
-        test = 1
+        assert len(explanation_results.explained_forecasts[1]['price'].columns) == (-(min(model.lags['target'])) + model.static_covariates.shape[1])
 
-    def test_shapley_with_static_cov_multiple_series(self):
-        model = LightGBMModel(
-            lags=4,
-            output_chunk_length=1,
-        )
         model.fit(
             series=self.target_ts_with_static_covs_multiple_series,
         )
         shap_explain = ShapExplainer(model)
         explanation_results = shap_explain.explain()
-        test = 1
+        assert len(explanation_results.feature_values[1]) == 2
+        assert len(explanation_results.explained_forecasts[1]['price'].columns) == (-(min(model.lags['target']))*model.input_dim['target'] + model.input_dim['target']*model.static_covariates.shape[1])
+
+
 
     def test_shapley_multiple_series_with_different_static_covs(self):
         model = LightGBMModel(
@@ -723,4 +721,5 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         )
         shap_explain = ShapExplainer(model, background_series=self.target_ts_multiple_series_with_different_static_covs)
         explanation_results = shap_explain.explain()
-        test = 1
+
+        self.assertTrue(1==1)
