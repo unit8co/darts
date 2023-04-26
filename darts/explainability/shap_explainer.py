@@ -24,6 +24,7 @@ from typing import Dict, NewType, Optional, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 import shap
 from numpy import integer
 from sklearn.multioutput import MultiOutputRegressor
@@ -33,7 +34,8 @@ from darts.explainability.explainability import ForecastingModelExplainer
 from darts.explainability.explainability_result import ShapExplainabilityResult
 from darts.logging import get_logger, raise_if, raise_log
 from darts.models.forecasting.regression_model import RegressionModel
-from darts.utils.data.tabularization import create_lagged_prediction_data
+from darts.utils.data.tabularization import create_lagged_prediction_data, add_static_covariates_to_lagged_data, \
+    create_lagged_component_names
 from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
@@ -698,13 +700,33 @@ class _RegressionShapExplainers:
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             lags=lags_list,
+            concatenate=False,
             lags_past_covariates=lags_past_covariates_list if past_covariates else None,
             lags_future_covariates=lags_future_covariates_list
             if future_covariates
             else None,
         )
         # Remove sample axis:
-        X = X[:, :, 0]
+        for i, X_i in enumerate(X):
+            X[i] = X_i[:, :, 0]
+
+
+        X, _ = add_static_covariates_to_lagged_data(X, target_series, uses_static_covariates=self.model.uses_static_covariates)
+
+        # generate and store the lagged components names (for feature importance analysis)
+        self.model._lagged_feature_names, _ = create_lagged_component_names(
+            target_series=target_series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            lags=self.model.lags.get("target"),
+            lags_past_covariates=self.model.lags.get("past"),
+            lags_future_covariates=self.model.lags.get("future"),
+            output_chunk_length=self.model.output_chunk_length,
+            concatenate=False,
+            use_static_covariates=self.model.uses_static_covariates,
+        )
+
+        X = np.concatenate(X, axis=0)
 
         if train:
             X = pd.DataFrame(X)
@@ -720,24 +742,9 @@ class _RegressionShapExplainers:
         if n_samples:
             X = shap.utils.sample(X, n_samples)
 
-        # We keep the creation order of the different lags/features in create_lagged_data
-        lags_names_list = []
-        if lags_list:
-            for lag in lags_list:
-                for t_name in self.target_components:
-                    lags_names_list.append(t_name + "_target_lag" + str(lag))
-        if lags_past_covariates_list:
-            for lag in lags_past_covariates_list:
-                for t_name in self.past_covariates_components:
-                    lags_names_list.append(t_name + "_past_cov_lag" + str(lag))
-        if lags_future_covariates_list:
-            for lag in lags_future_covariates_list:
-                for t_name in self.future_covariates_components:
-                    lags_names_list.append(t_name + "_fut_cov_lag" + str(lag))
-
         X = X.rename(
             columns={
-                name: lags_names_list[idx]
+                name: self.model._lagged_feature_names[idx]
                 for idx, name in enumerate(X.columns.to_list())
             }
         )

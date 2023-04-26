@@ -5,6 +5,8 @@ We do our best to avoid the introduction of breaking changes,
 but cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "🔴".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
+- Added static covariates to ShapExplainer - you can now use RegressionModels with static covariates **and** generate shapley values for them
+
 [Full Changelog](https://github.com/unit8co/darts/compare/0.24.0...master)
 
 ## [0.24.0](https://github.com/unit8co/darts/tree/0.24.0) (2023-04-12)
