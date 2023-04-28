@@ -524,7 +524,7 @@ class TimeSeries:
             ..
             The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
             different levels are consistent), see `hierarchical reconciliation
-            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliaton.html>`_.
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
 
         **kwargs
             Optional arguments to be passed to `pandas.read_csv` function
@@ -623,7 +623,7 @@ class TimeSeries:
             ..
             The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
             different levels are consistent), see `hierarchical reconciliation
-            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliaton.html>`_.
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
 
         Returns
         -------
@@ -985,7 +985,7 @@ class TimeSeries:
             ..
             The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
             different levels are consistent), see `hierarchical reconciliation
-            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliaton.html>`_.
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
 
         Returns
         -------
@@ -1093,7 +1093,7 @@ class TimeSeries:
             ..
             The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
             different levels are consistent), see `hierarchical reconciliation
-            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliaton.html>`_.
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
 
         Returns
         -------
@@ -1164,7 +1164,7 @@ class TimeSeries:
             ..
             The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
             different levels are consistent), see `hierarchical reconciliation
-            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliaton.html>`_.
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
 
         Returns
         -------
