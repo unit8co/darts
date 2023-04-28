@@ -12,7 +12,7 @@ For the sake of the example, we train a `TCNModel` on a single series, and optim
 You can also have a look at [this notebook](https://github.com/unit8co/darts/blob/master/examples/17-hyperparameter-optimization.ipynb)
 for a more complete example.
 
-_Note (2023-19-02): Optuna's `PyTorchLightningPruningCallback` raises an error with pytorch-lightning>=1.8. Until this fixed, a workaround is proposed [here](https://github.com/optuna/optuna-examples/issues/166#issuecomment-1403112861)._
+>**NOTE** (2023-19-02): Optuna's `PyTorchLightningPruningCallback` raises an error with pytorch-lightning>=1.8. Until this fixed, a workaround is proposed [here](https://github.com/optuna/optuna-examples/issues/166#issuecomment-1403112861).
 
 ```python
 import numpy as np
@@ -22,8 +22,8 @@ from optuna.integration import PyTorchLightningPruningCallback
 from pytorch_lightning.callbacks import EarlyStopping
 from sklearn.preprocessing import MaxAbsScaler
 
-from darts.dataprocessing.transformers import Scale
-from darts.datasets import AirPassengersDatasetr
+from darts.dataprocessing.transformers import Scaler
+from darts.datasets import AirPassengersDataset
 from darts.metrics import smape
 from darts.models import TCNModel
 from darts.utils.likelihood_models import GaussianLikelihood
@@ -120,7 +120,7 @@ def objective(trial):
     model = TCNModel.load_from_checkpoint("tcn_model")
     
     # Evaluate how good it is on the validation set, using sMAPE
-    preds = model.predict(series=train, n=val_len)
+    preds = model.predict(series=train, n=VAL_LEN)
     smapes = smape(val, preds, n_jobs=-1, verbose=True)
     smape_val = np.mean(smapes)
 
