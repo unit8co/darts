@@ -23,8 +23,8 @@ from enum import Enum
 from typing import Dict, NewType, Optional, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
+import pandas as pd
 import shap
 from numpy import integer
 from sklearn.multioutput import MultiOutputRegressor
@@ -34,8 +34,11 @@ from darts.explainability.explainability import ForecastingModelExplainer
 from darts.explainability.explainability_result import ShapExplainabilityResult
 from darts.logging import get_logger, raise_if, raise_log
 from darts.models.forecasting.regression_model import RegressionModel
-from darts.utils.data.tabularization import create_lagged_prediction_data, add_static_covariates_to_lagged_data, \
-    create_lagged_component_names
+from darts.utils.data.tabularization import (
+    add_static_covariates_to_lagged_data,
+    create_lagged_component_names,
+    create_lagged_prediction_data,
+)
 from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
@@ -707,11 +710,17 @@ class _RegressionShapExplainers:
             else None,
         )
         # Remove sample axis:
+        # X_2 = X.copy()
+        # X = X[0]
+        # X = X[:, :, 0]
+        # X = [X]
+
         for i, X_i in enumerate(X):
             X[i] = X_i[:, :, 0]
 
-
-        X, _ = add_static_covariates_to_lagged_data(X, target_series, uses_static_covariates=self.model.uses_static_covariates)
+        X, _ = add_static_covariates_to_lagged_data(
+            X, target_series, uses_static_covariates=self.model.uses_static_covariates
+        )
 
         # generate and store the lagged components names (for feature importance analysis)
         self.model._lagged_feature_names, _ = create_lagged_component_names(
