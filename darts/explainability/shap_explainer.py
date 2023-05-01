@@ -36,7 +36,6 @@ from darts.logging import get_logger, raise_if, raise_log
 from darts.models.forecasting.regression_model import RegressionModel
 from darts.utils.data.tabularization import (
     add_static_covariates_to_lagged_data,
-    create_lagged_component_names,
     create_lagged_prediction_data,
 )
 from darts.utils.utils import series2seq
@@ -710,29 +709,11 @@ class _RegressionShapExplainers:
             else None,
         )
         # Remove sample axis:
-        # X_2 = X.copy()
-        # X = X[0]
-        # X = X[:, :, 0]
-        # X = [X]
-
         for i, X_i in enumerate(X):
             X[i] = X_i[:, :, 0]
 
         X, _ = add_static_covariates_to_lagged_data(
             X, target_series, uses_static_covariates=self.model.uses_static_covariates
-        )
-
-        # generate and store the lagged components names (for feature importance analysis)
-        self.model._lagged_feature_names, _ = create_lagged_component_names(
-            target_series=target_series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            lags=self.model.lags.get("target"),
-            lags_past_covariates=self.model.lags.get("past"),
-            lags_future_covariates=self.model.lags.get("future"),
-            output_chunk_length=self.model.output_chunk_length,
-            concatenate=False,
-            use_static_covariates=self.model.uses_static_covariates,
         )
 
         X = np.concatenate(X, axis=0)
