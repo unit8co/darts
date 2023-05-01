@@ -15,7 +15,6 @@ from darts.dataprocessing.encoders import (
     FutureCyclicEncoder,
     PastDatetimeAttributeEncoder,
 )
-
 from darts.logging import get_logger
 from darts.metrics import mae, rmse
 from darts.models import (
