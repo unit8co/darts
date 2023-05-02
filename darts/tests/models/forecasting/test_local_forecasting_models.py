@@ -129,6 +129,11 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
     ts_ice_heater = IceCreamHeaterDataset().load()
     ts_ice_heater_train, ts_ice_heater_val = ts_ice_heater.split_after(split_point=0.7)
 
+    def retrain_func(
+        counter, pred_time, train_series, past_covariates, future_covariates
+    ):
+        return len(train_series) % 2 == 0
+
     def setUp(self):
         self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
 
@@ -466,7 +471,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             self.assertTrue(np.array_equal(pred1.values(), pred3.values()))
             model.backtest(series1, future_covariates=exog1, start=0.5, retrain=False)
 
-    @patch("typing.Callable")
+    @patch("typing.Callable", autospec=retrain_func, return_value=True)
     def test_backtest_retrain(
         self,
         patch_retrain_func,

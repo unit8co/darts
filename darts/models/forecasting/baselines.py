@@ -79,10 +79,6 @@ class NaiveSeasonal(LocalForecastingModel):
         forecast = np.array([self.last_k_vals[i % self.K, :] for i in range(n)])
         return self._build_forecast_series(forecast)
 
-    @property
-    def extreme_lags(self):
-        return -self.K, 0, None, None, None, None
-
 
 class NaiveDrift(LocalForecastingModel):
     def __init__(self):

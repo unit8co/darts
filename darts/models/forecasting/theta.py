@@ -4,7 +4,7 @@ Theta Method
 """
 
 import math
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
@@ -178,6 +178,19 @@ class Theta(LocalForecastingModel):
             return 2 * self.seasonality_period
         else:
             return 3
+
+    @property
+    def extreme_lags(
+        self,
+    ) -> Tuple[
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+        Optional[int],
+    ]:
+        return -self.min_train_series_length, 0, None, None, None, None
 
 
 class FourTheta(LocalForecastingModel):

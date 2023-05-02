@@ -7,7 +7,7 @@ from darts.tests.base_test_class import DartsBaseTestClass
 
 
 class MetricsTestCase(DartsBaseTestClass):
-
+    np.random.seed(42)
     pd_train = pd.Series(
         np.sin(np.pi * np.arange(31) / 4) + 1,
         index=pd.date_range("20121201", "20121231"),

@@ -518,7 +518,7 @@ class TimeSeries:
             ..
             The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
             different levels are consistent), see `hierarchical reconciliation
-            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliaton.html>`_.
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
 
         **kwargs
             Optional arguments to be passed to `pandas.read_csv` function
@@ -617,7 +617,7 @@ class TimeSeries:
             ..
             The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
             different levels are consistent), see `hierarchical reconciliation
-            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliaton.html>`_.
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
 
         Returns
         -------
@@ -979,7 +979,7 @@ class TimeSeries:
             ..
             The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
             different levels are consistent), see `hierarchical reconciliation
-            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliaton.html>`_.
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
 
         Returns
         -------
@@ -1087,7 +1087,7 @@ class TimeSeries:
             ..
             The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
             different levels are consistent), see `hierarchical reconciliation
-            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliaton.html>`_.
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
 
         Returns
         -------
@@ -1158,7 +1158,7 @@ class TimeSeries:
             ..
             The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
             different levels are consistent), see `hierarchical reconciliation
-            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliaton.html>`_.
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
 
         Returns
         -------
@@ -3255,6 +3255,14 @@ class TimeSeries:
                                transformation should be applied. If not specified, the transformation will be
                                applied on all components.
 
+            :``"function_name"``: Optional. A string specifying the function name referenced as part of
+                                  the transformation output name. For example, given a user-provided function
+                                  transformation on rolling window size of 5 on the component "comp", the
+                                  default transformation output name is "rolling_udf_5_comp" whereby "udf"
+                                  refers to "user defined function". If specified, the ``"function_name"`` will
+                                  replace the default name "udf". Similarly, the ``"function_name"`` will replace
+                                  the name of the pandas builtin transformation function name in the output name.
+
             All other dictionary items provided will be treated as keyword arguments for the windowing mode
             (i.e., ``rolling/ewm/expanding``) or for the specific function
             in that mode (i.e., ``pandas.DataFrame.rolling.mean/std/max/min...`` or
@@ -3264,7 +3272,8 @@ class TimeSeries:
 
             * :``"window"``: Size of the moving window for the "rolling" mode.
                             If an integer, the fixed number of observations used for each window.
-                            If an offset, the time period of each window.
+                            If an offset, the time period of each window with data type :class:`pandas.Timedelta`
+                            representing a fixed duration.
             * :``"min_periods"``: The minimum number of observations in the window required to have a value (otherwise
                 NaN). Darts reuses pandas defaults of 1 for "rolling" and "expanding" modes and of 0 for "ewm" mode.
             * :``"win_type"``: The type of weigthing to apply to the window elements.
@@ -3408,6 +3417,7 @@ class TimeSeries:
                 "function",
                 "group",
                 "components",
+                "function_name",
             }
 
             window_mode_expected_args = set(window_mode.__code__.co_varnames)
@@ -3535,8 +3545,13 @@ class TimeSeries:
             )
             min_periods = transformation["min_periods"]
             # set new columns names
+            fn_name = transformation.get("function_name")
+            if fn_name:
+                function_name = fn_name
+            else:
+                function_name = fn if fn != "apply" else "udf"
             name_prefix = (
-                f"{window_mode}_{fn if fn != 'apply' else 'udf'}"
+                f"{window_mode}_{function_name}"
                 f"{'_'+str(transformation['window']) if 'window' in transformation else ''}"
                 f"{'_'+str(min_periods) if min_periods>1 else ''}"
             )
