@@ -363,3 +363,90 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         # -10 comes from the maximum minimum train series length of all models
         assert ensemble.extreme_lags == (-10 - regr_train_n, 0, None, None, None, None)
         ensemble.backtest(series)
+
+    def test_stochastic_regression_ensemble_model(self):
+        quantiles = [0.25, 0.5, 0.75]
+
+        # probabilistic ensembling model
+        linreg_prob_ensemble = LinearRegressionModel(
+            quantiles=quantiles, lags_future_covariates=[0], likelihood="quantile"
+        )
+
+        # deterministic ensembling model
+        linreg_dete_ensemble = LinearRegressionModel(lags_future_covariates=[0])
+
+        # probabilistic models
+        linreg_prob_1 = LinearRegressionModel(
+            quantiles=quantiles, lags=[-1, -3], likelihood="quantile"
+        )
+        linreg_prob_2 = LinearRegressionModel(
+            quantiles=quantiles, lags=[-2, -4], likelihood="quantile"
+        )
+
+        # deterministic models
+        linreg_dete_1 = LinearRegressionModel(lags=[-1, -3])
+        linreg_dete_2 = LinearRegressionModel(lags=[-2, -4])
+
+        # every models are probabilistic
+        ensemble_allproba = RegressionEnsembleModel(
+            forecasting_models=[
+                linreg_prob_1.untrained_model(),
+                linreg_prob_2.untrained_model(),
+            ],
+            regression_train_n_points=10,
+            regression_model=linreg_prob_ensemble.untrained_model(),
+        )
+
+        self.assertTrue(ensemble_allproba._models_are_probabilistic())
+        self.assertTrue(ensemble_allproba._is_probabilistic())
+        ensemble_allproba.fit(self.ts_random_walk[:100])
+        pred = ensemble_allproba.predict(5, num_samples=10)
+        self.assertEqual(pred.n_samples, 10)
+
+        # only regression model is probabilistic
+        ensemble_proba_reg = RegressionEnsembleModel(
+            forecasting_models=[
+                linreg_dete_1.untrained_model(),
+                linreg_dete_2.untrained_model(),
+            ],
+            regression_train_n_points=10,
+            regression_model=linreg_prob_ensemble.untrained_model(),
+        )
+
+        self.assertFalse(ensemble_proba_reg._models_are_probabilistic())
+        self.assertTrue(ensemble_proba_reg._is_probabilistic())
+        ensemble_proba_reg.fit(self.ts_random_walk[:100])
+        pred = ensemble_proba_reg.predict(5, num_samples=10)
+        self.assertEqual(pred.n_samples, 10)
+
+        # every models but regression model are probabilistics
+        ensemble_dete_reg = RegressionEnsembleModel(
+            forecasting_models=[
+                linreg_prob_1.untrained_model(),
+                linreg_prob_2.untrained_model(),
+            ],
+            regression_train_n_points=10,
+            regression_model=linreg_dete_ensemble.untrained_model(),
+        )
+
+        self.assertTrue(ensemble_dete_reg._models_are_probabilistic())
+        self.assertFalse(ensemble_dete_reg._is_probabilistic())
+        ensemble_dete_reg.fit(self.ts_random_walk[:100])
+        with self.assertRaises(ValueError):
+            pred = ensemble_dete_reg.predict(5, num_samples=10)
+
+        # every models are deterministic
+        ensemble_alldete = RegressionEnsembleModel(
+            forecasting_models=[
+                linreg_dete_1.untrained_model(),
+                linreg_dete_2.untrained_model(),
+            ],
+            regression_train_n_points=10,
+            regression_model=linreg_dete_ensemble.untrained_model(),
+        )
+
+        self.assertFalse(ensemble_alldete._models_are_probabilistic())
+        self.assertFalse(ensemble_alldete._is_probabilistic())
+        ensemble_alldete.fit(self.ts_random_walk[:100])
+        with self.assertRaises(ValueError):
+            pred = ensemble_alldete.predict(5, num_samples=10)
