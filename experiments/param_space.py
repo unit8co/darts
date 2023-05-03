@@ -1,6 +1,7 @@
 """
 This file defines, for each model, the hyperparameter space for optuna to explore
 """
+from typing import Any, Dict
 
 from darts.models import (
     ARIMA,
@@ -18,9 +19,8 @@ from darts.models import (
 )
 
 # --------------------------------------- UTILS
-N_EPOCHS = 5
-encoders_dict = {
-    # maybe future wouéld be better but torch models only take past covariates
+N_EPOCHS = 15
+encoders_dict_past = {
     "datetime_attribute": {"past": ["month", "week", "hour", "dayofweek"]},
     "cyclic": {"past": ["month", "week", "hour", "dayofweek"]},
 }
@@ -31,18 +31,29 @@ encoders_dict_future = {
 }
 
 
-def optuna2params(optuna_params):
+def optuna2params(optuna_params: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Optuna only takes ints/float/bool/categorical parameters. This function converts the optuna parameters to
+    Optuna only takes ints/float/bool/categorical parameters.
+    If we want to pass more complex parameters (dict/list, ...)
+    we have to find a workaround. This function converts optuna parameters to
     enable models to take more complex parameters.
+    e.g: we pass 2 ints to optuna and in here, we put those 2 ints in a list
     """
-    output_params = optuna_params.copy()
-    if "add_encoders" in output_params:
-        # converts boolean True/False to dict for encoders (adapts the future_lags if necessary)
-        output_params["add_encoders"] = (
-            encoders_dict if output_params["add_encoders"] else None
-        )
 
+    # Encoders want dicts params, so we converts boolean to dicts of encoders
+    output_params = optuna_params.copy()
+    if "add_past_encoders" in output_params:
+        output_params["add_encoders"] = (
+            encoders_dict_past if output_params["add_past_encoders"] else None
+        )
+        del output_params["add_past_encoders"]
+    if "add_future_encoders" in output_params:
+        output_params["add_encoders"] = (
+            encoders_dict_future if output_params["add_future_encoders"] else None
+        )
+        del output_params["add_future_encoders"]
+
+    # Lags require a tuple with 2 ints, so we convert 2 ints to a tuple
     if (
         "lags_future_covariates_past" in output_params
         or "lags_future_covariates_future" in output_params
@@ -58,55 +69,52 @@ def optuna2params(optuna_params):
     return output_params
 
 
-def _empty_params(**kwargs):
+def _empty_params(**kwargs) -> Dict[str, Any]:
     return dict()
 
 
-def suggest_lags(trial, target_dataset, var_name: str):
+def suggest_lags(trial, series, var_name: str):
     lags = trial.suggest_int(
         var_name,
-        max(5, int(len(target_dataset) * 0.001)),
-        max(6, int(len(target_dataset) * 0.2)),
+        max(5, int(len(series) * 0.001)),
+        max(6, int(len(series) * 0.2)),
         log=True,
     )
     return lags
 
 
-def fixed_lags(target_dataset, suggested_lags=None):
-    return suggested_lags or max(5, int(len(target_dataset) * 0.05))
+def fixed_lags(series, suggested_lags=None):
+    return suggested_lags or max(3, int(len(series) * 0.02))
 
 
 # --------------------------------------- NHITS
-def _params_NHITS(trial, target_dataset, **kwargs):
-    suggest_lags(trial, target_dataset, "input_chunk_length")
+def _params_NHITS(trial, series, **kwargs):
+    suggest_lags(trial, series, "input_chunk_length")
 
-    trial.suggest_categorical("add_encoders", [False, True])
+    trial.suggest_categorical("add_past_encoders", [False, True])
 
-    trial.suggest_int("num_stacks", 2, 5)
-    trial.suggest_int("num_blocks", 1, 3)
-    trial.suggest_int("num_layers", 2, 5)
-    trial.suggest_categorical(
-        "activation",
-        ["ReLU", "RReLU", "PReLU", "Softplus", "Tanh", "SELU", "LeakyReLU", "Sigmoid"],
-    )
+    trial.suggest_int("num_stacks", 2, 3)
 
+    trial.suggest_int("layer_widths", 64, 1024)
     trial.suggest_categorical("MaxPool1d", [False, True])
     trial.suggest_float("dropout", 0.0, 0.4)
 
 
-def _fixed_params_NHITS(target_dataset, suggested_lags=None, **kwargs):
+def _fixed_params_NHITS(series, suggested_lags=None, **kwargs):
 
     output = dict()
-    output["input_chunk_length"] = fixed_lags(target_dataset, suggested_lags)
+    output["input_chunk_length"] = fixed_lags(series, suggested_lags)
     output["output_chunk_length"] = 1
     output["n_epochs"] = N_EPOCHS
+    output["pl_trainer_kwargs"] = {"enable_progress_bar": False}
+
     return output
 
 
 # --------------------------------------- NLINEAR
-def _params_NLINEAR(trial, target_dataset, **kwargs):
+def _params_NLINEAR(trial, series, **kwargs):
 
-    suggest_lags(trial, target_dataset, "input_chunk_length")
+    suggest_lags(trial, series, "input_chunk_length")
 
     trial.suggest_categorical("const_init", [False, True])
     normalize = trial.suggest_categorical("normalize", [False, True])
@@ -115,74 +123,79 @@ def _params_NLINEAR(trial, target_dataset, **kwargs):
     if not shared_weights and not normalize:
         # in current version, darts does not support covariates with normalize.
         # Should be fixed with https://github.com/unit8co/darts/pull/1583
-        trial.suggest_categorical("add_encoders", [False, True])
+        trial.suggest_categorical("add_past_encoders", [False, True])
 
 
-def _fixed_params_NLINEAR(target_dataset, suggested_lags=None, **kwargs):
+def _fixed_params_NLINEAR(series, suggested_lags=None, **kwargs):
 
     output = dict()
-    output["input_chunk_length"] = fixed_lags(target_dataset, suggested_lags)
+    output["input_chunk_length"] = fixed_lags(series, suggested_lags)
     output["output_chunk_length"] = 1
     output["n_epochs"] = N_EPOCHS
     return output
 
 
 # --------------------------------------- DLINEAR
-def _params_DLINEAR(trial, target_dataset, **kwargs):
+def _params_DLINEAR(trial, series, **kwargs):
 
-    input_size = suggest_lags(trial, target_dataset, "input_chunk_length")
+    input_size = suggest_lags(trial, series, "input_chunk_length")
     trial.suggest_int("kernel_size", 2, input_size)
     shared_weights = trial.suggest_categorical("shared_weights", [False, True])
     if not shared_weights:
-        trial.suggest_categorical("add_encoders", [False, True])
+        trial.suggest_categorical("add_past_encoders", [False, True])
 
     trial.suggest_categorical("const_init", [False, True])
 
 
-def _fixed_params_DLINEAR(target_dataset, suggested_lags=None, **kwargs):
+def _fixed_params_DLINEAR(series, suggested_lags=None, **kwargs):
     output = dict()
-    output["input_chunk_length"] = fixed_lags(target_dataset, suggested_lags)
+    output["input_chunk_length"] = fixed_lags(series, suggested_lags)
     output["output_chunk_length"] = 1
     output["n_epochs"] = N_EPOCHS
     return output
 
 
 # --------------------------------------- TCNMODEL
-def _params_TCNMODEL(trial, target_dataset, **kwargs):
+def _params_TCNMODEL(trial, series, **kwargs):
 
-    input_size = suggest_lags(trial, target_dataset, "input_chunk_length")
+    input_size = suggest_lags(trial, series, "input_chunk_length")
 
     trial.suggest_int("kernel_size", 2, input_size - 1)
-    trial.suggest_int("num_filters", 2, 10)
+    trial.suggest_int("num_filters", 2, 6)
     trial.suggest_categorical("weight_norm", [False, True])
     trial.suggest_int("dilation_base", 2, 4)
     trial.suggest_float("dropout", 0.0, 0.4)
+    trial.suggest_categorical("add_past_encoders", [False, True])
 
 
-def _fixed_params_TCNMODEL(target_dataset, suggested_lags=None, **kwargs):
+def _fixed_params_TCNMODEL(series, suggested_lags=None, **kwargs):
     output = dict()
     output["input_chunk_length"] = (
-        suggested_lags if suggested_lags else max(5, int(len(target_dataset) * 0.05))
+        suggested_lags if suggested_lags else max(5, int(len(series) * 0.05))
     )
     output["output_chunk_length"] = 1
     output["n_epochs"] = N_EPOCHS
+
     return output
 
 
 # --------------------------------------- LGMBMODEL
-def _params_LGBMModel(trial, target_dataset, **kwargs):
+def _params_LGBMModel(trial, series, has_future_cov=False, **kwargs):
 
-    suggest_lags(trial, target_dataset, "lags")
+    suggest_lags(trial, series, "lags")
 
-    trial.suggest_categorical("boosting", ["gbdt", "dart"])
-    trial.suggest_int("num_leaves", 2, 50)
-    trial.suggest_int("max_bin", 100, 500)
-    trial.suggest_float("learning_rate", 1e-8, 1e-1, log=True)
-    trial.suggest_int("num_iterations", 50, 500)
+    trial.suggest_int("num_leaves", 2, 50, log=True)
+    trial.suggest_float("learning_rate", 1e-3, 3e-1, log=True)
+    trial.suggest_float("reg_lambda", 1e-2, 1e1, log=True)
+
+    encoders_future = trial.suggest_categorical("add_future_encoders", [False, True])
+    if encoders_future or has_future_cov:
+        trial.suggest_int("lags_future_covariates_past", 1, 5)
+        trial.suggest_int("lags_future_covariates_future", 1, 5)
 
 
 def _fixed_params_LGBMModel(
-    target_dataset,
+    series,
     suggested_lags=None,
     has_past_cov=False,
     lags_past_covariates=[-1],
@@ -191,28 +204,32 @@ def _fixed_params_LGBMModel(
     **kwargs
 ):
     output = dict()
+
+    output["lags"] = fixed_lags(series, suggested_lags)
+    output["reg_lambda"] = 0.1
     if has_future_cov:
         output["lags_future_covariates"] = lags_future_covariates
     if has_past_cov:
         output["lags_past_covariates"] = lags_past_covariates
-    output["lags"] = (
-        suggested_lags if suggested_lags else max(5, int(len(target_dataset) * 0.05))
-    )
+
     return output
 
 
 # --------------------------------------- LINEARREGRESSION
-def _params_LinearRegression(trial, target_dataset, **kwargs):
+def _params_LinearRegression(
+    trial, series, has_past_cov=False, has_future_cov=False, **kwargs
+):
     # lag length as a ratio of the train data size
-    suggest_lags(trial, target_dataset, "lags")
+    suggest_lags(trial, series, "lags")
 
-    encoders_past = trial.suggest_categorical("add_encoders", [False, True])
-    if encoders_past:
-        trial.suggest_int("lags_past_covariates", 1, 5)
+    encoders_future = trial.suggest_categorical("add_future_encoders", [False, True])
+    if encoders_future or has_future_cov:
+        trial.suggest_int("lags_future_covariates_past", 1, 5)
+        trial.suggest_int("lags_future_covariates_future", 1, 5)
 
 
 def _fixed_params_LinearRegression(
-    target_dataset,
+    series,
     suggested_lags: int = None,
     has_past_cov=False,
     lags_past_covariates=[-1],
@@ -227,14 +244,14 @@ def _fixed_params_LinearRegression(
     if has_past_cov:
         output["lags_past_covariates"] = lags_past_covariates
     output["lags"] = (
-        suggested_lags if suggested_lags else max(5, int(len(target_dataset) * 0.05))
+        suggested_lags if suggested_lags else max(5, int(len(series) * 0.05))
     )
     return output
 
 
 # --------------------------------------- CATBOOST
 def _fixed_params_Catboost(
-    target_dataset,
+    series,
     suggested_lags=None,
     has_past_cov=False,
     lags_past_covariates=[-1],
@@ -248,33 +265,60 @@ def _fixed_params_Catboost(
     if has_past_cov:
         output["lags_past_covariates"] = lags_past_covariates
     output["lags"] = (
-        suggested_lags if suggested_lags else max(5, int(len(target_dataset) * 0.05))
+        suggested_lags if suggested_lags else max(5, int(len(series) * 0.05))
     )
     return output
 
 
 # --------------------------------------- NBEATS
-def _params_Nbeats(trial, target_dataset, **kwargs):
-    suggest_lags(trial, target_dataset, "input_chunk_length")
+def _params_Nbeats(trial, series, **kwargs):
+    suggest_lags(trial, series, "input_chunk_length")
+    trial.suggest_categorical("add_past_encoders", [False, True])
+    trial.suggest_categorical("generic_architecture", [False, True])
+    trial.suggest_float("dropout", 0.0, 0.4)
 
 
-def _fixed_params_Nbeats(target_dataset, suggested_lags=None, **kwargs):
+def _fixed_params_Nbeats(series, suggested_lags=None, **kwargs):
     output = dict()
     output["input_chunk_length"] = (
-        suggested_lags if suggested_lags else max(5, int(len(target_dataset) * 0.05))
+        suggested_lags if suggested_lags else max(5, int(len(series) * 0.05))
     )
     output["output_chunk_length"] = 1
-    output["generic_architecture"] = False
+    output["generic_architecture"] = True
     output["n_epochs"] = N_EPOCHS
+
     return output
 
 
 # --------------------------------------- ARIMA
-def _params_arima(trial, target_dataset, **kwargs):
-    suggest_lags(trial, target_dataset, "p")
-    trial.suggest_int("d", 0, 2)
+def _params_arima(trial, series, **kwargs):
+    """Raytune gets stuck on this model. Since no fix could be found, we deactivate optuna search for ARIMA"""
+    suggest_lags(trial, series, "p")
     trial.suggest_int("q", 0, 10)
-    trial.suggest_categorical("q", ["n", "c", "t", "ct"])
+    trend = trial.suggest_categorical("trend", ["n", "c", "t"])
+    if trend == "n":
+        trial.suggest_int("d", 0, 2)
+    elif trend == "t":
+        trial.suggest_int("d", 0, 1)
+    elif trend == "c":
+        trial.suggest_int("d", 0, 0)
+
+
+def _fixed_params_arima(series, **kwargs):
+    output = dict()
+    output["p"] = 10
+    output["d"] = 1
+    output["q"] = 5
+    output["trend"] = "t"
+
+    return output
+
+
+# --------------------------------------- FFT
+def _params_fft(trial, series, **kwargs):
+    trend = trial.suggest_categorical("trend", ["poly", "exp", None])
+    if trend == "poly":
+        trial.suggest_int("trend_poly_degree", 1, 3)
 
 
 OPTUNA_SEARCH_SPACE = {
@@ -283,9 +327,10 @@ OPTUNA_SEARCH_SPACE = {
     NLinearModel.__name__: _params_NLINEAR,
     NHiTSModel.__name__: _params_NHITS,
     NBEATSModel.__name__: _params_Nbeats,
+    FFT.__name__: _params_fft,
     LightGBMModel.__name__: _params_LGBMModel,
     LinearRegressionModel.__name__: _params_LinearRegression,
-    ARIMA.__name__: _params_arima,
+    # ARIMA.__name__: _params_arima,
 }
 
 FIXED_PARAMS = {
@@ -293,7 +338,7 @@ FIXED_PARAMS = {
     CatBoostModel.__name__: _fixed_params_Catboost,
     NBEATSModel.__name__: _fixed_params_Nbeats,
     NHiTSModel.__name__: _fixed_params_NHITS,
-    ARIMA.__name__: _empty_params,
+    ARIMA.__name__: _fixed_params_arima,
     FFT.__name__: _empty_params,
     Prophet.__name__: _empty_params,
     TCNModel.__name__: _fixed_params_TCNMODEL,

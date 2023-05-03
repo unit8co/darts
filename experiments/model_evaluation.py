@@ -24,13 +24,15 @@ def randommness(seed=0):
 
 def evaluate_model(
     model_class: ForecastingModel,
-    target_dataset: TimeSeries,
+    series: TimeSeries,
     model_params: Dict = dict(),
     metric: Callable[[TimeSeries, TimeSeries], float] = mae,
-    split: float = 0.8,
-    past_cov: TimeSeries = None,
-    future_cov: TimeSeries = None,
+    split: float = 0.85,
+    past_covariates: TimeSeries = None,
+    future_covariates: TimeSeries = None,
     num_test_points: int = 20,
+    forecast_horizon=1,
+    repeat=3,
     **kwargs
 ):
     """
@@ -41,7 +43,7 @@ def evaluate_model(
     ----------
     model_class
         The class of the model to be evaluated.
-    target_dataset
+    series
         The dataset on which the model will be evaluated.
     model_params
         The parameters for instantiating the model class.
@@ -49,9 +51,9 @@ def evaluate_model(
         A darts metric function.
     split
         The split ratio between training and validation.
-    past_cov
+    past_covariates
         The past covariates for the model.
-    future_cov
+    future_covariates
         The future covariates for the model.
     num_test_points
         The number of test points to be used for the evaluation.
@@ -64,40 +66,47 @@ def evaluate_model(
         or model_params.get("add_encoders", False)
     )
 
-    stride = int((1 - split) * len(target_dataset) / num_test_points)
+    stride = int((1 - split) * len(series) / num_test_points)
     stride = max(stride, 1)
+    forecast_horizon = min(stride, forecast_horizon)
 
     # now we performe the evaluation
     model = model_class(**model_params)
 
     retrain = True
     if not isinstance(model, LocalForecastingModel):
-        retrain = False
+        retrain = retrain_func
 
-        train = target_dataset.split_after(split)[0]
-        train_past_cov = past_cov.split_after(split)[0] if past_cov else None
-        train_future_cov = future_cov.split_after(split)[0] if future_cov else None
-
+    result = []
+    for _ in range(repeat):
         if model_uses_cov:
-            model.fit(
-                train,
-                past_covariates=train_past_cov,
-                future_covariates=train_future_cov,
-            )
+            result += [
+                model.backtest(
+                    series,
+                    retrain=retrain,
+                    metric=metric,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
+                    start=split,
+                    stride=stride,
+                    forecast_horizon=forecast_horizon,
+                    last_points_only=True,
+                )
+            ]
         else:
-            model.fit(train)
+            result += [
+                model.backtest(
+                    series,
+                    retrain=retrain,
+                    metric=metric,
+                    start=split,
+                    stride=stride,
+                    forecast_horizon=forecast_horizon,
+                    last_points_only=True,
+                )
+            ]
+    return np.mean(result)
 
-    if model_uses_cov:
-        return model.backtest(
-            target_dataset,
-            retrain=retrain,
-            metric=metric,
-            past_covariates=past_cov,
-            future_covariates=future_cov,
-            start=split,
-            stride=stride,
-        )
-    else:
-        return model.backtest(
-            target_dataset, retrain=retrain, metric=metric, start=split, stride=stride
-        )
+
+def retrain_func(counter, pred_time, train_series, past_covariates, future_covariates):
+    return counter == 0

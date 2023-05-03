@@ -2,9 +2,10 @@ import tempfile
 import warnings
 from typing import Callable, Dict
 
+import ray
 from model_evaluation import evaluate_model
 from param_space import FIXED_PARAMS, OPTUNA_SEARCH_SPACE, optuna2params
-from ray import air, tune
+from pytorch_lightning.callbacks import EarlyStopping
 from ray.air import session
 from ray.tune.search.optuna import OptunaSearch
 from sklearn.preprocessing import MaxAbsScaler
@@ -20,18 +21,33 @@ from darts.models.forecasting.torch_forecasting_model import (
 from darts.timeseries import TimeSeries
 from darts.utils import missing_values
 
+# DEEP LEARNING MODELS
+torch_early_stopper = EarlyStopping(
+    "val_loss", min_delta=0.001, patience=3, verbose=True
+)
+
+PL_TRAINER_KWARGS = {
+    "enable_progress_bar": False,
+    "accelerator": "cpu",
+    "callbacks": [torch_early_stopper],
+}
+
 
 def evaluation_step(
     config,
     model_class: ForecastingModel,
-    target_dataset: TimeSeries,
+    series: TimeSeries,
     fixed_params: Dict = dict(),
     metric: Callable[[TimeSeries, TimeSeries], float] = mae,
     split: float = 0.85,
-    past_cov: TimeSeries = None,
-    future_cov: TimeSeries = None,
+    past_covariates: TimeSeries = None,
+    future_covariates: TimeSeries = None,
     num_test_points: int = 20,
 ):
+    import warnings
+
+    warnings.filterwarnings("ignore")
+
     # convert optuna config to accept more complex params
     config = optuna2params(config)
     model_params = {**fixed_params, **config}
@@ -39,26 +55,25 @@ def evaluation_step(
     result = evaluate_model(
         model_class=model_class,
         model_params=model_params,
-        target_dataset=target_dataset,
+        series=series,
         metric=metric,
         split=split,
-        past_cov=past_cov,
-        future_cov=future_cov,
+        past_covariates=past_covariates,
+        future_covariates=future_covariates,
         num_test_points=num_test_points,
     )
-
     session.report({"metric": result})
 
 
 def optuna_search(
     model_class: ForecastingModel,
-    target_dataset: TimeSeries,
+    series: TimeSeries,
     fixed_params: Dict = None,
     optuna_search_space: Callable = None,
     metric: Callable[[TimeSeries, TimeSeries], float] = mae,
     split: float = 0.85,
-    past_cov: TimeSeries = None,
-    future_cov: TimeSeries = None,
+    past_covariates: TimeSeries = None,
+    future_covariates: TimeSeries = None,
     num_test_points: int = 20,
     time_budget=60,
     optuna_dir=None,
@@ -70,10 +85,14 @@ def optuna_search(
         optuna_dir = temp_dir.name
 
     dataset_data = {
-        "target_dataset": target_dataset,
+        "series": series.split_after(split)[0],
     }
 
-    fixed_params = fixed_params or FIXED_PARAMS[model_class.__name__](**dataset_data)
+    fixed_params = fixed_params.copy() or FIXED_PARAMS[model_class.__name__](
+        **dataset_data
+    )
+    if issubclass(model_class, TorchForecastingModel):
+        fixed_params["pl_trainer_kwargs"] = PL_TRAINER_KWARGS
 
     if not optuna_search_space and model_class.__name__ not in OPTUNA_SEARCH_SPACE:
         warnings.warn(
@@ -86,15 +105,15 @@ def optuna_search(
     )
 
     # building optuna objects
-    trainable_object = tune.with_parameters(
+    trainable_object = ray.tune.with_parameters(
         evaluation_step,
-        target_dataset=target_dataset,
+        series=series,
         model_class=model_class,
         metric=metric,
         fixed_params=fixed_params,
         split=split,
-        past_cov=past_cov,
-        future_cov=future_cov,
+        past_covariates=past_covariates,
+        future_covariates=future_covariates,
         num_test_points=num_test_points,
     )
 
@@ -104,15 +123,15 @@ def optuna_search(
         mode="min",
     )
 
-    tuner = tune.Tuner(
+    tuner = ray.tune.Tuner(
         trainable=trainable_object,
-        tune_config=tune.TuneConfig(
+        tune_config=ray.tune.TuneConfig(
             search_alg=search_alg,
             num_samples=-1,
             time_budget_s=time_budget,
             max_concurrent_trials=4,
         ),
-        run_config=air.RunConfig(
+        run_config=ray.air.RunConfig(
             local_dir=str(optuna_dir),
             name=f"{model_class.__name__}_tuner_{metric.__name__}",
             verbose=1,
