@@ -38,8 +38,6 @@ class RegressionEnsembleModel(EnsembleModel):
         as in :class:`RegressionModel`, where the regression model is used to produce forecasts based on the
         lagged series.
 
-        In order to generate probabilistic forecasts, the `regression_model` must be probabilistic.
-
         Parameters
         ----------
         forecasting_models
@@ -49,6 +47,10 @@ class RegressionEnsembleModel(EnsembleModel):
         regression_model
             Any regression model with ``predict()`` and ``fit()`` methods (e.g. from scikit-learn)
             Default: ``darts.model.LinearRegressionModel(fit_intercept=False)``
+
+            .. note::
+                a probabilistic `regression_model` will make the `RegressionEnsembleModel` probabilistic.
+            ..
 
         References
         ----------
