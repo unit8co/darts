@@ -30,13 +30,15 @@ class RegressionEnsembleModel(EnsembleModel):
         regression_model=None,
     ):
         """
-        Use a regression model for ensembling individual models' predictions.
+        Use a regression model for ensembling individual models' predictions using the stacking technique [1]_.
 
         The provided regression model must implement ``fit()`` and ``predict()`` methods
         (e.g. scikit-learn regression models). Note that here the regression model is used to learn how to
         best ensemble the individual forecasting models' forecasts. It is not the same usage of regression
         as in :class:`RegressionModel`, where the regression model is used to produce forecasts based on the
         lagged series.
+
+        In order to generate probabilistic forecasts, the `regression_model` must be probabilistic.
 
         Parameters
         ----------
@@ -47,6 +49,10 @@ class RegressionEnsembleModel(EnsembleModel):
         regression_model
             Any regression model with ``predict()`` and ``fit()`` methods (e.g. from scikit-learn)
             Default: ``darts.model.LinearRegressionModel(fit_intercept=False)``
+
+        References
+        ----------
+        .. [1] D. H. Wolpert, “Stacked generalization”, Neural Networks, vol. 5, no. 2, pp. 241–259, Jan. 1992
         """
         super().__init__(forecasting_models)
         if regression_model is None:
