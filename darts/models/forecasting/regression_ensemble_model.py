@@ -185,3 +185,10 @@ class RegressionEnsembleModel(EnsembleModel):
     ]:
         extreme_lags_ = super().extreme_lags
         return (extreme_lags_[0] - self.train_n_points,) + extreme_lags_[1:]
+
+    def _is_probabilistic(self) -> bool:
+        """
+        A RegressionEnsembleModel is probabilistic if its regression
+        model is probabilistic (ensembling layer)
+        """
+        return self.regression_model._is_probabilistic()

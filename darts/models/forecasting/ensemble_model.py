@@ -165,7 +165,7 @@ class EnsembleModel(GlobalForecastingModel):
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            num_samples=num_samples,
+            num_samples=num_samples if self._models_are_probabilistic() else 1,
         )
         return self.ensemble(predictions, series=series, num_samples=num_samples)
 
@@ -228,5 +228,8 @@ class EnsembleModel(GlobalForecastingModel):
             find_max_lag_or_none(i, agg) for i, agg in enumerate(lag_aggregators)
         )
 
-    def _is_probabilistic(self) -> bool:
+    def _models_are_probabilistic(self) -> bool:
         return all([model._is_probabilistic() for model in self.models])
+
+    def _is_probabilistic(self) -> bool:
+        return self._models_are_probabilistic()

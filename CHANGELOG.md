@@ -5,6 +5,9 @@ We do our best to avoid the introduction of breaking changes,
 but cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "🔴".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
+- Improvements to `EnsembleModel`:
+  - `RegressionEnsembleModel` can generate probabilistic forecasts. [#1692](https://github.com/unit8co/darts/pull/#1692) by [Antoine Madrona](https://github.com/madtoinou).
+
 [Full Changelog](https://github.com/unit8co/darts/compare/0.24.0...master)
 
 ## [0.24.0](https://github.com/unit8co/darts/tree/0.24.0) (2023-04-12)
