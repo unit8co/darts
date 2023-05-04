@@ -582,3 +582,13 @@ class BaseDataTransformer(ABC):
 
     def __repr__(self):
         return self.__str__()
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, self.__class__):
+            return (
+                self._name == other._name
+                and self._parallel_params == other._parallel_params
+                and self._mask_components == other._mask_components
+            )
+        else:
+            return False
