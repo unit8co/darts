@@ -59,7 +59,7 @@ if TORCH_AVAILABLE:
                 self.assertNotEqual(model_pair[0], model_pair[1])
 
         def test_inter_class_equality(self):
-            model_combinations = combinations(likelihood_models.keys())
+            model_combinations = combinations(likelihood_models.keys(), 2)
             for (first_model_name, second_model_name) in model_combinations:
                 self.assertNotEqual(
                     likelihood_models[first_model_name][0],

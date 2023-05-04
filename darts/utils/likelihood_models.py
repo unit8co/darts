@@ -270,7 +270,7 @@ class GaussianLikelihood(Likelihood):
             ]
             return all(
                 [
-                    self.__dict__[attr] == other.__dict[attr]
+                    self.__dict__[attr] == other.__dict__[attr]
                     for attr in attributes_to_check
                 ]
             )
@@ -333,7 +333,7 @@ class PoissonLikelihood(Likelihood):
             attributes_to_check = ["prior_strength", "prior_lambda"]
             return all(
                 [
-                    self.__dict__[attr] == other.__dict[attr]
+                    self.__dict__[attr] == other.__dict__[attr]
                     for attr in attributes_to_check
                 ]
             )
@@ -445,7 +445,7 @@ class BernoulliLikelihood(Likelihood):
             attributes_to_check = ["prior_strength", "prior_p"]
             return all(
                 [
-                    self.__dict__[attr] == other.__dict[attr]
+                    self.__dict__[attr] == other.__dict__[attr]
                     for attr in attributes_to_check
                 ]
             )
@@ -508,7 +508,7 @@ class BetaLikelihood(Likelihood):
             attributes_to_check = ["prior_strength", "prior_alpha", "prior_beta"]
             return all(
                 [
-                    self.__dict__[attr] == other.__dict[attr]
+                    self.__dict__[attr] == other.__dict__[attr]
                     for attr in attributes_to_check
                 ]
             )
@@ -578,7 +578,7 @@ class CauchyLikelihood(Likelihood):
             attributes_to_check = ["prior_strength", "prior_xzero", "prior_gamma"]
             return all(
                 [
-                    self.__dict__[attr] == other.__dict[attr]
+                    self.__dict__[attr] == other.__dict__[attr]
                     for attr in attributes_to_check
                 ]
             )
@@ -636,7 +636,7 @@ class ContinuousBernoulliLikelihood(Likelihood):
             attributes_to_check = ["prior_strength", "prior_lambda"]
             return all(
                 [
-                    self.__dict__[attr] == other.__dict[attr]
+                    self.__dict__[attr] == other.__dict__[attr]
                     for attr in attributes_to_check
                 ]
             )
@@ -696,7 +696,7 @@ class DirichletLikelihood(Likelihood):
             attributes_to_check = ["prior_strength", "prior_alphas"]
             return all(
                 [
-                    self.__dict__[attr] == other.__dict[attr]
+                    self.__dict__[attr] == other.__dict__[attr]
                     for attr in attributes_to_check
                 ]
             )
@@ -753,7 +753,7 @@ class ExponentialLikelihood(Likelihood):
             attributes_to_check = ["prior_strength", "prior_lambda"]
             return all(
                 [
-                    self.__dict__[attr] == other.__dict[attr]
+                    self.__dict__[attr] == other.__dict__[attr]
                     for attr in attributes_to_check
                 ]
             )
@@ -815,7 +815,7 @@ class GammaLikelihood(Likelihood):
             attributes_to_check = ["prior_strength", "prior_alpha", "prior_beta"]
             return all(
                 [
-                    self.__dict__[attr] == other.__dict[attr]
+                    self.__dict__[attr] == other.__dict__[attr]
                     for attr in attributes_to_check
                 ]
             )
@@ -872,7 +872,7 @@ class GeometricLikelihood(Likelihood):
             attributes_to_check = ["prior_strength", "prior_p"]
             return all(
                 [
-                    self.__dict__[attr] == other.__dict[attr]
+                    self.__dict__[attr] == other.__dict__[attr]
                     for attr in attributes_to_check
                 ]
             )
@@ -933,7 +933,7 @@ class GumbelLikelihood(Likelihood):
             attributes_to_check = ["prior_strength", "prior_mu", "prior_beta"]
             return all(
                 [
-                    self.__dict__[attr] == other.__dict[attr]
+                    self.__dict__[attr] == other.__dict__[attr]
                     for attr in attributes_to_check
                 ]
             )
@@ -990,7 +990,7 @@ class HalfNormalLikelihood(Likelihood):
             attributes_to_check = ["prior_strength", "prior_sigma"]
             return all(
                 [
-                    self.__dict__[attr] == other.__dict[attr]
+                    self.__dict__[attr] == other.__dict__[attr]
                     for attr in attributes_to_check
                 ]
             )
@@ -1051,7 +1051,7 @@ class LaplaceLikelihood(Likelihood):
             attributes_to_check = ["prior_strength", "prior_mu", "prior_b"]
             return all(
                 [
-                    self.__dict__[attr] == other.__dict[attr]
+                    self.__dict__[attr] == other.__dict__[attr]
                     for attr in attributes_to_check
                 ]
             )
@@ -1112,7 +1112,7 @@ class LogNormalLikelihood(Likelihood):
             attributes_to_check = ["prior_strength", "prior_mu", "prior_sigma"]
             return all(
                 [
-                    self.__dict__[attr] == other.__dict[attr]
+                    self.__dict__[attr] == other.__dict__[attr]
                     for attr in attributes_to_check
                 ]
             )
