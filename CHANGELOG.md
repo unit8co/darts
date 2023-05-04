@@ -6,7 +6,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 **Fixed**
-- Fixed a bug when loading the weights of a model trained with encoders or a Likelihood. [#1594](https://github.com/unit8co/darts/pull/1594) by [Antoine Madrona](https://github.com/madtoinou).
+- Fixed a bug when loading the weights of a model trained with encoders or a Likelihood. [#1744](https://github.com/unit8co/darts/pull/1744) by [Antoine Madrona](https://github.com/madtoinou).
 
 [Full Changelog](https://github.com/unit8co/darts/compare/0.24.0...master)
 
