@@ -8,6 +8,7 @@ from typing import List, Optional, Sequence, Tuple, Union
 
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.forecasting_model import (
+    ForecastingModel,
     GlobalForecastingModel,
     LocalForecastingModel,
 )
@@ -28,26 +29,18 @@ class EnsembleModel(GlobalForecastingModel):
         List of forecasting models whose predictions to ensemble
     """
 
-    def __init__(
-        self, models: Union[List[LocalForecastingModel], List[GlobalForecastingModel]]
-    ):
+    def __init__(self, models: List[ForecastingModel]):
         raise_if_not(
             isinstance(models, list) and models,
             "Cannot instantiate EnsembleModel with an empty list of models",
             logger,
         )
 
-        is_local_ensemble = all(
+        self.is_local_ensemble = all(
             isinstance(model, LocalForecastingModel) for model in models
         )
         self.is_global_ensemble = all(
             isinstance(model, GlobalForecastingModel) for model in models
-        )
-
-        raise_if_not(
-            is_local_ensemble or self.is_global_ensemble,
-            "All models must be of the same type: either GlobalForecastingModel, or LocalForecastingModel.",
-            logger,
         )
 
         raise_if(
@@ -72,30 +65,33 @@ class EnsembleModel(GlobalForecastingModel):
         It is left to classes inheriting from EnsembleModel to do so appropriately when overriding `fit()`
         """
         raise_if(
-            not self.is_global_ensemble and not isinstance(series, TimeSeries),
+            self.is_local_ensemble and not isinstance(series, TimeSeries),
             "The models are of type LocalForecastingModel, which does not support training on multiple series.",
             logger,
         )
         raise_if(
-            not self.is_global_ensemble and past_covariates is not None,
+            self.is_local_ensemble and past_covariates is not None,
             "The models are of type LocalForecastingModel, which does not support past covariates.",
             logger,
         )
 
         is_single_series = isinstance(series, TimeSeries)
 
-        # check that if timeseries is single series, than covariates are as well and vice versa
-        error = False
+        # check that if timeseries is single series, that covariates are as well and vice versa
+        error_past_cov = False
+        error_future_cov = False
 
         if past_covariates is not None:
-            error = is_single_series != isinstance(past_covariates, TimeSeries)
+            error_past_cov = is_single_series != isinstance(past_covariates, TimeSeries)
 
         if future_covariates is not None:
-            error = is_single_series != isinstance(future_covariates, TimeSeries)
+            error_future_cov = is_single_series != isinstance(
+                future_covariates, TimeSeries
+            )
 
         raise_if(
-            error,
-            "Both series and covariates have to be either univariate or multivariate.",
+            error_past_cov or error_future_cov,
+            "Both series and covariates have to be either single TimeSeries or sequences of TimeSeries.",
             logger,
         )
 
