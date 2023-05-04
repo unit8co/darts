@@ -382,3 +382,12 @@ class FittableDataTransformer(BaseDataTransformer):
                 ),
             )
         return fitted_params
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, self.__class__):
+            return (
+                self._fitted_params == other._fitted_params
+                and self._global_fit == other._global_fit
+            )
+        else:
+            return False
