@@ -1,6 +1,7 @@
 import os
 import shutil
 import tempfile
+from typing import Dict
 from unittest.mock import patch
 
 import numpy as np
@@ -8,6 +9,7 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries
+from darts.dataprocessing.transformers import Scaler
 from darts.logging import get_logger
 from darts.metrics import mape
 from darts.tests.base_test_class import DartsBaseTestClass
@@ -215,6 +217,139 @@ if TORCH_AVAILABLE:
             self.assertEqual(
                 model_chained_load_save.predict(n=4), model_manual_save.predict(n=4)
             )
+
+        def test_save_and_load_weights_w_encoders(self):
+            """verify that manual save/load does not break encoders"""
+
+            def create_RNNModel(
+                model_name: str,
+                save_checkpoints: bool = False,
+                add_encoders: Dict = None,
+            ):
+                return RNNModel(
+                    4,
+                    "RNN",
+                    2,
+                    1,
+                    model_name=model_name,
+                    add_encoders=add_encoders,
+                    work_dir=self.temp_work_dir,
+                    save_checkpoints=save_checkpoints,
+                    random_state=42,
+                )
+
+            model_dir = os.path.join(self.temp_work_dir)
+            manual_name = "save_manual"
+            auto_name = "save_auto"
+            # create manually saved model checkpoints folder
+            checkpoint_path_manual = os.path.join(model_dir, manual_name)
+            os.mkdir(checkpoint_path_manual)
+            checkpoint_file_name = "checkpoint_0.pth.tar"
+            model_path_manual = os.path.join(
+                checkpoint_path_manual, checkpoint_file_name
+            )
+
+            # define two encoders sets
+            encoders = {
+                "cyclic": {"past": ["month"]},
+                "transformer": Scaler(),
+            }
+            encoders_other = {
+                "datetime_attribute": {"past": ["hour"]},
+                "transformer": Scaler(),
+            }
+
+            model_auto_save = create_RNNModel(
+                auto_name, save_checkpoints=True, add_encoders=encoders
+            )
+            model_auto_save.fit(self.series, epochs=1)
+
+            model_manual_save = create_RNNModel(
+                manual_name, save_checkpoints=False, add_encoders=encoders
+            )
+            model_manual_save.fit(self.series, epochs=1)
+            model_manual_save.save(model_path_manual)
+
+            # load automatic checkpoint encoders in model without encoders
+            model_no_enc = create_RNNModel("no_encoder", add_encoders=None)
+            model_no_enc.load_weights_from_checkpoint(
+                auto_name,
+                work_dir=self.temp_work_dir,
+                best=False,
+                load_encoders=True,
+                map_location="cpu",
+            )
+            model_no_enc.to_cpu()
+
+            self.assertEqual(model_auto_save.add_encoders, model_no_enc.add_encoders)
+            # cannot directly verify equality between encoders, using predict as proxy
+            self.assertEqual(
+                model_auto_save.predict(n=4),
+                model_no_enc.predict(n=4, series=self.series),
+            )
+            # since load_weights() calls load_weights_from_checkpoint(), it will be used
+            # for the rest of the tests
+
+            # load manual checkpoint encoders in model without encoders
+            model_no_enc = create_RNNModel("no_encoder", add_encoders=None)
+            model_no_enc.load_weights(
+                model_path_manual, load_encoders=True, map_location="cpu"
+            )
+            model_no_enc.to_cpu()
+
+            self.assertEqual(model_manual_save.add_encoders, model_no_enc.add_encoders)
+            self.assertEqual(
+                model_manual_save.predict(n=4),
+                model_no_enc.predict(n=4, series=self.series),
+            )
+
+            # not loading ckpt encoders in model without encoders
+            with self.assertRaises(ValueError):
+                model_no_enc = create_RNNModel("no_encoder", add_encoders=None)
+                model_no_enc.load_weights(
+                    model_path_manual, load_encoders=False, map_location="cpu"
+                )
+
+            # load checkpoint encoders in model with identical encoders
+            model_same_enc = create_RNNModel("same_encoder", add_encoders=encoders)
+            model_same_enc.load_weights(
+                model_path_manual, load_encoders=True, map_location="cpu"
+            )
+            model_same_enc.to_cpu()
+            self.assertEqual(
+                model_manual_save.add_encoders, model_same_enc.add_encoders
+            )
+            self.assertEqual(
+                model_manual_save.predict(n=4),
+                model_same_enc.predict(n=4, series=self.series),
+            )
+
+            # load checkpoint encoders in model with different encoders
+            with self.assertRaises(ValueError):
+                model_new_enc = create_RNNModel(
+                    "other_encoder", add_encoders=encoders_other
+                )
+                model_new_enc.load_weights(
+                    model_path_manual, load_encoders=True, map_location="cpu"
+                )
+
+            # not loading ckpt encoders in model with different encoders
+            model_new_enc = create_RNNModel(
+                "other_encoder", add_encoders=encoders_other
+            )
+            model_new_enc.load_weights(
+                model_path_manual, load_encoders=False, map_location="cpu"
+            )
+            model_new_enc.to_cpu()
+            self.assertNotEqual(model_new_enc.add_encoders, encoders)
+            self.assertEqual(model_new_enc.add_encoders, encoders_other)
+            # since fit() was not called, new encoders are not instantiated
+            self.assertTrue(model_new_enc.encoders is None)
+
+            model_new_enc.fit(self.series, epochs=1)
+            # check that new encoders are instantiated
+            self.assertFalse(model_new_enc.encoders is None)
+            model_new_enc.predict(n=4, series=self.series)
 
         def test_create_instance_new_model_no_name_set(self):
             RNNModel(12, "RNN", 10, 10, work_dir=self.temp_work_dir)

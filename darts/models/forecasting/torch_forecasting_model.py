@@ -1850,12 +1850,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             else:
                 raise_if(
                     len(model_ckpt.add_encoders) > 0 and self.add_encoders is None,
-                    "Model's weights were trained with encoders but loaded without them; the model "
-                    "needs new encoders before calling fit() or predict(). `load_encoders`"
-                    "can be set to `True` to load them from the model checkpoint or the "
-                    "new model needs to be instantiated with `add_encoders`.",
+                    "Model was instantiated without encoders but the weights were trained with encoders "
+                    "that were not loaded. Either `load_encoders` can be set to `True` or the model "
+                    "loading the weights needs to be instantiated with `add_encoders` and fit() must "
+                    "be called before predict().",
                     logger,
                 )
+
+                # TODO: sanity check that the new encoders match dims of the old encoders
 
     def load_weights(self, path: str, load_encoders: bool = True, **kwargs):
         """
