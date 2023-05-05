@@ -368,29 +368,21 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         quantiles = [0.25, 0.5, 0.75]
 
         # probabilistic ensembling model
-        linreg_prob_ensemble = LinearRegressionModel(
+        linreg_prob = LinearRegressionModel(
             quantiles=quantiles, lags_future_covariates=[0], likelihood="quantile"
         )
 
         # deterministic ensembling model
-        linreg_dete_ensemble = LinearRegressionModel(lags_future_covariates=[0])
-
-        # probabilistic models
-        linreg_prob_1 = self.get_probabilistic_global_model([-1, -3], quantiles)
-        linreg_prob_2 = self.get_probabilistic_global_model([-2, -4], quantiles)
-
-        # deterministic models
-        linreg_dete_1 = self.get_deterministic_global_model([-1, -3])
-        linreg_dete_2 = self.get_deterministic_global_model([-2, -4])
+        linreg_dete = LinearRegressionModel(lags_future_covariates=[0])
 
         # every models are probabilistic
         ensemble_allproba = RegressionEnsembleModel(
             forecasting_models=[
-                linreg_prob_1.untrained_model(),
-                linreg_prob_2.untrained_model(),
+                self.get_probabilistic_global_model([-1, -3], quantiles),
+                self.get_probabilistic_global_model([-2, -4], quantiles),
             ],
             regression_train_n_points=10,
-            regression_model=linreg_prob_ensemble.untrained_model(),
+            regression_model=linreg_prob.untrained_model(),
         )
 
         self.assertTrue(ensemble_allproba._models_are_probabilistic())
@@ -403,11 +395,11 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         # only regression model is probabilistic
         ensemble_proba_reg = RegressionEnsembleModel(
             forecasting_models=[
-                linreg_dete_1.untrained_model(),
-                linreg_dete_2.untrained_model(),
+                self.get_deterministic_global_model([-1, -3]),
+                self.get_deterministic_global_model([-2, -4]),
             ],
             regression_train_n_points=10,
-            regression_model=linreg_prob_ensemble.untrained_model(),
+            regression_model=linreg_prob.untrained_model(),
         )
 
         self.assertFalse(ensemble_proba_reg._models_are_probabilistic())
@@ -420,11 +412,11 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         # every models but regression model are probabilistics
         ensemble_dete_reg = RegressionEnsembleModel(
             forecasting_models=[
-                linreg_prob_1.untrained_model(),
-                linreg_prob_2.untrained_model(),
+                self.get_probabilistic_global_model([-1, -3], quantiles),
+                self.get_probabilistic_global_model([-2, -4], quantiles),
             ],
             regression_train_n_points=10,
-            regression_model=linreg_dete_ensemble.untrained_model(),
+            regression_model=linreg_dete.untrained_model(),
         )
 
         self.assertTrue(ensemble_dete_reg._models_are_probabilistic())
@@ -439,11 +431,11 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         # every models are deterministic
         ensemble_alldete = RegressionEnsembleModel(
             forecasting_models=[
-                linreg_dete_1.untrained_model(),
-                linreg_dete_2.untrained_model(),
+                self.get_deterministic_global_model([-1, -3]),
+                self.get_deterministic_global_model([-2, -4]),
             ],
             regression_train_n_points=10,
-            regression_model=linreg_dete_ensemble.untrained_model(),
+            regression_model=linreg_dete.untrained_model(),
         )
 
         self.assertFalse(ensemble_alldete._models_are_probabilistic())
@@ -456,6 +448,10 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             ensemble_alldete.predict(5, num_samples=10)
 
     def test_stochastic_training_regression_ensemble_model_(self):
+        """
+        regression model is deterministic (default) but the forecasting model are
+        probabilistic and they can be sampled to train the regression model.
+        """
         quantiles = [0.25, 0.5, 0.75]
 
         # cannot sample deterministic forecasting models
