@@ -376,16 +376,12 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         linreg_dete_ensemble = LinearRegressionModel(lags_future_covariates=[0])
 
         # probabilistic models
-        linreg_prob_1 = LinearRegressionModel(
-            quantiles=quantiles, lags=[-1, -3], likelihood="quantile"
-        )
-        linreg_prob_2 = LinearRegressionModel(
-            quantiles=quantiles, lags=[-2, -4], likelihood="quantile"
-        )
+        linreg_prob_1 = self.get_probabilistic_global_model([-1, -3], quantiles)
+        linreg_prob_2 = self.get_probabilistic_global_model([-2, -4], quantiles)
 
         # deterministic models
-        linreg_dete_1 = LinearRegressionModel(lags=[-1, -3])
-        linreg_dete_2 = LinearRegressionModel(lags=[-2, -4])
+        linreg_dete_1 = self.get_deterministic_global_model([-1, -3])
+        linreg_dete_2 = self.get_deterministic_global_model([-2, -4])
 
         # every models are probabilistic
         ensemble_allproba = RegressionEnsembleModel(
@@ -458,3 +454,98 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         # probabilistic forecasting is not supported
         with self.assertRaises(ValueError):
             ensemble_alldete.predict(5, num_samples=10)
+
+    def test_stochastic_training_regression_ensemble_model_(self):
+        quantiles = [0.25, 0.5, 0.75]
+
+        # cannot sample deterministic forecasting models
+        with self.assertRaises(ValueError):
+            RegressionEnsembleModel(
+                forecasting_models=[
+                    self.get_deterministic_global_model([-1, -3]),
+                    self.get_deterministic_global_model([-2, -4]),
+                ],
+                regression_train_n_points=50,
+                regression_train_num_samples=500,
+            )
+
+        # must use apprioriate reduction method
+        with self.assertRaises(ValueError):
+            RegressionEnsembleModel(
+                forecasting_models=[
+                    self.get_probabilistic_global_model([-1, -3], quantiles),
+                    self.get_probabilistic_global_model([-2, -4], quantiles),
+                ],
+                regression_train_n_points=50,
+                regression_train_num_samples=500,
+                regression_train_samples_reduction="wrong",
+            )
+
+        ensemble_model_mean = RegressionEnsembleModel(
+            forecasting_models=[
+                self.get_probabilistic_global_model([-1, -3], quantiles),
+                self.get_probabilistic_global_model([-2, -4], quantiles),
+            ],
+            regression_train_n_points=50,
+            regression_train_num_samples=500,
+        )
+
+        ensemble_model_median = RegressionEnsembleModel(
+            forecasting_models=[
+                self.get_probabilistic_global_model([-1, -3], quantiles),
+                self.get_probabilistic_global_model([-2, -4], quantiles),
+            ],
+            regression_train_n_points=50,
+            regression_train_num_samples=500,
+            regression_train_samples_reduction="median",
+        )
+
+        ensemble_model_0_5_quantile = RegressionEnsembleModel(
+            forecasting_models=[
+                self.get_probabilistic_global_model([-1, -3], quantiles),
+                self.get_probabilistic_global_model([-2, -4], quantiles),
+            ],
+            regression_train_n_points=50,
+            regression_train_num_samples=500,
+            regression_train_samples_reduction=0.5,
+        )
+
+        train, val = self.ts_sum1.split_after(0.9)
+        ensemble_model_mean.fit(train)
+        ensemble_model_median.fit(train)
+        ensemble_model_0_5_quantile.fit(train)
+
+        pred_mean_training = ensemble_model_mean.predict(len(val))
+        pred_median_training = ensemble_model_median.predict(len(val))
+        pred_0_5_qt_training = ensemble_model_0_5_quantile.predict(len(val))
+
+        self.assertEqual(pred_median_training, pred_0_5_qt_training)
+        # training with mean or median should get similar error since 500 samples are used
+        self.assertAlmostEqual(
+            rmse(pred_mean_training, val), rmse(pred_median_training, val), places=1
+        )
+
+        # possible to use very small regression_train_num_samples
+        ensemble_model_mean_1_sample = RegressionEnsembleModel(
+            forecasting_models=[
+                self.get_probabilistic_global_model([-1, -3], quantiles),
+                self.get_probabilistic_global_model([-2, -4], quantiles),
+            ],
+            regression_train_n_points=50,
+            regression_train_num_samples=1,
+        )
+        ensemble_model_mean_1_sample.fit(train)
+        ensemble_model_mean_1_sample.predict(len(val))
+
+    @staticmethod
+    def get_probabilistic_global_model(lags, quantiles, random_state=42):
+        return LinearRegressionModel(
+            lags=lags,
+            quantiles=quantiles,
+            likelihood="quantile",
+            random_state=random_state,
+        )
+
+    @staticmethod
+    def get_deterministic_global_model(lags, random_state=13):
+        return LinearRegressionModel(lags=lags, random_state=random_state)
