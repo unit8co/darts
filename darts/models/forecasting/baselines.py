@@ -203,12 +203,13 @@ class NaiveEnsembleModel(EnsembleModel):
         num_samples: int = 1,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         def take_average(prediction: TimeSeries) -> TimeSeries:
-            # if forecasting models are probabilistic, samples will in the columns
-            series = prediction.pd_dataframe(copy=False).sum(axis=1) / (
-                len(self.models) * prediction.n_samples
+            # average across the components, keep n_samples, rename components
+            return TimeSeries.from_times_and_values(
+                times=prediction.time_index,
+                values=prediction.mean(axis=1).all_values(),
+                freq=prediction.freq,
+                columns=[prediction.components[0]],
             )
-            series.name = prediction.components[0]
-            return TimeSeries.from_series(series)
 
         if isinstance(predictions, Sequence):
             return [take_average(p) for p in predictions]
