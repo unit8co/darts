@@ -240,9 +240,7 @@ class RegressionEnsembleModel(EnsembleModel):
                 n=len(prediction),
                 series=serie,
                 future_covariates=prediction,
-                num_samples=num_samples
-                if self.regression_model._is_probabilistic()
-                else 1,
+                num_samples=num_samples,
             )
             for serie, prediction in zip(series, predictions)
         ]
