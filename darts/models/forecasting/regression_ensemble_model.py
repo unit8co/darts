@@ -195,7 +195,7 @@ class RegressionEnsembleModel(EnsembleModel):
         )
 
         # component-wise reduction of the probabilistic forecasting models predictions
-        if predictions.n_samples > 1:
+        if predictions[0].n_samples > 1:
             if self.regression_train_samples_reduction == "mean":
                 predictions = predictions.mean(axis=2)
             elif self.regression_train_samples_reduction == "median":
