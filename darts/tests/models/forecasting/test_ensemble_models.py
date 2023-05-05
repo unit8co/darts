@@ -84,8 +84,10 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
     def test_input_models_local_models(self):
         with self.assertRaises(ValueError):
             NaiveEnsembleModel([])
+        # models are not instantiated
         with self.assertRaises(ValueError):
             NaiveEnsembleModel([NaiveDrift, NaiveSeasonal, Theta, ExponentialSmoothing])
+        # one model is not instantiated
         with self.assertRaises(ValueError):
             NaiveEnsembleModel(
                 [NaiveDrift(), NaiveSeasonal, Theta(), ExponentialSmoothing()]
@@ -136,6 +138,9 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_input_models_global_models(self):
+        # one model is not instantiated
+        with self.assertRaises(ValueError):
+            NaiveEnsembleModel([RNNModel(12), TCNModel(10, 2), NBEATSModel])
         NaiveEnsembleModel([RNNModel(12), TCNModel(10, 2), NBEATSModel(10, 2)])
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
@@ -183,8 +188,14 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_input_models_mixed(self):
+        naive_ensemble = NaiveEnsembleModel([NaiveDrift(), RNNModel(12)])
+        # ensemble is neither local, nor global
+        self.assertFalse(naive_ensemble.is_local_ensemble)
+        self.assertFalse(naive_ensemble.is_global_ensemble)
+
+        # ensemble contains one local model, no support for multiple ts fit
         with self.assertRaises(ValueError):
-            NaiveEnsembleModel([NaiveDrift(), Theta(), RNNModel(12)])
+            naive_ensemble.fit([self.series1, self.series2])
 
     def test_fit_multivar_ts_with_local_models(self):
         naive = NaiveEnsembleModel(
