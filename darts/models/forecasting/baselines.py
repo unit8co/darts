@@ -203,7 +203,10 @@ class NaiveEnsembleModel(EnsembleModel):
         num_samples: int = 1,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         def take_average(prediction: TimeSeries) -> TimeSeries:
-            series = prediction.pd_dataframe(copy=False).sum(axis=1) / len(self.models)
+            # if forecasting models are probabilistic, samples will in the columns
+            series = prediction.pd_dataframe(copy=False).sum(axis=1) / (
+                len(self.models) * prediction.n_samples
+            )
             series.name = prediction.components[0]
             return TimeSeries.from_series(series)
 

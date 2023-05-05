@@ -19,6 +19,9 @@ from darts.utils.utils import seq2series, series2seq
 
 logger = get_logger(__name__)
 
+# arbitrary threshold to raise warning for probabilistic forecasting models
+SAMPLES_WARNING_THRESHOLD = 1e12
+
 
 class RegressionEnsembleModel(EnsembleModel):
     def __init__(
@@ -28,6 +31,8 @@ class RegressionEnsembleModel(EnsembleModel):
         ],
         regression_train_n_points: int,
         regression_model=None,
+        regression_train_num_samples: Optional[int] = 1,
+        regression_train_samples_reduction: Optional[Union[str, float]] = "mean",
     ):
         """
         Use a regression model for ensembling individual models' predictions using the stacking technique [1]_.
@@ -51,7 +56,13 @@ class RegressionEnsembleModel(EnsembleModel):
             .. note::
                 a probabilistic `regression_model` will make the `RegressionEnsembleModel` probabilistic.
             ..
-
+        regression_train_num_samples
+            Number of times a prediction is sampled from each forecasting models to train the regression
+            model (samples are averaged). Should be left set to 1 for deterministic models. Default: 1.
+        regression_train_samples_reduction
+            If `forecasting models` are probabilistic and `regression_train_num_samples` > 1, method used to
+            reduce the samples before passing them to the regression model. Possible values: "mean", "median"
+            or float value corresponding to the desired quantile. Default: "mean"
         References
         ----------
         .. [1] D. H. Wolpert, “Stacked generalization”, Neural Networks, vol. 5, no. 2, pp. 241–259, Jan. 1992
@@ -77,8 +88,54 @@ class RegressionEnsembleModel(EnsembleModel):
             f"{regression_model.lags}",
         )
 
+        # check the reduction method
+        if isinstance(regression_train_samples_reduction, float):
+            # this is already checked by `ts.quantile()`, maybe too redundant
+            raise_if(
+                regression_train_samples_reduction > 1.0
+                or regression_train_samples_reduction < 0,
+                f"`regression_train_samples_reduction` should be comprised between "
+                f"0 and 1 ({regression_train_samples_reduction}).",
+                logger,
+            )
+        elif isinstance(regression_train_samples_reduction, str):
+            supported_reduction = ["mean", "median"]
+            raise_if(
+                regression_train_samples_reduction not in supported_reduction,
+                f"`regression_train_samples_reduction` should be one of {supported_reduction}, "
+                f"received ({regression_train_samples_reduction})",
+                logger,
+            )
+        else:
+            logger.exception(
+                f"`regression_train_samples_reduction` type not supported "
+                f"({regression_train_samples_reduction}). Must be either `str` or `float`."
+            )
+
+        raise_if(
+            regression_train_num_samples > 1 and not self._models_are_probabilistic(),
+            "`regression_train_num_samples` is greater than 1 but the `RegressionEnsembleModel` "
+            "contains at least one non-probabilistic forecasting model.",
+            logger,
+        )
+
+        if (
+            regression_train_num_samples
+            * regression_train_n_points
+            * len(forecasting_models)
+            > SAMPLES_WARNING_THRESHOLD
+        ):
+            logger.warning(
+                f"Considering the number of models present in this ensemble ({len(forecasting_models)}), "
+                f"`regression_train_n_points` ({regression_train_n_points}) and `regression_train_num_samples` "
+                f"({regression_train_num_samples}) the number of sampled values to train the regression model "
+                f"will be very large (>{SAMPLES_WARNING_THRESHOLD})."
+            )
+
         self.regression_model = regression_model
         self.train_n_points = regression_train_n_points
+        self.regression_train_num_samples = regression_train_num_samples
+        self.regression_train_samples_reduction = regression_train_samples_reduction
 
     def _split_multi_ts_sequence(
         self, n: int, ts_sequence: Sequence[TimeSeries]
@@ -109,7 +166,7 @@ class RegressionEnsembleModel(EnsembleModel):
 
         raise_if(
             train_n_points_too_big,
-            "regression_train_n_points parameter too big (must be smaller or "
+            "`regression_train_n_points` parameter too big (must be smaller or "
             "equal to the number of points in training_series)",
             logger,
         )
@@ -134,8 +191,19 @@ class RegressionEnsembleModel(EnsembleModel):
             series=forecast_training,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            num_samples=1,
+            num_samples=self.regression_train_num_samples,
         )
+
+        # component-wise reduction of the probabilistic forecasting models predictions
+        if predictions.n_samples > 1:
+            if self.regression_train_samples_reduction == "mean":
+                predictions = predictions.mean(axis=2)
+            elif self.regression_train_samples_reduction == "median":
+                predictions = predictions.median(axis=2)
+            else:
+                predictions = predictions.quantile(
+                    self.regression_train_samples_reduction
+                )
 
         # train the regression model on the individual models' predictions
         self.regression_model.fit(

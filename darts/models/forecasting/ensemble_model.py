@@ -160,6 +160,7 @@ class EnsembleModel(GlobalForecastingModel):
             verbose=verbose,
         )
 
+        # support deterministic forecasting model with probabilistic ensembling
         predictions = self._make_multiple_predictions(
             n=n,
             series=series,
