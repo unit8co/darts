@@ -26,6 +26,10 @@ class EnsembleModel(GlobalForecastingModel):
     ----------
     models
         List of forecasting models whose predictions to ensemble
+
+        .. note::
+                if all the models are probabilistic, the `EnsembleModel` will also be probabilistic.
+        ..
     """
 
     def __init__(

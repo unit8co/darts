@@ -54,7 +54,7 @@ class RegressionEnsembleModel(EnsembleModel):
             Default: ``darts.model.LinearRegressionModel(fit_intercept=False)``
 
             .. note::
-                a probabilistic `regression_model` will make the `RegressionEnsembleModel` probabilistic.
+                if `regression_model` is probabilistic, the `RegressionEnsembleModel` will also be probabilistic.
             ..
         regression_train_num_samples
             Number of times a prediction is sampled from each forecasting models to train the regression
