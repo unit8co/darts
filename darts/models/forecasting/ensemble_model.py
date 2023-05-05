@@ -23,6 +23,9 @@ class EnsembleModel(GlobalForecastingModel):
     Ensemble models take in a list of forecasting models and ensemble their predictions
     to make a single one according to the rule defined by their `ensemble()` method.
 
+    If `future_covariates` or `past_covariates` are provided at training or inference time,
+    they will be passed only to the models supporting them.
+
     Parameters
     ----------
     models
@@ -36,11 +39,26 @@ class EnsembleModel(GlobalForecastingModel):
             logger,
         )
 
-        self.is_local_ensemble = all(
-            isinstance(model, LocalForecastingModel) for model in models
-        )
-        self.is_global_ensemble = all(
+        is_local_model = [isinstance(model, LocalForecastingModel) for model in models]
+        is_global_model = [
             isinstance(model, GlobalForecastingModel) for model in models
+        ]
+
+        self.is_local_ensemble = all(is_local_model)
+        self.is_global_ensemble = all(is_global_model)
+
+        raise_if_not(
+            all(
+                [
+                    local_model or global_model
+                    for local_model, global_model in zip(
+                        is_local_model, is_global_model
+                    )
+                ]
+            ),
+            "Cannot instantiate EnsembleModel with forecasting models that are neither local, "
+            "nor global. Also, please make sure that all the models in `models` are instantiated.",
+            logger,
         )
 
         raise_if(
@@ -64,9 +82,14 @@ class EnsembleModel(GlobalForecastingModel):
         Note that `EnsembleModel.fit()` does NOT call `fit()` on each of its constituent forecasting models.
         It is left to classes inheriting from EnsembleModel to do so appropriately when overriding `fit()`
         """
+
+        is_single_series = isinstance(series, TimeSeries)
+
+        # local models OR mix of local and global models
         raise_if(
-            self.is_local_ensemble and not isinstance(series, TimeSeries),
-            "The models are of type LocalForecastingModel, which does not support training on multiple series.",
+            not self.is_global_ensemble and not is_single_series,
+            "The models contain at least one LocalForecastingModel, which does not support training on multiple "
+            "series.",
             logger,
         )
         raise_if(
@@ -74,8 +97,6 @@ class EnsembleModel(GlobalForecastingModel):
             "The models are of type LocalForecastingModel, which does not support past covariates.",
             logger,
         )
-
-        is_single_series = isinstance(series, TimeSeries)
 
         # check that if timeseries is single series, that covariates are as well and vice versa
         error_past_cov = False
@@ -121,12 +142,17 @@ class EnsembleModel(GlobalForecastingModel):
         num_samples: int = 1,
     ):
         is_single_series = isinstance(series, TimeSeries) or series is None
+        # maximize covariate usage
         predictions = [
             model._predict_wrapper(
                 n=n,
                 series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
+                past_covariates=past_covariates
+                if model.supports_past_covariates
+                else None,
+                future_covariates=future_covariates
+                if model.supports_future_covariates
+                else None,
                 num_samples=num_samples,
             )
             for model in self.models
