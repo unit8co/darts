@@ -121,20 +121,54 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
             np.array_equal(forecast_naive_ensemble.values(), forecast_mean.values())
         )
 
-    def test_stochastic_ensemble(self):
-        # probabilistic models
-        model1 = LinearRegressionModel(lags=1, likelihood="quantile")
-        model2 = LinearRegressionModel(lags=2, likelihood="quantile")
+    def test_stochastic_naive_ensemble(self):
+        num_samples = 100
 
-        # deterministic model
-        model3 = LinearRegressionModel(lags=3)
+        # probabilistic forecasting models
+        model_proba_1 = LinearRegressionModel(
+            lags=1, likelihood="quantile", random_state=42
+        )
+        model_proba_2 = LinearRegressionModel(
+            lags=2, likelihood="quantile", random_state=42
+        )
 
-        naive_ensemble_1 = NaiveEnsembleModel([model1, model2])
-        self.assertTrue(naive_ensemble_1._is_probabilistic())
+        # only probabilistic forecasting models
+        naive_ensemble_proba = NaiveEnsembleModel([model_proba_1, model_proba_2])
+        self.assertTrue(naive_ensemble_proba._is_probabilistic())
 
-        # mix probabilistic and deterministic forecasting models
-        naive_ensemble_2 = NaiveEnsembleModel([model2, model3])
-        self.assertFalse(naive_ensemble_2._is_probabilistic())
+        naive_ensemble_proba.fit(self.series1 + self.series2)
+        # by default, only 1 sample
+        pred_proba_1_sample = naive_ensemble_proba.predict(n=5)
+        self.assertEqual(pred_proba_1_sample.n_samples, 1)
+
+        # possible to obtain probabilistic forecast by averaging samples across the models
+        pred_proba_many_sample = naive_ensemble_proba.predict(
+            n=5, num_samples=num_samples
+        )
+        self.assertEqual(pred_proba_many_sample.n_samples, num_samples)
+
+        # need to redefine the models to reset the random state
+        model_alone_1 = LinearRegressionModel(
+            lags=1, likelihood="quantile", random_state=42
+        )
+        model_alone_2 = LinearRegressionModel(
+            lags=2, likelihood="quantile", random_state=42
+        )
+        model_alone_1.fit(self.series1 + self.series2)
+        model_alone_2.fit(self.series1 + self.series2)
+        forecast_mean = 0.5 * model_alone_1.predict(
+            5, num_samples=num_samples
+        ) + 0.5 * model_alone_2.predict(5, num_samples=num_samples)
+
+        self.assertEqual(
+            forecast_mean.values().shape, pred_proba_many_sample.values().shape
+        )
+        self.assertEqual(forecast_mean.n_samples, pred_proba_many_sample.n_samples)
+        self.assertTrue(
+            np.array_equal(
+                pred_proba_many_sample.mean().values(), forecast_mean.mean().values()
+            )
+        )
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_input_models_global_models(self):
