@@ -400,6 +400,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         self.assertTrue(ensemble_allproba._models_are_probabilistic())
         self.assertTrue(ensemble_allproba._is_probabilistic())
         ensemble_allproba.fit(self.ts_random_walk[:100])
+        # probabilistic forecasting is supported
         pred = ensemble_allproba.predict(5, num_samples=10)
         self.assertEqual(pred.n_samples, 10)
 
@@ -416,6 +417,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         self.assertFalse(ensemble_proba_reg._models_are_probabilistic())
         self.assertTrue(ensemble_proba_reg._is_probabilistic())
         ensemble_proba_reg.fit(self.ts_random_walk[:100])
+        # probabilistic forecasting is supported
         pred = ensemble_proba_reg.predict(5, num_samples=10)
         self.assertEqual(pred.n_samples, 10)
 
@@ -432,8 +434,11 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         self.assertTrue(ensemble_dete_reg._models_are_probabilistic())
         self.assertFalse(ensemble_dete_reg._is_probabilistic())
         ensemble_dete_reg.fit(self.ts_random_walk[:100])
+        # deterministic forecasting is supported
+        ensemble_dete_reg.predict(5, num_samples=1)
+        # probabilistic forecasting is not supported
         with self.assertRaises(ValueError):
-            pred = ensemble_dete_reg.predict(5, num_samples=10)
+            ensemble_dete_reg.predict(5, num_samples=10)
 
         # every models are deterministic
         ensemble_alldete = RegressionEnsembleModel(
@@ -448,5 +453,8 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         self.assertFalse(ensemble_alldete._models_are_probabilistic())
         self.assertFalse(ensemble_alldete._is_probabilistic())
         ensemble_alldete.fit(self.ts_random_walk[:100])
+        # deterministic forecasting is supported
+        ensemble_alldete.predict(5, num_samples=1)
+        # probabilistic forecasting is not supported
         with self.assertRaises(ValueError):
-            pred = ensemble_alldete.predict(5, num_samples=10)
+            ensemble_alldete.predict(5, num_samples=10)
