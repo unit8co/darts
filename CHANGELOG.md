@@ -6,7 +6,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 - Improvements to `EnsembleModel`:
-  - `RegressionEnsembleModel` can generate probabilistic forecasts, updated the documentation (stacking technique). [#1692](https://github.com/unit8co/darts/pull/#1692) by [Antoine Madrona](https://github.com/madtoinou).
+  - `RegressionEnsembleModel` and `NaiveEnsembleModel` can generate probabilistic forecasts, probabilistics `forecasting_models` can be sampled to train the `regression_model`, updated the documentation (stacking technique). [#1692](https://github.com/unit8co/darts/pull/#1692) by [Antoine Madrona](https://github.com/madtoinou).
 
 [Full Changelog](https://github.com/unit8co/darts/compare/0.24.0...master)
 
