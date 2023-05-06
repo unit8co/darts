@@ -36,6 +36,7 @@ Read our `user guide on covariates <https://unit8co.github.io/darts/userguide/co
 import itertools
 import pickle
 import re
+import sys
 from collections import defaultdict
 from copy import deepcopy
 from inspect import signature
@@ -54,6 +55,11 @@ try:
     from typing import Literal
 except ImportError:
     from typing_extensions import Literal
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 logger = get_logger(__name__)
 
@@ -317,7 +323,7 @@ class TimeSeries:
         fill_missing_dates: Optional[bool] = False,
         freq: Optional[Union[str, int]] = None,
         fillna_value: Optional[float] = None,
-    ) -> "TimeSeries":
+    ) -> Self:
         """
         Return a TimeSeries instance built from an xarray DataArray.
         The dimensions of the DataArray have to be (time, component, sample), in this order. The time
@@ -457,7 +463,7 @@ class TimeSeries:
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[Dict] = None,
         **kwargs,
-    ) -> "TimeSeries":
+    ) -> Self:
         """
         Build a deterministic TimeSeries instance built from a single CSV file.
         One column can be used to represent the time (if not present, the time index will be a RangeIndex)
@@ -552,7 +558,7 @@ class TimeSeries:
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[Dict] = None,
-    ) -> "TimeSeries":
+    ) -> Self:
         """
         Build a deterministic TimeSeries instance built from a selection of columns of a DataFrame.
         One column (or the DataFrame index) has to represent the time,
@@ -860,7 +866,7 @@ class TimeSeries:
         freq: Optional[Union[str, int]] = None,
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
-    ) -> "TimeSeries":
+    ) -> Self:
         """
         Build a univariate deterministic series from a pandas Series.
 
@@ -918,7 +924,7 @@ class TimeSeries:
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[Dict] = None,
-    ) -> "TimeSeries":
+    ) -> Self:
         """
         Build a series from a time index and value array.
 
@@ -1041,7 +1047,7 @@ class TimeSeries:
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[Dict] = None,
-    ) -> "TimeSeries":
+    ) -> Self:
         """
         Build an integer-indexed series from an array of values.
         The series will have an integer index (RangeIndex).
@@ -1116,7 +1122,7 @@ class TimeSeries:
         json_str: str,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[Dict] = None,
-    ) -> "TimeSeries":
+    ) -> Self:
         """
         Build a series from the JSON String representation of a ``TimeSeries``
         (produced using :func:`TimeSeries.to_json()`).
@@ -1171,7 +1177,7 @@ class TimeSeries:
         )
 
     @classmethod
-    def from_pickle(cls, path: str) -> "TimeSeries":
+    def from_pickle(cls, path: str) -> Self:
         """
         Read a pickled ``TimeSeries``.
 
@@ -1565,7 +1571,7 @@ class TimeSeries:
             columns=cnames,
         )
 
-    def quantile_timeseries(self, quantile=0.5, **kwargs) -> "TimeSeries":
+    def quantile_timeseries(self, quantile=0.5, **kwargs) -> Self:
         """
         Return a deterministic ``TimeSeries`` containing the single desired quantile of each component
         (over the samples) of this stochastic ``TimeSeries``.
@@ -1648,7 +1654,7 @@ class TimeSeries:
             axis=1,
         )
 
-    def astype(self, dtype: Union[str, np.dtype]) -> "TimeSeries":
+    def astype(self, dtype: Union[str, np.dtype]) -> Self:
         """
         Converts this series to a new series with desired dtype.
 
@@ -1858,7 +1864,7 @@ class TimeSeries:
 
     def head(
         self, size: Optional[int] = 5, axis: Optional[Union[int, str]] = 0
-    ) -> "TimeSeries":
+    ) -> Self:
         """
         Return a TimeSeries containing the first `size` points.
 
@@ -1885,7 +1891,7 @@ class TimeSeries:
 
     def tail(
         self, size: Optional[int] = 5, axis: Optional[Union[int, str]] = 0
-    ) -> "TimeSeries":
+    ) -> Self:
         """
         Return last `size` points of the series.
 
@@ -2030,7 +2036,7 @@ class TimeSeries:
 
             return gap_df
 
-    def copy(self) -> "TimeSeries":
+    def copy(self) -> Self:
         """
         Make a copy of this series.
 
@@ -2302,9 +2308,7 @@ class TimeSeries:
             idx = pd.RangeIndex(effective_start_ts, effective_end_ts, step=self.freq)
             return self[idx]
 
-    def slice_n_points_after(
-        self, start_ts: Union[pd.Timestamp, int], n: int
-    ) -> "TimeSeries":
+    def slice_n_points_after(self, start_ts: Union[pd.Timestamp, int], n: int) -> Self:
         """
         Return a new TimeSeries, starting a `start_ts` (inclusive) and having at most `n` points.
 
@@ -2337,9 +2341,7 @@ class TimeSeries:
                 ValueError("start_ts must be an int or a pandas Timestamp."), logger
             )
 
-    def slice_n_points_before(
-        self, end_ts: Union[pd.Timestamp, int], n: int
-    ) -> "TimeSeries":
+    def slice_n_points_before(self, end_ts: Union[pd.Timestamp, int], n: int) -> Self:
         """
         Return a new TimeSeries, ending at `end_ts` (inclusive) and having at most `n` points.
 
@@ -2373,7 +2375,7 @@ class TimeSeries:
                 ValueError("start_ts must be an int or a pandas Timestamp."), logger
             )
 
-    def slice_intersect(self, other: "TimeSeries") -> "TimeSeries":
+    def slice_intersect(self, other: "TimeSeries") -> Self:
         """
         Return a ``TimeSeries`` slice of this series, where the time index has been intersected with the one
         of the `other` series.
@@ -2393,7 +2395,7 @@ class TimeSeries:
         time_index = self.time_index.intersection(other.time_index)
         return self[time_index]
 
-    def strip(self) -> "TimeSeries":
+    def strip(self) -> Self:
         """
         Return a ``TimeSeries`` slice of this deterministic time series, where NaN-only entries at the beginning
         and the end of the series are removed. No entries after (and including) the first non-NaN entry and
@@ -2417,7 +2419,7 @@ class TimeSeries:
 
     def longest_contiguous_slice(
         self, max_gap_size: int = 0, mode: str = "all"
-    ) -> "TimeSeries":
+    ) -> Self:
         """
         Return the largest TimeSeries slice of this deterministic series that contains no gaps
         (contiguous all-NaN values) larger than `max_gap_size`.
@@ -2468,7 +2470,7 @@ class TimeSeries:
 
         return stripped_series[max_slice_start:max_slice_end]
 
-    def rescale_with_value(self, value_at_first_step: float) -> "TimeSeries":
+    def rescale_with_value(self, value_at_first_step: float) -> Self:
         """
         Return a new ``TimeSeries``, which is a multiple of this series such that
         the first value is `value_at_first_step`.
@@ -2494,7 +2496,7 @@ class TimeSeries:
         new_series = coef * self._xa
         return self.__class__(new_series)
 
-    def shift(self, n: int) -> "TimeSeries":
+    def shift(self, n: int) -> Self:
         """
         Shifts the time axis of this TimeSeries by `n` time steps.
 
@@ -2544,7 +2546,7 @@ class TimeSeries:
         n: Optional[int] = 1,
         periods: Optional[int] = 1,
         dropna: Optional[bool] = True,
-    ) -> "TimeSeries":
+    ) -> Self:
         """
         Return a differenced time series. This is often used to make a time series stationary.
 
@@ -2608,7 +2610,7 @@ class TimeSeries:
             return False
         return (other.time_index == self.time_index).all()
 
-    def append(self, other: "TimeSeries") -> "TimeSeries":
+    def append(self, other: "TimeSeries") -> Self:
         """
         Appends another series to this series along the time axis.
 
@@ -2670,7 +2672,7 @@ class TimeSeries:
             new_xa, fill_missing_dates=True, freq=self._freq_str
         )
 
-    def append_values(self, values: np.ndarray) -> "TimeSeries":
+    def append_values(self, values: np.ndarray) -> Self:
         """
         Appends new values to current TimeSeries, extending its time index.
 
@@ -2704,7 +2706,7 @@ class TimeSeries:
             )
         )
 
-    def prepend(self, other: "TimeSeries") -> "TimeSeries":
+    def prepend(self, other: "TimeSeries") -> Self:
         """
         Prepends (i.e. adds to the beginning) another series to this series along the time axis.
 
@@ -2729,7 +2731,7 @@ class TimeSeries:
         )
         return other.append(self)
 
-    def prepend_values(self, values: np.ndarray) -> "TimeSeries":
+    def prepend_values(self, values: np.ndarray) -> Self:
         """
         Prepends (i.e. adds to the beginning) new values to current TimeSeries, extending its time index into the past.
 
@@ -2768,7 +2770,7 @@ class TimeSeries:
             )
         )
 
-    def with_values(self, values: np.ndarray) -> "TimeSeries":
+    def with_values(self, values: np.ndarray) -> Self:
         """
         Return a new ``TimeSeries`` similar to this one but with new specified values.
 
@@ -2924,7 +2926,7 @@ class TimeSeries:
         """
         return concatenate([self, other], axis=1)
 
-    def drop_columns(self, col_names: Union[List[str], str]) -> "TimeSeries":
+    def drop_columns(self, col_names: Union[List[str], str]) -> Self:
         """
         Return a new ``TimeSeries`` instance with dropped columns/components.
 
@@ -2950,7 +2952,7 @@ class TimeSeries:
         new_xa = self._xa.drop_sel({"component": col_names})
         return self.__class__(new_xa)
 
-    def univariate_component(self, index: Union[str, int]) -> "TimeSeries":
+    def univariate_component(self, index: Union[str, int]) -> Self:
         """
         Retrieve one of the components of the series
         and return it as new univariate ``TimeSeries`` instance.
@@ -3043,7 +3045,7 @@ class TimeSeries:
             tg.holidays_timeseries(self.time_index, country_code, prov, state)
         )
 
-    def resample(self, freq: str, method: str = "pad", **kwargs) -> "TimeSeries":
+    def resample(self, freq: str, method: str = "pad", **kwargs) -> Self:
 
         """
         Build a reindexed ``TimeSeries`` with a given frequency.
@@ -3134,7 +3136,7 @@ class TimeSeries:
             Callable[[np.number], np.number],
             Callable[[Union[pd.Timestamp, int], np.number], np.number],
         ],
-    ) -> "TimeSeries":  # noqa: E501
+    ) -> Self:  # noqa: E501
         """
         Applies the function `fn` to the underlying NumPy array containing this series' values.
 
@@ -3859,7 +3861,7 @@ class TimeSeries:
 
     def with_columns_renamed(
         self, col_names: Union[List[str], str], col_names_new: Union[List[str], str]
-    ) -> "TimeSeries":
+    ) -> Self:
         """
         Return a new ``TimeSeries`` instance with new columns/components names. It also
         adapts the names in the hierarchy, if any.
@@ -3937,7 +3939,7 @@ class TimeSeries:
         elif axis == 2:  # do nothing
             return {self._xa.dims[0]: self.time_index, DIMS[1]: self.components}
 
-    def mean(self, axis: int = 2) -> "TimeSeries":
+    def mean(self, axis: int = 2) -> Self:
         """
         Return a ``TimeSeries`` containing the mean calculated over the specified axis.
 
@@ -3970,7 +3972,7 @@ class TimeSeries:
         )
         return self.__class__(new_xa)
 
-    def median(self, axis: int = 2) -> "TimeSeries":
+    def median(self, axis: int = 2) -> Self:
         """
         Return a ``TimeSeries`` containing the median calculated over the specified axis.
 
@@ -4004,7 +4006,7 @@ class TimeSeries:
         )
         return self.__class__(new_xa)
 
-    def sum(self, axis: int = 2) -> "TimeSeries":
+    def sum(self, axis: int = 2) -> Self:
         """
         Return a ``TimeSeries`` containing the sum calculated over the specified axis.
 
@@ -4037,7 +4039,7 @@ class TimeSeries:
         )
         return self.__class__(new_xa)
 
-    def min(self, axis: int = 2) -> "TimeSeries":
+    def min(self, axis: int = 2) -> Self:
         """
         Return a ``TimeSeries`` containing the min calculated over the specified axis.
 
@@ -4070,7 +4072,7 @@ class TimeSeries:
         )
         return self.__class__(new_xa)
 
-    def max(self, axis: int = 2) -> "TimeSeries":
+    def max(self, axis: int = 2) -> Self:
         """
         Return a ``TimeSeries`` containing the max calculated over the specified axis.
 
@@ -4102,7 +4104,7 @@ class TimeSeries:
         )
         return self.__class__(new_xa)
 
-    def var(self, ddof: int = 1) -> "TimeSeries":
+    def var(self, ddof: int = 1) -> Self:
         """
         Return a deterministic ``TimeSeries`` containing the variance of each component
         (over the samples) of this stochastic ``TimeSeries``.
@@ -4127,7 +4129,7 @@ class TimeSeries:
         )
         return self.__class__(new_xa)
 
-    def std(self, ddof: int = 1) -> "TimeSeries":
+    def std(self, ddof: int = 1) -> Self:
         """
         Return a deterministic ``TimeSeries`` containing the standard deviation of each component
         (over the samples) of this stochastic ``TimeSeries``.
@@ -4152,7 +4154,7 @@ class TimeSeries:
         )
         return self.__class__(new_xa)
 
-    def skew(self, **kwargs) -> "TimeSeries":
+    def skew(self, **kwargs) -> Self:
         """
         Return a deterministic ``TimeSeries`` containing the skew of each component
         (over the samples) of this stochastic ``TimeSeries``.
@@ -4176,7 +4178,7 @@ class TimeSeries:
         )
         return self.__class__(new_xa)
 
-    def kurtosis(self, **kwargs) -> "TimeSeries":
+    def kurtosis(self, **kwargs) -> Self:
         """
         Return a deterministic ``TimeSeries`` containing the kurtosis of each component
         (over the samples) of this stochastic ``TimeSeries``.
@@ -4200,7 +4202,7 @@ class TimeSeries:
         )
         return self.__class__(new_xa)
 
-    def quantile(self, quantile: float, **kwargs) -> "TimeSeries":
+    def quantile(self, quantile: float, **kwargs) -> Self:
         """
         Return a deterministic ``TimeSeries`` containing the single desired quantile of each component
         (over the samples) of this stochastic ``TimeSeries``.
@@ -4235,7 +4237,7 @@ class TimeSeries:
         self,
         other: Union["TimeSeries", xr.DataArray, np.ndarray],
         combine_fn: Callable[[np.ndarray, np.ndarray], np.ndarray],
-    ) -> "TimeSeries":
+    ) -> Self:
         """
         This is a helper function that allows us to combine this series with another one,
         directly applying an operation on their underlying numpy arrays.
@@ -4786,7 +4788,7 @@ class TimeSeries:
             pd.Timestamp,
             Any,
         ],
-    ) -> "TimeSeries":
+    ) -> Self:
         """Allow indexing on darts TimeSeries.
 
         The supported index types are the following base types as a single value, a list or a slice:
