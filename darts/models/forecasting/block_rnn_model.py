@@ -16,7 +16,6 @@ from darts.utils.torch import ExtractRnnOutput, TemporalBatchNorm1d
 logger = get_logger(__name__)
 
 
-# TODO add batch norm
 class _BlockRNNModule(PLPastCovariatesModule):
     def __init__(
         self,
