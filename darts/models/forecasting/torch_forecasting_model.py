@@ -1776,36 +1776,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             # remove the .ckpt added in TorchForecastingModel.save()
             model_ckpt_file_name = file_name[:-5]
 
-        # updating model attributes before self._init_model() which create new ckpt
-        model_ckpt_path = os.path.join(model_ckpt_dir, model_ckpt_file_name)
-        with open(model_ckpt_path, "rb") as model_ckpt_file:
-            model_ckpt: TorchForecastingModel = torch.load(
-                model_ckpt_file, map_location=kwargs.get("map_location", None)
-            )
-            # encoders are necessary for direct inference
-            if load_encoders:
-                raise_if(
-                    self.add_encoders is not None
-                    and self.add_encoders != model_ckpt.add_encoders,
-                    f"Encoders loaded from the checkpoint ({model_ckpt.add_encoders}) "
-                    f"are different from the encoders defined in the new model "
-                    f"({self.add_encoders}).",
-                    logger,
-                )
-                self.add_encoders = copy.deepcopy(model_ckpt.add_encoders)
-                self.encoders = copy.deepcopy(model_ckpt.encoders)
-            else:
-                raise_if(
-                    len(model_ckpt.add_encoders) > 0 and self.add_encoders is None,
-                    "Model was instantiated without encoders but the weights were trained with encoders "
-                    "that were not loaded. Either `load_encoders` can be set to `True` or the model "
-                    "loading the weights needs to be instantiated with `add_encoders` and fit() must "
-                    "be called before predict().",
-                    logger,
-                )
-
-                # TODO: sanity check that the new encoders match dims of the old encoders
-
         ckpt_path = os.path.join(checkpoint_dir, file_name)
         ckpt = torch.load(ckpt_path, **kwargs)
         ckpt_hyper_params = ckpt["hyper_parameters"]
@@ -1844,6 +1814,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             for sample_shape in ckpt["train_sample_shape"]
         ]
         self.train_sample = tuple(mock_train_sample)
+
+        # updating model attributes before self._init_model() which create new ckpt
+        model_ckpt_path = os.path.join(model_ckpt_dir, model_ckpt_file_name)
+        with open(model_ckpt_path, "rb") as model_ckpt_file:
+            model_ckpt: TorchForecastingModel = torch.load(
+                model_ckpt_file, map_location=kwargs.get("map_location", None)
+            )
+            # encoders are necessary for direct inference
+            self._load_encoders(model_ckpt, load_encoders)
 
         # instanciate the model without having to call `fit_from_dataset`
         self.model = self._init_model()
@@ -1935,6 +1914,69 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             if self.model_created
             else True  # all torch models can be probabilistic (via Dropout)
         )
+
+    def _load_encoders(self, model_ckpt: "TorchForecastingModel", load_encoders: bool):
+        """Load the encoders from a model with several sanity check."""
+        if load_encoders:
+            # avoid silently overwritting new encoders
+            raise_if(
+                self.add_encoders is not None
+                and self.add_encoders != model_ckpt.add_encoders,
+                f"Encoders loaded from the checkpoint ({model_ckpt.add_encoders}) "
+                f"are different from the encoders defined in the new model "
+                f"({self.add_encoders}).",
+                logger,
+            )
+            self.add_encoders: Dict = copy.deepcopy(model_ckpt.add_encoders)
+            self.encoders = copy.deepcopy(model_ckpt.encoders)
+        else:
+            raise_if(
+                len(model_ckpt.add_encoders) > 0 and self.add_encoders is None,
+                "Model was instantiated without encoders but the weights were trained with encoders "
+                "that were not loaded. Either `load_encoders` can be set to `True` or the model "
+                "loading the weights needs to be instantiated with a non-empty `add_encoders`.",
+                logger,
+            )
+
+            new_encoders = self.initialize_encoders()
+
+            # compare the dimensions of the new and ckpt encoders
+            if model_ckpt.encoders is not None:
+                # extract output dimensions of checkpoint encoders
+                ckpt_past_encs, ckpt_future_encs = model_ckpt.encoders.encoders
+                ckpt_enc_past_covs_comp = sum(
+                    past_enc.encoding_n_components for past_enc in ckpt_past_encs
+                )
+                ckpt_enc_future_covs_comp = sum(
+                    future_enc.encoding_n_components for future_enc in ckpt_future_encs
+                )
+
+                # extract output dimensions of new encoders
+                new_past_encs, new_future_encs = new_encoders.encoders
+                new_enc_past_covs_comp = sum(
+                    past_enc.encoding_n_components for past_enc in new_past_encs
+                )
+                new_enc_future_covs_comp = sum(
+                    future_enc.encoding_n_components for future_enc in new_future_encs
+                )
+
+                raise_if(
+                    new_enc_past_covs_comp != ckpt_enc_past_covs_comp
+                    or new_enc_future_covs_comp != ckpt_enc_future_covs_comp,
+                    f"Number of components mismatch between model's and checkpoint's encoders:\n"
+                    f"- past covs: new {new_enc_past_covs_comp}, checkpoint {ckpt_enc_past_covs_comp}\n"
+                    f"- future covs: new {new_enc_future_covs_comp}, checkpoint {ckpt_enc_future_covs_comp}",
+                    logger,
+                )
+
+            self.encoders = new_encoders
+
+            # display warning, an exception will be raised if `fit()`` is not called before `predict()`
+            if not self.encoders.fit_called and self.encoders.requires_fit:
+                logger.warning(
+                    "Model's weights were loaded without the encoders and at least one of "
+                    "them needs to be fitted: please call `fit()` before calling `predict()`."
+                )
 
     def __getstate__(self):
         # do not pickle the PyTorch LightningModule, and Trainer

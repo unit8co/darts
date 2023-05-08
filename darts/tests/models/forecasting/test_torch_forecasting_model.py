@@ -25,6 +25,7 @@ try:
         MetricCollection,
     )
 
+    from darts.models.forecasting.dlinear import DLinearModel
     from darts.models.forecasting.rnn_model import RNNModel
     from darts.utils.likelihood_models import GaussianLikelihood
 
@@ -219,28 +220,35 @@ if TORCH_AVAILABLE:
             )
 
         def test_save_and_load_weights_w_encoders(self):
-            """verify that manual save/load does not break encoders"""
+            """
+            Verify that save/load does not break encoders.
 
-            def create_RNNModel(
+            Note: since load_weights() calls load_weights_from_checkpoint(), it will be used
+            for all but one test.
+            Note: Using DLinear since it supports both past and future covariates
+            """
+
+            def create_DLinearModel(
                 model_name: str,
                 save_checkpoints: bool = False,
                 add_encoders: Dict = None,
             ):
-                return RNNModel(
-                    4,
-                    "RNN",
-                    2,
-                    1,
+                return DLinearModel(
+                    input_chunk_length=4,
+                    output_chunk_length=1,
+                    kernel_size=5,
                     model_name=model_name,
                     add_encoders=add_encoders,
                     work_dir=self.temp_work_dir,
                     save_checkpoints=save_checkpoints,
                     random_state=42,
+                    force_reset=True,
                 )
 
             model_dir = os.path.join(self.temp_work_dir)
             manual_name = "save_manual"
             auto_name = "save_auto"
+            auto_name_other = "save_auto_other"
             # create manually saved model checkpoints folder
             checkpoint_path_manual = os.path.join(model_dir, manual_name)
             os.mkdir(checkpoint_path_manual)
@@ -249,29 +257,61 @@ if TORCH_AVAILABLE:
                 checkpoint_path_manual, checkpoint_file_name
             )
 
-            # define two encoders sets
-            encoders = {
-                "cyclic": {"past": ["month"]},
+            # define encoders sets
+            encoders_past = {
+                "datetime_attribute": {"past": ["day"]},
                 "transformer": Scaler(),
             }
-            encoders_other = {
+            encoders_other_past = {
                 "datetime_attribute": {"past": ["hour"]},
                 "transformer": Scaler(),
             }
+            encoders_past_noscaler = {
+                "datetime_attribute": {"past": ["day"]},
+            }
+            encoders_2_past = {
+                "datetime_attribute": {"past": ["hour", "day"]},
+                "transformer": Scaler(),
+            }
+            encoders_past_n_future = {
+                "datetime_attribute": {"past": ["day"], "future": ["dayofweek"]},
+                "transformer": Scaler(),
+            }
 
-            model_auto_save = create_RNNModel(
-                auto_name, save_checkpoints=True, add_encoders=encoders
+            model_auto_save = create_DLinearModel(
+                auto_name, save_checkpoints=True, add_encoders=encoders_past
             )
             model_auto_save.fit(self.series, epochs=1)
 
-            model_manual_save = create_RNNModel(
-                manual_name, save_checkpoints=False, add_encoders=encoders
+            model_manual_save = create_DLinearModel(
+                manual_name, save_checkpoints=False, add_encoders=encoders_past
             )
             model_manual_save.fit(self.series, epochs=1)
             model_manual_save.save(model_path_manual)
 
-            # load automatic checkpoint encoders in model without encoders
-            model_no_enc = create_RNNModel("no_encoder", add_encoders=None)
+            model_auto_save_other = create_DLinearModel(
+                auto_name_other, save_checkpoints=True, add_encoders=encoders_other_past
+            )
+            model_auto_save_other.fit(self.series, epochs=1)
+
+            # prediction are different when using different encoders
+            self.assertNotEqual(
+                model_auto_save.predict(n=4),
+                model_auto_save_other.predict(n=4),
+            )
+
+            # model with undeclared encoders
+            model_no_enc = create_DLinearModel("no_encoder", add_encoders=None)
+            # weights were trained with encoders, new model must be instantiated with encoders
+            with self.assertRaises(ValueError):
+                model_no_enc.load_weights_from_checkpoint(
+                    auto_name,
+                    work_dir=self.temp_work_dir,
+                    best=False,
+                    load_encoders=False,
+                    map_location="cpu",
+                )
+            # overwritte undeclared encoders
             model_no_enc.load_weights_from_checkpoint(
                 auto_name,
                 work_dir=self.temp_work_dir,
@@ -287,69 +327,106 @@ if TORCH_AVAILABLE:
                 model_auto_save.predict(n=4),
                 model_no_enc.predict(n=4, series=self.series),
             )
-            # since load_weights() calls load_weights_from_checkpoint(), it will be used
-            # for the rest of the tests
 
-            # load manual checkpoint encoders in model without encoders
-            model_no_enc = create_RNNModel("no_encoder", add_encoders=None)
-            model_no_enc.load_weights(
+            # model with identical encoders (fittable)
+            model_same_enc_noload = create_DLinearModel(
+                "same_encoder_noload", add_encoders=encoders_past
+            )
+            model_same_enc_noload.load_weights(
+                model_path_manual, load_encoders=False, map_location="cpu"
+            )
+            model_same_enc_noload.to_cpu()
+            # cannot predict because of un-fitted encoder
+            with self.assertRaises(ValueError):
+                model_same_enc_noload.predict(n=4, series=self.series)
+
+            model_same_enc_load = create_DLinearModel(
+                "same_encoder_load", add_encoders=encoders_past
+            )
+            model_same_enc_load.load_weights(
                 model_path_manual, load_encoders=True, map_location="cpu"
             )
-            model_no_enc.to_cpu()
-
-            self.assertEqual(model_manual_save.add_encoders, model_no_enc.add_encoders)
+            model_same_enc_load.to_cpu()
             self.assertEqual(
                 model_manual_save.predict(n=4),
-                model_no_enc.predict(n=4, series=self.series),
+                model_same_enc_load.predict(n=4, series=self.series),
             )
 
-            # not loading ckpt encoders in model without encoders
+            # model with different encoders (fittable)
+            model_other_enc_load = create_DLinearModel(
+                "other_encoder_load", add_encoders=encoders_other_past
+            )
+            # cannot overwritte different declared encoders
             with self.assertRaises(ValueError):
-                model_no_enc = create_RNNModel("no_encoder", add_encoders=None)
-                model_no_enc.load_weights(
-                    model_path_manual, load_encoders=False, map_location="cpu"
-                )
-
-            # load checkpoint encoders in model with identical encoders
-            model_same_enc = create_RNNModel("same_encoder", add_encoders=encoders)
-            model_same_enc.load_weights(
-                model_path_manual, load_encoders=True, map_location="cpu"
-            )
-            model_same_enc.to_cpu()
-            self.assertEqual(
-                model_manual_save.add_encoders, model_same_enc.add_encoders
-            )
-            self.assertEqual(
-                model_manual_save.predict(n=4),
-                model_same_enc.predict(n=4, series=self.series),
-            )
-
-            # load checkpoint encoders in model with different encoders
-            with self.assertRaises(ValueError):
-                model_new_enc = create_RNNModel(
-                    "other_encoder", add_encoders=encoders_other
-                )
-                model_new_enc.load_weights(
+                model_other_enc_load.load_weights(
                     model_path_manual, load_encoders=True, map_location="cpu"
                 )
 
-            # not loading ckpt encoders in model with different encoders
-            model_new_enc = create_RNNModel(
-                "other_encoder", add_encoders=encoders_other
+            # model with different encoders but same dimensions (fittable)
+            model_other_enc_noload = create_DLinearModel(
+                "other_encoder_noload", add_encoders=encoders_other_past
             )
-            model_new_enc.load_weights(
+            model_other_enc_noload.load_weights(
                 model_path_manual, load_encoders=False, map_location="cpu"
             )
-            model_new_enc.to_cpu()
-            self.assertNotEqual(model_new_enc.add_encoders, encoders)
-            self.assertEqual(model_new_enc.add_encoders, encoders_other)
-            # since fit() was not called, new encoders are not instantiated
-            self.assertTrue(model_new_enc.encoders is None)
+            model_other_enc_noload.to_cpu()
+            self.assertEqual(model_other_enc_noload.add_encoders, encoders_other_past)
+            # new encoders were instantiated
+            self.assertNotEqual(model_other_enc_noload.encoders, None)
+            # since fit() was not called, new fittable encoders were not trained
+            with self.assertRaises(ValueError):
+                model_other_enc_noload.predict(n=4, series=self.series)
 
-            model_new_enc.fit(self.series, epochs=1)
-            # check that new encoders are instantiated
-            self.assertFalse(model_new_enc.encoders is None)
-            model_new_enc.predict(n=4, series=self.series)
+            # predict() can be called after fit()
+            model_other_enc_noload.fit(self.series, epochs=1)
+            model_other_enc_noload.predict(n=4, series=self.series)
+
+            # model with same encoders but no scaler (non-fittable)
+            model_new_enc_noscaler_noload = create_DLinearModel(
+                "same_encoder_noscaler", add_encoders=encoders_past_noscaler
+            )
+            model_new_enc_noscaler_noload.load_weights(
+                model_path_manual, load_encoders=False, map_location="cpu"
+            )
+            model_new_enc_noscaler_noload.to_cpu()
+            self.assertNotEqual(
+                model_new_enc_noscaler_noload.add_encoders, encoders_past
+            )
+            self.assertEqual(
+                model_new_enc_noscaler_noload.add_encoders, encoders_past_noscaler
+            )
+            # predict() can be called directly since new encoders don't contain scaler
+            model_new_enc_noscaler_noload.predict(n=4, series=self.series)
+
+            # model with encoders containing more components (fittable)
+            model_new_enc_2_past = create_DLinearModel(
+                "encoder_2_components_past", add_encoders=encoders_2_past
+            )
+            # cannot overwritte different declared encoders
+            with self.assertRaises(ValueError):
+                model_new_enc_2_past.load_weights(
+                    model_path_manual, load_encoders=True, map_location="cpu"
+                )
+            # new encoders have one additional past component
+            with self.assertRaises(ValueError):
+                model_new_enc_2_past.load_weights(
+                    model_path_manual, load_encoders=False, map_location="cpu"
+                )
+
+            # model with encoders containing past and future covs (fittable)
+            model_new_enc_past_n_future = create_DLinearModel(
+                "encoder_past_n_future", add_encoders=encoders_past_n_future
+            )
+            # cannot overwritte different declared encoders
+            with self.assertRaises(ValueError):
+                model_new_enc_past_n_future.load_weights(
+                    model_path_manual, load_encoders=True, map_location="cpu"
+                )
+            # identical past components, but different future components
+            with self.assertRaises(ValueError):
+                model_new_enc_past_n_future.load_weights(
+                    model_path_manual, load_encoders=False, map_location="cpu"
+                )
 
         def test_create_instance_new_model_no_name_set(self):
             RNNModel(12, "RNN", 10, 10, work_dir=self.temp_work_dir)
