@@ -1896,7 +1896,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             if include_default_params
             or (
                 isinstance(v, (pd.DataFrame, np.ndarray))
-                and np.all(v != default_model_params.get(k, None))
+                and np.any(v != default_model_params.get(k, None))
             )
             or v != default_model_params.get(k, None)
         ]
