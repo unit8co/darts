@@ -11,6 +11,7 @@ import torch.nn as nn
 from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
+from darts.utils.torch import ExtractRnnOutput, TemporalBatchNorm1d
 
 logger = get_logger(__name__)
 
@@ -27,6 +28,7 @@ class _BlockRNNModule(PLPastCovariatesModule):
         nr_params: int,
         num_layers_out_fc: Optional[List] = None,
         dropout: float = 0.0,
+        normalization: str = None,
         **kwargs,
     ):
 
@@ -62,6 +64,8 @@ class _BlockRNNModule(PLPastCovariatesModule):
             This network connects the last hidden layer of the PyTorch RNN module to the output.
         dropout
             The fraction of neurons that are dropped in all-but-last RNN layers.
+        normalization
+            The name of the normalization applied after RNN and FC layers ("batch", "layer")
         **kwargs
             all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
 
@@ -88,32 +92,25 @@ class _BlockRNNModule(PLPastCovariatesModule):
         self.name = name
 
         # Defining the RNN module
-        self.rnn = getattr(nn, name)(
-            input_size, hidden_dim, num_layers, batch_first=True, dropout=dropout
+        self.rnn = self._rnn_sequence(
+            name, input_size, hidden_dim, num_layers, dropout, normalization
         )
 
         # The RNN module is followed by a fully connected layer, which maps the last hidden layer
         # to the output of desired length
-        last = hidden_dim
-        feats = []
-        for feature in num_layers_out_fc + [
-            self.output_chunk_length * target_size * nr_params
-        ]:
-            feats.append(nn.Linear(last, feature))
-            last = feature
-        self.fc = nn.Sequential(*feats)
+        self.fc = self._fc_layer(
+            hidden_dim, num_layers_out_fc, target_size, normalization
+        )
 
     def forward(self, x_in: Tuple):
         x, _ = x_in
         # data is of size (batch_size, input_chunk_length, input_size)
         batch_size = x.size(0)
 
-        out, hidden = self.rnn(x)
+        hidden = self.rnn(x)
 
         """ Here, we apply the FC network only on the last output point (at the last time step)
         """
-        if self.name == "LSTM":
-            hidden = hidden[0]
         predictions = hidden[-1, :, :]
         predictions = self.fc(predictions)
         predictions = predictions.view(
@@ -122,6 +119,64 @@ class _BlockRNNModule(PLPastCovariatesModule):
 
         # predictions is of size (batch_size, output_chunk_length, 1)
         return predictions
+
+    def _rnn_sequence(
+        self,
+        name: str,
+        input_size: int,
+        hidden_dim: int,
+        num_layers: int,
+        dropout: float = 0.0,
+        normalization: str = None,
+    ):
+
+        modules = []
+        for i in range(num_layers):
+            input = input_size if (i == 0) else hidden_dim
+            rnn = getattr(nn, name)(input, hidden_dim, 1, batch_first=True)
+
+            modules.append(rnn)
+            modules.append(ExtractRnnOutput())
+
+            if normalization:
+                modules.append(self._normalization_layer(normalization, hidden_dim))
+            if (
+                i < num_layers - 1
+            ):  # pytorch RNNs don't have dropout applied on the last layer
+                modules.append(nn.Dropout(dropout))
+        return nn.Sequential(*modules)
+
+    def _fc_layer(
+        self,
+        input_size: int,
+        num_layers_out_fc: list[int],
+        target_size: int,
+        normalization: str = None,
+    ):
+        if not num_layers_out_fc:
+            num_layers_out_fc = []
+
+        last = input_size
+        feats = []
+        for feature in num_layers_out_fc:
+            if normalization:
+                feats.append(self._normalization_layer(normalization, last, False))
+            feats.append(nn.Linear(last, feature))
+            last = feature
+        feats.append(nn.Linear(last, self.out_len * target_size * self.nr_params))
+        return nn.Sequential(*feats)
+
+    def _normalization_layer(
+        self, normalization: str, hidden_size: int, is_temporal: bool
+    ):
+
+        if normalization == "batch":
+            if is_temporal:
+                return TemporalBatchNorm1d(hidden_size)
+            else:
+                return nn.BatchNorm1d(hidden_size)
+        elif normalization == "layer":
+            return nn.LayerNorm(hidden_size)
 
 
 class BlockRNNModel(PastCovariatesTorchModel):

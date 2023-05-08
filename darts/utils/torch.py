@@ -112,3 +112,28 @@ def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
             return decorated(self, *args, **kwargs)
 
     return decorator
+
+
+class TemporalBatchNorm1d(nn.Module):
+    def __init__(self, feature_size) -> None:
+        super().__init__()
+        self.norm = nn.BatchNorm1d(feature_size)
+
+    def forward(self, input):
+        input = self._reshape_input(input)  # Reshape N L C -> N C L
+        input = self.norm(input)
+        input = self._reshape_input(input)
+        return input if len(input) > 1 else input[0]
+
+    def _reshape_input(self, x):
+        shape = x.shape
+        return x.reshape(shape[0], shape[2], shape[1])
+
+
+class ExtractRnnOutput(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def forward(self, input):
+        output, _ = input
+        return output
