@@ -478,8 +478,7 @@ if TORCH_AVAILABLE:
             self.assertEqual(15, model1.epochs_trained)
 
         def test_load_weights_from_checkpoint(self):
-            ts_training = self.series[:90]
-            ts_test = self.series[90:]
+            ts_training, ts_test = self.series.split_before(90)
             original_model_name = "original"
             retrained_model_name = "retrained"
             # original model, checkpoints are saved
@@ -557,8 +556,7 @@ if TORCH_AVAILABLE:
                 )
 
         def test_load_weights(self):
-            ts_training = self.series[:90]
-            ts_test = self.series[90:]
+            ts_training, ts_test = self.series.split_before(90)
             original_model_name = "original"
             retrained_model_name = "retrained"
             # original model, checkpoints are saved
@@ -605,6 +603,56 @@ if TORCH_AVAILABLE:
                 f"Retrained model has a greater mape error than the original model, "
                 f"respectively {retrained_mape} and {original_mape}",
             )
+
+        def test_multi_steps_pipeline(self):
+            ts_training, ts_val = self.series.split_before(75)
+            pretrain_model_name = "pre-train"
+            retrained_model_name = "re-train"
+
+            def create_RNNModel(model_name: str):
+                return RNNModel(
+                    input_chunk_length=4,
+                    hidden_dim=3,
+                    add_encoders={
+                        "cyclic": {"past": ["month"]},
+                        "datetime_attribute": {
+                            "past": ["hour"],
+                        },
+                        "transformer": Scaler(),
+                    },
+                    n_epochs=2,
+                    model_name=model_name,
+                    work_dir=self.temp_work_dir,
+                    force_reset=True,
+                    save_checkpoints=True,
+                )
+
+            # pretraining
+            model = create_RNNModel(pretrain_model_name)
+            model.fit(
+                ts_training,
+                val_series=ts_val,
+            )
+
+            # finetuning
+            model = create_RNNModel(retrained_model_name)
+            model.load_weights_from_checkpoint(
+                model_name=pretrain_model_name,
+                work_dir=self.temp_work_dir,
+                best=True,
+            )
+            model.fit(
+                ts_training,
+                val_series=ts_val,
+            )
+
+            # prediction
+            model = model.load_from_checkpoint(
+                model_name=retrained_model_name,
+                work_dir=self.temp_work_dir,
+                best=True,
+            )
+            model.predict(4, series=ts_training)
 
         def test_optimizers(self):
 
