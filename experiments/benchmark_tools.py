@@ -2,16 +2,16 @@ import json
 import logging
 import os
 import warnings
-from ast import Dict
 from tempfile import TemporaryDirectory
+from typing import Dict
 
 import pandas as pd
+from model_evaluation import evaluate_model, illustrate_model
+from optuna_search import optuna_search
+from param_space import FIXED_PARAMS
 
 from darts import TimeSeries
 from darts.metrics import mae
-from experiments.model_evaluation import evaluate_model, illustrate_model
-from experiments.optuna_search import optuna_search
-from experiments.param_space import FIXED_PARAMS
 
 
 def convert_to_ts(ds: TimeSeries):

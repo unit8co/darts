@@ -4,6 +4,7 @@ This is the main file for the benchmarking experiment.
 
 import os
 
+from benchmark_tools import convert_to_ts, experiment
 from sklearn.preprocessing import StandardScaler
 
 from darts.dataprocessing.transformers import Scaler
@@ -29,7 +30,6 @@ from darts.models import (
     TCNModel,
 )
 from darts.utils import missing_values
-from experiments.benchmark_tools import convert_to_ts, experiment
 
 # Loading the models to benchmark
 
@@ -118,14 +118,15 @@ ds = scaler.fit_transform(
 datasets += [{"series": ds, "dataset_name": "USGasoline"}]
 datasets = datasets
 
-
-if __name__ == "main":
-
+if __name__ == "__main__":
+    # silence_prompt()
     experiment(
-        datasets=datasets,
-        models=models,
+        datasets=datasets[3:4],
+        # models=models,
+        models=[NHiTSModel],
         grid_search=True,
         forecast_horizon=1000,
-        time_budget=180,
-        experiment_dir=os.path.join(os.getcwd(), "results_long_forecast"),
+        time_budget=600,
+        repeat=5,
+        experiment_dir=os.path.join(os.getcwd(), "results_tmp"),
     )
