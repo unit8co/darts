@@ -3,9 +3,13 @@ This file defines, for each model, the hyperparameter space for optuna to explor
 """
 from typing import Any, Dict
 
+from sklearn.preprocessing import StandardScaler
+
+from darts.dataprocessing.transformers import Scaler
 from darts.models import (
     ARIMA,
     FFT,
+    AutoARIMA,
     CatBoostModel,
     DLinearModel,
     LightGBMModel,
@@ -19,15 +23,19 @@ from darts.models import (
 )
 
 # --------------------------------------- UTILS
+
+
 N_EPOCHS = 15
 encoders_dict_past = {
-    "datetime_attribute": {"past": ["month", "week", "hour", "dayofweek"]},
     "cyclic": {"past": ["month", "week", "hour", "dayofweek"]},
+    "datetime_attribute": {"future": ["year"]},
+    "transformer": Scaler(StandardScaler()),
 }
 
 encoders_dict_future = {
-    "datetime_attribute": {"future": ["month", "week", "hour", "dayofweek"]},
     "cyclic": {"future": ["month", "week", "hour", "dayofweek"]},
+    "datetime_attribute": {"future": ["year"]},
+    "transformer": Scaler(StandardScaler()),
 }
 
 
@@ -161,9 +169,7 @@ def _params_TCNMODEL(trial, series, **kwargs):
     input_size = suggest_lags(trial, series, "input_chunk_length")
 
     trial.suggest_int("kernel_size", 2, input_size - 1)
-    trial.suggest_int("num_filters", 2, 6)
-    trial.suggest_categorical("weight_norm", [False, True])
-    trial.suggest_int("dilation_base", 2, 4)
+    trial.suggest_int("num_layers", 1, 4)
     trial.suggest_float("dropout", 0.0, 0.4)
     trial.suggest_categorical("add_past_encoders", [False, True])
 
@@ -238,7 +244,6 @@ def _fixed_params_LinearRegression(
     **kwargs
 ):
     output = dict()
-
     if has_future_cov:
         output["lags_future_covariates"] = lags_future_covariates
     if has_past_cov:
@@ -321,6 +326,10 @@ def _params_fft(trial, series, **kwargs):
         trial.suggest_int("trend_poly_degree", 1, 3)
 
 
+def _fixed_params_fft(**kwargs):
+    return {"trend": "poly", "trend_poly_degree": 0}
+
+
 OPTUNA_SEARCH_SPACE = {
     TCNModel.__name__: _params_TCNMODEL,
     DLinearModel.__name__: _params_DLINEAR,
@@ -339,11 +348,12 @@ FIXED_PARAMS = {
     NBEATSModel.__name__: _fixed_params_Nbeats,
     NHiTSModel.__name__: _fixed_params_NHITS,
     ARIMA.__name__: _fixed_params_arima,
-    FFT.__name__: _empty_params,
+    FFT.__name__: _fixed_params_fft,
     Prophet.__name__: _empty_params,
     TCNModel.__name__: _fixed_params_TCNMODEL,
     NaiveSeasonal.__name__: _empty_params,
     LightGBMModel.__name__: _fixed_params_LGBMModel,
     NLinearModel.__name__: _fixed_params_NLINEAR,
     DLinearModel.__name__: _fixed_params_DLINEAR,
+    AutoARIMA.__name__: _empty_params,
 }

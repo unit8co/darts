@@ -5,7 +5,6 @@ from typing import Callable, Dict
 import ray
 from model_evaluation import evaluate_model
 from param_space import FIXED_PARAMS, OPTUNA_SEARCH_SPACE, optuna2params
-from pytorch_lightning.callbacks import EarlyStopping
 from ray.air import session
 from ray.tune.search.optuna import OptunaSearch
 from sklearn.preprocessing import MaxAbsScaler
@@ -21,17 +20,6 @@ from darts.models.forecasting.torch_forecasting_model import (
 from darts.timeseries import TimeSeries
 from darts.utils import missing_values
 
-# DEEP LEARNING MODELS
-torch_early_stopper = EarlyStopping(
-    "val_loss", min_delta=0.001, patience=3, verbose=True
-)
-
-PL_TRAINER_KWARGS = {
-    "enable_progress_bar": False,
-    "accelerator": "cpu",
-    "callbacks": [torch_early_stopper],
-}
-
 
 def evaluation_step(
     config,
@@ -42,6 +30,7 @@ def evaluation_step(
     split: float = 0.85,
     past_covariates: TimeSeries = None,
     future_covariates: TimeSeries = None,
+    forecast_horizon=1,
     num_test_points: int = 20,
 ):
     import warnings
@@ -61,6 +50,7 @@ def evaluation_step(
         past_covariates=past_covariates,
         future_covariates=future_covariates,
         num_test_points=num_test_points,
+        forecast_horizon=forecast_horizon,
     )
     session.report({"metric": result})
 
@@ -77,6 +67,7 @@ def optuna_search(
     num_test_points: int = 20,
     time_budget=60,
     optuna_dir=None,
+    forecast_horizon=1,
     **kwargs,
 ):
 
@@ -91,8 +82,6 @@ def optuna_search(
     fixed_params = fixed_params.copy() or FIXED_PARAMS[model_class.__name__](
         **dataset_data
     )
-    if issubclass(model_class, TorchForecastingModel):
-        fixed_params["pl_trainer_kwargs"] = PL_TRAINER_KWARGS
 
     if not optuna_search_space and model_class.__name__ not in OPTUNA_SEARCH_SPACE:
         warnings.warn(
@@ -115,6 +104,7 @@ def optuna_search(
         past_covariates=past_covariates,
         future_covariates=future_covariates,
         num_test_points=num_test_points,
+        forecast_horizon=forecast_horizon,
     )
 
     search_alg = OptunaSearch(
