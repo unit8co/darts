@@ -28,7 +28,7 @@ from darts.models import (
 N_EPOCHS = 15
 encoders_dict_past = {
     "cyclic": {"past": ["month", "week", "hour", "dayofweek"]},
-    "datetime_attribute": {"future": ["year"]},
+    "datetime_attribute": {"past": ["year"]},
     "transformer": Scaler(StandardScaler()),
 }
 
@@ -74,6 +74,16 @@ def optuna2params(optuna_params: Dict[str, Any]) -> Dict[str, Any]:
         del output_params["lags_future_covariates_past"]
         del output_params["lags_future_covariates_future"]
 
+    if optuna_params.get("prophet_seasonality_period"):
+        optuna_params["add_seasonalities"] = {
+            "name": "optuna_seasonality",
+            "seasonal_periods": optuna_params["prophet_seasonality_period"],
+            "fourier_order": 10,
+            "mode": "additive",  # assuming additive to limit search space
+        }
+
+        del output_params["prophet_seasonality_period"]
+
     return output_params
 
 
@@ -96,9 +106,11 @@ def fixed_lags(series, suggested_lags=None):
 
 
 # --------------------------------------- NHITS
-def _params_NHITS(trial, series, **kwargs):
+def _params_NHITS(trial, series, forecast_horizon, **kwargs):
     suggest_lags(trial, series, "input_chunk_length")
+    trial.suggest_categorical("output_chunk_length", [1, forecast_horizon])
 
+    trial.suggest_categorical("output_chunk_length", [1, forecast_horizon])
     trial.suggest_categorical("add_past_encoders", [False, True])
 
     trial.suggest_int("num_stacks", 2, 3)
@@ -108,11 +120,11 @@ def _params_NHITS(trial, series, **kwargs):
     trial.suggest_float("dropout", 0.0, 0.4)
 
 
-def _fixed_params_NHITS(series, suggested_lags=None, **kwargs):
+def _fixed_params_NHITS(series, forecast_horizon, suggested_lags=None, **kwargs):
 
     output = dict()
     output["input_chunk_length"] = fixed_lags(series, suggested_lags)
-    output["output_chunk_length"] = 1
+    output["output_chunk_length"] = forecast_horizon
     output["n_epochs"] = N_EPOCHS
     output["pl_trainer_kwargs"] = {"enable_progress_bar": False}
 
@@ -120,9 +132,10 @@ def _fixed_params_NHITS(series, suggested_lags=None, **kwargs):
 
 
 # --------------------------------------- NLINEAR
-def _params_NLINEAR(trial, series, **kwargs):
+def _params_NLINEAR(trial, series, forecast_horizon, **kwargs):
 
     suggest_lags(trial, series, "input_chunk_length")
+    trial.suggest_categorical("output_chunk_length", [1, forecast_horizon])
 
     trial.suggest_categorical("const_init", [False, True])
     normalize = trial.suggest_categorical("normalize", [False, True])
@@ -134,19 +147,21 @@ def _params_NLINEAR(trial, series, **kwargs):
         trial.suggest_categorical("add_past_encoders", [False, True])
 
 
-def _fixed_params_NLINEAR(series, suggested_lags=None, **kwargs):
+def _fixed_params_NLINEAR(series, forecast_horizon, suggested_lags=None, **kwargs):
 
     output = dict()
     output["input_chunk_length"] = fixed_lags(series, suggested_lags)
-    output["output_chunk_length"] = 1
+    output["output_chunk_length"] = forecast_horizon
     output["n_epochs"] = N_EPOCHS
     return output
 
 
 # --------------------------------------- DLINEAR
-def _params_DLINEAR(trial, series, **kwargs):
+def _params_DLINEAR(trial, series, forecast_horizon, **kwargs):
 
     input_size = suggest_lags(trial, series, "input_chunk_length")
+    trial.suggest_categorical("output_chunk_length", [1, forecast_horizon])
+
     trial.suggest_int("kernel_size", 2, input_size)
     shared_weights = trial.suggest_categorical("shared_weights", [False, True])
     if not shared_weights:
@@ -155,18 +170,19 @@ def _params_DLINEAR(trial, series, **kwargs):
     trial.suggest_categorical("const_init", [False, True])
 
 
-def _fixed_params_DLINEAR(series, suggested_lags=None, **kwargs):
+def _fixed_params_DLINEAR(series, forecast_horizon, suggested_lags=None, **kwargs):
     output = dict()
     output["input_chunk_length"] = fixed_lags(series, suggested_lags)
-    output["output_chunk_length"] = 1
+    output["output_chunk_length"] = forecast_horizon
     output["n_epochs"] = N_EPOCHS
     return output
 
 
 # --------------------------------------- TCNMODEL
-def _params_TCNMODEL(trial, series, **kwargs):
+def _params_TCNMODEL(trial, series, forecast_horizon, **kwargs):
 
     input_size = suggest_lags(trial, series, "input_chunk_length")
+    trial.suggest_categorical("output_chunk_length", [1, forecast_horizon])
 
     trial.suggest_int("kernel_size", 2, input_size - 1)
     trial.suggest_int("num_layers", 1, 4)
@@ -174,12 +190,12 @@ def _params_TCNMODEL(trial, series, **kwargs):
     trial.suggest_categorical("add_past_encoders", [False, True])
 
 
-def _fixed_params_TCNMODEL(series, suggested_lags=None, **kwargs):
+def _fixed_params_TCNMODEL(series, forecast_horizon, suggested_lags=None, **kwargs):
     output = dict()
     output["input_chunk_length"] = (
         suggested_lags if suggested_lags else max(5, int(len(series) * 0.05))
     )
-    output["output_chunk_length"] = 1
+    output["output_chunk_length"] = forecast_horizon
     output["n_epochs"] = N_EPOCHS
 
     return output
@@ -276,19 +292,21 @@ def _fixed_params_Catboost(
 
 
 # --------------------------------------- NBEATS
-def _params_Nbeats(trial, series, **kwargs):
+def _params_Nbeats(trial, series, forecast_horizon, **kwargs):
     suggest_lags(trial, series, "input_chunk_length")
+    trial.suggest_categorical("output_chunk_length", [1, forecast_horizon])
+
     trial.suggest_categorical("add_past_encoders", [False, True])
     trial.suggest_categorical("generic_architecture", [False, True])
     trial.suggest_float("dropout", 0.0, 0.4)
 
 
-def _fixed_params_Nbeats(series, suggested_lags=None, **kwargs):
+def _fixed_params_Nbeats(series, forecast_horizon, suggested_lags=None, **kwargs):
     output = dict()
     output["input_chunk_length"] = (
         suggested_lags if suggested_lags else max(5, int(len(series) * 0.05))
     )
-    output["output_chunk_length"] = 1
+    output["output_chunk_length"] = forecast_horizon
     output["generic_architecture"] = True
     output["n_epochs"] = N_EPOCHS
 
@@ -309,7 +327,7 @@ def _params_arima(trial, series, **kwargs):
         trial.suggest_int("d", 0, 0)
 
 
-def _fixed_params_arima(series, **kwargs):
+def _fixed_params_arima(**kwargs):
     output = dict()
     output["p"] = 10
     output["d"] = 1
@@ -319,8 +337,21 @@ def _fixed_params_arima(series, **kwargs):
     return output
 
 
+# --------------------------------------- prophet
+def _params_prophet(trial, series, **kwargs):
+    growth = trial.suggest_categorical("growth", ["linear", "logistic"])
+    if growth == "logistic":
+        floor = trial.suggest_float("floor", 0.0, 10.0)
+        trial.suggest_float("cap", floor, 10.0)
+
+    trial.suggest_int(
+        "prophet_seasonality_period", 4, max(4, int(len(series * 0.25))), log=True
+    )
+    trial.suggest_categorical("add_future_encoders", [False, True])
+
+
 # --------------------------------------- FFT
-def _params_fft(trial, series, **kwargs):
+def _params_fft(trial, **kwargs):
     trend = trial.suggest_categorical("trend", ["poly", "exp", None])
     if trend == "poly":
         trial.suggest_int("trend_poly_degree", 1, 3)
@@ -339,6 +370,7 @@ OPTUNA_SEARCH_SPACE = {
     FFT.__name__: _params_fft,
     LightGBMModel.__name__: _params_LGBMModel,
     LinearRegressionModel.__name__: _params_LinearRegression,
+    Prophet.__name__: _params_prophet,
     # ARIMA.__name__: _params_arima,
 }
 

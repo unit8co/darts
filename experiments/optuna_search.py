@@ -31,7 +31,7 @@ def evaluation_step(
     past_covariates: TimeSeries = None,
     future_covariates: TimeSeries = None,
     forecast_horizon=1,
-    num_test_points: int = 20,
+    stride: int = 1,
 ):
     import warnings
 
@@ -49,7 +49,7 @@ def evaluation_step(
         split=split,
         past_covariates=past_covariates,
         future_covariates=future_covariates,
-        num_test_points=num_test_points,
+        stride=stride,
         forecast_horizon=forecast_horizon,
     )
     session.report({"metric": result})
@@ -64,7 +64,7 @@ def optuna_search(
     split: float = 0.85,
     past_covariates: TimeSeries = None,
     future_covariates: TimeSeries = None,
-    num_test_points: int = 20,
+    stride: int = 1,
     time_budget=60,
     optuna_dir=None,
     forecast_horizon=1,
@@ -90,7 +90,9 @@ def optuna_search(
         return fixed_params
 
     optuna_search_space = optuna_search_space or (
-        lambda trial: OPTUNA_SEARCH_SPACE[model_class.__name__](trial, **dataset_data)
+        lambda trial: OPTUNA_SEARCH_SPACE[model_class.__name__](
+            trial, **dataset_data, forecast_horizon=forecast_horizon
+        )
     )
 
     # building optuna objects
@@ -103,7 +105,7 @@ def optuna_search(
         split=split,
         past_covariates=past_covariates,
         future_covariates=future_covariates,
-        num_test_points=num_test_points,
+        stride=stride,
         forecast_horizon=forecast_horizon,
     )
 

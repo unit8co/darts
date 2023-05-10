@@ -44,9 +44,10 @@ def evaluate_model(
     split: float = 0.85,
     past_covariates: TimeSeries = None,
     future_covariates: TimeSeries = None,
-    num_test_points: int = 20,
+    stride: int = 1,
     forecast_horizon=1,
     repeat=1,
+    get_output_sample=False,
     **kwargs
 ):
     """
@@ -69,82 +70,17 @@ def evaluate_model(
         The past covariates for the model.
     future_covariates
         The future covariates for the model.
-    num_test_points
-        The number of test points to be used for the evaluation.
+    stride
+        Can be used to reduce the number of points tested for performance.
     """
+
     set_randommness()
 
-    model_instance, function_args = prepare_data(
-        model_class,
-        series,
-        model_params,
-        metric,
-        split,
-        past_covariates,
-        future_covariates,
-        num_test_points,
-        forecast_horizon,
-    )
-
-    losses = [model_instance.backtest(**function_args) for _ in range(repeat)]
-
-    return np.mean(losses)
-
-
-def illustrate_model(
-    model_class: ForecastingModel,
-    series: TimeSeries,
-    model_params: Dict = dict(),
-    split: float = 0.85,
-    past_covariates: TimeSeries = None,
-    future_covariates: TimeSeries = None,
-    num_test_points: int = 20,
-    forecast_horizon=1,
-    **kwargs
-):
-    """
-    This function performs the same operation as evaluate_model
-    but prodive the output instead for visual exploration
-    """
-    model_instance, function_args = prepare_data(
-        model_class,
-        series,
-        model_params,
-        split=split,
-        past_covariates=past_covariates,
-        future_covariates=future_covariates,
-        num_test_points=num_test_points,
-        forecast_horizon=forecast_horizon,
-    )
-
-    return model_instance.historical_forecasts(**function_args)
-
-
-def prepare_data(
-    model_class: ForecastingModel,
-    series: TimeSeries,
-    model_params: Dict = dict(),
-    metric: Callable[[TimeSeries, TimeSeries], float] = None,
-    split: float = 0.85,
-    past_covariates: TimeSeries = None,
-    future_covariates: TimeSeries = None,
-    num_test_points: int = 20,
-    forecast_horizon=1,
-    **kwargs
-):
-    """
-    Standardizes inputs to have the same entry point for all models and datasets
-    """
-
+    # Standardizes inputs to have the same entry point for all models and datasets
     if issubclass(model_class, TorchForecastingModel):
         model_params["pl_trainer_kwargs"] = PL_TRAINER_KWARGS
     # now we performe the evaluation
     model_instance = model_class(**model_params)
-
-    stride = int((1 - split) * len(series) / num_test_points)
-    stride = max(stride, 1)
-    forecast_horizon = min(stride, forecast_horizon)
-
     is_local_model = isinstance(model_instance, LocalForecastingModel)
     retrain = True if is_local_model else retrain_func
 
@@ -167,7 +103,12 @@ def prepare_data(
     ):
         function_args["future_covariates"] = future_covariates
 
-    return model_instance, function_args
+    # performing evaluation
+    losses = [model_instance.backtest(**function_args) for _ in range(repeat)]
+    if not get_output_sample:
+        return np.mean(losses)
+    else:
+        return np.mean(losses), model_instance.historical_forecasts(**function_args)
 
 
 def retrain_func(counter, pred_time, train_series, past_covariates, future_covariates):

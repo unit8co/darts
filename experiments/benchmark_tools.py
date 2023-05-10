@@ -6,7 +6,7 @@ from tempfile import TemporaryDirectory
 from typing import Dict
 
 import pandas as pd
-from model_evaluation import evaluate_model, illustrate_model
+from model_evaluation import evaluate_model
 from optuna_search import optuna_search
 from param_space import FIXED_PARAMS
 
@@ -46,11 +46,14 @@ def experiment(
     forecast_horizon=1,
     repeat=3,
     metric=mae,
+    num_test_points=20,
+    silent_search=False,
 ):
     """
     Takes a list of datasets
     """
 
+    split = 0.8
     if experiment_dir:
         if not os.path.isdir(experiment_dir):
             os.mkdir(experiment_dir)
@@ -68,38 +71,49 @@ def experiment(
     for dataset in datasets:
         for model_class in models:
 
-            if results.get(dataset["dataset_name"]) and results[
-                dataset["dataset_name"]
-            ].get(model_class.__name__):
+            ds_name = dataset["dataset_name"]
+            stride, corrected_fh = estimate_stride(
+                dataset["series"], split, num_test_points, forecast_horizon
+            )
+
+            if ds_name in results and model_class.__name__ in results[ds_name]:
                 continue
 
-            model_params = FIXED_PARAMS[model_class.__name__](**dataset)
+            model_params = FIXED_PARAMS[model_class.__name__](
+                **dataset, forecast_horizon=corrected_fh
+            )
             if grid_search and time_budget:
+                if silent_search:
+                    silence_prompt()
                 model_params = optuna_search(
                     model_class,
                     fixed_params=model_params,
                     **dataset,
                     time_budget=time_budget,
                     optuna_dir=os.path.join(experiment_dir, "optuna"),
-                    forecast_horizon=forecast_horizon,
+                    forecast_horizon=corrected_fh,
                     metric=metric,
+                    stride=stride,
+                    split=split,
                 )
 
             output = evaluate_model(
                 model_class,
                 **dataset,
                 model_params=model_params,
-                split=0.8,
-                forecast_horizon=forecast_horizon,
+                split=split,
+                forecast_horizon=corrected_fh,
                 repeat=repeat,
                 metric=metric,
+                stride=stride,
             )
 
             print("#####################################################")
-            print(dataset["dataset_name"], model_class.__name__, output)
-            if not results.get(dataset["dataset_name"]):
-                results[dataset["dataset_name"]] = dict()
-            results[dataset["dataset_name"]][model_class.__name__] = output
+            print(ds_name, model_class.__name__, output)
+
+            if ds_name not in results:
+                results[ds_name] = dict()
+            results[ds_name][model_class.__name__] = output
 
             # save results
             json.dump(results, open(path_results, "w"))
@@ -138,12 +152,13 @@ def illustrate(models, ds, split=0.8, forecast_horizon=1, time_budget=0, metric=
                 forecast_horizon=forecast_horizon,
                 metric=metric,
             )
-        output = illustrate_model(
+        _, output = evaluate_model(  # type: ignore
             model_class,
             **ds,
             model_params=model_params,
             split=0.8,
             forecast_horizon=forecast_horizon,
+            get_output_sample=True,
         )
         output.plot(label=f"{model_class.__name__} - {metric(output, target):.2f}")
 
@@ -156,3 +171,15 @@ def silence_prompt():
     for logger in loggers:
         logger.setLevel(logging.ERROR)
         warnings.filterwarnings("ignore")
+
+
+def estimate_stride(series, split, num_test_points, forecast_horizon):
+    stride = int((1 - split) * len(series) / num_test_points)
+    stride = max(stride, 1)
+    if forecast_horizon > stride:
+        warnings.warn(
+            f"Forecast horizon ({forecast_horizon}) is larger than stride ({stride}). "
+            f"Setting forecast horizon to {stride}."
+        )
+        forecast_horizon = stride
+    return stride, forecast_horizon

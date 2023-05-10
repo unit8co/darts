@@ -2,8 +2,6 @@
 This is the main file for the benchmarking experiment.
 """
 
-import os
-
 from benchmark_tools import convert_to_ts, experiment
 from sklearn.preprocessing import StandardScaler
 
@@ -119,14 +117,14 @@ datasets += [{"series": ds, "dataset_name": "USGasoline"}]
 datasets = datasets
 
 if __name__ == "__main__":
-    # silence_prompt()
     experiment(
-        datasets=datasets[3:4],
+        datasets=datasets[-2:],
         # models=models,
-        models=[NHiTSModel],
+        models=[Prophet],
         grid_search=True,
         forecast_horizon=1000,
-        time_budget=600,
+        time_budget=300,
         repeat=5,
-        experiment_dir=os.path.join(os.getcwd(), "results_tmp"),
+        silent_search=True,
+        # experiment_dir=os.path.join(os.getcwd(), "results_tmp"),
     )
