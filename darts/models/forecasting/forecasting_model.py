@@ -14,6 +14,7 @@ to obtain forecasts for a desired number of time stamps into the future.
 import copy
 import datetime
 import inspect
+import io
 import os
 import pickle
 import time
@@ -1818,7 +1819,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             # save the whole object using pickle
             with open(path, "wb") as handle:
                 pickle.dump(obj=self, file=handle, **pkl_kwargs)
-        elif isinstance(BinaryIO):
+        elif isinstance(path, io.BufferedWriter):
             # save the whole object using pickle
             pickle.dump(obj=self, file=path, **pkl_kwargs)
         else:
@@ -1847,7 +1848,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             with open(path, "rb") as handle:
                 model = pickle.load(file=handle)
-        elif isinstance(path, BinaryIO):
+        elif isinstance(path, io.BufferedReader):
             model = pickle.load(file=path)
         else:
             raise ValueError(
