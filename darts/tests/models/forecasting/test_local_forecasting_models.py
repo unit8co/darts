@@ -1,5 +1,6 @@
 import copy
 import os
+import pathlib
 import shutil
 import tempfile
 from typing import Callable
@@ -154,8 +155,9 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
 
         for model in [ARIMA(1, 1, 1), LinearRegressionModel(lags=12)]:
             model_path_str = type(model).__name__
-            model_path_file = model_path_str + "_file"
-            model_paths = [model_path_str, model_path_file]
+            model_path_pathlike = pathlib.Path(model_path_str + "_pathlike")
+            model_path_binary = model_path_str + "_binary"
+            model_paths = [model_path_str, model_path_pathlike, model_path_binary]
             full_model_paths = [
                 os.path.join(self.temp_work_dir, p) for p in model_paths
             ]
@@ -166,7 +168,8 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             # test save
             model.save()
             model.save(model_path_str)
-            with open(model_path_file, "wb") as f:
+            model.save(model_path_pathlike)
+            with open(model_path_binary, "wb") as f:
                 model.save(f)
 
             for p in full_model_paths:
@@ -180,13 +183,19 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                         if p.startswith(type(model).__name__)
                     ]
                 )
-                == 3
+                == len(full_model_paths) + 1
             )
 
             # test load
             loaded_model_str = type(model).load(model_path_str)
-            loaded_model_file = type(model).load(model_path_file)
-            loaded_models = [loaded_model_str, loaded_model_file]
+            loaded_model_pathlike = type(model).load(model_path_pathlike)
+            with open(model_path_binary, "rb") as f:
+                loaded_model_binary = type(model).load(f)
+            loaded_models = [
+                loaded_model_str,
+                loaded_model_pathlike,
+                loaded_model_binary,
+            ]
 
             for loaded_model in loaded_models:
                 self.assertEqual(
