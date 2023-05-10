@@ -116,19 +116,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
             dict() if lr_scheduler_kwargs is None else lr_scheduler_kwargs
         )
 
-        if torch_metrics is None:
-            torch_metrics = torchmetrics.MetricCollection([])
-        elif isinstance(torch_metrics, torchmetrics.Metric):
-            torch_metrics = torchmetrics.MetricCollection([torch_metrics])
-        elif isinstance(torch_metrics, torchmetrics.MetricCollection):
-            pass
-        else:
-            raise_log(
-                AttributeError(
-                    "`torch_metrics` only accepts type torchmetrics.Metric or torchmetrics.MetricCollection"
-                ),
-                logger,
-            )
+        # convert torch_metrics to torchmetrics.MetricCollection
+        torch_metrics = self.configure_torch_metrics(torch_metrics)
         self.train_metrics = torch_metrics.clone(prefix="train_")
         self.val_metrics = torch_metrics.clone(prefix="val_")
 
@@ -424,6 +413,26 @@ class PLForecastingModule(pl.LightningModule, ABC):
             current_epoch += 1
 
         return current_epoch
+
+    @staticmethod
+    def configure_torch_metrics(
+        torch_metrics: Union[torchmetrics.Metric, torchmetrics.MetricCollection]
+    ) -> torchmetrics.MetricCollection:
+        """process the torch_metrics parameter."""
+        if torch_metrics is None:
+            torch_metrics = torchmetrics.MetricCollection([])
+        elif isinstance(torch_metrics, torchmetrics.Metric):
+            torch_metrics = torchmetrics.MetricCollection([torch_metrics])
+        elif isinstance(torch_metrics, torchmetrics.MetricCollection):
+            pass
+        else:
+            raise_log(
+                AttributeError(
+                    "`torch_metrics` only accepts type torchmetrics.Metric or torchmetrics.MetricCollection"
+                ),
+                logger,
+            )
+        return torch_metrics
 
 
 class PLPastCovariatesModule(PLForecastingModule, ABC):
