@@ -1823,9 +1823,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             # save the whole object using pickle
             pickle.dump(obj=self, file=path, **pkl_kwargs)
         else:
-            raise ValueError(
-                "Argument 'path' has to be either 'str' or 'PathLike' (for a filepath) "
-                f"or 'BinaryIO' (for an already opened file), but was '{path.__class__}'."
+            raise_log(
+                ValueError(
+                    "Argument 'path' has to be either 'str' or 'PathLike' (for a filepath) "
+                    f"or 'BufferedWriter' (for an already opened file), but was '{path.__class__}'."
+                ),
+                logger=logger,
             )
 
     @staticmethod
@@ -1851,9 +1854,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         elif isinstance(path, io.BufferedReader):
             model = pickle.load(file=path)
         else:
-            raise ValueError(
-                "Argument 'path' has to be either 'str' or 'PathLike' (for a filepath) "
-                f"or 'BinaryIO' (for an already opened file), but was '{path.__class__}'."
+            raise_log(
+                ValueError(
+                    "Argument 'path' has to be either 'str' or 'PathLike' (for a filepath) "
+                    f"or 'BufferedReader' (for an already opened file), but was '{path.__class__}'."
+                ),
+                logger=logger,
             )
 
         return model
