@@ -410,3 +410,11 @@ class NLinearModel(MixedCovariatesTorchModel):
     @property
     def supports_static_covariates(self) -> bool:
         return True
+
+    @property
+    def supports_future_covariates(self) -> bool:
+        return not self.shared_weights
+
+    @property
+    def supports_past_covariates(self) -> bool:
+        return not self.shared_weights
