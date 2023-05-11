@@ -7,6 +7,11 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 [Full Changelog](https://github.com/unit8co/darts/compare/0.24.0...master)
 
+### For users of the library:
+
+**Improved**
+- Added support for `PathLike` to the `save()` and `load()` functions of `ForecastingModel`. [#1754](https://github.com/unit8co/darts/pull/1754) by [Simon Sudrich](https://github.com/sudrich).
+
 ## [0.24.0](https://github.com/unit8co/darts/tree/0.24.0) (2023-04-12)
 ### For users of the library:
 
@@ -38,7 +43,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Added `historical_forecasts` parameter to `backtest()` that allows to use precomputed historical forecasts from `historical_forecasts()`. [#1597](https://github.com/unit8co/darts/pull/1597) by [Janek Fidor](https://github.com/JanFidor).
 - Added feature values and SHAP object to `ShapExplainabilityResult`, giving easy user access to all SHAP-specific explainability results. [#1545](https://github.com/unit8co/darts/pull/1545) by [Rijk van der Meulen](https://github.com/rijkvandermeulen).
 - New `quantile_loss()` (pinball loss) metric for probabilistic forecasts. [#1559](https://github.com/unit8co/darts/pull/1559) by [Janek Fidor](https://github.com/JanFidor).
-- Added support for `PathLike` to the `save()` and `load()` functions of `ForecastingModel`. [#1754](https://github.com/unit8co/darts/pull/1754) by [Simon Sudrich](https://github.com/sudrich).
 
 **Fixed**
 - Fixed an issue in `BottomUp/TopDownReconciliator` where the order of the series components was not taken into account. [#1592](https://github.com/unit8co/darts/pull/1592) by [David Kleindienst](https://github.com/DavidKleindienst).
