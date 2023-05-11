@@ -32,7 +32,7 @@ class RegressionEnsembleModel(EnsembleModel):
         regression_train_n_points: int,
         regression_model=None,
         regression_train_num_samples: Optional[int] = 1,
-        regression_train_samples_reduction: Optional[Union[str, float]] = "mean",
+        regression_train_samples_reduction: Optional[Union[str, float]] = None,
     ):
         """
         Use a regression model for ensembling individual models' predictions using the stacking technique [1]_.
@@ -61,8 +61,8 @@ class RegressionEnsembleModel(EnsembleModel):
             model (samples are averaged). Should be left set to 1 for deterministic models. Default: 1.
         regression_train_samples_reduction
             If `forecasting models` are probabilistic and `regression_train_num_samples` > 1, method used to
-            reduce the samples before passing them to the regression model. Possible values: "mean", "median"
-            or float value corresponding to the desired quantile. Default: "mean"
+            reduce the samples before passing them to the regression model. Possible values: None, "mean",
+            "median" or float value corresponding to the desired quantile. Default: ``None``
         References
         ----------
         .. [1] D. H. Wolpert, “Stacked generalization”, Neural Networks, vol. 5, no. 2, pp. 241–259, Jan. 1992
@@ -106,10 +106,12 @@ class RegressionEnsembleModel(EnsembleModel):
                 f"received ({regression_train_samples_reduction})",
                 logger,
             )
+        elif regression_train_samples_reduction is None:
+            pass
         else:
             logger.exception(
                 f"`regression_train_samples_reduction` type not supported "
-                f"({regression_train_samples_reduction}). Must be either `str` or `float`."
+                f"({regression_train_samples_reduction}). Must be either None, `str` or `float`."
             )
 
         raise_if(
@@ -196,14 +198,7 @@ class RegressionEnsembleModel(EnsembleModel):
 
         # component-wise reduction of the probabilistic forecasting models predictions
         if predictions[0].n_samples > 1:
-            if self.regression_train_samples_reduction == "mean":
-                predictions = predictions.mean(axis=2)
-            elif self.regression_train_samples_reduction == "median":
-                predictions = predictions.median(axis=2)
-            else:
-                predictions = predictions.quantile(
-                    self.regression_train_samples_reduction
-                )
+            predictions = self._predictions_reduction(predictions)
 
         # train the regression model on the individual models' predictions
         self.regression_model.fit(
@@ -223,6 +218,39 @@ class RegressionEnsembleModel(EnsembleModel):
                 kwargs["future_covariates"] = future_covariates
             model.fit(**kwargs)
         return self
+
+    def predict(
+        self,
+        n: int,
+        series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        num_samples: int = 1,
+        verbose: bool = False,
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+
+        super().predict(
+            n=n,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            verbose=verbose,
+        )
+
+        # support deterministic forecasting model with probabilistic ensembling
+        predictions = self._make_multiple_predictions(
+            n=n,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            num_samples=self.regression_train_num_samples,
+        )
+
+        if predictions[0].n_samples > 1:
+            predictions = self._predictions_reduction(predictions)
+
+        return self.ensemble(predictions, series=series, num_samples=num_samples)
 
     def ensemble(
         self,
@@ -266,3 +294,19 @@ class RegressionEnsembleModel(EnsembleModel):
         model is probabilistic (ensembling layer)
         """
         return self.regression_model._is_probabilistic()
+
+    def _predictions_reduction(self, predictions: TimeSeries) -> TimeSeries:
+        """"""
+        if self.regression_train_samples_reduction is None:
+            # flatten the n_sample dimension into components
+            predictions = TimeSeries.from_dataframe(
+                df=predictions.pd_dataframe(suppress_warnings=True),
+                freq=predictions.freq,
+            )
+        elif self.regression_train_samples_reduction == "mean":
+            predictions = predictions.mean(axis=2)
+        elif self.regression_train_samples_reduction == "median":
+            predictions = predictions.median(axis=2)
+        else:
+            predictions = predictions.quantile(self.regression_train_samples_reduction)
+        return predictions

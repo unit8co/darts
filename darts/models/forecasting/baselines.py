@@ -196,6 +196,34 @@ class NaiveEnsembleModel(EnsembleModel):
 
         return self
 
+    def predict(
+        self,
+        n: int,
+        series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        num_samples: int = 1,
+        verbose: bool = False,
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+
+        super().predict(
+            n=n,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            verbose=verbose,
+        )
+
+        predictions = self._make_multiple_predictions(
+            n=n,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+        )
+        return self.ensemble(predictions)
+
     def ensemble(
         self,
         predictions: Union[TimeSeries, Sequence[TimeSeries]],
@@ -204,6 +232,7 @@ class NaiveEnsembleModel(EnsembleModel):
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         def take_average(prediction: TimeSeries) -> TimeSeries:
             # average across the components, keep n_samples, rename components
+            # NOTE: could use `with_columns_renamed()` instead
             return TimeSeries.from_times_and_values(
                 times=prediction.time_index,
                 values=prediction.mean(axis=1).all_values(),

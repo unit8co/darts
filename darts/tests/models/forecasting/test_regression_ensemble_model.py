@@ -477,7 +477,8 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
                 regression_train_samples_reduction="wrong",
             )
 
-        ensemble_model_mean = RegressionEnsembleModel(
+        # by default, does not reduce samples and convert them to components
+        ensemble_model_none = RegressionEnsembleModel(
             forecasting_models=[
                 self.get_probabilistic_global_model([-1, -3], quantiles),
                 self.get_probabilistic_global_model([-2, -4], quantiles),
@@ -485,6 +486,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             regression_train_n_points=50,
             regression_train_num_samples=500,
         )
+        self.assertEqual(ensemble_model_none.regression_train_samples_reduction, None)
 
         ensemble_model_median = RegressionEnsembleModel(
             forecasting_models=[
@@ -507,19 +509,20 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         )
 
         train, val = self.ts_sum1.split_after(0.9)
-        ensemble_model_mean.fit(train)
+        ensemble_model_none.fit(train)
         ensemble_model_median.fit(train)
         ensemble_model_0_5_quantile.fit(train)
 
-        pred_mean_training = ensemble_model_mean.predict(len(val))
+        pred_none_training = ensemble_model_none.predict(len(val))
         pred_median_training = ensemble_model_median.predict(len(val))
         pred_0_5_qt_training = ensemble_model_0_5_quantile.predict(len(val))
 
         self.assertEqual(pred_median_training, pred_0_5_qt_training)
-        # training with mean or median should get similar error since 500 samples are used
-        self.assertAlmostEqual(
-            rmse(pred_mean_training, val), rmse(pred_median_training, val), places=1
+        self.assertEqual(
+            pred_none_training.all_values().shape,
+            pred_median_training.all_values().shape,
         )
+        # comparison between training methods is difficult, no reduction is not necessarily better
 
         # possible to use very small regression_train_num_samples
         ensemble_model_mean_1_sample = RegressionEnsembleModel(

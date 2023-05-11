@@ -64,6 +64,7 @@ class EnsembleModel(GlobalForecastingModel):
         super().__init__()
         self.models = models
 
+    @abstractmethod
     def fit(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -145,6 +146,7 @@ class EnsembleModel(GlobalForecastingModel):
             else self._stack_ts_multiseq(predictions)
         )
 
+    @abstractmethod
     def predict(
         self,
         n: int,
@@ -163,16 +165,6 @@ class EnsembleModel(GlobalForecastingModel):
             num_samples=num_samples,
             verbose=verbose,
         )
-
-        # support deterministic forecasting model with probabilistic ensembling
-        predictions = self._make_multiple_predictions(
-            n=n,
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            num_samples=num_samples if self._models_are_probabilistic() else 1,
-        )
-        return self.ensemble(predictions, series=series, num_samples=num_samples)
 
     @abstractmethod
     def ensemble(
