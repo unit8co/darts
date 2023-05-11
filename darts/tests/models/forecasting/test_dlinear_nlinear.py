@@ -256,8 +256,12 @@ if TORCH_AVAILABLE:
             for model in [DLinearModel, NLinearModel]:
                 for shared_weights in [True, False]:
                     model_instance = model(5, 5, shared_weights=shared_weights)
-                    assert model_instance.supports_past_covariates == ~shared_weights
-                    assert model_instance.supports_future_covariates == ~shared_weights
+                    assert model_instance.supports_past_covariates == (
+                        not shared_weights
+                    )
+                    assert model_instance.supports_future_covariates == (
+                        not shared_weights
+                    )
 
         def test_optional_static_covariates(self):
             series = tg.sine_timeseries(length=20).with_static_covariates(
