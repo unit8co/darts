@@ -132,6 +132,7 @@ class _BlockRNNModule(PLPastCovariatesModule):
         modules = []
         for i in range(num_layers):
             input = input_size if (i == 0) else hidden_dim
+            is_last = i == num_layers - 1
             rnn = getattr(nn, name)(input, hidden_dim, 1, batch_first=True)
 
             modules.append(rnn)
@@ -139,9 +140,7 @@ class _BlockRNNModule(PLPastCovariatesModule):
 
             if normalization:
                 modules.append(self._normalization_layer(normalization, hidden_dim))
-            if (
-                i < num_layers - 1
-            ):  # pytorch RNNs don't have dropout applied on the last layer
+            if is_last:  # pytorch RNNs don't have dropout applied on the last layer
                 modules.append(nn.Dropout(dropout))
         return nn.Sequential(*modules)
 
@@ -161,20 +160,15 @@ class _BlockRNNModule(PLPastCovariatesModule):
             self.output_chunk_length * target_size * self.nr_params
         ]:
             if normalization:
-                feats.append(self._normalization_layer(normalization, last, False))
+                feats.append(self._normalization_layer(normalization, last))
             feats.append(nn.Linear(last, feature))
             last = feature
         return nn.Sequential(*feats)
 
-    def _normalization_layer(
-        self, normalization: str, hidden_size: int, is_temporal: bool
-    ):
+    def _normalization_layer(self, normalization: str, hidden_size: int):
 
         if normalization == "batch":
-            if is_temporal:
-                return TemporalBatchNorm1d(hidden_size)
-            else:
-                return nn.BatchNorm1d(hidden_size)
+            return TemporalBatchNorm1d(hidden_size)
         elif normalization == "layer":
             return nn.LayerNorm(hidden_size)
 
