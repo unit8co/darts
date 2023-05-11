@@ -110,7 +110,7 @@ class _BlockRNNModule(PLPastCovariatesModule):
 
         """ Here, we apply the FC network only on the last output point (at the last time step)
         """
-        predictions = hidden[-1, :, :]
+        predictions = hidden[:, -1, :]
         predictions = self.fc(predictions)
         predictions = predictions.view(
             batch_size, self.out_len, self.target_size, self.nr_params
@@ -157,12 +157,13 @@ class _BlockRNNModule(PLPastCovariatesModule):
 
         last = input_size
         feats = []
-        for feature in num_layers_out_fc:
+        for feature in num_layers_out_fc + [
+            self.output_chunk_length * target_size * self.nr_params
+        ]:
             if normalization:
                 feats.append(self._normalization_layer(normalization, last, False))
             feats.append(nn.Linear(last, feature))
             last = feature
-        feats.append(nn.Linear(last, self.out_len * target_size * self.nr_params))
         return nn.Sequential(*feats)
 
     def _normalization_layer(
