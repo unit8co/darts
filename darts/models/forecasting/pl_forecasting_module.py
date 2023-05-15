@@ -381,12 +381,33 @@ class PLForecastingModule(pl.LightningModule, ABC):
         checkpoint["model_dtype"] = self.dtype
         # we must save the shape of the input to be able to instanciate the model without calling fit_from_dataset
         checkpoint["train_sample_shape"] = self.train_sample_shape
+        # we must save the loss to properly restore it when resuming training
+        checkpoint["loss_fn"] = self.criterion
+        # we must save the metrics to continue outputing them when resuming training
+        checkpoint["torch_metrics_train"] = self.train_metrics
+        checkpoint["torch_metrics_val"] = self.val_metrics
 
     def on_load_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
         # by default our models are initialized as float32. For other dtypes, we need to cast to the correct precision
         # before parameters are loaded by PyTorch-Lightning
         dtype = checkpoint["model_dtype"]
         self.to_dtype(dtype)
+
+        # restoring attributes necessary to resume from training properly
+        if (
+            "loss_fn" in checkpoint.keys()
+            and "torch_metrics_train" in checkpoint.keys()
+        ):
+            self.criterion = checkpoint["loss_fn"]
+            self.train_metrics = checkpoint["torch_metrics_train"]
+            self.val_metrics = checkpoint["torch_metrics_val"]
+        else:
+            # explicitly indicate to the user that there is a bug
+            logger.warning(
+                "This checkpoint was generated with darts <= 0.24.0, if a custom loss "
+                "was used to train the model, it won't be properly loaded. Similarly, "
+                "the torch metrics won't be restored from the checkpoint."
+            )
 
     def to_dtype(self, dtype):
         """Cast module precision (float32 by default) to another precision."""
