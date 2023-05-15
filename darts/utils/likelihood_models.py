@@ -91,6 +91,7 @@ class Likelihood(ABC):
         Abstract class for a likelihood model.
         """
         self.prior_strength = prior_strength
+        # used for equality operator between likelihood objects
         self.ignore_attrs_equality = []
 
     def compute_loss(self, model_output: torch.Tensor, target: torch.Tensor):
