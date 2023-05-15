@@ -91,6 +91,7 @@ class Likelihood(ABC):
         Abstract class for a likelihood model.
         """
         self.prior_strength = prior_strength
+        self.ignore_attrs_equality = []
 
     def compute_loss(self, model_output: torch.Tensor, target: torch.Tensor):
         """
@@ -171,12 +172,25 @@ class Likelihood(ABC):
         """
         pass
 
-    @abstractmethod
     def __eq__(self, other) -> bool:
         """
-        Define (in)equality between two likelihood objects
+        Defines (in)equality between two likelihood objects, ignore the attributes listed in
+        self.ignore_attrs_equality.
         """
-        pass
+        if type(other) is type(self):
+            other_state = {
+                k: v
+                for k, v in other.__dict__.items()
+                if k not in self.ignore_attrs_equality
+            }
+            self_state = {
+                k: v
+                for k, v in self.__dict__.items()
+                if k not in self.ignore_attrs_equality
+            }
+            return other_state == self_state
+        else:
+            return False
 
 
 class GaussianLikelihood(Likelihood):
@@ -260,23 +274,6 @@ class GaussianLikelihood(Likelihood):
         sigma = self.softplus(model_output[:, :, :, 1])
         return mu, sigma
 
-    def __eq__(self, other) -> bool:
-        if type(other) is type(self):
-            attributes_to_check = [
-                "prior_strength",
-                "prior_mu",
-                "prior_sigma",
-                "beta_nll",
-            ]
-            return all(
-                [
-                    self.__dict__[attr] == other.__dict__[attr]
-                    for attr in attributes_to_check
-                ]
-            )
-        else:
-            return False
-
 
 class PoissonLikelihood(Likelihood):
     def __init__(self, prior_lambda=None, prior_strength=1.0):
@@ -327,18 +324,6 @@ class PoissonLikelihood(Likelihood):
     def _params_from_output(self, model_output):
         lmbda = self.softplus(model_output.squeeze(dim=-1))
         return lmbda
-
-    def __eq__(self, other) -> bool:
-        if type(other) is type(self):
-            attributes_to_check = ["prior_strength", "prior_lambda"]
-            return all(
-                [
-                    self.__dict__[attr] == other.__dict__[attr]
-                    for attr in attributes_to_check
-                ]
-            )
-        else:
-            return False
 
 
 class NegativeBinomialLikelihood(Likelihood):
@@ -391,10 +376,6 @@ class NegativeBinomialLikelihood(Likelihood):
     def num_parameters(self) -> int:
         return 2
 
-    def __eq__(self, other) -> bool:
-        # no attribute to compare
-        return type(other) is type(self)
-
 
 class BernoulliLikelihood(Likelihood):
     def __init__(self, prior_p=None, prior_strength=1.0):
@@ -439,18 +420,6 @@ class BernoulliLikelihood(Likelihood):
     def _params_from_output(self, model_output: torch.Tensor):
         p = self.sigmoid(model_output.squeeze(dim=-1))
         return p
-
-    def __eq__(self, other) -> bool:
-        if type(other) is type(self):
-            attributes_to_check = ["prior_strength", "prior_p"]
-            return all(
-                [
-                    self.__dict__[attr] == other.__dict__[attr]
-                    for attr in attributes_to_check
-                ]
-            )
-        else:
-            return False
 
 
 class BetaLikelihood(Likelihood):
@@ -502,18 +471,6 @@ class BetaLikelihood(Likelihood):
         alpha = self.softplus(model_output[:, :, :, 0])
         beta = self.softplus(model_output[:, :, :, 1])
         return alpha, beta
-
-    def __eq__(self, other) -> bool:
-        if type(other) is type(self):
-            attributes_to_check = ["prior_strength", "prior_alpha", "prior_beta"]
-            return all(
-                [
-                    self.__dict__[attr] == other.__dict__[attr]
-                    for attr in attributes_to_check
-                ]
-            )
-        else:
-            return False
 
 
 class CauchyLikelihood(Likelihood):
@@ -573,18 +530,6 @@ class CauchyLikelihood(Likelihood):
         gamma = self.softplus(model_output[:, :, :, 1])
         return xzero, gamma
 
-    def __eq__(self, other) -> bool:
-        if type(other) is type(self):
-            attributes_to_check = ["prior_strength", "prior_xzero", "prior_gamma"]
-            return all(
-                [
-                    self.__dict__[attr] == other.__dict__[attr]
-                    for attr in attributes_to_check
-                ]
-            )
-        else:
-            return False
-
 
 class ContinuousBernoulliLikelihood(Likelihood):
     def __init__(self, prior_lambda=None, prior_strength=1.0):
@@ -630,18 +575,6 @@ class ContinuousBernoulliLikelihood(Likelihood):
     def _params_from_output(self, model_output: torch.Tensor):
         lmbda = self.sigmoid(model_output.squeeze(dim=-1))
         return lmbda
-
-    def __eq__(self, other) -> bool:
-        if type(other) is type(self):
-            attributes_to_check = ["prior_strength", "prior_lambda"]
-            return all(
-                [
-                    self.__dict__[attr] == other.__dict__[attr]
-                    for attr in attributes_to_check
-                ]
-            )
-        else:
-            return False
 
 
 class DirichletLikelihood(Likelihood):
@@ -691,18 +624,6 @@ class DirichletLikelihood(Likelihood):
         )  # take softmax over components
         return alphas
 
-    def __eq__(self, other) -> bool:
-        if type(other) is type(self):
-            attributes_to_check = ["prior_strength", "prior_alphas"]
-            return all(
-                [
-                    self.__dict__[attr] == other.__dict__[attr]
-                    for attr in attributes_to_check
-                ]
-            )
-        else:
-            return False
-
 
 class ExponentialLikelihood(Likelihood):
     def __init__(self, prior_lambda=None, prior_strength=1.0):
@@ -747,18 +668,6 @@ class ExponentialLikelihood(Likelihood):
     def _params_from_output(self, model_output: torch.Tensor):
         lmbda = self.softplus(model_output.squeeze(dim=-1))
         return lmbda
-
-    def __eq__(self, other) -> bool:
-        if type(other) is type(self):
-            attributes_to_check = ["prior_strength", "prior_lambda"]
-            return all(
-                [
-                    self.__dict__[attr] == other.__dict__[attr]
-                    for attr in attributes_to_check
-                ]
-            )
-        else:
-            return False
 
 
 class GammaLikelihood(Likelihood):
@@ -810,18 +719,6 @@ class GammaLikelihood(Likelihood):
         beta = self.softplus(model_output[:, :, :, 1])
         return alpha, beta
 
-    def __eq__(self, other) -> bool:
-        if type(other) is type(self):
-            attributes_to_check = ["prior_strength", "prior_alpha", "prior_beta"]
-            return all(
-                [
-                    self.__dict__[attr] == other.__dict__[attr]
-                    for attr in attributes_to_check
-                ]
-            )
-        else:
-            return False
-
 
 class GeometricLikelihood(Likelihood):
     def __init__(self, prior_p=None, prior_strength=1.0):
@@ -866,18 +763,6 @@ class GeometricLikelihood(Likelihood):
     def _params_from_output(self, model_output: torch.Tensor):
         p = self.sigmoid(model_output.squeeze(dim=-1))
         return p
-
-    def __eq__(self, other) -> bool:
-        if type(other) is type(self):
-            attributes_to_check = ["prior_strength", "prior_p"]
-            return all(
-                [
-                    self.__dict__[attr] == other.__dict__[attr]
-                    for attr in attributes_to_check
-                ]
-            )
-        else:
-            return False
 
 
 class GumbelLikelihood(Likelihood):
@@ -928,18 +813,6 @@ class GumbelLikelihood(Likelihood):
         beta = self.softplus(model_output[:, :, :, 1])
         return mu, beta
 
-    def __eq__(self, other) -> bool:
-        if type(other) is type(self):
-            attributes_to_check = ["prior_strength", "prior_mu", "prior_beta"]
-            return all(
-                [
-                    self.__dict__[attr] == other.__dict__[attr]
-                    for attr in attributes_to_check
-                ]
-            )
-        else:
-            return False
-
 
 class HalfNormalLikelihood(Likelihood):
     def __init__(self, prior_sigma=None, prior_strength=1.0):
@@ -984,18 +857,6 @@ class HalfNormalLikelihood(Likelihood):
     def _params_from_output(self, model_output: torch.Tensor):
         sigma = self.softplus(model_output.squeeze(dim=-1))
         return sigma
-
-    def __eq__(self, other) -> bool:
-        if type(other) is type(self):
-            attributes_to_check = ["prior_strength", "prior_sigma"]
-            return all(
-                [
-                    self.__dict__[attr] == other.__dict__[attr]
-                    for attr in attributes_to_check
-                ]
-            )
-        else:
-            return False
 
 
 class LaplaceLikelihood(Likelihood):
@@ -1046,18 +907,6 @@ class LaplaceLikelihood(Likelihood):
         b = self.softplus(model_output[:, :, :, 1])
         return mu, b
 
-    def __eq__(self, other) -> bool:
-        if type(other) is type(self):
-            attributes_to_check = ["prior_strength", "prior_mu", "prior_b"]
-            return all(
-                [
-                    self.__dict__[attr] == other.__dict__[attr]
-                    for attr in attributes_to_check
-                ]
-            )
-        else:
-            return False
-
 
 class LogNormalLikelihood(Likelihood):
     def __init__(self, prior_mu=None, prior_sigma=None, prior_strength=1.0):
@@ -1107,18 +956,6 @@ class LogNormalLikelihood(Likelihood):
         sigma = self.softplus(model_output[:, :, :, 1])
         return mu, sigma
 
-    def __eq__(self, other) -> bool:
-        if type(other) is type(self):
-            attributes_to_check = ["prior_strength", "prior_mu", "prior_sigma"]
-            return all(
-                [
-                    self.__dict__[attr] == other.__dict__[attr]
-                    for attr in attributes_to_check
-                ]
-            )
-        else:
-            return False
-
 
 class WeibullLikelihood(Likelihood):
     def __init__(self, prior_strength=1.0):
@@ -1163,9 +1000,6 @@ class WeibullLikelihood(Likelihood):
         k = self.softplus(model_output[:, :, :, 1])
         return lmbda, k
 
-    def __eq__(self, other) -> bool:
-        return type(other) is type(self) and other.prior_strength == self.prior_strength
-
 
 class QuantileRegression(Likelihood):
     def __init__(self, quantiles: Optional[List[float]] = None):
@@ -1209,6 +1043,9 @@ class QuantileRegression(Likelihood):
         self._median_idx = self.quantiles.index(0.5)
         self.first = True
         self.quantiles_tensor = None
+
+        # overwrite the attributes of Likelihood parent class
+        self.ignore_attrs_equality = ["first", "quantiles_tensor"]
 
     def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         """
@@ -1319,9 +1156,6 @@ class QuantileRegression(Likelihood):
     def _params_from_output(self, model_output: torch.Tensor) -> None:
         # This should not be called in this class (we are abusing Likelihood)
         return None
-
-    def __eq__(self, other) -> bool:
-        return type(other) is type(self) and other.quantiles == self.quantiles
 
 
 """ TODO
