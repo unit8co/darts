@@ -110,7 +110,7 @@ class _BlockRNNModule(PLPastCovariatesModule):
 
         """ Here, we apply the FC network only on the last output point (at the last time step)
         """
-        predictions = hidden[:, -1, :]
+        predictions = hidden[-1, :, :]
         predictions = self.fc(predictions)
         predictions = predictions.view(
             batch_size, self.out_len, self.target_size, self.nr_params
@@ -130,18 +130,20 @@ class _BlockRNNModule(PLPastCovariatesModule):
     ):
 
         modules = []
+        is_lstm = self.name == "LSTM"
         for i in range(num_layers):
             input = input_size if (i == 0) else hidden_dim
             is_last = i == num_layers - 1
             rnn = getattr(nn, name)(input, hidden_dim, 1, batch_first=True)
 
             modules.append(rnn)
-            modules.append(ExtractRnnOutput())
-
+            modules.append(ExtractRnnOutput(not is_last, is_lstm))
+            modules.append(nn.Dropout(dropout))
             if normalization:
                 modules.append(self._normalization_layer(normalization, hidden_dim))
-            if is_last:  # pytorch RNNs don't have dropout applied on the last layer
+            if not is_last:  # pytorch RNNs don't have dropout applied on the last layer
                 modules.append(nn.Dropout(dropout))
+
         return nn.Sequential(*modules)
 
     def _fc_layer(

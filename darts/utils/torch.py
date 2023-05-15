@@ -131,9 +131,15 @@ class TemporalBatchNorm1d(nn.Module):
 
 
 class ExtractRnnOutput(nn.Module):
-    def __init__(self) -> None:
+    def __init__(self, is_output, is_lstm) -> None:
+        self.is_output = is_output
+        self.is_lstm = is_lstm
         super().__init__()
 
     def forward(self, input):
-        output, _ = input
-        return output
+        output, hidden = input
+        if self.is_output:
+            return output
+        if self.is_lstm:
+            return hidden[0]
+        return hidden
