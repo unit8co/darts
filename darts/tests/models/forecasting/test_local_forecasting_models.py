@@ -625,7 +625,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             ),  # no params changed
             (
                 ARIMA(1, 1, 1),
-                "ARIMA(p=1, d=1, q=1, seasonal_order=(0, 0, 0, 0), trend=None, random_state=0, add_encoders=None)",
+                "ARIMA(p=1, d=1, q=1, seasonal_order=(0, 0, 0, 0), trend=None, random_state=None, add_encoders=None)",
             ),  # default value for a param
         ]
         for model, expected in model_expected_name_pairs:
