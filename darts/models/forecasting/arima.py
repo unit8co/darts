@@ -32,7 +32,7 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
         q: int = 0,
         seasonal_order: Tuple[int, int, int, int] = (0, 0, 0, 0),
         trend: Optional[str] = None,
-        random_state: int = 0,
+        random_state: Optional[int] = None,
         add_encoders: Optional[dict] = None,
     ):
         """ARIMA
@@ -81,7 +81,11 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
         self.seasonal_order = seasonal_order
         self.trend = trend
         self.model = None
-        np.random.seed(random_state)
+        self._random_state = (
+            random_state
+            if random_state is None
+            else np.random.RandomState(random_state)
+        )
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         super()._fit(series, future_covariates)
@@ -144,6 +148,7 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
                 nsimulations=n,
                 repetitions=num_samples,
                 initial_state=self.model.states.predicted[-1, :],
+                random_state=self._random_state,
                 exog=future_covariates.values(copy=False)
                 if future_covariates
                 else None,
