@@ -383,12 +383,39 @@ class FittableDataTransformer(BaseDataTransformer):
             )
         return fitted_params
 
+    def _get_coefficients(self) -> Sequence[np.ndarray]:
+        """Returns the fitted parameters as np.ndarray. If an entry is an object, get its np.ndarray attributes."""
+        fitted_coefs = []
+        if self._fit_called:
+            for fitted_param in self._fitted_params:
+                # coefficients are directly accessible
+                if isinstance(fitted_param, np.ndarray):
+                    fitted_coefs.append(fitted_param)
+                # get all the ndarray attributes of the objects
+                else:
+                    fitted_coefs += [
+                        param
+                        for param in fitted_param.__dict__.values()
+                        if isinstance(param, np.ndarray)
+                    ]
+        return fitted_coefs
+
     def __eq__(self, other) -> bool:
-        if super().__eq__(other) and isinstance(other, self.__class__):
-            return (
-                self._fit_called == other._fit_called
-                and self._global_fit == other._global_fit
-                and self._fitted_params == other._fitted_params
-            )
+        """FittableDataTransformers are equal if they have identical fixed parameters and fitted coefficients."""
+        # check fixed parameters
+        if super().__eq__(other) and self._global_fit == other._global_fit:
+            # identical fitted parameters
+            if self._fit_called and other._fit_called:
+                same_coefs = np.all(
+                    [
+                        np.array_equal(s_coefs, o_coefs)
+                        for s_coefs, o_coefs in zip(
+                            self._get_coefficients(), other._get_coefficients()
+                        )
+                    ]
+                )
+                return same_coefs
+            else:
+                return self._fit_called == other._fit_called
         else:
             return False

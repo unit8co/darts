@@ -585,6 +585,7 @@ class BaseDataTransformer(ABC):
 
     def __eq__(self, other) -> bool:
         if isinstance(other, self.__class__):
+            # ignore n_jobs and verbose attributes
             return (
                 self._name == other._name
                 and self._parallel_params == other._parallel_params
