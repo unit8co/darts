@@ -186,6 +186,6 @@ def silence_prompt():
     # forwards the output for multiple processes in parallel
     # so we need to silence warnings to make the prompt readable
     loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
+    warnings.filterwarnings("ignore")
     for logger in loggers:
         logger.setLevel(logging.ERROR)
-        warnings.filterwarnings("ignore")

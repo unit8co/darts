@@ -185,7 +185,7 @@ def _fixed_params_DLINEAR(series, forecast_horizon, suggested_lags=None, **kwarg
 def _params_TCNMODEL(trial, series, forecast_horizon, **kwargs):
 
     input_size = suggest_lags(trial, series, "input_chunk_length")
-    trial.suggest_categorical("output_chunk_length", [1, forecast_horizon])
+    trial.suggest_int("output_chunk_length", 1, min(forecast_horizon, input_size - 1))
 
     trial.suggest_int("kernel_size", 2, input_size - 1)
     trial.suggest_int("num_layers", 1, 4)

@@ -3,7 +3,7 @@ This is the main file for the benchmarking experiment.
 """
 import os
 
-from benchmark_tools import convert_to_ts, experiment
+from benchmark_tools import Dataset, convert_to_ts, experiment
 from sklearn.preprocessing import StandardScaler
 
 from darts.dataprocessing.transformers import Scaler
@@ -55,16 +55,16 @@ datasets = []
 ds = scaler.fit_transform(convert_to_ts(GasRateCO2Dataset().load()["CO2%"]))[
     :max_ts_length
 ]
-datasets += [{"series": ds, "dataset_name": "GasRateCO2"}]
+datasets += [Dataset(series=ds, name="GasRateCO2")]
 
 ds = scaler.fit_transform(
     missing_values.fill_missing_values(WeatherDataset().load().resample("1h"))
 )[:max_ts_length]
 datasets += [
-    {
-        "dataset_name": "Weather",
-        "series": ds["T (degC)"],  # type: ignore
-        "past_covariates": ds[  # type: ignore
+    Dataset(
+        name="Weather",
+        series=ds["T (degC)"],  # type: ignore
+        past_covariates=ds[  # type: ignore
             [
                 "p (mbar)",
                 "rh (%)",
@@ -80,20 +80,18 @@ datasets += [
                 "SWDR (W/m²)",
             ]
         ],
-        "has_past_cov": True,
-    }
+    )
 ]
 
 ds = scaler.fit_transform(missing_values.fill_missing_values(ETTh1Dataset().load()))[
     :max_ts_length
 ]
 datasets += [
-    {
-        "dataset_name": "ETTh1",
-        "series": ds["OT"],  # type: ignore
-        "future_covariates": ds[["HUFL", "HULL", "MUFL", "MULL", "LUFL", "LULL"]],  # type: ignore
-        "has_future_cov": True,
-    }
+    Dataset(
+        name="ETTh1",
+        series=ds["OT"],  # type: ignore
+        future_covariates=ds[["HUFL", "HULL", "MUFL", "MULL", "LUFL", "LULL"]],  # type: ignore
+    )
 ]
 
 ds = scaler.fit_transform(
@@ -101,26 +99,27 @@ ds = scaler.fit_transform(
         convert_to_ts(ExchangeRateDataset().load()["0"])
     )[:max_ts_length]
 )
-datasets += [{"series": ds, "dataset_name": "ExchangeRate"}]
+datasets += [Dataset(series=ds, name="ExchangeRate")]
 
 ds = scaler.fit_transform(
     missing_values.fill_missing_values(SunspotsDataset().load()["Sunspots"])
 )[:max_ts_length]
-datasets += [{"series": ds, "dataset_name": "Sunspots"}]
+datasets += [Dataset(series=ds, name="Sunspots")]
 
 ds = scaler.fit_transform(
     missing_values.fill_missing_values(AirPassengersDataset().load()["#Passengers"])
 )[:max_ts_length]
-datasets += [{"series": ds, "dataset_name": "Air passengers"}]
+datasets += [Dataset(series=ds, name="Air passengers")]
+
+
 ds = scaler.fit_transform(
     missing_values.fill_missing_values(USGasolineDataset().load()["Gasoline"])
 )[:max_ts_length]
-datasets += [{"series": ds, "dataset_name": "USGasoline"}]
-datasets = datasets
+datasets += [Dataset(series=ds, name="USGasoline")]
 
 if __name__ == "__main__":
     experiment(
-        datasets=datasets,
+        list_datasets=datasets,
         models=models,
         grid_search=True,
         forecast_horizon=0.05,
