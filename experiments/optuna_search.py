@@ -79,8 +79,10 @@ def optuna_search(
         "series": series.split_after(split)[0],
     }
 
-    fixed_params = fixed_params.copy() or FIXED_PARAMS[model_class.__name__](
-        **dataset_data
+    fixed_params = (
+        fixed_params.copy()
+        if fixed_params
+        else FIXED_PARAMS[model_class.__name__](**dataset_data)
     )
 
     if not optuna_search_space and model_class.__name__ not in OPTUNA_SEARCH_SPACE:
