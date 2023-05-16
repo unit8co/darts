@@ -9,7 +9,7 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries
-from darts.dataprocessing.transformers import Scaler
+from darts.dataprocessing.transformers import BoxCox, Scaler
 from darts.logging import get_logger
 from darts.metrics import mape
 from darts.tests.base_test_class import DartsBaseTestClass
@@ -273,6 +273,10 @@ if TORCH_AVAILABLE:
             encoders_past_noscaler = {
                 "datetime_attribute": {"past": ["day"]},
             }
+            encoders_past_other_transformer = {
+                "datetime_attribute": {"past": ["day"]},
+                "transformer": BoxCox(),
+            }
             encoders_2_past = {
                 "datetime_attribute": {"past": ["hour", "day"]},
                 "transformer": Scaler(),
@@ -401,6 +405,29 @@ if TORCH_AVAILABLE:
             )
             # predict() can be called directly since new encoders don't contain scaler
             model_new_enc_noscaler_noload.predict(n=4, series=self.series)
+
+            # model with same encoders but different transformer (fittable)
+            model_new_enc_other_transformer = create_DLinearModel(
+                "same_encoder_other_transform",
+                add_encoders=encoders_past_other_transformer,
+            )
+            # cannot overwritte different declared encoders
+            with self.assertRaises(ValueError):
+                model_new_enc_other_transformer.load_weights(
+                    model_path_manual, load_encoders=True, map_location="cpu"
+                )
+
+            model_new_enc_other_transformer.load_weights(
+                model_path_manual, load_encoders=False, map_location="cpu"
+            )
+            model_new_enc_other_transformer.to_cpu()
+            # since fit() was not called, new fittable encoders were not trained
+            with self.assertRaises(ValueError):
+                model_new_enc_other_transformer.predict(n=4, series=self.series)
+
+            # predict() can be called after fit()
+            model_new_enc_other_transformer.fit(self.series, epochs=1)
+            model_new_enc_other_transformer.predict(n=4, series=self.series)
 
             # model with encoders containing more components (fittable)
             model_new_enc_2_past = create_DLinearModel(
