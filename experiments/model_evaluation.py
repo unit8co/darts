@@ -108,6 +108,8 @@ def evaluate_model(
     if not get_output_sample:
         return np.mean(losses)
     else:
+        if "metric" in function_args:
+            del function_args["metric"]
         return np.mean(losses), model_instance.historical_forecasts(**function_args)
 
 

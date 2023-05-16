@@ -2,8 +2,9 @@ import json
 import logging
 import os
 import warnings
+from collections import namedtuple
 from tempfile import TemporaryDirectory
-from typing import Dict
+from typing import Dict, List
 
 import pandas as pd
 from model_evaluation import evaluate_model
@@ -13,8 +14,18 @@ from param_space import FIXED_PARAMS
 from darts import TimeSeries
 from darts.metrics import mae
 
+Dataset = namedtuple(
+    "Dataset",
+    ["name", "series", "future_covariates", "past_covariates"],
+    defaults=(None, None, None),
+)
+
 
 def convert_to_ts(ds: TimeSeries):
+    """
+    Converts enventual numerical index to datetime index
+    (necessary for compatibility down the line)
+    """
     return TimeSeries.from_times_and_values(
         pd.to_datetime(ds.time_index), ds.all_values(), columns=ds.components
     )
@@ -38,7 +49,7 @@ def create_dataset_dict_entry(
 
 
 def experiment(
-    datasets,
+    list_datasets: List[Dataset],
     models,
     grid_search=False,
     time_budget=120,
@@ -68,19 +79,25 @@ def experiment(
     else:
         results = dict()
 
-    for dataset in datasets:
+    for dataset in list_datasets:
         for model_class in models:
 
-            ds_name = dataset["dataset_name"]
-            stride, corrected_fh = estimate_stride(
-                dataset["series"], split, num_test_points, forecast_horizon
-            )
+            stride = int((1 - split) * len(dataset.series) / num_test_points)
+            stride = max(stride, 1)
 
-            if ds_name in results and model_class.__name__ in results[ds_name]:
+            fh_corrected = forecast_horizon
+            if forecast_horizon < 1:
+                fh_corrected = int(forecast_horizon * (1 - split) * len(dataset.series))
+            print(f"Using forecast horizon of length {fh_corrected}")
+
+            if (
+                dataset.name in results
+                and model_class.__name__ in results[dataset.name]
+            ):
                 continue
 
             model_params = FIXED_PARAMS[model_class.__name__](
-                **dataset, forecast_horizon=corrected_fh
+                **dataset._asdict(), forecast_horizon=fh_corrected
             )
             if grid_search and time_budget:
                 if silent_search:
@@ -88,37 +105,38 @@ def experiment(
                 model_params = optuna_search(
                     model_class,
                     fixed_params=model_params,
-                    **dataset,
+                    **dataset._asdict(),
                     time_budget=time_budget,
                     optuna_dir=os.path.join(experiment_dir, "optuna"),
-                    forecast_horizon=corrected_fh,
+                    forecast_horizon=fh_corrected,
                     metric=metric,
                     stride=stride,
                     split=split,
                 )
-
+            if silent_search:
+                silence_prompt()
             output = evaluate_model(
                 model_class,
-                **dataset,
+                **dataset._asdict(),
                 model_params=model_params,
                 split=split,
-                forecast_horizon=corrected_fh,
+                forecast_horizon=fh_corrected,
                 repeat=repeat,
                 metric=metric,
                 stride=stride,
             )
 
             print("#####################################################")
-            print(ds_name, model_class.__name__, output)
+            print(dataset.name, model_class.__name__, output)
 
-            if ds_name not in results:
-                results[ds_name] = dict()
-            results[ds_name][model_class.__name__] = output
+            if dataset.name not in results:
+                results[dataset.name] = dict()
+            results[dataset.name][model_class.__name__] = output
 
             # save results
             json.dump(results, open(path_results, "w"))
-
-    print(format_output(results))
+    results = format_output(results)
+    return results
 
 
 def format_output(results: Dict[str, Dict[str, float]]):
@@ -171,15 +189,3 @@ def silence_prompt():
     for logger in loggers:
         logger.setLevel(logging.ERROR)
         warnings.filterwarnings("ignore")
-
-
-def estimate_stride(series, split, num_test_points, forecast_horizon):
-    stride = int((1 - split) * len(series) / num_test_points)
-    stride = max(stride, 1)
-    if forecast_horizon > stride:
-        warnings.warn(
-            f"Forecast horizon ({forecast_horizon}) is larger than stride ({stride}). "
-            f"Setting forecast horizon to {stride}."
-        )
-        forecast_horizon = stride
-    return stride, forecast_horizon

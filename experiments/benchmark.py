@@ -1,6 +1,7 @@
 """
 This is the main file for the benchmarking experiment.
 """
+import os
 
 from benchmark_tools import convert_to_ts, experiment
 from sklearn.preprocessing import StandardScaler
@@ -16,8 +17,8 @@ from darts.datasets import (
     WeatherDataset,
 )
 from darts.models import (
-    ARIMA,
     FFT,
+    AutoARIMA,
     LightGBMModel,
     LinearRegressionModel,
     NaiveSeasonal,
@@ -42,7 +43,8 @@ models = [
     NHiTSModel,
     NBEATSModel,
     LinearRegressionModel,
-    ARIMA,  # Raytune gets stuck on this one
+    # ARIMA,  # Raytune gets stuck on this one
+    AutoARIMA,
 ]
 
 # loading the datasets to use for the benchmark
@@ -118,13 +120,12 @@ datasets = datasets
 
 if __name__ == "__main__":
     experiment(
-        datasets=datasets[-2:],
-        # models=models,
-        models=[Prophet],
+        datasets=datasets,
+        models=models,
         grid_search=True,
-        forecast_horizon=1000,
-        time_budget=300,
+        forecast_horizon=0.05,
+        time_budget=600,
         repeat=5,
         silent_search=True,
-        # experiment_dir=os.path.join(os.getcwd(), "results_tmp"),
+        experiment_dir=os.path.join(os.getcwd(), "results_long"),
     )
