@@ -176,18 +176,18 @@ class Likelihood(ABC):
     def __eq__(self, other) -> bool:
         """
         Defines (in)equality between two likelihood objects, ignore the attributes listed in
-        self.ignore_attrs_equality.
+        self.ignore_attrs_equality or inheriting from torch.nn.Module.
         """
         if type(other) is type(self):
             other_state = {
                 k: v
                 for k, v in other.__dict__.items()
-                if k not in self.ignore_attrs_equality
+                if k not in self.ignore_attrs_equality and not isinstance(v, nn.Module)
             }
             self_state = {
                 k: v
                 for k, v in self.__dict__.items()
-                if k not in self.ignore_attrs_equality
+                if k not in self.ignore_attrs_equality and not isinstance(v, nn.Module)
             }
             return other_state == self_state
         else:
