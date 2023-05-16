@@ -27,7 +27,11 @@ try:
 
     from darts.models.forecasting.dlinear import DLinearModel
     from darts.models.forecasting.rnn_model import RNNModel
-    from darts.utils.likelihood_models import GaussianLikelihood
+    from darts.utils.likelihood_models import (
+        GaussianLikelihood,
+        LaplaceLikelihood,
+        Likelihood,
+    )
 
     TORCH_AVAILABLE = True
 except ImportError:
@@ -426,6 +430,103 @@ if TORCH_AVAILABLE:
             with self.assertRaises(ValueError):
                 model_new_enc_past_n_future.load_weights(
                     model_path_manual, load_encoders=False, map_location="cpu"
+                )
+
+        def test_save_and_load_weights_w_likelihood(self):
+            """
+            Verify that save/load does not break likelihood.
+
+            Note: since load_weights() calls load_weights_from_checkpoint(), it will be used
+            for all but one test.
+            Note: Using DLinear since it supports both past and future covariates
+            """
+
+            def create_DLinearModel(
+                model_name: str,
+                save_checkpoints: bool = False,
+                likelihood: Likelihood = None,
+            ):
+                return DLinearModel(
+                    input_chunk_length=4,
+                    output_chunk_length=1,
+                    kernel_size=5,
+                    model_name=model_name,
+                    work_dir=self.temp_work_dir,
+                    save_checkpoints=save_checkpoints,
+                    likelihood=likelihood,
+                    random_state=42,
+                    force_reset=True,
+                )
+
+            model_dir = os.path.join(self.temp_work_dir)
+            manual_name = "save_manual"
+            auto_name = "save_auto"
+            # create manually saved model checkpoints folder
+            checkpoint_path_manual = os.path.join(model_dir, manual_name)
+            os.mkdir(checkpoint_path_manual)
+            checkpoint_file_name = "checkpoint_0.pth.tar"
+            model_path_manual = os.path.join(
+                checkpoint_path_manual, checkpoint_file_name
+            )
+
+            model_auto_save = create_DLinearModel(
+                auto_name,
+                save_checkpoints=True,
+                likelihood=GaussianLikelihood(prior_mu=0.5),
+            )
+            model_auto_save.fit(self.series, epochs=1)
+
+            model_manual_save = create_DLinearModel(
+                manual_name,
+                save_checkpoints=False,
+                likelihood=GaussianLikelihood(prior_mu=0.5),
+            )
+            model_manual_save.fit(self.series, epochs=1)
+            model_manual_save.save(model_path_manual)
+
+            """
+            # prediction are identical when using same likelihood
+            self.assertEqual(
+                model_auto_save.predict(n=4),
+                model_manual_save.predict(n=4),
+            )
+            """
+
+            # model with identical likelihood
+            model_same_likelihood = create_DLinearModel(
+                "same_likelihood", likelihood=GaussianLikelihood(prior_mu=0.5)
+            )
+            model_same_likelihood.load_weights(model_path_manual, map_location="cpu")
+            model_same_likelihood.to_cpu()
+            model_same_likelihood.predict(n=4, series=self.series),
+
+            # model with no likelihood
+            model_no_likelihood = create_DLinearModel("no_likelihood", likelihood=None)
+            # state_dict does not have the proper dimensions, expection raised by torch.load
+            with self.assertRaises(RuntimeError):
+                model_no_likelihood.load_weights_from_checkpoint(
+                    auto_name,
+                    work_dir=self.temp_work_dir,
+                    best=False,
+                    map_location="cpu",
+                )
+
+            # model with different likelihood
+            model_other_likelihood = create_DLinearModel(
+                "other_likelihood", likelihood=LaplaceLikelihood()
+            )
+            with self.assertRaises(ValueError):
+                model_other_likelihood.load_weights(
+                    model_path_manual, map_location="cpu"
+                )
+
+            # model with same likelihood but different parameters
+            model_same_likelihood_other_prior = create_DLinearModel(
+                "same_likelihood_other_prior", likelihood=GaussianLikelihood()
+            )
+            with self.assertRaises(ValueError):
+                model_same_likelihood_other_prior.load_weights(
+                    model_path_manual, map_location="cpu"
                 )
 
         def test_create_instance_new_model_no_name_set(self):
