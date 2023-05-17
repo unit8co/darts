@@ -116,6 +116,9 @@ class EnsembleModel(GlobalForecastingModel):
             logger,
         )
 
+        # inform user that covariates will be passed only to the models supporting them
+        self._logger_info_covariates_handling(past_covariates, future_covariates)
+
         super().fit(series, past_covariates, future_covariates)
 
         return self
@@ -181,6 +184,9 @@ class EnsembleModel(GlobalForecastingModel):
             num_samples=num_samples,
             verbose=verbose,
         )
+
+        # inform user that covariates will be passed only to the models supporting them
+        self._logger_info_covariates_handling(past_covariates, future_covariates)
 
         predictions = self._make_multiple_predictions(
             n=n,
@@ -251,3 +257,26 @@ class EnsembleModel(GlobalForecastingModel):
 
     def _is_probabilistic(self) -> bool:
         return all([model._is_probabilistic() for model in self.models])
+
+    def _full_past_covariates_support(self) -> bool:
+        return all([model.supports_past_covariates() for model in self.models])
+
+    def _full_future_covariates_support(self) -> bool:
+        return all([model.supports_future_covariates() for model in self.models])
+
+    def _logger_info_covariates_handling(
+        self,
+        past_covariates: Union[TimeSeries, Sequence[TimeSeries]],
+        future_covariates: Union[TimeSeries, Sequence[TimeSeries]],
+    ):
+        if past_covariates is not None and not self._full_past_covariates_support():
+            logger.info(
+                "Some models in the ensemble do not support past covariates, the past covariates will be "
+                "provided only to the models supporting them."
+            )
+
+        if future_covariates is not None and not self._full_future_covariates_support():
+            logger.info(
+                "Some models in the ensemble do not support future covariates, the future covariates will be "
+                "provided only to the models supporting them."
+            )
