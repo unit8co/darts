@@ -502,6 +502,7 @@ if TORCH_AVAILABLE:
                 likelihood=GaussianLikelihood(prior_mu=0.5),
             )
             model_auto_save.fit(self.series, epochs=1)
+            pred_auto = model_auto_save.predict(n=4, series=self.series)
 
             model_manual_save = create_DLinearModel(
                 manual_name,
@@ -510,14 +511,10 @@ if TORCH_AVAILABLE:
             )
             model_manual_save.fit(self.series, epochs=1)
             model_manual_save.save(model_path_manual)
+            pred_manual = model_manual_save.predict(n=4, series=self.series)
 
-            """
-            # prediction are identical when using same likelihood
-            self.assertEqual(
-                model_auto_save.predict(n=4),
-                model_manual_save.predict(n=4),
-            )
-            """
+            # predictions are identical when using the same likelihood
+            self.assertTrue(np.array_equal(pred_auto.values(), pred_manual.values()))
 
             # model with identical likelihood
             model_same_likelihood = create_DLinearModel(
@@ -525,7 +522,8 @@ if TORCH_AVAILABLE:
             )
             model_same_likelihood.load_weights(model_path_manual, map_location="cpu")
             model_same_likelihood.to_cpu()
-            model_same_likelihood.predict(n=4, series=self.series),
+            model_same_likelihood.predict(n=4, series=self.series)
+            # cannot check predictions since this model is not fitted, random state is different
 
             # model with no likelihood
             model_no_likelihood = create_DLinearModel("no_likelihood", likelihood=None)
@@ -538,7 +536,7 @@ if TORCH_AVAILABLE:
                     map_location="cpu",
                 )
 
-            # model with different likelihood
+            # model with a different likelihood
             model_other_likelihood = create_DLinearModel(
                 "other_likelihood", likelihood=LaplaceLikelihood()
             )
@@ -547,7 +545,7 @@ if TORCH_AVAILABLE:
                     model_path_manual, map_location="cpu"
                 )
 
-            # model with same likelihood but different parameters
+            # model with the same likelihood but different parameters
             model_same_likelihood_other_prior = create_DLinearModel(
                 "same_likelihood_other_prior", likelihood=GaussianLikelihood()
             )
