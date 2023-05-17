@@ -259,10 +259,10 @@ class EnsembleModel(GlobalForecastingModel):
         return all([model._is_probabilistic() for model in self.models])
 
     def _full_past_covariates_support(self) -> bool:
-        return all([model.supports_past_covariates() for model in self.models])
+        return all([model.supports_past_covariates for model in self.models])
 
     def _full_future_covariates_support(self) -> bool:
-        return all([model.supports_future_covariates() for model in self.models])
+        return all([model.supports_future_covariates for model in self.models])
 
     def _logger_info_covariates_handling(
         self,
