@@ -3798,11 +3798,10 @@ class TimeSeries:
             if custom_labels:
                 label_to_use = label[i]
             else:
-                label_to_use = (
-                    (label + ("_" + str(i) if len(self.components) > 1 else ""))
-                    if label != ""
-                    else "" + str(comp_name)
-                )
+                if label == "":
+                    label_to_use = comp_name
+                else:
+                    label_to_use = f"{label}_{comp_name}"
             kwargs["label"] = label_to_use
 
             if central_series.shape[0] > 1:
