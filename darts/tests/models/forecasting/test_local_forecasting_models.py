@@ -204,6 +204,21 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
 
         os.chdir(cwd)
 
+    def test_save_load_model_invalid_path(self):
+        # check if save and load methods raise an error when given an invalid path
+        model = ARIMA(1, 1, 1)
+        model.fit(self.ts_gaussian)
+
+        # Use a byte string as path (, which is not supported)
+        model_path_invalid = b"invalid_path"
+
+        # test save
+        self.assertRaises(ValueError, model.save, model_path_invalid)
+        
+        # test load
+        self.assertRaises(ValueError, type(model).load, model_path_invalid)
+
+
     def test_models_runnability(self):
         for model, _ in models:
             if not isinstance(model, RegressionModel):
