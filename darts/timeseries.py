@@ -195,7 +195,6 @@ class TimeSeries:
             # We have to check manually if the index is complete for non-empty series. Another way could
             # be to rely on `inferred_freq` being present, but this fails for series of length < 3.
             if len(self._time_index) > 0:
-
                 is_index_complete = (
                     len(
                         pd.date_range(
@@ -2147,7 +2146,6 @@ class TimeSeries:
     def _split_at(
         self, split_point: Union[pd.Timestamp, float, int], after: bool = True
     ) -> Tuple["TimeSeries", "TimeSeries"]:
-
         # Get index with not after in order to avoid moving twice if split_point is not in self
         point_index = self.get_index_at_point(split_point, not after)
         return (
@@ -3046,7 +3044,6 @@ class TimeSeries:
         )
 
     def resample(self, freq: str, method: str = "pad", **kwargs) -> Self:
-
         """
         Build a reindexed ``TimeSeries`` with a given frequency.
         Provided method is used to fill holes in reindexed TimeSeries, by default 'pad'.
@@ -3499,7 +3496,6 @@ class TimeSeries:
 
         # run through all transformations in transforms
         for transformation in transforms:
-
             if "components" in transformation:
                 if isinstance(transformation["components"], str):
                     transformation["components"] = [transformation["components"]]
@@ -3723,8 +3719,10 @@ class TimeSeries:
         default_formatting
             Whether or not to use the darts default scheme.
         label
-            A prefix that will appear in front of each component of the TimeSeries or a list of string of
-            length the number of components in the plotted TimeSeries (default "").
+            Can either be a string or list of strings. If it's a single string and the series has only has a single
+            component, it is used as the label of the series in the plot. If it's a single string and the series has
+            more components, it is used as a prefix that will appear in front of each component. If it's a list of
+            strings, it is used as the label of each component. (default: "")
         args
             some positional arguments for the `plot()` method
         kwargs
@@ -3800,6 +3798,8 @@ class TimeSeries:
             else:
                 if label == "":
                     label_to_use = comp_name
+                elif len(self.components) == 1:
+                    label_to_use = label
                 else:
                     label_to_use = f"{label}_{comp_name}"
             kwargs["label"] = label_to_use
@@ -4694,7 +4694,6 @@ class TimeSeries:
             )
 
     def __gt__(self, other) -> xr.DataArray:
-
         if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
             return _xarray_with_attrs(
                 self._xa > other, self.static_covariates, self.hierarchy
