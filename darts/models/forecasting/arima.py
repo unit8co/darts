@@ -13,6 +13,7 @@ References
 from typing import Optional, Tuple
 
 import numpy as np
+from statsmodels import __version_tuple__ as statsmodels_version
 from statsmodels.tsa.arima.model import ARIMA as staARIMA
 
 from darts.logging import get_logger
@@ -22,6 +23,9 @@ from darts.models.forecasting.forecasting_model import (
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
+
+# Check whether we are running statsmodels >= 0.13.5 or not:
+statsmodels_above_0135 = statsmodels_version > (0, 13, 5)
 
 
 class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
@@ -81,11 +85,15 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
         self.seasonal_order = seasonal_order
         self.trend = trend
         self.model = None
-        self._random_state = (
-            random_state
-            if random_state is None
-            else np.random.RandomState(random_state)
-        )
+        if statsmodels_above_0135:
+            self._random_state = (
+                random_state
+                if random_state is None
+                else np.random.RandomState(random_state)
+            )
+        else:
+            self._random_state = None
+            np.random.seed(random_state if random_state is not None else 0)
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         super()._fit(series, future_covariates)
