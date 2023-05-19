@@ -195,7 +195,7 @@ my_stopper = EarlyStopping(
 # set up ray tune callback
 tune_callback = TuneReportCallback(
     {
-        "loss": "val_Loss",
+        "loss": "val_loss",
         "MAPE": "val_MeanAbsolutePercentageError",
     },
     on="validation_end",
