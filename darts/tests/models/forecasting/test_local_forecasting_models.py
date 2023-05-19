@@ -108,7 +108,6 @@ encoder_support_models = [
 
 
 class LocalForecastingModelsTestCase(DartsBaseTestClass):
-
     # forecasting horizon used in runnability tests
     forecasting_horizon = 5
 
@@ -213,11 +212,12 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
         model_path_invalid = b"invalid_path"
 
         # test save
-        self.assertRaises(ValueError, model.save, model_path_invalid)
-        
-        # test load
-        self.assertRaises(ValueError, type(model).load, model_path_invalid)
+        with pytest.raises(ValueError):
+            model.save(model_path_invalid)
 
+        # test load
+        with pytest.raises(ValueError):
+            type(model).load(model_path_invalid)
 
     def test_models_runnability(self):
         for model, _ in models:
@@ -390,7 +390,6 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
 
     @pytest.mark.slow
     def test_statsmodels_future_models(self):
-
         # same tests, but VARIMA requires to work on a multivariate target series
         UNIVARIATE = "univariate"
         MULTIVARIATE = "multivariate"
@@ -569,7 +568,6 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
         ]
 
         for model_cls, retrainable, multivariate, retrain, model_type in params:
-
             if (
                 not isinstance(retrain, (int, bool, Callable))
                 or (isinstance(retrain, int) and retrain < 0)
@@ -580,7 +578,6 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                     _ = model_cls.historical_forecasts(series, retrain=retrain)
 
             else:
-
                 if isinstance(retrain, Mock):
                     # resets patch_retrain_func call_count to 0
                     retrain.call_count = 0
@@ -593,7 +590,6 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                     with patch(
                         predict_method_to_patch, side_effect=series
                     ) as patch_predict_method:
-
                         # Set _fit_called attribute to True, otherwise retrain function is never called
                         model_cls._fit_called = True
 
