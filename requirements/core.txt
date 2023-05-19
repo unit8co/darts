@@ -1,10 +1,10 @@
-catboost>=1.0.6
-holidays>=0.11.1
+catboost>=1.0.6,<1.2.0
+holidays>=0.11.1,<0.25.0
 joblib>=0.16.0
 lightgbm>=3.2.0
 matplotlib>=3.3.0
 nfoursid>=1.0.0
-numpy>=1.19.0
+numpy>=1.19.0,<1.24.0
 pandas>=1.0.5
 pmdarima>=1.8.0
 prophet>=1.1.1
@@ -17,5 +17,6 @@ statsforecast>=1.4
 statsmodels>=0.13.0
 tbats>=1.1.0
 tqdm>=4.60.0
+typing-extensions
 xarray>=0.17.0
 xgboost>=1.6.0
