@@ -63,9 +63,7 @@ def objective(trial):
     # detect if a GPU is available
     if torch.cuda.is_available():
         pl_trainer_kwargs = {
-            "accelerator": "gpu",
-            "gpus": -1,
-            "auto_select_gpus": True,
+            "accelerator": "auto",
             "callbacks": callbacks,
         }
         num_workers = 4
