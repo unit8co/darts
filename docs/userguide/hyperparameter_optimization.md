@@ -62,14 +62,14 @@ def objective(trial):
 
     # detect if a GPU is available
     if torch.cuda.is_available():
-        pl_trainer_kwargs = {
-            "accelerator": "auto",
-            "callbacks": callbacks,
-        }
         num_workers = 4
     else:
-        pl_trainer_kwargs = {"callbacks": callbacks}
         num_workers = 0
+        
+    pl_trainer_kwargs = {
+        "accelerator": "auto",
+        "callbacks": callbacks,
+    }
 
     # optionally also add the (scaled) year value as a past covariate
     if include_year:
