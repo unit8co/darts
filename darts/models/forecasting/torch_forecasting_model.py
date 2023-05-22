@@ -1952,7 +1952,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             # avoid silently overwriting new encoders
             raise_if_not(
                 same_transformer,
-                f"Tranformers defined in the loaded encoders and the new model must have the same type, received: "
+                f"Transformers defined in the loaded encoders and the new model must have the same type, received "
                 f"({None if tfm_save.add_encoders is None else type(tfm_save.add_encoders.get('transformer', None))}) "
                 f"and "
                 f"({None if self.add_encoders is None else type(self.add_encoders.get('transformer', None))}).",
