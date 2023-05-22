@@ -12,6 +12,7 @@ from darts.models import (
     NaiveEnsembleModel,
     NaiveSeasonal,
     RegressionEnsembleModel,
+    StatsForecastAutoARIMA,
     Theta,
 )
 from darts.tests.base_test_class import DartsBaseTestClass
@@ -188,7 +189,8 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_input_models_mixed(self):
-        naive_ensemble = NaiveEnsembleModel([NaiveDrift(), RNNModel(12)])
+        # NaiveDrift is local, RNNModel is global
+        naive_ensemble = NaiveEnsembleModel([NaiveDrift(), RNNModel(12, n_epochs=1)])
         # ensemble is neither local, nor global
         self.assertFalse(naive_ensemble.is_local_ensemble)
         self.assertFalse(naive_ensemble.is_global_ensemble)
@@ -196,6 +198,26 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         # ensemble contains one local model, no support for multiple ts fit
         with self.assertRaises(ValueError):
             naive_ensemble.fit([self.series1, self.series2])
+
+    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    def test_mixed_models_with_covariates(self):
+        naive_ensemble_one_covs = NaiveEnsembleModel(
+            [NaiveDrift(), RNNModel(12, n_epochs=1)]
+        )
+        # none of the models support past covariates
+        with self.assertRaises(ValueError):
+            naive_ensemble_one_covs.fit(self.series1, past_covariates=self.series2)
+        # only RNN supports future covariates
+        naive_ensemble_one_covs.fit(self.series1, future_covariates=self.series2)
+
+        naive_ensemble_future_covs = NaiveEnsembleModel(
+            [StatsForecastAutoARIMA(), RNNModel(12, n_epochs=1)]
+        )
+        # none of the models support past covariates
+        with self.assertRaises(ValueError):
+            naive_ensemble_future_covs.fit(self.series1, past_covariates=self.series2)
+        # both models supports future covariates
+        naive_ensemble_future_covs.fit(self.series1, future_covariates=self.series2)
 
     def test_fit_multivar_ts_with_local_models(self):
         naive = NaiveEnsembleModel(

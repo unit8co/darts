@@ -8,10 +8,7 @@ from typing import List, Optional, Sequence, Tuple, Union
 
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.ensemble_model import EnsembleModel
-from darts.models.forecasting.forecasting_model import (
-    GlobalForecastingModel,
-    LocalForecastingModel,
-)
+from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
 from darts.models.forecasting.regression_model import RegressionModel
 from darts.timeseries import TimeSeries
@@ -23,9 +20,7 @@ logger = get_logger(__name__)
 class RegressionEnsembleModel(EnsembleModel):
     def __init__(
         self,
-        forecasting_models: Union[
-            List[LocalForecastingModel], List[GlobalForecastingModel]
-        ],
+        forecasting_models: List[ForecastingModel],
         regression_train_n_points: int,
         regression_model=None,
     ):
@@ -37,6 +32,11 @@ class RegressionEnsembleModel(EnsembleModel):
         best ensemble the individual forecasting models' forecasts. It is not the same usage of regression
         as in :class:`RegressionModel`, where the regression model is used to produce forecasts based on the
         lagged series.
+
+        If `future_covariates` or `past_covariates` are provided at training or inference time,
+        they will be passed only to the forecasting models supporting them.
+
+        The regression model does not leverage the covariates passed to ``fit()`` and ``predict()``.
 
         Parameters
         ----------

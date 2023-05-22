@@ -169,6 +169,9 @@ class NaiveEnsembleModel(EnsembleModel):
 
         Naive implementation of `EnsembleModel`
         Returns the average of all predictions of the constituent models
+
+        If `future_covariates` or `past_covariates` are provided at training or inference time,
+        they will be passed only to the models supporting them.
         """
         super().__init__(models)
 
