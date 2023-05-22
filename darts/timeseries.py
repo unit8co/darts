@@ -3719,10 +3719,10 @@ class TimeSeries:
         default_formatting
             Whether or not to use the darts default scheme.
         label
-            Can either be a string or list of strings. If it's a single string and the series has only has a single
-            component, it is used as the label of the series in the plot. If it's a single string and the series has
-            more components, it is used as a prefix that will appear in front of each component. If it's a list of
-            strings, it is used as the label of each component. (default: "")
+            Can either be a string or list of strings. If a string and the series only has a single component, it is
+            used as the label for that component. If a string and the series has multiple components, it is used as
+            a prefix for each component name. If a list of strings with length equal to the number of components in
+            the series, the labels will be mapped to the components in order.
         args
             some positional arguments for the `plot()` method
         kwargs
