@@ -1163,7 +1163,7 @@ class SequentialEncoder(Encoder):
         """
         # by default, _[past/future]_encoders are empty lists
         past_enc_n_compoments = sum(
-            past_enc.encoding_n_components for past_enc in self._past_encoders
+            past_enc.encoding_n_components for past_enc in self.past_encoders
         )
         future_enc_n_compoments = sum(
             future_enc.encoding_n_components for future_enc in self.future_encoders
