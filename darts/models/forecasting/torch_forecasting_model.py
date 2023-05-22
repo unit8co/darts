@@ -1782,7 +1782,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ckpt_hyper_params = ckpt["hyper_parameters"]
 
         # verify that the arguments passed to the constructor match those of the checkpoint
-        # add_encoders is treated im _load_encoders()
+        # add_encoders is checked in _load_encoders()
         skipped_params = ["add_encoders"]
         for param_key, param_value in self.model_params.items():
             # TODO: there are discrepancies between the param names, for ex num_layer/n_rnn_layers
@@ -1951,18 +1951,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if load_encoders:
             # avoid silently overwriting new encoders
             raise_if_not(
-                same_encoders,
-                f"Encoders loaded from the checkpoint ({tfm_save.add_encoders}) "
-                f"are different from the encoders defined in the new model "
-                f"({self.add_encoders}).",
-                logger,
-            )
-            raise_if_not(
                 same_transformer,
                 f"Tranformers defined in the loaded encoders and the new model must have the same type, received: "
                 f"({None if tfm_save.add_encoders is None else type(tfm_save.add_encoders.get('transformer', None))}) "
                 f"and "
                 f"({None if self.add_encoders is None else type(self.add_encoders.get('transformer', None))}).",
+                logger,
+            )
+            raise_if_not(
+                same_encoders,
+                f"Encoders loaded from the checkpoint ({tfm_save.add_encoders}) "
+                f"are different from the encoders defined in the new model "
+                f"({self.add_encoders}).",
                 logger,
             )
 
