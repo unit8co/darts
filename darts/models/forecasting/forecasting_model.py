@@ -14,6 +14,7 @@ to obtain forecasts for a desired number of time stamps into the future.
 import copy
 import datetime
 import inspect
+import io
 import os
 import pickle
 import time
@@ -1781,7 +1782,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def _default_save_path(cls) -> str:
         return f"{cls.__name__}_{datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S')}"
 
-    def save(self, path: Optional[Union[str, BinaryIO]] = None, **pkl_kwargs) -> None:
+    def save(
+        self, path: Optional[Union[str, os.PathLike, BinaryIO]] = None, **pkl_kwargs
+    ) -> None:
         """
         Saves the model under a given path or file handle.
 
@@ -1812,16 +1815,24 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             # default path
             path = self._default_save_path() + ".pkl"
 
-        if isinstance(path, str):
+        if isinstance(path, (str, os.PathLike)):
             # save the whole object using pickle
             with open(path, "wb") as handle:
                 pickle.dump(obj=self, file=handle, **pkl_kwargs)
-        else:
+        elif isinstance(path, io.BufferedWriter):
             # save the whole object using pickle
             pickle.dump(obj=self, file=path, **pkl_kwargs)
+        else:
+            raise_log(
+                ValueError(
+                    "Argument 'path' has to be either 'str' or 'PathLike' (for a filepath) "
+                    f"or 'BufferedWriter' (for an already opened file), but was '{path.__class__}'."
+                ),
+                logger=logger,
+            )
 
     @staticmethod
-    def load(path: Union[str, BinaryIO]) -> "ForecastingModel":
+    def load(path: Union[str, os.PathLike, BinaryIO]) -> "ForecastingModel":
         """
         Loads the model from a given path or file handle.
 
@@ -1831,7 +1842,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Path or file handle from which to load the model.
         """
 
-        if isinstance(path, str):
+        if isinstance(path, (str, os.PathLike)):
             raise_if_not(
                 os.path.exists(path),
                 f"The file {path} doesn't exist",
@@ -1840,8 +1851,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             with open(path, "rb") as handle:
                 model = pickle.load(file=handle)
-        else:
+        elif isinstance(path, io.BufferedReader):
             model = pickle.load(file=path)
+        else:
+            raise_log(
+                ValueError(
+                    "Argument 'path' has to be either 'str' or 'PathLike' (for a filepath) "
+                    f"or 'BufferedReader' (for an already opened file), but was '{path.__class__}'."
+                ),
+                logger=logger,
+            )
 
         return model
 
