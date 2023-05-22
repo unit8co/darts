@@ -56,8 +56,8 @@ class EnsembleModel(GlobalForecastingModel):
                     )
                 ]
             ),
-            "Cannot instantiate EnsembleModel with forecasting models that are neither local, "
-            "nor global. Also, please make sure that all the models in `models` are instantiated.",
+            "All models must be of type `GlobalForecastingModel`, or `LocalForecastingModel`. "
+            "Also, make sure that all models in `models` are instantiated.",
             logger,
         )
 
