@@ -9,6 +9,7 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries
+from darts.dataprocessing.encoders import SequentialEncoder
 from darts.dataprocessing.transformers import BoxCox, Scaler
 from darts.logging import get_logger
 from darts.metrics import mape
@@ -317,7 +318,6 @@ if TORCH_AVAILABLE:
                     work_dir=self.temp_work_dir,
                     best=False,
                     load_encoders=False,
-                    map_location="cpu",
                 )
             # overwritte undeclared encoders
             model_no_enc.load_weights_from_checkpoint(
@@ -325,11 +325,24 @@ if TORCH_AVAILABLE:
                 work_dir=self.temp_work_dir,
                 best=False,
                 load_encoders=True,
-                map_location="cpu",
             )
-            model_no_enc.to_cpu()
-
-            self.assertEqual(model_auto_save.add_encoders, model_no_enc.add_encoders)
+            # equality between data transformers is not well defined
+            self.assertEqual(
+                {
+                    k: v
+                    for k, v in model_auto_save.add_encoders.items()
+                    if k != "transformer"
+                },
+                {
+                    k: v
+                    for k, v in model_no_enc.add_encoders.items()
+                    if k != "transformer"
+                },
+            )
+            self.assertEqual(
+                type(model_auto_save.add_encoders["transformer"]),
+                type(model_no_enc.add_encoders["transformer"]),
+            )
             # cannot directly verify equality between encoders, using predict as proxy
             self.assertEqual(
                 model_auto_save.predict(n=4),
@@ -340,10 +353,7 @@ if TORCH_AVAILABLE:
             model_same_enc_noload = create_DLinearModel(
                 "same_encoder_noload", add_encoders=encoders_past
             )
-            model_same_enc_noload.load_weights(
-                model_path_manual, load_encoders=False, map_location="cpu"
-            )
-            model_same_enc_noload.to_cpu()
+            model_same_enc_noload.load_weights(model_path_manual, load_encoders=False)
             # cannot predict because of un-fitted encoder
             with self.assertRaises(ValueError):
                 model_same_enc_noload.predict(n=4, series=self.series)
@@ -351,10 +361,7 @@ if TORCH_AVAILABLE:
             model_same_enc_load = create_DLinearModel(
                 "same_encoder_load", add_encoders=encoders_past
             )
-            model_same_enc_load.load_weights(
-                model_path_manual, load_encoders=True, map_location="cpu"
-            )
-            model_same_enc_load.to_cpu()
+            model_same_enc_load.load_weights(model_path_manual, load_encoders=True)
             self.assertEqual(
                 model_manual_save.predict(n=4),
                 model_same_enc_load.predict(n=4, series=self.series),
@@ -366,21 +373,30 @@ if TORCH_AVAILABLE:
             )
             # cannot overwritte different declared encoders
             with self.assertRaises(ValueError):
-                model_other_enc_load.load_weights(
-                    model_path_manual, load_encoders=True, map_location="cpu"
-                )
+                model_other_enc_load.load_weights(model_path_manual, load_encoders=True)
 
             # model with different encoders but same dimensions (fittable)
             model_other_enc_noload = create_DLinearModel(
                 "other_encoder_noload", add_encoders=encoders_other_past
             )
-            model_other_enc_noload.load_weights(
-                model_path_manual, load_encoders=False, map_location="cpu"
+            model_other_enc_noload.load_weights(model_path_manual, load_encoders=False)
+            # equality between data transformers is not well defined
+            self.assertEqual(
+                {
+                    k: v
+                    for k, v in model_other_enc_noload.add_encoders.items()
+                    if k != "transformer"
+                },
+                {k: v for k, v in encoders_other_past.items() if k != "transformer"},
             )
-            model_other_enc_noload.to_cpu()
-            self.assertEqual(model_other_enc_noload.add_encoders, encoders_other_past)
+            self.assertEqual(
+                type(model_auto_save.add_encoders["transformer"]),
+                type(encoders_other_past["transformer"]),
+            )
             # new encoders were instantiated
-            self.assertNotEqual(model_other_enc_noload.encoders, None)
+            self.assertTrue(
+                isinstance(model_other_enc_noload.encoders, SequentialEncoder)
+            )
             # since fit() was not called, new fittable encoders were not trained
             with self.assertRaises(ValueError):
                 model_other_enc_noload.predict(n=4, series=self.series)
@@ -394,14 +410,21 @@ if TORCH_AVAILABLE:
                 "same_encoder_noscaler", add_encoders=encoders_past_noscaler
             )
             model_new_enc_noscaler_noload.load_weights(
-                model_path_manual, load_encoders=False, map_location="cpu"
+                model_path_manual, load_encoders=False
             )
-            model_new_enc_noscaler_noload.to_cpu()
-            self.assertNotEqual(
-                model_new_enc_noscaler_noload.add_encoders, encoders_past
+
+            # equality between data transformers is not well defined
+            self.assertEqual(
+                {
+                    k: v
+                    for k, v in model_new_enc_noscaler_noload.add_encoders.items()
+                    if k != "transformer"
+                },
+                {k: v for k, v in encoders_past_noscaler.items() if k != "transformer"},
             )
             self.assertEqual(
-                model_new_enc_noscaler_noload.add_encoders, encoders_past_noscaler
+                type(model_auto_save.add_encoders["transformer"]),
+                type(encoders_other_past["transformer"]),
             )
             # predict() can be called directly since new encoders don't contain scaler
             model_new_enc_noscaler_noload.predict(n=4, series=self.series)
@@ -414,13 +437,12 @@ if TORCH_AVAILABLE:
             # cannot overwritte different declared encoders
             with self.assertRaises(ValueError):
                 model_new_enc_other_transformer.load_weights(
-                    model_path_manual, load_encoders=True, map_location="cpu"
+                    model_path_manual, load_encoders=True
                 )
 
             model_new_enc_other_transformer.load_weights(
-                model_path_manual, load_encoders=False, map_location="cpu"
+                model_path_manual, load_encoders=False
             )
-            model_new_enc_other_transformer.to_cpu()
             # since fit() was not called, new fittable encoders were not trained
             with self.assertRaises(ValueError):
                 model_new_enc_other_transformer.predict(n=4, series=self.series)
@@ -435,13 +457,11 @@ if TORCH_AVAILABLE:
             )
             # cannot overwritte different declared encoders
             with self.assertRaises(ValueError):
-                model_new_enc_2_past.load_weights(
-                    model_path_manual, load_encoders=True, map_location="cpu"
-                )
+                model_new_enc_2_past.load_weights(model_path_manual, load_encoders=True)
             # new encoders have one additional past component
             with self.assertRaises(ValueError):
                 model_new_enc_2_past.load_weights(
-                    model_path_manual, load_encoders=False, map_location="cpu"
+                    model_path_manual, load_encoders=False
                 )
 
             # model with encoders containing past and future covs (fittable)
@@ -451,12 +471,12 @@ if TORCH_AVAILABLE:
             # cannot overwritte different declared encoders
             with self.assertRaises(ValueError):
                 model_new_enc_past_n_future.load_weights(
-                    model_path_manual, load_encoders=True, map_location="cpu"
+                    model_path_manual, load_encoders=True
                 )
             # identical past components, but different future components
             with self.assertRaises(ValueError):
                 model_new_enc_past_n_future.load_weights(
-                    model_path_manual, load_encoders=False, map_location="cpu"
+                    model_path_manual, load_encoders=False
                 )
 
         def test_save_and_load_weights_w_likelihood(self):
@@ -520,20 +540,17 @@ if TORCH_AVAILABLE:
             model_same_likelihood = create_DLinearModel(
                 "same_likelihood", likelihood=GaussianLikelihood(prior_mu=0.5)
             )
-            model_same_likelihood.load_weights(model_path_manual, map_location="cpu")
-            model_same_likelihood.to_cpu()
+            model_same_likelihood.load_weights(model_path_manual)
             model_same_likelihood.predict(n=4, series=self.series)
             # cannot check predictions since this model is not fitted, random state is different
 
             # model with no likelihood
             model_no_likelihood = create_DLinearModel("no_likelihood", likelihood=None)
-            # state_dict does not have the proper dimensions, expection raised by torch.load
-            with self.assertRaises(RuntimeError):
+            with self.assertRaises(ValueError):
                 model_no_likelihood.load_weights_from_checkpoint(
                     auto_name,
                     work_dir=self.temp_work_dir,
                     best=False,
-                    map_location="cpu",
                 )
 
             # model with a different likelihood
@@ -541,18 +558,14 @@ if TORCH_AVAILABLE:
                 "other_likelihood", likelihood=LaplaceLikelihood()
             )
             with self.assertRaises(ValueError):
-                model_other_likelihood.load_weights(
-                    model_path_manual, map_location="cpu"
-                )
+                model_other_likelihood.load_weights(model_path_manual)
 
             # model with the same likelihood but different parameters
             model_same_likelihood_other_prior = create_DLinearModel(
                 "same_likelihood_other_prior", likelihood=GaussianLikelihood()
             )
             with self.assertRaises(ValueError):
-                model_same_likelihood_other_prior.load_weights(
-                    model_path_manual, map_location="cpu"
-                )
+                model_same_likelihood_other_prior.load_weights(model_path_manual)
 
         def test_create_instance_new_model_no_name_set(self):
             RNNModel(12, "RNN", 10, 10, work_dir=self.temp_work_dir)

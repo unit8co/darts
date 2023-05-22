@@ -1782,9 +1782,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ckpt_hyper_params = ckpt["hyper_parameters"]
 
         # verify that the arguments passed to the constructor match those of the checkpoint
+        # add_encoders is treated im _load_encoders()
+        skipped_params = ["add_encoders"]
         for param_key, param_value in self.model_params.items():
             # TODO: there are discrepancies between the param names, for ex num_layer/n_rnn_layers
-            if param_key in ckpt_hyper_params.keys() and param_value is not None:
+            if (
+                param_key in ckpt_hyper_params.keys()
+                and param_key not in skipped_params
+            ):
                 # some parameters must be converted
                 if isinstance(ckpt_hyper_params[param_key], list) and not isinstance(
                     param_value, list
@@ -1922,16 +1927,45 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self, tfm_save: "TorchForecastingModel", load_encoders: bool
     ) -> Tuple[SequentialEncoder, Dict]:
         """Return the encoders from a model save with several sanity checks."""
+        if self.add_encoders is None:
+            same_encoders = True
+            same_transformer = True
+        elif tfm_save.add_encoders is None:
+            same_encoders = False
+            same_transformer = False
+        else:
+            # transformers are equal if they are instances of the same class
+            self_transformer = self.add_encoders.get("transformer", None)
+            tfm_transformer = tfm_save.add_encoders.get("transformer", None)
+            same_transformer = type(self_transformer) == type(tfm_transformer)
+
+            # encoders are equal if they have the same entries (transformer excluded)
+            self_encoders = {
+                k: v for k, v in self.add_encoders.items() if k != "transformer"
+            }
+            tfm_encoders = {
+                k: v for k, v in tfm_save.add_encoders.items() if k != "transformer"
+            }
+            same_encoders = self_encoders == tfm_encoders
+
         if load_encoders:
             # avoid silently overwriting new encoders
-            raise_if(
-                self.add_encoders is not None
-                and self.add_encoders != tfm_save.add_encoders,
+            raise_if_not(
+                same_encoders,
                 f"Encoders loaded from the checkpoint ({tfm_save.add_encoders}) "
                 f"are different from the encoders defined in the new model "
                 f"({self.add_encoders}).",
                 logger,
             )
+            raise_if_not(
+                same_transformer,
+                f"Tranformers defined in the loaded encoders and the new model must have the same type, received: "
+                f"({None if tfm_save.add_encoders is None else type(tfm_save.add_encoders.get('transformer', None))}) "
+                f"and "
+                f"({None if self.add_encoders is None else type(self.add_encoders.get('transformer', None))}).",
+                logger,
+            )
+
             new_add_encoders: Dict = copy.deepcopy(tfm_save.add_encoders)
             new_encoders: SequentialEncoder = copy.deepcopy(tfm_save.encoders)
         else:
