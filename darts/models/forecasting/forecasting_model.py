@@ -1912,7 +1912,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         changed_model_params = [
             (k, v)
             for k, v in self.model_params.items()
-            if include_default_params or v != default_model_params.get(k, None)
+            if include_default_params or np.any(v != default_model_params.get(k, None))
         ]
 
         model_name = self.__class__.__name__
