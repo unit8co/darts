@@ -200,24 +200,47 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
             naive_ensemble.fit([self.series1, self.series2])
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
-    def test_mixed_models_with_covariates(self):
-        naive_ensemble_one_covs = NaiveEnsembleModel(
+    def test_call_predict_different_covariates_support(self):
+        # AutoARIMA support future covariates only
+        local_ensemble_one_covs = NaiveEnsembleModel(
+            [NaiveDrift(), StatsForecastAutoARIMA()]
+        )
+        with self.assertRaises(ValueError):
+            local_ensemble_one_covs.fit(self.series1, past_covariates=self.series2)
+        local_ensemble_one_covs.fit(self.series1, future_covariates=self.series2)
+
+        # RNN support future covariates only
+        mixed_ensemble_one_covs = NaiveEnsembleModel(
             [NaiveDrift(), RNNModel(12, n_epochs=1)]
         )
-        # none of the models support past covariates
         with self.assertRaises(ValueError):
-            naive_ensemble_one_covs.fit(self.series1, past_covariates=self.series2)
-        # only RNN supports future covariates
-        naive_ensemble_one_covs.fit(self.series1, future_covariates=self.series2)
+            mixed_ensemble_one_covs.fit(self.series1, past_covariates=self.series2)
+        mixed_ensemble_one_covs.fit(self.series1, future_covariates=self.series2)
 
-        naive_ensemble_future_covs = NaiveEnsembleModel(
+        # both models support future covariates only
+        mixed_ensemble_future_covs = NaiveEnsembleModel(
             [StatsForecastAutoARIMA(), RNNModel(12, n_epochs=1)]
         )
-        # none of the models support past covariates
+        mixed_ensemble_future_covs.fit(self.series1, future_covariates=self.series2)
         with self.assertRaises(ValueError):
-            naive_ensemble_future_covs.fit(self.series1, past_covariates=self.series2)
-        # both models supports future covariates
-        naive_ensemble_future_covs.fit(self.series1, future_covariates=self.series2)
+            mixed_ensemble_future_covs.fit(self.series1, past_covariates=self.series2)
+
+        # RegressionModels with different covariates
+        global_ensemble_both_covs = NaiveEnsembleModel(
+            [
+                LinearRegressionModel(lags=1, lags_past_covariates=[-1]),
+                LinearRegressionModel(lags=1, lags_future_covariates=[1]),
+            ]
+        )
+        # missing future covariates
+        with self.assertRaises(ValueError):
+            global_ensemble_both_covs.fit(self.series1, past_covariates=self.series2)
+        # missing past covariates
+        with self.assertRaises(ValueError):
+            global_ensemble_both_covs.fit(self.series1, future_covariates=self.series2)
+        global_ensemble_both_covs.fit(
+            self.series1, past_covariates=self.series2, future_covariates=self.series2
+        )
 
     def test_fit_multivar_ts_with_local_models(self):
         naive = NaiveEnsembleModel(

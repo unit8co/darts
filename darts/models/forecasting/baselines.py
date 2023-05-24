@@ -163,7 +163,9 @@ class NaiveMovingAverage(LocalForecastingModel):
 
 class NaiveEnsembleModel(EnsembleModel):
     def __init__(
-        self, models: Union[List[LocalForecastingModel], List[GlobalForecastingModel]]
+        self,
+        models: Union[List[LocalForecastingModel], List[GlobalForecastingModel]],
+        show_warnings: bool = True,
     ):
         """Naive combination model
 
@@ -172,8 +174,15 @@ class NaiveEnsembleModel(EnsembleModel):
 
         If `future_covariates` or `past_covariates` are provided at training or inference time,
         they will be passed only to the models supporting them.
+
+        Parameters
+        ----------
+        models
+            List of forecasting models whose predictions to ensemble
+        show_warnings
+            Whether to show warnings related to models covariates support.
         """
-        super().__init__(models)
+        super().__init__(models=models, show_warnings=show_warnings)
 
     def fit(
         self,

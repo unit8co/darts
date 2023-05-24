@@ -23,6 +23,7 @@ class RegressionEnsembleModel(EnsembleModel):
         forecasting_models: List[ForecastingModel],
         regression_train_n_points: int,
         regression_model=None,
+        show_warnings: bool = True,
     ):
         """
         Use a regression model for ensembling individual models' predictions.
@@ -47,8 +48,10 @@ class RegressionEnsembleModel(EnsembleModel):
         regression_model
             Any regression model with ``predict()`` and ``fit()`` methods (e.g. from scikit-learn)
             Default: ``darts.model.LinearRegressionModel(fit_intercept=False)``
+        show_warnings
+            Whether to show warnings related to forecasting_models covariates support.
         """
-        super().__init__(forecasting_models)
+        super().__init__(models=forecasting_models, show_warnings=show_warnings)
         if regression_model is None:
             regression_model = LinearRegressionModel(
                 lags=None, lags_future_covariates=[0], fit_intercept=False

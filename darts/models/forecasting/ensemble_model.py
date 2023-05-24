@@ -30,9 +30,11 @@ class EnsembleModel(GlobalForecastingModel):
     ----------
     models
         List of forecasting models whose predictions to ensemble
+    show_warnings
+        Whether to show warnings related to models covariates support.
     """
 
-    def __init__(self, models: List[ForecastingModel]):
+    def __init__(self, models: List[ForecastingModel], show_warnings: bool = True):
         raise_if_not(
             isinstance(models, list) and models,
             "Cannot instantiate EnsembleModel with an empty list of models",
@@ -71,20 +73,26 @@ class EnsembleModel(GlobalForecastingModel):
         super().__init__()
         self.models = models
 
-        if self.supports_past_covariates and not self._full_past_covariates_support():
-            logger.info(
-                "Some models in the ensemble do not support past covariates, the past covariates will be "
-                "provided only to the models supporting them when calling fit/predict."
-            )
+        if show_warnings:
+            if (
+                self.supports_past_covariates
+                and not self._full_past_covariates_support()
+            ):
+                logger.warning(
+                    "Some models in the ensemble do not support past covariates, the past covariates will be "
+                    "provided only to the models supporting them when calling fit/predict."
+                    "To hide these warnings, set `show_warnings=False`."
+                )
 
-        if (
-            self.supports_future_covariates
-            and not self._full_future_covariates_support()
-        ):
-            logger.info(
-                "Some models in the ensemble do not support future covariates, the future covariates will be "
-                "provided only to the models supporting them when calling fit/predict."
-            )
+            if (
+                self.supports_future_covariates
+                and not self._full_future_covariates_support()
+            ):
+                logger.warning(
+                    "Some models in the ensemble do not support future covariates, the future covariates will be "
+                    "provided only to the models supporting them when calling fit/predict."
+                    "To hide these warnings, set `show_warnings=False`."
+                )
 
     def fit(
         self,
@@ -105,11 +113,6 @@ class EnsembleModel(GlobalForecastingModel):
             not self.is_global_ensemble and not is_single_series,
             "The models contain at least one LocalForecastingModel, which does not support training on multiple "
             "series.",
-            logger,
-        )
-        raise_if(
-            self.is_local_ensemble and past_covariates is not None,
-            "The models are of type LocalForecastingModel, which does not support past covariates.",
             logger,
         )
 
@@ -291,13 +294,13 @@ class EnsembleModel(GlobalForecastingModel):
         """
         raise_if(
             past_covariates is not None and not self.supports_past_covariates,
-            "`past_covariates` were provided to an `EnsembleModel` but none of its 
+            "`past_covariates` were provided to an `EnsembleModel` but none of its "
             "base models support such covariates.",
             logger,
         )
         raise_if(
             future_covariates is not None and not self.supports_future_covariates,
-            "`future_covariates` were provided to an `EnsembleModel` but none of its 
+            "`future_covariates` were provided to an `EnsembleModel` but none of its "
             "base models support such covariates.",
             logger,
         )
