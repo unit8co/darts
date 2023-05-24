@@ -57,7 +57,7 @@ class EnsembleModel(GlobalForecastingModel):
                 ]
             ),
             "All models must be of type `GlobalForecastingModel`, or `LocalForecastingModel`. "
-            "Also, make sure that all models in `models` are instantiated.",
+            "Also, make sure that all models in `forecasting_model/models` are instantiated.",
             logger,
         )
 
@@ -291,13 +291,13 @@ class EnsembleModel(GlobalForecastingModel):
         """
         raise_if(
             past_covariates is not None and not self.supports_past_covariates,
-            "Some past_covariates have been provided to a EnsembleModel containing no models "
-            "supporting such covariates.",
+            "`past_covariates` were provided to an `EnsembleModel` but none of its 
+            "base models support such covariates.",
             logger,
         )
         raise_if(
             future_covariates is not None and not self.supports_future_covariates,
-            "Some future_covariates have been provided to a Ensemble model containing no models "
-            "supporting such covariates.",
+            "`future_covariates` were provided to an `EnsembleModel` but none of its 
+            "base models support such covariates.",
             logger,
         )
