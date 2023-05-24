@@ -447,7 +447,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             ensemble_alldete.predict(5, num_samples=10)
 
-    def test_stochastic_training_regression_ensemble_model_(self):
+    def test_stochastic_training_regression_ensemble_model(self):
         """
         regression model is deterministic (default) but the forecasting model are
         probabilistic and they can be sampled to train the regression model.

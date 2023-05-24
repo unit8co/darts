@@ -20,7 +20,7 @@ from darts.utils.utils import seq2series, series2seq
 logger = get_logger(__name__)
 
 # arbitrary threshold to raise warning for probabilistic forecasting models
-SAMPLES_WARNING_THRESHOLD = 1e12
+SAMPLES_WARNING_THRESHOLD = 1e6
 
 
 class RegressionEnsembleModel(EnsembleModel):
@@ -131,7 +131,8 @@ class RegressionEnsembleModel(EnsembleModel):
                 f"Considering the number of models present in this ensemble ({len(forecasting_models)}), "
                 f"`regression_train_n_points` ({regression_train_n_points}) and `regression_train_num_samples` "
                 f"({regression_train_num_samples}) the number of sampled values to train the regression model "
-                f"will be very large (>{SAMPLES_WARNING_THRESHOLD})."
+                f"will be very large ({regression_train_num_samples*regression_train_n_points*len(forecasting_models)}"
+                f">{SAMPLES_WARNING_THRESHOLD})."
             )
 
         self.regression_model = regression_model

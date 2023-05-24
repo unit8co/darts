@@ -165,9 +165,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         )
         self.assertEqual(forecast_mean.n_samples, pred_proba_many_sample.n_samples)
         self.assertTrue(
-            np.array_equal(
-                pred_proba_many_sample.mean().values(), forecast_mean.mean().values()
-            )
+            np.array_equal(pred_proba_many_sample.values(), forecast_mean.values())
         )
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
