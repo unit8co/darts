@@ -80,7 +80,7 @@ class EnsembleModel(GlobalForecastingModel):
             ):
                 logger.warning(
                     "Some models in the ensemble do not support past covariates, the past covariates will be "
-                    "provided only to the models supporting them when calling fit/predict. "
+                    "provided only to the models supporting them when calling fit()` or `predict()`. "
                     "To hide these warnings, set `show_warnings=False`."
                 )
 
@@ -90,7 +90,7 @@ class EnsembleModel(GlobalForecastingModel):
             ):
                 logger.warning(
                     "Some models in the ensemble do not support future covariates, the future covariates will be "
-                    "provided only to the models supporting them when calling fit/predict. "
+                    "provided only to the models supporting them when calling `fit()` or `predict()`. "
                     "To hide these warnings, set `show_warnings=False`."
                 )
 
