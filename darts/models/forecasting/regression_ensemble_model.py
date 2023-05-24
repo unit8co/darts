@@ -57,8 +57,8 @@ class RegressionEnsembleModel(EnsembleModel):
                 if `regression_model` is probabilistic, the `RegressionEnsembleModel` will also be probabilistic.
             ..
         regression_train_num_samples
-            Number of times a prediction is sampled from each forecasting models to train the regression
-            model (samples are averaged). Should be left set to 1 for deterministic models. Default: 1.
+            Number of prediction samples from each forecasting model to train the regression model (samples are
+            averaged). Should be set to 1 for deterministic models. Default: 1.
         regression_train_samples_reduction
             If `forecasting models` are probabilistic and `regression_train_num_samples` > 1, method used to
             reduce the samples before passing them to the regression model. Possible values: None, "mean",

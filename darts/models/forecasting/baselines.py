@@ -232,12 +232,8 @@ class NaiveEnsembleModel(EnsembleModel):
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         def take_average(prediction: TimeSeries) -> TimeSeries:
             # average across the components, keep n_samples, rename components
-            # NOTE: could use `with_columns_renamed()` instead
-            return TimeSeries.from_times_and_values(
-                times=prediction.time_index,
-                values=prediction.mean(axis=1).all_values(),
-                freq=prediction.freq,
-                columns=[prediction.components[0]],
+            return prediction.mean(axis=1).with_columns_renamed(
+                "components_mean", prediction.components[0]
             )
 
         if isinstance(predictions, Sequence):
