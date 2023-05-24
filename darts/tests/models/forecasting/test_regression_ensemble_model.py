@@ -522,7 +522,14 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             pred_none_training.all_values().shape,
             pred_median_training.all_values().shape,
         )
-        # comparison between training methods is difficult, no reduction is not necessarily better
+
+        # deterministic regression model -> deterministic ensemble
+        with self.assertRaises(ValueError):
+            ensemble_model_none.predict(len(val), num_samples=100)
+        with self.assertRaises(ValueError):
+            ensemble_model_median.predict(len(val), num_samples=100)
+        with self.assertRaises(ValueError):
+            ensemble_model_0_5_quantile.predict(len(val), num_samples=100)
 
         # possible to use very small regression_train_num_samples
         ensemble_model_mean_1_sample = RegressionEnsembleModel(
