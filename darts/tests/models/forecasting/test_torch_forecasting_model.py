@@ -19,6 +19,7 @@ logger = get_logger(__name__)
 
 try:
     import torch
+    from pytorch_lightning.loggers.logger import DummyLogger
     from pytorch_lightning.tuner.lr_finder import _LRFinder
     from torchmetrics import (
         MeanAbsoluteError,
@@ -867,6 +868,63 @@ if TORCH_AVAILABLE:
             )
             model.predict(4, series=ts_training)
 
+        def test_load_from_checkpoint_w_custom_loss(self):
+            model_name = "pretraining_custom_loss"
+            # model with a custom loss
+            model = RNNModel(
+                12,
+                "RNN",
+                5,
+                1,
+                n_epochs=1,
+                work_dir=self.temp_work_dir,
+                model_name=model_name,
+                save_checkpoints=True,
+                force_reset=True,
+                loss_fn=torch.nn.L1Loss(),
+            )
+            model.fit(self.series)
+
+            loaded_model = RNNModel.load_from_checkpoint(
+                model_name, self.temp_work_dir, best=False
+            )
+            # custom loss function should be properly restored from ckpt
+            self.assertTrue(isinstance(loaded_model.model.criterion, torch.nn.L1Loss))
+
+            loaded_model.fit(self.series, epochs=2)
+            # calling fit() should not impact the loss function
+            self.assertTrue(isinstance(loaded_model.model.criterion, torch.nn.L1Loss))
+
+        def test_load_from_checkpoint_w_metrics(self):
+            model_name = "pretraining_metrics"
+            # model with one torch_metrics
+            model = RNNModel(
+                12,
+                "RNN",
+                5,
+                1,
+                n_epochs=1,
+                work_dir=self.temp_work_dir,
+                model_name=model_name,
+                save_checkpoints=True,
+                force_reset=True,
+                torch_metrics=MeanAbsolutePercentageError(),
+                pl_trainer_kwargs={"logger": DummyLogger(), "log_every_n_steps": 1},
+            )
+            model.fit(self.series)
+            # check train_metrics before loading
+            self.assertTrue(isinstance(model.model.train_metrics, MetricCollection))
+            self.assertEqual(len(model.model.train_metrics), 1)
+
+            loaded_model = RNNModel.load_from_checkpoint(
+                model_name, self.temp_work_dir, best=False
+            )
+            # custom loss function should be properly restored from ckpt torchmetrics.Metric
+            self.assertTrue(
+                isinstance(loaded_model.model.train_metrics, MetricCollection)
+            )
+            self.assertEqual(len(loaded_model.model.train_metrics), 1)
+
         def test_optimizers(self):
 
             optimizers = [
@@ -927,17 +985,39 @@ if TORCH_AVAILABLE:
             )
 
             # test single metric
-            model = RNNModel(12, "RNN", 10, 10, n_epochs=1, torch_metrics=metric)
+            model = RNNModel(
+                12,
+                "RNN",
+                10,
+                10,
+                n_epochs=1,
+                torch_metrics=metric,
+                pl_trainer_kwargs={"logger": DummyLogger(), "log_every_n_steps": 1},
+            )
             model.fit(self.series)
 
             # test metric collection
             model = RNNModel(
-                12, "RNN", 10, 10, n_epochs=1, torch_metrics=metric_collection
+                12,
+                "RNN",
+                10,
+                10,
+                n_epochs=1,
+                torch_metrics=metric_collection,
+                pl_trainer_kwargs={"logger": DummyLogger(), "log_every_n_steps": 1},
             )
             model.fit(self.series)
 
             # test multivariate series
-            model = RNNModel(12, "RNN", 10, 10, n_epochs=1, torch_metrics=metric)
+            model = RNNModel(
+                12,
+                "RNN",
+                10,
+                10,
+                n_epochs=1,
+                torch_metrics=metric,
+                pl_trainer_kwargs={"logger": DummyLogger(), "log_every_n_steps": 1},
+            )
             model.fit(self.multivariate_series)
 
         def test_metrics_w_likelihood(self):
@@ -955,6 +1035,7 @@ if TORCH_AVAILABLE:
                 n_epochs=1,
                 likelihood=GaussianLikelihood(),
                 torch_metrics=metric,
+                pl_trainer_kwargs={"logger": DummyLogger(), "log_every_n_steps": 1},
             )
             model.fit(self.series)
 
@@ -967,6 +1048,7 @@ if TORCH_AVAILABLE:
                 n_epochs=1,
                 likelihood=GaussianLikelihood(),
                 torch_metrics=metric_collection,
+                pl_trainer_kwargs={"logger": DummyLogger(), "log_every_n_steps": 1},
             )
             model.fit(self.series)
 
@@ -979,6 +1061,7 @@ if TORCH_AVAILABLE:
                 n_epochs=1,
                 likelihood=GaussianLikelihood(),
                 torch_metrics=metric_collection,
+                pl_trainer_kwargs={"logger": DummyLogger(), "log_every_n_steps": 1},
             )
             model.fit(self.multivariate_series)
 
