@@ -7,6 +7,15 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 [Full Changelog](https://github.com/unit8co/darts/compare/0.24.0...master)
 
+### For users of the library:
+
+**Improved**
+- Added support for `PathLike` to the `save()` and `load()` functions of `ForecastingModel`. [#1754](https://github.com/unit8co/darts/pull/1754) by [Simon Sudrich](https://github.com/sudrich).
+- Fixed an issue with `TorchForecastingModel.load_from_checkpoint()` not properly loading the loss function and metrics. [#1749](https://github.com/unit8co/darts/pull/1749) by [Antoine Madrona](https://github.com/madtoinou).
+
+**Fixed**
+- Fixed an issue not considering original component names for `TimeSeries.plot()` when providing a label prefix. [#1783](https://github.com/unit8co/darts/pull/1783) by [Simon Sudrich](https://github.com/sudrich).
+
 ## [0.24.0](https://github.com/unit8co/darts/tree/0.24.0) (2023-04-12)
 ### For users of the library:
 
