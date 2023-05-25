@@ -1971,9 +1971,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         else:
             raise_if(
                 len(tfm_save.add_encoders) > 0 and self.add_encoders is None,
-                "Model was created without encoders and encoders were not loaded, but "
-                "the weights were trained using encoders. Either set `load_encoders` to "
-                "`True` or add a matching `add_encoders` dict at model creation.",
+                f"Model was created without encoders and encoders were not loaded, but the weights were trained "
+                f"using encoders({tfm_save.add_encoders}). Either set `load_encoders` to `True` or add a matching "
+                f"`add_encoders` dict at model creation.",
                 logger,
             )
 

@@ -1,7 +1,7 @@
 import os
 import shutil
 import tempfile
-from typing import Dict
+from typing import Any, Dict
 from unittest.mock import patch
 
 import numpy as np
@@ -26,8 +26,7 @@ try:
         MetricCollection,
     )
 
-    from darts.models.forecasting.dlinear import DLinearModel
-    from darts.models.forecasting.rnn_model import RNNModel
+    from darts.models import DLinearModel, RNNModel
     from darts.utils.likelihood_models import (
         GaussianLikelihood,
         LaplaceLikelihood,
@@ -326,22 +325,11 @@ if TORCH_AVAILABLE:
                 best=False,
                 load_encoders=True,
             )
-            # equality between data transformers is not well defined
-            self.assertEqual(
-                {
-                    k: v
-                    for k, v in model_auto_save.add_encoders.items()
-                    if k != "transformer"
-                },
-                {
-                    k: v
-                    for k, v in model_no_enc.add_encoders.items()
-                    if k != "transformer"
-                },
+            self.helper_equality_encoders(
+                model_auto_save.add_encoders, model_no_enc.add_encoders
             )
-            self.assertEqual(
-                type(model_auto_save.add_encoders["transformer"]),
-                type(model_no_enc.add_encoders["transformer"]),
+            self.helper_equality_encoders_transfo(
+                model_auto_save.add_encoders, model_no_enc.add_encoders
             )
             # cannot directly verify equality between encoders, using predict as proxy
             self.assertEqual(
@@ -380,18 +368,11 @@ if TORCH_AVAILABLE:
                 "other_encoder_noload", add_encoders=encoders_other_past
             )
             model_other_enc_noload.load_weights(model_path_manual, load_encoders=False)
-            # equality between data transformers is not well defined
-            self.assertEqual(
-                {
-                    k: v
-                    for k, v in model_other_enc_noload.add_encoders.items()
-                    if k != "transformer"
-                },
-                {k: v for k, v in encoders_other_past.items() if k != "transformer"},
+            self.helper_equality_encoders(
+                model_other_enc_noload.add_encoders, encoders_other_past
             )
-            self.assertEqual(
-                type(model_auto_save.add_encoders["transformer"]),
-                type(encoders_other_past["transformer"]),
+            self.helper_equality_encoders_transfo(
+                model_other_enc_noload.add_encoders, encoders_other_past
             )
             # new encoders were instantiated
             self.assertTrue(
@@ -413,18 +394,11 @@ if TORCH_AVAILABLE:
                 model_path_manual, load_encoders=False
             )
 
-            # equality between data transformers is not well defined
-            self.assertEqual(
-                {
-                    k: v
-                    for k, v in model_new_enc_noscaler_noload.add_encoders.items()
-                    if k != "transformer"
-                },
-                {k: v for k, v in encoders_past_noscaler.items() if k != "transformer"},
+            self.helper_equality_encoders(
+                model_new_enc_noscaler_noload.add_encoders, encoders_past_noscaler
             )
-            self.assertEqual(
-                type(model_auto_save.add_encoders["transformer"]),
-                type(encoders_other_past["transformer"]),
+            self.helper_equality_encoders_transfo(
+                model_new_enc_noscaler_noload.add_encoders, encoders_past_noscaler
             )
             # predict() can be called directly since new encoders don't contain scaler
             model_new_enc_noscaler_noload.predict(n=4, series=self.series)
@@ -543,6 +517,29 @@ if TORCH_AVAILABLE:
             model_same_likelihood.load_weights(model_path_manual)
             model_same_likelihood.predict(n=4, series=self.series)
             # cannot check predictions since this model is not fitted, random state is different
+
+            # loading models weights with respective methods
+            model_manual_same_likelihood = create_DLinearModel(
+                "same_likelihood", likelihood=GaussianLikelihood(prior_mu=0.5)
+            )
+            model_manual_same_likelihood.load_weights(model_path_manual)
+            preds_manual_from_weights = model_manual_same_likelihood.predict(
+                n=4, series=self.series
+            )
+
+            model_auto_same_likelihood = create_DLinearModel(
+                "same_likelihood", likelihood=GaussianLikelihood(prior_mu=0.5)
+            )
+            model_auto_same_likelihood.load_weights_from_checkpoint(
+                auto_name,
+                work_dir=self.temp_work_dir,
+                best=False,
+            )
+            preds_auto_from_weights = model_auto_same_likelihood.predict(
+                n=4, series=self.series
+            )
+            # check that weights from checkpoint give identical predictions as weights from manual save
+            self.assertTrue(preds_manual_from_weights == preds_auto_from_weights)
 
             # model with no likelihood
             model_no_likelihood = create_DLinearModel("no_likelihood", likelihood=None)
@@ -1033,3 +1030,27 @@ if TORCH_AVAILABLE:
                     val_series, model.predict(len(val_series), series=train_series)
                 )
             assert scores["worst"] > scores["suggested"]
+
+        def helper_equality_encoders(
+            self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]
+        ):
+            if first_encoders is None:
+                first_encoders = {}
+            if second_encoders is None:
+                second_encoders = {}
+            self.assertEqual(
+                {k: v for k, v in first_encoders.items() if k != "transformer"},
+                {k: v for k, v in second_encoders.items() if k != "transformer"},
+            )
+
+        def helper_equality_encoders_transfo(
+            self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]
+        ):
+            if first_encoders is None:
+                first_encoders = {}
+            if second_encoders is None:
+                second_encoders = {}
+            self.assertEqual(
+                type(first_encoders.get("transformer", None)),
+                type(second_encoders.get("transformer", None)),
+            )
