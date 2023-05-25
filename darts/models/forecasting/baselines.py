@@ -170,7 +170,7 @@ class NaiveEnsembleModel(EnsembleModel):
         Naive implementation of `EnsembleModel`
         Returns the average of all predictions of the constituent models
         """
-        super().__init__(models)
+        super().__init__(models, train_num_samples=None, train_samples_reduction=None)
 
     def fit(
         self,
@@ -195,34 +195,6 @@ class NaiveEnsembleModel(EnsembleModel):
                 model.fit(series=series)
 
         return self
-
-    def predict(
-        self,
-        n: int,
-        series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        num_samples: int = 1,
-        verbose: bool = False,
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-
-        super().predict(
-            n=n,
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            num_samples=num_samples,
-            verbose=verbose,
-        )
-
-        predictions = self._make_multiple_predictions(
-            n=n,
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            num_samples=num_samples,
-        )
-        return self.ensemble(predictions)
 
     def ensemble(
         self,

@@ -12,6 +12,7 @@ from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
 )
 from darts.timeseries import TimeSeries
+from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
 
@@ -30,10 +31,20 @@ class EnsembleModel(GlobalForecastingModel):
         .. note::
                 if all the models are probabilistic, the `EnsembleModel` will also be probabilistic.
         ..
+    train_num_samples
+        Number of prediction samples from each forecasting model for multi-level ensembles. The n_samples
+        dimension will be reduced using the `train_samples_reduction` method.
+    train_samples_reduction
+        If `forecasting models` are probabilistic and `train_num_samples` > 1, method used to
+        reduce the samples dimension to 1. Possible values: "mean", "median" or float value corresponding
+        to the desired quantile.
     """
 
     def __init__(
-        self, models: Union[List[LocalForecastingModel], List[GlobalForecastingModel]]
+        self,
+        models: Union[List[LocalForecastingModel], List[GlobalForecastingModel]],
+        train_num_samples: int,
+        train_samples_reduction: Union[str, float],
     ):
         raise_if_not(
             isinstance(models, list) and models,
@@ -63,6 +74,8 @@ class EnsembleModel(GlobalForecastingModel):
 
         super().__init__()
         self.models = models
+        self.train_num_samples = train_num_samples
+        self.train_samples_reduction = train_samples_reduction
 
     @abstractmethod
     def fit(
@@ -146,7 +159,6 @@ class EnsembleModel(GlobalForecastingModel):
             else self._stack_ts_multiseq(predictions)
         )
 
-    @abstractmethod
     def predict(
         self,
         n: int,
@@ -165,6 +177,25 @@ class EnsembleModel(GlobalForecastingModel):
             num_samples=num_samples,
             verbose=verbose,
         )
+
+        # for multi-level models, forecasting models can generate arbitrary number of samples
+        if self.train_samples_reduction is None:
+            pred_num_samples = num_samples
+        else:
+            pred_num_samples = self.train_num_samples
+
+        predictions = self._make_multiple_predictions(
+            n=n,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            num_samples=pred_num_samples,
+        )
+
+        if self.train_samples_reduction is not None and self.train_num_samples > 1:
+            predictions = self._predictions_reduction(predictions)
+
+        return self.ensemble(predictions, series=series, num_samples=num_samples)
 
     @abstractmethod
     def ensemble(
@@ -190,6 +221,20 @@ class EnsembleModel(GlobalForecastingModel):
             The predicted ``TimeSeries`` or sequence of ``TimeSeries`` obtained by ensembling the individual predictions
         """
         pass
+
+    def _predictions_reduction(self, predictions: TimeSeries) -> TimeSeries:
+        """Reduce the sample dimension of the forecasting models predictions"""
+        is_single_series = isinstance(predictions, TimeSeries)
+        predictions = series2seq(predictions)
+        if self.train_samples_reduction == "median":
+            predictions = [pred.median(axis=2) for pred in predictions]
+        elif self.train_samples_reduction == "mean":
+            predictions = [pred.mean(axis=2) for pred in predictions]
+        else:
+            predictions = [
+                pred.quantile(self.train_samples_reduction) for pred in predictions
+            ]
+        return predictions[0] if is_single_series else predictions
 
     @property
     def min_train_series_length(self) -> int:
