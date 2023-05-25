@@ -62,16 +62,14 @@ def objective(trial):
 
     # detect if a GPU is available
     if torch.cuda.is_available():
-        pl_trainer_kwargs = {
-            "accelerator": "gpu",
-            "gpus": -1,
-            "auto_select_gpus": True,
-            "callbacks": callbacks,
-        }
         num_workers = 4
     else:
-        pl_trainer_kwargs = {"callbacks": callbacks}
         num_workers = 0
+        
+    pl_trainer_kwargs = {
+        "accelerator": "auto",
+        "callbacks": callbacks,
+    }
 
     # optionally also add the (scaled) year value as a past covariate
     if include_year:
@@ -133,9 +131,10 @@ def print_callback(study, trial):
     print(f"Best value: {study.best_value}, Best params: {study.best_trial.params}")
 
 
-# optimize hyperparameters by minimizing the sMAPE on the validation set 
-study = optuna.create_study(direction="minimize")
-study.optimize(objective, n_trials=100, callbacks=[print_callback])
+# optimize hyperparameters by minimizing the sMAPE on the validation set
+if __name__ == "__main__":
+    study = optuna.create_study(direction="minimize")
+    study.optimize(objective, n_trials=100, callbacks=[print_callback])
 ```
 
 ## Hyperparameter optimization with Ray Tune
@@ -195,7 +194,7 @@ my_stopper = EarlyStopping(
 # set up ray tune callback
 tune_callback = TuneReportCallback(
     {
-        "loss": "val_Loss",
+        "loss": "val_loss",
         "MAPE": "val_MeanAbsolutePercentageError",
     },
     on="validation_end",
