@@ -40,7 +40,7 @@ class Theta(LocalForecastingModel):
 
         `season_mode` must be a ``SeasonalityMode`` Enum member.
 
-        You can access the Enum with ``from darts import SeasonalityMode``.
+        You can access the Enum with ``from darts.utils.utils import SeasonalityMode``.
 
         Parameters
         ----------
