@@ -1,6 +1,7 @@
 import os
 import shutil
 import tempfile
+from typing import Any, Dict
 from unittest.mock import patch
 
 import numpy as np
@@ -8,6 +9,8 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries
+from darts.dataprocessing.encoders import SequentialEncoder
+from darts.dataprocessing.transformers import BoxCox, Scaler
 from darts.logging import get_logger
 from darts.metrics import mape
 from darts.tests.base_test_class import DartsBaseTestClass
@@ -24,8 +27,12 @@ try:
         MetricCollection,
     )
 
-    from darts.models.forecasting.rnn_model import RNNModel
-    from darts.utils.likelihood_models import GaussianLikelihood
+    from darts.models import DLinearModel, RNNModel
+    from darts.utils.likelihood_models import (
+        GaussianLikelihood,
+        LaplaceLikelihood,
+        Likelihood,
+    )
 
     TORCH_AVAILABLE = True
 except ImportError:
@@ -217,6 +224,347 @@ if TORCH_AVAILABLE:
                 model_chained_load_save.predict(n=4), model_manual_save.predict(n=4)
             )
 
+        def test_save_and_load_weights_w_encoders(self):
+            """
+            Verify that save/load does not break encoders.
+
+            Note: since load_weights() calls load_weights_from_checkpoint(), it will be used
+            for all but one test.
+            Note: Using DLinear since it supports both past and future covariates
+            """
+
+            def create_DLinearModel(
+                model_name: str,
+                save_checkpoints: bool = False,
+                add_encoders: Dict = None,
+            ):
+                return DLinearModel(
+                    input_chunk_length=4,
+                    output_chunk_length=1,
+                    kernel_size=5,
+                    model_name=model_name,
+                    add_encoders=add_encoders,
+                    work_dir=self.temp_work_dir,
+                    save_checkpoints=save_checkpoints,
+                    random_state=42,
+                    force_reset=True,
+                )
+
+            model_dir = os.path.join(self.temp_work_dir)
+            manual_name = "save_manual"
+            auto_name = "save_auto"
+            auto_name_other = "save_auto_other"
+            # create manually saved model checkpoints folder
+            checkpoint_path_manual = os.path.join(model_dir, manual_name)
+            os.mkdir(checkpoint_path_manual)
+            checkpoint_file_name = "checkpoint_0.pth.tar"
+            model_path_manual = os.path.join(
+                checkpoint_path_manual, checkpoint_file_name
+            )
+
+            # define encoders sets
+            encoders_past = {
+                "datetime_attribute": {"past": ["day"]},
+                "transformer": Scaler(),
+            }
+            encoders_other_past = {
+                "datetime_attribute": {"past": ["hour"]},
+                "transformer": Scaler(),
+            }
+            encoders_past_noscaler = {
+                "datetime_attribute": {"past": ["day"]},
+            }
+            encoders_past_other_transformer = {
+                "datetime_attribute": {"past": ["day"]},
+                "transformer": BoxCox(),
+            }
+            encoders_2_past = {
+                "datetime_attribute": {"past": ["hour", "day"]},
+                "transformer": Scaler(),
+            }
+            encoders_past_n_future = {
+                "datetime_attribute": {"past": ["day"], "future": ["dayofweek"]},
+                "transformer": Scaler(),
+            }
+
+            model_auto_save = create_DLinearModel(
+                auto_name, save_checkpoints=True, add_encoders=encoders_past
+            )
+            model_auto_save.fit(self.series, epochs=1)
+
+            model_manual_save = create_DLinearModel(
+                manual_name, save_checkpoints=False, add_encoders=encoders_past
+            )
+            model_manual_save.fit(self.series, epochs=1)
+            model_manual_save.save(model_path_manual)
+
+            model_auto_save_other = create_DLinearModel(
+                auto_name_other, save_checkpoints=True, add_encoders=encoders_other_past
+            )
+            model_auto_save_other.fit(self.series, epochs=1)
+
+            # prediction are different when using different encoders
+            self.assertNotEqual(
+                model_auto_save.predict(n=4),
+                model_auto_save_other.predict(n=4),
+            )
+
+            # model with undeclared encoders
+            model_no_enc = create_DLinearModel("no_encoder", add_encoders=None)
+            # weights were trained with encoders, new model must be instantiated with encoders
+            with self.assertRaises(ValueError):
+                model_no_enc.load_weights_from_checkpoint(
+                    auto_name,
+                    work_dir=self.temp_work_dir,
+                    best=False,
+                    load_encoders=False,
+                )
+            # overwritte undeclared encoders
+            model_no_enc.load_weights_from_checkpoint(
+                auto_name,
+                work_dir=self.temp_work_dir,
+                best=False,
+                load_encoders=True,
+            )
+            self.helper_equality_encoders(
+                model_auto_save.add_encoders, model_no_enc.add_encoders
+            )
+            self.helper_equality_encoders_transfo(
+                model_auto_save.add_encoders, model_no_enc.add_encoders
+            )
+            # cannot directly verify equality between encoders, using predict as proxy
+            self.assertEqual(
+                model_auto_save.predict(n=4),
+                model_no_enc.predict(n=4, series=self.series),
+            )
+
+            # model with identical encoders (fittable)
+            model_same_enc_noload = create_DLinearModel(
+                "same_encoder_noload", add_encoders=encoders_past
+            )
+            model_same_enc_noload.load_weights(model_path_manual, load_encoders=False)
+            # cannot predict because of un-fitted encoder
+            with self.assertRaises(ValueError):
+                model_same_enc_noload.predict(n=4, series=self.series)
+
+            model_same_enc_load = create_DLinearModel(
+                "same_encoder_load", add_encoders=encoders_past
+            )
+            model_same_enc_load.load_weights(model_path_manual, load_encoders=True)
+            self.assertEqual(
+                model_manual_save.predict(n=4),
+                model_same_enc_load.predict(n=4, series=self.series),
+            )
+
+            # model with different encoders (fittable)
+            model_other_enc_load = create_DLinearModel(
+                "other_encoder_load", add_encoders=encoders_other_past
+            )
+            # cannot overwritte different declared encoders
+            with self.assertRaises(ValueError):
+                model_other_enc_load.load_weights(model_path_manual, load_encoders=True)
+
+            # model with different encoders but same dimensions (fittable)
+            model_other_enc_noload = create_DLinearModel(
+                "other_encoder_noload", add_encoders=encoders_other_past
+            )
+            model_other_enc_noload.load_weights(model_path_manual, load_encoders=False)
+            self.helper_equality_encoders(
+                model_other_enc_noload.add_encoders, encoders_other_past
+            )
+            self.helper_equality_encoders_transfo(
+                model_other_enc_noload.add_encoders, encoders_other_past
+            )
+            # new encoders were instantiated
+            self.assertTrue(
+                isinstance(model_other_enc_noload.encoders, SequentialEncoder)
+            )
+            # since fit() was not called, new fittable encoders were not trained
+            with self.assertRaises(ValueError):
+                model_other_enc_noload.predict(n=4, series=self.series)
+
+            # predict() can be called after fit()
+            model_other_enc_noload.fit(self.series, epochs=1)
+            model_other_enc_noload.predict(n=4, series=self.series)
+
+            # model with same encoders but no scaler (non-fittable)
+            model_new_enc_noscaler_noload = create_DLinearModel(
+                "same_encoder_noscaler", add_encoders=encoders_past_noscaler
+            )
+            model_new_enc_noscaler_noload.load_weights(
+                model_path_manual, load_encoders=False
+            )
+
+            self.helper_equality_encoders(
+                model_new_enc_noscaler_noload.add_encoders, encoders_past_noscaler
+            )
+            self.helper_equality_encoders_transfo(
+                model_new_enc_noscaler_noload.add_encoders, encoders_past_noscaler
+            )
+            # predict() can be called directly since new encoders don't contain scaler
+            model_new_enc_noscaler_noload.predict(n=4, series=self.series)
+
+            # model with same encoders but different transformer (fittable)
+            model_new_enc_other_transformer = create_DLinearModel(
+                "same_encoder_other_transform",
+                add_encoders=encoders_past_other_transformer,
+            )
+            # cannot overwritte different declared encoders
+            with self.assertRaises(ValueError):
+                model_new_enc_other_transformer.load_weights(
+                    model_path_manual, load_encoders=True
+                )
+
+            model_new_enc_other_transformer.load_weights(
+                model_path_manual, load_encoders=False
+            )
+            # since fit() was not called, new fittable encoders were not trained
+            with self.assertRaises(ValueError):
+                model_new_enc_other_transformer.predict(n=4, series=self.series)
+
+            # predict() can be called after fit()
+            model_new_enc_other_transformer.fit(self.series, epochs=1)
+            model_new_enc_other_transformer.predict(n=4, series=self.series)
+
+            # model with encoders containing more components (fittable)
+            model_new_enc_2_past = create_DLinearModel(
+                "encoder_2_components_past", add_encoders=encoders_2_past
+            )
+            # cannot overwritte different declared encoders
+            with self.assertRaises(ValueError):
+                model_new_enc_2_past.load_weights(model_path_manual, load_encoders=True)
+            # new encoders have one additional past component
+            with self.assertRaises(ValueError):
+                model_new_enc_2_past.load_weights(
+                    model_path_manual, load_encoders=False
+                )
+
+            # model with encoders containing past and future covs (fittable)
+            model_new_enc_past_n_future = create_DLinearModel(
+                "encoder_past_n_future", add_encoders=encoders_past_n_future
+            )
+            # cannot overwritte different declared encoders
+            with self.assertRaises(ValueError):
+                model_new_enc_past_n_future.load_weights(
+                    model_path_manual, load_encoders=True
+                )
+            # identical past components, but different future components
+            with self.assertRaises(ValueError):
+                model_new_enc_past_n_future.load_weights(
+                    model_path_manual, load_encoders=False
+                )
+
+        def test_save_and_load_weights_w_likelihood(self):
+            """
+            Verify that save/load does not break likelihood.
+
+            Note: since load_weights() calls load_weights_from_checkpoint(), it will be used
+            for all but one test.
+            Note: Using DLinear since it supports both past and future covariates
+            """
+
+            def create_DLinearModel(
+                model_name: str,
+                save_checkpoints: bool = False,
+                likelihood: Likelihood = None,
+            ):
+                return DLinearModel(
+                    input_chunk_length=4,
+                    output_chunk_length=1,
+                    kernel_size=5,
+                    model_name=model_name,
+                    work_dir=self.temp_work_dir,
+                    save_checkpoints=save_checkpoints,
+                    likelihood=likelihood,
+                    random_state=42,
+                    force_reset=True,
+                )
+
+            model_dir = os.path.join(self.temp_work_dir)
+            manual_name = "save_manual"
+            auto_name = "save_auto"
+            # create manually saved model checkpoints folder
+            checkpoint_path_manual = os.path.join(model_dir, manual_name)
+            os.mkdir(checkpoint_path_manual)
+            checkpoint_file_name = "checkpoint_0.pth.tar"
+            model_path_manual = os.path.join(
+                checkpoint_path_manual, checkpoint_file_name
+            )
+
+            model_auto_save = create_DLinearModel(
+                auto_name,
+                save_checkpoints=True,
+                likelihood=GaussianLikelihood(prior_mu=0.5),
+            )
+            model_auto_save.fit(self.series, epochs=1)
+            pred_auto = model_auto_save.predict(n=4, series=self.series)
+
+            model_manual_save = create_DLinearModel(
+                manual_name,
+                save_checkpoints=False,
+                likelihood=GaussianLikelihood(prior_mu=0.5),
+            )
+            model_manual_save.fit(self.series, epochs=1)
+            model_manual_save.save(model_path_manual)
+            pred_manual = model_manual_save.predict(n=4, series=self.series)
+
+            # predictions are identical when using the same likelihood
+            self.assertTrue(np.array_equal(pred_auto.values(), pred_manual.values()))
+
+            # model with identical likelihood
+            model_same_likelihood = create_DLinearModel(
+                "same_likelihood", likelihood=GaussianLikelihood(prior_mu=0.5)
+            )
+            model_same_likelihood.load_weights(model_path_manual)
+            model_same_likelihood.predict(n=4, series=self.series)
+            # cannot check predictions since this model is not fitted, random state is different
+
+            # loading models weights with respective methods
+            model_manual_same_likelihood = create_DLinearModel(
+                "same_likelihood", likelihood=GaussianLikelihood(prior_mu=0.5)
+            )
+            model_manual_same_likelihood.load_weights(model_path_manual)
+            preds_manual_from_weights = model_manual_same_likelihood.predict(
+                n=4, series=self.series
+            )
+
+            model_auto_same_likelihood = create_DLinearModel(
+                "same_likelihood", likelihood=GaussianLikelihood(prior_mu=0.5)
+            )
+            model_auto_same_likelihood.load_weights_from_checkpoint(
+                auto_name,
+                work_dir=self.temp_work_dir,
+                best=False,
+            )
+            preds_auto_from_weights = model_auto_same_likelihood.predict(
+                n=4, series=self.series
+            )
+            # check that weights from checkpoint give identical predictions as weights from manual save
+            self.assertTrue(preds_manual_from_weights == preds_auto_from_weights)
+
+            # model with no likelihood
+            model_no_likelihood = create_DLinearModel("no_likelihood", likelihood=None)
+            with self.assertRaises(ValueError):
+                model_no_likelihood.load_weights_from_checkpoint(
+                    auto_name,
+                    work_dir=self.temp_work_dir,
+                    best=False,
+                )
+
+            # model with a different likelihood
+            model_other_likelihood = create_DLinearModel(
+                "other_likelihood", likelihood=LaplaceLikelihood()
+            )
+            with self.assertRaises(ValueError):
+                model_other_likelihood.load_weights(model_path_manual)
+
+            # model with the same likelihood but different parameters
+            model_same_likelihood_other_prior = create_DLinearModel(
+                "same_likelihood_other_prior", likelihood=GaussianLikelihood()
+            )
+            with self.assertRaises(ValueError):
+                model_same_likelihood_other_prior.load_weights(model_path_manual)
+
         def test_create_instance_new_model_no_name_set(self):
             RNNModel(12, "RNN", 10, 10, work_dir=self.temp_work_dir)
             # no exception is raised
@@ -344,8 +692,7 @@ if TORCH_AVAILABLE:
             self.assertEqual(15, model1.epochs_trained)
 
         def test_load_weights_from_checkpoint(self):
-            ts_training = self.series[:90]
-            ts_test = self.series[90:]
+            ts_training, ts_test = self.series.split_before(90)
             original_model_name = "original"
             retrained_model_name = "retrained"
             # original model, checkpoints are saved
@@ -423,8 +770,7 @@ if TORCH_AVAILABLE:
                 )
 
         def test_load_weights(self):
-            ts_training = self.series[:90]
-            ts_test = self.series[90:]
+            ts_training, ts_test = self.series.split_before(90)
             original_model_name = "original"
             retrained_model_name = "retrained"
             # original model, checkpoints are saved
@@ -471,6 +817,56 @@ if TORCH_AVAILABLE:
                 f"Retrained model has a greater mape error than the original model, "
                 f"respectively {retrained_mape} and {original_mape}",
             )
+
+        def test_multi_steps_pipeline(self):
+            ts_training, ts_val = self.series.split_before(75)
+            pretrain_model_name = "pre-train"
+            retrained_model_name = "re-train"
+
+            def create_RNNModel(model_name: str):
+                return RNNModel(
+                    input_chunk_length=4,
+                    hidden_dim=3,
+                    add_encoders={
+                        "cyclic": {"past": ["month"]},
+                        "datetime_attribute": {
+                            "past": ["hour"],
+                        },
+                        "transformer": Scaler(),
+                    },
+                    n_epochs=2,
+                    model_name=model_name,
+                    work_dir=self.temp_work_dir,
+                    force_reset=True,
+                    save_checkpoints=True,
+                )
+
+            # pretraining
+            model = create_RNNModel(pretrain_model_name)
+            model.fit(
+                ts_training,
+                val_series=ts_val,
+            )
+
+            # finetuning
+            model = create_RNNModel(retrained_model_name)
+            model.load_weights_from_checkpoint(
+                model_name=pretrain_model_name,
+                work_dir=self.temp_work_dir,
+                best=True,
+            )
+            model.fit(
+                ts_training,
+                val_series=ts_val,
+            )
+
+            # prediction
+            model = model.load_from_checkpoint(
+                model_name=retrained_model_name,
+                work_dir=self.temp_work_dir,
+                best=True,
+            )
+            model.predict(4, series=ts_training)
 
         def test_load_from_checkpoint_w_custom_loss(self):
             model_name = "pretraining_custom_loss"
@@ -717,3 +1113,27 @@ if TORCH_AVAILABLE:
                     val_series, model.predict(len(val_series), series=train_series)
                 )
             assert scores["worst"] > scores["suggested"]
+
+        def helper_equality_encoders(
+            self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]
+        ):
+            if first_encoders is None:
+                first_encoders = {}
+            if second_encoders is None:
+                second_encoders = {}
+            self.assertEqual(
+                {k: v for k, v in first_encoders.items() if k != "transformer"},
+                {k: v for k, v in second_encoders.items() if k != "transformer"},
+            )
+
+        def helper_equality_encoders_transfo(
+            self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]
+        ):
+            if first_encoders is None:
+                first_encoders = {}
+            if second_encoders is None:
+                second_encoders = {}
+            self.assertEqual(
+                type(first_encoders.get("transformer", None)),
+                type(second_encoders.get("transformer", None)),
+            )
