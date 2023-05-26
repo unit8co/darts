@@ -91,6 +91,8 @@ class Likelihood(ABC):
         Abstract class for a likelihood model.
         """
         self.prior_strength = prior_strength
+        # used for equality operator between likelihood objects
+        self.ignore_attrs_equality = []
 
     def compute_loss(self, model_output: torch.Tensor, target: torch.Tensor):
         """
@@ -170,6 +172,26 @@ class Likelihood(ABC):
         target value.
         """
         pass
+
+    def __eq__(self, other) -> bool:
+        """
+        Defines (in)equality between two likelihood objects, ignore the attributes listed in
+        self.ignore_attrs_equality or inheriting from torch.nn.Module.
+        """
+        if type(other) is type(self):
+            other_state = {
+                k: v
+                for k, v in other.__dict__.items()
+                if k not in self.ignore_attrs_equality and not isinstance(v, nn.Module)
+            }
+            self_state = {
+                k: v
+                for k, v in self.__dict__.items()
+                if k not in self.ignore_attrs_equality and not isinstance(v, nn.Module)
+            }
+            return other_state == self_state
+        else:
+            return False
 
 
 class GaussianLikelihood(Likelihood):
@@ -1022,6 +1044,9 @@ class QuantileRegression(Likelihood):
         self._median_idx = self.quantiles.index(0.5)
         self.first = True
         self.quantiles_tensor = None
+
+        # overwrite the attributes of Likelihood parent class
+        self.ignore_attrs_equality = ["first", "quantiles_tensor"]
 
     def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         """
