@@ -803,6 +803,14 @@ class RegressionModel(GlobalForecastingModel):
         return self.model.__str__()
 
     @property
+    def supports_past_covariates(self) -> bool:
+        return len(self.lags.get("past", [])) > 0
+
+    @property
+    def supports_future_covariates(self) -> bool:
+        return len(self.lags.get("future", [])) > 0
+
+    @property
     def supports_static_covariates(self) -> bool:
         return True
 
