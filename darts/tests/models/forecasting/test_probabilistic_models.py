@@ -48,7 +48,7 @@ except ImportError:
 
 models_cls_kwargs_errs = [
     (ExponentialSmoothing, {}, 0.3),
-    (ARIMA, {"p": 1, "d": 0, "q": 1}, 0.03),
+    (ARIMA, {"p": 1, "d": 0, "q": 1, "random_state": 42}, 0.03),
 ]
 
 models_cls_kwargs_errs += [
@@ -150,7 +150,6 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
     def test_fit_predict_determinism(self):
 
         for model_cls, model_kwargs, _ in models_cls_kwargs_errs:
-
             # whether the first predictions of two models initiated with the same random state are the same
             model = model_cls(**model_kwargs)
             model.fit(self.constant_noisy_ts)

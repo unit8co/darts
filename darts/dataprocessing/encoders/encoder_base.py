@@ -678,6 +678,12 @@ class SingleEncoder(Encoder, ABC):
         pass
 
     @property
+    @abstractmethod
+    def encoding_n_components(self) -> int:
+        """The number of components in the `SingleEncoder` output."""
+        pass
+
+    @property
     def components(self) -> pd.Index:
         """Returns the encoded component names. Only available after `Encoder.encode_train()` or
         `Encoder.encode_inference()` have been called."""

@@ -125,7 +125,7 @@ class RegressionModel(GlobalForecastingModel):
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
-            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()`.
+            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         """
 
         super().__init__(add_encoders=add_encoders)
@@ -803,6 +803,14 @@ class RegressionModel(GlobalForecastingModel):
         return self.model.__str__()
 
     @property
+    def supports_past_covariates(self) -> bool:
+        return len(self.lags.get("past", [])) > 0
+
+    @property
+    def supports_future_covariates(self) -> bool:
+        return len(self.lags.get("future", [])) > 0
+
+    @property
     def supports_static_covariates(self) -> bool:
         return True
 
@@ -1085,7 +1093,7 @@ class RegressionModelWithCategoricalCovariates(RegressionModel):
         use_static_covariates
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
-            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()`.
+            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         categorical_past_covariates
             Optionally, component name or list of component names specifying the past covariates that should be treated
             as categorical.
