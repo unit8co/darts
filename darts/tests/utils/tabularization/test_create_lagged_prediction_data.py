@@ -375,6 +375,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 lags=lags,
                 lags_past_covariates=lags_past,
                 lags_future_covariates=lags_future,
+                uses_static_covariates=False,
                 max_samples_per_ts=max_samples_per_ts,
                 use_moving_windows=True,
             )
@@ -462,6 +463,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 lags=lags,
                 lags_past_covariates=lags_past,
                 lags_future_covariates=lags_future,
+                uses_static_covariates=False,
                 max_samples_per_ts=max_samples_per_ts,
                 use_moving_windows=True,
             )
@@ -534,6 +536,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 lags=lags,
                 lags_past_covariates=lags_past,
                 lags_future_covariates=lags_future,
+                uses_static_covariates=False,
                 max_samples_per_ts=max_samples_per_ts,
                 use_moving_windows=True,
             )
@@ -606,6 +609,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 lags=lags,
                 lags_past_covariates=lags_past,
                 lags_future_covariates=lags_future,
+                uses_static_covariates=False,
                 max_samples_per_ts=max_samples_per_ts,
                 use_moving_windows=True,
             )
@@ -694,6 +698,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 lags=lags,
                 lags_past_covariates=lags_past,
                 lags_future_covariates=lags_future,
+                uses_static_covariates=False,
                 max_samples_per_ts=max_samples_per_ts,
                 use_moving_windows=True,
             )
@@ -705,6 +710,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 lags=lags,
                 lags_past_covariates=lags_past,
                 lags_future_covariates=lags_future,
+                uses_static_covariates=False,
                 max_samples_per_ts=max_samples_per_ts,
                 use_moving_windows=False,
             )
@@ -772,6 +778,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 lags=lags,
                 lags_past_covariates=lags_past,
                 lags_future_covariates=lags_future,
+                uses_static_covariates=False,
                 max_samples_per_ts=max_samples_per_ts,
                 use_moving_windows=True,
             )
@@ -783,6 +790,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 lags=lags,
                 lags_past_covariates=lags_past,
                 lags_future_covariates=lags_future,
+                uses_static_covariates=False,
                 max_samples_per_ts=max_samples_per_ts,
                 use_moving_windows=False,
             )
@@ -827,6 +835,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 lags=lags,
                 lags_past_covariates=past_lags,
                 lags_future_covariates=future_lags,
+                uses_static_covariates=False,
                 use_moving_windows=use_moving_windows,
             )
             # Number of observations should match number of feature times:
@@ -870,6 +879,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 lags=lags,
                 lags_past_covariates=past_lags,
                 lags_future_covariates=future_lags,
+                uses_static_covariates=False,
                 use_moving_windows=use_moving_windows,
             )
             # Number of observations should match number of feature times:
@@ -917,6 +927,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 lags=lags,
                 lags_past_covariates=lags_past,
                 lags_future_covariates=lags_future,
+                uses_static_covariates=False,
                 max_samples_per_ts=max_samples_per_ts,
                 use_moving_windows=use_moving_windows,
             )
@@ -978,6 +989,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 lags=lags,
                 lags_past_covariates=lags_past,
                 lags_future_covariates=lags_future,
+                uses_static_covariates=False,
                 max_samples_per_ts=max_samples_per_ts,
                 use_moving_windows=use_moving_windows,
             )
@@ -997,7 +1009,10 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
         lag = 5
         for use_moving_windows in (False, True):
             X, times = create_lagged_prediction_data(
-                target, lags=[-lag], use_moving_windows=use_moving_windows
+                target,
+                lags=[-lag],
+                use_moving_windows=use_moving_windows,
+                uses_static_covariates=False,
             )
             self.assertTrue(np.allclose(expected_X, X))
             # Should only have one sample, generated for
@@ -1020,7 +1035,10 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
         lag = 5
         for use_moving_windows in (False, True):
             X, times = create_lagged_prediction_data(
-                target, lags=[-lag], use_moving_windows=use_moving_windows
+                target,
+                lags=[-lag],
+                use_moving_windows=use_moving_windows,
+                uses_static_covariates=False,
             )
             self.assertTrue(np.allclose(expected_X, X))
             # Should only have one sample, generated for
@@ -1053,6 +1071,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 future_covariates=future,
                 lags=[-1],
                 lags_future_covariates=[0],
+                uses_static_covariates=False,
                 use_moving_windows=use_moving_windows,
             )
             self.assertTrue(np.allclose(expected_X, X))
@@ -1088,6 +1107,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 future_covariates=future,
                 lags=[-1],
                 lags_future_covariates=[0],
+                uses_static_covariates=False,
                 use_moving_windows=use_moving_windows,
             )
             self.assertTrue(np.allclose(expected_X, X))
@@ -1119,6 +1139,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 future_covariates=future,
                 lags=[-1],
                 lags_future_covariates=[1],
+                uses_static_covariates=False,
                 use_moving_windows=use_moving_windows,
             )
             self.assertTrue(np.allclose(expected_X, X))
@@ -1154,6 +1175,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 future_covariates=future,
                 lags=[-1],
                 lags_future_covariates=[1],
+                uses_static_covariates=False,
                 use_moving_windows=use_moving_windows,
             )
             self.assertTrue(np.allclose(expected_X, X))
@@ -1185,6 +1207,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
             lags=lags,
             lags_past_covariates=lags_past,
             lags_future_covariates=lags_future,
+            uses_static_covariates=False,
         )
         self.assertTrue(np.allclose(X, expected_X))
         self.assertEqual(len(times), 2)
@@ -1198,6 +1221,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
             lags=lags,
             lags_past_covariates=lags_past,
             lags_future_covariates=lags_future,
+            uses_static_covariates=False,
             concatenate=False,
         )
         self.assertEqual(len(X), 2)
@@ -1230,6 +1254,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
             lags=lags,
             lags_past_covariates=lags_past,
             lags_future_covariates=lags_future,
+            uses_static_covariates=False,
         )
         self.assertTrue(np.allclose(X, expected_X))
         self.assertTrue(times[0].equals(expected_times))
@@ -1252,6 +1277,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                     lags=lags,
                     past_covariates=series_2,
                     lags_past_covariates=lags,
+                    uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
                 )
             self.assertEqual(
@@ -1264,6 +1290,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                     lags=lags,
                     past_covariates=series_2,
                     lags_past_covariates=lags,
+                    uses_static_covariates=False,
                 )
             self.assertEqual(
                 "Specified series do not share any common times for which features can be created.",
@@ -1289,6 +1316,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                         target_series=series,
                         lags_future_covariates=[-1],
                         past_covariates=series,
+                        uses_static_covariates=False,
                         use_moving_windows=use_moving_windows,
                     )
             self.assertEqual(
@@ -1306,7 +1334,9 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
         for use_moving_windows in (False, True):
             with self.assertRaises(ValueError) as e:
                 create_lagged_prediction_data(
-                    target_series=target, use_moving_windows=use_moving_windows
+                    target_series=target,
+                    use_moving_windows=use_moving_windows,
+                    uses_static_covariates=False,
                 )
             self.assertEqual(
                 "Must specify at least one of: `lags`, `lags_past_covariates`, `lags_future_covariates`.",
@@ -1326,6 +1356,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 create_lagged_prediction_data(
                     target_series=series,
                     lags=[-20, -1],
+                    uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
                 )
             self.assertEqual(
@@ -1340,6 +1371,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 create_lagged_prediction_data(
                     past_covariates=series,
                     lags_past_covariates=[-20, -1],
+                    uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
                 )
             self.assertEqual(
@@ -1369,6 +1401,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 create_lagged_prediction_data(
                     target_series=series,
                     lags=[0],
+                    uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
                 )
             self.assertEqual(
@@ -1382,6 +1415,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                 create_lagged_prediction_data(
                     past_covariates=series,
                     lags_past_covariates=[0],
+                    uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
                 )
             self.assertEqual(
@@ -1394,6 +1428,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
             create_lagged_prediction_data(
                 future_covariates=series,
                 lags_future_covariates=[-1, 0, 1],
+                uses_static_covariates=False,
                 use_moving_windows=use_moving_windows,
             )
 
@@ -1412,6 +1447,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                     target_series=series,
                     lags=lags,
                     future_covariates=series,
+                    uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
                 )
                 self.assertEqual(len(w), 1)
@@ -1429,6 +1465,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                     target_series=series,
                     lags=lags,
                     lags_future_covariates=lags,
+                    uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
                 )
                 self.assertEqual(len(w), 1)
@@ -1449,6 +1486,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                     lags=lags,
                     past_covariates=series,
                     lags_future_covariates=lags,
+                    uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
                 )
                 self.assertEqual(len(w), 2)
@@ -1475,6 +1513,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                     target_series=series,
                     past_covariates=series,
                     lags_past_covariates=lags,
+                    uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
                 )
                 self.assertEqual(len(w), 1)
@@ -1493,6 +1532,7 @@ class CreateLaggedPredictionDataTestCase(DartsBaseTestClass):
                     lags=lags,
                     past_covariates=series,
                     lags_past_covariates=lags,
+                    uses_static_covariates=False,
                     use_moving_windows=use_moving_windows,
                 )
                 self.assertEqual(len(w), 1)
