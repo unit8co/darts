@@ -1,3 +1,4 @@
+import copy
 from datetime import date, timedelta
 
 import matplotlib.pyplot as plt
@@ -690,6 +691,41 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             ),
             shap.Explanation,
         )
+
+    def test_shap_selected_components(self):
+        model = LightGBMModel(
+            lags=4,
+            lags_past_covariates=2,
+            lags_future_covariates=[1],
+            output_chunk_length=1,
+        )
+        model.fit(
+            series=self.target_ts,
+            past_covariates=self.past_cov_ts,
+            future_covariates=self.fut_cov_ts,
+        )
+        shap_explain = ShapExplainer(model)
+        explanation_results = shap_explain.explain()
+        # check that explain() with selected components gives identical results
+        for comp in self.target_ts.components:
+            explanation_comp = shap_explain.explain(target_components=[comp])
+            assert explanation_comp.available_components == [comp]
+            assert explanation_comp.available_horizons == [1]
+            # explained forecasts
+            fc_res_tmp = copy.deepcopy(explanation_results.explained_forecasts)
+            fc_res_tmp[1] = {str(comp): fc_res_tmp[1][comp]}
+            assert explanation_comp.explained_forecasts == fc_res_tmp
+
+            # feature values
+            fv_res_tmp = copy.deepcopy(explanation_results.feature_values)
+            fv_res_tmp[1] = {str(comp): fv_res_tmp[1][comp]}
+            assert explanation_comp.explained_forecasts == fc_res_tmp
+
+            # shap objects
+            assert (
+                len(explanation_comp.shap_explanation_object[1]) == 1
+                and comp in explanation_comp.shap_explanation_object[1]
+            )
 
     def test_shapley_with_static_cov(self):
         ts = self.target_ts_with_static_covs
