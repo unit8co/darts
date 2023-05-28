@@ -29,13 +29,20 @@ def create_lagged_data(
     lags_past_covariates: Optional[Sequence[int]] = None,
     lags_future_covariates: Optional[Sequence[int]] = None,
     output_chunk_length: int = 1,
+    uses_static_covariates: bool = True,
+    last_static_covariates_shape: Optional[Tuple[int, int]] = None,
     max_samples_per_ts: Optional[int] = None,
     multi_models: bool = True,
     check_inputs: bool = True,
     use_moving_windows: bool = True,
     is_training: bool = True,
     concatenate: bool = True,
-) -> Tuple[ArrayOrArraySequence, Union[None, ArrayOrArraySequence], Sequence[pd.Index]]:
+) -> Tuple[
+    ArrayOrArraySequence,
+    Union[None, ArrayOrArraySequence],
+    Sequence[pd.Index],
+    Optional[Tuple[int, int]],
+]:
     """
     Creates the features array `X` and labels array `y` to train a lagged-variables regression model (e.g. an
     `sklearn` model) when `is_training = True`; alternatively, creates the features array `X` to produce a series
@@ -154,6 +161,12 @@ def create_lagged_data(
         `lags_past_covariates`, `lags_future_covariates` values can be positive (i.e. use values *after* time `t`
         to predict target at time `t`), zero (i.e. use values *at* time `t` to predict target at time `t`), and/or
         negative (i.e. use values *before* time `t` to predict target at time `t`).
+    uses_static_covariates
+        Whether the model uses/expects static covariates. If `True`, it enforces that static covariates must
+        have identical shapes across all target series.
+    last_static_covariates_shape
+        Optionally, the last observed shape of the static covariates. This is ``None`` before fitting, or when
+        `uses_static_covariates` is ``False``.
     max_samples_per_ts
         Optionally, the maximum number of samples to be drawn for training/validation; only the most recent
         samples are kept. In theory, specifying a smaller `max_samples_per_ts` should reduce computation time,
@@ -207,6 +220,10 @@ def create_lagged_data(
         gives the times of those observations formed using the `i`th `TimeSeries` object in each
         `Sequence`. Otherwise, if the series inputs were specified as `TimeSeries`, the only
         element is the times of those observations formed from the lone `TimeSeries` inputs.
+    last_static_covariates_shape
+        The last observed shape of the static covariates. This is ``None`` when `uses_static_covariates`
+        is ``False``.
+
 
     Raises
     ------
@@ -288,6 +305,12 @@ def create_lagged_data(
                 check_inputs,
                 is_training,
             )
+        X_i, last_static_covariates_shape = add_static_covariates_to_lagged_data(
+            features=X_i,
+            target_series=target_i,
+            uses_static_covariates=uses_static_covariates,
+            last_shape=last_static_covariates_shape,
+        )
         X.append(X_i)
         y.append(y_i)
         times.append(times_i)
@@ -298,7 +321,7 @@ def create_lagged_data(
         y = None
     elif concatenate:
         y = np.concatenate(y, axis=0)
-    return X, y, times
+    return X, y, times, last_static_covariates_shape
 
 
 def create_lagged_training_data(
@@ -309,12 +332,19 @@ def create_lagged_training_data(
     lags: Optional[Sequence[int]] = None,
     lags_past_covariates: Optional[Sequence[int]] = None,
     lags_future_covariates: Optional[Sequence[int]] = None,
+    uses_static_covariates: bool = True,
+    last_static_covariates_shape: Optional[Tuple[int, int]] = None,
     max_samples_per_ts: Optional[int] = None,
     multi_models: bool = True,
     check_inputs: bool = True,
     use_moving_windows: bool = True,
     concatenate: bool = True,
-) -> Tuple[ArrayOrArraySequence, Union[None, ArrayOrArraySequence], Sequence[pd.Index]]:
+) -> Tuple[
+    ArrayOrArraySequence,
+    Union[None, ArrayOrArraySequence],
+    Sequence[pd.Index],
+    Optional[Tuple[int, int]],
+]:
     """
     Creates the features array `X` and labels array `y` to train a lagged-variables regression model (e.g. an
     `sklearn` model); the time index values of each observation is also returned.
@@ -349,6 +379,12 @@ def create_lagged_training_data(
         `lags_future_covariates` values can be positive (i.e. use values *after* time `t` to predict target at
         time `t`), zero (i.e. use values *at* time `t` to predict target at time `t`), and/or negative (i.e. use values
         *before* time `t` to predict target at time `t`).
+    uses_static_covariates
+        Whether the model uses/expects static covariates. If `True`, it enforces that static covariates must
+        have identical shapes across all target series.
+    last_static_covariates_shape
+        Optionally, the last observed shape of the static covariates. This is ``None`` before fitting, or when
+        `uses_static_covariates` is ``False``.
     max_samples_per_ts
         Optionally, the maximum number of samples to be drawn for training/validation; only the most recent
         samples are kept. In theory, specifying a smaller `max_samples_per_ts` should reduce computation time,
@@ -416,6 +452,8 @@ def create_lagged_training_data(
         lags_past_covariates=lags_past_covariates,
         lags_future_covariates=lags_future_covariates,
         output_chunk_length=output_chunk_length,
+        uses_static_covariates=uses_static_covariates,
+        last_static_covariates_shape=last_static_covariates_shape,
         max_samples_per_ts=max_samples_per_ts,
         multi_models=multi_models,
         check_inputs=check_inputs,
@@ -432,6 +470,8 @@ def create_lagged_prediction_data(
     lags: Optional[Sequence[int]] = None,
     lags_past_covariates: Optional[Sequence[int]] = None,
     lags_future_covariates: Optional[Sequence[int]] = None,
+    uses_static_covariates: bool = True,
+    last_static_covariates_shape: Optional[Tuple[int, int]] = None,
     max_samples_per_ts: Optional[int] = None,
     check_inputs: bool = True,
     use_moving_windows: bool = True,
@@ -469,6 +509,12 @@ def create_lagged_prediction_data(
         `lags_future_covariates` values can be positive (i.e. use values *after* time `t` to predict target at
         time `t`), zero (i.e. use values *at* time `t` to predict target at time `t`), and/or negative (i.e. use
         values *before* time `t` to predict target at time `t`).
+    uses_static_covariates
+        Whether the model uses/expects static covariates. If `True`, it enforces that static covariates must
+        have identical shapes across all target series.
+    last_static_covariates_shape
+        Optionally, the last observed shape of the static covariates. This is ``None`` before fitting, or when
+        `uses_static_covariates` is ``False``.
     max_samples_per_ts
         Optionally, the maximum number of samples to be drawn for training/validation; only the most recent
         samples are kept. In theory, specifying a smaller `max_samples_per_ts` should reduce computation time,
@@ -517,13 +563,15 @@ def create_lagged_prediction_data(
         If the provided series do not share the same type of `time_index` (e.g. `target_series` uses a
         pd.RangeIndex, but `future_covariates` uses a `pd.DatetimeIndex`).
     """
-    X, _, times = create_lagged_data(
+    X, _, times, _ = create_lagged_data(
         target_series=target_series,
         past_covariates=past_covariates,
         future_covariates=future_covariates,
         lags=lags,
         lags_past_covariates=lags_past_covariates,
         lags_future_covariates=lags_future_covariates,
+        uses_static_covariates=uses_static_covariates,
+        last_static_covariates_shape=last_static_covariates_shape,
         max_samples_per_ts=max_samples_per_ts,
         check_inputs=check_inputs,
         use_moving_windows=use_moving_windows,
@@ -607,12 +655,15 @@ def add_static_covariates_to_lagged_data(
             static_covs = ts.static_covariates.values.flatten(order="F")
             # we stack the static covariates to the right of lagged features
             # the broadcasting repeats the static covariates along axis=0 to match the number of feature rows
+            shape_out = (
+                (len(features[idx]), len(static_covs))
+                if len(features[idx].shape) == 2
+                else (len(features[idx]), len(static_covs), 1)
+            )
             features[idx] = np.hstack(
                 [
                     features[idx],
-                    np.broadcast_to(
-                        static_covs, (len(features[idx]), len(static_covs))
-                    ),
+                    np.broadcast_to(static_covs, shape_out),
                 ]
             )
 

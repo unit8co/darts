@@ -702,6 +702,8 @@ class _RegressionShapExplainers:
             lags_future_covariates=lags_future_covariates_list
             if future_covariates
             else None,
+            uses_static_covariates=self.model.uses_static_covariates,
+            last_static_covariates_shape=self.model._static_covariates_shape,
         )
         # Remove sample axis:
         X = X[:, :, 0]
@@ -720,26 +722,11 @@ class _RegressionShapExplainers:
         if n_samples:
             X = shap.utils.sample(X, n_samples)
 
-        # We keep the creation order of the different lags/features in create_lagged_data
-        lags_names_list = []
-        if lags_list:
-            for lag in lags_list:
-                for t_name in self.target_components:
-                    lags_names_list.append(t_name + "_target_lag" + str(lag))
-        if lags_past_covariates_list:
-            for lag in lags_past_covariates_list:
-                for t_name in self.past_covariates_components:
-                    lags_names_list.append(t_name + "_past_cov_lag" + str(lag))
-        if lags_future_covariates_list:
-            for lag in lags_future_covariates_list:
-                for t_name in self.future_covariates_components:
-                    lags_names_list.append(t_name + "_fut_cov_lag" + str(lag))
-
+        # rename output columns to the matching lagged features names
         X = X.rename(
             columns={
-                name: lags_names_list[idx]
+                name: self.model.lagged_feature_names[idx]
                 for idx, name in enumerate(X.columns.to_list())
             }
         )
-
         return X
