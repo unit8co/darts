@@ -763,12 +763,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         elif (
             train_length is not None
         ) and train_length < model._training_sample_time_index_length + (
-            self.min_train_samples - 1
+            model.min_train_samples - 1
         ):
             raise_log(
                 ValueError(
                     "train_length is too small for the training requirements of this model. "
-                    f"Must be `>={model._training_sample_time_index_length + (self.min_train_samples - 1)}`."
+                    f"Must be `>={model._training_sample_time_index_length + (model.min_train_samples - 1)}`."
                 ),
                 logger,
             )
@@ -888,12 +888,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 )
 
             # We need the first value timestamp to be used in order to properly shift the series
-            if historical_forecasts_time_index_train is None:
-                # dummy value, should not impact the downstream operations
-                min_timestamp_train = series_.time_index[0]
+            if retrain is False:
+                # we are only predicting: start of the series does not have to change
+                min_timestamp_series = series_.time_index[0]
             else:
+                # otherwise, we need to prepare for training:
                 # look at both past and future, since the target lags must be taken in consideration
-                min_timestamp_train = (
+                min_timestamp_series = (
                     historical_forecasts_time_index_train[0]
                     - model._training_sample_time_index_length * series_.freq
                 )
@@ -944,11 +945,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         )
 
                     train_length_ = None
-                    if self.min_train_samples > 1:
+                    if model.min_train_samples > 1:
                         historical_forecasts_time_index = drop_before_index(
                             historical_forecasts_time_index,
                             historical_forecasts_time_index[0]
-                            + (self.min_train_samples - 1) * series_.freq,
+                            + (model.min_train_samples - 1) * series_.freq,
                         )
 
             # Take into account overlap_end, and forecast_horizon.
@@ -1004,6 +1005,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         start_time_,
                     )
 
+            # adjust the start of the series depending on whether we train (at some point), or predict only
+            if min_timestamp_series > series_.time_index[0]:
+                series_ = series_.drop_before(min_timestamp_series - 1 * series_.freq)
+
             if len(series) == 1:
                 # Only use tqdm if there's no outer loop
                 iterator = _build_tqdm_iterator(
@@ -1021,14 +1026,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             # iterate and forecast
             for _counter, pred_time in enumerate(iterator):
-                # build the training series, as if retrain is True to break circular dependency
-                if min_timestamp_train > series_.time_index[0]:
-                    train_series = series_.drop_before(
-                        min_timestamp_train - 1 * series_.freq
-                    ).drop_after(pred_time)
-                else:
-                    train_series = series_.drop_after(pred_time)
+                # drop everything after `pred_time` to train on / predict with shifting input
+                train_series = series_.drop_after(pred_time)
 
+                # optionally, apply moving window (instead of expanding window)
                 if train_length_ and len(train_series) > train_length_:
                     train_series = train_series[-train_length_:]
 
@@ -1066,23 +1067,20 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                                 logger,
                             )
                     _counter_train += 1
-                else:
+                elif not _counter and not model._fit_called:
                     # model must be fit before the first prediction
                     # `historical_forecasts_time_index_train` is known to be not None
-                    if not _counter and not model._fit_called:
-                        raise_log(
-                            ValueError(
-                                f"Model has not been fit before the first predict iteration at prediction point "
-                                f"(in time) `{pred_time}`. Either call `fit()` before `historical_forecasts()`, "
-                                f"set `retrain=True`, modify the function to return `True` at least once before "
-                                f"`{pred_time}`, or use a different `start` value. The first 'predictable' "
-                                f"timestamp with re-training inside `historical_forecasts` is: "
-                                f"{historical_forecasts_time_index_train[0]} (potential `start` value)."
-                            ),
-                            logger,
-                        )
-                    # slice the series for prediction without retraining
-                    train_series = series_.drop_after(pred_time)
+                    raise_log(
+                        ValueError(
+                            f"Model has not been fit before the first predict iteration at prediction point "
+                            f"(in time) `{pred_time}`. Either call `fit()` before `historical_forecasts()`, "
+                            f"set `retrain=True`, modify the function to return `True` at least once before "
+                            f"`{pred_time}`, or use a different `start` value. The first 'predictable' "
+                            f"timestamp with re-training inside `historical_forecasts` is: "
+                            f"{historical_forecasts_time_index_train[0]} (potential `start` value)."
+                        ),
+                        logger,
+                    )
 
                 # for regression models with lags=None, lags_past_covariates=None and min(lags_future_covariates)>=0,
                 # the first predictable timestamp is the first timestamp of the series, a dummy ts must be created
