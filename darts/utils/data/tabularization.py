@@ -663,7 +663,7 @@ def add_static_covariates_to_lagged_data(
             features[idx] = np.hstack(
                 [
                     features[idx],
-                    np.broadcast_to(static_covs, shape_out),
+                    np.broadcast_to(static_covs, shape_out[:2]).reshape(shape_out),
                 ]
             )
 
