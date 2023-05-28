@@ -353,7 +353,12 @@ class RegressionModel(GlobalForecastingModel):
         lags_past_covariates = self.lags.get("past")
         lags_future_covariates = self.lags.get("future")
 
-        features, labels, _ = create_lagged_training_data(
+        (
+            features,
+            labels,
+            _,
+            self._static_covariates_shape,
+        ) = create_lagged_training_data(
             target_series=target_series,
             output_chunk_length=self.output_chunk_length,
             past_covariates=past_covariates,
@@ -361,6 +366,8 @@ class RegressionModel(GlobalForecastingModel):
             lags=lags,
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,
+            uses_static_covariates=self.uses_static_covariates,
+            last_static_covariates_shape=None,
             max_samples_per_ts=max_samples_per_ts,
             multi_models=self.multi_models,
             check_inputs=False,
@@ -370,14 +377,6 @@ class RegressionModel(GlobalForecastingModel):
         for i, (X_i, y_i) in enumerate(zip(features, labels)):
             features[i] = X_i[:, :, 0]
             labels[i] = y_i[:, :, 0]
-
-        features, static_covariates_shape = add_static_covariates_to_lagged_data(
-            features,
-            target_series,
-            uses_static_covariates=self.uses_static_covariates,
-            last_shape=None,
-        )
-        self._static_covariates_shape = static_covariates_shape
 
         training_samples = np.concatenate(features, axis=0)
         training_labels = np.concatenate(labels, axis=0)

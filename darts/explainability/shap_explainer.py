@@ -25,7 +25,6 @@ from typing import Dict, NewType, Optional, Sequence, Tuple, Union
 import matplotlib.pyplot as plt
 import pandas as pd
 import shap
-from numpy import integer
 from sklearn.multioutput import MultiOutputRegressor
 
 from darts import TimeSeries
@@ -563,7 +562,7 @@ class _RegressionShapExplainers:
         foreground_X,
         horizons: Optional[Sequence[int]] = None,
         target_components: Optional[Sequence[str]] = None,
-    ) -> Dict[integer, Dict[str, shap.Explanation]]:
+    ) -> Dict[int, Dict[str, shap.Explanation]]:
 
         """
         Return a dictionary of dictionaries of shap.Explanation instances:
@@ -577,7 +576,7 @@ class _RegressionShapExplainers:
             Optionally, a list of integers representing which points/steps in the future we want to explain,
             starting from the first prediction step at 1. Currently, only forecasting models are supported which
             provide an `output_chunk_length` parameter. `horizons` must not be larger than `output_chunk_length`.
-        target_names
+        target_components
             Optionally, a list of strings with the target components we want to explain.
 
         """
@@ -589,7 +588,9 @@ class _RegressionShapExplainers:
 
             for h in horizons:
                 tmp_n = {}
-                for t_idx, t in enumerate(target_components):
+                for t_idx, t in enumerate(self.target_components):
+                    if t not in target_components:
+                        continue
                     explainer = self.explainers[h - 1][t_idx](foreground_X)
                     explainer.base_values = explainer.base_values.ravel()
                     explainer.time_index = foreground_X.index
@@ -601,6 +602,8 @@ class _RegressionShapExplainers:
             for h in horizons:
                 tmp_n = {}
                 for t_idx, t in enumerate(target_components):
+                    if t not in target_components:
+                        continue
                     if not self.single_output:
                         tmp_t = shap.Explanation(
                             shap_explanation_tmp.values[
@@ -702,6 +705,8 @@ class _RegressionShapExplainers:
             lags_future_covariates=lags_future_covariates_list
             if future_covariates
             else None,
+            uses_static_covariates=self.model.uses_static_covariates,
+            last_static_covariates_shape=self.model._static_covariates_shape,
         )
         # Remove sample axis:
         X = X[:, :, 0]
@@ -720,26 +725,11 @@ class _RegressionShapExplainers:
         if n_samples:
             X = shap.utils.sample(X, n_samples)
 
-        # We keep the creation order of the different lags/features in create_lagged_data
-        lags_names_list = []
-        if lags_list:
-            for lag in lags_list:
-                for t_name in self.target_components:
-                    lags_names_list.append(t_name + "_target_lag" + str(lag))
-        if lags_past_covariates_list:
-            for lag in lags_past_covariates_list:
-                for t_name in self.past_covariates_components:
-                    lags_names_list.append(t_name + "_past_cov_lag" + str(lag))
-        if lags_future_covariates_list:
-            for lag in lags_future_covariates_list:
-                for t_name in self.future_covariates_components:
-                    lags_names_list.append(t_name + "_fut_cov_lag" + str(lag))
-
+        # rename output columns to the matching lagged features names
         X = X.rename(
             columns={
-                name: lags_names_list[idx]
+                name: self.model.lagged_feature_names[idx]
                 for idx, name in enumerate(X.columns.to_list())
             }
         )
-
         return X
