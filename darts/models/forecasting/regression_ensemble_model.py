@@ -19,9 +19,6 @@ from darts.utils.utils import seq2series, series2seq
 
 logger = get_logger(__name__)
 
-# arbitrary threshold to raise warning for probabilistic forecasting models
-SAMPLES_WARNING_THRESHOLD = 1e6
-
 
 class RegressionEnsembleModel(EnsembleModel):
     def __init__(
@@ -59,6 +56,10 @@ class RegressionEnsembleModel(EnsembleModel):
         regression_train_num_samples
             Number of prediction samples from each forecasting model to train the regression model (samples are
             averaged). Should be set to 1 for deterministic models. Default: 1.
+            .. note::
+                if `forecasting_models` contains a mix of probabilistic and deterministic models,
+                `regression_train_num_samples will be passed only to the probabilistic ones.
+            ..
         regression_train_samples_reduction
             If `forecasting models` are probabilistic and `regression_train_num_samples` > 1, method used to
             reduce the samples before passing them to the regression model. Possible values: "mean", "median"
@@ -91,51 +92,6 @@ class RegressionEnsembleModel(EnsembleModel):
             f"and `lags_future_covariates` must be [0]. Given:\n"
             f"{regression_model.lags}",
         )
-
-        raise_if(
-            regression_train_num_samples > 1 and not self._models_are_probabilistic(),
-            "`regression_train_num_samples` is greater than 1 but the `RegressionEnsembleModel` "
-            "contains at least one non-probabilistic forecasting model.",
-            logger,
-        )
-
-        # check the reduction method
-        supported_reduction = ["mean", "median"]
-        if isinstance(regression_train_samples_reduction, float):
-            # this is already checked by `ts.quantile()`, maybe too redundant
-            raise_if_not(
-                0.0 < regression_train_samples_reduction < 1.0,
-                f"if a float, `regression_train_samples_reduction` must be between "
-                f"0 and 1, received ({regression_train_samples_reduction})",
-                logger,
-            )
-        elif isinstance(regression_train_samples_reduction, str):
-            raise_if(
-                regression_train_samples_reduction not in supported_reduction,
-                f"if a string, `regression_train_samples_reduction` must be one of {supported_reduction}, "
-                f"received ({regression_train_samples_reduction})",
-                logger,
-            )
-        else:
-            logger.exception(
-                f"`regression_train_samples_reduction` type not supported "
-                f"({regression_train_samples_reduction}). Must be `float` "
-                f" or one of {supported_reduction}."
-            )
-
-        if (
-            regression_train_num_samples
-            * regression_train_n_points
-            * len(forecasting_models)
-            > SAMPLES_WARNING_THRESHOLD
-        ):
-            logger.warning(
-                f"Considering the number of models present in this ensemble ({len(forecasting_models)}), "
-                f"`regression_train_n_points` ({regression_train_n_points}) and `regression_train_num_samples` "
-                f"({regression_train_num_samples}) the number of sampled values to train the regression model "
-                f"will be very large ({regression_train_num_samples*regression_train_n_points*len(forecasting_models)}"
-                f">{SAMPLES_WARNING_THRESHOLD})."
-            )
 
         self.regression_model = regression_model
         self.train_n_points = regression_train_n_points

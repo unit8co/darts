@@ -392,6 +392,23 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         pred = ensemble_allproba.predict(5, num_samples=10)
         self.assertEqual(pred.n_samples, 10)
 
+        # forecasting models are a mix of probabilistic and deterministic, probabilistic regressor
+        ensemble_mixproba = RegressionEnsembleModel(
+            forecasting_models=[
+                self.get_probabilistic_global_model([-1, -3], quantiles),
+                self.get_deterministic_global_model([-2, -4], quantiles),
+            ],
+            regression_train_n_points=10,
+            regression_model=linreg_prob.untrained_model(),
+        )
+
+        self.assertFalse(ensemble_mixproba._models_are_probabilistic())
+        self.assertTrue(ensemble_mixproba._is_probabilistic())
+        ensemble_mixproba.fit(self.ts_random_walk[:100])
+        # probabilistic forecasting is supported
+        pred = ensemble_mixproba.predict(5, num_samples=10)
+        self.assertEqual(pred.n_samples, 10)
+
         # only regression model is probabilistic
         ensemble_proba_reg = RegressionEnsembleModel(
             forecasting_models=[
@@ -447,9 +464,21 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             ensemble_alldete.predict(5, num_samples=10)
 
+        # deterministic forecasters cannot be sampled
+        with self.assertRaises(ValueError):
+            RegressionEnsembleModel(
+                forecasting_models=[
+                    self.get_deterministic_global_model([-1, -3]),
+                    self.get_deterministic_global_model([-2, -4]),
+                ],
+                regression_train_n_points=10,
+                regression_model=linreg_prob.untrained_model(),
+                regression_train_num_samples=10,
+            )
+
     def test_stochastic_training_regression_ensemble_model(self):
         """
-        regression model is deterministic (default) but the forecasting model are
+        regression model is deterministic (default) but the forecasting models are
         probabilistic and they can be sampled to train the regression model.
         """
         quantiles = [0.25, 0.5, 0.75]

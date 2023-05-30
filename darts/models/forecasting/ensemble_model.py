@@ -6,7 +6,7 @@ from abc import abstractmethod
 from functools import reduce
 from typing import List, Optional, Sequence, Tuple, Union
 
-from darts.logging import get_logger, raise_if, raise_if_not
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
     LocalForecastingModel,
@@ -71,6 +71,40 @@ class EnsembleModel(GlobalForecastingModel):
             "Consider resetting all models with `my_model.untrained_model()`",
             logger,
         )
+
+        raise_if(
+            train_num_samples is not None
+            and train_num_samples > 1
+            and all([not m._is_probabilistic() for m in models]),
+            "`train_num_samples` is greater than 1 but the `RegressionEnsembleModel` "
+            "contains only deterministic models.",
+            logger,
+        )
+
+        supported_reduction = ["mean", "median"]
+        if train_samples_reduction is None:
+            pass
+        elif isinstance(train_samples_reduction, float):
+            raise_if_not(
+                0.0 < train_samples_reduction < 1.0,
+                f"if a float, `train_samples_reduction` must be between "
+                f"0 and 1, received ({train_samples_reduction})",
+                logger,
+            )
+        elif isinstance(train_samples_reduction, str):
+            raise_if(
+                train_samples_reduction not in supported_reduction,
+                f"if a string, `train_samples_reduction` must be one of {supported_reduction}, "
+                f"received ({train_samples_reduction})",
+                logger,
+            )
+        else:
+            raise_log(
+                f"`train_samples_reduction` type not supported "
+                f"({train_samples_reduction}). Must be `float` "
+                f" or one of {supported_reduction}.",
+                logger,
+            )
 
         super().__init__()
         self.models = models
@@ -149,7 +183,7 @@ class EnsembleModel(GlobalForecastingModel):
                 series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
-                num_samples=num_samples,
+                num_samples=num_samples if model._is_probabilistic() else 1,
             )
             for model in self.models
         ]
