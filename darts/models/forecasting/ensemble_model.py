@@ -35,7 +35,7 @@ class EnsembleModel(GlobalForecastingModel):
         Number of prediction samples from each forecasting model for multi-level ensembles. The n_samples
         dimension will be reduced using the `train_samples_reduction` method.
     train_samples_reduction
-        If `forecasting models` are probabilistic and `train_num_samples` > 1, method used to
+        If `models` are probabilistic and `train_num_samples` > 1, method used to
         reduce the samples dimension to 1. Possible values: "mean", "median" or float value corresponding
         to the desired quantile.
     """

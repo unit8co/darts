@@ -103,17 +103,16 @@ class RegressionEnsembleModel(EnsembleModel):
         supported_reduction = ["mean", "median"]
         if isinstance(regression_train_samples_reduction, float):
             # this is already checked by `ts.quantile()`, maybe too redundant
-            raise_if(
-                regression_train_samples_reduction > 1.0
-                or regression_train_samples_reduction < 0,
-                f"`regression_train_samples_reduction` should be comprised between "
-                f"0 and 1 ({regression_train_samples_reduction}).",
+            raise_if_not(
+                0.0 < regression_train_samples_reduction < 1.0,
+                f"if a float, `regression_train_samples_reduction` must be between "
+                f"0 and 1, received ({regression_train_samples_reduction})",
                 logger,
             )
         elif isinstance(regression_train_samples_reduction, str):
             raise_if(
                 regression_train_samples_reduction not in supported_reduction,
-                f"`regression_train_samples_reduction` should be one of {supported_reduction}, "
+                f"if a string, `regression_train_samples_reduction` must be one of {supported_reduction}, "
                 f"received ({regression_train_samples_reduction})",
                 logger,
             )
