@@ -30,6 +30,7 @@ from collections import OrderedDict
 from typing import Any, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
+import pandas as pd
 from sklearn.linear_model import LinearRegression
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
@@ -812,6 +813,28 @@ class RegressionModel(GlobalForecastingModel):
     @property
     def supports_static_covariates(self) -> bool:
         return True
+
+    @property
+    def supports_optimized_historical_forecasts(self) -> bool:
+        return True
+
+    def _optimized_historical_forecasts(
+        self,
+        series: Sequence[TimeSeries],
+        past_covariates: Optional[Sequence[TimeSeries]] = None,
+        future_covariates: Optional[Sequence[TimeSeries]] = None,
+        num_samples: int = 1,
+        start: Optional[Union[pd.Timestamp, float, int]] = None,
+        forecast_horizon: int = 1,
+        stride: int = 1,
+        overlap_end: bool = False,
+        last_points_only: bool = True,
+        verbose: bool = False,
+        show_warnings: bool = True,
+    ) -> Union[
+        TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
+    ]:
+        return series
 
 
 class _LikelihoodMixin:

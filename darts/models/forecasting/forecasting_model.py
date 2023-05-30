@@ -195,14 +195,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return False
 
     @property
-    def supports_past_covariates(self):
+    def supports_past_covariates(self) -> bool:
         """
         Whether model supports past covariates
         """
         return "past_covariates" in inspect.signature(self.fit).parameters.keys()
 
     @property
-    def supports_future_covariates(self):
+    def supports_future_covariates(self) -> bool:
         """
         Whether model supports future covariates
         """
@@ -223,25 +223,32 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return self._uses_past_covariates
 
     @property
-    def uses_future_covariates(self):
+    def uses_future_covariates(self) -> bool:
         """
         Whether the model uses future covariates, once fitted.
         """
         return self._uses_future_covariates
 
     @property
-    def uses_static_covariates(self):
+    def uses_static_covariates(self) -> bool:
         """
         Whether the model uses static covariates, once fitted.
         """
         return self._uses_static_covariates
 
     @property
-    def considers_static_covariates(self):
+    def considers_static_covariates(self) -> bool:
         """
         Whether the model considers static covariates, if there are any.
         """
         return self._considers_static_covariates
+
+    @property
+    def supports_optimized_historical_forecasts(self) -> bool:
+        """
+        Whether the model supports optimized historical forecasts
+        """
+        return False
 
     @abstractmethod
     def predict(self, n: int, num_samples: int = 1) -> TimeSeries:
@@ -829,6 +836,21 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         series = series2seq(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
+
+        if retrain is False and model.supports_optimized_historical_forecasts:
+            return model._optimized_historical_forecasts(
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                num_samples=num_samples,
+                start=start,
+                forecast_horizon=forecast_horizon,
+                stride=stride,
+                overlap_end=overlap_end,
+                last_points_only=last_points_only,
+                verbose=verbose,
+                show_warnings=show_warnings,
+            )
 
         if len(series) == 1:
             # Use tqdm on the outer loop only if there's more than one series to iterate over
@@ -1927,6 +1949,24 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             for p in init_signature.parameters.values()
             if p.name != "self"
         }
+
+    def _optimized_historical_forecasts(
+        self,
+        series: Sequence[TimeSeries],
+        past_covariates: Optional[Sequence[TimeSeries]] = None,
+        future_covariates: Optional[Sequence[TimeSeries]] = None,
+        num_samples: int = 1,
+        start: Optional[Union[pd.Timestamp, float, int]] = None,
+        forecast_horizon: int = 1,
+        stride: int = 1,
+        overlap_end: bool = False,
+        last_points_only: bool = True,
+        verbose: bool = False,
+        show_warnings: bool = True,
+    ) -> Union[
+        TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
+    ]:
+        pass
 
 
 class LocalForecastingModel(ForecastingModel, ABC):
