@@ -2214,7 +2214,7 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries, after `ts`.
         """
-        return self.split_before(split_point)[0]
+        return self[: self.get_index_at_point(split_point, after=True)]
 
     def drop_before(self, split_point: Union[pd.Timestamp, float, int]):
         """
@@ -2231,7 +2231,7 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries, after `ts`.
         """
-        return self.split_after(split_point)[1]
+        return self[self.get_index_at_point(split_point, after=False) + 1 :]
 
     def slice(
         self, start_ts: Union[pd.Timestamp, int], end_ts: Union[pd.Timestamp, int]
@@ -2272,9 +2272,9 @@ class TimeSeries:
                     start_ts:end_ts
                 ]  # we assume this is faster than the filtering below
             else:
-                idx = pd.DatetimeIndex(
-                    filter(lambda t: start_ts <= t <= end_ts, self._time_index)
-                )
+                idx = self._time_index[
+                    (start_ts <= self._time_index) & (self._time_index <= end_ts)
+                ]
                 return self[idx]
         else:
             raise_if(

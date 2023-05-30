@@ -8,6 +8,7 @@ from typing import List, Optional, Sequence, Tuple, Union
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import (
+    ForecastingModel,
     GlobalForecastingModel,
     LocalForecastingModel,
 )
@@ -22,6 +23,9 @@ class EnsembleModel(GlobalForecastingModel):
     Abstract base class for ensemble models.
     Ensemble models take in a list of forecasting models and ensemble their predictions
     to make a single one according to the rule defined by their `ensemble()` method.
+
+    If `future_covariates` or `past_covariates` are provided at training or inference time,
+    they will be passed only to the models supporting them.
 
     Parameters
     ----------
@@ -38,13 +42,16 @@ class EnsembleModel(GlobalForecastingModel):
         If `models` are probabilistic and `train_num_samples` > 1, method used to
         reduce the samples dimension to 1. Possible values: "mean", "median" or float value corresponding
         to the desired quantile.
+    show_warnings
+        Whether to show warnings related to models covariates support.
     """
 
     def __init__(
         self,
-        models: Union[List[LocalForecastingModel], List[GlobalForecastingModel]],
+        models: List[ForecastingModel],
         train_num_samples: int,
         train_samples_reduction: Union[str, float],
+        show_warnings: bool = True,
     ):
         raise_if_not(
             isinstance(models, list) and models,
@@ -52,16 +59,25 @@ class EnsembleModel(GlobalForecastingModel):
             logger,
         )
 
-        is_local_ensemble = all(
-            isinstance(model, LocalForecastingModel) for model in models
-        )
-        self.is_global_ensemble = all(
+        is_local_model = [isinstance(model, LocalForecastingModel) for model in models]
+        is_global_model = [
             isinstance(model, GlobalForecastingModel) for model in models
-        )
+        ]
+
+        self.is_local_ensemble = all(is_local_model)
+        self.is_global_ensemble = all(is_global_model)
 
         raise_if_not(
-            is_local_ensemble or self.is_global_ensemble,
-            "All models must be of the same type: either GlobalForecastingModel, or LocalForecastingModel.",
+            all(
+                [
+                    local_model or global_model
+                    for local_model, global_model in zip(
+                        is_local_model, is_global_model
+                    )
+                ]
+            ),
+            "All models must be of type `GlobalForecastingModel`, or `LocalForecastingModel`. "
+            "Also, make sure that all models in `forecasting_model/models` are instantiated.",
             logger,
         )
 
@@ -111,6 +127,27 @@ class EnsembleModel(GlobalForecastingModel):
         self.train_num_samples = train_num_samples
         self.train_samples_reduction = train_samples_reduction
 
+        if show_warnings:
+            if (
+                self.supports_past_covariates
+                and not self._full_past_covariates_support()
+            ):
+                logger.warning(
+                    "Some models in the ensemble do not support past covariates, the past covariates will be "
+                    "provided only to the models supporting them when calling fit()` or `predict()`. "
+                    "To hide these warnings, set `show_warnings=False`."
+                )
+
+            if (
+                self.supports_future_covariates
+                and not self._full_future_covariates_support()
+            ):
+                logger.warning(
+                    "Some models in the ensemble do not support future covariates, the future covariates will be "
+                    "provided only to the models supporting them when calling `fit()` or `predict()`. "
+                    "To hide these warnings, set `show_warnings=False`."
+                )
+
     @abstractmethod
     def fit(
         self,
@@ -123,33 +160,36 @@ class EnsembleModel(GlobalForecastingModel):
         Note that `EnsembleModel.fit()` does NOT call `fit()` on each of its constituent forecasting models.
         It is left to classes inheriting from EnsembleModel to do so appropriately when overriding `fit()`
         """
-        raise_if(
-            not self.is_global_ensemble and not isinstance(series, TimeSeries),
-            "The models are of type LocalForecastingModel, which does not support training on multiple series.",
-            logger,
-        )
-        raise_if(
-            not self.is_global_ensemble and past_covariates is not None,
-            "The models are of type LocalForecastingModel, which does not support past covariates.",
-            logger,
-        )
 
         is_single_series = isinstance(series, TimeSeries)
 
-        # check that if timeseries is single series, than covariates are as well and vice versa
-        error = False
-
-        if past_covariates is not None:
-            error = is_single_series != isinstance(past_covariates, TimeSeries)
-
-        if future_covariates is not None:
-            error = is_single_series != isinstance(future_covariates, TimeSeries)
-
+        # local models OR mix of local and global models
         raise_if(
-            error,
-            "Both series and covariates have to be either univariate or multivariate.",
+            not self.is_global_ensemble and not is_single_series,
+            "The models contain at least one LocalForecastingModel, which does not support training on multiple "
+            "series.",
             logger,
         )
+
+        # check that if timeseries is single series, that covariates are as well and vice versa
+        error_past_cov = False
+        error_future_cov = False
+
+        if past_covariates is not None:
+            error_past_cov = is_single_series != isinstance(past_covariates, TimeSeries)
+
+        if future_covariates is not None:
+            error_future_cov = is_single_series != isinstance(
+                future_covariates, TimeSeries
+            )
+
+        raise_if(
+            error_past_cov or error_future_cov,
+            "Both series and covariates have to be either single TimeSeries or sequences of TimeSeries.",
+            logger,
+        )
+
+        self._verify_past_future_covariates(past_covariates, future_covariates)
 
         super().fit(series, past_covariates, future_covariates)
 
@@ -177,12 +217,17 @@ class EnsembleModel(GlobalForecastingModel):
         num_samples: int = 1,
     ):
         is_single_series = isinstance(series, TimeSeries) or series is None
+        # maximize covariate usage
         predictions = [
             model._predict_wrapper(
                 n=n,
                 series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
+                past_covariates=past_covariates
+                if model.supports_past_covariates
+                else None,
+                future_covariates=future_covariates
+                if model.supports_future_covariates
+                else None,
                 num_samples=num_samples if model._is_probabilistic() else 1,
             )
             for model in self.models
@@ -217,6 +262,8 @@ class EnsembleModel(GlobalForecastingModel):
             pred_num_samples = num_samples
         else:
             pred_num_samples = self.train_num_samples
+
+        self._verify_past_future_covariates(past_covariates, future_covariates)
 
         predictions = self._make_multiple_predictions(
             n=n,
@@ -309,3 +356,34 @@ class EnsembleModel(GlobalForecastingModel):
 
     def _is_probabilistic(self) -> bool:
         return self._models_are_probabilistic()
+
+    @property
+    def supports_past_covariates(self) -> bool:
+        return any([model.supports_past_covariates for model in self.models])
+
+    @property
+    def supports_future_covariates(self) -> bool:
+        return any([model.supports_future_covariates for model in self.models])
+
+    def _full_past_covariates_support(self) -> bool:
+        return all([model.supports_past_covariates for model in self.models])
+
+    def _full_future_covariates_support(self) -> bool:
+        return all([model.supports_future_covariates for model in self.models])
+
+    def _verify_past_future_covariates(self, past_covariates, future_covariates):
+        """
+        Verify that any non-None covariates comply with the model type.
+        """
+        raise_if(
+            past_covariates is not None and not self.supports_past_covariates,
+            "`past_covariates` were provided to an `EnsembleModel` but none of its "
+            "base models support such covariates.",
+            logger,
+        )
+        raise_if(
+            future_covariates is not None and not self.supports_future_covariates,
+            "`future_covariates` were provided to an `EnsembleModel` but none of its "
+            "base models support such covariates.",
+            logger,
+        )

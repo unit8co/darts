@@ -12,7 +12,7 @@ import numpy as np
 from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import (
-    GlobalForecastingModel,
+    ForecastingModel,
     LocalForecastingModel,
 )
 from darts.timeseries import TimeSeries
@@ -163,14 +163,31 @@ class NaiveMovingAverage(LocalForecastingModel):
 
 class NaiveEnsembleModel(EnsembleModel):
     def __init__(
-        self, models: Union[List[LocalForecastingModel], List[GlobalForecastingModel]]
+        self,
+        models: List[ForecastingModel],
+        show_warnings: bool = True,
     ):
         """Naive combination model
 
         Naive implementation of `EnsembleModel`
         Returns the average of all predictions of the constituent models
+
+        If `future_covariates` or `past_covariates` are provided at training or inference time,
+        they will be passed only to the models supporting them.
+
+        Parameters
+        ----------
+        models
+            List of forecasting models whose predictions to ensemble
+        show_warnings
+            Whether to show warnings related to models covariates support.
         """
-        super().__init__(models, train_num_samples=None, train_samples_reduction=None)
+        super().__init__(
+            models=models,
+            train_num_samples=None,
+            train_samples_reduction=None,
+            show_warnings=show_warnings,
+        )
 
     def fit(
         self,
@@ -184,15 +201,12 @@ class NaiveEnsembleModel(EnsembleModel):
             future_covariates=future_covariates,
         )
         for model in self.models:
-            if self.is_global_ensemble:
-                kwargs = dict(series=series)
-                if model.supports_past_covariates:
-                    kwargs["past_covariates"] = past_covariates
-                if model.supports_future_covariates:
-                    kwargs["future_covariates"] = future_covariates
-                model.fit(**kwargs)
-            else:
-                model.fit(series=series)
+            kwargs = dict(series=series)
+            if model.supports_past_covariates:
+                kwargs["past_covariates"] = past_covariates
+            if model.supports_future_covariates:
+                kwargs["future_covariates"] = future_covariates
+            model.fit(**kwargs)
 
         return self
 

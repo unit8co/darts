@@ -8,10 +8,7 @@ from typing import List, Optional, Sequence, Tuple, Union
 
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.ensemble_model import EnsembleModel
-from darts.models.forecasting.forecasting_model import (
-    GlobalForecastingModel,
-    LocalForecastingModel,
-)
+from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
 from darts.models.forecasting.regression_model import RegressionModel
 from darts.timeseries import TimeSeries
@@ -23,13 +20,12 @@ logger = get_logger(__name__)
 class RegressionEnsembleModel(EnsembleModel):
     def __init__(
         self,
-        forecasting_models: Union[
-            List[LocalForecastingModel], List[GlobalForecastingModel]
-        ],
+        forecasting_models: List[ForecastingModel],
         regression_train_n_points: int,
         regression_model=None,
         regression_train_num_samples: Optional[int] = 1,
         regression_train_samples_reduction: Optional[Union[str, float]] = "median",
+        show_warnings: bool = True,
     ):
         """
         Use a regression model for ensembling individual models' predictions using the stacking technique [1]_.
@@ -39,6 +35,11 @@ class RegressionEnsembleModel(EnsembleModel):
         best ensemble the individual forecasting models' forecasts. It is not the same usage of regression
         as in :class:`RegressionModel`, where the regression model is used to produce forecasts based on the
         lagged series.
+
+        If `future_covariates` or `past_covariates` are provided at training or inference time,
+        they will be passed only to the forecasting models supporting them.
+
+        The regression model does not leverage the covariates passed to ``fit()`` and ``predict()``.
 
         Parameters
         ----------
@@ -56,6 +57,7 @@ class RegressionEnsembleModel(EnsembleModel):
         regression_train_num_samples
             Number of prediction samples from each forecasting model to train the regression model (samples are
             averaged). Should be set to 1 for deterministic models. Default: 1.
+
             .. note::
                 if `forecasting_models` contains a mix of probabilistic and deterministic models,
                 `regression_train_num_samples will be passed only to the probabilistic ones.
@@ -64,15 +66,19 @@ class RegressionEnsembleModel(EnsembleModel):
             If `forecasting models` are probabilistic and `regression_train_num_samples` > 1, method used to
             reduce the samples before passing them to the regression model. Possible values: "mean", "median"
             or float value corresponding to the desired quantile. Default: "median"
+        show_warnings
+            Whether to show warnings related to forecasting_models covariates support.
         References
         ----------
         .. [1] D. H. Wolpert, “Stacked generalization”, Neural Networks, vol. 5, no. 2, pp. 241–259, Jan. 1992
         """
         super().__init__(
-            forecasting_models,
+            models=forecasting_models,
             train_num_samples=regression_train_num_samples,
             train_samples_reduction=regression_train_samples_reduction,
+            show_warnings=show_warnings,
         )
+
         if regression_model is None:
             regression_model = LinearRegressionModel(
                 lags=None, lags_future_covariates=[0], fit_intercept=False
@@ -139,10 +145,15 @@ class RegressionEnsembleModel(EnsembleModel):
             )
 
         for model in self.models:
+            # maximize covariate usage
             model._fit_wrapper(
                 series=forecast_training,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
+                past_covariates=past_covariates
+                if model.supports_past_covariates
+                else None,
+                future_covariates=future_covariates
+                if model.supports_future_covariates
+                else None,
             )
 
         predictions = self._make_multiple_predictions(
