@@ -244,7 +244,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return self._considers_static_covariates
 
     @abstractmethod
-    def predict(self, n: int, num_samples: int = 1) -> TimeSeries:
+    def predict(
+        self, n: int, num_samples: int = 1, likelihood_parameters: bool = False
+    ) -> TimeSeries:
         """Forecasts values for `n` time steps after the end of the training series.
 
         Parameters
@@ -254,6 +256,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
+        likelihood_parameters
+            Lorem
 
         Returns
         -------
@@ -270,10 +274,27 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 logger,
             )
 
-        if not self._is_probabilistic() and num_samples > 1:
+        if not self._is_probabilistic():
+            if num_samples > 1:
+                raise_log(
+                    ValueError(
+                        "`num_samples > 1` is only supported for probabilistic models."
+                    ),
+                    logger,
+                )
+
+            if likelihood_parameters:
+                raise_log(
+                    ValueError(
+                        "`likelihood_parameters = True` is only supported for probabilistic models."
+                    ),
+                    logger,
+                )
+
+        if likelihood_parameters and num_samples > 1:
             raise_log(
                 ValueError(
-                    "`num_samples > 1` is only supported for probabilistic models."
+                    "`num_samples` must be set to 1 if `likelihood_parameters` is `True`."
                 ),
                 logger,
             )
@@ -2087,6 +2108,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
         verbose: bool = False,
+        likelihood_parameters: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Forecasts values for `n` time steps after the end of the series.
 
@@ -2119,6 +2141,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
+        likelihood_parameters
+            Output the probabilistic model likelihood model instead of target values. `num_samples` must be set to 1.
 
         Returns
         -------

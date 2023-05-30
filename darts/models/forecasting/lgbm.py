@@ -224,14 +224,21 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
         return self
 
     def _predict_and_sample(
-        self, x: np.ndarray, num_samples: int, **kwargs
+        self, x: np.ndarray, num_samples: int, likelihood_parameters: bool, **kwargs
     ) -> np.ndarray:
+        """Override of RegressionModel's predict method to allow for the probabilistic case"""
         if self.likelihood == "quantile":
-            return self._predict_quantiles(x, num_samples, **kwargs)
+            return self._predict_quantiles(
+                x, num_samples, likelihood_parameters, **kwargs
+            )
         elif self.likelihood == "poisson":
-            return self._predict_poisson(x, num_samples, **kwargs)
+            return self._predict_poisson(
+                x, num_samples, likelihood_parameters, **kwargs
+            )
         else:
-            return super()._predict_and_sample(x, num_samples, **kwargs)
+            return super()._predict_and_sample(
+                x, num_samples, likelihood_parameters, **kwargs
+            )
 
     def _is_probabilistic(self) -> bool:
         return self.likelihood is not None
