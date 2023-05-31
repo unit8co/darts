@@ -4916,7 +4916,9 @@ class TimeSeries:
                 xa_ = xa_.assign_coords(
                     {
                         self._time_dim: pd.RangeIndex(
-                            start=key, stop=key + self.freq, step=self.freq
+                            start=time_idx[0],
+                            stop=time_idx[0] + self.freq,
+                            step=self.freq,
                         )
                     }
                 )

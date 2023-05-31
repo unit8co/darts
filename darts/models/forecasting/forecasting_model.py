@@ -445,6 +445,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         past_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         is_training: Optional[bool] = False,
+        reduce_to_bounds: bool = False,
     ) -> Union[pd.DatetimeIndex, pd.RangeIndex, None]:
         """
         Private function that returns the largest time_index representing the subset of each timestamps
@@ -469,6 +470,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Optionally, a future covariates.
         is_training
             Whether the returned time_index should be taking into account the training.
+        reduce_to_bounds
+            Whether to only return the minimum and maximum historical forecastable index
 
         Returns
         -------
@@ -515,47 +518,84 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             min_target_lag = 0
 
         # longest possible time index for target
-        intersect_ = generate_index(
-            start=series.start_time()
-            + (max_target_lag - min_target_lag + 1) * series.freq
+        start = (
+            series.start_time() + (max_target_lag - min_target_lag + 1) * series.freq
             if is_training
-            else series.start_time() - min_target_lag * series.freq,
-            end=series.end_time() + 1 * series.freq,
-            freq=series.freq,
+            else series.start_time() - min_target_lag * series.freq
+        )
+        end = series.end_time() + 1 * series.freq
+        intersect_ = (
+            generate_index(
+                start=start,
+                end=end,
+                freq=series.freq,
+            )
+            if not reduce_to_bounds
+            else (start, end)
         )
 
         # longest possible time index for past covariates
         if (min_past_cov_lag is not None) and (past_covariates is not None):
-            tmp_ = generate_index(
-                start=past_covariates.start_time()
+            start_pc = (
+                past_covariates.start_time()
                 - (min_past_cov_lag - max_target_lag - 1) * past_covariates.freq
                 if is_training
                 else past_covariates.start_time()
-                - min_past_cov_lag * past_covariates.freq,
-                end=past_covariates.end_time()
-                - max_past_cov_lag * past_covariates.freq,
-                freq=past_covariates.freq,
+            )
+            end_pc = (
+                past_covariates.end_time() - max_past_cov_lag * past_covariates.freq
+            )
+            tmp_ = (
+                generate_index(
+                    start=start_pc,
+                    end=end_pc,
+                    freq=past_covariates.freq,
+                )
+                if not reduce_to_bounds
+                else (start_pc, end_pc)
             )
             if intersect_ is not None:
-                intersect_ = intersect_.intersection(tmp_)
+                if not reduce_to_bounds:
+                    intersect_ = intersect_.intersection(tmp_)
+                else:
+                    intersect_ = (
+                        max([intersect_[0], tmp_[0]]),
+                        min([intersect_[1], tmp_[1]]),
+                    )
             else:
                 intersect_ = tmp_
 
         # longest possible time index for future covariates
         if (min_future_cov_lag is not None) and (future_covariates is not None):
-            tmp_ = generate_index(
-                start=future_covariates.start_time()
+            start_fc = (
+                future_covariates.start_time()
                 - (min_future_cov_lag - max_target_lag - 1) * future_covariates.freq
                 if is_training
                 else future_covariates.start_time()
-                - min_future_cov_lag * future_covariates.freq,
-                end=future_covariates.end_time()
-                - max_future_cov_lag * future_covariates.freq,
-                freq=future_covariates.freq,
+                - min_future_cov_lag * future_covariates.freq
+            )
+            end_fc = (
+                future_covariates.end_time()
+                - max_future_cov_lag * future_covariates.freq
+            )
+            tmp_ = (
+                generate_index(
+                    start=start_fc,
+                    end=end_fc,
+                    freq=future_covariates.freq,
+                )
+                if reduce_to_bounds
+                else (start_fc, end_fc)
             )
 
             if intersect_ is not None:
-                intersect_ = intersect_.intersection(tmp_)
+                if not reduce_to_bounds:
+                    intersect_ = intersect_.intersection(tmp_)
+                else:
+                    intersect_ = (
+                        max([intersect_[0], tmp_[0]]),
+                        min([intersect_[1], tmp_[1]]),
+                    )
             else:
                 intersect_ = tmp_
 
