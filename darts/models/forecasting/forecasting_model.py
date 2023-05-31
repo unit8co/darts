@@ -291,7 +291,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     logger,
                 )
 
-        if likelihood_parameters and num_samples > 1:
+        if likelihood_parameters and num_samples != 1:
             raise_log(
                 ValueError(
                     "`num_samples` must be set to 1 if `likelihood_parameters` is `True`."
@@ -590,15 +590,37 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         self,
         points_preds: Union[np.ndarray, Sequence[np.ndarray]],
         input_series: Optional[TimeSeries] = None,
+        custom_columns: List[str] = None,
+        with_static_covs: bool = True,
+        with_hierarchy: bool = True,
     ) -> TimeSeries:
         """
         Builds a forecast time series starting after the end of the training time series, with the
         correct time index (or after the end of the input series, if specified).
+
+        Parameters
+        ----------
+        points_preds
+            Forecasted values, can be either the target(s) or parameters of the likelihood model
+        input_series
+            TimeSeries used as input for the prediction
+        custom_columns
+            New names for the forecast TimeSeries, used when the number of components changes
+        with_static_covs
+            If set to False, do not copy the input_series `static_covariates` attribute
+        with_hierarchy
+            If set to False, do not copy the input_series `hierarchy` attribute
+        Returns
+        -------
+        TimeSeries
+            New TimeSeries instance starting after the input series
         """
         input_series = (
             input_series if input_series is not None else self.training_series
         )
-        return _build_forecast_series(points_preds, input_series)
+        return _build_forecast_series(
+            points_preds, input_series, custom_columns, with_static_covs, with_hierarchy
+        )
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
         """Sanity checks for the historical_forecasts function
