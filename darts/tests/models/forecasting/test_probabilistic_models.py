@@ -13,6 +13,9 @@ logger = get_logger(__name__)
 
 try:
     import torch
+    from torch.distributions import Dirichlet as _Dirichlet
+    from torch.distributions import Normal as _Normal
+    from torch.distributions import Poisson as _Poisson
 
     from darts.models import (
         BlockRNNModel,
@@ -43,7 +46,9 @@ try:
 
     TORCH_AVAILABLE = True
 except ImportError:
-    logger.warning("Torch not available. TCN tests will be skipped.")
+    logger.warning(
+        "Torch not available. BlockRNN, NBeats, RNN, TCN and Transformer tests will be skipped."
+    )
     TORCH_AVAILABLE = False
 
 models_cls_kwargs_errs = [
@@ -268,6 +273,66 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
                     diff2,
                     "The difference between the mean forecast and the mean series is larger "
                     "than expected on component 1 for distribution {}".format(lkl),
+                )
+
+        @pytest.mark.slow
+        def test_likelihoods_parameters_forecasts(self):
+            torch.manual_seed(seed=142857)
+            list_lkl = [
+                (GaussianLikelihood(), _Normal(10, 1), [10, 1], np.array([0.1, 2])),
+                (PoissonLikelihood(), _Poisson(5), [5], 0.2),
+                (
+                    DirichletLikelihood(),
+                    _Dirichlet(torch.Tensor([0.3, 0.3, 0.3])),
+                    [0.3, 0.3, 0.3],
+                    0.1,
+                ),
+                (
+                    QuantileRegression([0.05, 0.5, 0.95]),
+                    _Normal(0, 1),
+                    [-1.67, 0, 1.67],
+                    0.3,
+                ),
+                # (NegativeBinomialLikelihood(), _NegativeBinomial(2, 0.5), [2, 0.5]),
+                # (BernoulliLikelihood(), _Bernoulli(0.8), [0.8]),
+                # (GammaLikelihood(), _Gamma(2.0, 2.0), [2.0, 2.0]),
+                # (GumbelLikelihood(), _Gumbel(3.0, 4.0), [3.0, 4.0]),
+                # (LaplaceLikelihood(), _Laplace(0, 1), [0, 1]),
+                # (BetaLikelihood(), _Beta(0.5, 0.5), [0.5, 0.5]),
+                # (ExponentialLikelihood(), _Exponential(1.0), [1.0]),
+                # (GeometricLikelihood(),  _Geometric(0.3), [0.3]),
+                # (CauchyLikelihood(), _Cauchy(0, 1), [0,1]),
+                # (ContinuousBernoulliLikelihood(), _ContinuousBernoulli(0.4), [0.4]),
+                # (HalfNormalLikelihood(), _HalfNormal(1), [1]),
+                # (LogNormalLikelihood(), _LogNormal(0, 0.25), [0, 0.25]),
+                # (WeibullLikelihood(), _Weibull(1, 1.5), [1, 1.5]),
+            ]
+
+            for lkl, lkl_distrib, lkl_params, tol in list_lkl:
+                # 500 steps, 1 component, 1 sample
+                values = lkl_distrib.sample((3000, 1, 1))
+                # some distribution generate several components one the last dimension
+                if values.shape[-1] > 1:
+                    values = torch.swapaxes(values, 1, 3)
+                    values = torch.squeeze(values, 3)
+
+                ts = TimeSeries.from_values(values)
+
+                model = RNNModel(7, "RNN", likelihood=lkl, n_epochs=25)
+                model.fit(ts)
+
+                # model predicts the likelihood parameters instead of the target
+                pred_lkl_params = model.predict(
+                    n=1, num_samples=1, likelihood_parameters=True
+                ).values()[0]
+                true_lkl_params = np.array(lkl_params)
+
+                # tolereance in percentage
+                self.assertTrue(
+                    (np.abs(pred_lkl_params - true_lkl_params) < tol).all(),
+                    f"The difference between theoritical {true_lkl_params} and predicted "
+                    f"{pred_lkl_params} parameters for the {lkl_distrib.__class__} "
+                    f"likelihood is greater than {tol}.",
                 )
 
         def test_stochastic_inputs(self):
