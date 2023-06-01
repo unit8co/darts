@@ -220,7 +220,9 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         elif self.likelihood == "poisson":
             return self._predict_poisson(x, num_samples, **kwargs)
         else:
-            return super()._predict_and_sample(x, num_samples, **kwargs)
+            return super()._predict_and_sample(
+                x, num_samples, likelihood_parameters, **kwargs
+            )
 
     def _is_probabilistic(self) -> bool:
         return self.likelihood is not None

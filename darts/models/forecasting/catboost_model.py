@@ -236,17 +236,19 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         elif self.likelihood in ["gaussian", "RMSEWithUncertainty"]:
             return self._predict_normal(x, num_samples, **kwargs)
         else:
-            return super()._predict_and_sample(x, num_samples, **kwargs)
+            return super()._predict_and_sample(
+                x, num_samples, likelihood_parameters, **kwargs
+            )
 
-    def _generate_likelihood_components_names(
-        self, input_series: TimeSeries
-    ) -> List[str]:
+    def _likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
         if self.likelihood == "quantile":
             return self._quantiles_generate_components_names(input_series)
         elif self.likelihood == "poisson":
-            return self._poisson_generate_components_names(input_series)
+            return self._likelihood_generate_components_names(input_series, ["lam"])
         elif self.likelihood in ["gaussian", "RMSEWithUncertainty"]:
-            return self._normal_generate_components_names(input_series)
+            return self._likelihood_generate_components_names(
+                input_series, ["mu", "sigma"]
+            )
         else:
             return None
 

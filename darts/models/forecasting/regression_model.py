@@ -794,7 +794,7 @@ class RegressionModel(GlobalForecastingModel):
         if likelihood_parameters:
             # generate the new components names, inherited from _LikelihoodMixin
             distrib_comp_names = [
-                self._generate_likelihood_components_names(ts) for ts in series
+                self._likelihood_components_names(ts) for ts in series
             ]
 
             # concatenate, reshape and convert the likelihood parameters to TimeSeries
@@ -908,13 +908,11 @@ class _LikelihoodMixin:
 
         return quantiles, median_idx
 
-    def _generate_likelihood_components_names(
-        self, input_series: TimeSeries
-    ) -> List[str]:
+    def _likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
         if self.likelihood == "quantile":
             return self._quantiles_generate_components_names(input_series)
         elif self.likelihood == "poisson":
-            return self._poisson_generate_components_names(input_series)
+            return self._likelihood_generate_components_names(input_series, ["lam"])
         else:
             return None
 
@@ -988,11 +986,9 @@ class _LikelihoodMixin:
             # univariate & single-chunk output
             if output_dim <= 2:
                 output_slice = model_output[:, 0]
-                distrib_params = model_output[0, :]
             else:
                 output_slice = model_output[0, :, :]
-                distrib_params = model_output[:, 0, :]
-            return output_slice.reshape(k, self.pred_dim, -1), distrib_params.reshape(
+            return output_slice.reshape(k, self.pred_dim, -1), model_output.reshape(
                 k, self.pred_dim, -1
             )
 
@@ -1139,14 +1135,14 @@ class _LikelihoodMixin:
             for quantile in self._model_container.keys()
         ]
 
-    def _poisson_generate_components_names(self, input_series: TimeSeries) -> List[str]:
-        return [f"{tgt_name}_lam" for tgt_name in input_series.components]
-
-    def _normal_generate_components_names(self, input_series: TimeSeries) -> List[str]:
-        comp_names = []
-        for tgt_name in input_series.components:
-            comp_names += [f"{tgt_name}_mu", f"{tgt_name}_sigma"]
-        return comp_names
+    def _likelihood_generate_components_names(
+        self, input_series: TimeSeries, parameter_names: List[str]
+    ) -> List[str]:
+        return [
+            f"{tgt_name}_{param_n}"
+            for tgt_name in input_series.components
+            for param_n in parameter_names
+        ]
 
 
 class _QuantileModelContainer(OrderedDict):
