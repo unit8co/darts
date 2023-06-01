@@ -1200,6 +1200,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         num_samples: int = 1,
         num_loader_workers: int = 0,
         mc_dropout: bool = False,
+        likelihood_parameters: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Predict the ``n`` time step following the end of the training series, or of the specified ``series``.
 
@@ -1325,6 +1326,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             num_samples=num_samples,
             num_loader_workers=num_loader_workers,
             mc_dropout=mc_dropout,
+            likelihood_parameters=likelihood_parameters,
         )
 
         return predictions[0] if called_with_single_series else predictions
@@ -1342,6 +1344,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         num_samples: int = 1,
         num_loader_workers: int = 0,
         mc_dropout: bool = False,
+        likelihood_parameters: bool = False,
     ) -> Sequence[TimeSeries]:
         """
         This method allows for predicting with a specific :class:`darts.utils.data.InferenceDataset` instance.
@@ -1423,6 +1426,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             roll_size=roll_size,
             batch_size=batch_size,
             n_jobs=n_jobs,
+            likelihood_parameters=likelihood_parameters,
         )
 
         pred_loader = DataLoader(
