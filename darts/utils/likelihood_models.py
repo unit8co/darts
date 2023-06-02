@@ -1117,7 +1117,7 @@ class QuantileRegression(Likelihood):
         self._median_idx = self.quantiles.index(0.5)
         self.first = True
         self.quantiles_tensor = None
-        
+
         # overwrite the attributes of Likelihood parent class
         self.ignore_attrs_equality = ["first", "quantiles_tensor"]
 
