@@ -164,10 +164,6 @@ class RegressionEnsembleModel(EnsembleModel):
             num_samples=self.train_num_samples,
         )
 
-        # component-wise reduction of the probabilistic forecasting models predictions
-        if predictions[0].n_samples > 1:
-            predictions = self._predictions_reduction(predictions)
-
         # train the regression model on the individual models' predictions
         self.regression_model.fit(
             series=regression_target, future_covariates=predictions

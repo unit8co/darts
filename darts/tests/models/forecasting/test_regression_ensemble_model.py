@@ -409,6 +409,25 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         pred = ensemble_mixproba.predict(5, num_samples=10)
         self.assertEqual(pred.n_samples, 10)
 
+        # forecasting models are a mix of probabilistic and deterministic, probabilistic regressor
+        # with regression_train_num_samples > 1
+        ensemble_mixproba2 = RegressionEnsembleModel(
+            forecasting_models=[
+                self.get_probabilistic_global_model([-1, -3], quantiles),
+                self.get_deterministic_global_model([-2, -4], quantiles),
+            ],
+            regression_train_n_points=10,
+            regression_model=linreg_prob.untrained_model(),
+            regression_train_num_samples=100,
+            regression_train_samples_reduction="median",
+        )
+
+        self.assertFalse(ensemble_mixproba2._models_are_probabilistic())
+        self.assertTrue(ensemble_mixproba2._is_probabilistic())
+        ensemble_mixproba2.fit(self.ts_random_walk[:100])
+        pred = ensemble_mixproba2.predict(5, num_samples=10)
+        self.assertEqual(pred.n_samples, 10)
+
         # only regression model is probabilistic
         ensemble_proba_reg = RegressionEnsembleModel(
             forecasting_models=[

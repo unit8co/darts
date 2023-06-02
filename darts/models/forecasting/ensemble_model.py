@@ -232,6 +232,17 @@ class EnsembleModel(GlobalForecastingModel):
             )
             for model in self.models
         ]
+
+        # reduce the probabilistics series
+        if (
+            self.train_samples_reduction is not None
+            and self.train_num_samples is not None
+            and self.train_num_samples > 1
+        ):
+            predictions = [
+                self._predictions_reduction(prediction) for prediction in predictions
+            ]
+
         return (
             self._stack_ts_seq(predictions)
             if is_single_series
@@ -272,9 +283,6 @@ class EnsembleModel(GlobalForecastingModel):
             future_covariates=future_covariates,
             num_samples=pred_num_samples,
         )
-
-        if self.train_samples_reduction is not None and self.train_num_samples > 1:
-            predictions = self._predictions_reduction(predictions)
 
         return self.ensemble(predictions, series=series, num_samples=num_samples)
 
