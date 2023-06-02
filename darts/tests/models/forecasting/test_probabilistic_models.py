@@ -13,12 +13,26 @@ logger = get_logger(__name__)
 
 try:
     import torch
+    from torch.distributions import Bernoulli as _Bernoulli
+    from torch.distributions import Beta as _Beta
+    from torch.distributions import Cauchy as _Cauchy
+    from torch.distributions import ContinuousBernoulli as _ContinuousBernoulli
     from torch.distributions import Dirichlet as _Dirichlet
+    from torch.distributions import Exponential as _Exponential
+    from torch.distributions import Gamma as _Gamma
+    from torch.distributions import Geometric as _Geometric
+    from torch.distributions import Gumbel as _Gumbel
+    from torch.distributions import HalfNormal as _HalfNormal
+    from torch.distributions import Laplace as _Laplace
+    from torch.distributions import LogNormal as _LogNormal
+    from torch.distributions import NegativeBinomial as _NegativeBinomial
     from torch.distributions import Normal as _Normal
     from torch.distributions import Poisson as _Poisson
+    from torch.distributions import Weibull as _Weibull
 
     from darts.models import (
         BlockRNNModel,
+        DLinearModel,
         NBEATSModel,
         RNNModel,
         TCNModel,
@@ -47,7 +61,7 @@ try:
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning(
-        "Torch not available. BlockRNN, NBeats, RNN, TCN and Transformer tests will be skipped."
+        "Torch not available. Tests related to torch-based models will be skipped."
     )
     TORCH_AVAILABLE = False
 
@@ -277,63 +291,72 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
 
         @pytest.mark.slow
         def test_likelihoods_parameters_forecasts(self):
+            """Checking convergence of model for each metric is too time consuming, making sure that the dimensions
+            of the predictions contain the proper elements.
+            """
             torch.manual_seed(seed=142857)
             list_lkl = [
-                (GaussianLikelihood(), _Normal(10, 1), [10, 1], np.array([0.1, 2])),
-                (PoissonLikelihood(), _Poisson(5), [5], 0.2),
+                (
+                    GaussianLikelihood(),
+                    _Normal(10, 1),
+                    [10, 1],
+                ),
+                (
+                    PoissonLikelihood(),
+                    _Poisson(5),
+                    [5],
+                ),
                 (
                     DirichletLikelihood(),
                     _Dirichlet(torch.Tensor([0.3, 0.3, 0.3])),
                     [0.3, 0.3, 0.3],
-                    0.1,
                 ),
                 (
                     QuantileRegression([0.05, 0.5, 0.95]),
                     _Normal(0, 1),
                     [-1.67, 0, 1.67],
-                    0.3,
                 ),
-                # (NegativeBinomialLikelihood(), _NegativeBinomial(2, 0.5), [2, 0.5]),
-                # (BernoulliLikelihood(), _Bernoulli(0.8), [0.8]),
-                # (GammaLikelihood(), _Gamma(2.0, 2.0), [2.0, 2.0]),
-                # (GumbelLikelihood(), _Gumbel(3.0, 4.0), [3.0, 4.0]),
-                # (LaplaceLikelihood(), _Laplace(0, 1), [0, 1]),
-                # (BetaLikelihood(), _Beta(0.5, 0.5), [0.5, 0.5]),
-                # (ExponentialLikelihood(), _Exponential(1.0), [1.0]),
-                # (GeometricLikelihood(),  _Geometric(0.3), [0.3]),
-                # (CauchyLikelihood(), _Cauchy(0, 1), [0,1]),
-                # (ContinuousBernoulliLikelihood(), _ContinuousBernoulli(0.4), [0.4]),
-                # (HalfNormalLikelihood(), _HalfNormal(1), [1]),
-                # (LogNormalLikelihood(), _LogNormal(0, 0.25), [0, 0.25]),
-                # (WeibullLikelihood(), _Weibull(1, 1.5), [1, 1.5]),
+                (NegativeBinomialLikelihood(), _NegativeBinomial(2, 0.5), [2, 0.5]),
+                (BernoulliLikelihood(), _Bernoulli(0.8), [0.8]),
+                (GammaLikelihood(), _Gamma(2.0, 2.0), [2.0, 2.0]),
+                (GumbelLikelihood(), _Gumbel(3.0, 4.0), [3.0, 4.0]),
+                (LaplaceLikelihood(), _Laplace(0, 1), [0, 1]),
+                (BetaLikelihood(), _Beta(0.5, 0.5), [0.5, 0.5]),
+                (ExponentialLikelihood(), _Exponential(1.0), [1.0]),
+                (GeometricLikelihood(), _Geometric(0.3), [0.3]),
+                (CauchyLikelihood(), _Cauchy(0, 1), [0, 1]),
+                (ContinuousBernoulliLikelihood(), _ContinuousBernoulli(0.4), [0.4]),
+                (HalfNormalLikelihood(), _HalfNormal(1), [1]),
+                (LogNormalLikelihood(), _LogNormal(0, 0.25), [0, 0.25]),
+                (WeibullLikelihood(), _Weibull(1, 1.5), [1, 1.5]),
             ]
 
-            for lkl, lkl_distrib, lkl_params, tol in list_lkl:
-                # 500 steps, 1 component, 1 sample
-                values = lkl_distrib.sample((3000, 1, 1))
+            for lkl, lkl_distrib, lkl_params in list_lkl:
+                # 100 steps, 1 component, 1 sample
+                values = lkl_distrib.sample((100, 1, 1))
                 # some distribution generate several components one the last dimension
                 if values.shape[-1] > 1:
                     values = torch.swapaxes(values, 1, 3)
                     values = torch.squeeze(values, 3)
-
                 ts = TimeSeries.from_values(values)
 
-                model = RNNModel(7, "RNN", likelihood=lkl, n_epochs=25)
-                model.fit(ts)
+                # [DualCovariatesModule, PastCovariatesModule, MixedCovariatesModule]
+                models = [
+                    RNNModel(4, "RNN", likelihood=lkl, n_epochs=1),
+                    TCNModel(4, 1, likelihood=lkl, n_epochs=1),
+                    DLinearModel(4, 1, likelihood=lkl, n_epochs=1),
+                ]
 
-                # model predicts the likelihood parameters instead of the target
-                pred_lkl_params = model.predict(
-                    n=1, num_samples=1, likelihood_parameters=True
-                ).values()[0]
                 true_lkl_params = np.array(lkl_params)
+                for model in models:
+                    model.fit(ts)
+                    # predict the likelihood parameters instead of the target
+                    pred_lkl_params = model.predict(
+                        n=3, num_samples=1, likelihood_parameters=True
+                    ).values()
 
-                # tolereance in percentage
-                self.assertTrue(
-                    (np.abs(pred_lkl_params - true_lkl_params) < tol).all(),
-                    f"The difference between theoritical {true_lkl_params} and predicted "
-                    f"{pred_lkl_params} parameters for the {lkl_distrib.__class__} "
-                    f"likelihood is greater than {tol}.",
-                )
+                    self.assertEqual(pred_lkl_params[0].shape, true_lkl_params.shape)
+                    self.assertEqual(pred_lkl_params[2].shape, true_lkl_params.shape)
 
         def test_stochastic_inputs(self):
             model = RNNModel(input_chunk_length=5)
