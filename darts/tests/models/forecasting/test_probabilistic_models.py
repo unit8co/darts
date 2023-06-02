@@ -13,22 +13,6 @@ logger = get_logger(__name__)
 
 try:
     import torch
-    from torch.distributions import Bernoulli as _Bernoulli
-    from torch.distributions import Beta as _Beta
-    from torch.distributions import Cauchy as _Cauchy
-    from torch.distributions import ContinuousBernoulli as _ContinuousBernoulli
-    from torch.distributions import Dirichlet as _Dirichlet
-    from torch.distributions import Exponential as _Exponential
-    from torch.distributions import Gamma as _Gamma
-    from torch.distributions import Geometric as _Geometric
-    from torch.distributions import Gumbel as _Gumbel
-    from torch.distributions import HalfNormal as _HalfNormal
-    from torch.distributions import Laplace as _Laplace
-    from torch.distributions import LogNormal as _LogNormal
-    from torch.distributions import NegativeBinomial as _NegativeBinomial
-    from torch.distributions import Normal as _Normal
-    from torch.distributions import Poisson as _Poisson
-    from torch.distributions import Weibull as _Weibull
 
     from darts.models import (
         BlockRNNModel,
@@ -298,42 +282,48 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
             seed = 142857
             torch.manual_seed(seed=seed)
             list_lkl = [
-                (GaussianLikelihood(), _Normal(10, 1), [10, 1]),
-                (PoissonLikelihood(), _Poisson(5), [5]),
-                (
-                    DirichletLikelihood(),
-                    _Dirichlet(torch.Tensor([0.3, 0.3, 0.3])),
-                    [0.3, 0.3, 0.3],
-                ),
+                (GaussianLikelihood(), [10, 1]),
+                (PoissonLikelihood(), [5]),
+                (DirichletLikelihood(), [torch.Tensor([0.3, 0.3, 0.3])]),
                 (
                     QuantileRegression([0.05, 0.5, 0.95]),
-                    _Normal(0, 1),
                     [-1.67, 0, 1.67],
                 ),
-                (NegativeBinomialLikelihood(), _NegativeBinomial(2, 0.5), [2, 0.5]),
-                (BernoulliLikelihood(), _Bernoulli(0.8), [0.8]),
-                (GammaLikelihood(), _Gamma(2.0, 2.0), [2.0, 2.0]),
-                (GumbelLikelihood(), _Gumbel(3.0, 4.0), [3.0, 4.0]),
-                (LaplaceLikelihood(), _Laplace(0, 1), [0, 1]),
-                (BetaLikelihood(), _Beta(0.5, 0.5), [0.5, 0.5]),
-                (ExponentialLikelihood(), _Exponential(1.0), [1.0]),
-                (GeometricLikelihood(), _Geometric(0.3), [0.3]),
-                (CauchyLikelihood(), _Cauchy(0, 1), [0, 1]),
-                (ContinuousBernoulliLikelihood(), _ContinuousBernoulli(0.4), [0.4]),
-                (HalfNormalLikelihood(), _HalfNormal(1), [1]),
-                (LogNormalLikelihood(), _LogNormal(0, 0.25), [0, 0.25]),
-                (WeibullLikelihood(), _Weibull(1, 1.5), [1, 1.5]),
+                (NegativeBinomialLikelihood(), [2, 0.5]),
+                (BernoulliLikelihood(), [0.8]),
+                (GammaLikelihood(), [2.0, 2.0]),
+                (GumbelLikelihood(), [3.0, 4.0]),
+                (LaplaceLikelihood(), [0, 1]),
+                (BetaLikelihood(), [0.5, 0.5]),
+                (ExponentialLikelihood(), [1.0]),
+                (GeometricLikelihood(), [0.3]),
+                (CauchyLikelihood(), [0, 1]),
+                (ContinuousBernoulliLikelihood(), [0.4]),
+                (HalfNormalLikelihood(), [1]),
+                (LogNormalLikelihood(), [0, 0.25]),
+                (WeibullLikelihood(), [1, 1.5]),
             ]
 
             n_times = 100
             n_comp = 1
             n_samples = 1
-            for lkl, lkl_distrib, lkl_params in list_lkl:
-                values = lkl_distrib.sample((n_times, n_comp, n_samples))
-                # handle multivariate distribution
-                if values.shape[-1] > 1:
+            for lkl, lkl_params in list_lkl:
+                # QuantileRegression is not distribution
+                if isinstance(lkl, QuantileRegression):
+                    values = np.random.normal(
+                        loc=0, scale=1, size=(n_times, n_comp, n_samples)
+                    )
+                else:
+                    values = lkl._distr_from_params(lkl_params).sample(
+                        (n_times, n_comp, n_samples)
+                    )
+
+                # Dirichlet must be handled sligthly differently since its multivariate
+                if isinstance(lkl, DirichletLikelihood):
                     values = torch.swapaxes(values, 1, 3)
                     values = torch.squeeze(values, 3)
+                    lkl_params = lkl_params[0]
+
                 ts = TimeSeries.from_values(
                     values, columns=[f"dummy_{i}" for i in range(values.shape[1])]
                 )
@@ -367,14 +357,12 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
             list_lkl = [
                 (
                     GaussianLikelihood(),
-                    _Normal(10, 1),
                     [10, 1],
                     ["dummy_0_mu", "dummy_0_sigma", "dummy_1_mu", "dummy_1_sigma"],
                 ),
-                (PoissonLikelihood(), _Poisson(5), [5], ["dummy_0_lam", "dummy_1_lam"]),
+                (PoissonLikelihood(), [5], ["dummy_0_lam", "dummy_1_lam"]),
                 (
                     QuantileRegression([0.05, 0.5, 0.95]),
-                    _Normal(0, 1),
                     [-1.67, 0, 1.67],
                     [
                         "dummy_0_q0.05",
@@ -390,8 +378,15 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
             n_times = 100
             n_comp = 2
             n_samples = 1
-            for lkl, lkl_distrib, lkl_params, comp_names in list_lkl:
-                values = lkl_distrib.sample((n_times, n_comp, n_samples))
+            for lkl, lkl_params, comp_names in list_lkl:
+                if isinstance(lkl, QuantileRegression):
+                    values = np.random.normal(
+                        loc=0, scale=1, size=(n_times, n_comp, n_samples)
+                    )
+                else:
+                    values = lkl._distr_from_params(lkl_params).sample(
+                        (n_times, n_comp, n_samples)
+                    )
                 ts = TimeSeries.from_values(
                     values, columns=[f"dummy_{i}" for i in range(values.shape[1])]
                 )
