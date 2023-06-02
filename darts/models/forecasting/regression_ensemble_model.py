@@ -8,10 +8,7 @@ from typing import List, Optional, Sequence, Tuple, Union
 
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.ensemble_model import EnsembleModel
-from darts.models.forecasting.forecasting_model import (
-    GlobalForecastingModel,
-    LocalForecastingModel,
-)
+from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
 from darts.models.forecasting.regression_model import RegressionModel
 from darts.timeseries import TimeSeries
@@ -23,11 +20,10 @@ logger = get_logger(__name__)
 class RegressionEnsembleModel(EnsembleModel):
     def __init__(
         self,
-        forecasting_models: Union[
-            List[LocalForecastingModel], List[GlobalForecastingModel]
-        ],
+        forecasting_models: List[ForecastingModel],
         regression_train_n_points: int,
         regression_model=None,
+        show_warnings: bool = True,
     ):
         """
         Use a regression model for ensembling individual models' predictions.
@@ -38,6 +34,11 @@ class RegressionEnsembleModel(EnsembleModel):
         as in :class:`RegressionModel`, where the regression model is used to produce forecasts based on the
         lagged series.
 
+        If `future_covariates` or `past_covariates` are provided at training or inference time,
+        they will be passed only to the forecasting models supporting them.
+
+        The regression model does not leverage the covariates passed to ``fit()`` and ``predict()``.
+
         Parameters
         ----------
         forecasting_models
@@ -47,8 +48,10 @@ class RegressionEnsembleModel(EnsembleModel):
         regression_model
             Any regression model with ``predict()`` and ``fit()`` methods (e.g. from scikit-learn)
             Default: ``darts.model.LinearRegressionModel(fit_intercept=False)``
+        show_warnings
+            Whether to show warnings related to forecasting_models covariates support.
         """
-        super().__init__(forecasting_models)
+        super().__init__(models=forecasting_models, show_warnings=show_warnings)
         if regression_model is None:
             regression_model = LinearRegressionModel(
                 lags=None, lags_future_covariates=[0], fit_intercept=False
@@ -115,10 +118,15 @@ class RegressionEnsembleModel(EnsembleModel):
             )
 
         for model in self.models:
+            # maximize covariate usage
             model._fit_wrapper(
                 series=forecast_training,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
+                past_covariates=past_covariates
+                if model.supports_past_covariates
+                else None,
+                future_covariates=future_covariates
+                if model.supports_future_covariates
+                else None,
             )
 
         predictions = self._make_multiple_predictions(
