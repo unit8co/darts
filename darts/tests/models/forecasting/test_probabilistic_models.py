@@ -290,22 +290,16 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
                 )
 
         @pytest.mark.slow
-        def test_likelihoods_parameters_forecasts(self):
+        def test_likelihoods_parameters_forecasts_univariate(self):
             """Checking convergence of model for each metric is too time consuming, making sure that the dimensions
-            of the predictions contain the proper elements.
+            of the predictions contain the proper elements for univariate input.
             """
-            torch.manual_seed(seed=142857)
+            # fix seed to avoid values outside of distribution's support
+            seed = 142857
+            torch.manual_seed(seed=seed)
             list_lkl = [
-                (
-                    GaussianLikelihood(),
-                    _Normal(10, 1),
-                    [10, 1],
-                ),
-                (
-                    PoissonLikelihood(),
-                    _Poisson(5),
-                    [5],
-                ),
+                (GaussianLikelihood(), _Normal(10, 1), [10, 1]),
+                (PoissonLikelihood(), _Poisson(5), [5]),
                 (
                     DirichletLikelihood(),
                     _Dirichlet(torch.Tensor([0.3, 0.3, 0.3])),
@@ -331,14 +325,76 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
                 (WeibullLikelihood(), _Weibull(1, 1.5), [1, 1.5]),
             ]
 
+            n_times = 100
+            n_comp = 1
+            n_samples = 1
             for lkl, lkl_distrib, lkl_params in list_lkl:
-                # 100 steps, 1 component, 1 sample
-                values = lkl_distrib.sample((100, 1, 1))
-                # some distribution generate several components one the last dimension
+                values = lkl_distrib.sample((n_times, n_comp, n_samples))
+                # handle multivariate distribution
                 if values.shape[-1] > 1:
                     values = torch.swapaxes(values, 1, 3)
                     values = torch.squeeze(values, 3)
-                ts = TimeSeries.from_values(values)
+                ts = TimeSeries.from_values(
+                    values, columns=[f"dummy_{i}" for i in range(values.shape[1])]
+                )
+
+                # [DualCovariatesModule, PastCovariatesModule, MixedCovariatesModule]
+                models = [
+                    RNNModel(4, "RNN", likelihood=lkl, n_epochs=1, random_state=seed),
+                    NBEATSModel(4, 1, likelihood=lkl, n_epochs=1, random_state=seed),
+                    DLinearModel(4, 1, likelihood=lkl, n_epochs=1, random_state=seed),
+                ]
+
+                true_lkl_params = np.array(lkl_params)
+                for model in models:
+                    # univariate
+                    model.fit(ts)
+                    pred_lkl_params = model.predict(
+                        n=3, num_samples=1, likelihood_parameters=True
+                    )
+
+                    # check the dimensions, values require too much training
+                    self.assertEqual(
+                        pred_lkl_params.values()[0].shape, true_lkl_params.shape
+                    )
+
+        @pytest.mark.slow
+        def test_likelihoods_parameters_forecasts_multivariate(self):
+            """Checking convergence of model for each metric is too time consuming, making sure that the dimensions
+            of the predictions contain the proper elements for multivariate inputs.
+            """
+            torch.manual_seed(seed=142857)
+            list_lkl = [
+                (
+                    GaussianLikelihood(),
+                    _Normal(10, 1),
+                    [10, 1],
+                    ["dummy_0_mu", "dummy_0_sigma", "dummy_1_mu", "dummy_1_sigma"],
+                ),
+                (PoissonLikelihood(), _Poisson(5), [5], ["dummy_0_lam", "dummy_1_lam"]),
+                (
+                    QuantileRegression([0.05, 0.5, 0.95]),
+                    _Normal(0, 1),
+                    [-1.67, 0, 1.67],
+                    [
+                        "dummy_0_q0.05",
+                        "dummy_0_q0.50",
+                        "dummy_0_q0.95",
+                        "dummy_1_q0.05",
+                        "dummy_1_q0.50",
+                        "dummy_1_q0.95",
+                    ],
+                ),
+            ]
+
+            n_times = 100
+            n_comp = 2
+            n_samples = 1
+            for lkl, lkl_distrib, lkl_params, comp_names in list_lkl:
+                values = lkl_distrib.sample((n_times, n_comp, n_samples))
+                ts = TimeSeries.from_values(
+                    values, columns=[f"dummy_{i}" for i in range(values.shape[1])]
+                )
 
                 # [DualCovariatesModule, PastCovariatesModule, MixedCovariatesModule]
                 models = [
@@ -347,16 +403,21 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
                     DLinearModel(4, 1, likelihood=lkl, n_epochs=1),
                 ]
 
-                true_lkl_params = np.array(lkl_params)
                 for model in models:
                     model.fit(ts)
-                    # predict the likelihood parameters instead of the target
                     pred_lkl_params = model.predict(
                         n=3, num_samples=1, likelihood_parameters=True
-                    ).values()
-
-                    self.assertEqual(pred_lkl_params[0].shape, true_lkl_params.shape)
-                    self.assertEqual(pred_lkl_params[2].shape, true_lkl_params.shape)
+                    )
+                    # check the dimensions
+                    self.assertEqual(
+                        pred_lkl_params.values()[0].shape[0], n_comp * len(lkl_params)
+                    )
+                    # check the component names
+                    self.assertTrue(
+                        list(pred_lkl_params.components) == comp_names,
+                        f"Components names are not matching; expected {comp_names} "
+                        f"but received {list(pred_lkl_params.components)}",
+                    )
 
         def test_stochastic_inputs(self):
             model = RNNModel(input_chunk_length=5)
