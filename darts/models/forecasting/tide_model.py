@@ -204,7 +204,7 @@ class _TideModule(PLMixedCovariatesModule):
         # future covariates need to be extracted from x and stacked with historical future covariates
         if self.future_cov_dim > 0:
             x_dynamic_covariates = torch.cat(
-                [x_future_covariates, x[:, :, -self.future_cov_dim :]], dim=1
+        [x_future_covariates, x[:, :, None if self.future_cov_dim == 0 else -self.future_cov_dim:]], dim=1
             )
 
             # project input features across all input time steps
@@ -216,7 +216,7 @@ class _TideModule(PLMixedCovariatesModule):
 
         # extract past covariates, if they exist
         if self.input_dim - self.output_dim - self.future_cov_dim > 0:
-            x_past_covariates = x[:, :, self.output_dim : -self.future_cov_dim]
+            x_past_covariates = x[:, :, self.output_dim : None if self.future_cov_dim == 0 else -self.future_cov_dim:]
         else:
             x_past_covariates = None
 
@@ -276,7 +276,7 @@ class TiDEModel(MixedCovariatesTorchModel):
         num_decoder_layers: int = 1,
         decoder_output_dim: int = 16,
         hidden_size: int = 512,
-        temporal_width: int = 128,
+        temporal_width: int = 4,
         temporal_decoder_width: int = 64,
         dropout: float = 0.1,
         use_static_covariates: bool = True,
