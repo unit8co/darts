@@ -81,10 +81,22 @@ class EnsembleModel(GlobalForecastingModel):
             logger,
         )
 
+        model_fit_status = [m._fit_called for m in models]
+        self.all_trained = all(model_fit_status)
+        some_trained = any(model_fit_status)
+
         raise_if(
-            any([m._fit_called for m in models]),
-            "Cannot instantiate EnsembleModel with trained/fitted models. "
-            "Consider resetting all models with `my_model.untrained_model()`",
+            not self.is_global_ensemble and some_trained,
+            "Cannot instantiate EnsembleModel with a mixture of unfitted and fitted models. "
+            "Consider resetting all models with `my_model.untrained_model()` or using only "
+            "trained GlobalForecastingModels.",
+            logger,
+        )
+
+        raise_if(
+            self.is_global_ensemble and not (self.all_trained or not some_trained),
+            "If EnsembleModel is instanciated with only GlobalForecastingModels, they must all be either "
+            "trained or untrained. Consider resetting all models with `my_model.untrained_model()`",
             logger,
         )
 

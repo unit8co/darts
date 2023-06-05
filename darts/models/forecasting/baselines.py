@@ -189,6 +189,10 @@ class NaiveEnsembleModel(EnsembleModel):
             show_warnings=show_warnings,
         )
 
+        # ensemble model initialised with trained global models
+        if self.all_trained:
+            self._fit_called = True
+
     def fit(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],

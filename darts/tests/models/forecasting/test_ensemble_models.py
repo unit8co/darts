@@ -45,7 +45,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         model = NaiveDrift()
         _ = NaiveEnsembleModel([model])
 
-        # trained models should raise error
+        # trained local models should raise error
         model.fit(self.series1)
         with self.assertRaises(ValueError):
             NaiveEnsembleModel([model])
@@ -56,6 +56,32 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         assert model_ens.models[0]._fit_called
         new_model = model_ens.untrained_model()
         assert not new_model.models[0]._fit_called
+
+    def test_trained_models(self):
+        """EnsembleModels can be instantiated with pre-trained GlobalForecastingModels"""
+        local_model = NaiveDrift()
+        global_model = LinearRegressionModel(lags=2)
+        local_model.fit(self.series1)
+        global_model.fit(self.series1)
+
+        # local and global trained
+        with self.assertRaises(ValueError):
+            NaiveEnsembleModel([local_model, global_model])
+
+        # local untrained, global trained
+        with self.assertRaises(ValueError):
+            NaiveEnsembleModel([local_model.untrained_model(), global_model])
+
+        # local trained, global untrained
+        with self.assertRaises(ValueError):
+            NaiveEnsembleModel([local_model, global_model.untrained_model()])
+
+        # global trained, global untrained
+        with self.assertRaises(ValueError):
+            NaiveEnsembleModel([global_model, global_model.untrained_model()])
+
+        model_ens = NaiveEnsembleModel([global_model, global_model])
+        model_ens.predict(1, series=self.series1)
 
     def test_extreme_lag_inference(self):
         ensemble = NaiveEnsembleModel([NaiveDrift()])

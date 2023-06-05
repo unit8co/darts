@@ -86,7 +86,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         ]
 
     @staticmethod
-    def get_global_ensembe_model(output_chunk_length=5):
+    def get_global_ensemble_model(output_chunk_length=5):
         lags = [-1, -2, -5]
         return RegressionEnsembleModel(
             forecasting_models=[
@@ -131,6 +131,33 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         for model in models:
             model.fit(series=self.combined)
             model.predict(10)
+
+    def test_accept_pretrain_global_models(self):
+        linreg1 = LinearRegressionModel(lags=1)
+        linreg2 = LinearRegressionModel(lags=2)
+
+        linreg1.fit(self.lin_series[:30])
+        linreg2.fit(self.lin_series[:30])
+
+        model_ens = RegressionEnsembleModel(
+            [linreg1, linreg2],
+            regression_train_n_points=10,
+        )
+        model_ens.fit(self.sine_series[:45])
+        pred_no_ft = model_ens.predict(5)
+
+        model_ens_ft = RegressionEnsembleModel(
+            [linreg1, linreg2],
+            regression_train_n_points=10,
+        )
+        model_ens_ft.fit(self.sine_series[:45], retrain_forecasting_models=True)
+        pred_ft = model_ens_ft.predict(5)
+
+        # prediction without retraining the forecasting models on the longer ts
+        # is less accurate than with retraining
+        self.assertGreater(
+            rmse(self.lin_series[-5:], pred_no_ft), rmse(self.lin_series[-5:], pred_ft)
+        )
 
     def test_train_n_points(self):
         regr = LinearRegressionModel(lags_future_covariates=[0])
@@ -216,7 +243,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         series_short = series_long[:25]
 
         # train with a single series
-        ensemble_model = self.get_global_ensembe_model()
+        ensemble_model = self.get_global_ensemble_model()
         ensemble_model.fit(series_short, past_covariates=series_long)
         # predict after end of train series
         preds = ensemble_model.predict(n=5, past_covariates=series_long)
@@ -238,7 +265,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         self.assertTrue(isinstance(preds, list) and len(preds) == 1)
 
         # train with multiple series
-        ensemble_model = self.get_global_ensembe_model()
+        ensemble_model = self.get_global_ensemble_model()
         ensemble_model.fit([series_short] * 2, past_covariates=[series_long] * 2)
         with self.assertRaises(ValueError):
             # predict without passing series should raise an error

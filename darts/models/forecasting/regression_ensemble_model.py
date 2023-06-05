@@ -39,6 +39,9 @@ class RegressionEnsembleModel(EnsembleModel):
         If `future_covariates` or `past_covariates` are provided at training or inference time,
         they will be passed only to the forecasting models supporting them.
 
+        If `forecasting_models` contains exclusively GlobalForecastingModels, they can be pre-trained. Otherwise,
+        the `forecasting_models` must be untrained.
+
         The regression model does not leverage the covariates passed to ``fit()`` and ``predict()``.
 
         Parameters
@@ -114,10 +117,37 @@ class RegressionEnsembleModel(EnsembleModel):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        retrain_forecasting_models: bool = False,
     ):
+        """
+        Fits the forecasting models with the entire series except the last `regression_train_n_points` values.
+
+        Parameters
+        ----------
+        series
+            TimeSeries or Sequence[TimeSeries] object containing the target values.
+        past_covariates
+            Optionally, a series or sequence of series specifying past-observed covariates passed to the
+            forecasting models
+        future_covariates
+            Optionally, a series or sequence of series specifying future-known covariates passed to the
+            forecasting models
+        finetune_forecastings_models
+            If set, the `forecasting_models` are retrained on `series`. Only supported if all the `forecasting_models`
+            are pretrained `GlobalForecastingModels`.
+        """
 
         super().fit(
             series, past_covariates=past_covariates, future_covariates=future_covariates
+        )
+
+        raise_if(
+            retrain_forecasting_models
+            and (not self.is_global_ensemble)
+            and (not self.all_trained),
+            "`finetune_forecastings_models=True` is supported only if all the `forecasting_models` are "
+            "already trained `GlobalForecastingModels`.",
+            logger,
         )
 
         # spare train_n_points points to serve as regression target
@@ -144,17 +174,18 @@ class RegressionEnsembleModel(EnsembleModel):
                 self.train_n_points, series
             )
 
-        for model in self.models:
-            # maximize covariate usage
-            model._fit_wrapper(
-                series=forecast_training,
-                past_covariates=past_covariates
-                if model.supports_past_covariates
-                else None,
-                future_covariates=future_covariates
-                if model.supports_future_covariates
-                else None,
-            )
+        if (not self.all_trained) or retrain_forecasting_models:
+            for model in self.models:
+                # maximize covariate usage
+                model._fit_wrapper(
+                    series=forecast_training,
+                    past_covariates=past_covariates
+                    if model.supports_past_covariates
+                    else None,
+                    future_covariates=future_covariates
+                    if model.supports_future_covariates
+                    else None,
+                )
 
         predictions = self._make_multiple_predictions(
             n=self.train_n_points,
