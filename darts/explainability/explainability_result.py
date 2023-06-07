@@ -9,7 +9,6 @@ from abc import ABC
 from typing import Any, Dict, Optional, Sequence, Union
 
 import shap
-from numpy import integer
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not
@@ -26,8 +25,8 @@ class ExplainabilityResult(ABC):
     def __init__(
         self,
         explained_forecasts: Union[
-            Dict[integer, Dict[str, TimeSeries]],
-            Sequence[Dict[integer, Dict[str, TimeSeries]]],
+            Dict[int, Dict[str, TimeSeries]],
+            Sequence[Dict[int, Dict[str, TimeSeries]]],
         ],
     ):
         self.explained_forecasts = explained_forecasts
@@ -61,9 +60,7 @@ class ExplainabilityResult(ABC):
 
     def _query_explainability_result(
         self,
-        attr: Union[
-            Dict[integer, Dict[str, Any]], Sequence[Dict[integer, Dict[str, Any]]]
-        ],
+        attr: Union[Dict[int, Dict[str, Any]], Sequence[Dict[int, Dict[str, Any]]]],
         horizon: int,
         component: Optional[str] = None,
     ) -> Any:
@@ -141,16 +138,16 @@ class ShapExplainabilityResult(ExplainabilityResult):
     def __init__(
         self,
         explained_forecasts: Union[
-            Dict[integer, Dict[str, TimeSeries]],
-            Sequence[Dict[integer, Dict[str, TimeSeries]]],
+            Dict[int, Dict[str, TimeSeries]],
+            Sequence[Dict[int, Dict[str, TimeSeries]]],
         ],
         feature_values: Union[
-            Dict[integer, Dict[str, TimeSeries]],
-            Sequence[Dict[integer, Dict[str, TimeSeries]]],
+            Dict[int, Dict[str, TimeSeries]],
+            Sequence[Dict[int, Dict[str, TimeSeries]]],
         ],
         shap_explanation_object: Union[
-            Dict[integer, Dict[str, shap.Explanation]],
-            Sequence[Dict[integer, Dict[str, shap.Explanation]]],
+            Dict[int, Dict[str, shap.Explanation]],
+            Sequence[Dict[int, Dict[str, shap.Explanation]]],
         ],
     ):
         super().__init__(explained_forecasts)

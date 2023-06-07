@@ -12,7 +12,7 @@ import numpy as np
 from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import (
-    GlobalForecastingModel,
+    ForecastingModel,
     LocalForecastingModel,
 )
 from darts.timeseries import TimeSeries
@@ -78,10 +78,6 @@ class NaiveSeasonal(LocalForecastingModel):
         super().predict(n, num_samples)
         forecast = np.array([self.last_k_vals[i % self.K, :] for i in range(n)])
         return self._build_forecast_series(forecast)
-
-    @property
-    def extreme_lags(self):
-        return (-self.K, 1, None, None, None)
 
 
 class NaiveDrift(LocalForecastingModel):
@@ -167,14 +163,31 @@ class NaiveMovingAverage(LocalForecastingModel):
 
 class NaiveEnsembleModel(EnsembleModel):
     def __init__(
-        self, models: Union[List[LocalForecastingModel], List[GlobalForecastingModel]]
+        self,
+        models: List[ForecastingModel],
+        show_warnings: bool = True,
     ):
         """Naive combination model
 
         Naive implementation of `EnsembleModel`
         Returns the average of all predictions of the constituent models
+
+        If `future_covariates` or `past_covariates` are provided at training or inference time,
+        they will be passed only to the models supporting them.
+
+        Parameters
+        ----------
+        models
+            List of forecasting models whose predictions to ensemble
+        show_warnings
+            Whether to show warnings related to models covariates support.
         """
-        super().__init__(models)
+        super().__init__(
+            models=models,
+            train_num_samples=None,
+            train_samples_reduction=None,
+            show_warnings=show_warnings,
+        )
 
     def fit(
         self,
@@ -182,22 +195,18 @@ class NaiveEnsembleModel(EnsembleModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     ):
-
         super().fit(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
         for model in self.models:
-            if self.is_global_ensemble:
-                kwargs = dict(series=series)
-                if model.supports_past_covariates:
-                    kwargs["past_covariates"] = past_covariates
-                if model.supports_future_covariates:
-                    kwargs["future_covariates"] = future_covariates
-                model.fit(**kwargs)
-            else:
-                model.fit(series=series)
+            kwargs = dict(series=series)
+            if model.supports_past_covariates:
+                kwargs["past_covariates"] = past_covariates
+            if model.supports_future_covariates:
+                kwargs["future_covariates"] = future_covariates
+            model.fit(**kwargs)
 
         return self
 
@@ -205,11 +214,13 @@ class NaiveEnsembleModel(EnsembleModel):
         self,
         predictions: Union[TimeSeries, Sequence[TimeSeries]],
         series: Optional[Sequence[TimeSeries]] = None,
+        num_samples: int = 1,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         def take_average(prediction: TimeSeries) -> TimeSeries:
-            series = prediction.pd_dataframe(copy=False).sum(axis=1) / len(self.models)
-            series.name = prediction.components[0]
-            return TimeSeries.from_series(series)
+            # average across the components, keep n_samples, rename components
+            return prediction.mean(axis=1).with_columns_renamed(
+                "components_mean", prediction.components[0]
+            )
 
         if isinstance(predictions, Sequence):
             return [take_average(p) for p in predictions]

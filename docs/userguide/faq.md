@@ -2,8 +2,7 @@
 
 - *Is Darts just a wrapper around other libraries?*
 
-  No. When it makes sense, we reuse existing implementations (e.g. from statsforecasts), but we often write our 
-  own implementations (e.g., of neural networks). Furthermore, Darts models often have more features than their original counter-parts. For instance, unlike the original version, our implementation of N-BEATS supports multivariate time series, past covariates, and probabilistic forecasts.
+  No. When it makes sense, we reuse existing implementations (e.g. from statsforecasts), but we often write our own implementations (e.g., of neural networks). Furthermore, Darts models often have more features than their original counter-parts. For instance, unlike the original version, our implementation of N-BEATS supports multivariate time series, past covariates, and probabilistic forecasts.
 
 - *Darts looks like an awesome project, can I contribute?*
 
@@ -23,10 +22,8 @@
 - *I'm getting some NaNs in my forecasts, what should I do?*
 
   Usually this means one of two things:
-  - You have some NaNs in your training data (targets or covariates). This is the most frequent situation, and it will lead most models
-    to always forecast NaNs.
-  - Training the model causes some numerical divergence. If you're working with neural networks, make sure your data is properly scaled, and if the issue
-    persists, try reducing the learning rate.
+  - You have some NaNs in your training `TimeSeries` (targets or covariates). This is the most frequent situation, and it will lead most models to always forecast NaNs. Note that NaNs can be introduced when you convert data from a `pd.DataFrame` into a `TimeSeries` if some dates are missing and the `freq` argument is incorrectly set.
+  - Training the model causes some numerical divergence. If you're working with neural networks, make sure your data is properly scaled, and if the issue persists, try reducing the learning rate.
 
 - *My forecasting models give bad results, can you help?*
 
