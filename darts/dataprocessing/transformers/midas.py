@@ -2,7 +2,7 @@
 Mixed-data sampling (MIDAS) Transformer
 ------------------
 """
-from typing import Any, Mapping
+from typing import Any, Mapping, Union
 
 import numpy as np
 import pandas as pd
@@ -10,7 +10,7 @@ from pandas import DatetimeIndex
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import InvertibleDataTransformer
-from darts.logging import get_logger, raise_if, raise_if_not
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 
 logger = get_logger(__name__)
 
@@ -19,7 +19,7 @@ class MIDAS(InvertibleDataTransformer):
     def __init__(
         self,
         rule: str,
-        strip: bool = False,
+        strip: bool = True,
         name: str = "MIDASTransformer",
         n_jobs: int = 1,
         verbose: bool = False,
@@ -101,11 +101,8 @@ class MIDAS(InvertibleDataTransformer):
             (4) Transform every column of the high frequency series into multiple columns for the low frequency series
             (5) Transform the low frequency series back into a TimeSeries
         """
-        # MIDAS is non-invertible for multivariate series
         MIDAS._verify_series(series)
-
         rule, strip = params["fixed"]["_rule"], params["fixed"]["_strip"]
-        high_freq_datetime = series.freq_str
 
         # TimeSeries to pd.DataFrame
         series_df = series.pd_dataframe(copy=True)
@@ -113,6 +110,7 @@ class MIDAS(InvertibleDataTransformer):
         series_copy_df = series_df.copy()
 
         # get high frequency string that's suitable for PeriodIndex
+        high_freq_datetime = series.freq_str
         high_freq_period = series_df.index.to_period().freqstr
 
         # downsample
@@ -162,54 +160,101 @@ class MIDAS(InvertibleDataTransformer):
         if strip:
             midas_ts = midas_ts.strip()
 
+        # components: comp0_0, comp1_0, comp0_1, comp1_1, ...
         return midas_ts
 
     @staticmethod
     def ts_inverse_transform(
-        series: TimeSeries, params: Mapping[str, Any]
+        series: TimeSeries,
+        params: Mapping[str, Any],
+        offset: Union[pd.Timedelta, str] = None,
     ) -> TimeSeries:
         """
-        Transforms series back to high frequency
+        Transforms series back to high frequency by retrieving the original high frequency and reshaping the values.
+        When converting to/from anchorable offset [1]_, the original time index is not garanteed to be restored.
+
+        Steps:
+            (1) Reshape the values to eliminate the components introduced by the transform
+            (2) Identify ratio between the low frequency and the original high frequency
+            (3) Generate a new time index with the high frequency
+            (4) When applicable, shift the time index back in time to adjust the start date
+
+        Parameters
+        ----------
+        offset
+            If set, shift the new TimeSeries time index back in time.
+
+        References
+        ----------
+        .. [1] https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#anchored-offsets
         """
-        MIDAS._verify_series(series, check_multivariate=False)
+        MIDAS._verify_series(series)
 
-        start_time = series.start_time()
-        # extract array from ts & flatten components dimension
-        series_values = series.values().flatten()
+        # retrieve the number of component introduced by midas
+        n_midas_components = int(series.components[-1].split("_")[-1]) + 1
+        series_n_components = series.n_components
 
-        # retrieve the original high-freq from the number of components
-        n_components = series.n_components
+        # original ts was univariate
+        if n_midas_components == series_n_components:
+            n_orig_components = 1
+            series_values = series.values().flatten()
+        else:
+            n_orig_components = series_n_components // n_midas_components
+            series_values = series.values().reshape((-1, n_orig_components))
+
+        # retrieve original components name by removing the "_0" suffix
+        component_names = [
+            series.components[i][:-2] for i in range(0, n_orig_components)
+        ]
+
         low_freq_name = series.freq_str
 
-        # cannot be reversed numerically from the low-freq offset
+        # remove anchor, not recognized by pd.Timedelta
+        if "-" in low_freq_name:
+            low_freq_name = low_freq_name.split("-")[0]
+
+        # Quarter period cannot be reversed numerically
         if "Q" in low_freq_name:
             high_freq_name = "M"
-            # correct the shift when necessary
-            if "S" not in low_freq_name:
-                start_time -= pd.DateOffset(months=n_components - 1)
+            # introduce shift to account for the extension
+            if "S" not in low_freq_name and offset is None:
+                offset = pd.DateOffset(months=n_midas_components - 1)
         else:
-            # low_timedelta: pd.Timedelta = series.time_index[1] - series.time_index[0]
             low_timedelta = pd.Timedelta(value=1, unit=low_freq_name)
-            high_timedelta = low_timedelta / n_components
+            high_timedelta = low_timedelta / n_midas_components
             high_freq_name = high_timedelta.resolution_string
+
+        start_time = series.start_time()
+        if offset is None:
+            pass
+        elif isinstance(offset, str):
+            start_time -= pd.Timedelta(offset)
+        elif isinstance(offset, (pd.Timedelta, pd.DateOffset)):
+            start_time -= offset
+        else:
+            raise_log(
+                ValueError(
+                    f"`offset` but be either `None`, `str` or `pd.Timedelta, received "
+                    f"{type(offset)}."
+                ),
+                logger,
+            )
 
         new_times = pd.date_range(
             start=start_time, periods=len(series_values), freq=high_freq_name
         )
 
-        # retrieve component name
-        component_name = series.components[-1][: -len(f"_{n_components}")]
-
+        # do not apply strip to make the offset behave more intuitively
         return TimeSeries.from_times_and_values(
             times=new_times,
             values=series_values,
             freq=high_freq_name,
-            columns=[component_name],
+            columns=component_names,
             static_covariates=series.static_covariates,
         )
 
     @staticmethod
-    def _verify_series(series: TimeSeries, check_multivariate: bool = True):
+    def _verify_series(series: TimeSeries):
         raise_if(
             series.is_probabilistic,
             "MIDAS Transformer cannot be applied to probabilistic/stochastic TimeSeries",
@@ -222,13 +267,6 @@ class MIDAS(InvertibleDataTransformer):
             logger,
         )
 
-        if check_multivariate:
-            raise_if(
-                series.n_components > 1,
-                "MIDAS Transformer cannot be applied to multivariate TimeSeries",
-                logger,
-            )
-
 
 def _create_midas_df(
     series_df: pd.DataFrame,
@@ -240,16 +278,15 @@ def _create_midas_df(
     # calculate the multiple
     n_high = series_df.shape[0]
     n_low = len(low_index_datetime)
-    multiple = n_high / n_low
 
     raise_if_not(
-        multiple.is_integer(),
+        n_high % n_low == 0,
         "The frequency of the high frequency input series should be an exact multiple of the targeted"
         "low frequency output. For example, you could go from a monthly series to a quarterly series.",
         logger,
     )
 
-    multiple = int(multiple)
+    multiple = n_high // n_low
 
     # set up integer index
     range_lst = list(range(n_high))
@@ -262,7 +299,7 @@ def _create_midas_df(
         range_lst_tmp = range_lst[f:][0::multiple]
         series_tmp_df = series_df.iloc[range_lst_tmp, :]
         series_tmp_df.index = low_index_datetime
-        col_names_tmp = [col_name + f"_{f}" for col_name in col_names]
+        col_names_tmp = [f"{col_name}_{f}" for col_name in col_names]
         rename_dict_tmp = dict(zip(col_names, col_names_tmp))
         midas_lst += [series_tmp_df.rename(columns=rename_dict_tmp)]
 
