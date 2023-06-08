@@ -9,17 +9,17 @@ import pandas as pd
 from pandas import DatetimeIndex
 
 from darts import TimeSeries
-from darts.dataprocessing.transformers import BaseDataTransformer
-from darts.logging import get_logger, raise_log
+from darts.dataprocessing.transformers import InvertibleDataTransformer
+from darts.logging import get_logger, raise_if, raise_if_not
 
 logger = get_logger(__name__)
 
 
-class MIDAS(BaseDataTransformer):
+class MIDAS(InvertibleDataTransformer):
     def __init__(
         self,
         rule: str,
-        strip: bool = True,
+        strip: bool = False,
         name: str = "MIDASTransformer",
         n_jobs: int = 1,
         verbose: bool = False,
@@ -101,20 +101,23 @@ class MIDAS(BaseDataTransformer):
             (4) Transform every column of the high frequency series into multiple columns for the low frequency series
             (5) Transform the low frequency series back into a TimeSeries
         """
+        # MIDAS is non-invertible for multivariate series
+        MIDAS._verify_series(series)
+
         rule, strip = params["fixed"]["_rule"], params["fixed"]["_strip"]
         high_freq_datetime = series.freq_str
 
         # TimeSeries to pd.DataFrame
-        series_df = series.pd_dataframe()
+        series_df = series.pd_dataframe(copy=True)
+        # TODO: get ride of the double copy?
         series_copy_df = series_df.copy()
 
         # get high frequency string that's suitable for PeriodIndex
-        series_period_index_df = series_df.copy()
-        series_period_index_df.index = series_df.index.to_period()
-        high_freq_period = series_period_index_df.index.freqstr
+        high_freq_period = series_df.index.to_period().freqstr
 
         # downsample
         low_freq_series_df = series_df.resample(rule).last()
+        # save the downsampled index
         low_index_datetime = low_freq_series_df.index
 
         # upsample again to get full range of high freq periods for every low freq period
@@ -130,12 +133,12 @@ class MIDAS(BaseDataTransformer):
             **args_to_timestamp
         )
 
-        # check if user requested a transform from a high to a low frequency (otherwise raise an error)
-        _assert_high_to_low_freq(
-            high_freq_series_df=high_freq_series_df,
-            low_freq_series_df=low_freq_series_df,
-            rule=rule,
-            high_freq=high_freq_datetime,
+        raise_if_not(
+            low_freq_series_df.shape[0] < high_freq_series_df.shape[0],
+            f"The target conversion should go from a high to a "
+            f"low frequency, instead the targeted frequency is "
+            f"{rule}, while the original frequency is {high_freq_datetime}.",
+            logger,
         )
 
         # if necessary, expand the original series
@@ -152,30 +155,79 @@ class MIDAS(BaseDataTransformer):
         )
 
         # back to TimeSeries
-        midas_ts = TimeSeries.from_dataframe(midas_df)
+        midas_ts = TimeSeries.from_dataframe(
+            midas_df,
+            static_covariates=series.static_covariates,
+        )
         if strip:
             midas_ts = midas_ts.strip()
 
         return midas_ts
 
+    @staticmethod
+    def ts_inverse_transform(
+        series: TimeSeries, params: Mapping[str, Any]
+    ) -> TimeSeries:
+        """
+        Transforms series back to high frequency
+        """
+        MIDAS._verify_series(series, check_multivariate=False)
 
-def _assert_high_to_low_freq(
-    high_freq_series_df: pd.DataFrame,
-    low_freq_series_df: pd.DataFrame,
-    rule,
-    high_freq,
-):
-    """
-    Asserts that the lower frequency series really has a lower frequency then the assumed higher frequency series.
-    """
-    if not low_freq_series_df.shape[0] < high_freq_series_df.shape[0]:
-        raise_log(
-            ValueError(
-                f"The target conversion should go from a high to a "
-                f"low frequency, instead the targeted frequency is "
-                f"{rule}, while the original frequency is {high_freq}."
-            )
+        start_time = series.start_time()
+        # extract array from ts & flatten components dimension
+        series_values = series.values().flatten()
+
+        # retrieve the original high-freq from the number of components
+        n_components = series.n_components
+        low_freq_name = series.freq_str
+
+        # cannot be reversed numerically from the low-freq offset
+        if "Q" in low_freq_name:
+            high_freq_name = "M"
+            # correct the shift when necessary
+            if "S" not in low_freq_name:
+                start_time -= pd.DateOffset(months=n_components - 1)
+        else:
+            # low_timedelta: pd.Timedelta = series.time_index[1] - series.time_index[0]
+            low_timedelta = pd.Timedelta(value=1, unit=low_freq_name)
+            high_timedelta = low_timedelta / n_components
+            high_freq_name = high_timedelta.resolution_string
+
+        new_times = pd.date_range(
+            start=start_time, periods=len(series_values), freq=high_freq_name
         )
+
+        # retrieve component name
+        component_name = series.components[-1][: -len(f"_{n_components}")]
+
+        return TimeSeries.from_times_and_values(
+            times=new_times,
+            values=series_values,
+            freq=high_freq_name,
+            columns=[component_name],
+            static_covariates=series.static_covariates,
+        )
+
+    @staticmethod
+    def _verify_series(series: TimeSeries, check_multivariate: bool = True):
+        raise_if(
+            series.is_probabilistic,
+            "MIDAS Transformer cannot be applied to probabilistic/stochastic TimeSeries",
+            logger,
+        )
+
+        raise_if_not(
+            isinstance(series.time_index, pd.DatetimeIndex),
+            "MIDAS input series must have a pd.Datetime index",
+            logger,
+        )
+
+        if check_multivariate:
+            raise_if(
+                series.n_components > 1,
+                "MIDAS Transformer cannot be applied to multivariate TimeSeries",
+                logger,
+            )
 
 
 def _create_midas_df(
@@ -183,22 +235,21 @@ def _create_midas_df(
     low_index_datetime: DatetimeIndex,
 ) -> pd.DataFrame:
     """
-    Function for actually creating the lower frequency dataframe out of a higher frequency dataframe.
+    Function creating the lower frequency dataframe out of a higher frequency dataframe.
     """
     # calculate the multiple
     n_high = series_df.shape[0]
     n_low = len(low_index_datetime)
     multiple = n_high / n_low
 
-    if not multiple.is_integer():
-        raise_log(
-            ValueError(
-                "The frequency of the high frequency input series should be an exact multiple of the targeted"
-                "low frequency output. For example, you could go from a monthly series to a quarterly series."
-            )
-        )
-    else:
-        multiple = int(multiple)
+    raise_if_not(
+        multiple.is_integer(),
+        "The frequency of the high frequency input series should be an exact multiple of the targeted"
+        "low frequency output. For example, you could go from a monthly series to a quarterly series.",
+        logger,
+    )
+
+    multiple = int(multiple)
 
     # set up integer index
     range_lst = list(range(n_high))

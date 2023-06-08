@@ -24,7 +24,6 @@ class MIDASTestCase(unittest.TestCase):
         columns=["values_0", "values_1", "values_2"],
     )
 
-    quarterly_values = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
     quarterly_end_times = pd.date_range(start="01-2020", periods=3, freq="Q")
     quarterly_with_quarter_end_index_ts = TimeSeries.from_times_and_values(
         times=quarterly_end_times,
@@ -35,7 +34,6 @@ class MIDASTestCase(unittest.TestCase):
     quarterly_not_complete_values = np.array(
         [[np.nan, np.nan, 3], [4, 5, 6], [7, 8, np.nan]]
     )
-    quarterly_times = pd.date_range(start="01-2020", periods=3, freq="QS")
     quarterly_not_complete_ts = TimeSeries.from_times_and_values(
         times=quarterly_times,
         values=quarterly_not_complete_values,
@@ -66,40 +64,75 @@ class MIDASTestCase(unittest.TestCase):
         """
         Tests if monthly series is transformed into a quarterly series in the expected way.
         """
-        # 'complete' monthly series
+        # to quarter start
         midas_1 = MIDAS(rule="QS")
-        quarterly_midas_ts = midas_1.transform(self.monthly_ts)
+        quarterly_ts_midas = midas_1.transform(self.monthly_ts)
         self.assertEqual(
-            quarterly_midas_ts,
+            quarterly_ts_midas,
             self.quarterly_ts,
             "Monthly TimeSeries is not correctly transformed "
             "into a quarterly TimeSeries.",
         )
 
-        # 'complete' monthly series
-        midas_2 = MIDAS(rule="Q")
-        quarterly_midas_ts = midas_2.transform(self.monthly_ts)
+        inversed_quarterly_ts_midas = midas_1.inverse_transform(quarterly_ts_midas)
         self.assertEqual(
-            quarterly_midas_ts,
+            self.monthly_ts,
+            inversed_quarterly_ts_midas,
+            "Quarterly TimeSeries is not correctly inverse_transformed "
+            "back into into a monthly TimeSeries.",
+        )
+
+        # to quarter end
+        midas_2 = MIDAS(rule="Q")
+        quarterly_ts_midas = midas_2.transform(self.monthly_ts)
+        self.assertEqual(
+            quarterly_ts_midas,
             self.quarterly_with_quarter_end_index_ts,
             "Monthly TimeSeries is not correctly transformed "
             "into a quarterly TimeSeries. Specifically, when the rule requires an QuarterEnd index.",
+        )
+
+        inversed_quarterly_ts_midas = midas_2.inverse_transform(quarterly_ts_midas)
+        self.assertEqual(
+            self.monthly_ts,
+            inversed_quarterly_ts_midas,
+            "Quarterly TimeSeries is not correctly inverse_transformed "
+            "back into into a monthly TimeSeries.",
         )
 
     def test_not_complete_monthly_to_quarterly(self):
         """
         Tests if a not 'complete' monthly series is transformed into a quarterly series in the expected way.
         """
-        # not 'complete' monthly series
+        # monthly series with missing values
         midas = MIDAS(rule="QS", strip=False)
-        quarterly_midas_not_complete_ts = midas.transform(self.monthly_not_complete_ts)
+        quarterly_not_complete_ts_midas = midas.transform(self.monthly_not_complete_ts)
         self.assertEqual(
-            quarterly_midas_not_complete_ts,
+            quarterly_not_complete_ts_midas,
             self.quarterly_not_complete_ts,
             "Monthly TimeSeries is not "
             "correctly transformed when"
             " it is not 'complete'.",
         )
+        inversed_quarterly_not_complete_ts_midas = midas.inverse_transform(
+            quarterly_not_complete_ts_midas
+        )
+        self.assertEqual(
+            self.monthly_not_complete_ts,
+            inversed_quarterly_not_complete_ts_midas.strip(),
+            "Quarterly TimeSeries is not correctly inverse_transformed "
+            "back into into a monthly TimeSeries with missing values.",
+        )
+
+    def test_from_second_to_minute(self):
+        """
+        Test to see if other frequencies transforms like second to minute work as well.
+        """
+        midas = MIDAS(rule="T")
+        minute_ts_midas = midas.transform(self.second_ts)
+        self.assertEqual(minute_ts_midas, self.minute_ts)
+        second_ts_midas = midas.inverse_transform(minute_ts_midas)
+        self.assertEqual(second_ts_midas, self.second_ts)
 
     def test_error_when_from_low_to_high(self):
         """
@@ -122,10 +155,3 @@ class MIDASTestCase(unittest.TestCase):
         """
         midas = MIDAS(rule="M")
         self.assertRaises(ValueError, midas.transform, self.daily_ts)
-
-    def test_from_second_to_minute(self):
-        """
-        Test to see if other frequencies transforms like second to minute work as well.
-        """
-        midas = MIDAS(rule="T")
-        self.assertEqual(midas.transform(self.second_ts), self.minute_ts)
