@@ -524,7 +524,7 @@ class ElectricityDataset(DatasetLoaderCSV):
         super().__init__(
             metadata=DatasetLoaderMetadata(
                 "Electricity.csv",
-                uri="https://archive.ics.uci.edu/ml/machine-learning-databases/00321/LD2011_2014.txt.zip",
+                uri="https://archive.ics.uci.edu/static/public/321/electricityloaddiagrams20112014.zip",
                 hash="acfe6783eea43905e510f537add940fd",
                 header_time="Unnamed: 0",
                 format_time="%Y-%m-%d %H:%M:%S",
