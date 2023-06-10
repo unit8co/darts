@@ -224,6 +224,43 @@ if TORCH_AVAILABLE:
                 model_chained_load_save.predict(n=4), model_manual_save.predict(n=4)
             )
 
+        def test_valid_save_and_load_weights_with_different_params(self):
+            """
+            Verify that save/load does not break encoders.
+
+            Note: since load_weights() calls load_weights_from_checkpoint(), it will be used
+            for all but one test.
+            Note: Using DLinear since it supports both past and future covariates
+            """
+
+            def create_model(**kwargs):
+                return DLinearModel(
+                    input_chunk_length=4, output_chunk_length=1, **kwargs
+                )
+
+            model_dir = os.path.join(self.temp_work_dir)
+            manual_name = "save_manual"
+            # create manually saved model checkpoints folder
+            checkpoint_path_manual = os.path.join(model_dir, manual_name)
+            os.mkdir(checkpoint_path_manual)
+            checkpoint_file_name = "checkpoint_0.pth.tar"
+            model_path_manual = os.path.join(
+                checkpoint_path_manual, checkpoint_file_name
+            )
+            model = create_model()
+            model.fit(self.series, epochs=1)
+            model.save(model_path_manual)
+
+            kwargs_valid = [
+                {"optimizer_cls": torch.optim.SGD},
+                {"optimizer_kwargs": {"lr": 0.1}},
+                {"pl_trainer_kwargs": {"accelerator": "cpu"}},
+            ]
+            # check that all models can be created with different valid kwargs
+            for kwargs_ in kwargs_valid:
+                model_new = create_model(**kwargs_)
+                model_new.load_weights(model_path_manual)
+
         def test_save_and_load_weights_w_encoders(self):
             """
             Verify that save/load does not break encoders.
