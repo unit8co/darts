@@ -1784,7 +1784,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # verify that the arguments passed to the constructor match those of the checkpoint
         # add_encoders is checked in _load_encoders()
-        skipped_params = ["add_encoders"]
+        skipped_params = list(
+            inspect.signature(TorchForecastingModel.__init__).parameters.keys()
+        ) + [
+            "loss_fn",
+            "torch_metrics",
+            "optimizer_cls",
+            "optimizer_kwargs",
+            "lr_scheduler_cls",
+            "lr_scheduler_kwargs",
+        ]
         for param_key, param_value in self.model_params.items():
             # TODO: there are discrepancies between the param names, for ex num_layer/n_rnn_layers
             if (
