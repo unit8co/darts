@@ -152,32 +152,40 @@ class _TideModule(PLMixedCovariatesModule):
         )
 
         self.encoders = nn.Sequential(
+         _ResidualBlock(
+                    input_dim=encoder_dim,
+                    output_dim=hidden_size,
+                    hidden_size=hidden_size,
+                    dropout=dropout,
+                ),
             *[
                 _ResidualBlock(
-                    input_dim=encoder_dim,
-                    output_dim=encoder_dim,
+                    input_dim=hidden_size,
+                    output_dim=hidden_size,
                     hidden_size=hidden_size,
                     dropout=dropout,
                 )
-                for _ in range(num_encoder_layers)
+                for _ in range(num_encoder_layers-1)
             ]
         )
 
         self.decoders = nn.Sequential(
             *[
                 _ResidualBlock(
-                    input_dim=encoder_dim,
-                    output_dim=encoder_dim,
+                    input_dim=hidden_size,
+                    output_dim=hidden_size,
                     hidden_size=hidden_size,
                     dropout=dropout,
                 )
-                for _ in range(num_decoder_layers)
+                for _ in range(num_decoder_layers-1)
             ],
             # add decoder output layer
-            nn.Linear(
-                encoder_dim,
-                decoder_output_dim * self.output_chunk_length * self.nr_params,
-            ),
+            _ResidualBlock(
+                    input_dim=hidden_size,
+                    output_dim=decoder_output_dim * self.output_chunk_length * self.nr_params,
+                    hidden_size=hidden_size,
+                    dropout=dropout,
+                )
         )
 
         self.temporal_decoder = _ResidualBlock(
