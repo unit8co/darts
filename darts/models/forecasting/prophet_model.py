@@ -186,6 +186,8 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 name=seasonality_name,
                 period=attributes["seasonal_periods"] * interval_length,
                 fourier_order=attributes["fourier_order"],
+                prior_scale=attributes["prior_scale"],
+                mode=attributes["mode"],
             )
 
         # add covariates
