@@ -83,9 +83,9 @@ class FittableDataTransformer(BaseDataTransformer):
         of fitted parameters.
 
         Note that if an invertible *and* fittable data transformer is to be globally fitted, the data transformer
-        class should first inherit from `FittableDataTransformer` and then from `InveritibleDataTransformer`. In
-        other words, `MyTransformer(FittableDataTransformer, InveritibleDataTransformer)` is correct, but
-        `MyTransformer(InveritibleDataTransformer, FittableDataTransformer)` is **not**. If this is not implemented
+        class should first inherit from `FittableDataTransformer` and then from `InvertibleDataTransformer`. In
+        other words, `MyTransformer(FittableDataTransformer, InvertibleDataTransformer)` is correct, but
+        `MyTransformer(InvertibleDataTransformer, FittableDataTransformer)` is **not**. If this is not implemented
         correctly, then the `global_fit` parameter will not be correctly passed to `FittableDataTransformer`'s
         constructor.
 

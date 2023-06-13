@@ -136,7 +136,7 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         params: Mapping[str, Any],
         *args,
         **kwargs
-    ) -> Union[Sequence[float], pd.core.series.Series]:
+    ) -> Union[Sequence[float], pd.Series]:
         lmbda, method = params["fixed"]["_lmbda"], params["fixed"]["_optim_method"]
         # If `global_fit` is `True`, then `series` will be ` Sequence[TimeSeries]`;
         # otherwise, `series` is a single `TimeSeries`:

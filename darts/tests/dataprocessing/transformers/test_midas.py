@@ -66,7 +66,7 @@ class MIDASTestCase(unittest.TestCase):
         """
         # to quarter start
         midas_1 = MIDAS(rule="QS")
-        quarterly_ts_midas = midas_1.transform(self.monthly_ts)
+        quarterly_ts_midas = midas_1.fit_transform(self.monthly_ts)
         self.assertEqual(
             quarterly_ts_midas,
             self.quarterly_ts,
@@ -84,7 +84,7 @@ class MIDASTestCase(unittest.TestCase):
 
         # to quarter end
         midas_2 = MIDAS(rule="Q")
-        quarterly_ts_midas = midas_2.transform(self.monthly_ts)
+        quarterly_ts_midas = midas_2.fit_transform(self.monthly_ts)
         self.assertEqual(
             quarterly_ts_midas,
             self.quarterly_with_quarter_end_index_ts,
@@ -106,7 +106,9 @@ class MIDASTestCase(unittest.TestCase):
         """
         # monthly series with missing values
         midas = MIDAS(rule="QS", strip=False)
-        quarterly_not_complete_ts_midas = midas.transform(self.monthly_not_complete_ts)
+        quarterly_not_complete_ts_midas = midas.fit_transform(
+            self.monthly_not_complete_ts
+        )
         self.assertEqual(
             quarterly_not_complete_ts_midas,
             self.quarterly_not_complete_ts,
@@ -129,7 +131,7 @@ class MIDASTestCase(unittest.TestCase):
         Test to see if other frequencies transforms like second to minute work as well.
         """
         midas = MIDAS(rule="T")
-        minute_ts_midas = midas.transform(self.second_ts)
+        minute_ts_midas = midas.fit_transform(self.second_ts)
         self.assertEqual(minute_ts_midas, self.minute_ts)
         second_ts_midas = midas.inverse_transform(minute_ts_midas)
         self.assertEqual(second_ts_midas, self.second_ts)
@@ -140,11 +142,11 @@ class MIDASTestCase(unittest.TestCase):
         """
         # wrong direction / low to high freq
         midas_1 = MIDAS(rule="M")
-        self.assertRaises(ValueError, midas_1.transform, self.quarterly_ts)
+        self.assertRaises(ValueError, midas_1.fit_transform, self.quarterly_ts)
 
         # transform to same index requested
         midas_2 = MIDAS(rule="Q")
-        self.assertRaises(ValueError, midas_2.transform, self.quarterly_ts)
+        self.assertRaises(ValueError, midas_2.fit_transform, self.quarterly_ts)
 
     def test_error_when_frequency_not_suitable_for_midas(self):
         """
@@ -154,4 +156,4 @@ class MIDASTestCase(unittest.TestCase):
         impossible.
         """
         midas = MIDAS(rule="M")
-        self.assertRaises(ValueError, midas.transform, self.daily_ts)
+        self.assertRaises(ValueError, midas.fit_transform, self.daily_ts)

@@ -2,20 +2,23 @@
 Mixed-data sampling (MIDAS) Transformer
 ------------------
 """
-from typing import Any, Mapping, Union
+from typing import Any, Dict, List, Mapping, Sequence, Union
 
 import numpy as np
 import pandas as pd
 from pandas import DatetimeIndex
 
 from darts import TimeSeries
-from darts.dataprocessing.transformers import InvertibleDataTransformer
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.dataprocessing.transformers import (
+    FittableDataTransformer,
+    InvertibleDataTransformer,
+)
+from darts.logging import get_logger, raise_if, raise_if_not
 
 logger = get_logger(__name__)
 
 
-class MIDAS(InvertibleDataTransformer):
+class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
     def __init__(
         self,
         rule: str,
@@ -86,7 +89,35 @@ class MIDAS(InvertibleDataTransformer):
         """
         self._rule = rule
         self._strip = strip
-        super().__init__(name, n_jobs, verbose)
+        # Original high frequency should be fitted on TimeSeries independently
+        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose, global_fit=False)
+
+    @staticmethod
+    def ts_fit(
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        params: Mapping[str, Any],
+        *args,
+        **kwargs,
+    ) -> List[Dict[str, str]]:
+        """MIDAS needs the high frequency period name in order to easily reverse_transform
+        TimeSeries, the parallelization is handled by `transform` and/or `inverse_transform`
+        (see InvertibleDataTransformer.__init__() docstring).
+        """
+        is_single_series = isinstance(series, TimeSeries)
+
+        if is_single_series:
+            series = [series]
+
+        fitted_params = [
+            {
+                "high_freq_name": ts.freq_str,
+                "start": ts.start_time(),
+                "end": ts.end_time(),
+            }
+            for ts in series
+        ]
+
+        return fitted_params[0] if is_single_series else fitted_params
 
     @staticmethod
     def ts_transform(series: TimeSeries, params: Mapping[str, Any]) -> TimeSeries:
@@ -167,7 +198,6 @@ class MIDAS(InvertibleDataTransformer):
     def ts_inverse_transform(
         series: TimeSeries,
         params: Mapping[str, Any],
-        offset: Union[pd.Timedelta, str] = None,
     ) -> TimeSeries:
         """
         Transforms series back to high frequency by retrieving the original high frequency and reshaping the values.
@@ -179,16 +209,15 @@ class MIDAS(InvertibleDataTransformer):
             (3) Generate a new time index with the high frequency
             (4) When applicable, shift the time index back in time to adjust the start date
 
-        Parameters
-        ----------
-        offset
-            If set, shift the new TimeSeries time index back in time.
-
         References
         ----------
         .. [1] https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#anchored-offsets
         """
         MIDAS._verify_series(series)
+        strip = params["fixed"]["_strip"]
+        high_freq_name = params["fitted"]["high_freq_name"]
+        orig_ts_start_time = params["fitted"]["start"]
+        # orig_ts_end_time = params["fitted"]["end"]
 
         # retrieve the number of component introduced by midas
         n_midas_components = int(series.components[-1].split("_")[-1]) + 1
@@ -207,51 +236,40 @@ class MIDAS(InvertibleDataTransformer):
             series.components[i][:-2] for i in range(0, n_orig_components)
         ]
 
-        low_freq_name = series.freq_str
+        # adjust the start of the inverse transform output
+        low_freq_timedelta = series.time_index[1] - series.time_index[0]
+        transform_time_shift = series.time_index[0] - orig_ts_start_time
 
-        # remove anchor, not recognized by pd.Timedelta
-        if "-" in low_freq_name:
-            low_freq_name = low_freq_name.split("-")[0]
-
-        # Quarter period cannot be reversed numerically
-        if "Q" in low_freq_name:
-            high_freq_name = "M"
-            # introduce shift to account for the extension
-            if "S" not in low_freq_name and offset is None:
-                offset = pd.DateOffset(months=n_midas_components - 1)
+        # downsampling shift is smaller than low freq period
+        if np.abs(transform_time_shift) <= low_freq_timedelta:
+            start_time = orig_ts_start_time
         else:
-            low_timedelta = pd.Timedelta(value=1, unit=low_freq_name)
-            high_timedelta = low_timedelta / n_midas_components
-            high_freq_name = high_timedelta.resolution_string
+            start_time = series.start_time()
 
-        start_time = series.start_time()
-        if offset is None:
+        # account for the NaN
+        left_nans = 0
+        while np.isnan(series_values[left_nans]):
+            left_nans += 1
+
+        if strip and left_nans > 0:
             pass
-        elif isinstance(offset, str):
-            start_time -= pd.Timedelta(offset)
-        elif isinstance(offset, (pd.Timedelta, pd.DateOffset)):
-            start_time -= offset
-        else:
-            raise_log(
-                ValueError(
-                    f"`offset` but be either `None`, `str` or `pd.Timedelta, received "
-                    f"{type(offset)}."
-                ),
-                logger,
-            )
 
         new_times = pd.date_range(
             start=start_time, periods=len(series_values), freq=high_freq_name
         )
 
-        # do not apply strip to make the offset behave more intuitively
-        return TimeSeries.from_times_and_values(
+        inversed_midas_ts = TimeSeries.from_times_and_values(
             times=new_times,
             values=series_values,
             freq=high_freq_name,
             columns=component_names,
             static_covariates=series.static_covariates,
         )
+
+        if strip:
+            inversed_midas_ts = inversed_midas_ts.strip()
+
+        return inversed_midas_ts
 
     @staticmethod
     def _verify_series(series: TimeSeries):
