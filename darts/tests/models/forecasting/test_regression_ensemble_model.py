@@ -142,6 +142,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         model_ens = RegressionEnsembleModel(
             [linreg1, linreg2],
             regression_train_n_points=10,
+            retrain_forecasting_models=False,
         )
         model_ens.fit(self.sine_series[:45])
         pred_no_ft = model_ens.predict(5)
@@ -149,8 +150,9 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         model_ens_ft = RegressionEnsembleModel(
             [linreg1, linreg2],
             regression_train_n_points=10,
+            retrain_forecasting_models=True,
         )
-        model_ens_ft.fit(self.sine_series[:45], retrain_forecasting_models=True)
+        model_ens_ft.fit(self.sine_series[:45])
         pred_ft = model_ens_ft.predict(5)
 
         # prediction without retraining the forecasting models on the longer ts
@@ -191,7 +193,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         ensemble = RegressionEnsembleModel([model1], 5)
         ensemble.fit(self.combined)
 
-        model1_fitted = ensemble.models[0]
+        model1_fitted = ensemble.forecasting_models[0]
         forecast1 = model1_fitted.predict(10)
 
         model2.fit(self.combined)
@@ -235,7 +237,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         # expected number of coefs is lags*components -> we have 1 lag for each target (1 comp)
         # and future covs (2 comp)
         expected_coefs = len(self.sine_series.components) + len(self.ts_cov1.components)
-        assert len(ensemble_models[0].model.coef_) == expected_coefs
+        assert len(ensemble.forecasting_models[0].model.coef_) == expected_coefs
         ensemble.predict(10, self.sine_series, future_covariates=self.ts_cov1)
 
     def test_predict_with_target(self):
@@ -386,7 +388,9 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             [NaiveSeasonal(5), Theta(2, 5)], regression_train_n_points=regr_train_n
         )
         ensemble.fit(series)
-        assert max(m_.min_train_series_length for m_ in ensemble.models) == 10
+        assert (
+            max(m_.min_train_series_length for m_ in ensemble.forecasting_models) == 10
+        )
         # -10 comes from the maximum minimum train series length of all models
         assert ensemble.extreme_lags == (-10 - regr_train_n, 0, None, None, None, None)
         ensemble.backtest(series)

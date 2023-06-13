@@ -53,9 +53,9 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         # an untrained ensemble model should also give untrained underlying models
         model_ens = NaiveEnsembleModel([NaiveDrift()])
         model_ens.fit(self.series1)
-        assert model_ens.models[0]._fit_called
+        assert model_ens.forecasting_models[0]._fit_called
         new_model = model_ens.untrained_model()
-        assert not new_model.models[0]._fit_called
+        assert not new_model.forecasting_models[0]._fit_called
 
     def test_trained_models(self):
         """EnsembleModels can be instantiated with pre-trained GlobalForecastingModels"""
@@ -80,8 +80,20 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             NaiveEnsembleModel([global_model, global_model.untrained_model()])
 
-        model_ens = NaiveEnsembleModel([global_model, global_model])
-        model_ens.predict(1, series=self.series1)
+        # both global trained, retrain = True
+        model_ens_retrain = NaiveEnsembleModel(
+            [global_model, global_model], retrain_forecasting_models=True
+        )
+        with self.assertRaises(ValueError):
+            model_ens_retrain.predict(1, series=self.series1)
+        model_ens_retrain.fit(self.series1)
+        model_ens_retrain.predict(1, series=self.series1)
+
+        # both global trained, retrain = False
+        model_ens_no_retrain = NaiveEnsembleModel(
+            [global_model, global_model], retrain_forecasting_models=False
+        )
+        model_ens_no_retrain.predict(1, series=self.series1)
 
     def test_extreme_lag_inference(self):
         ensemble = NaiveEnsembleModel([NaiveDrift()])
@@ -368,7 +380,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
     def get_global_ensemble_model(output_chunk_length=5):
         lags = [-1, -2, -5]
         return NaiveEnsembleModel(
-            models=[
+            forecasting_models=[
                 LinearRegressionModel(
                     lags=lags,
                     lags_past_covariates=lags,

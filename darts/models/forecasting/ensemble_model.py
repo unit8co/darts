@@ -2,6 +2,7 @@
 Ensemble Model Base Class
 """
 
+import copy
 from abc import abstractmethod
 from functools import reduce
 from typing import List, Optional, Sequence, Tuple, Union
@@ -42,26 +43,32 @@ class EnsembleModel(GlobalForecastingModel):
         If `models` are probabilistic and `train_num_samples` > 1, method used to
         reduce the samples dimension to 1. Possible values: "mean", "median" or float value corresponding
         to the desired quantile.
+    retrain_forecasting_models
+        If set to `False`, the `forecasting_models` are not retrained on `series` (only supported if all the
+        `forecasting_models` are pretrained `GlobalForecastingModels`). Default: ``True``.
     show_warnings
         Whether to show warnings related to models covariates support.
     """
 
     def __init__(
         self,
-        models: List[ForecastingModel],
+        forecasting_models: List[ForecastingModel],
         train_num_samples: int,
         train_samples_reduction: Union[str, float],
+        retrain_forecasting_models: bool = True,
         show_warnings: bool = True,
     ):
         raise_if_not(
-            isinstance(models, list) and models,
+            isinstance(forecasting_models, list) and forecasting_models,
             "Cannot instantiate EnsembleModel with an empty list of models",
             logger,
         )
 
-        is_local_model = [isinstance(model, LocalForecastingModel) for model in models]
+        is_local_model = [
+            isinstance(model, LocalForecastingModel) for model in forecasting_models
+        ]
         is_global_model = [
-            isinstance(model, GlobalForecastingModel) for model in models
+            isinstance(model, GlobalForecastingModel) for model in forecasting_models
         ]
 
         self.is_local_ensemble = all(is_local_model)
@@ -77,11 +84,11 @@ class EnsembleModel(GlobalForecastingModel):
                 ]
             ),
             "All models must be of type `GlobalForecastingModel`, or `LocalForecastingModel`. "
-            "Also, make sure that all models in `forecasting_model/models` are instantiated.",
+            "Also, make sure that all models in `forecasting_model` are instantiated.",
             logger,
         )
 
-        model_fit_status = [m._fit_called for m in models]
+        model_fit_status = [m._fit_called for m in forecasting_models]
         self.all_trained = all(model_fit_status)
         some_trained = any(model_fit_status)
 
@@ -89,7 +96,7 @@ class EnsembleModel(GlobalForecastingModel):
             not self.is_global_ensemble and some_trained,
             "Cannot instantiate EnsembleModel with a mixture of unfitted and fitted models. "
             "Consider resetting all models with `my_model.untrained_model()` or using only "
-            "trained GlobalForecastingModels.",
+            "trained GlobalForecastingModels as `forecasting_models`.",
             logger,
         )
 
@@ -100,10 +107,18 @@ class EnsembleModel(GlobalForecastingModel):
             logger,
         )
 
+        if not retrain_forecasting_models:
+            raise_if_not(
+                self.is_global_ensemble and self.all_trained,
+                "`retrain_forecastings_models=False` is supported only if all the `forecasting_models` are "
+                "already trained `GlobalForecastingModels`.",
+                logger,
+            )
+
         raise_if(
             train_num_samples is not None
             and train_num_samples > 1
-            and all([not m._is_probabilistic() for m in models]),
+            and all([not m._is_probabilistic() for m in forecasting_models]),
             "`train_num_samples` is greater than 1 but the `RegressionEnsembleModel` "
             "contains only deterministic models.",
             logger,
@@ -135,9 +150,15 @@ class EnsembleModel(GlobalForecastingModel):
             )
 
         super().__init__()
-        self.models = models
+        # work on copies to prevent modification of the original models
+        if retrain_forecasting_models:
+            forecasting_models = [m.untrained_model() for m in forecasting_models]
+        else:
+            forecasting_models = [copy.deepcopy(m) for m in forecasting_models]
+        self.forecasting_models = forecasting_models
         self.train_num_samples = train_num_samples
         self.train_samples_reduction = train_samples_reduction
+        self.retrain_forecasting_models = retrain_forecasting_models
 
         if show_warnings:
             if (
@@ -242,7 +263,7 @@ class EnsembleModel(GlobalForecastingModel):
                 else None,
                 num_samples=num_samples if model._is_probabilistic() else 1,
             )
-            for model in self.models
+            for model in self.forecasting_models
         ]
 
         # reduce the probabilistics series
@@ -339,11 +360,11 @@ class EnsembleModel(GlobalForecastingModel):
 
     @property
     def min_train_series_length(self) -> int:
-        return max(model.min_train_series_length for model in self.models)
+        return max(model.min_train_series_length for model in self.forecasting_models)
 
     @property
     def min_train_samples(self) -> int:
-        return max(model.min_train_samples for model in self.models)
+        return max(model.min_train_samples for model in self.forecasting_models)
 
     @property
     def extreme_lags(
@@ -358,7 +379,7 @@ class EnsembleModel(GlobalForecastingModel):
     ]:
         def find_max_lag_or_none(lag_id, aggregator) -> Optional[int]:
             max_lag = None
-            for model in self.models:
+            for model in self.forecasting_models:
                 curr_lag = model.extreme_lags[lag_id]
                 if max_lag is None:
                     max_lag = curr_lag
@@ -372,24 +393,32 @@ class EnsembleModel(GlobalForecastingModel):
         )
 
     def _models_are_probabilistic(self) -> bool:
-        return all([model._is_probabilistic() for model in self.models])
+        return all([model._is_probabilistic() for model in self.forecasting_models])
 
     def _is_probabilistic(self) -> bool:
         return self._models_are_probabilistic()
 
     @property
     def supports_past_covariates(self) -> bool:
-        return any([model.supports_past_covariates for model in self.models])
+        return any(
+            [model.supports_past_covariates for model in self.forecasting_models]
+        )
 
     @property
     def supports_future_covariates(self) -> bool:
-        return any([model.supports_future_covariates for model in self.models])
+        return any(
+            [model.supports_future_covariates for model in self.forecasting_models]
+        )
 
     def _full_past_covariates_support(self) -> bool:
-        return all([model.supports_past_covariates for model in self.models])
+        return all(
+            [model.supports_past_covariates for model in self.forecasting_models]
+        )
 
     def _full_future_covariates_support(self) -> bool:
-        return all([model.supports_future_covariates for model in self.models])
+        return all(
+            [model.supports_future_covariates for model in self.forecasting_models]
+        )
 
     def _verify_past_future_covariates(self, past_covariates, future_covariates):
         """

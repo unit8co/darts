@@ -164,7 +164,8 @@ class NaiveMovingAverage(LocalForecastingModel):
 class NaiveEnsembleModel(EnsembleModel):
     def __init__(
         self,
-        models: List[ForecastingModel],
+        forecasting_models: List[ForecastingModel],
+        retrain_forecasting_models: bool = True,
         show_warnings: bool = True,
     ):
         """Naive combination model
@@ -177,20 +178,24 @@ class NaiveEnsembleModel(EnsembleModel):
 
         Parameters
         ----------
-        models
+        forecasting_models
             List of forecasting models whose predictions to ensemble
+        retrain_forecasting_models
+            If set to `False`, the `forecasting_models` are not retrained on `series` (only supported if all the
+            `forecasting_models` are pretrained `GlobalForecastingModels`). Default: ``True``.
         show_warnings
             Whether to show warnings related to models covariates support.
         """
         super().__init__(
-            models=models,
+            forecasting_models=forecasting_models,
             train_num_samples=None,
             train_samples_reduction=None,
+            retrain_forecasting_models=retrain_forecasting_models,
             show_warnings=show_warnings,
         )
 
-        # ensemble model initialised with trained global models
-        if self.all_trained:
+        # ensemble model initialised with trained global models can call predict()
+        if self.all_trained and not retrain_forecasting_models:
             self._fit_called = True
 
     def fit(
@@ -204,13 +209,14 @@ class NaiveEnsembleModel(EnsembleModel):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
-        for model in self.models:
-            kwargs = dict(series=series)
-            if model.supports_past_covariates:
-                kwargs["past_covariates"] = past_covariates
-            if model.supports_future_covariates:
-                kwargs["future_covariates"] = future_covariates
-            model.fit(**kwargs)
+        if self.retrain_forecasting_models:
+            for model in self.forecasting_models:
+                kwargs = dict(series=series)
+                if model.supports_past_covariates:
+                    kwargs["past_covariates"] = past_covariates
+                if model.supports_future_covariates:
+                    kwargs["future_covariates"] = future_covariates
+                model.fit(**kwargs)
 
         return self
 

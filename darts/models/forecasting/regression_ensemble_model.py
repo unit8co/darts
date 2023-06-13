@@ -25,6 +25,7 @@ class RegressionEnsembleModel(EnsembleModel):
         regression_model=None,
         regression_train_num_samples: Optional[int] = 1,
         regression_train_samples_reduction: Optional[Union[str, float]] = "median",
+        retrain_forecasting_models: bool = True,
         show_warnings: bool = True,
     ):
         """
@@ -69,6 +70,9 @@ class RegressionEnsembleModel(EnsembleModel):
             If `forecasting models` are probabilistic and `regression_train_num_samples` > 1, method used to
             reduce the samples before passing them to the regression model. Possible values: "mean", "median"
             or float value corresponding to the desired quantile. Default: "median"
+        retrain_forecasting_models
+            If set to `False`, the `forecasting_models` are not retrained on `series` (only supported if all the
+            `forecasting_models` are pretrained `GlobalForecastingModels`). Default: ``True``.
         show_warnings
             Whether to show warnings related to forecasting_models covariates support.
         References
@@ -76,9 +80,10 @@ class RegressionEnsembleModel(EnsembleModel):
         .. [1] D. H. Wolpert, “Stacked generalization”, Neural Networks, vol. 5, no. 2, pp. 241–259, Jan. 1992
         """
         super().__init__(
-            models=forecasting_models,
+            forecasting_models=forecasting_models,
             train_num_samples=regression_train_num_samples,
             train_samples_reduction=regression_train_samples_reduction,
+            retrain_forecasting_models=retrain_forecasting_models,
             show_warnings=show_warnings,
         )
 
@@ -117,7 +122,6 @@ class RegressionEnsembleModel(EnsembleModel):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        retrain_forecasting_models: bool = False,
     ):
         """
         Fits the forecasting models with the entire series except the last `regression_train_n_points` values.
@@ -132,22 +136,10 @@ class RegressionEnsembleModel(EnsembleModel):
         future_covariates
             Optionally, a series or sequence of series specifying future-known covariates passed to the
             forecasting models
-        finetune_forecastings_models
-            If set, the `forecasting_models` are retrained on `series`. Only supported if all the `forecasting_models`
-            are pretrained `GlobalForecastingModels`.
         """
 
         super().fit(
             series, past_covariates=past_covariates, future_covariates=future_covariates
-        )
-
-        raise_if(
-            retrain_forecasting_models
-            and (not self.is_global_ensemble)
-            and (not self.all_trained),
-            "`finetune_forecastings_models=True` is supported only if all the `forecasting_models` are "
-            "already trained `GlobalForecastingModels`.",
-            logger,
         )
 
         # spare train_n_points points to serve as regression target
@@ -174,8 +166,8 @@ class RegressionEnsembleModel(EnsembleModel):
                 self.train_n_points, series
             )
 
-        if (not self.all_trained) or retrain_forecasting_models:
-            for model in self.models:
+        if self.retrain_forecasting_models:
+            for model in self.forecasting_models:
                 # maximize covariate usage
                 model._fit_wrapper(
                     series=forecast_training,
@@ -203,9 +195,11 @@ class RegressionEnsembleModel(EnsembleModel):
         # prepare the forecasting models for further predicting by fitting them with the entire data
 
         # Some models (incl. Neural-Network based models) may need to be 'reset' to allow being retrained from scratch
-        self.models = [model.untrained_model() for model in self.models]
+        self.forecasting_models = [
+            model.untrained_model() for model in self.forecasting_models
+        ]
 
-        for model in self.models:
+        for model in self.forecasting_models:
             kwargs = dict(series=series)
             if model.supports_past_covariates:
                 kwargs["past_covariates"] = past_covariates
