@@ -68,7 +68,7 @@ class _TideModule(PLMixedCovariatesModule):
         num_decoder_layers: int,
         decoder_output_dim: int,
         hidden_size: int,
-        temporal_decoder_width: int,
+        temporal_decoder_hidden: int,
         temporal_width: int,
         dropout: float,
         **kwargs,
@@ -95,7 +95,7 @@ class _TideModule(PLMixedCovariatesModule):
             The number of output components of the decoder.
         hidden_size
             The width of the hidden layers in the encoder/decoder Residual Blocks.
-        temporal_decoder_width
+        temporal_decoder_hidden
             The width of the hidden layers in the temporal decoder.
         temporal_width
             The width of the future covariate embedding space.
@@ -127,7 +127,7 @@ class _TideModule(PLMixedCovariatesModule):
         self.num_decoder_layers = num_decoder_layers
         self.decoder_output_dim = decoder_output_dim
         self.hidden_size = hidden_size
-        self.temporal_decoder_width = temporal_decoder_width
+        self.temporal_decoder_hidden = temporal_decoder_hidden
         self.dropout = dropout
         self.temporal_width = temporal_width
 
@@ -192,7 +192,7 @@ class _TideModule(PLMixedCovariatesModule):
             input_dim=decoder_output_dim * self.nr_params
             + (temporal_width if future_cov_dim > 0 else 0),
             output_dim=output_dim * self.nr_params,
-            hidden_size=temporal_decoder_width,
+            hidden_size=temporal_decoder_hidden,
             dropout=dropout,
         )
 
@@ -285,7 +285,7 @@ class TiDEModel(MixedCovariatesTorchModel):
         decoder_output_dim: int = 16,
         hidden_size: int = 512,
         temporal_width: int = 4,
-        temporal_decoder_width: int = 64,
+        temporal_decoder_hidden: int = 64,
         dropout: float = 0.1,
         use_static_covariates: bool = True,
         **kwargs,
@@ -304,7 +304,7 @@ class TiDEModel(MixedCovariatesTorchModel):
         The encoder and decoder are implemented as a series of residual blocks. The number of residual blocks in
         the encoder and decoder can be controlled via ``num_encoder_layers`` and ``num_decoder_layers`` respectively.
         The width of the layers in the residual blocks can be controlled via ``hidden_size``. Similarly, the width
-        of the layers in the temporal decoder can be controlled via ``temporal_decoder_width``.
+        of the layers in the temporal decoder can be controlled via ``temporal_decoder_hidden``.
 
         Parameters
         ----------
@@ -322,7 +322,7 @@ class TiDEModel(MixedCovariatesTorchModel):
             The width of the layers in the residual blocks of the encoder and decoder.
         temporal_width
             The width of the layers in the future covariate projection residual block.
-        temporal_decoder_width
+        temporal_decoder_hidden
             The width of the layers in the temporal decoder.
         dropout
             The dropout probability to be used in fully connected layers. This is compatible with Monte Carlo dropout
@@ -471,7 +471,7 @@ class TiDEModel(MixedCovariatesTorchModel):
         self.decoder_output_dim = decoder_output_dim
         self.hidden_size = hidden_size
         self.temporal_width = temporal_width
-        self.temporal_decoder_width = temporal_decoder_width
+        self.temporal_decoder_hidden = temporal_decoder_hidden
 
         self._considers_static_covariates = use_static_covariates
 
@@ -528,7 +528,7 @@ class TiDEModel(MixedCovariatesTorchModel):
             decoder_output_dim=self.decoder_output_dim,
             hidden_size=self.hidden_size,
             temporal_width=self.temporal_width,
-            temporal_decoder_width=self.temporal_decoder_width,
+            temporal_decoder_hidden=self.temporal_decoder_hidden,
             dropout=self.dropout,
             **self.pl_module_params,
         )
