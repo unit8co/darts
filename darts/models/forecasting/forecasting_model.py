@@ -294,7 +294,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if likelihood_parameters and num_samples != 1:
             raise_log(
                 ValueError(
-                    "`num_samples` must be set to 1 if `likelihood_parameters` is `True`."
+                    "`num_samples` must be set to `1` if `likelihood_parameters` is `True`."
                 ),
                 logger,
             )

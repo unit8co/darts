@@ -242,13 +242,13 @@ class PLForecastingModule(pl.LightningModule, ABC):
                 for input_series in batch_input_series
             ]
         else:
-            custom_columns = [None] * len(batch_input_series)
+            custom_columns = None
 
         ts_forecasts = Parallel(n_jobs=self.pred_n_jobs)(
             delayed(_build_forecast_series)(
                 [batch_prediction[batch_idx] for batch_prediction in batch_predictions],
                 input_series,
-                custom_columns=custom_cols,
+                custom_columns=None if custom_cols is None else custom_cols[batch_idx],
                 with_static_covs=True if custom_cols is None else False,
                 with_hierarchy=True if custom_cols is None else False,
             )
