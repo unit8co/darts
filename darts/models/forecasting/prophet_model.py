@@ -5,6 +5,7 @@ Facebook Prophet
 
 import logging
 import re
+import types
 from typing import Callable, List, Optional, Sequence, Union
 
 import numpy as np
@@ -182,12 +183,19 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         # add user defined seasonalities (from model creation and/or pre-fit self.add_seasonalities())
         interval_length = self._freq_to_days(series.freq_str)
         for seasonality_name, attributes in self._add_seasonalities.items():
+            condition_name = None
+            if attributes["condition_func"] is not None:
+                fit_df[seasonality_name] = fit_df["ds"].apply(
+                    attributes["condition_func"]
+                )
+                condition_name = seasonality_name
             self.model.add_seasonality(
                 name=seasonality_name,
                 period=attributes["seasonal_periods"] * interval_length,
                 fourier_order=attributes["fourier_order"],
                 prior_scale=attributes["prior_scale"],
                 mode=attributes["mode"],
+                condition_name=condition_name,
             )
 
         # add covariates
@@ -225,6 +233,12 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         super()._predict(n, future_covariates, num_samples)
 
         predict_df = self._generate_predict_df(n=n, future_covariates=future_covariates)
+
+        for seasonality_name, attributes in self._add_seasonalities.items():
+            if attributes["condition_func"] is not None:
+                predict_df[seasonality_name] = predict_df["ds"].apply(
+                    attributes["condition_func"]
+                )
 
         if num_samples == 1:
             forecast = self.model.predict(predict_df, vectorized=True)["yhat"].values
@@ -320,13 +334,20 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         fourier_order: int,
         prior_scale: Optional[float] = None,
         mode: Optional[str] = None,
+        condition_func: Optional[types.FunctionType] = None,
     ) -> None:
         """Adds a custom seasonality to the model that repeats after every n `seasonal_periods` timesteps.
         An example for `seasonal_periods`: If you have hourly data (frequency='H') and your seasonal cycle repeats
         after 48 hours -> `seasonal_periods=48`.
 
-        Apart from `seasonal_periods`, this is very similar to how you would call Facebook Prophet's
-        `add_seasonality()` method. For information about the parameters see:
+        Apart from `seasonal_periods` and `conditional_name`, this is very similar to how you would call
+        Facebook Prophet's `add_seasonality()` method. In the case of a conditional seasonality,
+        the condition_name is set to be the seasonality name and the condition is supplied in the form of a function
+        that operates on the time index and returns a boolean mask indicating the timesteps
+        to include in the seasonality component.
+        For more details on conditional seasonalities see:
+        https://facebook.github.io/prophet/docs/seasonality,_holiday_effects,_and_regressors.html#seasonalities-that-depend-on-other-factors
+        For information about the parameters see:
         `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py>`_.
 
         Parameters
@@ -341,6 +362,10 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             optionally, a prior scale for this component
         mode
             optionally, 'additive' or 'multiplicative'
+        condition_func
+            optionally, a function that takes the time index and returns a boolean mask indicating the timesteps
+            to include in the seasonality component.
+            The masking function will be applied as follows: df[name] = df["ds"].apply(condition_func)
         """
         function_call = {
             "name": name,
@@ -348,6 +373,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             "fourier_order": fourier_order,
             "prior_scale": prior_scale,
             "mode": mode,
+            "condition_func": condition_func,
         }
         self._store_add_seasonality_call(seasonality_call=function_call)
 
@@ -379,12 +405,18 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             "fourier_order": {"default": None, "dtype": int},
             "prior_scale": {"default": None, "dtype": float},
             "mode": {"default": None, "dtype": str},
+            "condition_func": {"default": None, "dtype": types.FunctionType},
         }
         seasonality_default = {
             kw: seasonality_properties[kw]["default"] for kw in seasonality_properties
         }
 
         mandatory_keywords = ["name", "seasonal_periods", "fourier_order"]
+        if (
+            "condition_func" in seasonality_call.keys()
+            and seasonality_call["condition_func"] is not None
+        ):
+            mandatory_keywords.append("condition_func")
 
         add_seasonality_call = dict(seasonality_default, **seasonality_call)
 
@@ -428,6 +460,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             f'of type {[seasonality_properties[kw]["dtype"] for kw in invalid_types]}.',
             logger,
         )
+
         self._add_seasonalities[seasonality_name] = add_seasonality_call
 
     @staticmethod

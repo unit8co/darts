@@ -25,7 +25,10 @@ class ProphetTestCase(DartsBaseTestClass):
             "seasonal_periods": 24,
             "fourier_order": 1,
         }
-        kwargs_all = dict(kwargs_mandatory, **{"prior_scale": 1.0, "mode": "additive"})
+        kwargs_all = dict(
+            kwargs_mandatory,
+            **{"prior_scale": 1.0, "mode": "additive", "condition_func": lambda x: x}
+        )
         model1 = Prophet(add_seasonalities=kwargs_all)
         model2 = Prophet()
         model2.add_seasonality(**kwargs_all)
