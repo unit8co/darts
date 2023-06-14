@@ -248,12 +248,11 @@ class _TideModule(PLMixedCovariatesModule):
 
         # get view that is batch size x output chunk length x self.decoder_output_dim x nr params
         decoded = decoded.view(
-            -1, self.output_chunk_length, self.decoder_output_dim, self.nr_params
-        )
+        decoded = decoded.view(x.shape[0], self.output_chunk_length, -1)
 
         # stack and temporally decode with future covariate last output steps
         temporal_decoder_input = [
-            decoded.flatten(start_dim=2),
+            decoded,
             x_dynamic_covariates_proj[:, -self.output_chunk_length :, :]
             if self.future_cov_dim > 0
             else None,
