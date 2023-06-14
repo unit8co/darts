@@ -587,9 +587,7 @@ class RegressionModel(GlobalForecastingModel):
 
         raise_if(
             likelihood_parameters and not isinstance(self, _LikelihoodMixin),
-            f"{self.__class__} does not support `likelihood_parameters=True` as it does not inherit from "
-            f"`_LikelihoodMixin`. The models supporting it are `LinearRegressionModel`, `LGBMModel`, "
-            f"`CatboostModel` and `XGBoostModel`.",
+            f"`likelihood_parameters=True` is only supported for probabilistic regression models.",
             logger,
         )
 
