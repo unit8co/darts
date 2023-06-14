@@ -133,12 +133,15 @@ class _TideModule(PLMixedCovariatesModule):
 
         # residual block for input feature projection
         # this is only needed when covariates are used
-        self.feature_projection = _ResidualBlock(
-            input_dim=future_cov_dim,
-            output_dim=temporal_width,
-            hidden_size=hidden_size,
-            dropout=dropout,
-        )
+        if future_cov_dim:
+            self.feature_projection = _ResidualBlock(
+                input_dim=future_cov_dim,
+                output_dim=temporal_width,
+                hidden_size=hidden_size,
+                dropout=dropout,
+            )
+        else:
+            self.feature_projection = None
 
         # original paper doesn't specify how to use past covariates
         # we assume that they pass them raw to the encoder
