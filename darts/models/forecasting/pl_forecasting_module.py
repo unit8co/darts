@@ -236,7 +236,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         batch_predictions = torch.cat(batch_predictions, dim=0)
         batch_predictions = batch_predictions.cpu().detach().numpy()
 
-        if self.likelihood_parameters:
+        if self.predict_likelihood_parameters:
             custom_columns = [
                 self.likelihood.likelihood_components_names(input_series)
                 for input_series in batch_input_series
@@ -248,13 +248,13 @@ class PLForecastingModule(pl.LightningModule, ABC):
             delayed(_build_forecast_series)(
                 [batch_prediction[batch_idx] for batch_prediction in batch_predictions],
                 input_series,
-                custom_columns=None if custom_cols is None else custom_cols[batch_idx],
-                with_static_covs=True if custom_cols is None else False,
-                with_hierarchy=True if custom_cols is None else False,
+                custom_columns=None
+                if custom_columns is None
+                else custom_columns[batch_idx],
+                with_static_covs=True if custom_columns is None else False,
+                with_hierarchy=True if custom_columns is None else False,
             )
-            for batch_idx, (input_series, custom_cols) in enumerate(
-                zip(batch_input_series, custom_columns)
-            )
+            for batch_idx, input_series in enumerate(batch_input_series)
         )
         return ts_forecasts
 
@@ -265,7 +265,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         roll_size: int,
         batch_size: int,
         n_jobs: int,
-        likelihood_parameters: bool,
+        predict_likelihood_parameters: bool,
     ) -> None:
         """to be set from TorchForecastingModel before calling trainer.predict() and reset at self.on_predict_end()"""
         self.pred_n = n
@@ -273,7 +273,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.pred_roll_size = roll_size
         self.pred_batch_size = batch_size
         self.pred_n_jobs = n_jobs
-        self.likelihood_parameters = likelihood_parameters
+        self.predict_likelihood_parameters = predict_likelihood_parameters
 
     def _compute_loss(self, output, target):
         # output is of shape (batch_size, n_timesteps, n_components, n_params)
@@ -388,12 +388,15 @@ class PLForecastingModule(pl.LightningModule, ABC):
     def _is_probabilistic(self) -> bool:
         return self.likelihood is not None or len(self._get_mc_dropout_modules()) > 0
 
-    def _produce_predict_output(self, x: Tuple) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _produce_predict_output(self, x: Tuple) -> torch.Tensor:
         if self.likelihood:
             output = self(x)
-            return self.likelihood.sample(output)
+            if self.predict_likelihood_parameters:
+                return self.likelihood.predict_likelihood_parameters(output)
+            else:
+                return self.likelihood.sample(output)
         else:
-            return self(x).squeeze(dim=-1), None
+            return self(x).squeeze(dim=-1)
 
     def on_save_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
         # we must save the dtype for correct parameter precision at loading time
@@ -510,15 +513,11 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
             dim=dim_component,
         )
 
-        out, params = self._produce_predict_output((input_past, static_covariates))
-        out = out[:, self.first_prediction_index :, :]
+        out = self._produce_predict_output(x=(input_past, static_covariates))
 
+        out = out[:, self.first_prediction_index :, :]
         batch_prediction = [out[:, :roll_size, :]]
         prediction_length = roll_size
-
-        if self.likelihood_parameters:
-            params = params[:, self.first_prediction_index :, :]
-            batch_parameters = [params[:, :roll_size, :]]
 
         while prediction_length < n:
             # we want the last prediction to end exactly at `n` into the future.
@@ -562,25 +561,15 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
                 ] = future_past_covariates[:, left_past:right_past, :]
 
             # take only last part of the output sequence where needed
-            out, params = self._produce_predict_output((input_past, static_covariates))
+            out = self._produce_predict_output(x=(input_past, static_covariates))
 
             batch_prediction.append(out[:, self.first_prediction_index :, :])
             prediction_length += self.output_chunk_length
 
-            if self.likelihood_parameters:
-                batch_parameters.append(params[:, self.first_prediction_index :, :])
-
-        # return the predicted likelihood parameters
-        if self.likelihood_parameters:
-            batch_parameters = torch.cat(batch_parameters, dim=1)
-            batch_parameters = batch_parameters[:, :n, :]
-            return batch_parameters
-        # return the predicted target(s) values
-        else:
-            # bring predictions into desired format and drop unnecessary values
-            batch_prediction = torch.cat(batch_prediction, dim=1)
-            batch_prediction = batch_prediction[:, :n, :]
-            return batch_prediction
+        # bring predictions into desired format and drop unnecessary values
+        batch_prediction = torch.cat(batch_prediction, dim=1)
+        batch_prediction = batch_prediction[:, :n, :]
+        return batch_prediction
 
 
 class PLFutureCovariatesModule(PLForecastingModule, ABC):
@@ -704,17 +693,11 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
             )
         )
 
-        out, params = self._produce_predict_output(
-            x=(input_past, input_future, input_static)
-        )
-        out = out[:, self.first_prediction_index :, :]
+        out = self._produce_predict_output(x=(input_past, input_future, input_static))
 
+        out = out[:, self.first_prediction_index :, :]
         batch_prediction = [out[:, :roll_size, :]]
         prediction_length = roll_size
-
-        if self.likelihood_parameters:
-            params = params[:, self.first_prediction_index :, :]
-            batch_parameters = [params[:, :roll_size, :]]
 
         while prediction_length < n:
             # we want the last prediction to end exactly at `n` into the future.
@@ -777,27 +760,17 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
                 input_future = future_covariates[:, left_future:right_future, :]
 
             # take only last part of the output sequence where needed
-            out, params = self._produce_predict_output(
+            out = self._produce_predict_output(
                 x=(input_past, input_future, input_static)
             )
 
             batch_prediction.append(out[:, self.first_prediction_index :, :])
             prediction_length += self.output_chunk_length
 
-            if self.likelihood_parameters:
-                batch_parameters.append(params[:, self.first_prediction_index :, :])
-
-        # return the predicted likelihood parameters
-        if self.likelihood_parameters:
-            batch_parameters = torch.cat(batch_parameters, dim=1)
-            batch_parameters = batch_parameters[:, :n, :]
-            return batch_parameters
-        # return the predicted target(s) values
-        else:
-            # bring predictions into desired format and drop unnecessary values
-            batch_prediction = torch.cat(batch_prediction, dim=1)
-            batch_prediction = batch_prediction[:, :n, :]
-            return batch_prediction
+        # bring predictions into desired format and drop unnecessary values
+        batch_prediction = torch.cat(batch_prediction, dim=1)
+        batch_prediction = batch_prediction[:, :n, :]
+        return batch_prediction
 
 
 class PLSplitCovariatesModule(PLForecastingModule, ABC):

@@ -245,7 +245,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     @abstractmethod
     def predict(
-        self, n: int, num_samples: int = 1, likelihood_parameters: bool = False
+        self, n: int, num_samples: int = 1, predict_likelihood_parameters: bool = False
     ) -> TimeSeries:
         """Forecasts values for `n` time steps after the end of the training series.
 
@@ -256,8 +256,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
-        likelihood_parameters
-            Lorem
+        predict_likelihood_parameters
+            If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
+            supported for probablistic models, with `num_samples = 1` and `n<=output_chunk_length`. Default: `False`.
 
         Returns
         -------
@@ -283,7 +284,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     logger,
                 )
 
-            if likelihood_parameters:
+            if predict_likelihood_parameters:
                 raise_log(
                     ValueError(
                         "`likelihood_parameters = True` is only supported for probabilistic models."
@@ -291,7 +292,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     logger,
                 )
 
-        if likelihood_parameters and num_samples != 1:
+        if predict_likelihood_parameters and num_samples != 1:
             raise_log(
                 ValueError(
                     "`num_samples` must be set to `1` if `likelihood_parameters` is `True`."
@@ -315,8 +316,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         future_covariates: Optional[TimeSeries],
         num_samples: int,
         verbose: bool = False,
+        predict_likelihood_parameters: bool = False,
     ) -> TimeSeries:
-        return self.predict(n, num_samples=num_samples, verbose=verbose)
+        return self.predict(
+            n,
+            num_samples=num_samples,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            verbose=verbose,
+        )
 
     @property
     def min_train_series_length(self) -> int:
@@ -2128,7 +2135,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
         verbose: bool = False,
-        likelihood_parameters: bool = False,
+        predict_likelihood_parameters: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Forecasts values for `n` time steps after the end of the series.
 
@@ -2161,8 +2168,9 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
-        likelihood_parameters
-            Output the probabilistic model likelihood model instead of target values. `num_samples` must be set to 1.
+        predict_likelihood_parameters
+            If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
+            supported for probablistic models, with `num_samples = 1` and `n<=output_chunk_length`. Default: ``False``
 
         Returns
         -------
@@ -2174,7 +2182,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             If `series` is given and is a sequence of several time series, this function returns
             a sequence where each element contains the corresponding `n` points forecasts.
         """
-        super().predict(n, num_samples)
+        super().predict(n, num_samples, predict_likelihood_parameters)
         if self.uses_past_covariates and past_covariates is None:
             raise_log(
                 ValueError(
@@ -2208,7 +2216,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         future_covariates: Optional[TimeSeries],
         num_samples: int,
         verbose: bool = False,
-    ) -> TimeSeries:
+        predict_likelihood_parameters: bool = False,
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         return self.predict(
             n,
             series,
@@ -2216,6 +2225,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             future_covariates=future_covariates,
             num_samples=num_samples,
             verbose=verbose,
+            predict_likelihood_parameters=predict_likelihood_parameters,
         )
 
     def _fit_wrapper(
@@ -2308,6 +2318,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         n: int,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
         **kwargs,
     ) -> TimeSeries:
         """Forecasts values for `n` time steps after the end of the training series.
@@ -2325,13 +2336,16 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
+        predict_likelihood_parameters
+            If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
+            supported for probablistic models, with `num_samples = 1` and `n<=output_chunk_length`. Default: ``False``
 
         Returns
         -------
         TimeSeries, a single time series containing the `n` next points after then end of the training series.
         """
 
-        super().predict(n, num_samples)
+        super().predict(n, num_samples, predict_likelihood_parameters)
 
         # avoid generating encodings again if subclass has already generated them
         if not self._supress_generate_predict_encoding:
@@ -2407,12 +2421,14 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         future_covariates: Optional[TimeSeries],
         num_samples: int,
         verbose: bool = False,
+        predict_likelihood_parameters: bool = False,
     ) -> TimeSeries:
         return self.predict(
             n,
             future_covariates=future_covariates,
             num_samples=num_samples,
             verbose=verbose,
+            predict_likelihood_parameters=predict_likelihood_parameters,
         )
 
     @property

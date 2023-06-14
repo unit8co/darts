@@ -132,12 +132,18 @@ class RegressionModel(GlobalForecastingModel):
 
         self.model = model
         self.lags = {}
-        self.output_chunk_length = None
         self.input_dim = None
         self.multi_models = multi_models
         self._considers_static_covariates = use_static_covariates
         self._static_covariates_shape: Optional[Tuple[int, int]] = None
         self._lagged_feature_names: Optional[List[str]] = None
+
+        # check and set output_chunk_length
+        raise_if_not(
+            isinstance(output_chunk_length, int) and output_chunk_length > 0,
+            f"output_chunk_length must be an integer greater than 0. Given: {output_chunk_length}",
+        )
+        self.output_chunk_length = output_chunk_length
 
         # model checks
         if self.model is None:
@@ -246,13 +252,6 @@ class RegressionModel(GlobalForecastingModel):
                 )
             if lags_future_covariates:
                 self.lags["future"] = sorted(lags_future_covariates)
-
-        # check and set output_chunk_length
-        raise_if_not(
-            isinstance(output_chunk_length, int) and output_chunk_length > 0,
-            f"output_chunk_length must be an integer greater than 0. Given: {output_chunk_length}",
-        )
-        self.output_chunk_length = output_chunk_length
 
         self.pred_dim = self.output_chunk_length if self.multi_models else 1
 
@@ -550,7 +549,7 @@ class RegressionModel(GlobalForecastingModel):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
         verbose: bool = False,
-        likelihood_parameters: bool = False,
+        predict_likelihood_parameters: bool = False,
         **kwargs,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Forecasts values for `n` time steps after the end of the series.
@@ -570,32 +569,24 @@ class RegressionModel(GlobalForecastingModel):
             Optionally, the future-known covariates series needed as inputs for the model.
             They must match the covariates used for training in terms of dimension and type.
         num_samples : int, default: 1
-            Currently this parameter is ignored for regression models.
-        likelihood_parameters : bool, default : False
-            Forecast contains likelihood model parameters instead of the target values, `num_samples` must be 1. Only
-            available for `LinearRegressionModel`, `LGBMModel`, `CatboostModel`, and `XGBoostModel`.
+            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+            for deterministic models.
+        predict_likelihood_parameters
+            If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
+            supported for probablistic models, with `num_samples = 1` and `n<=output_chunk_length`. Default: `False`.
         **kwargs : dict, optional
             Additional keyword arguments passed to the `predict` method of the model. Only works with
             univariate target series.
         """
-        # Test is already performed by ForecastingModel.predict(), called by GlobalForecastingModel.predict()
         raise_if(
-            not self._is_probabilistic() and num_samples > 1,
-            "`num_samples > 1` is only supported for probabilistic models.",
+            predict_likelihood_parameters and not isinstance(self, _LikelihoodMixin),
+            "`likelihood_parameters=True` is only supported for probabilistic regression models.",
             logger,
         )
 
         raise_if(
-            likelihood_parameters and not isinstance(self, _LikelihoodMixin),
-            f"{self.__class__} does not support `likelihood_parameters=True` as it does not inherit from "
-            f"`_LikelihoodMixin`. The models supporting it are `LinearRegressionModel`, `LGBMModel`, "
-            f"`CatboostModel` and `XGBoostModel`.",
-            logger,
-        )
-
-        raise_if(
-            likelihood_parameters and num_samples != 1,
-            "`num_samples` must be set to 1 if `likelihood_parameters` is True.",
+            predict_likelihood_parameters and n > self.output_chunk_length,
+            "`n` must be inferior or equal to `output_chunk_length` when `predict_likelihood_parameters=True`.",
             logger,
         )
 
@@ -633,7 +624,8 @@ class RegressionModel(GlobalForecastingModel):
             past_covariates,
             future_covariates,
             num_samples,
-            likelihood_parameters,
+            verbose,
+            predict_likelihood_parameters,
         )
 
         # check that the input sizes of the target series and covariates match
@@ -781,16 +773,16 @@ class RegressionModel(GlobalForecastingModel):
 
             # X has shape (n_series * n_samples, n_regression_features)
             prediction, dist_param = self._predict_and_sample(
-                X, num_samples, likelihood_parameters, **kwargs
+                X, num_samples, predict_likelihood_parameters, **kwargs
             )
             # prediction shape (n_series * n_samples, output_chunk_length, n_components)
             # append prediction to final predictions
             predictions.append(prediction[:, last_step_shift:])
             # append parameters
-            if likelihood_parameters:
+            if predict_likelihood_parameters:
                 distrib_parameters.append(dist_param[:, last_step_shift:])
 
-        if likelihood_parameters:
+        if predict_likelihood_parameters:
             # generate the new components names, inherited from _LikelihoodMixin
             distrib_comp_names = [
                 self._likelihood_components_names(ts) for ts in series

@@ -340,7 +340,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
                     # univariate
                     model.fit(ts)
                     pred_lkl_params = model.predict(
-                        n=3, num_samples=1, likelihood_parameters=True
+                        n=3, num_samples=1, predict_likelihood_parameters=True
                     )
 
                     # check the dimensions, values require too much training
@@ -401,7 +401,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
                 for model in models:
                     model.fit(ts)
                     pred_lkl_params = model.predict(
-                        n=3, num_samples=1, likelihood_parameters=True
+                        n=3, num_samples=1, predict_likelihood_parameters=True
                     )
                     # check the dimensions
                     self.assertEqual(

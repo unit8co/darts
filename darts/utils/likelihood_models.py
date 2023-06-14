@@ -32,7 +32,7 @@ to see what is the support. Similarly, the prior parameters also have to lie in 
 
 import collections.abc
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -151,7 +151,9 @@ class Likelihood(ABC):
         pass
 
     @abstractmethod
-    def _params_from_output(self, model_output: torch.Tensor):
+    def _params_from_output(
+        self, model_output: torch.Tensor
+    ) -> Union[Tuple[torch.Tensor, ...], torch.Tensor]:
         """
         Returns the distribution parameters, obtained from the raw model outputs
         (e.g. applies softplus or sigmoids to get parameters in the expected domains).
@@ -159,12 +161,22 @@ class Likelihood(ABC):
         pass
 
     @abstractmethod
-    def sample(self, model_output: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         """
         Samples a prediction from the probability distributions defined by the specific likelihood model
         and the parameters given in `model_output`, return both the samples and the Likelihood parameters.
         """
         pass
+
+    def predict_likelihood_parameters(self, model_output: torch.Tensor) -> torch.Tensor:
+        """
+        Returns the distribution parametersas a single Tensor, extracted from the raw model outputs.
+        """
+        params = self._params_from_output(model_output)
+        if isinstance(params, torch.Tensor):
+            return params
+        else:
+            return torch.cat(params, dims=-1)
 
     @abstractmethod
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
@@ -280,10 +292,10 @@ class GaussianLikelihood(Likelihood):
         mu, sigma = params
         return _Normal(mu, sigma)
 
-    def sample(self, model_output: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         mu, sigma = self._params_from_output(model_output)
         # concatenate the parameters on the component dimension
-        return torch.normal(mu, sigma), torch.cat([mu, sigma], dim=-1)
+        return torch.normal(mu, sigma)
 
     @property
     def num_parameters(self) -> int:
@@ -336,9 +348,9 @@ class PoissonLikelihood(Likelihood):
         lmbda = params[0]
         return _Poisson(lmbda)
 
-    def sample(self, model_output: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         model_lambda = self._params_from_output(model_output)
-        return torch.poisson(model_lambda), model_lambda
+        return torch.poisson(model_lambda)
 
     @property
     def num_parameters(self) -> int:
@@ -349,7 +361,7 @@ class PoissonLikelihood(Likelihood):
         return lmbda
 
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
-        return self._likelihood_generate_components_names(input_series, ["lam"])
+        return self._likelihood_generate_components_names(input_series, ["lambda"])
 
 
 class NegativeBinomialLikelihood(Likelihood):
@@ -387,11 +399,17 @@ class NegativeBinomialLikelihood(Likelihood):
         r, p = NegativeBinomialLikelihood._get_r_and_p_from_mu_and_alpha(mu, alpha)
         return _NegativeBinomial(r, p)
 
-    def sample(self, model_output: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         mu, alpha = self._params_from_output(model_output)
         r, p = NegativeBinomialLikelihood._get_r_and_p_from_mu_and_alpha(mu, alpha)
         distr = _NegativeBinomial(r, p)
-        return distr.sample(), torch.cat([r, p], dim=-1)
+        return distr.sample()
+
+    def predict_likelihood_parameters(self, model_output: torch.Tensor) -> torch.Tensor:
+        """Overwrite the parent since the parameters are extracted in two steps."""
+        mu, alpha = self._params_from_output(model_output)
+        r, p = NegativeBinomialLikelihood._get_r_and_p_from_mu_and_alpha(mu, alpha)
+        return torch.cat([r, p], dim=-1)
 
     def _params_from_output(self, model_output):
         mu = self.softplus(model_output[:, :, :, 0])
@@ -438,9 +456,9 @@ class BernoulliLikelihood(Likelihood):
         p = params[0]
         return _Bernoulli(p)
 
-    def sample(self, model_output: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         model_p = self._params_from_output(model_output)
-        return torch.bernoulli(model_p), model_p
+        return torch.bernoulli(model_p)
 
     @property
     def num_parameters(self) -> int:
@@ -490,10 +508,10 @@ class BetaLikelihood(Likelihood):
         alpha, beta = params
         return _Beta(alpha, beta)
 
-    def sample(self, model_output: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         alpha, beta = self._params_from_output(model_output)
         distr = _Beta(alpha, beta)
-        return distr.sample(), torch.cat([alpha, beta], dim=-1)
+        return distr.sample()
 
     @property
     def num_parameters(self) -> int:
@@ -549,14 +567,10 @@ class CauchyLikelihood(Likelihood):
         xzero, gamma = params
         return _Cauchy(xzero, gamma)
 
-    def sample(self, model_output: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         xzero, gamma = self._params_from_output(model_output)
-
-        # We need this hack as sometimes the output of the softplus is 0 in practice for Cauchy...
-        gamma[gamma < MIN_CAUCHY_GAMMA_SAMPLING] = MIN_CAUCHY_GAMMA_SAMPLING
-
         distr = _Cauchy(xzero, gamma)
-        return distr.sample(), torch.cat([xzero, gamma], dim=-1)
+        return distr.sample()
 
     @property
     def num_parameters(self) -> int:
@@ -565,6 +579,8 @@ class CauchyLikelihood(Likelihood):
     def _params_from_output(self, model_output):
         xzero = model_output[:, :, :, 0]
         gamma = self.softplus(model_output[:, :, :, 1])
+        # We need this hack as sometimes the output of the softplus is 0 in practice for Cauchy...
+        gamma[gamma < MIN_CAUCHY_GAMMA_SAMPLING] = MIN_CAUCHY_GAMMA_SAMPLING
         return xzero, gamma
 
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
@@ -605,10 +621,10 @@ class ContinuousBernoulliLikelihood(Likelihood):
         lmbda = params[0]
         return _ContinuousBernoulli(lmbda)
 
-    def sample(self, model_output: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         model_lmbda = self._params_from_output(model_output)
         distr = _ContinuousBernoulli(model_lmbda)
-        return distr.sample(), model_lmbda
+        return distr.sample()
 
     @property
     def num_parameters(self) -> int:
@@ -619,7 +635,7 @@ class ContinuousBernoulliLikelihood(Likelihood):
         return lmbda
 
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
-        return self._likelihood_generate_components_names(input_series, ["lmbda"])
+        return self._likelihood_generate_components_names(input_series, ["lambda"])
 
 
 class DirichletLikelihood(Likelihood):
@@ -654,10 +670,14 @@ class DirichletLikelihood(Likelihood):
         alphas = params[0]
         return _Dirichlet(alphas)
 
-    def sample(self, model_output: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         alphas = self._params_from_output(model_output)
         distr = _Dirichlet(alphas)
-        return distr.sample(), alphas
+        return distr.sample()
+
+    def predict_likelihood_parameters(self, model_output: torch.Tensor) -> torch.Tensor:
+        alphas = self._params_from_output(model_output)
+        return alphas
 
     @property
     def num_parameters(self) -> int:
@@ -670,7 +690,7 @@ class DirichletLikelihood(Likelihood):
         return alphas
 
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
-        return self._likelihood_generate_components_names(input_series, ["lmbda"])
+        return self._likelihood_generate_components_names(input_series, ["lambda"])
 
 
 class ExponentialLikelihood(Likelihood):
@@ -704,10 +724,10 @@ class ExponentialLikelihood(Likelihood):
         lmbda = params[0]
         return _Exponential(lmbda)
 
-    def sample(self, model_output: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         lmbda = self._params_from_output(model_output)
         distr = _Exponential(lmbda)
-        return distr.sample(), lmbda
+        return distr.sample()
 
     @property
     def num_parameters(self) -> int:
@@ -718,7 +738,7 @@ class ExponentialLikelihood(Likelihood):
         return lmbda
 
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
-        return self._likelihood_generate_components_names(input_series, ["lmbda"])
+        return self._likelihood_generate_components_names(input_series, ["lambda"])
 
 
 class GammaLikelihood(Likelihood):
@@ -756,10 +776,10 @@ class GammaLikelihood(Likelihood):
         alpha, beta = params
         return _Gamma(alpha, beta)
 
-    def sample(self, model_output: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         alpha, beta = self._params_from_output(model_output)
         distr = _Gamma(alpha, beta)
-        return distr.sample(), torch.cat([alpha, beta], dim=-1)
+        return distr.sample()
 
     @property
     def num_parameters(self) -> int:
@@ -807,10 +827,10 @@ class GeometricLikelihood(Likelihood):
         p = params[0]
         return _Geometric(p)
 
-    def sample(self, model_output) -> Tuple[torch.Tensor, torch.Tensor]:
+    def sample(self, model_output) -> torch.Tensor:
         p = self._params_from_output(model_output)
         distr = _Geometric(p)
-        return distr.sample(), p
+        return distr.sample()
 
     @property
     def num_parameters(self) -> int:
@@ -858,10 +878,10 @@ class GumbelLikelihood(Likelihood):
         mu, beta = params
         return _Gumbel(mu, beta)
 
-    def sample(self, model_output) -> Tuple[torch.Tensor, torch.Tensor]:
+    def sample(self, model_output) -> torch.Tensor:
         mu, beta = self._params_from_output(model_output)
         distr = _Gumbel(mu, beta)
-        return distr.sample(), torch.cat([mu, beta], dim=-1)
+        return distr.sample()
 
     @property
     def num_parameters(self) -> int:
@@ -907,10 +927,10 @@ class HalfNormalLikelihood(Likelihood):
         sigma = params[0]
         return _HalfNormal(sigma)
 
-    def sample(self, model_output: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         sigma = self._params_from_output(model_output)
         distr = _HalfNormal(sigma)
-        return distr.sample(), sigma
+        return distr.sample()
 
     @property
     def num_parameters(self) -> int:
@@ -958,10 +978,10 @@ class LaplaceLikelihood(Likelihood):
         mu, b = params
         return _Laplace(mu, b)
 
-    def sample(self, model_output) -> Tuple[torch.Tensor, torch.Tensor]:
+    def sample(self, model_output) -> torch.Tensor:
         mu, b = self._params_from_output(model_output)
         distr = _Laplace(mu, b)
-        return distr.sample(), torch.cat([mu, b], dim=-1)
+        return distr.sample()
 
     @property
     def num_parameters(self) -> int:
@@ -1010,10 +1030,10 @@ class LogNormalLikelihood(Likelihood):
         mu, sigma = params
         return _LogNormal(mu, sigma)
 
-    def sample(self, model_output: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         mu, sigma = self._params_from_output(model_output)
         distr = _LogNormal(mu, sigma)
-        return distr.sample(), torch.cat([mu, sigma], dim=-1)
+        return distr.sample()
 
     @property
     def num_parameters(self) -> int:
@@ -1057,10 +1077,10 @@ class WeibullLikelihood(Likelihood):
         lmba, k = params
         return _Weibull(lmba, k)
 
-    def sample(self, model_output) -> Tuple[torch.Tensor, torch.Tensor]:
+    def sample(self, model_output) -> torch.Tensor:
         lmbda, k = self._params_from_output(model_output)
         distr = _Weibull(lmbda, k)
-        return distr.sample(), torch.cat([lmbda, k], dim=-1)
+        return distr.sample()
 
     @property
     def num_parameters(self) -> int:
@@ -1072,7 +1092,7 @@ class WeibullLikelihood(Likelihood):
         return lmbda, k
 
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
-        return self._likelihood_generate_components_names(input_series, ["lmbda", "k"])
+        return self._likelihood_generate_components_names(input_series, ["lambda", "k"])
 
 
 class QuantileRegression(Likelihood):
@@ -1121,7 +1141,7 @@ class QuantileRegression(Likelihood):
         # overwrite the attributes of Likelihood parent class
         self.ignore_attrs_equality = ["first", "quantiles_tensor"]
 
-    def sample(self, model_output: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         """
         Sample uniformly between [0, 1] (for each batch example) and return the linear interpolation between the fitted
         quantiles closest to the sampled value.
@@ -1178,12 +1198,16 @@ class QuantileRegression(Likelihood):
         weights = (probs - left_q) / (right_q - left_q)
         inter = left_value + weights * (right_value - left_value)
 
-        # quantiles parameters
-        distrib_params = model_output.reshape(
+        return inter.squeeze(-1)
+
+    def predict_likelihood_parameters(self, model_output: torch.Tensor) -> torch.Tensor:
+        """Overwrite parent method since QuantileRegression is not a Likelihood per-se and
+        parameters must be extracted differently."""
+        num_samples, n_timesteps, n_components, n_quantiles = model_output.shape
+        params = model_output.reshape(
             num_samples, n_timesteps, n_components * n_quantiles
         )
-
-        return inter.squeeze(-1), distrib_params
+        return params
 
     @property
     def num_parameters(self) -> int:
