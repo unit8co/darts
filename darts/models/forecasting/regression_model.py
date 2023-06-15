@@ -27,7 +27,7 @@ When static covariates are present, they are appended to the lagged features. Wh
 if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.
 """
 from collections import OrderedDict
-from typing import Any, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
@@ -131,7 +131,7 @@ class RegressionModel(GlobalForecastingModel):
         super().__init__(add_encoders=add_encoders)
 
         self.model = model
-        self.lags = {}
+        self.lags: Dict[str, List[int]] = {}
         self.input_dim = None
         self.multi_models = multi_models
         self._considers_static_covariates = use_static_covariates
@@ -578,17 +578,21 @@ class RegressionModel(GlobalForecastingModel):
             Additional keyword arguments passed to the `predict` method of the model. Only works with
             univariate target series.
         """
-        raise_if(
-            predict_likelihood_parameters and not isinstance(self, _LikelihoodMixin),
-            "`likelihood_parameters=True` is only supported for probabilistic regression models.",
-            logger,
-        )
 
-        raise_if(
-            predict_likelihood_parameters and n > self.output_chunk_length,
-            "`n` must be inferior or equal to `output_chunk_length` when `predict_likelihood_parameters=True`.",
-            logger,
-        )
+        if predict_likelihood_parameters:
+            raise_if_not(
+                isinstance(self, _LikelihoodMixin),
+                "`likelihood_parameters=True` is only supported for probabilistic regression models.",
+                logger,
+            )
+
+            raise_if(
+                n > self.output_chunk_length,
+                "`n` must be inferior or equal to `output_chunk_length` when `predict_likelihood_parameters=True`.",
+                logger,
+            )
+
+            # num_samples == 1 check is handled by super().predict()
 
         if series is None:
             # then there must be a single TS, and that was saved in super().fit as self.training_series
@@ -719,8 +723,6 @@ class RegressionModel(GlobalForecastingModel):
             covariate_matrices[cov_type] = np.repeat(data, num_samples, axis=0)
         # prediction
         predictions = []
-        # likelihood params
-        distrib_parameters = []
         last_step_shift = 0
 
         # t_pred indicates the number of time steps after the first prediction
@@ -772,68 +774,56 @@ class RegressionModel(GlobalForecastingModel):
             X = np.concatenate(X_blocks, axis=0)
 
             # X has shape (n_series * n_samples, n_regression_features)
-            prediction, dist_param = self._predict_and_sample(
+            prediction = self._predict_and_sample(
                 X, num_samples, predict_likelihood_parameters, **kwargs
             )
             # prediction shape (n_series * n_samples, output_chunk_length, n_components)
             # append prediction to final predictions
             predictions.append(prediction[:, last_step_shift:])
-            # append parameters
-            if predict_likelihood_parameters:
-                distrib_parameters.append(dist_param[:, last_step_shift:])
 
+        # concatenate and use first n points as prediction
+        predictions = np.concatenate(predictions, axis=1)[:, :n]
+
+        # bring into correct shape: (n_series, output_chunk_length, n_components, n_samples)
+        predictions = np.moveaxis(
+            predictions.reshape(len(series), num_samples, n, -1), 1, -1
+        )
+
+        # generate the new components names, inherited from _LikelihoodMixin
         if predict_likelihood_parameters:
-            # generate the new components names, inherited from _LikelihoodMixin
-            distrib_comp_names = [
+            new_component_names = [
                 self._likelihood_components_names(ts) for ts in series
             ]
-
-            # concatenate, reshape and convert the likelihood parameters to TimeSeries
-            distrib_parameters = np.concatenate(distrib_parameters, axis=1)[:, :n]
-            distrib_parameters = np.moveaxis(
-                distrib_parameters.reshape(len(series), num_samples, n, -1), 1, -1
-            )
-
-            distrib_parameters = [
-                self._build_forecast_series(
-                    points_preds=row,
-                    input_series=input_tgt,
-                    custom_columns=new_cols,
-                    with_static_covs=False,
-                    with_hierarchy=False,
-                )
-                for row, new_cols, input_tgt in zip(
-                    distrib_parameters, distrib_comp_names, series
-                )
-            ]
-
-            return (
-                distrib_parameters[0]
-                if called_with_single_series
-                else distrib_parameters
-            )
         else:
-            # concatenate and use first n points as prediction
-            predictions = np.concatenate(predictions, axis=1)[:, :n]
+            new_component_names = None
 
-            # bring into correct shape: (n_series, output_chunk_length, n_components, n_samples)
-            predictions = np.moveaxis(
-                predictions.reshape(len(series), num_samples, n, -1), 1, -1
+        # build time series from the predicted values starting after end of series
+        predictions = [
+            self._build_forecast_series(
+                points_preds=row,
+                input_series=input_tgt,
+                custom_components=None
+                if new_component_names is None
+                else new_component_names[idx_ts],
+                with_static_covs=False if predict_likelihood_parameters else True,
+                with_hierarchy=False if predict_likelihood_parameters else True,
             )
-            # build time series from the predicted values starting after end of series
-            predictions = [
-                self._build_forecast_series(row, input_tgt)
-                for row, input_tgt in zip(predictions, series)
-            ]
+            for idx_ts, (row, input_tgt) in enumerate(zip(predictions, series))
+        ]
 
-            return predictions[0] if called_with_single_series else predictions
+        return predictions[0] if called_with_single_series else predictions
 
     def _predict_and_sample(
-        self, x: np.ndarray, num_samples: int, likelihood_parameters: bool, **kwargs
-    ) -> Tuple[np.ndarray, np.ndarray]:
+        self,
+        x: np.ndarray,
+        num_samples: int,
+        predict_likelihood_parameters: bool,
+        **kwargs,
+    ) -> np.ndarray:
+        """By default, the regression model returns a single sample."""
         prediction = self.model.predict(x, **kwargs)
         k = x.shape[0]
-        return prediction.reshape(k, self.pred_dim, -1), None
+        return prediction.reshape(k, self.pred_dim, -1)
 
     @property
     def lagged_feature_names(self) -> Optional[List[str]]:
@@ -911,7 +901,7 @@ class _LikelihoodMixin:
         if self.likelihood == "quantile":
             return self._quantiles_generate_components_names(input_series)
         elif self.likelihood == "poisson":
-            return self._likelihood_generate_components_names(input_series, ["lam"])
+            return self._likelihood_generate_components_names(input_series, ["lambda"])
         else:
             return None
 
@@ -919,22 +909,19 @@ class _LikelihoodMixin:
         self,
         x: np.ndarray,
         num_samples: int,
-        likelihood_parameters: bool = False,
+        predict_likelihood_parameters: bool,
         **kwargs,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> np.ndarray:
         """
         X is of shape (n_series * n_samples, n_regression_features)
         """
         k = x.shape[0]
 
-        # if likelihood_parameters is True, all the quantiles params should be returned
-        if num_samples == 1 and not likelihood_parameters:
+        # if predict_likelihood_parameters is True, all the quantiles must be predicted
+        if num_samples == 1 and not predict_likelihood_parameters:
             # return median
             fitted = self._model_container[0.5]
-            model_output = fitted.predict(x, **kwargs)
-            return model_output.reshape(k, self.pred_dim, -1), self._quantiles_params(
-                model_output
-            )
+            return fitted.predict(x, **kwargs).reshape(k, self.pred_dim, -1)
 
         model_outputs = []
         for quantile, fitted in self._model_container.items():
@@ -944,29 +931,22 @@ class _LikelihoodMixin:
             model_outputs.append(model_output)
         model_outputs = np.stack(model_outputs, axis=-1)
         # model_outputs has shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
+        return model_outputs
 
-        # sampling has shape (n_series * n_samples, output_chunk_length, n_components)
-        return self._quantile_sampling(model_outputs), self._quantiles_params(
-            model_outputs
-        )
-
-    def _predict_poisson(
-        self, x: np.ndarray, num_samples: int, **kwargs
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def _predict_poisson(self, x: np.ndarray, num_samples: int, **kwargs) -> np.ndarray:
         """
         X is of shape (n_series * n_samples, n_regression_features)
         """
         k = x.shape[0]
-
-        model_output = self.model.predict(x, **kwargs).reshape(k, self.pred_dim, -1)
-        if num_samples == 1:
-            return model_output, self._poisson_params(model_output)
-
-        return self._poisson_sampling(model_output), self._poisson_params(model_output)
+        return self.model.predict(x, **kwargs).reshape(k, self.pred_dim, -1)
 
     def _predict_normal(
-        self, x: np.ndarray, num_samples: int, **kwargs
-    ) -> Tuple[np.ndarray, np.ndarray]:
+        self,
+        x: np.ndarray,
+        num_samples: int,
+        predict_likelihood_parameters: bool,
+        **kwargs,
+    ) -> np.ndarray:
         """Method intended for CatBoost's RMSEWithUncertainty loss. Returns samples
         computed from double-valued inputs [mean, variance].
         X is of shape (n_series * n_samples, n_regression_features)
@@ -981,15 +961,13 @@ class _LikelihoodMixin:
         output_dim = len(model_output.shape)
 
         # deterministic case: we return the mean only
-        if num_samples == 1:
+        if num_samples == 1 and not predict_likelihood_parameters:
             # univariate & single-chunk output
             if output_dim <= 2:
                 output_slice = model_output[:, 0]
             else:
                 output_slice = model_output[0, :, :]
-            return output_slice.reshape(k, self.pred_dim, -1), model_output.reshape(
-                k, self.pred_dim, -1
-            )
+            return output_slice.reshape(k, self.pred_dim, -1)
 
         # probabilistic case
         # univariate & single-chunk output
@@ -1002,9 +980,9 @@ class _LikelihoodMixin:
             # shape becomes: (n_components * output_chunk_length, num_samples, 2)
             model_output = model_output.transpose()
 
-        return self._normal_sampling(model_output), self._normal_params(model_output)
+        return model_output
 
-    def _quantile_sampling(self, model_output: np.ndarray) -> np.ndarray:
+    def _quantiles_sampling(self, model_output: np.ndarray) -> np.ndarray:
         """
         Sample uniformly between [0, 1] (for each batch example) and return the linear interpolation between the fitted
         quantiles closest to the sampled value.
@@ -1061,6 +1039,7 @@ class _LikelihoodMixin:
         weights = (probs - left_q) / (right_q - left_q)
         inter = left_value + weights * (right_value - left_value)
 
+        # sampling has shape (n_series * n_samples, output_chunk_length, n_components)
         return inter.squeeze(-1)
 
     def _poisson_sampling(self, model_output: np.ndarray) -> np.ndarray:
@@ -1106,11 +1085,11 @@ class _LikelihoodMixin:
             return model_output.reshape(shape[0], shape[1], shape[2] * shape[3])
 
     def _poisson_params(self, model_output: np.ndarray) -> np.ndarray:
-        # model_outputs has shape (n_series * n_samples, output_chunk_length, n_components), with n_samples = 1
+        # model_output has shape (n_series * n_samples, output_chunk_length, n_components), with n_samples = 1
         return model_output
 
     def _normal_params(self, model_output: np.ndarray) -> np.ndarray:
-        # model_outputs has shape (n_components * output_chunk_length, num_samples, 2) with n_samples = 1
+        # model_output has shape (n_components * output_chunk_length, num_samples, 2) with n_samples = 1
 
         # prediction shape (n_series * n_samples, output_chunk_length, n_components)
         shape = model_output.shape
@@ -1124,6 +1103,61 @@ class _LikelihoodMixin:
         params_transposed = np.array(mu_sigma_list).transpose()
         params_reshaped = params_transposed.reshape(n_samples, chunk_len, -1)
         return params_reshaped
+
+    def _quantiles_predict_and_sample(
+        self,
+        x: np.ndarray,
+        num_samples: int,
+        predict_likelihood_parameters: bool,
+        **kwargs,
+    ) -> np.ndarray:
+        model_output = self._predict_quantiles(
+            x, num_samples, predict_likelihood_parameters, **kwargs
+        )
+        if predict_likelihood_parameters:
+            return self._quantiles_params(model_output)
+        else:
+            # return only the median
+            if num_samples == 1:
+                return model_output
+            else:
+                return self._quantiles_sampling(model_output)
+
+    def _poisson_predict_and_sample(
+        self,
+        x: np.ndarray,
+        num_samples: int,
+        predict_likelihood_parameters: bool,
+        **kwargs,
+    ) -> np.ndarray:
+        model_output = self._predict_poisson(x, num_samples, **kwargs)
+        if predict_likelihood_parameters:
+            return self._poisson_params(model_output)
+        else:
+            # by definition, return the parameters of the poisson distribution
+            if num_samples == 1:
+                return model_output
+            else:
+                return self._poisson_sampling(model_output)
+
+    def _normal_predict_and_sample(
+        self,
+        x: np.ndarray,
+        num_samples: int,
+        predict_likelihood_parameters: bool,
+        **kwargs,
+    ) -> np.ndarray:
+        model_output = self._predict_normal(
+            x, num_samples, predict_likelihood_parameters, **kwargs
+        )
+        if predict_likelihood_parameters:
+            return self._normal_params(model_output)
+        else:
+            # return only the mean
+            if num_samples == 1:
+                return model_output
+            else:
+                return self._normal_sampling(model_output)
 
     def _quantiles_generate_components_names(
         self, input_series: TimeSeries

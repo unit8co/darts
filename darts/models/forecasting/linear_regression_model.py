@@ -211,17 +211,23 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             return self
 
     def _predict_and_sample(
-        self, x: np.ndarray, num_samples: int, likelihood_parameters: bool, **kwargs
-    ) -> Tuple[np.ndarray, np.ndarray]:
+        self,
+        x: np.ndarray,
+        num_samples: int,
+        predict_likelihood_parameters: bool,
+        **kwargs,
+    ) -> np.ndarray:
         if self.likelihood == "quantile":
-            return self._predict_quantiles(
-                x, num_samples, likelihood_parameters, **kwargs
+            return self._quantiles_predict_and_sample(
+                x, num_samples, predict_likelihood_parameters, **kwargs
             )
         elif self.likelihood == "poisson":
-            return self._predict_poisson(x, num_samples, **kwargs)
+            return self._poisson_predict_and_sample(
+                x, num_samples, predict_likelihood_parameters, **kwargs
+            )
         else:
             return super()._predict_and_sample(
-                x, num_samples, likelihood_parameters, **kwargs
+                x, num_samples, predict_likelihood_parameters, **kwargs
             )
 
     def _is_probabilistic(self) -> bool:

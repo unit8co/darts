@@ -224,20 +224,28 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         return self
 
     def _predict_and_sample(
-        self, x: np.ndarray, num_samples: int, likelihood_parameters: bool, **kwargs
-    ) -> Tuple[np.ndarray, np.ndarray]:
+        self,
+        x: np.ndarray,
+        num_samples: int,
+        predict_likelihood_parameters: bool,
+        **kwargs,
+    ) -> np.ndarray:
         """Override of RegressionModel's predict method to allow for the probabilistic case"""
         if self.likelihood == "quantile":
-            return self._predict_quantiles(
-                x, num_samples, likelihood_parameters, **kwargs
+            return self._quantiles_predict_and_sample(
+                x, num_samples, predict_likelihood_parameters, **kwargs
             )
         elif self.likelihood == "poisson":
-            return self._predict_poisson(x, num_samples, **kwargs)
+            return self._poisson_predict_and_sample(
+                x, num_samples, predict_likelihood_parameters, **kwargs
+            )
         elif self.likelihood in ["gaussian", "RMSEWithUncertainty"]:
-            return self._predict_normal(x, num_samples, **kwargs)
+            return self._normal_predict_and_sample(
+                x, num_samples, predict_likelihood_parameters, **kwargs
+            )
         else:
             return super()._predict_and_sample(
-                x, num_samples, likelihood_parameters, **kwargs
+                x, num_samples, predict_likelihood_parameters, **kwargs
             )
 
     def _likelihood_components_names(self, input_series: TimeSeries) -> List[str]:

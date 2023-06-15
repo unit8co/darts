@@ -265,38 +265,30 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         TimeSeries
             A time series containing the `n` next points after then end of the training series.
         """
-        if not self._fit_called:
-            raise_log(
-                ValueError(
-                    "The model must be fit before calling predict(). "
-                    "For global models, if predict() is called without specifying a series, "
-                    "the model must have been fit on a single training series."
-                ),
+        raise_if_not(
+            self._fit_called,
+            "The model must be fit before calling predict(). "
+            "For global models, if predict() is called without specifying a series, "
+            "the model must have been fit on a single training series.",
+            logger,
+        )
+
+        if not self._is_probabilistic():
+            raise_if(
+                num_samples > 1,
+                "`num_samples > 1` is only supported for probabilistic models.",
                 logger,
             )
 
-        if not self._is_probabilistic():
-            if num_samples > 1:
-                raise_log(
-                    ValueError(
-                        "`num_samples > 1` is only supported for probabilistic models."
-                    ),
-                    logger,
-                )
-
-            if predict_likelihood_parameters:
-                raise_log(
-                    ValueError(
-                        "`likelihood_parameters = True` is only supported for probabilistic models."
-                    ),
-                    logger,
-                )
-
-        if predict_likelihood_parameters and num_samples != 1:
-            raise_log(
-                ValueError(
-                    "`num_samples` must be set to `1` if `likelihood_parameters` is `True`."
-                ),
+            raise_if(
+                predict_likelihood_parameters,
+                "`likelihood_parameters = True` is only supported for probabilistic models.",
+                logger,
+            )
+        else:
+            raise_if(
+                predict_likelihood_parameters and num_samples != 1,
+                "`num_samples` must be set to `1` if `likelihood_parameters` is `True`.",
                 logger,
             )
 
@@ -595,7 +587,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         self,
         points_preds: Union[np.ndarray, Sequence[np.ndarray]],
         input_series: Optional[TimeSeries] = None,
-        custom_columns: List[str] = None,
+        custom_components: Union[List[str], None] = None,
         with_static_covs: bool = True,
         with_hierarchy: bool = True,
     ) -> TimeSeries:
@@ -609,8 +601,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Forecasted values, can be either the target(s) or parameters of the likelihood model
         input_series
             TimeSeries used as input for the prediction
-        custom_columns
-            New names for the forecast TimeSeries, used when the number of components changes
+        custom_components
+            New names for the forecast TimeSeries components, used when the number of components changes
         with_static_covs
             If set to False, do not copy the input_series `static_covariates` attribute
         with_hierarchy
@@ -624,7 +616,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             input_series if input_series is not None else self.training_series
         )
         return _build_forecast_series(
-            points_preds, input_series, custom_columns, with_static_covs, with_hierarchy
+            points_preds,
+            input_series,
+            custom_components,
+            with_static_covs,
+            with_hierarchy,
         )
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
@@ -2180,7 +2176,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             If `series` is given and is a sequence of several time series, this function returns
             a sequence where each element contains the corresponding `n` points forecasts.
         """
-        super().predict(n, num_samples)
+        super().predict(n, num_samples, predict_likelihood_parameters)
         if predict_likelihood_parameters:
             raise_if(
                 not self._is_probabilistic(),
