@@ -690,7 +690,8 @@ class DirichletLikelihood(Likelihood):
         return alphas
 
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
-        return self._likelihood_generate_components_names(input_series, ["lambda"])
+        # one alpha per component
+        return self._likelihood_generate_components_names(input_series, ["alpha"])
 
 
 class ExponentialLikelihood(Likelihood):
