@@ -36,7 +36,13 @@ class NaiveMean(LocalForecastingModel):
         self.mean_val = np.mean(series.values(copy=False), axis=0)
         return self
 
-    def predict(self, n: int, num_samples: int = 1, verbose: bool = False):
+    def predict(
+        self,
+        n: int,
+        num_samples: int = 1,
+        verbose: bool = False,
+        predict_likelihood_parameters: bool = False,
+    ):
         super().predict(n, num_samples)
         forecast = np.tile(self.mean_val, (n, 1))
         return self._build_forecast_series(forecast)
@@ -74,7 +80,13 @@ class NaiveSeasonal(LocalForecastingModel):
         self.last_k_vals = series.values(copy=False)[-self.K :, :]
         return self
 
-    def predict(self, n: int, num_samples: int = 1, verbose: bool = False):
+    def predict(
+        self,
+        n: int,
+        num_samples: int = 1,
+        verbose: bool = False,
+        predict_likelihood_parameters: bool = False,
+    ):
         super().predict(n, num_samples)
         forecast = np.array([self.last_k_vals[i % self.K, :] for i in range(n)])
         return self._build_forecast_series(forecast)
@@ -98,7 +110,13 @@ class NaiveDrift(LocalForecastingModel):
         series = self.training_series
         return self
 
-    def predict(self, n: int, num_samples: int = 1, verbose: bool = False):
+    def predict(
+        self,
+        n: int,
+        num_samples: int = 1,
+        verbose: bool = False,
+        predict_likelihood_parameters: bool = False,
+    ):
         super().predict(n, num_samples)
         first, last = (
             self.training_series.first_values(),
@@ -143,7 +161,13 @@ class NaiveMovingAverage(LocalForecastingModel):
         self.rolling_window = series[-self.input_chunk_length :].values(copy=False)
         return self
 
-    def predict(self, n: int, num_samples: int = 1, verbose: bool = False):
+    def predict(
+        self,
+        n: int,
+        num_samples: int = 1,
+        verbose: bool = False,
+        predict_likelihood_parameters: bool = False,
+    ):
         super().predict(n, num_samples)
 
         predictions_with_observations = np.concatenate(

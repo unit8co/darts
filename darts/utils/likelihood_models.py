@@ -176,7 +176,7 @@ class Likelihood(ABC):
         if isinstance(params, torch.Tensor):
             return params
         else:
-            return torch.cat(params, dims=-1)
+            return torch.cat(tensors=params, dim=-1)
 
     @abstractmethod
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:

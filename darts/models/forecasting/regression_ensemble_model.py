@@ -188,6 +188,7 @@ class RegressionEnsembleModel(EnsembleModel):
         predictions: Union[TimeSeries, Sequence[TimeSeries]],
         series: Optional[Sequence[TimeSeries]] = None,
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
 
         is_single_series = isinstance(series, TimeSeries) or series is None
@@ -200,6 +201,7 @@ class RegressionEnsembleModel(EnsembleModel):
                 series=serie,
                 future_covariates=prediction,
                 num_samples=num_samples,
+                predict_likelihood_parameters=predict_likelihood_parameters,
             )
             for serie, prediction in zip(series, predictions)
         ]

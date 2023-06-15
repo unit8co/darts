@@ -340,12 +340,12 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
                     # univariate
                     model.fit(ts)
                     pred_lkl_params = model.predict(
-                        n=3, num_samples=1, predict_likelihood_parameters=True
+                        n=1, num_samples=1, predict_likelihood_parameters=True
                     )
 
                     # check the dimensions, values require too much training
                     self.assertEqual(
-                        pred_lkl_params.values()[0].shape, true_lkl_params.shape
+                        pred_lkl_params.values().shape[1], len(true_lkl_params)
                     )
 
         @pytest.mark.slow
@@ -360,7 +360,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
                     [10, 1],
                     ["dummy_0_mu", "dummy_0_sigma", "dummy_1_mu", "dummy_1_sigma"],
                 ),
-                (PoissonLikelihood(), [5], ["dummy_0_lam", "dummy_1_lam"]),
+                (PoissonLikelihood(), [5], ["dummy_0_lambda", "dummy_1_lambda"]),
                 (
                     QuantileRegression([0.05, 0.5, 0.95]),
                     [-1.67, 0, 1.67],
@@ -401,11 +401,11 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
                 for model in models:
                     model.fit(ts)
                     pred_lkl_params = model.predict(
-                        n=3, num_samples=1, predict_likelihood_parameters=True
+                        n=1, num_samples=1, predict_likelihood_parameters=True
                     )
                     # check the dimensions
                     self.assertEqual(
-                        pred_lkl_params.values()[0].shape[0], n_comp * len(lkl_params)
+                        pred_lkl_params.values().shape[1], n_comp * len(lkl_params)
                     )
                     # check the component names
                     self.assertTrue(

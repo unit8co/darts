@@ -124,12 +124,12 @@ class _RNNModule(PLDualCovariatesModule):
 
     def _produce_predict_output(
         self, x: Tuple, last_hidden_state: Union[torch.Tensor, None] = None
-    ) -> Tuple[torch.Tensor, Union[torch.Tensor, None]]:
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """overwrite parent classes `_produce_predict_output` method"""
         output, hidden = self(x, last_hidden_state)
         if self.likelihood:
             if self.predict_likelihood_parameters:
-                return self.likelihood.predict_likelihood_parameters(output), None
+                return self.likelihood.predict_likelihood_parameters(output), hidden
             else:
                 return self.likelihood.sample(output), hidden
         else:
@@ -163,10 +163,11 @@ class _RNNModule(PLDualCovariatesModule):
             input_series = past_target
             cov_future = None
 
+        batch_prediction = []
         out, last_hidden_state = self._produce_predict_output(
-            x=(input_series, static_covariates)
+            (input_series, static_covariates)
         )
-        batch_prediction = [out[:, -1:, :]]
+        batch_prediction.append(out[:, -1:, :])
         prediction_length = 1
 
         while prediction_length < n:
@@ -186,7 +187,7 @@ class _RNNModule(PLDualCovariatesModule):
 
             # feed new input to model, including the last hidden state from the previous iteration
             out, last_hidden_state = self._produce_predict_output(
-                x=(new_input, static_covariates), last_hidden_state=last_hidden_state
+                (new_input, static_covariates), last_hidden_state
             )
 
             # append prediction to batch prediction array, increase counter
