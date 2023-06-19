@@ -92,6 +92,36 @@ if TORCH_AVAILABLE:
             model.fit(ts)
             model.predict(n=2)
 
+        def test_future_covariate_handling(self):
+            ts_time_index = tg.sine_timeseries(length=2, freq="h")
+
+            model = TiDEModel(
+                input_chunk_length=1,
+                output_chunk_length=1,
+                add_encoders={"cyclic": {"future": "hour"}},
+            )
+            model.fit(ts_time_index, verbose=False, epochs=1)
+
+        def test_future_and_past_covariate_handling(self):
+            ts_time_index = tg.sine_timeseries(length=2, freq="h")
+
+            model = TiDEModel(
+                input_chunk_length=1,
+                output_chunk_length=1,
+                add_encoders={"cyclic": {"future": "hour", "past": "hour"}},
+            )
+            model.fit(ts_time_index, verbose=False, epochs=1)
+
+        def test_past_covariate_handling(self):
+            ts_time_index = tg.sine_timeseries(length=2, freq="h")
+
+            model = TiDEModel(
+                input_chunk_length=1,
+                output_chunk_length=1,
+                add_encoders={"cyclic": {"past": "hour"}},
+            )
+            model.fit(ts_time_index, verbose=False, epochs=1)
+
         def test_multivariate_and_covariates(self):
             np.random.seed(42)
             torch.manual_seed(42)
