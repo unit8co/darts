@@ -241,6 +241,7 @@ Model | Univariate | Multivariate | Probabilistic | Multiple series (global) | P
 `TFTModel` (Temporal Fusion Transformer) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [TFT paper](https://arxiv.org/pdf/1912.09363.pdf), [PyTorch Forecasting](https://pytorch-forecasting.readthedocs.io/en/latest/models.html)
 `DLinearModel` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [DLinear paper](https://arxiv.org/pdf/2205.13504.pdf)
 `NLinearModel` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [NLinear paper](https://arxiv.org/pdf/2205.13504.pdf)
+`TiDEModel` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [TiDE paper](https://arxiv.org/pdf/2304.08424.pdf)
 Naive Baselines | ✅ | ✅ | | | | | |
 
 
