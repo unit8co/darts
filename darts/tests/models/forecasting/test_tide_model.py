@@ -153,14 +153,11 @@ if TORCH_AVAILABLE:
                 )
             )
 
-            # should work with cyclic encoding for time index
-            # set categorical embedding sizes once with automatic embedding size with an `int` and once by
-            # manually setting it with `tuple(int, int)`
+            # test with static covariates in the timeseries
             model = TiDEModel(
                 input_chunk_length=3,
                 output_chunk_length=4,
                 add_encoders={"cyclic": {"future": "hour"}},
-                # categorical_embedding_sizes={"cat1": 2, "cat2": (2, 2)},
                 pl_trainer_kwargs={"fast_dev_run": True},
             )
             model.fit(target_multi, verbose=False)
