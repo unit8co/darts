@@ -122,6 +122,68 @@ if TORCH_AVAILABLE:
             )
             model.fit(ts_time_index, verbose=False, epochs=1)
 
+        def test_static_covariates_support(self):
+            target_multi = concatenate(
+                [tg.sine_timeseries(length=10, freq="h")] * 2, axis=1
+            )
+
+            target_multi = target_multi.with_static_covariates(
+                pd.DataFrame(
+                    [[0.0, 1.0, 0, 2], [2.0, 3.0, 1, 3]],
+                    columns=["st1", "st2", "cat1", "cat2"],
+                )
+            )
+
+            # should work with cyclic encoding for time index
+            # set categorical embedding sizes once with automatic embedding size with an `int` and once by
+            # manually setting it with `tuple(int, int)`
+            model = TiDEModel(
+                input_chunk_length=3,
+                output_chunk_length=4,
+                add_encoders={"cyclic": {"future": "hour"}},
+                # categorical_embedding_sizes={"cat1": 2, "cat2": (2, 2)},
+                pl_trainer_kwargs={"fast_dev_run": True},
+            )
+            model.fit(target_multi, verbose=False)
+
+            assert model.model.static_cov_dim == np.prod(
+                target_multi.static_covariates.values.shape
+            )
+
+            # raise an error when trained with static covariates of wrong dimensionality
+            target_multi = target_multi.with_static_covariates(
+                pd.concat([target_multi.static_covariates] * 2, axis=1)
+            )
+            with pytest.raises(ValueError):
+                model.predict(n=1, series=target_multi, verbose=False)
+
+            # raise an error when trained with static covariates and trying to predict without
+            with pytest.raises(ValueError):
+                model.predict(
+                    n=1, series=target_multi.with_static_covariates(None), verbose=False
+                )
+
+            # with `use_static_covariates=False`, we can predict without static covs
+            model = TiDEModel(
+                input_chunk_length=3,
+                output_chunk_length=4,
+                use_static_covariates=False,
+                n_epochs=1,
+            )
+            model.fit(target_multi)
+            preds = model.predict(n=2, series=target_multi.with_static_covariates(None))
+            assert preds.static_covariates is None
+
+            model = TiDEModel(
+                input_chunk_length=3,
+                output_chunk_length=4,
+                use_static_covariates=False,
+                n_epochs=1,
+            )
+            model.fit(target_multi.with_static_covariates(None))
+            preds = model.predict(n=2, series=target_multi)
+            assert preds.static_covariates.equals(target_multi.static_covariates)
+
         def test_multivariate_and_covariates(self):
             np.random.seed(42)
             torch.manual_seed(42)
