@@ -3,7 +3,7 @@ Time-series Dense Encoder (TiDE)
 ------
 """
 
-from typing import Tuple
+from typing import Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -155,12 +155,12 @@ class _TideModule(PLMixedCovariatesModule):
         )
 
         self.encoders = nn.Sequential(
-         _ResidualBlock(
-                    input_dim=encoder_dim,
-                    output_dim=hidden_size,
-                    hidden_size=hidden_size,
-                    dropout=dropout,
-                ),
+            _ResidualBlock(
+                input_dim=encoder_dim,
+                output_dim=hidden_size,
+                hidden_size=hidden_size,
+                dropout=dropout,
+            ),
             *[
                 _ResidualBlock(
                     input_dim=hidden_size,
@@ -168,8 +168,8 @@ class _TideModule(PLMixedCovariatesModule):
                     hidden_size=hidden_size,
                     dropout=dropout,
                 )
-                for _ in range(num_encoder_layers-1)
-            ]
+                for _ in range(num_encoder_layers - 1)
+            ],
         )
 
         self.decoders = nn.Sequential(
@@ -180,15 +180,17 @@ class _TideModule(PLMixedCovariatesModule):
                     hidden_size=hidden_size,
                     dropout=dropout,
                 )
-                for _ in range(num_decoder_layers-1)
+                for _ in range(num_decoder_layers - 1)
             ],
             # add decoder output layer
             _ResidualBlock(
-                    input_dim=hidden_size,
-                    output_dim=decoder_output_dim * self.output_chunk_length * self.nr_params,
-                    hidden_size=hidden_size,
-                    dropout=dropout,
-                )
+                input_dim=hidden_size,
+                output_dim=decoder_output_dim
+                * self.output_chunk_length
+                * self.nr_params,
+                hidden_size=hidden_size,
+                dropout=dropout,
+            ),
         )
 
         self.temporal_decoder = _ResidualBlock(
@@ -203,7 +205,20 @@ class _TideModule(PLMixedCovariatesModule):
             self.input_chunk_length, self.output_chunk_length * self.nr_params
         )
 
-    def forward(self, x_in: Tuple) -> torch.Tensor:
+    def forward(
+        self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
+    ) -> torch.Tensor:
+        """TiDE model forward pass.
+        Parameters
+        ----------
+        x_in
+            comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
+            is the output/future chunk. Input dimensions are `(batch_size, time_steps, components)`
+        Returns
+        -------
+        torch.Tensor
+            The output Tensor of shape `(batch_size, output_chunk_length, output_dim, nr_params)`
+        """
 
         # x has shape (batch_size, input_chunk_length, input_dim)
         # x_future_covariates has shape (batch_size, input_chunk_length, future_cov_dim)
@@ -215,7 +230,15 @@ class _TideModule(PLMixedCovariatesModule):
         # future covariates need to be extracted from x and stacked with historical future covariates
         if self.future_cov_dim > 0:
             x_dynamic_covariates = torch.cat(
-        [x_future_covariates, x[:, :, None if self.future_cov_dim == 0 else -self.future_cov_dim:]], dim=1
+                [
+                    x_future_covariates,
+                    x[
+                        :,
+                        :,
+                        None if self.future_cov_dim == 0 else -self.future_cov_dim :,
+                    ],
+                ],
+                dim=1,
             )
 
             # project input features across all input time steps
@@ -227,7 +250,13 @@ class _TideModule(PLMixedCovariatesModule):
 
         # extract past covariates, if they exist
         if self.input_dim - self.output_dim - self.future_cov_dim > 0:
-            x_past_covariates = x[:, :, self.output_dim : None if self.future_cov_dim == 0 else -self.future_cov_dim:]
+            x_past_covariates = x[
+                :,
+                :,
+                self.output_dim : None
+                if self.future_cov_dim == 0
+                else -self.future_cov_dim :,
+            ]
         else:
             x_past_covariates = None
 
@@ -247,7 +276,6 @@ class _TideModule(PLMixedCovariatesModule):
         # decoded = decoded.view(-1, self.output_chunk_length, self.decoder_output_dim)
 
         # get view that is batch size x output chunk length x self.decoder_output_dim x nr params
-        decoded = decoded.view(
         decoded = decoded.view(x.shape[0], self.output_chunk_length, -1)
 
         # stack and temporally decode with future covariate last output steps
