@@ -3,7 +3,9 @@ import numpy as np
 from darts.logging import get_logger
 from darts.models import LinearRegressionModel, NaiveSeasonal
 from darts.tests.base_test_class import DartsBaseTestClass
-from darts.tests.models.forecasting.test_regression_models import dummy_timeseries
+from darts.tests.models.forecasting.extras.test_regression_models import (
+    dummy_timeseries,
+)
 from darts.utils.timeseries_generation import constant_timeseries as ct
 from darts.utils.timeseries_generation import linear_timeseries as lt
 

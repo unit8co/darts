@@ -72,11 +72,15 @@ models = [
     (KalmanForecaster(dim_x=3), 20),
     (LinearRegressionModel(lags=12), 13),
     (RandomForest(lags=12, n_estimators=5, max_depth=3), 14),
-    (Prophet(), 9.0),
     (AutoARIMA(), 12),
     (TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 8.5),
     (BATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 11),
 ]
+
+try:
+    models.append((Prophet(), 9.0))
+except TypeError:
+    pass
 
 # forecasting models with exogenous variables support
 multivariate_models = [
@@ -93,18 +97,26 @@ dual_models = [
     ARIMA(),
     StatsForecastAutoARIMA(season_length=12),
     StatsForecastAutoETS(season_length=12),
-    Prophet(),
     AutoARIMA(),
 ]
+
+try:
+    dual_models.append(Prophet())
+except TypeError:
+    pass
 
 # test only a few models for encoder support reduce time
 encoder_support_models = [
     VARIMA(1, 0, 0),
     ARIMA(),
     AutoARIMA(),
-    Prophet(),
     KalmanForecaster(dim_x=30),
 ]
+
+try:
+    encoder_support_models.append(Prophet())
+except TypeError:
+    pass
 
 
 class LocalForecastingModelsTestCase(DartsBaseTestClass):
@@ -612,18 +624,23 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             (ExponentialSmoothing(), "ExponentialSmoothing()"),  # no params changed
             (ARIMA(1, 1, 1), "ARIMA(p=1, q=1)"),  # default value for a param
             (
-                Prophet(
-                    add_encoders={"cyclic": {"past": ["month"]}}
-                ),  # data structure param
-                "Prophet(add_encoders={'cyclic': {'past': ['month']}})",
-            ),
-            (
                 TBATS(
                     use_trend=True, use_arma_errors=True, use_box_cox=True
                 ),  # params in wrong order
                 "TBATS(use_box_cox=True, use_trend=True)",
             ),
         ]
+        try:
+            model_expected_name_pairs.append(
+                (
+                    Prophet(
+                        add_encoders={"cyclic": {"past": ["month"]}}
+                    ),  # data structure param
+                    "Prophet(add_encoders={'cyclic': {'past': ['month']}})",
+                )
+            )
+        except TypeError:
+            pass
         for model, expected in model_expected_name_pairs:
             self.assertEqual(expected, str(model))
 

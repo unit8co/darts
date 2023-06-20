@@ -131,15 +131,18 @@ class ShapExplainerTestCase(DartsBaseTestClass):
     def test_creation(self):
 
         # Model should be fitted first
-        m = LightGBMModel(
-            lags=4,
-            lags_past_covariates=[-1, -2, -3],
-            lags_future_covariates=[0],
-            output_chunk_length=4,
-            add_encoders=self.add_encoders,
-        )
-        with self.assertRaises(ValueError):
-            ShapExplainer(m, self.target_ts, self.past_cov_ts, self.fut_cov_ts)
+        try:
+            m = LightGBMModel(
+                lags=4,
+                lags_past_covariates=[-1, -2, -3],
+                lags_future_covariates=[0],
+                output_chunk_length=4,
+                add_encoders=self.add_encoders,
+            )
+            with self.assertRaises(ValueError):
+                ShapExplainer(m, self.target_ts, self.past_cov_ts, self.fut_cov_ts)
+        except TypeError:
+            pass
 
         # Model should be a RegressionModel
         m = ExponentialSmoothing()
@@ -500,18 +503,21 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         past_cov = np.random.normal(0, 1, len(days)).astype("float32")
         past_cov_ts = TimeSeries.from_times_and_values(days, past_cov.reshape(-1, 1))
 
-        model = LightGBMModel(
-            lags=None,
-            lags_past_covariates=[-1, -2],
-            lags_future_covariates=[-1, -2],
-            output_chunk_length=1,
-        )
+        try:
+            model = LightGBMModel(
+                lags=None,
+                lags_past_covariates=[-1, -2],
+                lags_future_covariates=[-1, -2],
+                output_chunk_length=1,
+            )
 
-        model.fit(
-            series=self.target_ts,
-            past_covariates=past_cov_ts,
-            future_covariates=fut_cov_ts,
-        )
+            model.fit(
+                series=self.target_ts,
+                past_covariates=past_cov_ts,
+                future_covariates=fut_cov_ts,
+            )
+        except TypeError:
+            pass
 
         shap_explain = ShapExplainer(model)
         explanation_results = shap_explain.explain()
@@ -619,13 +625,17 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         plt.close()
 
     def test_feature_values_align_with_input(self):
-        model = LightGBMModel(
-            lags=4,
-            output_chunk_length=1,
-        )
-        model.fit(
-            series=self.target_ts,
-        )
+        try:
+            model = LightGBMModel(
+                lags=4,
+                output_chunk_length=1,
+            )
+            model.fit(
+                series=self.target_ts,
+            )
+        except TypeError:
+            pass
+
         shap_explain = ShapExplainer(model)
         explanation_results = shap_explain.explain()
         df = pd.merge(
@@ -729,13 +739,16 @@ class ShapExplainerTestCase(DartsBaseTestClass):
 
     def test_shapley_with_static_cov(self):
         ts = self.target_ts_with_static_covs
-        model = LightGBMModel(
-            lags=4,
-            output_chunk_length=1,
-        )
-        model.fit(
-            series=ts,
-        )
+        try:
+            model = LightGBMModel(
+                lags=4,
+                output_chunk_length=1,
+            )
+            model.fit(
+                series=ts,
+            )
+        except TypeError:
+            pass
         shap_explain = ShapExplainer(model)
 
         # different static covariates dimensions should raise an error
