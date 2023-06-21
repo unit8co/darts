@@ -18,8 +18,10 @@ from darts.models import (
     Theta,
 )
 from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.models.forecasting.extras.test_regression_models import (
+    train_test_split,
+)
 from darts.tests.models.forecasting.test_ensemble_models import _make_ts
-from darts.tests.models.forecasting.test_regression_models import train_test_split
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)

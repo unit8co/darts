@@ -1,3 +1,6 @@
+*.code-workspace
+local_test.sh
+
 .idea
 .vscode
 *.pyc

@@ -60,6 +60,11 @@ except ModuleNotFoundError:
         "https://github.com/unit8co/darts/blob/master/INSTALL.md"
     )
 
+    class CatBoostRegressor:
+        def __init__(self) -> None:
+            """dummy"""
+            pass
+
 
 class RegressionModel(GlobalForecastingModel):
     def __init__(

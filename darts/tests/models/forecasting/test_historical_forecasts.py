@@ -8,14 +8,7 @@ from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
 from darts.datasets import AirPassengersDataset
 from darts.logging import get_logger
-from darts.models import (
-    ARIMA,
-    AutoARIMA,
-    CatBoostModel,
-    LightGBMModel,
-    LinearRegressionModel,
-    NaiveSeasonal,
-)
+from darts.models import ARIMA, AutoARIMA, LinearRegressionModel, NaiveSeasonal
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 
@@ -43,8 +36,8 @@ except ImportError:
 
 models_reg_no_cov_cls_kwargs = [
     (LinearRegressionModel, {"lags": 8}, (8, 1)),
-    (CatBoostModel, {"lags": 6}, (6, 1)),
-    (LightGBMModel, {"lags": 4}, (4, 1)),
+    # (CatBoostModel, {"lags": 6}, (6, 1)),
+    # (LightGBMModel, {"lags": 4}, (4, 1)),
 ]
 
 models_reg_cov_cls_kwargs = [

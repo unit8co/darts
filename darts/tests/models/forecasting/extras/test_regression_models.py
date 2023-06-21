@@ -146,9 +146,13 @@ def dummy_timeseries(
 
 # helper function used to register LightGBMModel/LinearRegressionModel with likelihood
 def partialclass(cls, *args, **kwargs):
-    class NewCls(cls):
-        __init__ = functools.partialmethod(cls.__init__, *args, **kwargs)
+    try:
 
+        class NewCls(cls):
+            __init__ = functools.partialmethod(cls.__init__, *args, **kwargs)
+
+    except TypeError:
+        return None
     return NewCls
 
 
