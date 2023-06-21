@@ -7,7 +7,7 @@ def read_requirements(path):
     return list(Path(path).read_text().splitlines())
 
 
-base_reqs = read_requirements("requirements/core.txt")
+base_reqs = read_requirements("requirements/core-slim.txt")
 torch_reqs = read_requirements("requirements/torch.txt")
 
 all_reqs = base_reqs + torch_reqs
@@ -27,23 +27,25 @@ PROJECT_URLS = {
 
 
 setup(
-    name="darts",
+    name="u8darts-slim",
     version="0.24.0",
-    description="A python library for easy manipulation and forecasting of time series.",
+    description=""""A python library for easy manipulation and forecasting of time series.
+                Slim fork with fewer dependencies.""",
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
     project_urls=PROJECT_URLS,
     url=URL,
-    maintainer="Unit8 SA",
-    maintainer_email="darts@unit8.co",
+    maintainer="Luís Seabra",
+    maintainer_email="luismavseabra@gmail.com",
     license="Apache License 2.0",
     packages=find_packages(),
-    install_requires=all_reqs,
+    install_requires=base_reqs,
+    extras_require={"all": all_reqs, "torch": torch_reqs},
     package_data={
         "darts": ["py.typed"],
     },
     zip_safe=False,
-    python_requires=">=3.7",
+    python_requires=">=3.9",
     classifiers=[
         "Intended Audience :: Science/Research",
         "Intended Audience :: Developers",
@@ -59,6 +61,7 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: Implementation :: PyPy",
     ],
     keywords="time series forecasting",
