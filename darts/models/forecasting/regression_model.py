@@ -315,6 +315,10 @@ class RegressionModel(GlobalForecastingModel):
         )
 
     @property
+    def supports_multivariate(self) -> bool:
+        return True
+
+    @property
     def min_train_series_length(self) -> int:
         return max(
             3,

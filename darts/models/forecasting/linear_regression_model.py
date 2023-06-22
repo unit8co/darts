@@ -220,5 +220,9 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         else:
             return super()._predict_and_sample(x, num_samples, **kwargs)
 
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
+
     def _is_probabilistic(self) -> bool:
         return self.likelihood is not None

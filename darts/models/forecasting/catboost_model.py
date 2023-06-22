@@ -140,6 +140,10 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             use_static_covariates=use_static_covariates,
         )
 
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
+
     def fit(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],

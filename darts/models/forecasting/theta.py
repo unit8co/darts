@@ -169,6 +169,10 @@ class Theta(LocalForecastingModel):
         return self._build_forecast_series(forecast)
 
     @property
+    def supports_multivariate(self) -> bool:
+        return False
+
+    @property
     def min_train_series_length(self) -> int:
         if (
             self.season_mode != SeasonalityMode.NONE

@@ -219,6 +219,10 @@ class RegressionEnsembleModel(EnsembleModel):
         extreme_lags_ = super().extreme_lags
         return (extreme_lags_[0] - self.train_n_points,) + extreme_lags_[1:]
 
+    @property
+    def supports_multivariate(self) -> bool:
+        return super().supports_multivariate and getattr(self.regression_model, "supports_multivariate", True)
+
     def _is_probabilistic(self) -> bool:
         """
         A RegressionEnsembleModel is probabilistic if its regression

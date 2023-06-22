@@ -109,3 +109,7 @@ class RandomForest(RegressionModel):
             model=RandomForestRegressor(**kwargs),
             use_static_covariates=use_static_covariates,
         )
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return True

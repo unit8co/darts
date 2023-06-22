@@ -98,6 +98,10 @@ class Croston(FutureCovariatesLocalForecastingModel):
 
         self.version = version
 
+    @property
+    def supports_multivariate(self) -> bool:
+        return False
+
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         super()._fit(series, future_covariates)
         self._assert_univariate(series)
