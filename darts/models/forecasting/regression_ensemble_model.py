@@ -115,7 +115,6 @@ class RegressionEnsembleModel(EnsembleModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     ):
-
         super().fit(
             series, past_covariates=past_covariates, future_covariates=future_covariates
         )
@@ -189,7 +188,6 @@ class RegressionEnsembleModel(EnsembleModel):
         series: Optional[Sequence[TimeSeries]] = None,
         num_samples: int = 1,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-
         is_single_series = isinstance(series, TimeSeries) or series is None
         predictions = series2seq(predictions)
         series = series2seq(series) if series is not None else [None]
@@ -221,7 +219,9 @@ class RegressionEnsembleModel(EnsembleModel):
 
     @property
     def supports_multivariate(self) -> bool:
-        return super().supports_multivariate and getattr(self.regression_model, "supports_multivariate", True)
+        return super().supports_multivariate and getattr(
+            self.regression_model, "supports_multivariate", True
+        )
 
     def _is_probabilistic(self) -> bool:
         """
