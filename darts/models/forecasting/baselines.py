@@ -214,19 +214,27 @@ class NaiveEnsembleModel(EnsembleModel):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
-        if not self.retrain_forecasting_models:
-            return self
-
-        for model in self.forecasting_models:
-            model._fit_wrapper(
-                series=series,
-                past_covariates=past_covariates
-                if model.supports_past_covariates
-                else None,
-                future_covariates=future_covariates
-                if model.supports_future_covariates
-                else None,
-            )
+        if self.retrain_forecasting_models:
+            # Some models may need to be 'reset' to allow being retrained from scratch, especially torch-based models
+            self.forecasting_models: List[ForecastingModel] = [
+                model.untrained_model() for model in self.forecasting_models
+            ]
+            for model in self.forecasting_models:
+                model._fit_wrapper(
+                    series=series,
+                    past_covariates=past_covariates
+                    if model.supports_past_covariates
+                    else None,
+                    future_covariates=future_covariates
+                    if model.supports_future_covariates
+                    else None,
+                )
+        # update training_series attribute to make predict() behave as expected
+        else:
+            for model in self.forecasting_models:
+                model.training_series = (
+                    series if isinstance(series, TimeSeries) else None
+                )
 
         return self
 
