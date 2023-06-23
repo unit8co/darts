@@ -81,8 +81,14 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
             NaiveEnsembleModel([global_model, global_model.untrained_model()])
 
         # both global trained, retrain = True
+        with self.assertRaises(ValueError):
+            # models need to be explicitely reset before retraining them
+            model_ens_retrain = NaiveEnsembleModel(
+                [global_model, global_model], retrain_forecasting_models=True
+            )
         model_ens_retrain = NaiveEnsembleModel(
-            [global_model, global_model], retrain_forecasting_models=True
+            [global_model.untrained_model(), global_model.untrained_model()],
+            retrain_forecasting_models=True,
         )
         with self.assertRaises(ValueError):
             model_ens_retrain.predict(1, series=self.series1)

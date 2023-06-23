@@ -145,21 +145,22 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             retrain_forecasting_models=False,
         )
         model_ens.fit(self.sine_series[:45])
-        pred_no_ft = model_ens.predict(5)
+        model_ens.predict(5)
 
+        # retrain_forecasting_models=True requires all the model to be reset
+        with self.assertRaises(ValueError):
+            RegressionEnsembleModel(
+                [linreg1, linreg2],
+                regression_train_n_points=10,
+                retrain_forecasting_models=True,
+            )
         model_ens_ft = RegressionEnsembleModel(
-            [linreg1, linreg2],
+            [linreg1.untrained_model(), linreg2.untrained_model()],
             regression_train_n_points=10,
             retrain_forecasting_models=True,
         )
         model_ens_ft.fit(self.sine_series[:45])
-        pred_ft = model_ens_ft.predict(5)
-
-        # prediction without retraining the forecasting models on the longer ts
-        # is less accurate than with retraining
-        self.assertGreater(
-            rmse(self.lin_series[-5:], pred_no_ft), rmse(self.lin_series[-5:], pred_ft)
-        )
+        model_ens_ft.predict(5)
 
     def test_train_n_points(self):
         regr = LinearRegressionModel(lags_future_covariates=[0])
@@ -427,7 +428,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         ensemble_mixproba = RegressionEnsembleModel(
             forecasting_models=[
                 self.get_probabilistic_global_model([-1, -3], quantiles),
-                self.get_deterministic_global_model([-2, -4], quantiles),
+                self.get_deterministic_global_model([-2, -4]),
             ],
             regression_train_n_points=10,
             regression_model=linreg_prob.untrained_model(),
@@ -445,7 +446,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         ensemble_mixproba2 = RegressionEnsembleModel(
             forecasting_models=[
                 self.get_probabilistic_global_model([-1, -3], quantiles),
-                self.get_deterministic_global_model([-2, -4], quantiles),
+                self.get_deterministic_global_model([-2, -4]),
             ],
             regression_train_n_points=10,
             regression_model=linreg_prob.untrained_model(),

@@ -50,7 +50,8 @@ class RegressionEnsembleModel(EnsembleModel):
         forecasting_models
             List of forecasting models whose predictions to ensemble
         regression_train_n_points
-            The number of points to use to train the regression model
+            The number of points to use to train the regression model. Can be set to `-1` to use the entire series
+            to train the regressor if `forecasting_models` are already fitted and `retrain_forecasting_models=False`.
         regression_model
             Any regression model with ``predict()`` and ``fit()`` methods (e.g. from scikit-learn)
             Default: ``darts.model.LinearRegressionModel(fit_intercept=False)``
@@ -67,12 +68,12 @@ class RegressionEnsembleModel(EnsembleModel):
                 `regression_train_num_samples will be passed only to the probabilistic ones.
             ..
         regression_train_samples_reduction
-            If `forecasting models` are probabilistic and `regression_train_num_samples` > 1, method used to
+            If `forecasting_models` are probabilistic and `regression_train_num_samples` > 1, method used to
             reduce the samples before passing them to the regression model. Possible values: "mean", "median"
             or float value corresponding to the desired quantile. Default: "median"
         retrain_forecasting_models
-            If set to `False`, the `forecasting_models` are not retrained on `series` (only supported if all the
-            `forecasting_models` are pretrained `GlobalForecastingModels`). Default: ``True``.
+            If set to `False`, the `forecasting_models` are not retrained when calling `fit()` (only supported
+            if all the `forecasting_models` are pretrained `GlobalForecastingModels`). Default: ``True``.
         show_warnings
             Whether to show warnings related to forecasting_models covariates support.
         References
@@ -108,6 +109,15 @@ class RegressionEnsembleModel(EnsembleModel):
         )
 
         self.regression_model = regression_model
+
+        raise_if(
+            regression_train_n_points == -1
+            and not (self.all_trained and (not retrain_forecasting_models)),
+            "`regression_train_n_points` can be set to `-1` only if `retrain_forecasting_model=False` and "
+            "all the `forecasting_models` are already fitted.",
+            logger,
+        )
+
         self.train_n_points = regression_train_n_points
 
     def _split_multi_ts_sequence(
@@ -120,11 +130,17 @@ class RegressionEnsembleModel(EnsembleModel):
     def fit(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries], None]] = None,
+        future_covariates: Optional[
+            Union[TimeSeries, Sequence[TimeSeries], None]
+        ] = None,
     ):
         """
-        Fits the forecasting models with the entire series except the last `regression_train_n_points` values.
+        Fits the forecasting models with the entire series except the last `regression_train_n_points` values, which
+        are used to train the regressor model.
+
+        If `forecasting_models` contains fitted `GlobalForecastingModels` and `retrain_forecasting_model=False`, the
+        regression model will be trained.
 
         Parameters
         ----------
@@ -144,12 +160,19 @@ class RegressionEnsembleModel(EnsembleModel):
 
         # spare train_n_points points to serve as regression target
         is_single_series = isinstance(series, TimeSeries)
-        if is_single_series:
-            train_n_points_too_big = len(self.training_series) <= self.train_n_points
-        else:
-            train_n_points_too_big = any(
-                [len(s) <= self.train_n_points for s in series]
+        if self.train_n_points == -1:
+            # take the longest possible time index
+            self.train_n_points = (
+                len(series) if is_single_series else min(len(ts) for ts in series)
             )
+            train_n_points_too_big = False
+        else:
+            if is_single_series:
+                train_n_points_too_big = len(series) <= self.train_n_points
+            else:
+                train_n_points_too_big = any(
+                    [len(s) <= self.train_n_points for s in series]
+                )
 
         raise_if(
             train_n_points_too_big,
@@ -159,8 +182,8 @@ class RegressionEnsembleModel(EnsembleModel):
         )
 
         if is_single_series:
-            forecast_training = self.training_series[: -self.train_n_points]
-            regression_target = self.training_series[-self.train_n_points :]
+            forecast_training = series[: -self.train_n_points]
+            regression_target = series[-self.train_n_points :]
         else:
             forecast_training, regression_target = self._split_multi_ts_sequence(
                 self.train_n_points, series
@@ -193,19 +216,26 @@ class RegressionEnsembleModel(EnsembleModel):
         )
 
         # prepare the forecasting models for further predicting by fitting them with the entire data
+        if self.retrain_forecasting_models:
+            # Some models may need to be 'reset' to allow being retrained from scratch, especially torch-based models
+            self.forecasting_models: List[ForecastingModel] = [
+                model.untrained_model() for model in self.forecasting_models
+            ]
 
-        # Some models (incl. Neural-Network based models) may need to be 'reset' to allow being retrained from scratch
-        self.forecasting_models = [
-            model.untrained_model() for model in self.forecasting_models
-        ]
-
-        for model in self.forecasting_models:
-            kwargs = dict(series=series)
-            if model.supports_past_covariates:
-                kwargs["past_covariates"] = past_covariates
-            if model.supports_future_covariates:
-                kwargs["future_covariates"] = future_covariates
-            model.fit(**kwargs)
+            for model in self.forecasting_models:
+                model._fit_wrapper(
+                    series=series,
+                    past_covariates=past_covariates
+                    if model.supports_past_covariates
+                    else None,
+                    future_covariates=future_covariates
+                    if model.supports_future_covariates
+                    else None,
+                )
+        # update training_series attribute to make predict() behave as expected
+        else:
+            for model in self.forecasting_models:
+                model.training_series = series if is_single_series else None
         return self
 
     def ensemble(

@@ -2,7 +2,6 @@
 Ensemble Model Base Class
 """
 
-import copy
 from abc import abstractmethod
 from functools import reduce
 from typing import List, Optional, Sequence, Tuple, Union
@@ -30,7 +29,7 @@ class EnsembleModel(GlobalForecastingModel):
 
     Parameters
     ----------
-    models
+    forecasting_models
         List of forecasting models whose predictions to ensemble
 
         .. note::
@@ -40,12 +39,12 @@ class EnsembleModel(GlobalForecastingModel):
         Number of prediction samples from each forecasting model for multi-level ensembles. The n_samples
         dimension will be reduced using the `train_samples_reduction` method.
     train_samples_reduction
-        If `models` are probabilistic and `train_num_samples` > 1, method used to
-        reduce the samples dimension to 1. Possible values: "mean", "median" or float value corresponding
-        to the desired quantile.
+        If `forecasting_models` are probabilistic and `train_num_samples` > 1, method used to reduce the
+        samples dimension to 1. Possible values: "mean", "median" or float value corresponding to the
+        desired quantile.
     retrain_forecasting_models
-        If set to `False`, the `forecasting_models` are not retrained on `series` (only supported if all the
-        `forecasting_models` are pretrained `GlobalForecastingModels`). Default: ``True``.
+        If set to `False`, the `forecasting_models` are not retrained when calling `fit()` (only supported
+        if all the `forecasting_models` are pretrained `GlobalForecastingModels`). Default: ``True``.
     show_warnings
         Whether to show warnings related to models covariates support.
     """
@@ -54,7 +53,7 @@ class EnsembleModel(GlobalForecastingModel):
         self,
         forecasting_models: List[ForecastingModel],
         train_num_samples: int,
-        train_samples_reduction: Union[str, float],
+        train_samples_reduction: Union[str, float, None],
         retrain_forecasting_models: bool = True,
         show_warnings: bool = True,
     ):
@@ -93,31 +92,34 @@ class EnsembleModel(GlobalForecastingModel):
         some_trained = any(model_fit_status)
 
         raise_if(
-            not self.is_global_ensemble and some_trained,
+            (not self.is_global_ensemble and some_trained)
+            or (self.is_global_ensemble and not (self.all_trained or not some_trained)),
             "Cannot instantiate EnsembleModel with a mixture of unfitted and fitted models. "
             "Consider resetting all models with `my_model.untrained_model()` or using only "
-            "trained GlobalForecastingModels as `forecasting_models`.",
+            "trained GlobalForecastingModels as `forecasting_models` together with "
+            "`retrain_forecasting_models=False`.",
             logger,
         )
 
-        raise_if(
-            self.is_global_ensemble and not (self.all_trained or not some_trained),
-            "If EnsembleModel is instanciated with only GlobalForecastingModels, they must all be either "
-            "trained or untrained. Consider resetting all models with `my_model.untrained_model()`",
-            logger,
-        )
-
-        if not retrain_forecasting_models:
+        if retrain_forecasting_models:
+            # prevent issues with pytorch-lightning trainer during retraining
+            raise_if(
+                some_trained,
+                "`retrain_forecasting_models=True` but some `forecasting_models` were already fitted. "
+                "Please reset all the models with `my_model.untrained_model()` before passing them to "
+                "the `EnsembleModel`.",
+                logger,
+            )
+        else:
             raise_if_not(
                 self.is_global_ensemble and self.all_trained,
-                "`retrain_forecastings_models=False` is supported only if all the `forecasting_models` are "
+                "`retrain_forecasting_models=False` is supported only if all the `forecasting_models` are "
                 "already trained `GlobalForecastingModels`.",
                 logger,
             )
 
         raise_if(
-            train_num_samples is not None
-            and train_num_samples > 1
+            train_num_samples > 1
             and all([not m._is_probabilistic() for m in forecasting_models]),
             "`train_num_samples` is greater than 1 but the `RegressionEnsembleModel` "
             "contains only deterministic models.",
@@ -143,18 +145,15 @@ class EnsembleModel(GlobalForecastingModel):
             )
         else:
             raise_log(
-                f"`train_samples_reduction` type not supported "
-                f"({train_samples_reduction}). Must be `float` "
-                f" or one of {supported_reduction}.",
+                ValueError(
+                    f"`train_samples_reduction` type not supported "
+                    f"({train_samples_reduction}). Must be `float` "
+                    f" or one of {supported_reduction}."
+                ),
                 logger,
             )
 
         super().__init__()
-        # work on copies to prevent modification of the original models
-        if retrain_forecasting_models:
-            forecasting_models = [m.untrained_model() for m in forecasting_models]
-        else:
-            forecasting_models = [copy.deepcopy(m) for m in forecasting_models]
         self.forecasting_models = forecasting_models
         self.train_num_samples = train_num_samples
         self.train_samples_reduction = train_samples_reduction
@@ -267,11 +266,7 @@ class EnsembleModel(GlobalForecastingModel):
         ]
 
         # reduce the probabilistics series
-        if (
-            self.train_samples_reduction is not None
-            and self.train_num_samples is not None
-            and self.train_num_samples > 1
-        ):
+        if self.train_samples_reduction is not None and self.train_num_samples > 1:
             predictions = [
                 self._predictions_reduction(prediction) for prediction in predictions
             ]

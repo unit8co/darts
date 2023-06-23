@@ -281,8 +281,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def _fit_wrapper(
         self,
         series: TimeSeries,
-        past_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
+        past_covariates: Optional[Union[TimeSeries, None]],
+        future_covariates: Optional[Union[TimeSeries, None]],
     ):
         self.fit(series)
 
@@ -290,8 +290,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         self,
         n: int,
         series: TimeSeries,
-        past_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
+        past_covariates: Optional[Union[TimeSeries, None]],
+        future_covariates: Optional[Union[TimeSeries, None]],
         num_samples: int,
         verbose: bool = False,
     ) -> TimeSeries:
@@ -2080,9 +2080,11 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     def predict(
         self,
         n: int,
-        series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: Optional[Union[TimeSeries, Sequence[TimeSeries], None]] = None,
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries], None]] = None,
+        future_covariates: Optional[
+            Union[TimeSeries, Sequence[TimeSeries], None]
+        ] = None,
         num_samples: int = 1,
         verbose: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
@@ -2157,12 +2159,12 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     def _predict_wrapper(
         self,
         n: int,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries], None]],
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries], None]],
         num_samples: int,
         verbose: bool = False,
-    ) -> TimeSeries:
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         return self.predict(
             n,
             series,
@@ -2174,9 +2176,9 @@ class GlobalForecastingModel(ForecastingModel, ABC):
 
     def _fit_wrapper(
         self,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries], None]],
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries], None]],
     ):
         self.fit(
             series=series,
