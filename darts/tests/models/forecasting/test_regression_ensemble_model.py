@@ -60,7 +60,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
     ts_cov1 = ts_cov1.pd_dataframe()
     ts_cov1.columns = ["Periodic", "Gaussian"]
     ts_cov1 = TimeSeries.from_dataframe(ts_cov1)
-    ts_sum1 = ts_periodic + ts_gaussian
+    ts_sum1: TimeSeries = ts_periodic + ts_gaussian
 
     ts_cov2 = ts_sum1.stack(ts_random_walk)
     ts_sum2 = ts_sum1 + ts_random_walk
@@ -181,6 +181,27 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         ensemble = RegressionEnsembleModel(self.get_local_models(), 45)
         with self.assertRaises(ValueError):
             ensemble.fit(self.combined)
+
+        # using regression_train_n_point=-1 without pretraining
+        with self.assertRaises(ValueError):
+            RegressionEnsembleModel(
+                self.get_global_models(), regression_train_n_points=-1
+            )
+
+        # using regression_train_n_point=-1 with pretraining
+        forecasting_models = [
+            LinearRegressionModel(lags=1).fit(self.sine_series),
+            LinearRegressionModel(lags=3).fit(self.sine_series),
+        ]
+        ensemble = RegressionEnsembleModel(
+            forecasting_models,
+            regression_train_n_points=-1,
+            retrain_forecasting_models=False,
+        )
+        ensemble.fit(self.combined)
+
+        # 3 values are necessary to predict the first value for the 2nd forecasting model
+        self.assertEqual(ensemble.regression_model.training_series, self.combined[3:])
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_torch_models_retrain(self):

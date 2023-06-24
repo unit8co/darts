@@ -52,8 +52,8 @@ class EnsembleModel(GlobalForecastingModel):
     def __init__(
         self,
         forecasting_models: List[ForecastingModel],
-        train_num_samples: int,
-        train_samples_reduction: Union[str, float, None],
+        train_num_samples: Optional[int],
+        train_samples_reduction: Optional[Union[str, float]],
         retrain_forecasting_models: bool = True,
         show_warnings: bool = True,
     ):

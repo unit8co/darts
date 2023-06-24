@@ -11,6 +11,7 @@ from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
 from darts.models.forecasting.regression_model import RegressionModel
+from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
 from darts.timeseries import TimeSeries
 from darts.utils.utils import seq2series, series2seq
 
@@ -165,6 +166,33 @@ class RegressionEnsembleModel(EnsembleModel):
             self.train_n_points = (
                 len(series) if is_single_series else min(len(ts) for ts in series)
             )
+            # shift by the greatest forecasting models input length
+            all_shifts = []
+            for m in self.forecasting_models:
+                if isinstance(m, TorchForecastingModel):
+                    all_shifts.append(m.input_chunk_length)
+                else:
+                    # when it's not clearly defined, extreme_lags returns
+                    # min_train_serie_length for the LocalForecastingModels
+                    (
+                        min_target_lag,
+                        max_target_lag,
+                        min_past_cov_lag,
+                        max_past_cov_lag,
+                        min_future_cov_lag,
+                        max_future_cov_lag,
+                    ) = m.extreme_lags
+                    if min_target_lag is not None:
+                        all_shifts.append(-min_target_lag)
+
+            self.train_n_points -= max(all_shifts)
+            raise_if(
+                self.train_n_points < 0,
+                f"`series` is too short to train the regression model due to the number of values "
+                f"necessary to produce one prediction : {max(all_shifts)}.",
+                logger,
+            )
+
             train_n_points_too_big = False
         else:
             if is_single_series:
