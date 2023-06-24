@@ -274,7 +274,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
                 )
 
         @pytest.mark.slow
-        def test_likelihoods_parameters_forecasts_univariate(self):
+        def test_predict_likelihood_parameters_univariate(self):
             """Checking convergence of model for each metric is too time consuming, making sure that the dimensions
             of the predictions contain the proper elements for univariate input.
             """
@@ -349,7 +349,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
                     )
 
         @pytest.mark.slow
-        def test_likelihoods_parameters_forecasts_multivariate(self):
+        def test_predict_likelihood_parameters_multivariate(self):
             """Checking convergence of model for each metric is too time consuming, making sure that the dimensions
             of the predictions contain the proper elements for multivariate inputs.
             """
@@ -413,6 +413,30 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
                         f"Components names are not matching; expected {comp_names} "
                         f"but received {list(pred_lkl_params.components)}",
                     )
+
+        def test_predict_likelihood_parameters_wrong_args(self):
+            # deterministic model
+            model = DLinearModel(
+                input_chunk_length=4, output_chunk_length=4, n_epochs=1
+            )
+            model.fit(self.constant_noisy_ts)
+            with self.assertRaises(ValueError):
+                model.predict(n=1, predict_likelihood_parameters=True)
+
+            model = DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=4,
+                n_epochs=1,
+                likelihood=GaussianLikelihood(),
+            )
+            model.fit(self.constant_noisy_ts)
+            # num_samples > 1
+            with self.assertRaises(ValueError):
+                model.predict(n=1, num_samples=2, predict_likelihood_parameters=True)
+            # n > output_chunk_length
+            with self.assertRaises(ValueError):
+                model.predict(n=5, num_samples=1, predict_likelihood_parameters=True)
+            model.predict(n=4, num_samples=1, predict_likelihood_parameters=True)
 
         def test_stochastic_inputs(self):
             model = RNNModel(input_chunk_length=5)
