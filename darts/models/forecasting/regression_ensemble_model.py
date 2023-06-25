@@ -99,7 +99,7 @@ class RegressionEnsembleModel(EnsembleModel):
             f"{regression_model.lags}",
         )
 
-        self.regression_model = regression_model
+        self.regression_model: RegressionModel = regression_model
         self.train_n_points = regression_train_n_points
 
     def _split_multi_ts_sequence(
@@ -219,9 +219,7 @@ class RegressionEnsembleModel(EnsembleModel):
 
     @property
     def supports_multivariate(self) -> bool:
-        return super().supports_multivariate and getattr(
-            self.regression_model, "supports_multivariate", True
-        )
+        return super().supports_multivariate and self.regression_model.supports_multivariate
 
     def _is_probabilistic(self) -> bool:
         """
