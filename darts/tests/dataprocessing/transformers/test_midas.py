@@ -5,6 +5,7 @@ import pandas as pd
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import MIDAS
+from darts.models import LinearRegressionModel
 
 
 class MIDASTestCase(unittest.TestCase):
@@ -62,7 +63,7 @@ class MIDASTestCase(unittest.TestCase):
 
     def test_complete_monthly_to_quarterly(self):
         """
-        Tests if monthly series is transformed into a quarterly series in the expected way.
+        Tests if monthly series aligned with quarters is transformed into a quarterly series in the expected way.
         """
         # to quarter start
         midas_1 = MIDAS(rule="QS")
@@ -102,7 +103,8 @@ class MIDASTestCase(unittest.TestCase):
 
     def test_not_complete_monthly_to_quarterly(self):
         """
-        Tests if a not 'complete' monthly series is transformed into a quarterly series in the expected way.
+        Check that an univariate monthly series not aligned with quarters is transformed into a quarterly series
+        in the expected way.
         """
         # monthly series with missing values
         midas = MIDAS(rule="QS", strip=False)
@@ -121,9 +123,103 @@ class MIDASTestCase(unittest.TestCase):
         )
         self.assertEqual(
             self.monthly_not_complete_ts,
-            inversed_quarterly_not_complete_ts_midas.strip(),
+            inversed_quarterly_not_complete_ts_midas,
             "Quarterly TimeSeries is not correctly inverse_transformed "
             "back into into a monthly TimeSeries with missing values.",
+        )
+
+    def test_multivariate_monthly_to_quarterly(self):
+        """
+        Check that multivariate monthly to quarterly is properly transformed
+        """
+        stacked_monthly_ts = self.monthly_ts.stack(
+            TimeSeries.from_times_and_values(
+                times=self.monthly_ts.time_index,
+                values=np.arange(10, 19),
+                columns=["other"],
+            )
+        )
+
+        # component components are alternating
+        expected_quarterly_ts = TimeSeries.from_times_and_values(
+            times=self.quarterly_ts.time_index,
+            values=np.array(
+                [[1, 10, 2, 11, 3, 12], [4, 13, 5, 14, 6, 15], [7, 16, 8, 17, 9, 18]]
+            ),
+            columns=[
+                "values_0",
+                "other_0",
+                "values_1",
+                "other_1",
+                "values_2",
+                "other_2",
+            ],
+        )
+
+        midas_1 = MIDAS(rule="QS")
+        multivar_quarterly_ts_midas = midas_1.fit_transform(stacked_monthly_ts)
+        self.assertEqual(
+            multivar_quarterly_ts_midas,
+            expected_quarterly_ts,
+            "Multivariate monthly TimeSeries is not correctly transformed "
+            "into a quarterly TimeSeries.",
+        )
+
+        multivar_inversed_quarterly_ts_midas = midas_1.inverse_transform(
+            multivar_quarterly_ts_midas
+        )
+        self.assertEqual(
+            stacked_monthly_ts,
+            multivar_inversed_quarterly_ts_midas,
+            "Multivariate quarterly TimeSeries is not correctly inverse_transformed "
+            "back into into a monthly TimeSeries.",
+        )
+
+    def test_ts_with_missing_data(self):
+        """
+        Check that multivariate monthly to quarterly with missing data in the middle is properly transformed.
+        """
+        stacked_monthly_ts_missing = self.monthly_ts.stack(
+            TimeSeries.from_times_and_values(
+                times=self.monthly_ts.time_index,
+                values=np.array([10, 11, 12, np.nan, np.nan, 15, 16, 17, 18]),
+                columns=["other"],
+            )
+        )
+
+        # component components are alternating
+        expected_quarterly_ts = TimeSeries.from_times_and_values(
+            times=self.quarterly_ts.time_index,
+            values=np.array(
+                [
+                    [1, 10, 2, 11, 3, 12],
+                    [4, np.nan, 5, np.nan, 6, 15],
+                    [7, 16, 8, 17, 9, 18],
+                ]
+            ),
+            columns=[
+                "values_0",
+                "other_0",
+                "values_1",
+                "other_1",
+                "values_2",
+                "other_2",
+            ],
+        )
+
+        midas_1 = MIDAS(rule="QS")
+        multivar_quarterly_ts_midas = midas_1.fit_transform(stacked_monthly_ts_missing)
+        self.assertEqual(
+            multivar_quarterly_ts_midas,
+            expected_quarterly_ts,
+        )
+
+        multivar_inversed_quarterly_ts_midas = midas_1.inverse_transform(
+            multivar_quarterly_ts_midas
+        )
+        self.assertEqual(
+            stacked_monthly_ts_missing,
+            multivar_inversed_quarterly_ts_midas,
         )
 
     def test_from_second_to_minute(self):
@@ -157,3 +253,46 @@ class MIDASTestCase(unittest.TestCase):
         """
         midas = MIDAS(rule="M")
         self.assertRaises(ValueError, midas.fit_transform, self.daily_ts)
+
+    def test_inverse_transform_prediction(self):
+        """
+        Check that inverse-transforming the prediction of a model generate the correct time index when
+        using frequency anchored either at the start or the end of the quarter
+        """
+        # low frequency : QuarterStart
+        monthly_ts = TimeSeries.from_times_and_values(
+            times=pd.date_range(start="01-2020", periods=24, freq="M"),
+            values=np.arange(0, 24),
+            columns=["values"],
+        )
+        monthly_train_ts, monthly_test_ts = monthly_ts.split_after(0.75)
+
+        model = LinearRegressionModel(lags=2)
+
+        midas_quarterly = MIDAS(rule="QS")
+        # shape : [6 quarters, 3 months, 1 sample]
+        quarterly_train_ts = midas_quarterly.fit_transform(monthly_train_ts)
+        # shape : [2 quarters, 3 months, 1 sample]
+        quarterly_test_ts = midas_quarterly.transform(monthly_test_ts)
+
+        model.fit(quarterly_train_ts)
+
+        # 2 quarters = 6 months forecast
+        pred_quarterly = model.predict(2)
+        pred_monthly = midas_quarterly.inverse_transform(pred_quarterly)
+        # verify prediction time index in both frequencies
+        self.assertTrue(pred_quarterly.time_index.equals(quarterly_test_ts.time_index))
+        self.assertTrue(pred_monthly.time_index.equals(monthly_test_ts.time_index))
+
+        # "Q" = QuarterEnd, the 2 "hidden" months must be retrieved
+        midas_quarterly = MIDAS(rule="Q")
+        quarterly_train_ts = midas_quarterly.fit_transform(monthly_train_ts)
+        quarterly_test_ts = midas_quarterly.transform(monthly_test_ts)
+
+        model.fit(quarterly_train_ts)
+
+        pred_quarterly = model.predict(2)
+        pred_monthly = midas_quarterly.inverse_transform(pred_quarterly)
+        # verify prediction time index in both frequencies
+        self.assertTrue(pred_quarterly.time_index.equals(quarterly_test_ts.time_index))
+        self.assertTrue(pred_monthly.time_index.equals(monthly_test_ts.time_index))

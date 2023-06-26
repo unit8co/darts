@@ -44,6 +44,11 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         rule
             The offset string or object representing target conversion. Passed on to the rule parameter in
             pandas.DataFrame.resample and therefore it is equivalent to it.
+
+        .. note::
+                For anchored low frequency, the transformed series must contain at least 2 samples in order to be
+                able to retrieve the original time index.
+        ..
         strip
             Whether to strip -remove the NaNs from the start and the end of- the transformed series.
 
@@ -98,7 +103,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         params: Mapping[str, Any],
         *args,
         **kwargs,
-    ) -> List[Dict[str, str]]:
+    ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
         """MIDAS needs the high frequency period name in order to easily reverse_transform
         TimeSeries, the parallelization is handled by `transform` and/or `inverse_transform`
         (see InvertibleDataTransformer.__init__() docstring).
@@ -204,20 +209,20 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         When converting to/from anchorable offset [1]_, the original time index is not garanteed to be restored.
 
         Steps:
-            (1) Reshape the values to eliminate the components introduced by the transform
-            (2) Identify ratio between the low frequency and the original high frequency
-            (3) Generate a new time index with the high frequency
-            (4) When applicable, shift the time index back in time to adjust the start date
+            (1) Reshape the values to flatten the components introduced by the transform
+            (2) Eliminate the rows filled with NaNs, to facilitate time index adjustment
+            (3) Retrieve the original components name
+            (4) When applicable, shift the time index start back in time
+            (5) Generate a new time index with the high frequency
 
         References
         ----------
         .. [1] https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#anchored-offsets
         """
         MIDAS._verify_series(series)
-        strip = params["fixed"]["_strip"]
         high_freq_name = params["fitted"]["high_freq_name"]
         orig_ts_start_time = params["fitted"]["start"]
-        # orig_ts_end_time = params["fitted"]["end"]
+        orig_ts_end_time = params["fitted"]["end"]
 
         # retrieve the number of component introduced by midas
         n_midas_components = int(series.components[-1].split("_")[-1]) + 1
@@ -236,27 +241,29 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             series.components[i][:-2] for i in range(0, n_orig_components)
         ]
 
-        # adjust the start of the inverse transform output
-        low_freq_timedelta = series.time_index[1] - series.time_index[0]
-        transform_time_shift = series.time_index[0] - orig_ts_start_time
+        # remove the rows containing NaNs at the extremes, necessary to adjust the time index
+        first_finite_row = pd.core.missing.find_valid_index(series_values, how="first")
+        last_finite_row = pd.core.missing.find_valid_index(series_values, how="last")
+        series_values = series_values[first_finite_row : last_finite_row + 1]
 
-        # downsampling shift is smaller than low freq period
-        if np.abs(transform_time_shift) <= low_freq_timedelta:
-            start_time = orig_ts_start_time
-        else:
-            start_time = series.start_time()
+        start_time = series.start_time()
+        shift = 0
+        # adjust the start if was shifted due to the frequency change
+        if len(series.time_index) > 1:
+            low_freq_timedelta = series.time_index[1] - series.time_index[0]
+            transform_time_shift = series.time_index[0] - orig_ts_start_time
+            # shift is caused by the low frequency anchoring, fitted and inversed ts have the same start
+            if np.abs(transform_time_shift) <= low_freq_timedelta:
+                start_time = orig_ts_start_time
+            # shift is caused by the low frequency anchoring, inversed ts starts after the end of the fitted ts
+            elif series.start_time() - orig_ts_end_time <= low_freq_timedelta:
+                start_time = orig_ts_end_time
+                shift = 1
 
-        # account for the NaN
-        left_nans = 0
-        while np.isnan(series_values[left_nans]):
-            left_nans += 1
-
-        if strip and left_nans > 0:
-            pass
-
+        # create new time index and shift it if necessary
         new_times = pd.date_range(
-            start=start_time, periods=len(series_values), freq=high_freq_name
-        )
+            start=start_time, periods=len(series_values) + shift, freq=high_freq_name
+        )[shift:]
 
         inversed_midas_ts = TimeSeries.from_times_and_values(
             times=new_times,
@@ -265,9 +272,6 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             columns=component_names,
             static_covariates=series.static_covariates,
         )
-
-        if strip:
-            inversed_midas_ts = inversed_midas_ts.strip()
 
         return inversed_midas_ts
 
