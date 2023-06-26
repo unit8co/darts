@@ -24,7 +24,7 @@ class RegressionEnsembleModel(EnsembleModel):
         forecasting_models: List[ForecastingModel],
         regression_train_n_points: int,
         regression_model=None,
-        regression_train_num_samples: Optional[int] = 1,
+        regression_train_num_samples: int = 1,
         regression_train_samples_reduction: Optional[Union[str, float]] = "median",
         retrain_forecasting_models: bool = True,
         show_warnings: bool = True,
