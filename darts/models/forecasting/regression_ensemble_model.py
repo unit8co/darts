@@ -140,8 +140,8 @@ class RegressionEnsembleModel(EnsembleModel):
         Fits the forecasting models with the entire series except the last `regression_train_n_points` values, which
         are used to train the regressor model.
 
-        If `forecasting_models` contains fitted `GlobalForecastingModels` and `retrain_forecasting_model=False`, only the
-        regression model will be trained.
+        If `forecasting_models` contains fitted `GlobalForecastingModels` and `retrain_forecasting_model=False`,
+        only the regression model will be trained.
 
         Parameters
         ----------
