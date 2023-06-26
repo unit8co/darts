@@ -219,7 +219,10 @@ class RegressionEnsembleModel(EnsembleModel):
 
     @property
     def supports_multivariate(self) -> bool:
-        return super().supports_multivariate and self.regression_model.supports_multivariate
+        return (
+            super().supports_multivariate
+            and self.regression_model.supports_multivariate
+        )
 
     def _is_probabilistic(self) -> bool:
         """
