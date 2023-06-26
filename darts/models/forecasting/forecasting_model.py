@@ -281,8 +281,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def _fit_wrapper(
         self,
         series: TimeSeries,
-        past_covariates: Optional[Union[TimeSeries, None]],
-        future_covariates: Optional[Union[TimeSeries, None]],
+        past_covariates: Optional[TimeSeries],
+        future_covariates: Optional[TimeSeries],
     ):
         self.fit(series)
 
@@ -290,8 +290,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         self,
         n: int,
         series: TimeSeries,
-        past_covariates: Optional[Union[TimeSeries, None]],
-        future_covariates: Optional[Union[TimeSeries, None]],
+        past_covariates: Optional[TimeSeries],
+        future_covariates: Optional[TimeSeries],
         num_samples: int,
         verbose: bool = False,
     ) -> TimeSeries:
@@ -438,7 +438,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         past_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         is_training: Optional[bool] = False,
-    ) -> Union[pd.DatetimeIndex, pd.RangeIndex, None]:
+    ) -> Optional[Union[pd.DatetimeIndex, pd.RangeIndex]]:
         """
         Private function that returns the largest time_index representing the subset of each timestamps
         for which historical forecasts can be made, given the model's properties, the training series
@@ -2080,11 +2080,9 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     def predict(
         self,
         n: int,
-        series: Optional[Union[TimeSeries, Sequence[TimeSeries], None]] = None,
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries], None]] = None,
-        future_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries], None]
-        ] = None,
+        series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
         verbose: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
@@ -2160,8 +2158,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         self,
         n: int,
         series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries], None]],
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries], None]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
         num_samples: int,
         verbose: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
@@ -2177,8 +2175,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     def _fit_wrapper(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries], None]],
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries], None]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
     ):
         self.fit(
             series=series,
