@@ -59,7 +59,7 @@ class EnsembleModel(GlobalForecastingModel):
     ):
         raise_if_not(
             isinstance(forecasting_models, list) and forecasting_models,
-            "Cannot instantiate EnsembleModel with an empty list of models",
+            "Cannot instantiate EnsembleModel with an empty list of `forecasting_models`",
             logger,
         )
 
@@ -83,7 +83,7 @@ class EnsembleModel(GlobalForecastingModel):
                 ]
             ),
             "All models must be of type `GlobalForecastingModel`, or `LocalForecastingModel`. "
-            "Also, make sure that all models are instantiated.",
+            "Also, make sure that all `forecasting_models` are instantiated.",
             logger,
         )
 
@@ -95,9 +95,8 @@ class EnsembleModel(GlobalForecastingModel):
             (not self.is_global_ensemble and some_trained)
             or (self.is_global_ensemble and not (self.all_trained or not some_trained)),
             "Cannot instantiate EnsembleModel with a mixture of unfitted and fitted `forecasting_models`. "
-            "Consider resetting all models with `my_model.untrained_model()` or using only "
-            "trained GlobalForecastingModels together with "
-            "`retrain_forecasting_models=False`.",
+            "Consider resetting all models with `my_model.untrained_model()` or using only trained "
+            "GlobalForecastingModels together with `retrain_forecasting_models=False`.",
             logger,
         )
 
@@ -106,8 +105,8 @@ class EnsembleModel(GlobalForecastingModel):
             raise_if(
                 some_trained,
                 "`retrain_forecasting_models=True` but some `forecasting_models` were already fitted. "
-                "Please reset all the models with `my_model.untrained_model()` before passing them to "
-                "the `EnsembleModel`.",
+                "Consider resetting all the `forecasting_models` with `my_model.untrained_model()` "
+                "before passing them to the `EnsembleModel`.",
                 logger,
             )
         else:
@@ -122,7 +121,7 @@ class EnsembleModel(GlobalForecastingModel):
             train_num_samples > 1
             and all([not m._is_probabilistic() for m in forecasting_models]),
             "`train_num_samples` is greater than 1 but the `RegressionEnsembleModel` "
-            "contains only deterministic models.",
+            "contains only deterministic `forecasting_models`.",
             logger,
         )
 
@@ -165,8 +164,8 @@ class EnsembleModel(GlobalForecastingModel):
                 and not self._full_past_covariates_support()
             ):
                 logger.warning(
-                    "Some models in the ensemble do not support past covariates, the past covariates will be "
-                    "provided only to the models supporting them when calling fit()` or `predict()`. "
+                    "Some `forecasting_models` in the ensemble do not support past covariates, the past covariates "
+                    "will be provided only to the models supporting them when calling fit()` or `predict()`. "
                     "To hide these warnings, set `show_warnings=False`."
                 )
 
@@ -175,8 +174,8 @@ class EnsembleModel(GlobalForecastingModel):
                 and not self._full_future_covariates_support()
             ):
                 logger.warning(
-                    "Some models in the ensemble do not support future covariates, the future covariates will be "
-                    "provided only to the models supporting them when calling `fit()` or `predict()`. "
+                    "Some `forecasting_models` in the ensemble do not support future covariates, the future covariates"
+                    " will be provided only to the models supporting them when calling `fit()` or `predict()`. "
                     "To hide these warnings, set `show_warnings=False`."
                 )
 
@@ -198,8 +197,8 @@ class EnsembleModel(GlobalForecastingModel):
         # local models OR mix of local and global models
         raise_if(
             not self.is_global_ensemble and not is_single_series,
-            "The models contain at least one LocalForecastingModel, which does not support training on multiple "
-            "series.",
+            "The `forecasting_models` contain at least one LocalForecastingModel, which does not support training "
+            "on multiple series.",
             logger,
         )
 
@@ -237,7 +236,7 @@ class EnsembleModel(GlobalForecastingModel):
 
     def _model_encoder_settings(self):
         raise NotImplementedError(
-            "Encoders are not supported by EnsembleModels. Instead add encoder to the underlying `models`."
+            "Encoders are not supported by EnsembleModels. Instead add encoder to the underlying `forecasting_models`."
         )
 
     def _make_multiple_predictions(
@@ -422,12 +421,12 @@ class EnsembleModel(GlobalForecastingModel):
         raise_if(
             past_covariates is not None and not self.supports_past_covariates,
             "`past_covariates` were provided to an `EnsembleModel` but none of its "
-            "base models support such covariates.",
+            "`forecasting_models` support such covariates.",
             logger,
         )
         raise_if(
             future_covariates is not None and not self.supports_future_covariates,
             "`future_covariates` were provided to an `EnsembleModel` but none of its "
-            "base models support such covariates.",
+            "`forecasting_models` support such covariates.",
             logger,
         )
