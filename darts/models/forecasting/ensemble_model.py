@@ -52,7 +52,7 @@ class EnsembleModel(GlobalForecastingModel):
     def __init__(
         self,
         forecasting_models: List[ForecastingModel],
-        train_num_samples: Optional[int],
+        train_num_samples: int,
         train_samples_reduction: Optional[Union[str, float]],
         retrain_forecasting_models: bool = True,
         show_warnings: bool = True,
@@ -83,7 +83,7 @@ class EnsembleModel(GlobalForecastingModel):
                 ]
             ),
             "All models must be of type `GlobalForecastingModel`, or `LocalForecastingModel`. "
-            "Also, make sure that all models in `forecasting_model` are instantiated.",
+            "Also, make sure that all models are instantiated.",
             logger,
         )
 
@@ -94,9 +94,9 @@ class EnsembleModel(GlobalForecastingModel):
         raise_if(
             (not self.is_global_ensemble and some_trained)
             or (self.is_global_ensemble and not (self.all_trained or not some_trained)),
-            "Cannot instantiate EnsembleModel with a mixture of unfitted and fitted models. "
+            "Cannot instantiate EnsembleModel with a mixture of unfitted and fitted `forecasting_models`. "
             "Consider resetting all models with `my_model.untrained_model()` or using only "
-            "trained GlobalForecastingModels as `forecasting_models` together with "
+            "trained GlobalForecastingModels together with "
             "`retrain_forecasting_models=False`.",
             logger,
         )
