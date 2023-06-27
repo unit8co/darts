@@ -119,7 +119,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         self.future_covariate_series: Optional[TimeSeries] = None
         self.static_covariates: Optional[pd.DataFrame] = None
 
-        self._supports_multivariate = False
         self._expect_past_covariates, self._uses_past_covariates = False, False
         self._expect_future_covariates, self._uses_future_covariates = False, False
         # for static covariates there is the option to consider static covariates or ignore them
