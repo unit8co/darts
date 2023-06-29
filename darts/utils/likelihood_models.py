@@ -164,13 +164,13 @@ class Likelihood(ABC):
     def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         """
         Samples a prediction from the probability distributions defined by the specific likelihood model
-        and the parameters given in `model_output`, return both the samples and the Likelihood parameters.
+        and the parameters given in `model_output`.
         """
         pass
 
     def predict_likelihood_parameters(self, model_output: torch.Tensor) -> torch.Tensor:
         """
-        Returns the distribution parametersas a single Tensor, extracted from the raw model outputs.
+        Returns the distribution parameters as a single Tensor, extracted from the raw model outputs.
         """
         params = self._params_from_output(model_output)
         if isinstance(params, torch.Tensor):

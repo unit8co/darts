@@ -87,7 +87,7 @@ class _RNNModule(PLDualCovariatesModule):
         self.V = nn.Linear(hidden_dim, target_size * nr_params)
 
     def forward(
-        self, x_in: Tuple, h: Union[torch.Tensor, None] = None
+        self, x_in: Tuple, h: Optional[torch.Tensor] = None
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         x, _ = x_in
         # data is of size (batch_size, input_length, input_size)
@@ -123,7 +123,7 @@ class _RNNModule(PLDualCovariatesModule):
         return self(model_input)[0]
 
     def _produce_predict_output(
-        self, x: Tuple, last_hidden_state: Union[torch.Tensor, None] = None
+        self, x: Tuple, last_hidden_state: Optional[torch.Tensor] = None
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """overwrite parent classes `_produce_predict_output` method"""
         output, hidden = self(x, last_hidden_state)

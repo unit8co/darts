@@ -142,6 +142,7 @@ class RegressionModel(GlobalForecastingModel):
         raise_if_not(
             isinstance(output_chunk_length, int) and output_chunk_length > 0,
             f"output_chunk_length must be an integer greater than 0. Given: {output_chunk_length}",
+                logger=logger,
         )
         self.output_chunk_length = output_chunk_length
 
@@ -569,11 +570,11 @@ class RegressionModel(GlobalForecastingModel):
             Optionally, the future-known covariates series needed as inputs for the model.
             They must match the covariates used for training in terms of dimension and type.
         num_samples : int, default: 1
-            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+            Number of times a prediction is sampled from a probabilistic model. Should be set to 1
             for deterministic models.
         predict_likelihood_parameters
             If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
-            supported for probablistic models, with `num_samples = 1` and `n<=output_chunk_length`. Default: `False`.
+            supported for probabilistic models, with `num_samples = 1` and `n<=output_chunk_length`. Default: `False`.
         **kwargs : dict, optional
             Additional keyword arguments passed to the `predict` method of the model. Only works with
             univariate target series.
@@ -588,7 +589,7 @@ class RegressionModel(GlobalForecastingModel):
 
             raise_if(
                 n > self.output_chunk_length,
-                "`n` must be inferior or equal to `output_chunk_length` when `predict_likelihood_parameters=True`.",
+                "`n` must be smaller than or equal to `output_chunk_length` when `predict_likelihood_parameters=True`.",
                 logger,
             )
 

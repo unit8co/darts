@@ -1270,7 +1270,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             This allows bayesian approximation by specifying an implicit prior over learned models.
         predict_likelihood_parameters
             If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
-            supported for probablistic models, with `num_samples = 1` and `n<=output_chunk_length`. Default: ``False``
+            supported for probabilistic models, with `num_samples = 1` and `n<=output_chunk_length`. Default: ``False``
 
         Returns
         -------
@@ -1404,7 +1404,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             This allows bayesian approximation by specifying an implicit prior over learned models.
         predict_likelihood_parameters
             If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
-            supported for probablistic models, with `num_samples = 1` and `n<=output_chunk_length`. Default: `False`.
+            supported for probabilistic models, with `num_samples = 1` and `n<=output_chunk_length`. Default: `False`.
 
         Returns
         -------
@@ -1431,7 +1431,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # prevent auto-regression when prediction the likelihood parameters
         raise_if(
             predict_likelihood_parameters and n > self.output_chunk_length,
-            "`n` must be inferior or equal to `output_chunk_length` when `predict_likelihood_parameters=True`.",
+            "`n` must be smaller than or equal to `output_chunk_length` when `predict_likelihood_parameters=True`.",
             logger,
         )
 
