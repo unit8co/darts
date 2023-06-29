@@ -360,6 +360,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
 
         forecasts = model.historical_forecasts(series=series, start=-2, retrain=False)
         self.assertEqual(len(forecasts), 2)
+        self.assertEqual(series.time_index[-2], forecasts.time_index[0])
 
     def test_historical_forecasts(self):
         train_length = 10
