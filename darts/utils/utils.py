@@ -230,9 +230,7 @@ def _historical_forecasts_general_checks(series, kwargs):
                 0.0 <= n.start <= 1.0, "`start` should be between 0.0 and 1.0.", logger
             )
         elif isinstance(n.start, (int, np.int64)):
-            raise_if_not(
-                n.start >= 0, "if `start` is an integer, must be `>= 0`.", logger
-            )
+            pass
 
         # verbose error messages
         if not isinstance(n.start, pd.Timestamp):
@@ -259,10 +257,17 @@ def _historical_forecasts_general_checks(series, kwargs):
                         logger,
                     )
             elif isinstance(n.start, (int, np.int64)):
-                if (
+                raise_out_of_bound_exception = False
+                # negative index is index type and frequency independent
+                if n.start < 0 and np.abs(n.start) > len(series_):
+                    raise_out_of_bound_exception = True
+                elif (
                     series_.has_datetime_index
                     or (series_.has_range_index and series_.freq == 1)
                 ) and n.start >= len(series_):
+                    raise_out_of_bound_exception = True
+
+                if raise_out_of_bound_exception:
                     raise_log(
                         ValueError(
                             f"`start` index `{n.start}` is out of bounds for series of length {len(series_)} "
@@ -270,9 +275,11 @@ def _historical_forecasts_general_checks(series, kwargs):
                         ),
                         logger,
                     )
-                elif (
-                    series_.has_range_index and series_.freq > 1
-                ) and n.start > series_.time_index[-1]:
+                if (
+                    series_.has_range_index
+                    and series_.freq > 1
+                    and n.start > series_.time_index[-1]
+                ):
                     raise_log(
                         ValueError(
                             f"`start` index `{n.start}` is larger than the last index `{series_.time_index[-1]}` "

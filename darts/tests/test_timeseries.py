@@ -113,6 +113,11 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         # getting index for idx should return i s.t., series[i].time == idx
         self.assertEqual(series.get_index_at_point(101), 91)
+        # getting index for negative idx return idx + len(ts)
+        self.assertEqual(series.get_index_at_point(-3), 97)
+        # getting index for negative idx greater than the ts length
+        with self.assertRaises(ValueError):
+            series.get_index_at_point(-(len(series) + 1))
 
         # slicing outside of the index range should return an empty ts
         self.assertEqual(len(series[120:125]), 0)
@@ -130,6 +135,8 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         # getting index for idx should return i s.t., series[i].time == idx
         self.assertEqual(series.get_index_at_point(100), 50)
+        # getting index for negative idx return idx + len(ts)
+        self.assertEqual(series.get_index_at_point(-1), 99)
 
         # getting index outside of the index range should raise an exception
         with self.assertRaises(IndexError):
@@ -158,6 +165,8 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         # getting index for idx should return i s.t., series[i].time == idx
         self.assertEqual(series.get_index_at_point(16), 3)
+        # getting index for negative idx return idx + len(ts)
+        self.assertEqual(series.get_index_at_point(-2), 8)
 
     def test_integer_indexing(self):
         n = 10
@@ -493,15 +502,25 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         test_case.assertEqual(len(seriesK), 5)
         test_case.assertEqual(len(seriesL), len(test_series) - 5)
 
+        seriesM, seriesN = test_series.split_after(-2)
+        test_case.assertEqual(len(seriesM), len(test_series) - len(seriesN))
+        test_case.assertEqual(len(seriesN), 1)
+
+        seriesO, seriesP = test_series.split_before(-2)
+        test_case.assertEqual(len(seriesO), len(test_series) - len(seriesP))
+        test_case.assertEqual(len(seriesP), 2)
+
         test_case.assertEqual(test_series.freq_str, seriesA.freq_str)
         test_case.assertEqual(test_series.freq_str, seriesC.freq_str)
         test_case.assertEqual(test_series.freq_str, seriesE.freq_str)
         test_case.assertEqual(test_series.freq_str, seriesG.freq_str)
         test_case.assertEqual(test_series.freq_str, seriesI.freq_str)
         test_case.assertEqual(test_series.freq_str, seriesK.freq_str)
+        test_case.assertEqual(test_series.freq_str, seriesM.freq_str)
+        test_case.assertEqual(test_series.freq_str, seriesO.freq_str)
 
         # Test split points outside of range
-        for value in [-5, 1.1, pd.Timestamp("21300104")]:
+        for value in [1.1, pd.Timestamp("21300104")]:
             with test_case.assertRaises(ValueError):
                 test_series.split_before(value)
 

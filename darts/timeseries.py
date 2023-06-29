@@ -215,7 +215,7 @@ class TimeSeries:
                     logger,
                 )
         else:
-            self._freq = self._time_index.step
+            self._freq: int = self._time_index.step
             self._freq_str = None
 
         # check static covariates
@@ -2085,7 +2085,9 @@ class TimeSeries:
             )
             point_index = int((len(self) - 1) * point)
         elif isinstance(point, (int, np.int64)):
-            if self.has_datetime_index or (self.start_time() == 0 and self.freq == 1):
+            if point < 0:
+                point_index = point + len(self)
+            elif self.has_datetime_index or (self.start_time() == 0 and self.freq == 1):
                 point_index = point
             else:
                 point_index_float = (point - self.start_time()) / self.freq

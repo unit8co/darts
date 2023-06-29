@@ -352,6 +352,15 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             "LocalForecastingModel does not support historical forecasting with `retrain` set to `False`"
         )
 
+    def test_historical_forecasts_negative_start(self):
+        series = tg.sine_timeseries(length=10)
+
+        model = LinearRegressionModel(lags=2)
+        model.fit(series[:8])
+
+        forecasts = model.historical_forecasts(series=series, start=-2, retrain=False)
+        self.assertEqual(len(forecasts), 2)
+
     def test_historical_forecasts(self):
         train_length = 10
         forecast_horizon = 8
@@ -550,14 +559,18 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
         )
         with pytest.raises(ValueError) as msg:
             LinearRegressionModel(lags=1).historical_forecasts(
-                rangeidx_step1, start=rangeidx_step1.start_time() - rangeidx_step1.freq
+                rangeidx_step1, start=-11
             )
-        assert str(msg.value).startswith("if `start` is an integer, must be `>= 0`")
+        assert str(msg.value).startswith(
+            "`start` index `-11` is out of bounds for series of length 10"
+        )
         with pytest.raises(ValueError) as msg:
             LinearRegressionModel(lags=1).historical_forecasts(
-                rangeidx_step2, start=rangeidx_step2.start_time() - rangeidx_step2.freq
+                rangeidx_step2, start=-11
             )
-        assert str(msg.value).startswith("if `start` is an integer, must be `>= 0`")
+        assert str(msg.value).startswith(
+            "`start` index `-11` is out of bounds for series of length 10"
+        )
 
         # value too high
         with pytest.raises(ValueError) as msg:
