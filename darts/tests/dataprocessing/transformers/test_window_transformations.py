@@ -1,5 +1,4 @@
 import itertools
-import sys
 import unittest
 
 import numpy as np
@@ -103,16 +102,14 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
             }  # window list
             self.series_univ_det.window_transform(transforms=window_transformations)
 
-        # skip this test for Python <= 3.7
-        if sys.version_info >= (3, 8):
-            with self.assertRaises(ValueError):
-                window_transformations = {
-                    "function": "mean",
-                    "window": 3,
-                    "mode": "rolling",
-                    "step": -2,
-                }  # Negative step
-                self.series_univ_det.window_transform(transforms=window_transformations)
+        with self.assertRaises(ValueError):
+            window_transformations = {
+                "function": "mean",
+                "window": 3,
+                "mode": "rolling",
+                "step": -2,
+            }  # Negative step
+            self.series_univ_det.window_transform(transforms=window_transformations)
 
         with self.assertRaises(ValueError):
             window_transformations = {
@@ -397,13 +394,6 @@ class TimeSeriesWindowTransformTestCase(unittest.TestCase):
             transformation, include_current=False
         )
         self.assertEqual(transformed_ts, expected_transformed_series)
-
-        # pandas on Python <= 3.7 raises this error:
-        # AttributeError: 'ExponentialMovingWindow' object has no attribute 'sum'
-
-        # skip these tests in Python <= 3.7:
-        if sys.version_info < (3, 8):
-            return
 
         transformation = [
             {"function": "sum", "mode": "rolling", "window": 1, "closed": "left"},
