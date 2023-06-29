@@ -220,10 +220,5 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         else:
             return super()._predict_and_sample(x, num_samples, **kwargs)
 
-    @property
-    def supports_multivariate(self) -> bool:
-    """Multivariate support is obtained by wrapping the univariate model in a `sklearn.multioutput.MultiOutputRegressor`"""
-        return True
-
     def _is_probabilistic(self) -> bool:
         return self.likelihood is not None

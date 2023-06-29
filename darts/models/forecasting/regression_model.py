@@ -316,7 +316,10 @@ class RegressionModel(GlobalForecastingModel):
 
     @property
     def supports_multivariate(self) -> bool:
-    """Multivariate support is obtained by wrapping the univariate model in a `sklearn.multioutput.MultiOutputRegressor`"""
+        """
+        If available, uses `model`'s native multivariate support. If not available, obtains multivariate support by
+        wrapping the univariate model in a `sklearn.multioutput.MultiOutputRegressor`.
+        """
         return True
 
     @property
