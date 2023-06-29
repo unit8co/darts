@@ -87,10 +87,8 @@ class ReversibleInstanceNorm(nn.Module):
         return x
 
     def _get_statistics(self, x):
-        self.mean = torch.mean(x, dim=self.axis, keepdim=True).detach()
-        self.stdev = torch.sqrt(
-            torch.var(x, dim=self.axis, keepdim=True) + self.eps
-        ).detach()
+        self.mean = torch.mean(x, dim=self.axis, keepdim=True)
+        self.stdev = torch.sqrt(torch.var(x, dim=self.axis, keepdim=True) + self.eps)
 
     def _normalize(self, x):
         x = x - self.mean
