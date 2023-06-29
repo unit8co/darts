@@ -88,20 +88,48 @@ class ReversibleInstanceNorm(nn.Module):
 
     def _get_statistics(self, x):
         self.mean = torch.mean(x, dim=self.axis, keepdim=True)
-        self.stdev = torch.sqrt(torch.var(x, dim=self.axis, keepdim=True) + self.eps)
+        self.std = torch.sqrt(torch.var(x, dim=self.axis, keepdim=True) + self.eps)
 
     def _normalize(self, x):
         x = x - self.mean
-        x = x / self.stdev
+        x = x / self.std
         if self.affine:
+
+            massage_shape = not (
+                (self.axis is not -1) and (self.axis is not x.ndim - 1)
+            )
+
+            # if axis isn't the last dimension, swap it to the last dimension
+            if massage_shape:
+                x = x.swapaxes(-2, self.axis)
+
             x = x * self.affine_weight
             x = x + self.affine_bias
+
+            # swap axis back
+            if massage_shape:
+                x = x.swapaxes(-2, self.axis)
+
         return x
 
     def _denormalize(self, x, target_slice=None):
         if self.affine:
+
+            massage_shape = not (
+                (self.axis is not -1) and (self.axis is not x.ndim - 1)
+            )
+
+            # if axis isn't the last dimension, swap it to the last dimension
+            if massage_shape:
+                x = x.swapaxes(-2, self.axis)
+
             x = x - self.affine_bias[target_slice]
             x = x / self.affine_weight[target_slice]
-        x = x * self.stdev[:, :, target_slice]
-        x = x + self.mean[:, :, target_slice]
+
+            # swap axis back
+            if massage_shape:
+                x = x.swapaxes(-2, self.axis)
+
+        x = x * self.std
+        x = x + self.mean
         return x
