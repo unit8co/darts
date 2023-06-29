@@ -3942,7 +3942,7 @@ class TimeSeries:
         """
         Return a ``TimeSeries`` containing the mean calculated over the specified axis.
 
-        If we reduce over time (``axis=1``), the resulting ``TimeSeries`` will have length one and will use the first
+        If we reduce over time (``axis=0``), the resulting ``TimeSeries`` will have length one and will use the first
         entry of the original ``time_index``. If we perform the calculation over the components (``axis=1``), the
         resulting single component will be renamed to "components_mean".  When applied to the samples (``axis=2``),
         a deterministic ``TimeSeries`` is returned.
@@ -3975,7 +3975,7 @@ class TimeSeries:
         """
         Return a ``TimeSeries`` containing the median calculated over the specified axis.
 
-        If we reduce over time (``axis=1``), the resulting ``TimeSeries`` will have length one and will use the first
+        If we reduce over time (``axis=0``), the resulting ``TimeSeries`` will have length one and will use the first
         entry of the original ``time_index``. If we perform the calculation over the components (``axis=1``), the
         resulting single component will be renamed to "components_median".  When applied to the samples (``axis=2``),
         a deterministic ``TimeSeries`` is returned.
@@ -4009,7 +4009,7 @@ class TimeSeries:
         """
         Return a ``TimeSeries`` containing the sum calculated over the specified axis.
 
-        If we reduce over time (``axis=1``), the resulting ``TimeSeries`` will have length one and will use the first
+        If we reduce over time (``axis=0``), the resulting ``TimeSeries`` will have length one and will use the first
         entry of the original ``time_index``. If we perform the calculation over the components (``axis=1``), the
         resulting single component will be renamed to "components_sum".  When applied to the samples (``axis=2``),
         a deterministic ``TimeSeries`` is returned.
@@ -4042,7 +4042,7 @@ class TimeSeries:
         """
         Return a ``TimeSeries`` containing the min calculated over the specified axis.
 
-        If we reduce over time (``axis=1``), the resulting ``TimeSeries`` will have length one and will use the first
+        If we reduce over time (``axis=0``), the resulting ``TimeSeries`` will have length one and will use the first
         entry of the original ``time_index``. If we perform the calculation over the components (``axis=1``), the
         resulting single component will be renamed to "components_min".  When applied to the samples (``axis=2``),
         a deterministic ``TimeSeries`` is returned.
@@ -4075,7 +4075,7 @@ class TimeSeries:
         """
         Return a ``TimeSeries`` containing the max calculated over the specified axis.
 
-        If we reduce over time (``axis=1``), the resulting ``TimeSeries`` will have length one and will use the first
+        If we reduce over time (``axis=0``), the resulting ``TimeSeries`` will have length one and will use the first
         entry of the original ``time_index``. If we perform the calculation over the components (``axis=1``), the
         resulting single component will be renamed to "components_max".  When applied to the samples (``axis=2``),
         a deterministic ``TimeSeries`` is returned.
