@@ -54,3 +54,56 @@ class LayerNormNoBias(nn.LayerNorm):
 class LayerNorm(nn.LayerNorm):
     def __init__(self, input_size, **kwargs) -> None:
         super().__init__(input_size, **kwargs)
+
+
+class ReversibleInstanceNorm(nn.Module):
+    """Reversible Instance Normalization based on [1]
+
+    References
+    ----------
+    .. [1] Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+            Distribution Shift" International Conference on Learning Representations (2022)
+    """
+
+    def __init__(self, axis, input_dim, eps=1e-5, affine=True):
+        super().__init__()
+        self.axis = axis
+        self.input_dim = input_dim
+        self.eps = eps
+        self.affine = affine
+
+        if self.affine:
+            self.affine_weight = nn.Parameter(torch.ones(self.input_dim))
+            self.affine_bias = nn.Parameter(torch.zeros(self.input_dim))
+
+    def forward(self, x, mode, target_slice=None):
+        if mode == "norm":
+            self._get_statistics(x)
+            x = self._normalize(x)
+        elif mode == "denorm":
+            x = self._denormalize(x, target_slice)
+        else:
+            raise NotImplementedError
+        return x
+
+    def _get_statistics(self, x):
+        self.mean = torch.mean(x, dim=self.axis, keepdim=True).detach()
+        self.stdev = torch.sqrt(
+            torch.var(x, dim=self.axis, keepdim=True) + self.eps
+        ).detach()
+
+    def _normalize(self, x):
+        x = x - self.mean
+        x = x / self.stdev
+        if self.affine:
+            x = x * self.affine_weight
+            x = x + self.affine_bias
+        return x
+
+    def _denormalize(self, x, target_slice=None):
+        if self.affine:
+            x = x - self.affine_bias[target_slice]
+            x = x / self.affine_weight[target_slice]
+        x = x * self.stdev[:, :, target_slice]
+        x = x + self.mean[:, :, target_slice]
+        return x
