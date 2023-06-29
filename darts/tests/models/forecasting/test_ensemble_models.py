@@ -20,7 +20,8 @@ from darts.utils import timeseries_generation as tg
 logger = get_logger(__name__)
 
 try:
-    from darts.models import NBEATSModel, RNNModel, TCNModel
+    from darts.models import DLinearModel, NBEATSModel, RNNModel, TCNModel
+    from darts.utils.likelihood_models import QuantileRegression
 
     TORCH_AVAILABLE = True
 except ImportError:
@@ -170,6 +171,78 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         self.assertTrue(
             np.array_equal(pred_proba_many_sample.values(), forecast_mean.values())
         )
+
+    def test_predict_likelihood_parameters_wrong_args(self):
+        m_deterministic = LinearRegressionModel(lags=2, output_chunk_length=2)
+        m_proba_quantile1 = LinearRegressionModel(
+            lags=2,
+            output_chunk_length=2,
+            likelihood="quantile",
+            quantiles=[0.05, 0.5, 0.95],
+        )
+        m_proba_quantile2 = LinearRegressionModel(
+            lags=3,
+            output_chunk_length=3,
+            likelihood="quantile",
+            quantiles=[0.05, 0.5, 0.95],
+        )
+        m_proba_poisson = LinearRegressionModel(
+            lags=2, output_chunk_length=2, likelihood="poisson"
+        )
+        # one model is not probabilistic
+        naive_ensemble = NaiveEnsembleModel([m_deterministic, m_proba_quantile1])
+        naive_ensemble.fit(self.series1 + self.series2)
+        with self.assertRaises(ValueError):
+            naive_ensemble.predict(n=1, predict_likelihood_parameters=True)
+
+        # one model has a different likelihood
+        naive_ensemble = NaiveEnsembleModel(
+            [m_proba_quantile1.untrained_model(), m_proba_poisson]
+        )
+        naive_ensemble.fit(self.series1 + self.series2)
+        with self.assertRaises(ValueError):
+            naive_ensemble.predict(n=1, predict_likelihood_parameters=True)
+
+        # n > shortest output_chunk_length
+        naive_ensemble = NaiveEnsembleModel(
+            [m_proba_quantile1.untrained_model(), m_proba_quantile2]
+        )
+        naive_ensemble.fit(self.series1 + self.series2)
+        with self.assertRaises(ValueError):
+            naive_ensemble.predict(n=4, predict_likelihood_parameters=True)
+
+    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    def test_predict_likelihood_parameters_univariate_naive_ensemble(self):
+        m_proba_quantile1 = LinearRegressionModel(
+            lags=2,
+            output_chunk_length=2,
+            likelihood="quantile",
+            quantiles=[0.05, 0.5, 0.95],
+        )
+        m_proba_quantile2 = LinearRegressionModel(
+            lags=3,
+            output_chunk_length=2,
+            likelihood="quantile",
+            quantiles=[0.05, 0.5, 0.95],
+        )
+        m_proba_quantile3 = DLinearModel(
+            input_chunk_length=4,
+            output_chunk_length=2,
+            likelihood=QuantileRegression([0.05, 0.5, 0.95]),
+        )
+
+        naive_ensemble = NaiveEnsembleModel([m_proba_quantile1, m_proba_quantile2])
+        naive_ensemble.fit(self.series1 + self.series2)
+        pred_regression_ens = naive_ensemble.predict(
+            n=1, predict_likelihood_parameters=True
+        )
+        naive_ensemble = NaiveEnsembleModel(
+            [m_proba_quantile2.untrained_model(), m_proba_quantile3.untrained_model()]
+        )
+        naive_ensemble.fit(self.series1 + self.series2)
+        pred_mix_ens = naive_ensemble.predict(n=1, predict_likelihood_parameters=True)
+        self.assertEqual(pred_regression_ens.time_index, pred_mix_ens.time_index)
+        self.assertTrue(all(pred_regression_ens.components == pred_mix_ens.components))
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_input_models_global_models(self):

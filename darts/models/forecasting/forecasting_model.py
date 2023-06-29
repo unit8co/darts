@@ -291,6 +291,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         future_covariates: Optional[TimeSeries],
         num_samples: int,
         verbose: bool = False,
+        predict_likelihood_parameters: bool = False,
     ) -> TimeSeries:
         return self.predict(
             n,
@@ -2207,6 +2208,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         future_covariates: Optional[TimeSeries],
         num_samples: int,
         verbose: bool = False,
+        predict_likelihood_parameters: bool = False,
     ) -> TimeSeries:
         return self.predict(
             n,
@@ -2215,6 +2217,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             future_covariates=future_covariates,
             num_samples=num_samples,
             verbose=verbose,
+            predict_likelihood_parameters=predict_likelihood_parameters,
         )
 
     def _fit_wrapper(
@@ -2406,6 +2409,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         future_covariates: Optional[TimeSeries],
         num_samples: int,
         verbose: bool = False,
+        predict_likelihood_parameters: bool = False,
     ) -> TimeSeries:
         return self.predict(
             n,
@@ -2628,6 +2632,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
         future_covariates: Optional[TimeSeries],
         num_samples: int,
         verbose: bool = False,
+        predict_likelihood_parameters: bool = False,
     ) -> TimeSeries:
         return self.predict(
             n=n,

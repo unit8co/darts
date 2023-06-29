@@ -9,13 +9,14 @@ from typing import List, Optional, Sequence, Union
 
 import numpy as np
 
-from darts.logging import get_logger, raise_if_not
+from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import (
     ForecastingModel,
     LocalForecastingModel,
 )
 from darts.timeseries import TimeSeries
+from darts.utils.likelihood_models import Likelihood
 
 logger = get_logger(__name__)
 
@@ -239,14 +240,64 @@ class NaiveEnsembleModel(EnsembleModel):
         predictions: Union[TimeSeries, Sequence[TimeSeries]],
         series: Optional[Sequence[TimeSeries]] = None,
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        def take_average(prediction: TimeSeries) -> TimeSeries:
+        # cannot average parameters from different distributions
+        raise_if(
+            predict_likelihood_parameters and not self._models_same_likelihood(),
+            "`predict_likelihood_parameters=True` is supported only if all the `forecasting_models` "
+            "are probabilistic and fitting the same likelihood.",
+            logger,
+        )
+
+        def target_average(prediction: TimeSeries) -> TimeSeries:
             # average across the components, keep n_samples, rename components
             return prediction.mean(axis=1).with_columns_renamed(
                 "components_mean", prediction.components[0]
             )
 
+        def params_average(prediction: TimeSeries) -> TimeSeries:
+            likelihood: Union[str, Likelihood] = getattr(self.models[0], "likelihood")
+            if isinstance(likelihood, Likelihood):
+                likelihood_n_params = likelihood.num_parameters
+            else:
+                likelihood_n_params = self.models[0].num_parameters
+            n_forecasting_models = len(self.models)
+            # aggregate across predictions [model1_param0, model1_param1, ..., modeln_param0, modeln_param1]
+            prediction_values = prediction.values()
+            params_values = np.zeros((prediction.n_timesteps, likelihood_n_params))
+            for idx_param in range(likelihood_n_params):
+                params_values[:, idx_param] = prediction_values[
+                    :,
+                    range(
+                        idx_param,
+                        likelihood_n_params * n_forecasting_models,
+                        likelihood_n_params,
+                    ),
+                ].mean(axis=1)
+
+            return TimeSeries.from_times_and_values(
+                times=prediction.time_index,
+                values=params_values,
+                freq=prediction.freq,
+                columns=[
+                    f"{comp_name}_mean"
+                    for comp_name in predictions.components[:likelihood_n_params]
+                ],
+                static_covariates=prediction.static_covariates,
+                hierarchy=prediction.hierarchy,
+            )
+
         if isinstance(predictions, Sequence):
-            return [take_average(p) for p in predictions]
+            return [
+                target_average(p)
+                if not predict_likelihood_parameters
+                else params_average(p)
+                for p in predictions
+            ]
         else:
-            return take_average(predictions)
+            return (
+                target_average(predictions)
+                if not predict_likelihood_parameters
+                else params_average(predictions)
+            )

@@ -203,6 +203,11 @@ class Likelihood(ABC):
         """
         pass
 
+    @abstractmethod
+    def simplified_name(self) -> str:
+        """Returns a simplified name, used to compare Likelihood and LikelihoodMixin_ instances"""
+        pass
+
     def __eq__(self, other) -> bool:
         """
         Defines (in)equality between two likelihood objects, ignore the attributes listed in
@@ -309,6 +314,9 @@ class GaussianLikelihood(Likelihood):
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
         return self._likelihood_generate_components_names(input_series, ["mu", "sigma"])
 
+    def simplified_name(self) -> str:
+        return "gaussian"
+
 
 class PoissonLikelihood(Likelihood):
     def __init__(self, prior_lambda=None, prior_strength=1.0):
@@ -362,6 +370,9 @@ class PoissonLikelihood(Likelihood):
 
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
         return self._likelihood_generate_components_names(input_series, ["lambda"])
+
+    def simplified_name(self) -> str:
+        return "poisson"
 
 
 class NegativeBinomialLikelihood(Likelihood):
@@ -423,6 +434,9 @@ class NegativeBinomialLikelihood(Likelihood):
     def num_parameters(self) -> int:
         return 2
 
+    def simplified_name(self) -> str:
+        return "negativebinomial"
+
 
 class BernoulliLikelihood(Likelihood):
     def __init__(self, prior_p=None, prior_strength=1.0):
@@ -470,6 +484,9 @@ class BernoulliLikelihood(Likelihood):
 
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
         return self._likelihood_generate_components_names(input_series, ["p"])
+
+    def simplified_name(self) -> str:
+        return "bernoulli"
 
 
 class BetaLikelihood(Likelihood):
@@ -526,6 +543,9 @@ class BetaLikelihood(Likelihood):
         return self._likelihood_generate_components_names(
             input_series, ["alpha", "beta"]
         )
+
+    def simplified_name(self) -> str:
+        return "beta"
 
 
 class CauchyLikelihood(Likelihood):
@@ -588,6 +608,9 @@ class CauchyLikelihood(Likelihood):
             input_series, ["xzero", "gamma"]
         )
 
+    def simplified_name(self) -> str:
+        return "cauchy"
+
 
 class ContinuousBernoulliLikelihood(Likelihood):
     def __init__(self, prior_lambda=None, prior_strength=1.0):
@@ -636,6 +659,9 @@ class ContinuousBernoulliLikelihood(Likelihood):
 
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
         return self._likelihood_generate_components_names(input_series, ["lambda"])
+
+    def simplified_name(self) -> str:
+        return "continuousbernoulli"
 
 
 class DirichletLikelihood(Likelihood):
@@ -693,6 +719,9 @@ class DirichletLikelihood(Likelihood):
         # one alpha per component
         return self._likelihood_generate_components_names(input_series, ["alpha"])
 
+    def simplified_name(self) -> str:
+        return "dirichlet"
+
 
 class ExponentialLikelihood(Likelihood):
     def __init__(self, prior_lambda=None, prior_strength=1.0):
@@ -740,6 +769,9 @@ class ExponentialLikelihood(Likelihood):
 
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
         return self._likelihood_generate_components_names(input_series, ["lambda"])
+
+    def simplified_name(self) -> str:
+        return "exponential"
 
 
 class GammaLikelihood(Likelihood):
@@ -796,6 +828,9 @@ class GammaLikelihood(Likelihood):
             input_series, ["alpha", "beta"]
         )
 
+    def simplified_name(self) -> str:
+        return "gamma"
+
 
 class GeometricLikelihood(Likelihood):
     def __init__(self, prior_p=None, prior_strength=1.0):
@@ -843,6 +878,9 @@ class GeometricLikelihood(Likelihood):
 
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
         return self._likelihood_generate_components_names(input_series, ["p"])
+
+    def simplified_name(self) -> str:
+        return "geometric"
 
 
 class GumbelLikelihood(Likelihood):
@@ -896,6 +934,9 @@ class GumbelLikelihood(Likelihood):
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
         return self._likelihood_generate_components_names(input_series, ["mu", "beta"])
 
+    def simplified_name(self) -> str:
+        return "gumbel"
+
 
 class HalfNormalLikelihood(Likelihood):
     def __init__(self, prior_sigma=None, prior_strength=1.0):
@@ -943,6 +984,9 @@ class HalfNormalLikelihood(Likelihood):
 
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
         return self._likelihood_generate_components_names(input_series, ["sigma"])
+
+    def simplified_name(self) -> str:
+        return "halfnormal"
 
 
 class LaplaceLikelihood(Likelihood):
@@ -996,6 +1040,9 @@ class LaplaceLikelihood(Likelihood):
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
         return self._likelihood_generate_components_names(input_series, ["mu", "b"])
 
+    def simplified_name(self) -> str:
+        return "laplace"
+
 
 class LogNormalLikelihood(Likelihood):
     def __init__(self, prior_mu=None, prior_sigma=None, prior_strength=1.0):
@@ -1048,6 +1095,9 @@ class LogNormalLikelihood(Likelihood):
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
         return self._likelihood_generate_components_names(input_series, ["mu", "sigma"])
 
+    def simplified_name(self) -> str:
+        return "lognormal"
+
 
 class WeibullLikelihood(Likelihood):
     def __init__(self, prior_strength=1.0):
@@ -1094,6 +1144,9 @@ class WeibullLikelihood(Likelihood):
 
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
         return self._likelihood_generate_components_names(input_series, ["lambda", "k"])
+
+    def simplified_name(self) -> str:
+        return "weibull"
 
 
 class QuantileRegression(Likelihood):
@@ -1268,6 +1321,9 @@ class QuantileRegression(Likelihood):
             for tgt_name in input_series.components
             for quantile in self.quantiles
         ]
+
+    def simplified_name(self) -> str:
+        return "quantile"
 
 
 """ TODO

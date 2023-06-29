@@ -230,7 +230,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         predict_likelihood_parameters: bool,
         **kwargs,
     ) -> np.ndarray:
-        """Override of RegressionModel's predict method to allow for the probabilistic case"""
+        """Override of RegressionModel's method to allow for the probabilistic case"""
         if self.likelihood in ["gaussian", "RMSEWithUncertainty"]:
             return self._predict_and_sample_likelihood(
                 x, num_samples, "normal", predict_likelihood_parameters, **kwargs
@@ -245,10 +245,11 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             )
 
     def _likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
+        """Override of RegressionModel's method to support the gaussian/normal likelihood"""
         if self.likelihood == "quantile":
             return self._quantiles_generate_components_names(input_series)
         elif self.likelihood == "poisson":
-            return self._likelihood_generate_components_names(input_series, ["lam"])
+            return self._likelihood_generate_components_names(input_series, ["lamba"])
         elif self.likelihood in ["gaussian", "RMSEWithUncertainty"]:
             return self._likelihood_generate_components_names(
                 input_series, ["mu", "sigma"]

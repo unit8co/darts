@@ -13,6 +13,7 @@ from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
 )
 from darts.timeseries import TimeSeries
+from darts.utils.likelihood_models import Likelihood
 from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
@@ -215,6 +216,7 @@ class EnsembleModel(GlobalForecastingModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
     ):
         is_single_series = isinstance(series, TimeSeries) or series is None
         # maximize covariate usage
@@ -229,6 +231,7 @@ class EnsembleModel(GlobalForecastingModel):
                 if model.supports_future_covariates
                 else None,
                 num_samples=num_samples if model._is_probabilistic() else 1,
+                predict_likelihood_parameters=predict_likelihood_parameters,
             )
             for model in self.models
         ]
@@ -257,6 +260,7 @@ class EnsembleModel(GlobalForecastingModel):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
         verbose: bool = False,
+        predict_likelihood_parameters: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
 
         super().predict(
@@ -266,6 +270,7 @@ class EnsembleModel(GlobalForecastingModel):
             future_covariates=future_covariates,
             num_samples=num_samples,
             verbose=verbose,
+            predict_likelihood_parameters=predict_likelihood_parameters,
         )
 
         # for multi-level models, forecasting models can generate arbitrary number of samples
@@ -282,9 +287,15 @@ class EnsembleModel(GlobalForecastingModel):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             num_samples=pred_num_samples,
+            predict_likelihood_parameters=predict_likelihood_parameters,
         )
 
-        return self.ensemble(predictions, series=series, num_samples=num_samples)
+        return self.ensemble(
+            predictions,
+            series=series,
+            num_samples=num_samples,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+        )
 
     @abstractmethod
     def ensemble(
@@ -292,6 +303,7 @@ class EnsembleModel(GlobalForecastingModel):
         predictions: Union[TimeSeries, Sequence[TimeSeries]],
         series: Optional[Sequence[TimeSeries]] = None,
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         Defines how to ensemble the individual models' predictions to produce a single prediction.
@@ -311,7 +323,9 @@ class EnsembleModel(GlobalForecastingModel):
         """
         pass
 
-    def _predictions_reduction(self, predictions: TimeSeries) -> TimeSeries:
+    def _predictions_reduction(
+        self, predictions: Union[Sequence[TimeSeries], TimeSeries]
+    ) -> TimeSeries:
         """Reduce the sample dimension of the forecasting models predictions"""
         is_single_series = isinstance(predictions, TimeSeries)
         predictions = series2seq(predictions)
@@ -361,6 +375,22 @@ class EnsembleModel(GlobalForecastingModel):
 
     def _models_are_probabilistic(self) -> bool:
         return all([model._is_probabilistic() for model in self.models])
+
+    def _models_same_likelihood(self) -> bool:
+        """Return `True` if all the `forecasting_models` are probabilistic and fit the same distribution."""
+        if not self._models_are_probabilistic:
+            return False
+        else:
+            models_likelihood = set()
+            for m in self.models:
+                # regression models likelihoods are strings, torch-based models likelihoods are object
+                likelihood = getattr(m, "likelihood")
+                models_likelihood.add(
+                    likelihood.simplified_name()
+                    if isinstance(likelihood, Likelihood)
+                    else likelihood
+                )
+            return len(models_likelihood) == 1
 
     def _is_probabilistic(self) -> bool:
         return self._models_are_probabilistic()

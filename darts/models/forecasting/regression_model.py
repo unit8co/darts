@@ -1122,6 +1122,24 @@ class _LikelihoodMixin:
             else:
                 return getattr(self, f"_sampling_{likelihood}")(model_output)
 
+    def _num_parameters_quantile(self) -> int:
+        return len(self.quantiles)
+
+    def _num_parameters_poisson(self) -> int:
+        return 1
+
+    def _num_parameters_normal(self) -> int:
+        return 2
+
+    @property
+    def num_parameters(self) -> int:
+        """Mimic function of Likelihood class"""
+        likelihood = getattr(self, "likelihood")
+        if likelihood in ["gaussian", "RMSEWithUncertainty"]:
+            return self._num_parameters_normal()
+        else:
+            return getattr(self, f"_num_parameters_{likelihood}")()
+
     def _quantiles_generate_components_names(
         self, input_series: TimeSeries
     ) -> List[str]:
