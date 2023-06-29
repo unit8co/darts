@@ -142,7 +142,7 @@ class RegressionModel(GlobalForecastingModel):
         raise_if_not(
             isinstance(output_chunk_length, int) and output_chunk_length > 0,
             f"output_chunk_length must be an integer greater than 0. Given: {output_chunk_length}",
-                logger=logger,
+            logger=logger,
         )
         self.output_chunk_length = output_chunk_length
 
@@ -583,7 +583,7 @@ class RegressionModel(GlobalForecastingModel):
         if predict_likelihood_parameters:
             raise_if_not(
                 isinstance(self, _LikelihoodMixin),
-                "`likelihood_parameters=True` is only supported for probabilistic regression models.",
+                "`predict_likelihood_parameters=True` is only supported for probabilistic regression models.",
                 logger,
             )
 
@@ -790,22 +790,14 @@ class RegressionModel(GlobalForecastingModel):
             predictions.reshape(len(series), num_samples, n, -1), 1, -1
         )
 
-        # generate the new components names, inherited from _LikelihoodMixin
-        if predict_likelihood_parameters:
-            new_component_names = [
-                self._likelihood_components_names(ts) for ts in series
-            ]
-        else:
-            new_component_names = None
-
         # build time series from the predicted values starting after end of series
         predictions = [
             self._build_forecast_series(
                 points_preds=row,
                 input_series=input_tgt,
-                custom_components=None
-                if new_component_names is None
-                else new_component_names[idx_ts],
+                custom_components=self._likelihood_components_names(input_tgt)
+                if predict_likelihood_parameters
+                else None,
                 with_static_covs=False if predict_likelihood_parameters else True,
                 with_hierarchy=False if predict_likelihood_parameters else True,
             )
@@ -906,7 +898,7 @@ class _LikelihoodMixin:
         else:
             return None
 
-    def _predict_quantiles(
+    def _predict_quantile(
         self,
         x: np.ndarray,
         num_samples: int,
@@ -934,7 +926,13 @@ class _LikelihoodMixin:
         # model_outputs has shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
         return model_outputs
 
-    def _predict_poisson(self, x: np.ndarray, num_samples: int, **kwargs) -> np.ndarray:
+    def _predict_poisson(
+        self,
+        x: np.ndarray,
+        num_samples: int,
+        predict_likelihood_parameters: bool,
+        **kwargs,
+    ) -> np.ndarray:
         """
         X is of shape (n_series * n_samples, n_regression_features)
         """
@@ -983,7 +981,7 @@ class _LikelihoodMixin:
 
         return model_output
 
-    def _quantiles_sampling(self, model_output: np.ndarray) -> np.ndarray:
+    def _sampling_quantile(self, model_output: np.ndarray) -> np.ndarray:
         """
         Sample uniformly between [0, 1] (for each batch example) and return the linear interpolation between the fitted
         quantiles closest to the sampled value.
@@ -1043,13 +1041,13 @@ class _LikelihoodMixin:
         # sampling has shape (n_series * n_samples, output_chunk_length, n_components)
         return inter.squeeze(-1)
 
-    def _poisson_sampling(self, model_output: np.ndarray) -> np.ndarray:
+    def _sampling_poisson(self, model_output: np.ndarray) -> np.ndarray:
         """
         Model_output is of shape (n_series * n_samples, output_chunk_length, n_components)
         """
         return self._rng.poisson(lam=model_output).astype(float)
 
-    def _normal_sampling(self, model_output: np.ndarray) -> np.ndarray:
+    def _sampling_normal(self, model_output: np.ndarray) -> np.ndarray:
         """Sampling method for CatBoost's [mean, variance] output.
         model_output is of shape (n_components * output_chunk_length, n_samples, 2),
         where the last 2 dimensions are mu and sigma.
@@ -1073,7 +1071,7 @@ class _LikelihoodMixin:
 
         return samples_reshaped
 
-    def _quantiles_params(self, model_output: np.ndarray) -> np.ndarray:
+    def _params_quantile(self, model_output: np.ndarray) -> np.ndarray:
         # model_outputs has shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles),
         # with n_samples = 1
 
@@ -1085,11 +1083,11 @@ class _LikelihoodMixin:
             # last dim : [comp_1_q_1, ..., comp_1_q_n, ..., comp_n_q_1, ..., comp_n_q_n]
             return model_output.reshape(shape[0], shape[1], shape[2] * shape[3])
 
-    def _poisson_params(self, model_output: np.ndarray) -> np.ndarray:
+    def _params_poisson(self, model_output: np.ndarray) -> np.ndarray:
         # model_output has shape (n_series * n_samples, output_chunk_length, n_components), with n_samples = 1
         return model_output
 
-    def _normal_params(self, model_output: np.ndarray) -> np.ndarray:
+    def _params_normal(self, model_output: np.ndarray) -> np.ndarray:
         # model_output has shape (n_components * output_chunk_length, num_samples, 2) with n_samples = 1
 
         # prediction shape (n_series * n_samples, output_chunk_length, n_components)
@@ -1105,69 +1103,32 @@ class _LikelihoodMixin:
         params_reshaped = params_transposed.reshape(n_samples, chunk_len, -1)
         return params_reshaped
 
-    def _quantiles_predict_and_sample(
+    def _predict_and_sample_likelihood(
         self,
         x: np.ndarray,
         num_samples: int,
+        likelihood: str,
         predict_likelihood_parameters: bool,
         **kwargs,
     ) -> np.ndarray:
-        model_output = self._predict_quantiles(
+        model_output = getattr(self, f"_predict_{likelihood}")(
             x, num_samples, predict_likelihood_parameters, **kwargs
         )
         if predict_likelihood_parameters:
-            return self._quantiles_params(model_output)
+            return getattr(self, f"_params_{likelihood}")(model_output)
         else:
-            # return only the median
             if num_samples == 1:
                 return model_output
             else:
-                return self._quantiles_sampling(model_output)
-
-    def _poisson_predict_and_sample(
-        self,
-        x: np.ndarray,
-        num_samples: int,
-        predict_likelihood_parameters: bool,
-        **kwargs,
-    ) -> np.ndarray:
-        model_output = self._predict_poisson(x, num_samples, **kwargs)
-        if predict_likelihood_parameters:
-            return self._poisson_params(model_output)
-        else:
-            # by definition, return the parameters of the poisson distribution
-            if num_samples == 1:
-                return model_output
-            else:
-                return self._poisson_sampling(model_output)
-
-    def _normal_predict_and_sample(
-        self,
-        x: np.ndarray,
-        num_samples: int,
-        predict_likelihood_parameters: bool,
-        **kwargs,
-    ) -> np.ndarray:
-        model_output = self._predict_normal(
-            x, num_samples, predict_likelihood_parameters, **kwargs
-        )
-        if predict_likelihood_parameters:
-            return self._normal_params(model_output)
-        else:
-            # return only the mean
-            if num_samples == 1:
-                return model_output
-            else:
-                return self._normal_sampling(model_output)
+                return getattr(self, f"_sampling_{likelihood}")(model_output)
 
     def _quantiles_generate_components_names(
         self, input_series: TimeSeries
     ) -> List[str]:
-        return [
-            f"{tgt_name}_q{quantile:.2f}"
-            for tgt_name in input_series.components
-            for quantile in self._model_container.keys()
-        ]
+        return self._likelihood_generate_components_names(
+            input_series,
+            [f"q{quantile:.2f}" for quantile in self._model_container.keys()],
+        )
 
     def _likelihood_generate_components_names(
         self, input_series: TimeSeries, parameter_names: List[str]

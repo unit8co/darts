@@ -217,13 +217,9 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         predict_likelihood_parameters: bool,
         **kwargs,
     ) -> np.ndarray:
-        if self.likelihood == "quantile":
-            return self._quantiles_predict_and_sample(
-                x, num_samples, predict_likelihood_parameters, **kwargs
-            )
-        elif self.likelihood == "poisson":
-            return self._poisson_predict_and_sample(
-                x, num_samples, predict_likelihood_parameters, **kwargs
+        if self.likelihood is not None:
+            return self._predict_and_sample_likelihood(
+                x, num_samples, self.likelihood, predict_likelihood_parameters, **kwargs
             )
         else:
             return super()._predict_and_sample(

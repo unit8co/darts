@@ -1413,7 +1413,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
 
         # We need to call super's super's method directly, because GlobalForecastingModel expects series:
-        ForecastingModel.predict(self, n, num_samples, predict_likelihood_parameters)
+        ForecastingModel.predict(self, n, num_samples)
 
         self._verify_inference_dataset_type(input_series_dataset)
 
