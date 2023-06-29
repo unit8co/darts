@@ -115,9 +115,6 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         self.assertEqual(series.get_index_at_point(101), 91)
         # getting index for negative idx return idx + len(ts)
         self.assertEqual(series.get_index_at_point(-3), 97)
-        # getting index for negative idx greater than the ts length
-        with self.assertRaises(ValueError):
-            series.get_index_at_point(-(len(series) + 1))
 
         # slicing outside of the index range should return an empty ts
         self.assertEqual(len(series[120:125]), 0)

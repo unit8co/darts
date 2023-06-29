@@ -15,7 +15,7 @@ from tqdm import tqdm
 from tqdm.notebook import tqdm as tqdm_notebook
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if_not, raise_log
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.utils.timeseries_generation import generate_index
 
 try:
@@ -257,46 +257,35 @@ def _historical_forecasts_general_checks(series, kwargs):
                         logger,
                     )
             elif isinstance(n.start, (int, np.int64)):
-                raise_out_of_bound_exception = False
-                # negative index is index type and frequency independent
-                if n.start < 0 and np.abs(n.start) > len(series_):
-                    raise_out_of_bound_exception = True
-                elif (
-                    series_.has_datetime_index
-                    or (series_.has_range_index and series_.freq == 1)
-                ) and n.start >= len(series_):
-                    raise_out_of_bound_exception = True
-
-                if raise_out_of_bound_exception:
-                    raise_log(
-                        ValueError(
-                            f"`start` index `{n.start}` is out of bounds for series of length {len(series_)} "
-                            f"at index: {idx}."
-                        ),
-                        logger,
-                    )
-                if (
-                    series_.has_range_index
-                    and series_.freq > 1
-                    and n.start > series_.time_index[-1]
-                ):
-                    raise_log(
-                        ValueError(
-                            f"`start` index `{n.start}` is larger than the last index `{series_.time_index[-1]}` "
-                            f"for series at index: {idx}."
-                        ),
-                        logger,
-                    )
-
-            start = series_.get_timestamp_at_point(n.start)
-            if n.retrain is not False and start == series_.start_time():
-                raise_log(
-                    ValueError(
-                        f"{start_value_msg} `{start}` is the first timestamp of the series {idx}, resulting in an "
-                        f"empty training set."
+                raise_if(
+                    (n.start < 0 and np.abs(n.start) > len(series_))
+                    or (
+                        (
+                            series_.has_datetime_index
+                            or (series_.has_range_index and series_.freq == 1)
+                        )
+                        and n.start >= len(series_)
                     ),
+                    f"`start` index `{n.start}` is out of bounds for series of length {len(series_)} "
+                    f"at index: {idx}.",
                     logger,
                 )
+                raise_if(
+                    series_.has_range_index
+                    and series_.freq > 1
+                    and n.start > series_.time_index[-1],
+                    f"`start` index `{n.start}` is larger than the last index `{series_.time_index[-1]}` "
+                    f"for series at index: {idx}.",
+                    logger,
+                )
+
+            start = series_.get_timestamp_at_point(n.start)
+            raise_if(
+                n.retrain is not False and start == series_.start_time(),
+                f"{start_value_msg} `{start}` is the first timestamp of the series {idx}, resulting in an "
+                f"empty training set.",
+                logger,
+            )
 
             # check that overlap_end and start together form a valid combination
             overlap_end = n.overlap_end
