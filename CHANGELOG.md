@@ -20,12 +20,17 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - `RegressionEnsembleModel` and `NaiveEnsembleModel` can generate probabilistic forecasts, probabilistics `forecasting_models` can be sampled to train the `regression_model`, updated the documentation (stacking technique). [#1692](https://github.com/unit8co/darts/pull/#1692) by [Antoine Madrona](https://github.com/madtoinou).
 - Improvements to `ShapExplainer`:
   - Added static covariates support to `ShapeExplainer`. [#1803](https://github.com/unit8co/darts/pull/#1803) by [Anne de Vries](https://github.com/anne-devries) and [Dennis Bader](https://github.com/dennisbader).
+  - Improved static covariates column naming when applying a `sklearn.preprocessing.OneHotEncoder` with `StaticCovariatesTransformer` [#1863](https://github.com/unit8co/darts/pull/1863) by [Anne de Vries](https://github.com/anne-devries)
 
 **Fixed**
 - Fixed an issue not considering original component names for `TimeSeries.plot()` when providing a label prefix. [#1783](https://github.com/unit8co/darts/pull/1783) by [Simon Sudrich](https://github.com/sudrich).
 - Fixed an issue with `TorchForecastingModel.load_from_checkpoint()` not properly loading the loss function and metrics. [#1749](https://github.com/unit8co/darts/pull/1749) by [Antoine Madrona](https://github.com/madtoinou).
 - Fixed a bug when loading the weights of a `TorchForecastingModel` trained with encoders or a Likelihood. [#1744](https://github.com/unit8co/darts/pull/1744) by [Antoine Madrona](https://github.com/madtoinou).
 - Fixed a bug when using selected `target_components` with `ShapExplainer. [#1803](https://github.com/unit8co/darts/pull/#1803) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed `TimeSeries.__getitem__()` for series with a RangeIndex with start != 0 and freq != 1. [#1868](https://github.com/unit8co/darts/pull/#1868) by [Dennis Bader](https://github.com/dennisbader).
+
+**Removed**
+- Removed support for Python 3.7 [#1864](https://github.com/unit8co/darts/pull/#1864) by [Dennis Bader](https://github.com/dennisbader).
 
 ## [0.24.0](https://github.com/unit8co/darts/tree/0.24.0) (2023-04-12)
 ### For users of the library:
