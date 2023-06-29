@@ -244,9 +244,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return self._considers_static_covariates
 
     @abstractmethod
-    def predict(
-        self, n: int, num_samples: int = 1, predict_likelihood_parameters: bool = False
-    ) -> TimeSeries:
+    def predict(self, n: int, num_samples: int = 1) -> TimeSeries:
         """Forecasts values for `n` time steps after the end of the training series.
 
         Parameters
@@ -256,9 +254,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
-        predict_likelihood_parameters
-            If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
-            supported for probabilistic models, with `num_samples = 1` and `n<=output_chunk_length`. Default: `False`.
 
         Returns
         -------
@@ -277,18 +272,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             raise_if(
                 num_samples > 1,
                 "`num_samples > 1` is only supported for probabilistic models.",
-                logger,
-            )
-
-            raise_if(
-                predict_likelihood_parameters,
-                "`likelihood_parameters = True` is only supported for probabilistic models.",
-                logger,
-            )
-        else:
-            raise_if(
-                predict_likelihood_parameters and num_samples != 1,
-                "`num_samples` must be set to `1` if `likelihood_parameters` is `True`.",
                 logger,
             )
 
@@ -2162,6 +2145,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
+        verbose
+            Optionally, whether to print progress.
         predict_likelihood_parameters
             If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
             supported for probabilistic models, with `num_samples = 1` and `n<=output_chunk_length`. Default: ``False``
@@ -2176,16 +2161,16 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             If `series` is given and is a sequence of several time series, this function returns
             a sequence where each element contains the corresponding `n` points forecasts.
         """
-        super().predict(n, num_samples, predict_likelihood_parameters)
+        super().predict(n, num_samples)
         if predict_likelihood_parameters:
             raise_if(
                 not self._is_probabilistic(),
-                "`likelihood_parameters = True` is only supported for probabilistic models.",
+                "`predict_likelihood_parameters=True` is only supported for probabilistic models.",
                 logger,
             )
             raise_if(
                 num_samples != 1,
-                f"`likelihood_parameters = True` is only supported for `num_samples = 1`, received {num_samples}.",
+                f"`predict_likelihood_parameters=True` is only supported for `num_samples=1`, received {num_samples}.",
                 logger,
             )
 
