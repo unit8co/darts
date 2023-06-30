@@ -245,6 +245,52 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         self.assertTrue(all(pred_regression_ens.components == pred_mix_ens.components))
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    def test_predict_likelihood_parameters_multivariate_naive_ensemble(self):
+        m_proba_quantile1 = LinearRegressionModel(
+            lags=2,
+            output_chunk_length=2,
+            likelihood="quantile",
+            quantiles=[0.05, 0.5, 0.95],
+        )
+        m_proba_quantile2 = LinearRegressionModel(
+            lags=3,
+            output_chunk_length=2,
+            likelihood="quantile",
+            quantiles=[0.05, 0.5, 0.95],
+        )
+        m_proba_quantile3 = DLinearModel(
+            input_chunk_length=4,
+            output_chunk_length=2,
+            likelihood=QuantileRegression([0.05, 0.5, 0.95]),
+        )
+
+        multivariate_series = self.series1.stack(self.series2)
+
+        naive_ensemble = NaiveEnsembleModel([m_proba_quantile1, m_proba_quantile2])
+        naive_ensemble.fit(multivariate_series)
+        pred_ens = naive_ensemble.predict(n=1, predict_likelihood_parameters=True)
+        naive_ensemble = NaiveEnsembleModel(
+            [m_proba_quantile2.untrained_model(), m_proba_quantile3.untrained_model()]
+        )
+        naive_ensemble.fit(multivariate_series)
+        pred_mix_ens = naive_ensemble.predict(n=1, predict_likelihood_parameters=True)
+        self.assertEqual(pred_ens.time_index, pred_mix_ens.time_index)
+        self.assertTrue(
+            all(
+                pred_ens.components
+                == [
+                    "sine_q0.05_mean",
+                    "sine_q0.50_mean",
+                    "sine_q0.95_mean",
+                    "linear_q0.05_mean",
+                    "linear_q0.50_mean",
+                    "linear_q0.95_mean",
+                ]
+            )
+        )
+        self.assertTrue(all(pred_ens.components == pred_mix_ens.components))
+
+    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_input_models_global_models(self):
         # one model is not instantiated
         with self.assertRaises(ValueError):

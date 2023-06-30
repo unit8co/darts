@@ -238,7 +238,7 @@ class NaiveEnsembleModel(EnsembleModel):
     def ensemble(
         self,
         predictions: Union[TimeSeries, Sequence[TimeSeries]],
-        series: Optional[Sequence[TimeSeries]] = None,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
@@ -256,23 +256,26 @@ class NaiveEnsembleModel(EnsembleModel):
                 "components_mean", prediction.components[0]
             )
 
-        def params_average(prediction: TimeSeries) -> TimeSeries:
+        def params_average(prediction: TimeSeries, series: TimeSeries) -> TimeSeries:
             likelihood: Union[str, Likelihood] = getattr(self.models[0], "likelihood")
             if isinstance(likelihood, Likelihood):
                 likelihood_n_params = likelihood.num_parameters
             else:
                 likelihood_n_params = self.models[0].num_parameters
             n_forecasting_models = len(self.models)
+            n_components = series.n_components
             # aggregate across predictions [model1_param0, model1_param1, ..., modeln_param0, modeln_param1]
             prediction_values = prediction.values()
-            params_values = np.zeros((prediction.n_timesteps, likelihood_n_params))
-            for idx_param in range(likelihood_n_params):
+            params_values = np.zeros(
+                (prediction.n_timesteps, likelihood_n_params * n_components)
+            )
+            for idx_param in range(likelihood_n_params * n_components):
                 params_values[:, idx_param] = prediction_values[
                     :,
                     range(
                         idx_param,
-                        likelihood_n_params * n_forecasting_models,
-                        likelihood_n_params,
+                        likelihood_n_params * n_forecasting_models * n_components,
+                        likelihood_n_params * n_components,
                     ),
                 ].mean(axis=1)
 
@@ -282,7 +285,9 @@ class NaiveEnsembleModel(EnsembleModel):
                 freq=prediction.freq,
                 columns=[
                     f"{comp_name}_mean"
-                    for comp_name in predictions.components[:likelihood_n_params]
+                    for comp_name in predictions.components[
+                        : likelihood_n_params * n_components
+                    ]
                 ],
                 static_covariates=prediction.static_covariates,
                 hierarchy=prediction.hierarchy,
@@ -292,12 +297,12 @@ class NaiveEnsembleModel(EnsembleModel):
             return [
                 target_average(p)
                 if not predict_likelihood_parameters
-                else params_average(p)
-                for p in predictions
+                else params_average(p, ts)
+                for p, ts in zip(predictions, series)
             ]
         else:
             return (
                 target_average(predictions)
                 if not predict_likelihood_parameters
-                else params_average(predictions)
+                else params_average(predictions, series)
             )

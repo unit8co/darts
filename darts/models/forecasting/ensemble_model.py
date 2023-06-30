@@ -273,6 +273,9 @@ class EnsembleModel(GlobalForecastingModel):
             predict_likelihood_parameters=predict_likelihood_parameters,
         )
 
+        if series is None:
+            series = self.training_series
+
         # for multi-level models, forecasting models can generate arbitrary number of samples
         if self.train_samples_reduction is None:
             pred_num_samples = num_samples
@@ -301,7 +304,7 @@ class EnsembleModel(GlobalForecastingModel):
     def ensemble(
         self,
         predictions: Union[TimeSeries, Sequence[TimeSeries]],
-        series: Optional[Sequence[TimeSeries]] = None,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
@@ -325,7 +328,7 @@ class EnsembleModel(GlobalForecastingModel):
 
     def _predictions_reduction(
         self, predictions: Union[Sequence[TimeSeries], TimeSeries]
-    ) -> TimeSeries:
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Reduce the sample dimension of the forecasting models predictions"""
         is_single_series = isinstance(predictions, TimeSeries)
         predictions = series2seq(predictions)
