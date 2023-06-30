@@ -236,23 +236,15 @@ class PLForecastingModule(pl.LightningModule, ABC):
         batch_predictions = torch.cat(batch_predictions, dim=0)
         batch_predictions = batch_predictions.cpu().detach().numpy()
 
-        if self.predict_likelihood_parameters:
-            custom_columns = [
-                self.likelihood.likelihood_components_names(input_series)
-                for input_series in batch_input_series
-            ]
-        else:
-            custom_columns = None
-
         ts_forecasts = Parallel(n_jobs=self.pred_n_jobs)(
             delayed(_build_forecast_series)(
                 [batch_prediction[batch_idx] for batch_prediction in batch_predictions],
                 input_series,
-                custom_columns=None
-                if custom_columns is None
-                else custom_columns[batch_idx],
-                with_static_covs=True if custom_columns is None else False,
-                with_hierarchy=True if custom_columns is None else False,
+                custom_columns=self.likelihood.likelihood_components_names(input_series)
+                if self.predict_likelihood_parameters
+                else None,
+                with_static_covs=False if self.predict_likelihood_parameters else True,
+                with_hierarchy=False if self.predict_likelihood_parameters else True,
             )
             for batch_idx, input_series in enumerate(batch_input_series)
         )
