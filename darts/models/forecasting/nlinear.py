@@ -147,7 +147,7 @@ class _NLinearModule(PLMixedCovariatesModule):
             )
 
             if self.normalize:
-                x = x + seq_last  # Note: works only when nr_params == 1
+                x = x + seq_last[:, :, x.shape[-1:]] # match last dimension
 
             if self.future_cov_dim != 0:
                 # x_future might be shorter than output_chunk_length when n < output_chunk_length
