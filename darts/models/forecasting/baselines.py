@@ -242,7 +242,7 @@ class NaiveEnsembleModel(EnsembleModel):
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        # cannot average parameters from different distributions
+        """Average the `forecasting_models` predictions, component-wise"""
         raise_if(
             predict_likelihood_parameters and not self._models_same_likelihood(),
             "`predict_likelihood_parameters=True` is supported only if all the `forecasting_models` "
@@ -250,59 +250,76 @@ class NaiveEnsembleModel(EnsembleModel):
             logger,
         )
 
-        def target_average(prediction: TimeSeries) -> TimeSeries:
-            # average across the components, keep n_samples, rename components
-            return prediction.mean(axis=1).with_columns_renamed(
-                "components_mean", prediction.components[0]
-            )
-
-        def params_average(prediction: TimeSeries, series: TimeSeries) -> TimeSeries:
-            likelihood: Union[str, Likelihood] = getattr(self.models[0], "likelihood")
-            if isinstance(likelihood, Likelihood):
-                likelihood_n_params = likelihood.num_parameters
-            else:
-                likelihood_n_params = self.models[0].num_parameters
-            n_forecasting_models = len(self.models)
-            n_components = series.n_components
-            # aggregate across predictions [model1_param0, model1_param1, ..., modeln_param0, modeln_param1]
-            prediction_values = prediction.values()
-            params_values = np.zeros(
-                (prediction.n_timesteps, likelihood_n_params * n_components)
-            )
-            for idx_param in range(likelihood_n_params * n_components):
-                params_values[:, idx_param] = prediction_values[
-                    :,
-                    range(
-                        idx_param,
-                        likelihood_n_params * n_forecasting_models * n_components,
-                        likelihood_n_params * n_components,
-                    ),
-                ].mean(axis=1)
-
-            return TimeSeries.from_times_and_values(
-                times=prediction.time_index,
-                values=params_values,
-                freq=prediction.freq,
-                columns=[
-                    f"{comp_name}_mean"
-                    for comp_name in predictions.components[
-                        : likelihood_n_params * n_components
-                    ]
-                ],
-                static_covariates=prediction.static_covariates,
-                hierarchy=prediction.hierarchy,
-            )
-
         if isinstance(predictions, Sequence):
             return [
-                target_average(p)
+                self._target_average(p, ts)
                 if not predict_likelihood_parameters
-                else params_average(p, ts)
+                else self._params_average(p, ts)
                 for p, ts in zip(predictions, series)
             ]
         else:
             return (
-                target_average(predictions)
+                self._target_average(predictions, series)
                 if not predict_likelihood_parameters
-                else params_average(predictions, series)
+                else self._params_average(predictions, series)
             )
+
+    def _target_average(self, prediction: TimeSeries, series: TimeSeries) -> TimeSeries:
+        """Average across the components, keep n_samples, rename components"""
+        n_forecasting_models = len(self.models)
+        n_components = series.n_components
+        prediction_values = prediction.all_values()
+        target_values = np.zeros(
+            (prediction.n_timesteps, n_components, prediction.n_samples)
+        )
+        for idx_target in range(n_components):
+            target_values[:, idx_target] = prediction_values[
+                :,
+                range(
+                    idx_target,
+                    n_forecasting_models * n_components,
+                    n_components,
+                ),
+            ].mean(axis=1)
+
+        return TimeSeries.from_times_and_values(
+            times=prediction.time_index,
+            values=target_values,
+            freq=series.freq,
+            columns=series.components,
+            static_covariates=series.static_covariates,
+            hierarchy=series.hierarchy,
+        )
+
+    def _params_average(self, prediction: TimeSeries, series: TimeSeries) -> TimeSeries:
+        """Average across the components after grouping by likelihood parameter, rename components"""
+        likelihood: Union[str, Likelihood] = getattr(self.models[0], "likelihood")
+        if isinstance(likelihood, Likelihood):
+            likelihood_n_params = likelihood.num_parameters
+        else:
+            likelihood_n_params = self.models[0].num_parameters
+        n_forecasting_models = len(self.models)
+        n_components = series.n_components
+        # aggregate across predictions [model1_param0, model1_param1, ..., modeln_param0, modeln_param1]
+        prediction_values = prediction.values()
+        params_values = np.zeros(
+            (prediction.n_timesteps, likelihood_n_params * n_components)
+        )
+        for idx_param in range(likelihood_n_params * n_components):
+            params_values[:, idx_param] = prediction_values[
+                :,
+                range(
+                    idx_param,
+                    likelihood_n_params * n_forecasting_models * n_components,
+                    likelihood_n_params * n_components,
+                ),
+            ].mean(axis=1)
+
+        return TimeSeries.from_times_and_values(
+            times=prediction.time_index,
+            values=params_values,
+            freq=series.freq,
+            columns=prediction.components[: likelihood_n_params * n_components],
+            static_covariates=None,
+            hierarchy=None,
+        )

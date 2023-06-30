@@ -111,10 +111,10 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         assert ensemble.extreme_lags == (-10, 0, None, None, None, None)
         ensemble.backtest(self.series1)
 
-    def test_predict_ensemble_local_models(self):
+    def test_predict_univariate_ensemble_local_models(self):
         naive = NaiveSeasonal(K=5)
         theta = Theta()
-        naive_ensemble = NaiveEnsembleModel([naive, theta])
+        naive_ensemble: NaiveEnsembleModel = NaiveEnsembleModel([naive, theta])
         naive_ensemble.fit(self.series1 + self.series2)
         forecast_naive_ensemble = naive_ensemble.predict(5)
         naive.fit(self.series1 + self.series2)
@@ -123,6 +123,25 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
 
         self.assertTrue(
             np.array_equal(forecast_naive_ensemble.values(), forecast_mean.values())
+        )
+
+    def test_predict_multivariate_ensemble_local_models(self):
+        multivariate_series = self.series1.stack(self.series2)
+
+        seasonal1 = NaiveSeasonal(K=5)
+        seasonal2 = NaiveSeasonal(K=8)
+        naive_ensemble: NaiveEnsembleModel = NaiveEnsembleModel([seasonal1, seasonal2])
+        naive_ensemble.fit(multivariate_series)
+        forecast_naive_ensemble = naive_ensemble.predict(5)
+        seasonal1.fit(multivariate_series)
+        seasonal2.fit(multivariate_series)
+        forecast_mean = 0.5 * seasonal1.predict(5) + 0.5 * seasonal2.predict(5)
+
+        self.assertTrue(
+            np.array_equal(forecast_naive_ensemble.values(), forecast_mean.values())
+        )
+        self.assertTrue(
+            all(forecast_naive_ensemble.components == multivariate_series.components)
         )
 
     def test_stochastic_naive_ensemble(self):
@@ -279,12 +298,12 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
             all(
                 pred_ens.components
                 == [
-                    "sine_q0.05_mean",
-                    "sine_q0.50_mean",
-                    "sine_q0.95_mean",
-                    "linear_q0.05_mean",
-                    "linear_q0.50_mean",
-                    "linear_q0.95_mean",
+                    "sine_q0.05",
+                    "sine_q0.50",
+                    "sine_q0.95",
+                    "linear_q0.05",
+                    "linear_q0.50",
+                    "linear_q0.95",
                 ]
             )
         )
