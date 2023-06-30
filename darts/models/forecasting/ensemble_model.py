@@ -276,11 +276,15 @@ class EnsembleModel(GlobalForecastingModel):
         if series is None:
             series = self.training_series
 
-        # for multi-level models, forecasting models can generate arbitrary number of samples
+        # for single-level ensemble, probabilistic forecast is obtained directly from forecasting models
         if self.train_samples_reduction is None:
             pred_num_samples = num_samples
+            forecast_models_pred_likelihood_params = predict_likelihood_parameters
+        # for multi-levels ensemble, forecasting models can generate arbitrary number of samples
         else:
             pred_num_samples = self.train_num_samples
+            # second layer model (regression) cannot be trained on likelihood parameters
+            forecast_models_pred_likelihood_params = False
 
         self._verify_past_future_covariates(past_covariates, future_covariates)
 
@@ -290,7 +294,7 @@ class EnsembleModel(GlobalForecastingModel):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             num_samples=pred_num_samples,
-            predict_likelihood_parameters=predict_likelihood_parameters,
+            predict_likelihood_parameters=forecast_models_pred_likelihood_params,
         )
 
         return self.ensemble(

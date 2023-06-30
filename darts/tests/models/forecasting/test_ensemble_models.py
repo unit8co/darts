@@ -251,17 +251,20 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         )
 
         naive_ensemble = NaiveEnsembleModel([m_proba_quantile1, m_proba_quantile2])
-        naive_ensemble.fit(self.series1 + self.series2)
-        pred_regression_ens = naive_ensemble.predict(
-            n=1, predict_likelihood_parameters=True
-        )
+        naive_ensemble.fit(self.series1)
+        pred_ens = naive_ensemble.predict(n=1, predict_likelihood_parameters=True)
         naive_ensemble = NaiveEnsembleModel(
             [m_proba_quantile2.untrained_model(), m_proba_quantile3.untrained_model()]
         )
-        naive_ensemble.fit(self.series1 + self.series2)
+        naive_ensemble.fit(self.series1)
         pred_mix_ens = naive_ensemble.predict(n=1, predict_likelihood_parameters=True)
-        self.assertEqual(pred_regression_ens.time_index, pred_mix_ens.time_index)
-        self.assertTrue(all(pred_regression_ens.components == pred_mix_ens.components))
+        self.assertEqual(pred_ens.time_index, pred_mix_ens.time_index)
+        self.assertTrue(all(pred_ens.components == pred_mix_ens.components))
+        self.assertTrue(
+            pred_ens["sine_q0.05"].values()
+            < pred_ens["sine_q0.50"].values()
+            < pred_ens["sine_q0.95"].values()
+        )
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_predict_likelihood_parameters_multivariate_naive_ensemble(self):
@@ -308,6 +311,16 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
             )
         )
         self.assertTrue(all(pred_ens.components == pred_mix_ens.components))
+        self.assertTrue(
+            pred_ens["sine_q0.05"].values()
+            < pred_ens["sine_q0.50"].values()
+            < pred_ens["sine_q0.95"].values()
+        )
+        self.assertTrue(
+            pred_ens["linear_q0.05"].values()
+            < pred_ens["linear_q0.50"].values()
+            < pred_ens["linear_q0.95"].values()
+        )
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_input_models_global_models(self):
