@@ -186,14 +186,14 @@ class RegressionEnsembleModel(EnsembleModel):
     def ensemble(
         self,
         predictions: Union[TimeSeries, Sequence[TimeSeries]],
-        series: Optional[Sequence[TimeSeries]] = None,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
 
         is_single_series = isinstance(series, TimeSeries) or series is None
         predictions = series2seq(predictions)
-        series = series2seq(series) if series is not None else [None]
+        series = series2seq(series)
 
         ensembled = [
             self.regression_model.predict(
