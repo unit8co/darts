@@ -4,7 +4,15 @@ import pytest
 from darts import TimeSeries
 from darts.logging import get_logger
 from darts.metrics import mae
-from darts.models import ARIMA, BATS, TBATS, ExponentialSmoothing
+from darts.models import (
+    ARIMA,
+    BATS,
+    TBATS,
+    CatBoostModel,
+    ExponentialSmoothing,
+    LightGBMModel,
+    LinearRegressionModel,
+)
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
@@ -209,6 +217,72 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
             self.assertLess(mae_err, new_mae + 0.1)
             mae_err = new_mae
 
+    @pytest.mark.slow
+    @pytest.mark.parametrize("n_comp", [1, 3])
+    # parametrize does not work with `self`
+    @staticmethod
+    def test_predict_likelihood_parameters_regression_models(n_comp):
+        """
+        Check that the shape of the predicted likelihood parameters match expectations.
+
+        Note: values are not tested as it would be too time consuming
+        """
+        seed = 142857
+        n_times, n_samples = 100, 1
+        model_classes = [LinearRegressionModel, LightGBMModel, CatBoostModel]
+        list_lkl = [
+            {
+                "kwargs": {"likelihood": "quantile", "quantiles": [0.05, 0.50, 0.95]},
+                "ts": TimeSeries.from_values(
+                    np.random.normal(loc=0, scale=1, size=(n_times, n_comp, n_samples))
+                ),
+                "expected": np.array([-1.67, 0, 1.67]),
+            },
+            {
+                "kwargs": {"likelihood": "poisson"},
+                "ts": TimeSeries.from_values(
+                    np.random.poisson(lam=4, size=(n_times, n_comp, n_samples))
+                ),
+                "expected": np.array([4]),
+            },
+        ]
+
+        for model_cls in model_classes:
+            # Catboost is the only regression model supporting the GaussianLikelihood
+            if isinstance(model_cls, CatBoostModel):
+                list_lkl.append(
+                    {
+                        "kwargs": {"likelihood": "gaussian"},
+                        "ts": TimeSeries.from_values(
+                            np.random.normal(
+                                loc=10, scale=3, size=(n_times, n_comp, n_samples)
+                            )
+                        ),
+                        "expected": np.array([10, 3]),
+                    }
+                )
+
+            for lkl in list_lkl:
+                model = model_cls(lags=3, random_state=seed, **lkl["kwargs"])
+                model.fit(lkl["ts"])
+                pred_lkl_params = model.predict(
+                    n=1, num_samples=1, predict_likelihood_parameters=True
+                )
+                if n_comp == 1:
+                    assert lkl["expected"].shape == pred_lkl_params.values()[0].shape, (
+                        "The shape of the predicted likelihood parameters do not match expectation "
+                        "for univariate series."
+                    )
+                else:
+                    assert (
+                        1,
+                        len(lkl["expected"]) * n_comp,
+                        1,
+                    ) == pred_lkl_params.values().shape, (
+                        "The shape of the predicted likelihood parameters do not match expectation "
+                        "for multivariate series."
+                    )
+
     """ More likelihood tests
     """
     if TORCH_AVAILABLE:
@@ -274,7 +348,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
                 )
 
         @pytest.mark.slow
-        def test_predict_likelihood_parameters_univariate(self):
+        def test_predict_likelihood_parameters_univariate_torch_models(self):
             """Checking convergence of model for each metric is too time consuming, making sure that the dimensions
             of the predictions contain the proper elements for univariate input.
             """
@@ -318,11 +392,11 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
                         (n_times, n_comp, n_samples)
                     )
 
-                # Dirichlet must be handled sligthly differently since its multivariate
-                if isinstance(lkl, DirichletLikelihood):
-                    values = torch.swapaxes(values, 1, 3)
-                    values = torch.squeeze(values, 3)
-                    lkl_params = lkl_params[0]
+                    # Dirichlet must be handled sligthly differently since its multivariate
+                    if isinstance(lkl, DirichletLikelihood):
+                        values = torch.swapaxes(values, 1, 3)
+                        values = torch.squeeze(values, 3)
+                        lkl_params = lkl_params[0]
 
                 ts = TimeSeries.from_values(
                     values, columns=[f"dummy_{i}" for i in range(values.shape[1])]
@@ -349,7 +423,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
                     )
 
         @pytest.mark.slow
-        def test_predict_likelihood_parameters_multivariate(self):
+        def test_predict_likelihood_parameters_multivariate_torch_models(self):
             """Checking convergence of model for each metric is too time consuming, making sure that the dimensions
             of the predictions contain the proper elements for multivariate inputs.
             """
