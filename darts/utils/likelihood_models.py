@@ -299,7 +299,6 @@ class GaussianLikelihood(Likelihood):
 
     def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         mu, sigma = self._params_from_output(model_output)
-        # concatenate the parameters on the component dimension
         return torch.normal(mu, sigma)
 
     @property
