@@ -1205,7 +1205,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
     def test_multivariate_componentwise_kmeans(self):
 
         # example multivariate KMeans component wise (True and False)
-        np.random.seed(1)
+        rng_seed = 1
+        np.random.seed(rng_seed)
 
         np_mts_train_kmeans = np.abs(
             np.random.normal(loc=[0, 0], scale=[0.1, 0.2], size=[100, 2])
@@ -1257,20 +1258,24 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # test scorer with component_wise=False
-        scorer_w10_cwfalse = KMeansScorer(window=10, component_wise=False, n_init=10)
+        scorer_w10_cwfalse = KMeansScorer(
+            window=10, component_wise=False, n_init=10, random_state=rng_seed
+        )
         scorer_w10_cwfalse.fit(mts_train_kmeans)
         auc_roc_cwfalse = scorer_w10_cwfalse.eval_accuracy(
             anomalies_common_kmeans, mts_test_kmeans, metric="AUC_ROC"
         )
 
         # test scorer with component_wise=True
-        scorer_w10_cwtrue = KMeansScorer(window=10, component_wise=True, n_init=10)
+        scorer_w10_cwtrue = KMeansScorer(
+            window=10, component_wise=True, n_init=10, random_state=rng_seed
+        )
         scorer_w10_cwtrue.fit(mts_train_kmeans)
         auc_roc_cwtrue = scorer_w10_cwtrue.eval_accuracy(
             anomalies_kmeans_per_width, mts_test_kmeans, metric="AUC_ROC"
         )
 
-        self.assertAlmostEqual(auc_roc_cwfalse, 0.9851042701092354, delta=1e-05)
+        self.assertAlmostEqual(auc_roc_cwfalse, 0.9841112214498511, delta=1e-05)
         self.assertAlmostEqual(auc_roc_cwtrue[0], 1.0, delta=1e-05)
         self.assertAlmostEqual(auc_roc_cwtrue[1], 0.9766633565044688, delta=1e-05)
 
