@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import argrelmax
 from scipy.stats import norm
-from statsmodels.tsa.seasonal import STL, seasonal_decompose
+from statsmodels.tsa.seasonal import MSTL, STL, seasonal_decompose
 from statsmodels.tsa.stattools import acf, adfuller, grangercausalitytests, kpss, pacf
 
 from darts import TimeSeries
@@ -123,7 +123,7 @@ def _bartlett_formula(r: np.ndarray, m: int, length: int) -> float:
 
 def extract_trend_and_seasonality(
     ts: TimeSeries,
-    freq: int = None,
+    freq: Union[int, list] = None,
     model: Union[SeasonalityMode, ModelMode] = ModelMode.MULTIPLICATIVE,
     method: str = "naive",
     **kwargs,
@@ -146,6 +146,8 @@ def extract_trend_and_seasonality(
         The method to be used to decompose the series.
         - "naive" : Seasonal decomposition using moving averages [1]_.
         - "STL" : Season-Trend decomposition using LOESS [2]_. Only compatible with ``ADDITIVE`` model type.
+        - "MSTL" : Season-Trend decomposition using LOESS with multiple seasonalities [3]_.
+        Only compatible with ``ADDITIVE`` model type.
     kwargs
         Other keyword arguments are passed down to the decomposition method.
     Returns
@@ -157,6 +159,7 @@ def extract_trend_and_seasonality(
     -------
     .. [1] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html
     .. [2] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html
+    .. [3] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.MSTL.html
     """
 
     ts._assert_univariate()
@@ -186,6 +189,19 @@ def extract_trend_and_seasonality(
         decomp = STL(
             endog=ts.pd_series(),
             period=freq,
+            **kwargs,
+        ).fit()
+
+    elif method == "MSTL":
+        raise_if_not(
+            model in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE],
+            f"Only ADDITIVE model is compatible with the MSTL method. Current model is {model}.",
+            logger,
+        )
+
+        decomp = MSTL(
+            endog=ts.pd_series(),
+            periods=freq,
             **kwargs,
         ).fit()
 

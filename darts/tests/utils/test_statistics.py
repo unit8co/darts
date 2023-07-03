@@ -136,6 +136,17 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
         diff = self.trend - calc_trend
         self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
 
+        # test MSTL method
+        calc_trend, calc_seasonality = extract_trend_and_seasonality(
+            self.ts, freq=[3, 6], method="MSTL", model=ModelMode.ADDITIVE
+        )
+        self.assertTrue(len(calc_seasonality.components) == 2)
+        diff = self.trend - calc_trend
+        # relaxed tolerance for MSTL since it will have a larger error from the
+        # extrapolation of the trend, it is still a small number but is more
+        # than STL or naive trend extraction
+        self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0, atol=1e-5))
+
         # check if error is raised
         with self.assertRaises(ValueError):
             calc_trend, _ = extract_trend_and_seasonality(
