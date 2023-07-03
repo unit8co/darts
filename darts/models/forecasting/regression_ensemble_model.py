@@ -193,7 +193,7 @@ class RegressionEnsembleModel(EnsembleModel):
 
         is_single_series = isinstance(series, TimeSeries) or series is None
         predictions = series2seq(predictions)
-        series = series2seq(series)
+        series = series2seq(series) if series is not None else [None]
 
         ensembled = [
             self.regression_model.predict(

@@ -260,18 +260,21 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         TimeSeries
             A time series containing the `n` next points after then end of the training series.
         """
-        raise_if_not(
-            self._fit_called,
-            "The model must be fit before calling predict(). "
-            "For global models, if predict() is called without specifying a series, "
-            "the model must have been fit on a single training series.",
-            logger,
-        )
+        if not self._fit_called:
+            raise_log(
+                ValueError(
+                    "The model must be fit before calling predict(). "
+                    "For global models, if predict() is called without specifying a series, "
+                    "the model must have been fit on a single training series."
+                ),
+                logger,
+            )
 
-        if not self._is_probabilistic():
-            raise_if(
-                num_samples > 1,
-                "`num_samples > 1` is only supported for probabilistic models.",
+        if not self._is_probabilistic() and num_samples > 1:
+            raise_log(
+                ValueError(
+                    "`num_samples > 1` is only supported for probabilistic models."
+                ),
                 logger,
             )
 
@@ -2164,16 +2167,21 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         """
         super().predict(n, num_samples)
         if predict_likelihood_parameters:
-            raise_if(
-                not self._is_probabilistic(),
-                "`predict_likelihood_parameters=True` is only supported for probabilistic models.",
-                logger,
-            )
-            raise_if(
-                num_samples != 1,
-                f"`predict_likelihood_parameters=True` is only supported for `num_samples=1`, received {num_samples}.",
-                logger,
-            )
+            if not self._is_probabilistic():
+                raise_log(
+                    ValueError(
+                        "`predict_likelihood_parameters=True` is only supported for probabilistic models."
+                    ),
+                    logger,
+                )
+            if num_samples != 1:
+                raise_log(
+                    ValueError(
+                        f"`predict_likelihood_parameters=True` is only supported for `num_samples=1`, "
+                        f"received {num_samples}."
+                    ),
+                    logger,
+                )
 
         if self.uses_past_covariates and past_covariates is None:
             raise_log(

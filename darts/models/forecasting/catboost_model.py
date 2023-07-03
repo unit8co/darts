@@ -244,7 +244,9 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
                 x, num_samples, predict_likelihood_parameters, **kwargs
             )
 
-    def _likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
+    def _likelihood_components_names(
+        self, input_series: TimeSeries
+    ) -> Optional[List[str]]:
         """Override of RegressionModel's method to support the gaussian/normal likelihood"""
         if self.likelihood == "quantile":
             return self._quantiles_generate_components_names(input_series)

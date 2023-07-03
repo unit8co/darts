@@ -505,9 +505,10 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
             dim=dim_component,
         )
 
-        out = self._produce_predict_output(x=(input_past, static_covariates))
+        out = self._produce_predict_output(x=(input_past, static_covariates))[
+            :, self.first_prediction_index :, :
+        ]
 
-        out = out[:, self.first_prediction_index :, :]
         batch_prediction = [out[:, :roll_size, :]]
         prediction_length = roll_size
 
@@ -553,9 +554,11 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
                 ] = future_past_covariates[:, left_past:right_past, :]
 
             # take only last part of the output sequence where needed
-            out = self._produce_predict_output(x=(input_past, static_covariates))
+            out = self._produce_predict_output(x=(input_past, static_covariates))[
+                :, self.first_prediction_index :, :
+            ]
 
-            batch_prediction.append(out[:, self.first_prediction_index :, :])
+            batch_prediction.append(out)
             prediction_length += self.output_chunk_length
 
         # bring predictions into desired format and drop unnecessary values
@@ -685,9 +688,10 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
             )
         )
 
-        out = self._produce_predict_output(x=(input_past, input_future, input_static))
+        out = self._produce_predict_output(x=(input_past, input_future, input_static))[
+            :, self.first_prediction_index :, :
+        ]
 
-        out = out[:, self.first_prediction_index :, :]
         batch_prediction = [out[:, :roll_size, :]]
         prediction_length = roll_size
 
@@ -754,9 +758,9 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
             # take only last part of the output sequence where needed
             out = self._produce_predict_output(
                 x=(input_past, input_future, input_static)
-            )
+            )[:, self.first_prediction_index :, :]
 
-            batch_prediction.append(out[:, self.first_prediction_index :, :])
+            batch_prediction.append(out)
             prediction_length += self.output_chunk_length
 
         # bring predictions into desired format and drop unnecessary values

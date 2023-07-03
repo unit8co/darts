@@ -42,7 +42,6 @@ class NaiveMean(LocalForecastingModel):
         n: int,
         num_samples: int = 1,
         verbose: bool = False,
-        predict_likelihood_parameters: bool = False,
     ):
         super().predict(n, num_samples)
         forecast = np.tile(self.mean_val, (n, 1))
@@ -86,7 +85,6 @@ class NaiveSeasonal(LocalForecastingModel):
         n: int,
         num_samples: int = 1,
         verbose: bool = False,
-        predict_likelihood_parameters: bool = False,
     ):
         super().predict(n, num_samples)
         forecast = np.array([self.last_k_vals[i % self.K, :] for i in range(n)])
@@ -116,7 +114,6 @@ class NaiveDrift(LocalForecastingModel):
         n: int,
         num_samples: int = 1,
         verbose: bool = False,
-        predict_likelihood_parameters: bool = False,
     ):
         super().predict(n, num_samples)
         first, last = (
@@ -167,7 +164,6 @@ class NaiveMovingAverage(LocalForecastingModel):
         n: int,
         num_samples: int = 1,
         verbose: bool = False,
-        predict_likelihood_parameters: bool = False,
     ):
         super().predict(n, num_samples)
 
@@ -250,6 +246,9 @@ class NaiveEnsembleModel(EnsembleModel):
             logger,
         )
 
+        if series is None:
+            series = self.training_series
+
         if isinstance(predictions, Sequence):
             return [
                 self._target_average(p, ts)
@@ -268,7 +267,7 @@ class NaiveEnsembleModel(EnsembleModel):
         """Average across the components, keep n_samples, rename components"""
         n_forecasting_models = len(self.models)
         n_components = series.n_components
-        prediction_values = prediction.all_values()
+        prediction_values = prediction.all_values(copy=False)
         target_values = np.zeros(
             (prediction.n_timesteps, n_components, prediction.n_samples)
         )
@@ -301,7 +300,7 @@ class NaiveEnsembleModel(EnsembleModel):
         n_forecasting_models = len(self.models)
         n_components = series.n_components
         # aggregate across predictions [model1_param0, model1_param1, ..., modeln_param0, modeln_param1]
-        prediction_values = prediction.values()
+        prediction_values = prediction.values(copy=False)
         params_values = np.zeros(
             (prediction.n_timesteps, likelihood_n_params * n_components)
         )

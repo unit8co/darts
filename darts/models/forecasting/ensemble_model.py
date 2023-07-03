@@ -273,9 +273,6 @@ class EnsembleModel(GlobalForecastingModel):
             predict_likelihood_parameters=predict_likelihood_parameters,
         )
 
-        if series is None:
-            series = self.training_series
-
         # for single-level ensemble, probabilistic forecast is obtained directly from forecasting models
         if self.train_samples_reduction is None:
             pred_num_samples = num_samples
@@ -389,15 +386,28 @@ class EnsembleModel(GlobalForecastingModel):
             return False
         else:
             models_likelihood = set()
+            lkl_same_params = True
+            tmp_quantiles = None
             for m in self.models:
                 # regression models likelihoods are strings, torch-based models likelihoods are object
                 likelihood = getattr(m, "likelihood")
-                models_likelihood.add(
-                    likelihood.simplified_name()
-                    if isinstance(likelihood, Likelihood)
-                    else likelihood
+                is_obj_lkl = isinstance(likelihood, Likelihood)
+                lkl_simplified_name = (
+                    likelihood.simplified_name() if is_obj_lkl else likelihood
                 )
-            return len(models_likelihood) == 1
+                models_likelihood.add(lkl_simplified_name)
+
+                # check the quantiles
+                if lkl_simplified_name == "quantile":
+                    quantiles: List[str] = (
+                        likelihood.quantiles if is_obj_lkl else m.quantiles
+                    )
+                    if tmp_quantiles is None:
+                        tmp_quantiles = quantiles
+                    elif tmp_quantiles != quantiles:
+                        lkl_same_params = False
+
+            return len(models_likelihood) == 1 and lkl_same_params
 
     def _is_probabilistic(self) -> bool:
         return self._models_are_probabilistic()

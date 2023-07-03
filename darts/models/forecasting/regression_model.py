@@ -572,6 +572,8 @@ class RegressionModel(GlobalForecastingModel):
         num_samples : int, default: 1
             Number of times a prediction is sampled from a probabilistic model. Should be set to 1
             for deterministic models.
+        verbose
+            Optionally, whether to print progress.
         predict_likelihood_parameters
             If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
             supported for probabilistic models, with `num_samples = 1` and `n<=output_chunk_length`. Default: `False`.
@@ -579,21 +581,6 @@ class RegressionModel(GlobalForecastingModel):
             Additional keyword arguments passed to the `predict` method of the model. Only works with
             univariate target series.
         """
-
-        if predict_likelihood_parameters:
-            raise_if_not(
-                isinstance(self, _LikelihoodMixin),
-                "`predict_likelihood_parameters=True` is only supported for probabilistic regression models.",
-                logger,
-            )
-
-            raise_if(
-                n > self.output_chunk_length,
-                "`n` must be smaller than or equal to `output_chunk_length` when `predict_likelihood_parameters=True`.",
-                logger,
-            )
-
-            # num_samples == 1 check is handled by super().predict()
 
         if series is None:
             # then there must be a single TS, and that was saved in super().fit as self.training_series
@@ -890,7 +877,9 @@ class _LikelihoodMixin:
 
         return quantiles, median_idx
 
-    def _likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
+    def _likelihood_components_names(
+        self, input_series: TimeSeries
+    ) -> Optional[List[str]]:
         if self.likelihood == "quantile":
             return self._quantiles_generate_components_names(input_series)
         elif self.likelihood == "poisson":
@@ -1134,8 +1123,10 @@ class _LikelihoodMixin:
     @property
     def num_parameters(self) -> int:
         """Mimic function of Likelihood class"""
-        likelihood = getattr(self, "likelihood")
-        if likelihood in ["gaussian", "RMSEWithUncertainty"]:
+        likelihood = self.likelihood
+        if likelihood is None:
+            return 0
+        elif likelihood in ["gaussian", "RMSEWithUncertainty"]:
             return self._num_parameters_normal()
         else:
             return getattr(self, f"_num_parameters_{likelihood}")()
