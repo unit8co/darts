@@ -3,6 +3,7 @@ from typing import Sequence
 import numpy as np
 from pyod.models.knn import KNN
 from scipy.stats import cauchy, expon, gamma, laplace, norm, poisson
+import sklearn
 
 from darts import TimeSeries
 from darts.ad.scorers import CauchyNLLScorer
@@ -1205,8 +1206,7 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
     def test_multivariate_componentwise_kmeans(self):
 
         # example multivariate KMeans component wise (True and False)
-        rng_seed = 1
-        np.random.seed(rng_seed)
+        np.random.seed(1)
 
         np_mts_train_kmeans = np.abs(
             np.random.normal(loc=[0, 0], scale=[0.1, 0.2], size=[100, 2])
@@ -1258,32 +1258,27 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
         )
 
         # test scorer with component_wise=False
-        scorer_w10_cwfalse = KMeansScorer(
-            window=10,
-            component_wise=False,
-            n_init=10,
-            random_state=rng_seed,
-        )
+        scorer_w10_cwfalse = KMeansScorer(window=10, component_wise=False, n_init=10)
         scorer_w10_cwfalse.fit(mts_train_kmeans)
         auc_roc_cwfalse = scorer_w10_cwfalse.eval_accuracy(
             anomalies_common_kmeans, mts_test_kmeans, metric="AUC_ROC"
         )
 
         # test scorer with component_wise=True
-        scorer_w10_cwtrue = KMeansScorer(
-            window=10,
-            component_wise=True,
-            n_init=10,
-            random_state=rng_seed,
-        )
+        scorer_w10_cwtrue = KMeansScorer(window=10, component_wise=True, n_init=10)
         scorer_w10_cwtrue.fit(mts_train_kmeans)
         auc_roc_cwtrue = scorer_w10_cwtrue.eval_accuracy(
             anomalies_kmeans_per_width, mts_test_kmeans, metric="AUC_ROC"
         )
 
-        self.assertAlmostEqual(auc_roc_cwfalse, 0.9851, delta=1e-05)
-        self.assertAlmostEqual(auc_roc_cwtrue[0], 1.0, delta=1e-05)
-        self.assertAlmostEqual(auc_roc_cwtrue[1], 0.97666, delta=1e-05)
+        if sklearn.__version__ < '1.3.0':
+            self.assertAlmostEqual(auc_roc_cwfalse, 0.9851, delta=1e-05)
+            self.assertAlmostEqual(auc_roc_cwtrue[0], 1.0, delta=1e-05)
+            self.assertAlmostEqual(auc_roc_cwtrue[1], 0.97666, delta=1e-05)
+        else:
+            self.assertAlmostEqual(auc_roc_cwfalse, 0.9900695134061569, delta=1e-05)
+            self.assertAlmostEqual(auc_roc_cwtrue[0], 1.0, delta=1e-05)
+            self.assertAlmostEqual(auc_roc_cwtrue[1], 0.9766633565044688, delta=1e-05)
 
     def test_PyODScorer(self):
 
