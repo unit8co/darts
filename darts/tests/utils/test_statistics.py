@@ -205,5 +205,9 @@ class PlotTestCase(DartsBaseTestClass):
     def test_statistics_plot(self):
         plot_residuals_analysis(self.series)
         plt.close()
+        plot_residuals_analysis(self.series, acf_max_lag=10)
+        plt.close()
+        plot_residuals_analysis(self.series[:10])
+        plt.close()
         plot_pacf(self.series)
         plt.close()
