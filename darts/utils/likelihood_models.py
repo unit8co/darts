@@ -176,7 +176,11 @@ class Likelihood(ABC):
         if isinstance(params, torch.Tensor):
             return params
         else:
-            return torch.cat(tensors=params, dim=-1)
+            # interleave the predicted parameters to group them by input series component
+            num_samples, n_times, n_components, n_params = model_output.shape
+            return torch.stack(params, dim=3).reshape(
+                (num_samples, n_times, n_components * n_params)
+            )
 
     @abstractmethod
     def likelihood_components_names(self, input_series: TimeSeries) -> List[str]:
