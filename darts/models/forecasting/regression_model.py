@@ -916,7 +916,7 @@ class _LikelihoodMixin:
             model_output = fitted.predict(x, **kwargs).reshape(k, self.pred_dim, -1)
             model_outputs.append(model_output)
         model_outputs = np.stack(model_outputs, axis=-1)
-        # model_outputs has shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
+        # shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
         return model_outputs
 
     def _predict_poisson(
@@ -930,6 +930,7 @@ class _LikelihoodMixin:
         X is of shape (n_series * n_samples, n_regression_features)
         """
         k = x.shape[0]
+        # shape (n_series * n_samples, output_chunk_length, n_components)
         return self.model.predict(x, **kwargs).reshape(k, self.pred_dim, -1)
 
     def _predict_normal(
@@ -972,6 +973,7 @@ class _LikelihoodMixin:
             # shape becomes: (n_components * output_chunk_length, num_samples, 2)
             model_output = model_output.transpose()
 
+        # shape (n_components * output_chunk_length, num_samples, 2)
         return model_output
 
     def _sampling_quantile(self, model_output: np.ndarray) -> np.ndarray:
@@ -979,14 +981,14 @@ class _LikelihoodMixin:
         Sample uniformly between [0, 1] (for each batch example) and return the linear interpolation between the fitted
         quantiles closest to the sampled value.
 
-        model_output is of shape (batch_size, n_timesteps, n_components, n_quantiles)
+        model_output is of shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
         """
-        num_samples, n_timesteps, n_components, n_quantiles = model_output.shape
+        k, n_timesteps, n_components, n_quantiles = model_output.shape
 
         # obtain samples
         probs = self._rng.uniform(
             size=(
-                num_samples,
+                k,
                 n_timesteps,
                 n_components,
                 1,
@@ -1031,22 +1033,21 @@ class _LikelihoodMixin:
         weights = (probs - left_q) / (right_q - left_q)
         inter = left_value + weights * (right_value - left_value)
 
-        # sampling has shape (n_series * n_samples, output_chunk_length, n_components)
+        # shape (n_series * n_samples, output_chunk_length, n_components * n_quantiles)
         return inter.squeeze(-1)
 
     def _sampling_poisson(self, model_output: np.ndarray) -> np.ndarray:
         """
-        Model_output is of shape (n_series * n_samples, output_chunk_length, n_components)
+        model_output is of shape (n_series * n_samples, output_chunk_length, n_components)
         """
         return self._rng.poisson(lam=model_output).astype(float)
 
     def _sampling_normal(self, model_output: np.ndarray) -> np.ndarray:
         """Sampling method for CatBoost's [mean, variance] output.
-        model_output is of shape (n_components * output_chunk_length, n_samples, 2),
-        where the last 2 dimensions are mu and sigma.
+        model_output is of shape (n_components * output_chunk_length, n_samples, 2) where the last dimension
+        contain mu and sigma.
         """
         n_entries, n_samples, n_params = model_output.shape
-        chunk_len = self.pred_dim
 
         # treating each component separately
         mu_sigma_list = [model_output[i, :, :] for i in range(n_entries)]
@@ -1060,40 +1061,31 @@ class _LikelihoodMixin:
         ]
 
         samples_transposed = np.array(list_of_samples).transpose()
-        samples_reshaped = samples_transposed.reshape(n_samples, chunk_len, -1)
+        samples_reshaped = samples_transposed.reshape(n_samples, self.pred_dim, -1)
 
         return samples_reshaped
 
     def _params_quantile(self, model_output: np.ndarray) -> np.ndarray:
-        # model_outputs has shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles),
-        # with n_samples = 1
-
-        # output shape (n_series * n_samples, output_chunk_length, n_components*n_quantiles)
-        shape = model_output.shape
-        if len(shape) <= 4:
-            return model_output
-        else:
-            # last dim : [comp_1_q_1, ..., comp_1_q_n, ..., comp_n_q_1, ..., comp_n_q_n]
-            return model_output.reshape(shape[0], shape[1], shape[2] * shape[3])
+        """Quantiles on the last dimension, grouped by component"""
+        k, n_timesteps, n_components, n_quantiles = model_output.shape
+        # last dim : [comp_1_q_1, ..., comp_1_q_n, ..., comp_n_q_1, ..., comp_n_q_n]
+        return model_output.reshape(k, n_timesteps, n_components * n_quantiles)
 
     def _params_poisson(self, model_output: np.ndarray) -> np.ndarray:
-        # model_output has shape (n_series * n_samples, output_chunk_length, n_components), with n_samples = 1
+        """Lambdas on the last dimension, grouped by component"""
         return model_output
 
     def _params_normal(self, model_output: np.ndarray) -> np.ndarray:
-        # model_output has shape (n_components * output_chunk_length, num_samples, 2) with n_samples = 1
-
-        # prediction shape (n_series * n_samples, output_chunk_length, n_components)
+        """[mu, sigma] on the last dimension, grouped by component"""
         shape = model_output.shape
         n_samples = shape[1]
-        chunk_len = self.pred_dim
 
         # extract mu and sigma for each component
         mu_sigma_list = [model_output[i, :, :] for i in range(shape[0])]
 
         # reshape to (n_samples, output_chunk_length, 2)
         params_transposed = np.array(mu_sigma_list).transpose()
-        params_reshaped = params_transposed.reshape(n_samples, chunk_len, -1)
+        params_reshaped = params_transposed.reshape(n_samples, self.pred_dim, -1)
         return params_reshaped
 
     def _predict_and_sample_likelihood(
