@@ -1271,14 +1271,13 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
             anomalies_kmeans_per_width, mts_test_kmeans, metric="AUC_ROC"
         )
 
+        self.assertAlmostEqual(auc_roc_cwtrue[0], 1.0, delta=1e-05)
+        self.assertAlmostEqual(auc_roc_cwtrue[1], 0.97666, delta=1e-05)
+        # sklearn changed 
         if sklearn.__version__ < "1.3.0":
             self.assertAlmostEqual(auc_roc_cwfalse, 0.9851, delta=1e-05)
-            self.assertAlmostEqual(auc_roc_cwtrue[0], 1.0, delta=1e-05)
-            self.assertAlmostEqual(auc_roc_cwtrue[1], 0.97666, delta=1e-05)
         else:
-            self.assertAlmostEqual(auc_roc_cwfalse, 0.9900695134061569, delta=1e-05)
-            self.assertAlmostEqual(auc_roc_cwtrue[0], 1.0, delta=1e-05)
-            self.assertAlmostEqual(auc_roc_cwtrue[1], 0.9766633565044688, delta=1e-05)
+            self.assertAlmostEqual(auc_roc_cwfalse, 0.99007, delta=1e-05)
 
     def test_PyODScorer(self):
 
