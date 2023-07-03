@@ -1273,7 +1273,8 @@ class ADAnomalyScorerTestCase(DartsBaseTestClass):
 
         self.assertAlmostEqual(auc_roc_cwtrue[0], 1.0, delta=1e-05)
         self.assertAlmostEqual(auc_roc_cwtrue[1], 0.97666, delta=1e-05)
-        # sklearn changed 
+        # sklearn changed the centroid initialization in version 1.3.0
+        # so the results are slightly different for older versions
         if sklearn.__version__ < "1.3.0":
             self.assertAlmostEqual(auc_roc_cwfalse, 0.9851, delta=1e-05)
         else:
