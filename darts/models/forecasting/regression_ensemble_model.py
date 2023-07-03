@@ -221,6 +221,11 @@ class RegressionEnsembleModel(EnsembleModel):
         extreme_lags_ = super().extreme_lags
         return (extreme_lags_[0] - self.train_n_points,) + extreme_lags_[1:]
 
+    @property
+    def output_chunk_length(self) -> int:
+        """Return the `output_chunk_length` of the regression model (ensembling layer)"""
+        return self.regression_model.output_chunk_length
+
     def _is_probabilistic(self) -> bool:
         """
         A RegressionEnsembleModel is probabilistic if its regression

@@ -1927,7 +1927,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return self.model.epochs_trained if self.model_created else 0
 
     @property
-    def likelihood(self) -> Likelihood:
+    def likelihood(self) -> Optional[Likelihood]:
         return (
             self.model.likelihood
             if self.model_created
@@ -1949,6 +1949,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             if self.model_created
             else self.pl_module_params["output_chunk_length"]
         )
+
+    @property
+    def supports_likelihood_parameter_prediction(self) -> bool:
+        return True
 
     def _is_probabilistic(self) -> bool:
         return (

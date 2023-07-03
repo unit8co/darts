@@ -216,6 +216,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return False
 
     @property
+    @abstractmethod
+    def supports_likelihood_parameter_prediction(self) -> bool:
+        """
+        Whether model supports direct prediction of likelihood parameters
+        """
+        pass
+
+    @property
     def uses_past_covariates(self):
         """
         Whether the model uses past covariates, once fitted.
@@ -2009,6 +2017,10 @@ class LocalForecastingModel(ForecastingModel, ABC):
         #  that use an input to predict an output.
         return -self.min_train_series_length, -1, None, None, None, None
 
+    @property
+    def supports_likelihood_parameter_prediction(self) -> bool:
+        return False
+
 
 class GlobalForecastingModel(ForecastingModel, ABC):
     """The base class for "global" forecasting models, handling several time series and optional covariates.
@@ -2167,21 +2179,10 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         """
         super().predict(n, num_samples)
         if predict_likelihood_parameters:
-            if not self._is_probabilistic():
-                raise_log(
-                    ValueError(
-                        "`predict_likelihood_parameters=True` is only supported for probabilistic models."
-                    ),
-                    logger,
-                )
-            if num_samples != 1:
-                raise_log(
-                    ValueError(
-                        f"`predict_likelihood_parameters=True` is only supported for `num_samples=1`, "
-                        f"received {num_samples}."
-                    ),
-                    logger,
-                )
+            # output_chunk_length can be an attribute (regression model) or a property (torch-based model)
+            self._sanity_check_predict_likelihood_parameters(
+                n, getattr(self, "output_chunk_length", None), num_samples
+            )
 
         if self.uses_past_covariates and past_covariates is None:
             raise_log(
@@ -2245,6 +2246,41 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
         """GlobalForecastingModel supports historical forecasts without retraining the model"""
         return True
+
+    def _sanity_check_predict_likelihood_parameters(
+        self, n: int, output_chunk_length: Union[int, None], num_samples: int
+    ):
+        """Verudy that the assumptions for likelihood parameters prediction are verified."""
+        if not self.supports_likelihood_parameter_prediction:
+            raise_log(
+                ValueError(
+                    "`predict_likelihood_parameters=True` is not supported for this model."
+                ),
+                logger,
+            )
+        if not self._is_probabilistic():
+            raise_log(
+                ValueError(
+                    "`predict_likelihood_parameters=True` is only supported for probabilistic models."
+                ),
+                logger,
+            )
+        if num_samples != 1:
+            raise_log(
+                ValueError(
+                    f"`predict_likelihood_parameters=True` is only supported for `num_samples=1`, "
+                    f"received {num_samples}."
+                ),
+                logger,
+            )
+        if output_chunk_length is not None and n > output_chunk_length:
+            raise_log(
+                ValueError(
+                    "`predict_likelihood_parameters=True` is only supported for `n` smaller than or equal to "
+                    "`output_chunk_length`."
+                ),
+                logger,
+            )
 
 
 class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
