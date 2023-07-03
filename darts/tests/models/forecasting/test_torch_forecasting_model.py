@@ -176,13 +176,8 @@ if TORCH_AVAILABLE:
             # load manual save model and compare with automatic model results
             model_manual_save = RNNModel.load(model_path_manual, map_location="cpu")
             model_manual_save.to_cpu()
-            self.assertTrue(
-                all(
-                    np.isclose(
-                        model_manual_save.predict(n=4).values(),
-                        model_auto_save.predict(n=4).values(),
-                    )
-                )
+            self.assertEqual(
+                model_manual_save.predict(n=4), model_auto_save.predict(n=4)
             )
 
             # load automatically saved model with manual load() and load_from_checkpoint()
@@ -194,13 +189,8 @@ if TORCH_AVAILABLE:
             )
             model_auto_save1.to_cpu()
             # compare loaded checkpoint with manual save
-            self.assertTrue(
-                all(
-                    np.isclose(
-                        model_manual_save.predict(n=4).values(),
-                        model_auto_save1.predict(n=4).values(),
-                    )
-                )
+            self.assertEqual(
+                model_manual_save.predict(n=4), model_auto_save1.predict(n=4)
             )
 
             # save() model directly after load_from_checkpoint()
@@ -230,13 +220,8 @@ if TORCH_AVAILABLE:
             )
 
             # compare chained load_from_checkpoint() save() with manual save
-            self.assertTrue(
-                all(
-                    np.isclose(
-                        model_chained_load_save.predict(n=4).values(),
-                        model_manual_save.predict(n=4).values(),
-                    )
-                )
+            self.assertEqual(
+                model_chained_load_save.predict(n=4), model_manual_save.predict(n=4)
             )
 
         def test_valid_save_and_load_weights_with_different_params(self):

@@ -159,11 +159,11 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
             model.fit(self.constant_noisy_ts)
             pred2 = model.predict(n=10, num_samples=2).values()
 
-            self.assertTrue(all(np.isclose(pred1, pred2)))
+            self.assertTrue((pred1 == pred2).all())
 
             # test whether the next prediction of the same model is different
             pred3 = model.predict(n=10, num_samples=2).values()
-            self.assertFalse(all(np.isclose(pred2, pred3)))
+            self.assertTrue((pred2 != pred3).any())
 
     def test_probabilistic_forecast_accuracy(self):
         for model_cls, model_kwargs, err in models_cls_kwargs_errs:
