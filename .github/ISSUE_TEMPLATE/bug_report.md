@@ -17,8 +17,8 @@ Steps to reproduce the behavior, preferably code snippet.
 A clear and concise description of what you expected to happen.
 
 **System (please complete the following information):**
- - Python version: [e.g. 3.7]
- - darts version [e.g. 0.14.0]
+ - Python version: [e.g. 3.8]
+ - darts version [e.g. 0.24.0]
 
 **Additional context**
 Add any other context about the problem here.
