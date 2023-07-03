@@ -253,3 +253,7 @@ class LightGBMModel(RegressionModelWithCategoricalCovariates, _LikelihoodMixin):
             if "target" in self.lags
             else self.output_chunk_length,
         )
+
+    @property
+    def supports_likelihood_parameter_prediction(self) -> bool:
+        return True
