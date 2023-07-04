@@ -772,7 +772,6 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             assert not model.uses_static_covariates
             assert model._static_covariates_shape is None
             preds = model.predict(n=2, series=series)
-            # there seem to be some dtype issues with python=3.7
             np.testing.assert_almost_equal(
                 preds.static_covariates.values,
                 series.static_covariates.values,

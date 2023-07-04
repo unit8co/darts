@@ -867,7 +867,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             # Cannot divide by 0.
             self.series1 / 0
 
-    def test_getitem(self):
+    def test_getitem_datetime_index(self):
         seriesA: TimeSeries = self.series1.drop_after(pd.Timestamp("20130105"))
         self.assertEqual(self.series1[pd.date_range("20130101", " 20130104")], seriesA)
         self.assertEqual(self.series1[:4], seriesA)
@@ -889,6 +889,50 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         with self.assertRaises(IndexError):
             self.series1[::-1]
+
+    def test_getitem_integer_index(self):
+        freq = 3
+        start = 1
+        end = start + (len(self.series1) - 1) * freq
+        idx_int = pd.RangeIndex(start=start, stop=end + freq, step=freq)
+        series = TimeSeries.from_times_and_values(
+            times=idx_int, values=self.series1.values()
+        )
+        assert series.freq == freq
+        assert series.start_time() == start
+        assert series.end_time() == end
+        assert series[idx_int] == series == series[0 : len(series)]
+
+        series_single = series.drop_after(start + 2 * freq)
+        assert (
+            series[pd.RangeIndex(start=start, stop=start + 2 * freq, step=freq)]
+            == series_single
+        )
+        assert series[:2] == series_single
+        assert series_single.freq == freq
+        assert series_single.start_time() == start
+        assert series_single.end_time() == start + freq
+
+        idx_single = pd.RangeIndex(start=start + freq, stop=start + 2 * freq, step=freq)
+        assert series[idx_single].time_index == idx_single
+        assert series[idx_single].pd_series().equals(series.pd_series()[1:2])
+        assert series[idx_single] == series[1:2] == series[1]
+
+        # cannot slice with two RangeIndex
+        with pytest.raises(IndexError):
+            _ = series[idx_single : idx_single + freq]
+
+        # RangeIndex not in time_index
+        with pytest.raises(KeyError):
+            _ = series[idx_single - 1]
+
+        # RangeIndex start is out of bounds
+        with pytest.raises(KeyError):
+            _ = series[pd.RangeIndex(start - freq, stop=end + freq, step=freq)]
+
+        # RangeIndex end is out of bounds
+        with pytest.raises(KeyError):
+            _ = series[pd.RangeIndex(start, stop=end + 2 * freq, step=freq)]
 
     def test_fill_missing_dates(self):
         with self.assertRaises(ValueError):
