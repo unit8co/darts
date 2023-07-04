@@ -852,6 +852,7 @@ def plot_residuals_analysis(
     num_bins: int = 20,
     fill_nan: bool = True,
     default_formatting: bool = True,
+    acf_max_lag: int = 24,
 ) -> None:
     """Plots data relevant to residuals.
 
@@ -871,6 +872,8 @@ def plot_residuals_analysis(
         A boolean value indicating whether NaN values should be filled in the residuals.
     default_formatting
         Whether or not to use the darts default scheme.
+    acf_max_lag
+        The maximum lag to be displayed in the ACF plot. Must be less than residuals length.
     """
 
     residuals._assert_univariate()
@@ -910,8 +913,11 @@ def plot_residuals_analysis(
     ax2.set_xlabel("value")
 
     # plot ACF
+    acf_max_lag = min(acf_max_lag, len(residuals) - 1)
     ax3 = fig.add_subplot(gs[1:, :1])
-    plot_acf(residuals, axis=ax3, default_formatting=default_formatting)
+    plot_acf(
+        residuals, axis=ax3, default_formatting=default_formatting, max_lag=acf_max_lag
+    )
     ax3.set_ylabel("ACF value")
     ax3.set_xlabel("lag")
     ax3.set_title("ACF")
