@@ -196,25 +196,25 @@ if TORCH_AVAILABLE:
                 model.fit(
                     [train1, train2],
                     past_covariates=[past_cov1, past_cov2]
-                        if past_cov1 is not None
-                        else None,
+                    if past_cov1 is not None
+                    else None,
                     val_past_covariates=[val_past_cov1, val_past_cov2]
-                        if val_past_cov1 is not None
-                        else None,
+                    if val_past_cov1 is not None
+                    else None,
                     future_covariates=[fut_cov1, fut_cov2]
-                        if fut_cov1 is not None
-                        else None,
+                    if fut_cov1 is not None
+                    else None,
                     epochs=10,
                 )
 
                 pred1, pred2 = model.predict(
                     series=[train1, train2],
                     future_covariates=[fut_cov1, fut_cov2]
-                        if fut_cov1 is not None
-                        else None,
-                    past_covariates=[past_cov1, past_cov2]
-                        if past_cov1 is not None
-                        else None,
+                    if fut_cov1 is not None
+                    else None,
+                    past_covariates=[fut_cov1.copy(), fut_cov2.copy()]
+                    if past_cov1 is not None
+                    else None,
                     n=len(val1),
                     num_samples=500 if lkl is not None else 1,
                 )
@@ -273,7 +273,6 @@ if TORCH_AVAILABLE:
                 self.assertLessEqual(e1, 0.40)
                 self.assertLessEqual(e2, 0.34)
 
-
             e1, e2 = _eval_model(
                 train1,
                 train2,
@@ -287,7 +286,7 @@ if TORCH_AVAILABLE:
                 val_past_cov2=val_past_cov2,
                 cls=NLinearModel,
                 lkl=None,
-                normalize=True
+                normalize=True,
             )
             # can only fit models with past/future covariates when shared_weights=False
             for model in [DLinearModel, NLinearModel]:
