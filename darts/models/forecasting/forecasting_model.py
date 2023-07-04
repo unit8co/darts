@@ -446,7 +446,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         future_covariates: Optional[TimeSeries] = None,
         is_training: Optional[bool] = False,
         reduce_to_bounds: bool = False,
-    ) -> Union[pd.DatetimeIndex, pd.RangeIndex, None]:
+    ) -> Union[pd.DatetimeIndex, pd.RangeIndex, Tuple[Any, Any], None]:
         """
         Private function that returns the largest time_index representing the subset of each timestamps
         for which historical forecasts can be made, given the model's properties, the training series
@@ -877,20 +877,20 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
-        if retrain is False and model.supports_optimized_historical_forecasts:
-            return model._optimized_historical_forecasts(
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                num_samples=num_samples,
-                start=start,
-                forecast_horizon=forecast_horizon,
-                stride=stride,
-                overlap_end=overlap_end,
-                last_points_only=last_points_only,
-                verbose=verbose,
-                show_warnings=show_warnings,
-            )
+        # if retrain is False and model.supports_optimized_historical_forecasts:
+        #    return model._optimized_historical_forecasts(
+        #        series=series,
+        #        past_covariates=past_covariates,
+        #        future_covariates=future_covariates,
+        #        num_samples=num_samples,
+        #        start=start,
+        #        forecast_horizon=forecast_horizon,
+        #        stride=stride,
+        #        overlap_end=overlap_end,
+        #        last_points_only=last_points_only,
+        #        verbose=verbose,
+        #        show_warnings=show_warnings,
+        #    )
 
         if len(series) == 1:
             # Use tqdm on the outer loop only if there's more than one series to iterate over

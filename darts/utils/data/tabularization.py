@@ -581,7 +581,7 @@ def create_lagged_prediction_data(
     return X, times
 
 
-def create_lagged_historical_forecastings_data(
+def create_lagged_historical_forecasting_data(
     target_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
