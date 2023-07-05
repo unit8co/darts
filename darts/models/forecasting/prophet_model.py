@@ -368,14 +368,16 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         An example for `seasonal_periods`: If you have hourly data (frequency='H') and your seasonal cycle repeats
         after 48 hours -> `seasonal_periods=48`.
 
-        Apart from `seasonal_periods`, this is very similar to how you would call
-        Facebook Prophet's `add_seasonality()` method. To add conditional seasonalities,
-        a condition_name has to be given here and a future_covariates TimeSeries
-        with a component (column) named condition_name is expected to be passed to the 'fit()' and 'predict()' methods.
-        For more details on conditional seasonalities see:
-        https://facebook.github.io/prophet/docs/seasonality,_holiday_effects,_and_regressors.html#seasonalities-that-depend-on-other-factors
+        Apart from `seasonal_periods`, this is very similar to how you would call Facebook Prophet's
+        `add_seasonality()` method.
+
+        To add conditional seasonalities, provide `condition_name` here, and add a boolean (binary) component/column
+        named `condition_name` to the `future_covariates` series passed to `fit()` and `predict()`.
+
         For information about the parameters see:
         `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py>`.
+        For more details on conditional seasonalities see:
+        https://facebook.github.io/prophet/docs/seasonality,_holiday_effects,_and_regressors.html#seasonalities-that-depend-on-other-factors
 
         Parameters
         ----------
