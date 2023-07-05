@@ -212,7 +212,7 @@ if TORCH_AVAILABLE:
                     future_covariates=[fut_cov1, fut_cov2]
                     if fut_cov1 is not None
                     else None,
-                    past_covariates=[fut_cov1.copy(), fut_cov2.copy()]
+                    past_covariates=[fut_cov1, fut_cov2]
                     if past_cov1 is not None
                     else None,
                     n=len(val1),
@@ -278,8 +278,8 @@ if TORCH_AVAILABLE:
                 train2,
                 val1,
                 val2,
-                None,
-                None,
+                fut_cov1,
+                fut_cov2,
                 past_cov1=past_cov1,
                 past_cov2=past_cov2,
                 val_past_cov1=val_past_cov1,
