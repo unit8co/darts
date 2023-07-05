@@ -173,6 +173,11 @@ def extract_trend_and_seasonality(
         "The model must be either MULTIPLICATIVE or ADDITIVE.",
     )
 
+    raise_if_not(
+        (method == "MSTL") & (isinstance(freq, list)) or (method != "MSTL"),
+        f"MSTL method requires a list of frequencies. Got a single value instead: {freq}.",
+    )
+
     if method == "naive":
 
         decomp = seasonal_decompose(

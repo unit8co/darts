@@ -148,13 +148,12 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
         self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0, atol=1e-5))
 
         # test MSTL method with single freq - statsmodels was designed
-        # to handle list of ints or single int
-        calc_trend, calc_seasonality = extract_trend_and_seasonality(
-            self.ts, freq=6, method="MSTL", model=ModelMode.ADDITIVE
-        )
-        self.assertTrue(len(calc_seasonality.components) == 1)
-        diff = self.trend - calc_trend
-        self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0, atol=1e-5))
+        # to handle list of ints or single int, but we want to make sure
+        # that MSTL gets a list
+        with self.assertRaises(ValueError):
+            calc_trend, calc_seasonality = extract_trend_and_seasonality(
+                self.ts, freq=6, method="MSTL", model=ModelMode.ADDITIVE
+            )
 
         # check if error is raised when using multiplicative model
         with self.assertRaises(ValueError):
