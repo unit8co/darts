@@ -392,9 +392,9 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         mode
             optionally, 'additive' or 'multiplicative'
         condition_name
-            optionally, the name of the condition on which the seasonality depends. If not None, a future_covariates
-            TimeSeries with a component (column) named condition_name is expected to be passed to the 'fit()' and
-            'predict()' methods.
+            optionally, the name of the condition on which the seasonality depends. If not `None`, expects a 
+            `future_covariates` time series with a component/column named `condition_name` to be passed to `fit()` 
+            and `predict()`.
         """
         function_call = {
             "name": name,
