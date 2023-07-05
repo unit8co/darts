@@ -698,6 +698,10 @@ class NHiTSModel(PastCovariatesTorchModel):
         if isinstance(layer_widths, int):
             self.layer_widths = [layer_widths] * self.num_stacks
 
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
+
     @staticmethod
     def _prepare_pooling_downsampling(
         pooling_kernel_sizes, n_freq_downsample, in_len, out_len, num_blocks, num_stacks
