@@ -155,6 +155,12 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
                 self.ts, freq=6, method="MSTL", model=ModelMode.ADDITIVE
             )
 
+        # make sure non MSTL methods fail with multiple freqs
+        with self.assertRaises(ValueError):
+            calc_trend, calc_seasonality = extract_trend_and_seasonality(
+                self.ts, freq=[1, 4, 6], method="STL", model=ModelMode.ADDITIVE
+            )
+
         # check if error is raised when using multiplicative model
         with self.assertRaises(ValueError):
             calc_trend, _ = extract_trend_and_seasonality(
