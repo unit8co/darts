@@ -30,6 +30,10 @@ class NaiveMean(LocalForecastingModel):
         super().__init__()
         self.mean_val = None
 
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
+
     def fit(self, series: TimeSeries):
         super().fit(series)
 
@@ -58,6 +62,10 @@ class NaiveSeasonal(LocalForecastingModel):
         super().__init__()
         self.last_k_vals = None
         self.K = K
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
 
     @property
     def min_train_series_length(self):
@@ -90,6 +98,10 @@ class NaiveDrift(LocalForecastingModel):
         .. math:: \\hat{y}_{T+h} = y_T + h\\left( \\frac{y_T - y_1}{T - 1} \\right)
         """
         super().__init__()
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
 
     def fit(self, series: TimeSeries):
         super().fit(series)
@@ -124,6 +136,10 @@ class NaiveMovingAverage(LocalForecastingModel):
         super().__init__()
         self.input_chunk_length = input_chunk_length
         self.rolling_window = None
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
 
     @property
     def min_train_series_length(self):
