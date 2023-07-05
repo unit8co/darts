@@ -624,6 +624,51 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}",
             )
 
+    """
+    @pytest.mark.slow
+    def test_optimized_historical_forecasts_regression(self):
+        ts_univariate = tg.linear_timeseries(start_value=1, end_value=100, length=100)
+        ts_multivariate = ts_univariate.stack(tg.sine_timeseries(length=100))
+        start = 80
+        for ts in [ts_univariate, ts_multivariate]:
+            for last_points_only in [True, False]:
+                for stride in [1, 2]:
+                    for forecast_horizon in [1,3]:
+                        for multi_models in [True, False]:
+                            model = LinearRegressionModel(multi_models=multi_models,
+                                                        lags=3,
+                                                        output_chunk_length=forecast_horizon,
+                                                        )
+                            model.fit(ts[:start])
+                            hist_fct = model.historical_forecasts(series=ts,
+                                                                start=start,
+                                                                retrain=False,
+                                                                last_points_only=last_points_only,
+                                                                stride=stride,
+                                                                forecast_horizon=forecast_horizon,
+                                                                )
+                            opti_hist_fct =  model._optimized_historical_forecasts(series=ts,
+                                                                                start=start,
+                                                                                last_points_only=last_points_only,
+                                                                                stride=stride,
+                                                                                forecast_horizon=forecast_horizon,
+                                                                                )
+
+                        msg = f"failed with the following parameters:\n"\
+                              f"ts.n_comp {ts.n_components} last_points_only {last_points_only} stride {stride} "\
+                              f"forecast_horizon {forecast_horizon} multi_models {multi_models}"
+
+                        print(msg)
+
+                        if last_points_only:
+                            assert all(hist_fct.time_index == opti_hist_fct.time_index), msg
+                            assert np.allclose(hist_fct.values(), opti_hist_fct.values()), msg
+                        else:
+                            for fct, opti_fct in zip(hist_fct, opti_hist_fct):
+                                assert all(fct.time_index == opti_fct.time_index), msg
+                                assert np.allclose(fct.values(), opti_fct.values()), msg
+    """
+
     @pytest.mark.slow
     @unittest.skipUnless(
         TORCH_AVAILABLE,
