@@ -2,6 +2,7 @@ from unittest.mock import Mock
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.logging import get_logger
@@ -246,19 +247,21 @@ class ProphetTestCase(DartsBaseTestClass):
         """
         Test that conditional seasonality is correctly incorporated by the model
         """
+        duration = 395
+        horizon = 7
         df = pd.DataFrame()
         df["ds"] = pd.date_range(start="2022-01-02", periods=395)
-        df["y"] = [i + 10 * (i % 7 == 0) for i in range(395)]
+        df["y"] = [i + 10 * (i % 7 == 0) for i in range(duration)]
         df["is_sunday"] = df["ds"].apply(lambda x: int(x.weekday() == 6))
 
         ts = TimeSeries.from_dataframe(
-            df[:-30], time_col="ds", value_cols="y", freq="D"
+            df[:-horizon], time_col="ds", value_cols="y", freq="D"
         )
         future_covariates = TimeSeries.from_dataframe(
             df, time_col="ds", value_cols=["is_sunday"], freq="D"
         )
         expected_result = TimeSeries.from_dataframe(
-            df[-30:], time_col="ds", value_cols="y", freq="D"
+            df[-horizon:], time_col="ds", value_cols="y", freq="D"
         )
 
         model = Prophet(seasonality_mode="additive")
@@ -271,9 +274,22 @@ class ProphetTestCase(DartsBaseTestClass):
 
         model.fit(ts, future_covariates=future_covariates)
 
-        forecast = model.predict(30, future_covariates=future_covariates)
+        forecast = model.predict(horizon, future_covariates=future_covariates)
 
         for val_i, pred_i in zip(
             expected_result.univariate_values(), forecast.univariate_values()
         ):
             self.assertAlmostEqual(val_i, pred_i, delta=0.1)
+
+        invalid_future_covariates = future_covariates.with_values(
+            np.reshape(np.random.randint(0, 3, duration), (-1, 1, 1)).astype("float")
+        )
+
+        with pytest.raises(ValueError):
+            model.fit(ts, future_covariates=invalid_future_covariates)
+
+        with pytest.raises(ValueError):
+            model.fit(
+                ts,
+                future_covariates=invalid_future_covariates.drop_columns("is_sunday"),
+            )
