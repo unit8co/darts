@@ -942,15 +942,13 @@ class RegressionModel(GlobalForecastingModel):
                 hist_fct_pc_start += min_past_cov_lag * series_.freq
             hist_fct_pc_end = hist_fct_tgt_end
             # future lags can be anything
+            # TODO: indexes are wrong, something breaks
             hist_fct_fc_start, hist_fct_fc_end = historical_forecasts_time_index
             if min_future_cov_lag is not None and min_future_cov_lag < 0:
-                hist_fct_fc_start = (
-                    hist_fct_tgt_start + min_future_cov_lag * series_.freq
-                )
+                hist_fct_fc_start += min_future_cov_lag * series_.freq
             if max_future_cov_lag is not None and max_future_cov_lag > 0:
-                hist_fct_fc_end = hist_fct_tgt_end + max_future_cov_lag * series_.freq
+                hist_fct_fc_end += max_future_cov_lag * series_.freq
 
-            # TODO: check if the slicing of the target, past and future ts must be performed with more accuracy
             X, times = create_lagged_historical_forecasting_data(
                 target_series=series_[hist_fct_tgt_start:hist_fct_tgt_end],
                 past_covariates=None
@@ -971,20 +969,19 @@ class RegressionModel(GlobalForecastingModel):
             )
 
             # Unpack X, apply the stride and reduce to 2D
-            X = X[0][::stride, :, 0]
-
-            forecast = model._predict_and_sample(X, num_samples)
-
-            # TODO: reshape the forecast
+            # TODO: if multi_models=True and last_points_only=True, only one sub-model should be used
+            forecast = model._predict_and_sample(X[0][::stride, :, 0], num_samples)
 
             forecasts_list.append(
                 TimeSeries.from_times_and_values(
-                    generate_index(
+                    times=times[0]
+                    if stride == 1
+                    else generate_index(
                         start=historical_forecasts_time_index[0],
                         end=historical_forecasts_time_index[1],
                         freq=series_.freq * stride,
                     ),
-                    forecast,
+                    values=forecast,
                     columns=series_.columns,
                     static_covariates=series_.static_covariates,
                     hierarchy=series_.hierarchy,
