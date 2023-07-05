@@ -584,7 +584,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     end=end_fc,
                     freq=future_covariates.freq,
                 )
-                if reduce_to_bounds
+                if not reduce_to_bounds
                 else (start_fc, end_fc)
             )
 
