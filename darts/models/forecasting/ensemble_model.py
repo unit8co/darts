@@ -428,6 +428,10 @@ class EnsembleModel(GlobalForecastingModel):
         return self._models_are_probabilistic()
 
     @property
+    def supports_multivariate(self) -> bool:
+        return all([model.supports_multivariate for model in self.models])
+
+    @property
     def supports_past_covariates(self) -> bool:
         return any([model.supports_past_covariates for model in self.models])
 

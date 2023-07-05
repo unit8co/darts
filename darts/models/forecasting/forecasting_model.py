@@ -195,14 +195,21 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return False
 
     @property
-    def supports_past_covariates(self):
+    @abstractmethod
+    def supports_multivariate(self) -> bool:
+        """
+        Whether the model considers more than one variate in the time series.
+        """
+
+    @property
+    def supports_past_covariates(self) -> bool:
         """
         Whether model supports past covariates
         """
         return "past_covariates" in inspect.signature(self.fit).parameters.keys()
 
     @property
-    def supports_future_covariates(self):
+    def supports_future_covariates(self) -> bool:
         """
         Whether model supports future covariates
         """
@@ -224,28 +231,28 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         pass
 
     @property
-    def uses_past_covariates(self):
+    def uses_past_covariates(self) -> bool:
         """
         Whether the model uses past covariates, once fitted.
         """
         return self._uses_past_covariates
 
     @property
-    def uses_future_covariates(self):
+    def uses_future_covariates(self) -> bool:
         """
         Whether the model uses future covariates, once fitted.
         """
         return self._uses_future_covariates
 
     @property
-    def uses_static_covariates(self):
+    def uses_static_covariates(self) -> bool:
         """
         Whether the model uses static covariates, once fitted.
         """
         return self._uses_static_covariates
 
     @property
-    def considers_static_covariates(self):
+    def considers_static_covariates(self) -> bool:
         """
         Whether the model considers static covariates, if there are any.
         """

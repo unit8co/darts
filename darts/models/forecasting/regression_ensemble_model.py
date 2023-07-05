@@ -99,7 +99,7 @@ class RegressionEnsembleModel(EnsembleModel):
             f"{regression_model.lags}",
         )
 
-        self.regression_model = regression_model
+        self.regression_model: RegressionModel = regression_model
         self.train_n_points = regression_train_n_points
 
     def _split_multi_ts_sequence(
@@ -115,7 +115,6 @@ class RegressionEnsembleModel(EnsembleModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     ):
-
         super().fit(
             series, past_covariates=past_covariates, future_covariates=future_covariates
         )
@@ -190,7 +189,6 @@ class RegressionEnsembleModel(EnsembleModel):
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-
         is_single_series = isinstance(series, TimeSeries) or series is None
         predictions = series2seq(predictions)
         series = series2seq(series) if series is not None else [None]
@@ -225,6 +223,13 @@ class RegressionEnsembleModel(EnsembleModel):
     def output_chunk_length(self) -> int:
         """Return the `output_chunk_length` of the regression model (ensembling layer)"""
         return self.regression_model.output_chunk_length
+    
+    @property
+    def supports_multivariate(self) -> bool:
+        return (
+            super().supports_multivariate
+            and self.regression_model.supports_multivariate
+        )
 
     def _is_probabilistic(self) -> bool:
         """

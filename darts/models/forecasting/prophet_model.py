@@ -267,6 +267,10 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             )
         return predict_df
 
+    @property
+    def supports_multivariate(self) -> bool:
+        return False
+
     def _is_probabilistic(self) -> bool:
         return True
 

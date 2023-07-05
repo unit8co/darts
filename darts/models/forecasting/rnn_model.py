@@ -477,5 +477,9 @@ class RNNModel(DualCovariatesTorchModel):
         )
 
     @property
+    def supports_multivariate(self) -> bool:
+        return True
+
+    @property
     def min_train_series_length(self) -> int:
         return self.training_length + 1

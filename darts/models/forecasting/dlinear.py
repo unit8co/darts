@@ -453,6 +453,10 @@ class DLinearModel(MixedCovariatesTorchModel):
         )
 
     @property
+    def supports_multivariate(self) -> bool:
+        return True
+
+    @property
     def supports_static_covariates(self) -> bool:
         return True
 
