@@ -181,34 +181,17 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         # add user defined seasonalities (from model creation and/or pre-fit self.add_seasonalities())
         interval_length = self._freq_to_days(series.freq_str)
-        conditional_seasonality_covariates = []
-        if future_covariates is not None:
-            future_covariates_columns = future_covariates.columns
-        else:
-            future_covariates_columns = []
-
+        conditional_seasonality_covariates = self._check_seasonality_conditions(
+            future_covariates=future_covariates
+        )
         for seasonality_name, attributes in self._add_seasonalities.items():
-            condition_name = attributes["condition_name"]
-            if condition_name is not None:
-                if condition_name in future_covariates_columns:
-                    conditional_seasonality_covariates.append(
-                        attributes["condition_name"]
-                    )
-                else:
-                    raise_if(
-                        True,
-                        f"Condition name '{attributes['condition_name']}' is required by the custom "
-                        f"seasonality '{seasonality_name}', but either it is not found in future_covariates "
-                        f"or future_covariates is None.",
-                    )
-
             self.model.add_seasonality(
                 name=seasonality_name,
                 period=attributes["seasonal_periods"] * interval_length,
                 fourier_order=attributes["fourier_order"],
                 prior_scale=attributes["prior_scale"],
                 mode=attributes["mode"],
-                condition_name=condition_name,
+                condition_name=attributes["condition_name"],
             )
 
         # add covariates as additional regressors
@@ -219,7 +202,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 right_index=True,
                 how="left",
             )
-            for covariate in future_covariates_columns:
+            for covariate in future_covariates.columns:
                 if covariate not in conditional_seasonality_covariates:
                     self.model.add_regressor(covariate)
 
@@ -244,21 +227,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         verbose: bool = False,
     ) -> TimeSeries:
 
-        for seasonality_name, attributes in self._add_seasonalities.items():
-            if attributes["condition_name"] is not None:
-                raise_if(
-                    future_covariates is None,
-                    f"Condition name '{attributes['condition_name']}' is required by "
-                    f"the custom seasonality '{seasonality_name}', but future_covariates is None. In addition, "
-                    f"the model should be re-trained with future_covariates.",
-                    logger,
-                )
-                raise_if(
-                    attributes["condition_name"] not in future_covariates.columns,
-                    f"Condition name '{attributes['condition_name']}' is required by "
-                    f"the custom seasonality '{seasonality_name}', but it is not found in future_covariates.",
-                    logger,
-                )
+        _ = self._check_seasonality_conditions(future_covariates=future_covariates)
 
         super()._predict(n, future_covariates, num_samples)
 
@@ -306,6 +275,73 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 how="left",
             )
         return predict_df
+
+    def _check_seasonality_conditions(
+        self, future_covariates: Optional[TimeSeries] = None
+    ) -> List[str]:
+        """
+        Checks if the conditions for custom conditional seasonalities are met. Each custom seasonality that has a
+        `condition_name` other than None is checked. If the `condition_name` is not a column in the `future_covariates`
+        or if the values in the column are not all True or False, an error is raised.
+        Returns a list of the `condition_name`s of the conditional seasonalities that have been checked.
+
+        Parameters
+        ----------
+        future_covariates
+            optionally, a TimeSeries containing the future covariates and including the columns that are used as
+            conditions for the conditional seasonalities when necessary
+
+        Raises
+        ------
+        ValueError
+            if a seasonality has a `condition_name` and a column named `condition_name` is missing in
+            the `future_covariates`
+
+            if a seasonality has a `condition_name` and the values in the corresponding column in `future_covariates`
+            are not binary values (True or False, 1 or 0)
+        """
+
+        conditional_seasonality_covariates = []
+        invalid_conditional_seasonalities = []
+        if future_covariates is not None:
+            future_covariates_columns = future_covariates.columns
+        else:
+            future_covariates_columns = []
+
+        for seasonality_name, attributes in self._add_seasonalities.items():
+            condition_name = attributes["condition_name"]
+            if condition_name is not None:
+                if condition_name not in future_covariates_columns:
+                    invalid_conditional_seasonalities.append(
+                        (seasonality_name, condition_name, "column missing")
+                    )
+                    continue
+                if (
+                    not future_covariates[condition_name]
+                    .pd_series()
+                    .isin([True, False])
+                    .all()
+                ):
+                    invalid_conditional_seasonalities.append(
+                        (seasonality_name, condition_name, "invalid values")
+                    )
+                    continue
+                conditional_seasonality_covariates.append(condition_name)
+
+        formatted_issues_str = ", ".join(
+            f"'{name}' (condition_name: '{cond}'; issue: {reason})"
+            for name, cond, reason in invalid_conditional_seasonalities
+        )
+        raise_if(
+            len(invalid_conditional_seasonalities) > 0,
+            f"The following seasonalities have invalid conditions: "
+            f"{formatted_issues_str}. "
+            f"Each conditional seasonality must be accompanied by a binary component/column in the future_covariates "
+            f"with the same name as the condition_name. These components must only contain "
+            f"True or False values (or 1 or 0).",
+            logger,
+        )
+        return conditional_seasonality_covariates
 
     @property
     def supports_multivariate(self) -> bool:
@@ -392,8 +428,8 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         mode
             optionally, 'additive' or 'multiplicative'
         condition_name
-            optionally, the name of the condition on which the seasonality depends. If not `None`, expects a 
-            `future_covariates` time series with a component/column named `condition_name` to be passed to `fit()` 
+            optionally, the name of the condition on which the seasonality depends. If not `None`, expects a
+            `future_covariates` time series with a component/column named `condition_name` to be passed to `fit()`
             and `predict()`.
         """
         function_call = {
