@@ -223,7 +223,7 @@ class RegressionEnsembleModel(EnsembleModel):
     def output_chunk_length(self) -> int:
         """Return the `output_chunk_length` of the regression model (ensembling layer)"""
         return self.regression_model.output_chunk_length
-    
+
     @property
     def supports_multivariate(self) -> bool:
         return (
