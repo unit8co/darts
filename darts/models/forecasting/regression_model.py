@@ -31,6 +31,7 @@ from typing import Any, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
+from numpy.lib.stride_tricks import sliding_window_view
 from sklearn.linear_model import LinearRegression
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
@@ -839,7 +840,9 @@ class RegressionModel(GlobalForecastingModel):
         """Assumptions:
         retrain = False, train_length is unused
         num_samples == 1
-        multi_models = False if forecast_horizon > 1 and last_points_only=False
+        TODO: support forecast_horizon > output_chunk_length
+        TODO: support for num_samples > 1
+        TODO: support series_ is None (models relying on covariates only at prediction)
         """
         model = self
         if not model._fit_called:
@@ -908,9 +911,9 @@ class RegressionModel(GlobalForecastingModel):
                     <= start_time_
                     <= historical_forecasts_time_index[-1]
                 ):
+                    # TODO: put back the warnings
                     # ignore user-defined `start`
                     pass
-                    # TODO: put back the warnings
                 else:
                     historical_forecasts_time_index = (
                         max(historical_forecasts_time_index[0], start_time_),
@@ -944,19 +947,17 @@ class RegressionModel(GlobalForecastingModel):
             if max_future_cov_lag is not None and max_future_cov_lag > 0:
                 hist_fct_fc_end += max_future_cov_lag * freq
 
-            # shift start to perform auto-regression
+            # shift start to account for not multi_models with forecast_horizon > 1
             if (
                 (not last_points_only)
                 and forecast_horizon > 1
                 and (not model.multi_models)
             ):
-                # maybe the shift should depend on the stride as well?
-                shift = (forecast_horizon - 1) * freq
+                shift = (forecast_horizon * stride - 1) * freq
                 hist_fct_tgt_start -= shift
                 hist_fct_pc_start -= shift
                 hist_fct_fc_start -= shift
 
-            # TODO: support series_ is None, supported for prediction
             X, times = create_lagged_historical_forecasting_data(
                 target_series=series_[hist_fct_tgt_start:hist_fct_tgt_end],
                 past_covariates=None
@@ -976,9 +977,12 @@ class RegressionModel(GlobalForecastingModel):
                 concatenate=False,
             )
 
-            # TODO: try stride * forecast_horizon instead of stride alone
-            # Unpack X, apply the stride and squeeze to 2D
-            X = X[0][::stride, :, 0]
+            if last_points_only or forecast_horizon == 1:
+                # stride is shared between input data and historical_forecast
+                X = X[0][::stride, :, 0]
+                # stride must be applied post-hoc to avoid missing values
+            else:
+                X = X[0][:, :, 0]
 
             # if model.multi_models, forecast has shape (num_samples * n_timestamps, output_chunk_length, n_components)
             # else forecast has shape (num_samples * n_timestamps, 1, n_components)
@@ -989,11 +993,9 @@ class RegressionModel(GlobalForecastingModel):
                     forecast = forecast[
                         :, forecast_horizon - 1 :: series_.n_components, :
                     ]
-                else:
-                    pass
 
-                if forecast.shape[1] != series_.n_components:
-                    forecast = forecast.swapaxes(1, 2)
+                # reshape into (forecastable, n_components, n_samples)
+                forecast = forecast.swapaxes(1, 2)
 
                 forecasts_list.append(
                     TimeSeries.from_times_and_values(
@@ -1013,66 +1015,35 @@ class RegressionModel(GlobalForecastingModel):
                     )
                 )
             else:
-                # Vectorized autoregression
-                # TODO: account for the stride, both here and the shift above
-                if not model.multi_models and forecast_horizon > 1:
-                    autoreg_forecasts = [forecast[:-forecast_horizon, :, 0]]
-                    for autoreg_step in range(forecast_horizon - 1, 0, -1):
-                        # concatenate the last values of the X with the forecast of previous round
-                        X = np.hstack([X[1:, 1:], forecast[:-1, 0]])
-                        forecast = model._predict_and_sample(X, num_samples)
-                        autoreg_forecasts.append(forecast[:-autoreg_step, :, 0])
+                # Reshape and stride the forecast into (forecastable_index, forecast_horizon, n_components, num_samples)
+                if forecast_horizon > 1:
+                    if model.multi_models:
+                        forecast = forecast[::stride]
+                    else:
+                        forecast = sliding_window_view(
+                            forecast, (forecast_horizon, 1, 1)
+                        )[(stride - 1) * forecast_horizon :: stride, 0, :, :, 0, 0]
+                        forecast = forecast.swapaxes(1, 2)
 
-                    forecast = np.concatenate(autoreg_forecasts).reshape(
-                        -1, forecast_horizon
-                    )
+                new_times = generate_index(
+                    start=historical_forecasts_time_index[0],
+                    length=forecast.shape[0],
+                    freq=freq,
+                )
 
-                # Sliding window on the times and values (both already strided)
-                if stride > 1 and forecast_horizon > 1:
-                    new_times = generate_index(
-                        start=historical_forecasts_time_index[0],
-                        length=forecast.shape[0],
-                        freq=freq,
-                    )
-
-                    forecasts_ = []
-                    for idx_fct, step_fct in enumerate(
-                        range(0, forecast.shape[0] - forecast_horizon + 1, stride)
-                    ):
-                        forecasts_.append(
-                            TimeSeries.from_times_and_values(
-                                times=new_times[step_fct : step_fct + forecast_horizon],
-                                values=forecast[idx_fct],
-                                columns=series_.columns,
-                                static_covariates=series_.static_covariates,
-                                hierarchy=series_.hierarchy,
-                            )
+                forecasts_ = []
+                for idx_ftc, step_fct in enumerate(
+                    range(0, forecast.shape[0] - forecast_horizon + 1, stride)
+                ):
+                    forecasts_.append(
+                        TimeSeries.from_times_and_values(
+                            times=new_times[step_fct : step_fct + forecast_horizon],
+                            values=forecast[idx_ftc],
+                            columns=series_.columns,
+                            static_covariates=series_.static_covariates,
+                            hierarchy=series_.hierarchy,
                         )
-                else:
-                    # flatten the prediction, keep forecast of the first sub-model
-                    # TODO: not sure this is the best approach, the shape was (k, forecast_horizon, 1)
-                    if model.multi_models and stride == 1:
-                        forecast = forecast[::forecast_horizon].reshape((-1, 1))
-
-                    new_times = generate_index(
-                        start=historical_forecasts_time_index[0],
-                        length=forecast.shape[0],
-                        freq=freq * stride,
                     )
-
-                    forecasts_ = []
-                    for step_fct in range(
-                        0, forecast.shape[0] - forecast_horizon + 1, 1
-                    ):
-                        forecasts_.append(
-                            TimeSeries.from_times_and_values(
-                                times=new_times[step_fct : step_fct + forecast_horizon],
-                                values=forecast[step_fct : step_fct + forecast_horizon],
-                                columns=series_.columns,
-                                static_covariates=series_.static_covariates,
-                                hierarchy=series_.hierarchy,
-                            )
-                        )
 
                 forecasts_list.append(forecasts_)
         return forecasts_list if len(series) > 1 else forecasts_list[0]
