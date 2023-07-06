@@ -837,9 +837,8 @@ class RegressionModel(GlobalForecastingModel):
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:
-        """Assumptions:
-        retrain = False, train_length is unused
-        num_samples == 1
+        """
+        TODO: support models without output_chunk_length
         TODO: support forecast_horizon > output_chunk_length
         TODO: support for num_samples > 1
         TODO: support series_ is None (models relying on covariates only at prediction)
@@ -849,6 +848,18 @@ class RegressionModel(GlobalForecastingModel):
             raise_log(
                 ValueError(
                     "The model has not been fitted yet, this optimized routine cannot be used."
+                ),
+                logger,
+            )
+
+        if (
+            model.output_chunk_length is not None
+            and forecast_horizon > model.output_chunk_length
+        ):
+            raise_log(
+                ValueError(
+                    "As `forecast_horizon > model.output_chunk_length`, historical forecast "
+                    "requires auto-regression which is not supported in this optimized routine."
                 ),
                 logger,
             )
@@ -977,10 +988,10 @@ class RegressionModel(GlobalForecastingModel):
                 concatenate=False,
             )
 
+            # stride is shared between input data and historical_forecast
             if last_points_only or forecast_horizon == 1:
-                # stride is shared between input data and historical_forecast
                 X = X[0][::stride, :, 0]
-                # stride must be applied post-hoc to avoid missing values
+            # stride must be applied post-hoc to avoid missing values
             else:
                 X = X[0][:, :, 0]
 
@@ -994,7 +1005,7 @@ class RegressionModel(GlobalForecastingModel):
                         :, forecast_horizon - 1 :: series_.n_components, :
                     ]
 
-                # reshape into (forecastable, n_components, n_samples)
+                # reshape into (forecasted indexes, n_components, n_samples)
                 forecast = forecast.swapaxes(1, 2)
 
                 forecasts_list.append(
@@ -1016,14 +1027,21 @@ class RegressionModel(GlobalForecastingModel):
                 )
             else:
                 # Reshape and stride the forecast into (forecastable_index, forecast_horizon, n_components, num_samples)
-                if forecast_horizon > 1:
-                    if model.multi_models:
-                        forecast = forecast[::stride]
-                    else:
+                if model.multi_models:
+                    forecast = forecast[::stride, :forecast_horizon]
+                else:
+                    if model.output_chunk_length is None:
+                        # model generates everything at once, must be sliced
+                        raise_log(ValueError("Not supported"))
+                    elif forecast_horizon <= model.output_chunk_length:
+                        # no auto-regression needed
                         forecast = sliding_window_view(
                             forecast, (forecast_horizon, 1, 1)
                         )[(stride - 1) * forecast_horizon :: stride, 0, :, :, 0, 0]
                         forecast = forecast.swapaxes(1, 2)
+                    else:
+                        # auto-regression
+                        raise_log(ValueError("Not supported"))
 
                 new_times = generate_index(
                     start=historical_forecasts_time_index[0],
