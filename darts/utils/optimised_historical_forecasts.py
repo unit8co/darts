@@ -159,24 +159,23 @@ def _optimised_historical_forecasts_regression_last_points_only(
             freq,
         )
 
-        if model.output_chunk_length is not None and model.output_chunk_length > 1:
+        # Additional shift, to account for the model output_chunk_length
+        if (
+            model.output_chunk_length is not None
+            and model.output_chunk_length != forecast_horizon
+        ):
             if model.multi_models:
-                shift_start = 0
+                shift = 0
             else:
-                shift_start = model.output_chunk_length - 1
+                shift = model.output_chunk_length - forecast_horizon
 
-            hist_fct_tgt_start -= shift_start * freq
-            hist_fct_pc_start -= shift_start * freq
-            hist_fct_fc_start -= shift_start * freq
+            hist_fct_tgt_start -= shift * freq
+            hist_fct_pc_start -= shift * freq
+            hist_fct_fc_start -= shift * freq
 
-            if model.output_chunk_length != forecast_horizon:
-                shift_end = 0
-            else:
-                shift_end = model.output_chunk_length - 1
-
-            hist_fct_tgt_end -= shift_end * freq
-            hist_fct_pc_end -= shift_end * freq
-            hist_fct_fc_end -= shift_end * freq
+            hist_fct_tgt_end -= shift * freq
+            hist_fct_pc_end -= shift * freq
+            hist_fct_fc_end -= shift * freq
 
         X, times = create_lagged_prediction_data(
             target_series=series_[hist_fct_tgt_start:hist_fct_tgt_end],
@@ -197,18 +196,12 @@ def _optimised_historical_forecasts_regression_last_points_only(
             concatenate=False,
         )
 
+        # stride can be applied directly (same for input and historical forecasts)
         forecast = model._predict_and_sample(X[0][::stride, :, 0], num_samples)
 
         # extract the last sub-model forecast for each component
         if model.multi_models:
             forecast = forecast[:, forecast_horizon - 1 :: series_.n_components, :]
-        else:
-            if forecast_horizon != model.output_chunk_length:
-                forecast = forecast[
-                    forecast_horizon - 1 : -shift_start + forecast_horizon - 1, :, :
-                ]
-            else:
-                forecast
 
         # reshape into (forecasted indexes, n_components, n_samples)
         forecast = forecast.swapaxes(1, 2)
