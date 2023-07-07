@@ -320,6 +320,14 @@ class RegressionModel(GlobalForecastingModel):
         )
 
     @property
+    def supports_multivariate(self) -> bool:
+        """
+        If available, uses `model`'s native multivariate support. If not available, obtains multivariate support by
+        wrapping the univariate model in a `sklearn.multioutput.MultiOutputRegressor`.
+        """
+        return True
+
+    @property
     def min_train_series_length(self) -> int:
         return max(
             3,

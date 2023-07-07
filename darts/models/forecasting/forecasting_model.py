@@ -195,6 +195,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return False
 
     @property
+    @abstractmethod
+    def supports_multivariate(self) -> bool:
+        """
+        Whether the model considers more than one variate in the time series.
+        """
+
+    @property
     def supports_past_covariates(self) -> bool:
         """
         Whether model supports past covariates
@@ -216,7 +223,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return False
 
     @property
-    def uses_past_covariates(self):
+    def uses_past_covariates(self) -> bool:
         """
         Whether the model uses past covariates, once fitted.
         """

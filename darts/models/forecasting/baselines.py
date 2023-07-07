@@ -12,7 +12,7 @@ import numpy as np
 from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import (
-    GlobalForecastingModel,
+    ForecastingModel,
     LocalForecastingModel,
 )
 from darts.timeseries import TimeSeries
@@ -29,6 +29,10 @@ class NaiveMean(LocalForecastingModel):
         """
         super().__init__()
         self.mean_val = None
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
 
     def fit(self, series: TimeSeries):
         super().fit(series)
@@ -58,6 +62,10 @@ class NaiveSeasonal(LocalForecastingModel):
         super().__init__()
         self.last_k_vals = None
         self.K = K
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
 
     @property
     def min_train_series_length(self):
@@ -90,6 +98,10 @@ class NaiveDrift(LocalForecastingModel):
         .. math:: \\hat{y}_{T+h} = y_T + h\\left( \\frac{y_T - y_1}{T - 1} \\right)
         """
         super().__init__()
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
 
     def fit(self, series: TimeSeries):
         super().fit(series)
@@ -124,6 +136,10 @@ class NaiveMovingAverage(LocalForecastingModel):
         super().__init__()
         self.input_chunk_length = input_chunk_length
         self.rolling_window = None
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
 
     @property
     def min_train_series_length(self):
@@ -164,7 +180,7 @@ class NaiveMovingAverage(LocalForecastingModel):
 class NaiveEnsembleModel(EnsembleModel):
     def __init__(
         self,
-        models: Union[List[LocalForecastingModel], List[GlobalForecastingModel]],
+        models: List[ForecastingModel],
         show_warnings: bool = True,
     ):
         """Naive combination model
@@ -182,7 +198,12 @@ class NaiveEnsembleModel(EnsembleModel):
         show_warnings
             Whether to show warnings related to models covariates support.
         """
-        super().__init__(models=models, show_warnings=show_warnings)
+        super().__init__(
+            models=models,
+            train_num_samples=None,
+            train_samples_reduction=None,
+            show_warnings=show_warnings,
+        )
 
     def fit(
         self,
@@ -209,11 +230,13 @@ class NaiveEnsembleModel(EnsembleModel):
         self,
         predictions: Union[TimeSeries, Sequence[TimeSeries]],
         series: Optional[Sequence[TimeSeries]] = None,
+        num_samples: int = 1,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         def take_average(prediction: TimeSeries) -> TimeSeries:
-            series = prediction.pd_dataframe(copy=False).sum(axis=1) / len(self.models)
-            series.name = prediction.components[0]
-            return TimeSeries.from_series(series)
+            # average across the components, keep n_samples, rename components
+            return prediction.mean(axis=1).with_columns_renamed(
+                "components_mean", prediction.components[0]
+            )
 
         if isinstance(predictions, Sequence):
             return [take_average(p) for p in predictions]

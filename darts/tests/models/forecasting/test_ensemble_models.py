@@ -11,7 +11,6 @@ from darts.models import (
     NaiveDrift,
     NaiveEnsembleModel,
     NaiveSeasonal,
-    RegressionEnsembleModel,
     StatsForecastAutoARIMA,
     Theta,
 )
@@ -125,17 +124,52 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
             np.array_equal(forecast_naive_ensemble.values(), forecast_mean.values())
         )
 
-    def test_stochastic_ensemble(self):
-        model1 = LinearRegressionModel(lags=1, likelihood="quantile")
-        model2 = LinearRegressionModel(lags=2, likelihood="quantile")
+    def test_stochastic_naive_ensemble(self):
+        num_samples = 100
 
-        naive_ensemble = NaiveEnsembleModel([model1, model2])
-        self.assertTrue(naive_ensemble._is_probabilistic())
-
-        regression_ensemble = RegressionEnsembleModel(
-            [model1, model2], regression_train_n_points=1
+        # probabilistic forecasting models
+        model_proba_1 = LinearRegressionModel(
+            lags=1, likelihood="quantile", random_state=42
         )
-        self.assertTrue(regression_ensemble._is_probabilistic())
+        model_proba_2 = LinearRegressionModel(
+            lags=2, likelihood="quantile", random_state=42
+        )
+
+        # only probabilistic forecasting models
+        naive_ensemble_proba = NaiveEnsembleModel([model_proba_1, model_proba_2])
+        self.assertTrue(naive_ensemble_proba._is_probabilistic())
+
+        naive_ensemble_proba.fit(self.series1 + self.series2)
+        # by default, only 1 sample
+        pred_proba_1_sample = naive_ensemble_proba.predict(n=5)
+        self.assertEqual(pred_proba_1_sample.n_samples, 1)
+
+        # possible to obtain probabilistic forecast by averaging samples across the models
+        pred_proba_many_sample = naive_ensemble_proba.predict(
+            n=5, num_samples=num_samples
+        )
+        self.assertEqual(pred_proba_many_sample.n_samples, num_samples)
+
+        # need to redefine the models to reset the random state
+        model_alone_1 = LinearRegressionModel(
+            lags=1, likelihood="quantile", random_state=42
+        )
+        model_alone_2 = LinearRegressionModel(
+            lags=2, likelihood="quantile", random_state=42
+        )
+        model_alone_1.fit(self.series1 + self.series2)
+        model_alone_2.fit(self.series1 + self.series2)
+        forecast_mean = 0.5 * model_alone_1.predict(
+            5, num_samples=num_samples
+        ) + 0.5 * model_alone_2.predict(5, num_samples=num_samples)
+
+        self.assertEqual(
+            forecast_mean.values().shape, pred_proba_many_sample.values().shape
+        )
+        self.assertEqual(forecast_mean.n_samples, pred_proba_many_sample.n_samples)
+        self.assertTrue(
+            np.array_equal(pred_proba_many_sample.values(), forecast_mean.values())
+        )
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_input_models_global_models(self):
@@ -261,7 +295,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         series_short = series_long[:25]
 
         # train with a single series
-        ensemble_model = self.get_global_ensembe_model()
+        ensemble_model = self.get_global_ensemble_model()
         ensemble_model.fit(series_short, past_covariates=series_long)
         # predict after end of train series
         preds = ensemble_model.predict(n=5, past_covariates=series_long)
@@ -283,7 +317,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         self.assertTrue(isinstance(preds, list) and len(preds) == 1)
 
         # train with multiple series
-        ensemble_model = self.get_global_ensembe_model()
+        ensemble_model = self.get_global_ensemble_model()
         ensemble_model.fit([series_short] * 2, past_covariates=[series_long] * 2)
         with self.assertRaises(ValueError):
             # predict without passing series should raise an error
@@ -305,7 +339,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         self.assertTrue(isinstance(preds, list) and len(preds) == 1)
 
     @staticmethod
-    def get_global_ensembe_model(output_chunk_length=5):
+    def get_global_ensemble_model(output_chunk_length=5):
         lags = [-1, -2, -5]
         return NaiveEnsembleModel(
             models=[
