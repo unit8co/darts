@@ -13,21 +13,21 @@ logger = get_logger(__name__)
 
 def _get_historical_forecast_boundaries(
     model,
-    series_,
-    past_covariates_,
-    future_covariates_,
-    forecast_horizon,
-    overlap_end,
-    start,
-    freq,
+    series: TimeSeries,
+    past_covariates: Optional[TimeSeries],
+    future_covariates: Optional[TimeSeries],
+    start: Optional[Union[pd.Timestamp, float, int]],
+    forecast_horizon: int,
+    overlap_end: bool,
+    freq: pd.DateOffset,
 ) -> Tuple[Any, ...]:
     # obtain forecastable indexes boundaries
     historical_forecasts_time_index: Tuple[
         Any, Any
     ] = model._get_historical_forecastable_time_index(
-        series_,
-        past_covariates_,
-        future_covariates_,
+        series,
+        past_covariates,
+        future_covariates,
         is_training=False,
         reduce_to_bounds=True,
     )
@@ -45,7 +45,7 @@ def _get_historical_forecast_boundaries(
 
     # shift the end of the forecastable index based on `overlap_end`` and `forecast_horizon``
     last_valid_pred_time = model._get_last_prediction_time(
-        series_,
+        series,
         forecast_horizon,
         overlap_end,
     )
@@ -57,7 +57,7 @@ def _get_historical_forecast_boundaries(
 
     # when applicable, shift the start of the forecastable index based on `start`
     if start is not None:
-        start_time_ = series_.get_timestamp_at_point(start)
+        start_time_ = series.get_timestamp_at_point(start)
         # ignore user-defined `start`
         if (
             not historical_forecasts_time_index[0]
@@ -149,14 +149,14 @@ def _optimised_historical_forecasts_regression_last_points_only(
             hist_fct_fc_start,
             hist_fct_fc_end,
         ) = _get_historical_forecast_boundaries(
-            model,
-            series_,
-            past_covariates_,
-            future_covariates_,
-            forecast_horizon,
-            overlap_end,
-            start,
-            freq,
+            model=model,
+            series=series_,
+            past_covariates=past_covariates_,
+            future_covariates=future_covariates_,
+            start=start,
+            forecast_horizon=forecast_horizon,
+            overlap_end=overlap_end,
+            freq=freq,
         )
 
         # Additional shift, to account for the model output_chunk_length
@@ -257,14 +257,14 @@ def _optimised_historical_forecasts_regression_all_points(
             hist_fct_fc_start,
             hist_fct_fc_end,
         ) = _get_historical_forecast_boundaries(
-            model,
-            series_,
-            past_covariates_,
-            future_covariates_,
-            forecast_horizon,
-            overlap_end,
-            start,
-            freq,
+            model=model,
+            series=series_,
+            past_covariates=past_covariates_,
+            future_covariates=future_covariates_,
+            start=start,
+            forecast_horizon=forecast_horizon,
+            overlap_end=overlap_end,
+            freq=freq,
         )
 
         # Additional shift, to account for the model output_chunk_length
