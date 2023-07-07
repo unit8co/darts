@@ -23,7 +23,7 @@ class ProphetTestCase(DartsBaseTestClass):
         }
         kwargs_mandatory2 = {
             "name": "custom2",
-            "seasonal_periods": 24,
+            "seasonal_periods": 24.9,
             "fourier_order": 1,
         }
         kwargs_all = dict(

@@ -394,7 +394,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
     def add_seasonality(
         self,
         name: str,
-        seasonal_periods: int,
+        seasonal_periods: Union[int, float],
         fourier_order: int,
         prior_scale: Optional[float] = None,
         mode: Optional[str] = None,
@@ -466,7 +466,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         seasonality_properties = {
             "name": {"default": None, "dtype": str},
-            "seasonal_periods": {"default": None, "dtype": int},
+            "seasonal_periods": {"default": None, "dtype": Union[int, float]},
             "fourier_order": {"default": None, "dtype": int},
             "prior_scale": {"default": None, "dtype": float},
             "mode": {"default": None, "dtype": str},
