@@ -332,15 +332,19 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             f"'{name}' (condition_name: '{cond}'; issue: {reason})"
             for name, cond, reason in invalid_conditional_seasonalities
         )
-        raise_if(
-            len(invalid_conditional_seasonalities) > 0,
-            f"The following seasonalities have invalid conditions: "
-            f"{formatted_issues_str}. "
-            f"Each conditional seasonality must be accompanied by a binary component/column in the future_covariates "
-            f"with the same name as the condition_name. These components must only contain "
-            f"True or False values (or 1 or 0).",
-            logger,
-        )
+        if len(invalid_conditional_seasonalities) > 0:
+            formatted_issues_str = ", ".join(
+                f"'{name}' (condition_name: '{cond}'; issue: {reason})"
+                for name, cond, reason in invalid_conditional_seasonalities
+            )
+            raise_log(
+                ValueError(
+                    f"The following seasonalities have invalid conditions: {formatted_issues_str}. "
+                    f"Each conditional seasonality must be accompanied by a binary component/column in the "
+                    f"`future_covariates` with the same name as the `condition_name`"
+                ),
+                logger
+            )
         return conditional_seasonality_covariates
 
     @property
