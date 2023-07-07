@@ -581,38 +581,6 @@ def create_lagged_prediction_data(
     return X, times
 
 
-def create_lagged_historical_forecasting_data(
-    target_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    lags: Optional[Sequence[int]] = None,
-    lags_past_covariates: Optional[Sequence[int]] = None,
-    lags_future_covariates: Optional[Sequence[int]] = None,
-    uses_static_covariates: bool = True,
-    last_static_covariates_shape: Optional[Tuple[int, int]] = None,
-    max_samples_per_ts: Optional[int] = None,
-    check_inputs: bool = True,
-    use_moving_windows: bool = True,
-    concatenate: bool = True,
-) -> Tuple[ArrayOrArraySequence, Sequence[pd.Index]]:
-    X, _, times, _ = create_lagged_data(
-        target_series=target_series,
-        past_covariates=past_covariates,
-        future_covariates=future_covariates,
-        lags=lags,
-        lags_past_covariates=lags_past_covariates,
-        lags_future_covariates=lags_future_covariates,
-        uses_static_covariates=uses_static_covariates,
-        last_static_covariates_shape=last_static_covariates_shape,
-        max_samples_per_ts=max_samples_per_ts,
-        check_inputs=check_inputs,
-        use_moving_windows=use_moving_windows,
-        is_training=False,
-        concatenate=concatenate,
-    )
-    return X, times
-
-
 def add_static_covariates_to_lagged_data(
     features: Union[np.array, Sequence[np.array]],
     target_series: Union[TimeSeries, Sequence[TimeSeries]],
