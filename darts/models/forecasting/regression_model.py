@@ -839,7 +839,7 @@ class RegressionModel(GlobalForecastingModel):
     ]:
         """
         TODO: support models without output_chunk_length
-        TODO: support forecast_horizon > output_chunk_length
+        TODO: support forecast_horizon > output_chunk_length (auto-regression)
         TODO: support for num_samples > 1
         TODO: support series_ is None (models relying on covariates only at prediction)
         """
@@ -958,16 +958,18 @@ class RegressionModel(GlobalForecastingModel):
             if max_future_cov_lag is not None and max_future_cov_lag > 0:
                 hist_fct_fc_end += max_future_cov_lag * freq
 
-            # shift start to account for not multi_models with forecast_horizon > 1
-            if (
-                (not last_points_only)
-                and forecast_horizon > 1
-                and (not model.multi_models)
-            ):
-                shift = (forecast_horizon * stride - 1) * freq
-                hist_fct_tgt_start -= shift
-                hist_fct_pc_start -= shift
-                hist_fct_fc_start -= shift
+            # Additional shift if not last_points_only
+            if (not last_points_only) and forecast_horizon > 1:
+                if model.multi_models:
+                    shift_end = forecast_horizon * stride - 1
+                    hist_fct_tgt_end += shift_end * freq
+                    hist_fct_pc_end += shift_end * freq
+                    hist_fct_fc_end += shift_end * freq
+                else:
+                    shift_start = forecast_horizon * stride - 1
+                    hist_fct_tgt_start -= shift_start * freq
+                    hist_fct_pc_start -= shift_start * freq
+                    hist_fct_fc_start -= shift_start * freq
 
             X, times = create_lagged_historical_forecasting_data(
                 target_series=series_[hist_fct_tgt_start:hist_fct_tgt_end],
@@ -989,7 +991,7 @@ class RegressionModel(GlobalForecastingModel):
             )
 
             # stride is shared between input data and historical_forecast
-            if last_points_only or forecast_horizon == 1:
+            if last_points_only:
                 X = X[0][::stride, :, 0]
             # stride must be applied post-hoc to avoid missing values
             else:
@@ -1028,7 +1030,9 @@ class RegressionModel(GlobalForecastingModel):
             else:
                 # Reshape and stride the forecast into (forecastable_index, forecast_horizon, n_components, num_samples)
                 if model.multi_models:
-                    forecast = forecast[::stride, :forecast_horizon]
+                    forecast = forecast[
+                        : -forecast_horizon + 1 : stride, :forecast_horizon
+                    ]
                 else:
                     if model.output_chunk_length is None:
                         # model generates everything at once, must be sliced
@@ -1042,16 +1046,26 @@ class RegressionModel(GlobalForecastingModel):
                     else:
                         # auto-regression
                         raise_log(ValueError("Not supported"))
+                """
+                if stride > 1:
+                    fct_start_idx = series_.get_index_at_point(historical_forecasts_time_index[0])
+                    fct_end_idx = series_.get_index_at_point(historical_forecasts_time_index[1])
+                    length_fct = (fct_end_idx-fct_start_idx)//forecast_horizon
+                else:
+                    length_fct = forecast.shape[0] - forecast_horizon + 1
+                length_fct = max(1, forecast.shape[0] - forecast_horizon + 1)
+                """
 
+                # TODO: check if faster to create in the loop
                 new_times = generate_index(
                     start=historical_forecasts_time_index[0],
-                    length=forecast.shape[0],
+                    length=forecast_horizon * stride * forecast.shape[0],
                     freq=freq,
                 )
 
                 forecasts_ = []
                 for idx_ftc, step_fct in enumerate(
-                    range(0, forecast.shape[0] - forecast_horizon + 1, stride)
+                    range(0, forecast.shape[0] * stride, stride)
                 ):
                     forecasts_.append(
                         TimeSeries.from_times_and_values(
