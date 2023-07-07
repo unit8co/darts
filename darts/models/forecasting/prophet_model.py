@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import prophet
 
-from darts.logging import execute_and_suppress_output, get_logger, raise_if
+from darts.logging import execute_and_suppress_output, get_logger, raise_if, raise_log
 from darts.models.forecasting.forecasting_model import (
     FutureCovariatesLocalForecastingModel,
 )
@@ -328,10 +328,6 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                     continue
                 conditional_seasonality_covariates.append(condition_name)
 
-        formatted_issues_str = ", ".join(
-            f"'{name}' (condition_name: '{cond}'; issue: {reason})"
-            for name, cond, reason in invalid_conditional_seasonalities
-        )
         if len(invalid_conditional_seasonalities) > 0:
             formatted_issues_str = ", ".join(
                 f"'{name}' (condition_name: '{cond}'; issue: {reason})"
@@ -343,7 +339,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                     f"Each conditional seasonality must be accompanied by a binary component/column in the "
                     f"`future_covariates` with the same name as the `condition_name`"
                 ),
-                logger
+                logger,
             )
         return conditional_seasonality_covariates
 
