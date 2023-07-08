@@ -215,6 +215,10 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         return series_df
 
     @property
+    def supports_multivariate(self) -> bool:
+        return True
+
+    @property
     def min_train_series_length(self) -> int:
         return 30
 

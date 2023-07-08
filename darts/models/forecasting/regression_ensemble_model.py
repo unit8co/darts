@@ -99,7 +99,7 @@ class RegressionEnsembleModel(EnsembleModel):
             f"{regression_model.lags}",
         )
 
-        self.regression_model = regression_model
+        self.regression_model: RegressionModel = regression_model
         self.train_n_points = regression_train_n_points
 
     def _split_multi_ts_sequence(
@@ -115,7 +115,6 @@ class RegressionEnsembleModel(EnsembleModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     ):
-
         super().fit(
             series, past_covariates=past_covariates, future_covariates=future_covariates
         )
@@ -189,7 +188,6 @@ class RegressionEnsembleModel(EnsembleModel):
         series: Optional[Sequence[TimeSeries]] = None,
         num_samples: int = 1,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-
         is_single_series = isinstance(series, TimeSeries) or series is None
         predictions = series2seq(predictions)
         series = series2seq(series) if series is not None else [None]
@@ -218,6 +216,13 @@ class RegressionEnsembleModel(EnsembleModel):
     ]:
         extreme_lags_ = super().extreme_lags
         return (extreme_lags_[0] - self.train_n_points,) + extreme_lags_[1:]
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return (
+            super().supports_multivariate
+            and self.regression_model.supports_multivariate
+        )
 
     def _is_probabilistic(self) -> bool:
         """
