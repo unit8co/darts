@@ -175,7 +175,7 @@ def extract_trend_and_seasonality(
     )
 
     raise_if_not(
-        isinstance(freq, int) or method == "MSTL",
+        not (method != "MSTL" and isinstance(freq, list)),
         f"Method {method} is not compatible with freq {freq}. Only MSTL can use multiple seasonalities.",
         logger,
     )
