@@ -147,13 +147,13 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
         # than STL or naive trend extraction
         self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0, atol=1e-5))
 
-        # test MSTL method with single freq - statsmodels was designed
-        # to handle list of ints or single int, but we want to make sure
-        # that MSTL gets a list
-        with self.assertRaises(ValueError):
-            calc_trend, calc_seasonality = extract_trend_and_seasonality(
-                self.ts, freq=6, method="MSTL", model=ModelMode.ADDITIVE
-            )
+        # test MSTL method with single freq
+        calc_trend, calc_seasonality = extract_trend_and_seasonality(
+            self.ts, freq=6, method="MSTL", model=ModelMode.ADDITIVE
+        )
+        self.assertTrue(len(calc_seasonality.components) == 1)
+        diff = self.trend - calc_trend
+        self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0, atol=1e-5))
 
         # make sure non MSTL methods fail with multiple freqs
         with self.assertRaises(ValueError):
@@ -167,6 +167,7 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
                 self.ts, freq=6, method="STL", model=ModelMode.MULTIPLICATIVE
             )
 
+        # make sure non MSTL methods fail with multiplicative model
         with self.assertRaises(ValueError):
             calc_trend, _ = extract_trend_and_seasonality(
                 self.ts, freq=[3, 6], method="MSTL", model=ModelMode.MULTIPLICATIVE
