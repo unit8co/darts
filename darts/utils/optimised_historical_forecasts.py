@@ -1,5 +1,6 @@
 from typing import Any, List, Optional, Sequence, Tuple, Union
 
+import numpy as np
 import pandas as pd
 from numpy.lib.stride_tricks import sliding_window_view
 
@@ -197,14 +198,25 @@ def _optimised_historical_forecasts_regression_last_points_only(
         )
 
         # stride can be applied directly (same for input and historical forecasts)
-        forecast = model._predict_and_sample(X[0][::stride, :, 0], num_samples)
+        X = X[0][::stride, :, 0]
+
+        # repeat rows for probabilistic forecast
+        forecast = model._predict_and_sample(
+            np.repeat(X, num_samples, axis=0), num_samples
+        )
+
+        # reshape into (forecasted indexes, n_components, n_samples), components are interleaved
+        forecast = forecast.reshape(X.shape[0], -1, num_samples)
 
         # extract the last sub-model forecast for each component
         if model.multi_models:
-            forecast = forecast[:, forecast_horizon - 1 :: series_.n_components, :]
-
-        # reshape into (forecasted indexes, n_components, n_samples)
-        forecast = forecast.swapaxes(1, 2)
+            forecast = forecast[
+                :,
+                (forecast_horizon - 1)
+                * series_.n_components : (forecast_horizon)
+                * series_.n_components,
+                :,
+            ]
 
         forecasts_list.append(
             TimeSeries.from_times_and_values(
