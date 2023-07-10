@@ -53,7 +53,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
                 dict({
                 'name': str  # (name of the seasonality component),
-                'seasonal_periods': int  # (nr of steps composing a season),
+                'seasonal_periods': Union[int, float]  # (nr of steps composing a season),
                 'fourier_order': int  # (number of Fourier components to use),
                 'prior_scale': Optional[float]  # (a prior scale for this component),
                 'mode': Optional[str]  # ('additive' or 'multiplicative')
@@ -61,7 +61,9 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             ..
 
             An example for `seasonal_periods`: If you have hourly data (frequency='H') and your seasonal cycle repeats
-            after 48 hours then set `seasonal_periods=48`.
+            after 48 hours then set `seasonal_periods=48`. Notice that this value will be multiplied by the inferred
+            number of days for the TimeSeries frequency (1 / 24 in this example) to be consistent with the
+            `add_seasonality()` method of Facebook Prophet, where the `period` parameter is specified in days.
 
             Apart from `seasonal_periods`, this is very similar to how you would call Facebook Prophet's
             `add_seasonality()` method.
@@ -420,7 +422,9 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         name
             name of the seasonality component
         seasonal_periods
-            number of timesteps after which the seasonal cycle repeats
+            number of timesteps after which the seasonal cycle repeats. This value will be multiplied by the inferred
+            number of days for the TimeSeries frequency (e.g. 365.25 for a yearly frequency) to be consistent with the
+            `add_seasonality()` method of Facebook Prophet.
         fourier_order
             number of Fourier components to use
         prior_scale
@@ -466,7 +470,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         seasonality_properties = {
             "name": {"default": None, "dtype": str},
-            "seasonal_periods": {"default": None, "dtype": Union[int, float]},
+            "seasonal_periods": {"default": None, "dtype": (int, float)},
             "fourier_order": {"default": None, "dtype": int},
             "prior_scale": {"default": None, "dtype": float},
             "mode": {"default": None, "dtype": str},
