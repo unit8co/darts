@@ -319,12 +319,28 @@ def _optimised_historical_forecasts_regression_all_points(
         )
 
         # stride must be applied post-hoc to avoid missing values
-        forecast = model._predict_and_sample(X[0][:, :, 0], num_samples)
+        X = X[0][:, :, 0]
+
+        # repeat rows for probabilistic forecast
+        forecast = model._predict_and_sample(
+            np.repeat(X, num_samples, axis=0), num_samples
+        )
+
+        require_auto_regression: bool = forecast_horizon > model.output_chunk_length
 
         # reshape and stride the forecast into (forecastable_index, forecast_horizon, n_components, num_samples)
         if model.multi_models:
-            if forecast_horizon <= model.output_chunk_length:
-                # no auto-regression
+            if require_auto_regression:
+                raise_log(ValueError("Not supported"))
+            else:
+                # components are interleaved
+                forecast = forecast.reshape(
+                    X.shape[0],
+                    model.output_chunk_length,
+                    series_.n_components,
+                    num_samples,
+                )
+
                 if (
                     forecast_horizon == model.output_chunk_length
                     and forecast_horizon > 1
@@ -332,30 +348,33 @@ def _optimised_historical_forecasts_regression_all_points(
                     forecast = forecast[:-shift_end:stride, :forecast_horizon]
                 else:
                     forecast = forecast[::stride, :forecast_horizon]
-            else:
-                # auto-regression
-                raise_log(ValueError("Not supported"))
         else:
-            if forecast_horizon <= model.output_chunk_length:
-                # no auto-regression needed
-                forecast = sliding_window_view(forecast, (forecast_horizon, 1, 1))
+            if require_auto_regression:
+                raise_log(ValueError("Not supported"))
+            else:
+                # components are interleaved
+                forecast = forecast.reshape(X.shape[0], -1, num_samples)
 
+                forecast = sliding_window_view(
+                    forecast, (forecast_horizon, series_.n_components, num_samples)
+                )
+
+                # TODO: simplify this if/else
                 if forecast_horizon != model.output_chunk_length:
                     forecast = forecast[
-                        : -shift_start + forecast_horizon - 1 : stride, 0, :, :, 0, 0
+                        : -shift_start + forecast_horizon - 1 : stride,
+                        0,
+                        0,
+                        :forecast_horizon,
+                        :,
+                        :,
                     ]
-                # TRY
-                # else:
-                #     forecast=forecast[:forecast.shape[0]-forecast_horizon+1: stride, 0, :, :, 0, 0]
                 elif forecast_horizon > 1:
-                    forecast = forecast[: -forecast_horizon + 1 : stride, 0, :, :, 0, 0]
+                    forecast = forecast[
+                        : -forecast_horizon + 1 : stride, 0, 0, :forecast_horizon, :, :
+                    ]
                 else:
-                    forecast = forecast[::stride, 0, :, :, 0, 0]
-
-                forecast = forecast.swapaxes(1, 2)
-            else:
-                # auto-regression
-                raise_log(ValueError("Not supported"))
+                    forecast = forecast[::stride, 0, 0, :forecast_horizon, :, :]
 
         # TODO: check if faster to create in the loop
         new_times = generate_index(
