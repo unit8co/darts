@@ -20,7 +20,7 @@ def generate_index(
     start: Optional[Union[pd.Timestamp, int]] = None,
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
-    freq: Union[str, int] = None,
+    freq: Union[str, int, pd.DateOffset] = None,
     name: str = None,
 ) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
     """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency

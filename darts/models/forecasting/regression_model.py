@@ -847,9 +847,7 @@ class RegressionModel(GlobalForecastingModel):
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:
         """
-        TODO: support models without output_chunk_length
         TODO: support forecast_horizon > output_chunk_length (auto-regression)
-        TODO: support for num_samples > 1
         TODO: support series_ is None (models relying on covariates only at prediction)
         """
         if not self._fit_called:
