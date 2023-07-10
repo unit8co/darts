@@ -311,28 +311,20 @@ def _optimised_historical_forecasts_regression_all_points(
 
         # reshape and stride the forecast into (forecastable_index, forecast_horizon, n_components, num_samples)
         if model.multi_models:
-            if model.output_chunk_length is None:
-                # model generates everything at once, must be sliced
-                raise_log(ValueError("Not supported"))
-            elif forecast_horizon <= model.output_chunk_length:
-
-                # TODO: simplify this if/else
-                if forecast_horizon != model.output_chunk_length:
-                    forecast = forecast[::stride, :forecast_horizon]
+            if forecast_horizon <= model.output_chunk_length:
+                # no auto-regression
+                if (
+                    forecast_horizon == model.output_chunk_length
+                    and forecast_horizon > 1
+                ):
+                    forecast = forecast[:-shift_end:stride, :forecast_horizon]
                 else:
-                    if forecast_horizon > 1:
-                        forecast = forecast[:-shift_end:stride, :forecast_horizon]
-                    else:
-                        # -(model.output_chunk_length-shift_end)
-                        forecast = forecast[::stride, :forecast_horizon]
+                    forecast = forecast[::stride, :forecast_horizon]
             else:
                 # auto-regression
                 raise_log(ValueError("Not supported"))
         else:
-            if model.output_chunk_length is None:
-                # model generates everything at once, must be sliced
-                raise_log(ValueError("Not supported"))
-            elif forecast_horizon <= model.output_chunk_length:
+            if forecast_horizon <= model.output_chunk_length:
                 # no auto-regression needed
                 forecast = sliding_window_view(forecast, (forecast_horizon, 1, 1))
 
