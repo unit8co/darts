@@ -4,7 +4,7 @@ Time Series Statistics
 """
 
 import math
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -174,10 +174,9 @@ def extract_trend_and_seasonality(
         "The model must be either MULTIPLICATIVE or ADDITIVE.",
     )
 
-    raise_if_not(
-        not (method != "MSTL" and isinstance(freq, list)),
-        f"Method {method} is not compatible with freq {freq}. Only MSTL can use multiple seasonalities.",
-        logger,
+    raise_if(
+        isinstance(freq, Sequence) and method != "MSTL",
+        f"{method} decomposition cannot be performed with more than one seasonality, received {freq}.",
     )
 
     if method == "naive":
