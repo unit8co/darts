@@ -930,6 +930,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             with_optimisation
             and retrain is False
             and model.supports_optimized_historical_forecasts
+            and (
+                model.output_chunk_length is not None
+                and forecast_horizon <= model.output_chunk_length
+            )
         ):
             return model._optimized_historical_forecasts(
                 series=series,

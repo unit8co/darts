@@ -188,18 +188,21 @@ def _optimised_historical_forecasts_regression_last_points_only(
             model.output_chunk_length is not None
             and model.output_chunk_length != forecast_horizon
         ):
+            # used to convert the shift into the appropriate unit
+            unit = freq if series_.has_datetime_index else 1
+
             if model.multi_models:
                 shift = 0
             else:
                 shift = model.output_chunk_length - forecast_horizon
 
-            hist_fct_tgt_start -= shift * freq
-            hist_fct_pc_start -= shift * freq
-            hist_fct_fc_start -= shift * freq
+            hist_fct_tgt_start -= shift * unit
+            hist_fct_pc_start -= shift * unit
+            hist_fct_fc_start -= shift * unit
 
-            hist_fct_tgt_end -= shift * freq
-            hist_fct_pc_end -= shift * freq
-            hist_fct_fc_end -= shift * freq
+            hist_fct_tgt_end -= shift * unit
+            hist_fct_pc_end -= shift * unit
+            hist_fct_fc_end -= shift * unit
 
         X, times = create_lagged_prediction_data(
             target_series=series_[hist_fct_tgt_start:hist_fct_tgt_end],
@@ -307,23 +310,26 @@ def _optimised_historical_forecasts_regression_all_points(
         shift_start = 0
         shift_end = 0
         if model.output_chunk_length is not None and model.output_chunk_length > 1:
+            # used to convert the shift into the appropriate unit
+            unit = freq if series_.has_datetime_index else 1
+
             if model.output_chunk_length != forecast_horizon:
                 shift_end = 0
             else:
                 shift_end = model.output_chunk_length - 1
 
-            hist_fct_tgt_end += shift_end * freq
-            hist_fct_pc_end += shift_end * freq
-            hist_fct_fc_end += shift_end * freq
+            hist_fct_tgt_end += shift_end * unit
+            hist_fct_pc_end += shift_end * unit
+            hist_fct_fc_end += shift_end * unit
 
             if model.multi_models:
                 shift_start = 0
             else:
                 shift_start = model.output_chunk_length - 1
 
-            hist_fct_tgt_start -= shift_start * freq
-            hist_fct_pc_start -= shift_start * freq
-            hist_fct_fc_start -= shift_start * freq
+            hist_fct_tgt_start -= shift_start * unit
+            hist_fct_pc_start -= shift_start * unit
+            hist_fct_fc_start -= shift_start * unit
 
         X, _ = create_lagged_prediction_data(
             target_series=series_[hist_fct_tgt_start:hist_fct_tgt_end],
