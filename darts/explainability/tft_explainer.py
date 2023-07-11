@@ -54,11 +54,7 @@ class TFTExplainer(ForecastingModelExplainer):
         model
             The fitted TFT model to be explained.
         """
-        super().__init__(model)
-
-        if not model._fit_called:
-            raise ValueError("The model needs to be trained before explaining it.")
-
+        super().__init__(model, requires_input_series=False)
         self._model = model
 
     @property

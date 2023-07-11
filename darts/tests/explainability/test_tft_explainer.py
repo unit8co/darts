@@ -346,7 +346,6 @@ class TFTExplainerTestCase(DartsBaseTestClass):
                 == pd.RangeIndex(start=0, stop=48, step=1, name="time")
             ).all()
         )
-
         self.assertTrue(
             res_attention_heads.mean(1).values().round(4).tolist()
             == expected_average_attention

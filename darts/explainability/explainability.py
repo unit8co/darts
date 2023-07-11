@@ -7,7 +7,7 @@ depends on the characteristics of the XAI model chosen (shap, lime etc...).
 
 """
 from abc import ABC, abstractmethod
-from typing import Collection, Optional, Sequence, Union
+from typing import Collection, List, Optional, Sequence, Union
 
 from darts import TimeSeries
 from darts.explainability.explainability_result import ExplainabilityResult
@@ -26,6 +26,7 @@ class ForecastingModelExplainer(ABC):
     def __init__(
         self,
         model: ForecastingModel,
+        requires_input_series: bool = True,
         background_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         background_past_covariates: Optional[
             Union[TimeSeries, Sequence[TimeSeries]]
@@ -67,13 +68,26 @@ class ForecastingModelExplainer(ABC):
                 ),
                 logger,
             )
+        self.model = model
+
+        self.background_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None
+        self.background_past_covariates: Optional[
+            Union[TimeSeries, Sequence[TimeSeries]]
+        ] = None
+        self.background_future_covariates: Optional[
+            Union[TimeSeries, Sequence[TimeSeries]]
+        ] = None
+        self.target_components: Optional[List[str]] = None
+        self.past_covariates_components: Optional[List[str]] = None
+        self.future_covariates_components: Optional[List[str]] = None
+
+        if not requires_input_series:
+            return
 
         if model._is_probabilistic():
             logger.warning(
                 "The model is probabilistic, but num_samples=1 will be used for explainability."
             )
-
-        self.model = model
 
         # if `background_series` was not passed, use `training_series` saved in fitted forecasting model.
         if background_series is None:
@@ -93,7 +107,6 @@ class ForecastingModelExplainer(ABC):
             background_series = self.model.training_series
             background_past_covariates = self.model.past_covariate_series
             background_future_covariates = self.model.future_covariate_series
-
         else:
             if self.model.encoders.encoding_available:
                 (
@@ -124,12 +137,10 @@ class ForecastingModelExplainer(ABC):
             )
 
         self.target_components = self.background_series[0].columns.to_list()
-        self.past_covariates_components = None
         if self.background_past_covariates is not None:
             self.past_covariates_components = self.background_past_covariates[
                 0
             ].columns.to_list()
-        self.future_covariates_components = None
         if self.background_future_covariates is not None:
             self.future_covariates_components = self.background_future_covariates[
                 0
