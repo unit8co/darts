@@ -885,6 +885,7 @@ class RegressionModel(GlobalForecastingModel):
                 forecast_horizon=forecast_horizon,
                 stride=stride,
                 overlap_end=overlap_end,
+                show_warnings=show_warnings,
             )
         else:
             return _optimised_historical_forecasts_regression_all_points(
@@ -897,6 +898,7 @@ class RegressionModel(GlobalForecastingModel):
                 forecast_horizon=forecast_horizon,
                 stride=stride,
                 overlap_end=overlap_end,
+                show_warnings=show_warnings,
             )
 
 
