@@ -165,9 +165,6 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 # Use 0 as default value
                 self._floor = 0
 
-    def __str__(self):
-        return "Prophet"
-
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
 
         super()._fit(series, future_covariates)
@@ -269,6 +266,10 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 how="left",
             )
         return predict_df
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return False
 
     def _is_probabilistic(self) -> bool:
         return True

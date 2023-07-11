@@ -698,6 +698,10 @@ class NHiTSModel(PastCovariatesTorchModel):
         if isinstance(layer_widths, int):
             self.layer_widths = [layer_widths] * self.num_stacks
 
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
+
     @staticmethod
     def _prepare_pooling_downsampling(
         pooling_kernel_sizes, n_freq_downsample, in_len, out_len, num_blocks, num_stacks
@@ -749,10 +753,6 @@ class NHiTSModel(PastCovariatesTorchModel):
             )
 
         return pooling_kernel_sizes, n_freq_downsample
-
-    @staticmethod
-    def _supports_static_covariates() -> bool:
-        return False
 
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)

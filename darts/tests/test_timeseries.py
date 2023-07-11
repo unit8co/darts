@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
+import pytest
 import xarray as xr
 from scipy.stats import kurtosis, skew
 
@@ -74,7 +75,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         )
         _ = TimeSeries.from_xarray(ar)
 
-    def test_integer_indexing(self):
+    def test_integer_range_indexing(self):
         # sanity checks for the integer-indexed series
         range_indexed_data = np.random.randn(
             50,
@@ -157,6 +158,56 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         # getting index for idx should return i s.t., series[i].time == idx
         self.assertEqual(series.get_index_at_point(16), 3)
+
+    def test_integer_indexing(self):
+        n = 10
+        int_idx = pd.Index([i for i in range(n)])
+        assert not isinstance(int_idx, pd.RangeIndex)
+
+        # test that integer index gets converted to correct RangeIndex
+        vals = np.random.randn(n)
+        ts_from_int_idx = TimeSeries.from_times_and_values(times=int_idx, values=vals)
+        ts_from_range_idx = TimeSeries.from_values(values=vals)
+        assert (
+            isinstance(ts_from_int_idx.time_index, pd.RangeIndex)
+            and ts_from_int_idx.freq == 1
+        )
+        assert ts_from_int_idx.time_index.equals(ts_from_range_idx.time_index)
+
+        for step in [2, 3]:
+            # test integer index with different step sizes, beginning at non-zero
+            int_idx = pd.Index([i for i in range(2, 2 + n * step, step)])
+            ts_from_int_idx = TimeSeries.from_times_and_values(
+                times=int_idx, values=vals
+            )
+            assert isinstance(ts_from_int_idx.time_index, pd.RangeIndex)
+            assert ts_from_int_idx.time_index[0] == 2
+            assert ts_from_int_idx.time_index[-1] == 2 + (n - 1) * step
+            assert ts_from_int_idx.freq == step
+
+            # test integer index with unsorted indices
+            idx_permuted = [n - 1] + [i for i in range(1, n - 1, 1)] + [0]
+            ts_from_int_idx2 = TimeSeries.from_times_and_values(
+                times=int_idx[idx_permuted], values=vals[idx_permuted]
+            )
+            assert ts_from_int_idx == ts_from_int_idx2
+
+            # check other TimeSeries creation methods
+            ts_from_df_time_col = TimeSeries.from_dataframe(
+                pd.DataFrame({"0": vals, "time": int_idx}), time_col="time"
+            )
+            ts_from_df = TimeSeries.from_dataframe(pd.DataFrame(vals, index=int_idx))
+            ts_from_series = TimeSeries.from_series(pd.Series(vals, index=int_idx))
+            assert ts_from_df_time_col == ts_from_int_idx
+            assert ts_from_df == ts_from_int_idx
+            assert ts_from_series == ts_from_int_idx
+
+        # test invalid integer index; non-constant step size
+        int_idx = pd.Index([0, 2, 4, 5])
+        with pytest.raises(ValueError):
+            _ = TimeSeries.from_times_and_values(
+                times=int_idx, values=np.random.randn(4)
+            )
 
     def test_datetime_indexing(self):
         # checking that the DatetimeIndex slicing is behaving as described in
@@ -816,7 +867,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             # Cannot divide by 0.
             self.series1 / 0
 
-    def test_getitem(self):
+    def test_getitem_datetime_index(self):
         seriesA: TimeSeries = self.series1.drop_after(pd.Timestamp("20130105"))
         self.assertEqual(self.series1[pd.date_range("20130101", " 20130104")], seriesA)
         self.assertEqual(self.series1[:4], seriesA)
@@ -838,6 +889,50 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         with self.assertRaises(IndexError):
             self.series1[::-1]
+
+    def test_getitem_integer_index(self):
+        freq = 3
+        start = 1
+        end = start + (len(self.series1) - 1) * freq
+        idx_int = pd.RangeIndex(start=start, stop=end + freq, step=freq)
+        series = TimeSeries.from_times_and_values(
+            times=idx_int, values=self.series1.values()
+        )
+        assert series.freq == freq
+        assert series.start_time() == start
+        assert series.end_time() == end
+        assert series[idx_int] == series == series[0 : len(series)]
+
+        series_single = series.drop_after(start + 2 * freq)
+        assert (
+            series[pd.RangeIndex(start=start, stop=start + 2 * freq, step=freq)]
+            == series_single
+        )
+        assert series[:2] == series_single
+        assert series_single.freq == freq
+        assert series_single.start_time() == start
+        assert series_single.end_time() == start + freq
+
+        idx_single = pd.RangeIndex(start=start + freq, stop=start + 2 * freq, step=freq)
+        assert series[idx_single].time_index == idx_single
+        assert series[idx_single].pd_series().equals(series.pd_series()[1:2])
+        assert series[idx_single] == series[1:2] == series[1]
+
+        # cannot slice with two RangeIndex
+        with pytest.raises(IndexError):
+            _ = series[idx_single : idx_single + freq]
+
+        # RangeIndex not in time_index
+        with pytest.raises(KeyError):
+            _ = series[idx_single - 1]
+
+        # RangeIndex start is out of bounds
+        with pytest.raises(KeyError):
+            _ = series[pd.RangeIndex(start - freq, stop=end + freq, step=freq)]
+
+        # RangeIndex end is out of bounds
+        with pytest.raises(KeyError):
+            _ = series[pd.RangeIndex(start, stop=end + 2 * freq, step=freq)]
 
     def test_fill_missing_dates(self):
         with self.assertRaises(ValueError):
@@ -1794,6 +1889,30 @@ class TimeSeriesHierarchyTestCase(DartsBaseTestClass):
             (series1.slice_intersect(series2[10:20])).hierarchy, self.hierarchy
         )
 
+    def test_with_string_items(self):
+        # Single parents may be specified as string rather than [string]
+        dates = pd.date_range("2020-01-01", "2020-12-31", freq="D")
+        nr_dates = len(dates)
+        t1 = TimeSeries.from_times_and_values(
+            dates, 3 * np.ones(nr_dates), columns=["T1"]
+        )
+        t2 = TimeSeries.from_times_and_values(
+            dates, 5 * np.ones(nr_dates), columns=["T2"]
+        )
+        t3 = TimeSeries.from_times_and_values(dates, np.ones(nr_dates), columns=["T3"])
+        tsum = TimeSeries.from_times_and_values(
+            dates, 9 * np.ones(nr_dates), columns=["T_sum"]
+        )
+
+        ts = concatenate([t1, t2, t3, tsum], axis="component")
+        string_hierarchy = {"T1": "T_sum", "T2": "T_sum", "T3": "T_sum"}
+        ts_with_string_hierarchy = ts.with_hierarchy(string_hierarchy)
+        hierarchy_as_list = {k: [v] for k, v in string_hierarchy.items()}
+        assert ts_with_string_hierarchy.hierarchy == hierarchy_as_list
+        list_hierarchy = {"T1": ["T_sum"], "T2": ["T_sum"], "T3": ["T_sum"]}
+        ts_with_list_hierarchy = ts.with_hierarchy(list_hierarchy)
+        assert ts_with_string_hierarchy.hierarchy == ts_with_list_hierarchy.hierarchy
+
 
 class TimeSeriesHeadTailTestCase(DartsBaseTestClass):
 
@@ -1937,27 +2056,27 @@ class TimeSeriesFromDataFrameTestCase(DartsBaseTestClass):
             TimeSeries.from_dataframe(df=df, time_col="Time")
 
     def test_time_col_convert_rangeindex(self):
-        expected_l = [4, 0, 2, 3, 1]
-        expected = np.array(expected_l)
-        data_dict = {"Time": expected}
-        data_dict["Values1"] = np.random.uniform(
-            low=-10, high=10, size=len(data_dict["Time"])
-        )
-        df = pd.DataFrame(data_dict)
-        ts = TimeSeries.from_dataframe(df=df, time_col="Time")
+        for expected_l, step in zip([[4, 0, 2, 3, 1], [8, 0, 4, 6, 2]], [1, 2]):
+            expected = np.array(expected_l)
+            data_dict = {"Time": expected}
+            data_dict["Values1"] = np.random.uniform(
+                low=-10, high=10, size=len(data_dict["Time"])
+            )
+            df = pd.DataFrame(data_dict)
+            ts = TimeSeries.from_dataframe(df=df, time_col="Time")
 
-        # check type (should convert to RangeIndex):
-        self.assertEqual(type(ts.time_index), pd.RangeIndex)
+            # check type (should convert to RangeIndex):
+            self.assertEqual(type(ts.time_index), pd.RangeIndex)
 
-        # check values inside the index (should be sorted correctly):
-        self.assertEqual(list(ts.time_index), sorted(expected))
+            # check values inside the index (should be sorted correctly):
+            self.assertEqual(list(ts.time_index), sorted(expected))
 
-        # check that values are sorted accordingly:
-        ar1 = ts.values(copy=False)[:, 0]
-        ar2 = data_dict["Values1"][
-            list(expected_l.index(i) for i in range(len(expected)))
-        ]
-        self.assertTrue(np.all(ar1 == ar2))
+            # check that values are sorted accordingly:
+            ar1 = ts.values(copy=False)[:, 0]
+            ar2 = data_dict["Values1"][
+                list(expected_l.index(i * step) for i in range(len(expected)))
+            ]
+            self.assertTrue(np.all(ar1 == ar2))
 
     def test_time_col_convert_datetime(self):
         expected = pd.date_range(start="20180501", end="20200301", freq="MS")

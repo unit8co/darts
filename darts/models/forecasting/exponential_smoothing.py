@@ -77,12 +77,6 @@ class ExponentialSmoothing(LocalForecastingModel):
         self.model = None
         np.random.seed(random_state)
 
-    def __str__(self):
-        return (
-            f"ExponentialSmoothing(trend={self.trend}, damped={self.damped}, "
-            f"seasonal={self.seasonal}, seasonal_periods={self.seasonal_periods}"
-        )
-
     def fit(self, series: TimeSeries):
         super().fit(series)
         self._assert_univariate(series)
@@ -128,6 +122,10 @@ class ExponentialSmoothing(LocalForecastingModel):
             )
 
         return self._build_forecast_series(forecast)
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return False
 
     def _is_probabilistic(self) -> bool:
         return True

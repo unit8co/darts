@@ -116,6 +116,22 @@ class BacktestingTestCase(DartsBaseTestClass):
         )
         self.assertEqual(score, 1.0)
 
+        # univariate model + univariate series + historical_forecasts precalculated
+        forecasts = NaiveDrift().historical_forecasts(
+            linear_series,
+            start=pd.Timestamp("20000201"),
+            forecast_horizon=3,
+            last_points_only=False,
+        )
+        precalculated_forecasts_score = NaiveDrift().backtest(
+            linear_series,
+            historical_forecasts=forecasts,
+            start=pd.Timestamp("20000201"),
+            forecast_horizon=3,
+            metric=r2_score,
+        )
+        self.assertEqual(score, precalculated_forecasts_score)
+
         # very large train length should not affect the backtest
         score = NaiveDrift().backtest(
             linear_series,
@@ -155,16 +171,16 @@ class BacktestingTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             NaiveDrift().backtest(
                 linear_series,
-                start=pd.Timestamp("20000217"),
+                start=pd.Timestamp("20000218"),
                 forecast_horizon=3,
                 overlap_end=False,
             )
         NaiveDrift().backtest(
-            linear_series, start=pd.Timestamp("20000216"), forecast_horizon=3
+            linear_series, start=pd.Timestamp("20000217"), forecast_horizon=3
         )
         NaiveDrift().backtest(
             linear_series,
-            start=pd.Timestamp("20000217"),
+            start=pd.Timestamp("20000218"),
             forecast_horizon=3,
             overlap_end=True,
         )
@@ -217,6 +233,17 @@ class BacktestingTestCase(DartsBaseTestClass):
             tcn_model = TCNModel(
                 input_chunk_length=12, output_chunk_length=1, batch_size=1, n_epochs=1
             )
+            # cannot perform historical forecasts with `retrain=False` and untrained model
+            with pytest.raises(ValueError):
+                _ = tcn_model.historical_forecasts(
+                    linear_series,
+                    start=pd.Timestamp("20000125"),
+                    forecast_horizon=3,
+                    verbose=False,
+                    last_points_only=True,
+                    retrain=False,
+                )
+
             pred = tcn_model.historical_forecasts(
                 linear_series,
                 start=pd.Timestamp("20000125"),
@@ -234,7 +261,6 @@ class BacktestingTestCase(DartsBaseTestClass):
                 start=pd.Timestamp("20000125"),
                 forecast_horizon=3,
                 verbose=False,
-                retrain=False,
             )
 
             # univariate model

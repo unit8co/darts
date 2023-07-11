@@ -12,7 +12,7 @@ import numpy as np
 from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import (
-    GlobalForecastingModel,
+    ForecastingModel,
     LocalForecastingModel,
 )
 from darts.timeseries import TimeSeries
@@ -30,8 +30,9 @@ class NaiveMean(LocalForecastingModel):
         super().__init__()
         self.mean_val = None
 
-    def __str__(self):
-        return "Naive mean predictor model"
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
 
     def fit(self, series: TimeSeries):
         super().fit(series)
@@ -63,11 +64,12 @@ class NaiveSeasonal(LocalForecastingModel):
         self.K = K
 
     @property
+    def supports_multivariate(self) -> bool:
+        return True
+
+    @property
     def min_train_series_length(self):
         return max(self.K, 3)
-
-    def __str__(self):
-        return f"Naive seasonal model, with K={self.K}"
 
     def fit(self, series: TimeSeries):
         super().fit(series)
@@ -85,10 +87,6 @@ class NaiveSeasonal(LocalForecastingModel):
         forecast = np.array([self.last_k_vals[i % self.K, :] for i in range(n)])
         return self._build_forecast_series(forecast)
 
-    @property
-    def extreme_lags(self):
-        return (-self.K, 1, None, None, None)
-
 
 class NaiveDrift(LocalForecastingModel):
     def __init__(self):
@@ -101,8 +99,9 @@ class NaiveDrift(LocalForecastingModel):
         """
         super().__init__()
 
-    def __str__(self):
-        return "Naive drift model"
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
 
     def fit(self, series: TimeSeries):
         super().fit(series)
@@ -123,16 +122,88 @@ class NaiveDrift(LocalForecastingModel):
         return self._build_forecast_series(forecast)
 
 
+class NaiveMovingAverage(LocalForecastingModel):
+    def __init__(self, input_chunk_length: int = 1):
+        """Naive Moving Average Model
+
+        This model forecasts using an auto-regressive moving average (ARMA).
+
+        Parameters
+        ----------
+        input_chunk_length
+            The size of the sliding window used to calculate the moving average
+        """
+        super().__init__()
+        self.input_chunk_length = input_chunk_length
+        self.rolling_window = None
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
+
+    @property
+    def min_train_series_length(self):
+        return self.input_chunk_length
+
+    def __str__(self):
+        return f"NaiveMovingAverage({self.input_chunk_length})"
+
+    def fit(self, series: TimeSeries):
+        super().fit(series)
+        raise_if_not(
+            series.is_deterministic,
+            "This model expects deterministic time series",
+            logger,
+        )
+
+        self.rolling_window = series[-self.input_chunk_length :].values(copy=False)
+        return self
+
+    def predict(self, n: int, num_samples: int = 1, verbose: bool = False):
+        super().predict(n, num_samples)
+
+        predictions_with_observations = np.concatenate(
+            (self.rolling_window, np.zeros(shape=(n, self.rolling_window.shape[1]))),
+            axis=0,
+        )
+        rolling_sum = sum(self.rolling_window)
+
+        chunk_length = self.input_chunk_length
+        for i in range(chunk_length, chunk_length + n):
+            prediction = rolling_sum / chunk_length
+            predictions_with_observations[i] = prediction
+            lost_value = predictions_with_observations[i - chunk_length]
+            rolling_sum += prediction - lost_value
+        return self._build_forecast_series(predictions_with_observations[-n:])
+
+
 class NaiveEnsembleModel(EnsembleModel):
     def __init__(
-        self, models: Union[List[LocalForecastingModel], List[GlobalForecastingModel]]
+        self,
+        models: List[ForecastingModel],
+        show_warnings: bool = True,
     ):
         """Naive combination model
 
         Naive implementation of `EnsembleModel`
         Returns the average of all predictions of the constituent models
+
+        If `future_covariates` or `past_covariates` are provided at training or inference time,
+        they will be passed only to the models supporting them.
+
+        Parameters
+        ----------
+        models
+            List of forecasting models whose predictions to ensemble
+        show_warnings
+            Whether to show warnings related to models covariates support.
         """
-        super().__init__(models)
+        super().__init__(
+            models=models,
+            train_num_samples=None,
+            train_samples_reduction=None,
+            show_warnings=show_warnings,
+        )
 
     def fit(
         self,
@@ -140,22 +211,18 @@ class NaiveEnsembleModel(EnsembleModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     ):
-
         super().fit(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
         for model in self.models:
-            if self.is_global_ensemble:
-                kwargs = dict(series=series)
-                if model.supports_past_covariates:
-                    kwargs["past_covariates"] = past_covariates
-                if model.supports_future_covariates:
-                    kwargs["future_covariates"] = future_covariates
-                model.fit(**kwargs)
-            else:
-                model.fit(series=series)
+            kwargs = dict(series=series)
+            if model.supports_past_covariates:
+                kwargs["past_covariates"] = past_covariates
+            if model.supports_future_covariates:
+                kwargs["future_covariates"] = future_covariates
+            model.fit(**kwargs)
 
         return self
 
@@ -163,17 +230,15 @@ class NaiveEnsembleModel(EnsembleModel):
         self,
         predictions: Union[TimeSeries, Sequence[TimeSeries]],
         series: Optional[Sequence[TimeSeries]] = None,
+        num_samples: int = 1,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        if isinstance(predictions, Sequence):
-            return [
-                TimeSeries.from_series(
-                    p.pd_dataframe(copy=False).sum(axis=1) / len(self.models),
-                    static_covariates=p.static_covariates,
-                )
-                for p in predictions
-            ]
-        else:
-            return TimeSeries.from_series(
-                predictions.pd_dataframe(copy=False).sum(axis=1) / len(self.models),
-                static_covariates=predictions.static_covariates,
+        def take_average(prediction: TimeSeries) -> TimeSeries:
+            # average across the components, keep n_samples, rename components
+            return prediction.mean(axis=1).with_columns_renamed(
+                "components_mean", prediction.components[0]
             )
+
+        if isinstance(predictions, Sequence):
+            return [take_average(p) for p in predictions]
+        else:
+            return take_average(predictions)

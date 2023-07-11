@@ -81,11 +81,6 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
 
         assert d <= 1, "d > 1 not supported."
 
-    def __str__(self):
-        if self.d == 0:
-            return f"VARMA({self.p},{self.q})"
-        return f"VARIMA({self.p},{self.d},{self.q})"
-
     def _differentiate_series(self, series: TimeSeries) -> TimeSeries:
         """Differentiate the series self.d times"""
         for _ in range(self.d):
@@ -113,6 +108,8 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None
     ) -> None:
         super()._fit(series, future_covariates)
+
+        self._assert_multivariate(series)
 
         # storing to restore the statsmodels model results object
         self.training_historic_future_covariates = future_covariates
@@ -216,6 +213,10 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         else:
             series_df = self._last_values + series_df.cumsum(axis=0)
         return series_df
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
 
     @property
     def min_train_series_length(self) -> int:

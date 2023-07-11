@@ -11,7 +11,7 @@ from darts.models import (
     NaiveDrift,
     NaiveEnsembleModel,
     NaiveSeasonal,
-    RegressionEnsembleModel,
+    StatsForecastAutoARIMA,
     Theta,
 )
 from darts.tests.base_test_class import DartsBaseTestClass
@@ -57,11 +57,37 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         new_model = model_ens.untrained_model()
         assert not new_model.models[0]._fit_called
 
+    def test_extreme_lag_inference(self):
+        ensemble = NaiveEnsembleModel([NaiveDrift()])
+        assert ensemble.extreme_lags == (
+            -3,
+            -1,
+            None,
+            None,
+            None,
+            None,
+        )  # test if default is okay
+
+        model1 = LinearRegressionModel(
+            lags=3, lags_past_covariates=[-3, -5], lags_future_covariates=[7, 8]
+        )
+        model2 = LinearRegressionModel(
+            lags=5, lags_past_covariates=6, lags_future_covariates=[6, 9]
+        )
+
+        ensemble = NaiveEnsembleModel(
+            [model1, model2]
+        )  # test if infers extreme lags is okay
+        expected = (-5, 0, -6, -1, 6, 9)
+        assert expected == ensemble.extreme_lags
+
     def test_input_models_local_models(self):
         with self.assertRaises(ValueError):
             NaiveEnsembleModel([])
+        # models are not instantiated
         with self.assertRaises(ValueError):
             NaiveEnsembleModel([NaiveDrift, NaiveSeasonal, Theta, ExponentialSmoothing])
+        # one model is not instantiated
         with self.assertRaises(ValueError):
             NaiveEnsembleModel(
                 [NaiveDrift(), NaiveSeasonal, Theta(), ExponentialSmoothing()]
@@ -75,7 +101,14 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         with self.assertRaises(Exception):
             naive_ensemble.predict(5)
         naive_ensemble.fit(self.series1)
-        naive_ensemble.predict(5)
+        pred1 = naive_ensemble.predict(5)
+        assert self.series1.components == pred1.components
+
+    def test_call_backtest_naive_ensemble_local_models(self):
+        ensemble = NaiveEnsembleModel([NaiveSeasonal(5), Theta(2, 5)])
+        ensemble.fit(self.series1)
+        assert ensemble.extreme_lags == (-10, 0, None, None, None, None)
+        ensemble.backtest(self.series1)
 
     def test_predict_ensemble_local_models(self):
         naive = NaiveSeasonal(K=5)
@@ -91,20 +124,58 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
             np.array_equal(forecast_naive_ensemble.values(), forecast_mean.values())
         )
 
-    def test_stochastic_ensemble(self):
-        model1 = LinearRegressionModel(lags=1, likelihood="quantile")
-        model2 = LinearRegressionModel(lags=2, likelihood="quantile")
+    def test_stochastic_naive_ensemble(self):
+        num_samples = 100
 
-        naive_ensemble = NaiveEnsembleModel([model1, model2])
-        self.assertTrue(naive_ensemble._is_probabilistic())
-
-        regression_ensemble = RegressionEnsembleModel(
-            [model1, model2], regression_train_n_points=1
+        # probabilistic forecasting models
+        model_proba_1 = LinearRegressionModel(
+            lags=1, likelihood="quantile", random_state=42
         )
-        self.assertTrue(regression_ensemble._is_probabilistic())
+        model_proba_2 = LinearRegressionModel(
+            lags=2, likelihood="quantile", random_state=42
+        )
+
+        # only probabilistic forecasting models
+        naive_ensemble_proba = NaiveEnsembleModel([model_proba_1, model_proba_2])
+        self.assertTrue(naive_ensemble_proba._is_probabilistic())
+
+        naive_ensemble_proba.fit(self.series1 + self.series2)
+        # by default, only 1 sample
+        pred_proba_1_sample = naive_ensemble_proba.predict(n=5)
+        self.assertEqual(pred_proba_1_sample.n_samples, 1)
+
+        # possible to obtain probabilistic forecast by averaging samples across the models
+        pred_proba_many_sample = naive_ensemble_proba.predict(
+            n=5, num_samples=num_samples
+        )
+        self.assertEqual(pred_proba_many_sample.n_samples, num_samples)
+
+        # need to redefine the models to reset the random state
+        model_alone_1 = LinearRegressionModel(
+            lags=1, likelihood="quantile", random_state=42
+        )
+        model_alone_2 = LinearRegressionModel(
+            lags=2, likelihood="quantile", random_state=42
+        )
+        model_alone_1.fit(self.series1 + self.series2)
+        model_alone_2.fit(self.series1 + self.series2)
+        forecast_mean = 0.5 * model_alone_1.predict(
+            5, num_samples=num_samples
+        ) + 0.5 * model_alone_2.predict(5, num_samples=num_samples)
+
+        self.assertEqual(
+            forecast_mean.values().shape, pred_proba_many_sample.values().shape
+        )
+        self.assertEqual(forecast_mean.n_samples, pred_proba_many_sample.n_samples)
+        self.assertTrue(
+            np.array_equal(pred_proba_many_sample.values(), forecast_mean.values())
+        )
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_input_models_global_models(self):
+        # one model is not instantiated
+        with self.assertRaises(ValueError):
+            NaiveEnsembleModel([RNNModel(12), TCNModel(10, 2), NBEATSModel])
         NaiveEnsembleModel([RNNModel(12), TCNModel(10, 2), NBEATSModel(10, 2)])
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
@@ -152,8 +223,58 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_input_models_mixed(self):
+        # NaiveDrift is local, RNNModel is global
+        naive_ensemble = NaiveEnsembleModel([NaiveDrift(), RNNModel(12, n_epochs=1)])
+        # ensemble is neither local, nor global
+        self.assertFalse(naive_ensemble.is_local_ensemble)
+        self.assertFalse(naive_ensemble.is_global_ensemble)
+
+        # ensemble contains one local model, no support for multiple ts fit
         with self.assertRaises(ValueError):
-            NaiveEnsembleModel([NaiveDrift(), Theta(), RNNModel(12)])
+            naive_ensemble.fit([self.series1, self.series2])
+
+    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
+    def test_call_predict_different_covariates_support(self):
+        # AutoARIMA support future covariates only
+        local_ensemble_one_covs = NaiveEnsembleModel(
+            [NaiveDrift(), StatsForecastAutoARIMA()]
+        )
+        with self.assertRaises(ValueError):
+            local_ensemble_one_covs.fit(self.series1, past_covariates=self.series2)
+        local_ensemble_one_covs.fit(self.series1, future_covariates=self.series2)
+
+        # RNN support future covariates only
+        mixed_ensemble_one_covs = NaiveEnsembleModel(
+            [NaiveDrift(), RNNModel(12, n_epochs=1)]
+        )
+        with self.assertRaises(ValueError):
+            mixed_ensemble_one_covs.fit(self.series1, past_covariates=self.series2)
+        mixed_ensemble_one_covs.fit(self.series1, future_covariates=self.series2)
+
+        # both models support future covariates only
+        mixed_ensemble_future_covs = NaiveEnsembleModel(
+            [StatsForecastAutoARIMA(), RNNModel(12, n_epochs=1)]
+        )
+        mixed_ensemble_future_covs.fit(self.series1, future_covariates=self.series2)
+        with self.assertRaises(ValueError):
+            mixed_ensemble_future_covs.fit(self.series1, past_covariates=self.series2)
+
+        # RegressionModels with different covariates
+        global_ensemble_both_covs = NaiveEnsembleModel(
+            [
+                LinearRegressionModel(lags=1, lags_past_covariates=[-1]),
+                LinearRegressionModel(lags=1, lags_future_covariates=[1]),
+            ]
+        )
+        # missing future covariates
+        with self.assertRaises(ValueError):
+            global_ensemble_both_covs.fit(self.series1, past_covariates=self.series2)
+        # missing past covariates
+        with self.assertRaises(ValueError):
+            global_ensemble_both_covs.fit(self.series1, future_covariates=self.series2)
+        global_ensemble_both_covs.fit(
+            self.series1, past_covariates=self.series2, future_covariates=self.series2
+        )
 
     def test_fit_multivar_ts_with_local_models(self):
         naive = NaiveEnsembleModel(
@@ -174,7 +295,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         series_short = series_long[:25]
 
         # train with a single series
-        ensemble_model = self.get_global_ensembe_model()
+        ensemble_model = self.get_global_ensemble_model()
         ensemble_model.fit(series_short, past_covariates=series_long)
         # predict after end of train series
         preds = ensemble_model.predict(n=5, past_covariates=series_long)
@@ -196,7 +317,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         self.assertTrue(isinstance(preds, list) and len(preds) == 1)
 
         # train with multiple series
-        ensemble_model = self.get_global_ensembe_model()
+        ensemble_model = self.get_global_ensemble_model()
         ensemble_model.fit([series_short] * 2, past_covariates=[series_long] * 2)
         with self.assertRaises(ValueError):
             # predict without passing series should raise an error
@@ -218,7 +339,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         self.assertTrue(isinstance(preds, list) and len(preds) == 1)
 
     @staticmethod
-    def get_global_ensembe_model(output_chunk_length=5):
+    def get_global_ensemble_model(output_chunk_length=5):
         lags = [-1, -2, -5]
         return NaiveEnsembleModel(
             models=[

@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from darts import TimeSeries
 from darts.logging import get_logger
@@ -47,7 +48,7 @@ except ImportError:
 
 models_cls_kwargs_errs = [
     (ExponentialSmoothing, {}, 0.3),
-    (ARIMA, {"p": 1, "d": 0, "q": 1}, 0.03),
+    (ARIMA, {"p": 1, "d": 0, "q": 1, "random_state": 42}, 0.03),
 ]
 
 models_cls_kwargs_errs += [
@@ -126,7 +127,7 @@ if TORCH_AVAILABLE:
             {
                 "input_chunk_length": 10,
                 "output_chunk_length": 5,
-                "n_epochs": 5,
+                "n_epochs": 10,
                 "random_state": 0,
                 "likelihood": GaussianLikelihood(),
             },
@@ -135,6 +136,7 @@ if TORCH_AVAILABLE:
     ]
 
 
+@pytest.mark.slow
 class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
     np.random.seed(0)
 
@@ -144,10 +146,10 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
     constant_noisy_multivar_ts = constant_noisy_ts.stack(constant_noisy_ts)
     num_samples = 5
 
+    @pytest.mark.slow
     def test_fit_predict_determinism(self):
 
         for model_cls, model_kwargs, _ in models_cls_kwargs_errs:
-
             # whether the first predictions of two models initiated with the same random state are the same
             model = model_cls(**model_kwargs)
             model.fit(self.constant_noisy_ts)

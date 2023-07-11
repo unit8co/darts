@@ -193,9 +193,6 @@ class _BaseBatsTbatsModel(LocalForecastingModel, ABC):
         self.model = None
         np.random.seed(random_state)
 
-    def __str__(self):
-        return "(T)BATS"
-
     @abstractmethod
     def _create_model(self):
         pass
@@ -223,6 +220,10 @@ class _BaseBatsTbatsModel(LocalForecastingModel, ABC):
         samples = _compute_samples(self.model, yhat, num_samples)
 
         return self._build_forecast_series(samples)
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return False
 
     def _is_probabilistic(self) -> bool:
         return True

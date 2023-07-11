@@ -225,9 +225,33 @@ if TORCH_AVAILABLE:
                 model.predict(n=1, series=target_multi, verbose=False)
 
             # raise an error when trained with static covariates and trying to predict without
-            target_multi = target_multi.with_static_covariates(None)
             with pytest.raises(ValueError):
-                model.predict(n=1, series=target_multi, verbose=False)
+                model.predict(
+                    n=1, series=target_multi.with_static_covariates(None), verbose=False
+                )
+
+            # with `use_static_covariates=False`, we can predict without static covs
+            model = TFTModel(
+                input_chunk_length=3,
+                output_chunk_length=4,
+                use_static_covariates=False,
+                add_relative_index=True,
+                n_epochs=1,
+            )
+            model.fit(target_multi)
+            preds = model.predict(n=2, series=target_multi.with_static_covariates(None))
+            assert preds.static_covariates is None
+
+            model = TFTModel(
+                input_chunk_length=3,
+                output_chunk_length=4,
+                use_static_covariates=False,
+                add_relative_index=True,
+                n_epochs=1,
+            )
+            model.fit(target_multi.with_static_covariates(None))
+            preds = model.predict(n=2, series=target_multi)
+            assert preds.static_covariates.equals(target_multi.static_covariates)
 
         def helper_generate_multivariate_case_data(self, season_length, n_repeat):
             """generates multivariate test case data. Target series is a sine wave stacked with a repeating

@@ -449,6 +449,10 @@ class TCNModel(PastCovariatesTorchModel):
         self.dropout = dropout
         self.weight_norm = weight_norm
 
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
+
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
         input_dim = train_sample[0].shape[1] + (
@@ -485,9 +489,5 @@ class TCNModel(PastCovariatesTorchModel):
             length=self.input_chunk_length,
             shift=self.output_chunk_length,
             max_samples_per_ts=max_samples_per_ts,
-            use_static_covariates=self._supports_static_covariates(),
+            use_static_covariates=self.uses_static_covariates,
         )
-
-    @staticmethod
-    def _supports_static_covariates() -> bool:
-        return False

@@ -81,9 +81,6 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         self.kf = kf
         self.darts_kf = KalmanFilter(dim_x, kf)
 
-    def __str__(self):
-        return f"Kalman Filter Forecaster (dim_x={self.dim_x})"
-
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
 
         super()._fit(series, future_covariates)
@@ -137,6 +134,10 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         )
 
         return filtered_series[-n:]
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
 
     def _is_probabilistic(self) -> bool:
         return True
