@@ -16,14 +16,24 @@ logger = get_logger(__name__)
 def _get_historical_forecast_boundaries(
     model: ForecastingModel,
     series: TimeSeries,
+    series_idx: int,
     past_covariates: Optional[TimeSeries],
     future_covariates: Optional[TimeSeries],
     start: Optional[Union[pd.Timestamp, float, int]],
     forecast_horizon: int,
     overlap_end: bool,
     freq: pd.DateOffset,
+    show_warnings: bool = True,
 ) -> Tuple[Any, ...]:
-    # obtain forecastable indexes boundaries
+    """
+    Based on the boundaries of the forecastable time index, generates the boundaries of each covariates using the lags.
+
+    For TimeSeries with a RangeIndex, the boundaries are converted to absolute indexes to slice the array appropriately
+    when start > 0.
+
+    When applicable, move the start boundaries to the value provided by the user.
+    """
+    # obtain forecastable indexes boundaries, as values from the time index
     historical_forecasts_time_index = model._get_historical_forecastable_time_index(
         series,
         past_covariates,
@@ -36,7 +46,7 @@ def _get_historical_forecast_boundaries(
         raise_log(
             ValueError(
                 "Cannot build a single input for prediction with the provided model, "
-                f"`series` and `*_covariates` at series index: {'XXX'}. The minimum "
+                f"`series` and `*_covariates` at series index: {series_idx}. The minimum "
                 "prediction input time index requirements were not met. "
                 "Please check the time index of `series` and `*_covariates`."
             )
@@ -64,9 +74,13 @@ def _get_historical_forecast_boundaries(
             <= start_time_
             <= historical_forecasts_time_index[-1]
         ):
-            # TODO: put back the warnings?
-            # ignore user-defined `start`
-            pass
+            if show_warnings:
+                model._historical_forecasts_start_warnings(
+                    idx=series_idx,
+                    start=start,
+                    start_time_=start_time_,
+                    historical_forecasts_time_index=historical_forecasts_time_index,
+                )
         else:
             historical_forecasts_time_index = (
                 max(historical_forecasts_time_index[0], start_time_),
@@ -99,6 +113,15 @@ def _get_historical_forecast_boundaries(
         hist_fct_fc_start += min_future_cov_lag * freq
     if max_future_cov_lag is not None and max_future_cov_lag > 0:
         hist_fct_fc_end += max_future_cov_lag * freq
+
+    # convert relative integer index to absolute, make end bound inclusive
+    if series.has_range_index:
+        hist_fct_tgt_start = series.get_index_at_point(hist_fct_tgt_start)
+        hist_fct_tgt_end = series.get_index_at_point(hist_fct_tgt_end) + 1
+        hist_fct_pc_start = series.get_index_at_point(hist_fct_pc_start)
+        hist_fct_pc_end = series.get_index_at_point(hist_fct_pc_end) + 1
+        hist_fct_fc_start = series.get_index_at_point(hist_fct_fc_start)
+        hist_fct_fc_end = series.get_index_at_point(hist_fct_fc_end) + 1
 
     return (
         historical_forecasts_time_index[0],
@@ -151,6 +174,7 @@ def _optimised_historical_forecasts_regression_last_points_only(
         ) = _get_historical_forecast_boundaries(
             model=model,
             series=series_,
+            series_idx=idx,
             past_covariates=past_covariates_,
             future_covariates=future_covariates_,
             start=start,
@@ -188,8 +212,8 @@ def _optimised_historical_forecasts_regression_last_points_only(
             lags=model.lags.get("target", None),
             lags_past_covariates=model.lags.get("past", None),
             lags_future_covariates=model.lags.get("future", None),
-            uses_static_covariates=False,  # TODO: maybe change this
-            last_static_covariates_shape=None,  # TODO: maybe change this
+            uses_static_covariates=model.uses_static_covariates,
+            last_static_covariates_shape=model._static_covariates_shape,
             max_samples_per_ts=None,
             check_inputs=True,
             use_moving_windows=True,
@@ -223,7 +247,7 @@ def _optimised_historical_forecasts_regression_last_points_only(
                 if stride == 1 and model.output_chunk_length == 1
                 else generate_index(
                     start=hist_fct_start + (forecast_horizon - 1) * freq,
-                    end=hist_fct_end + (forecast_horizon - 1) * freq,
+                    length=forecast.shape[0],
                     freq=freq * stride,
                 ),
                 values=forecast,
@@ -270,6 +294,7 @@ def _optimised_historical_forecasts_regression_all_points(
         ) = _get_historical_forecast_boundaries(
             model=model,
             series=series_,
+            series_idx=idx,
             past_covariates=past_covariates_,
             future_covariates=future_covariates_,
             start=start,
@@ -311,8 +336,8 @@ def _optimised_historical_forecasts_regression_all_points(
             lags=model.lags.get("target", None),
             lags_past_covariates=model.lags.get("past", None),
             lags_future_covariates=model.lags.get("future", None),
-            uses_static_covariates=False,  # TODO: maybe change this
-            last_static_covariates_shape=None,  # TODO: maybe change this
+            uses_static_covariates=model.uses_static_covariates,
+            last_static_covariates_shape=model._static_covariates_shape,
             max_samples_per_ts=None,
             check_inputs=True,
             use_moving_windows=True,
