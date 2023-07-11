@@ -123,7 +123,7 @@ def _bartlett_formula(r: np.ndarray, m: int, length: int) -> float:
 
 def extract_trend_and_seasonality(
     ts: TimeSeries,
-    freq: Union[int, List] = None,
+    freq: Union[int, Sequence[int]] = None,
     model: Union[SeasonalityMode, ModelMode] = ModelMode.MULTIPLICATIVE,
     method: str = "naive",
     **kwargs,
