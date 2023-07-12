@@ -146,7 +146,7 @@ class ShapExplainer(ForecastingModelExplainer):
 
         super().__init__(
             model=model,
-            requires_input_series=True,
+            requires_background=True,
             check_component_names=True,
             background_series=background_series,
             background_past_covariates=background_past_covariates,
@@ -221,7 +221,7 @@ class ShapExplainer(ForecastingModelExplainer):
                     future_covariates=foreground_future_covariates,
                 )
 
-        horizons, target_names = self._check_horizons_and_targets(
+        horizons, target_names = self._process_horizons_and_targets(
             horizons, target_components
         )
 
@@ -317,7 +317,7 @@ class ShapExplainer(ForecastingModelExplainer):
 
         """
 
-        horizons, target_components = self._check_horizons_and_targets(
+        horizons, target_components = self._process_horizons_and_targets(
             horizons, target_components
         )
 
@@ -386,7 +386,7 @@ class ShapExplainer(ForecastingModelExplainer):
         if target_component is None:
             target_component = self.target_components[0]
 
-        horizon, target_component = self._check_horizons_and_targets(
+        horizon, target_component = self._process_horizons_and_targets(
             horizon, target_component
         )
 

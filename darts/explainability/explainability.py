@@ -33,7 +33,8 @@ class ForecastingModelExplainer(ABC):
         background_future_covariates: Optional[
             Union[TimeSeries, Sequence[TimeSeries]]
         ] = None,
-        requires_input_series: bool = True,
+        requires_background: bool = True,
+        requires_covariates_encoding: bool = True,
         check_component_names: bool = True,
         test_stationarity: bool = True,
     ):
@@ -62,9 +63,11 @@ class ForecastingModelExplainer(ABC):
             A past covariates series or list of series that the model needs once fitted.
         background_future_covariates
             A future covariates series or list of series that the model needs once fitted.
-        requires_input_series
+        requires_background
             Whether the explainer requires background series as an input. Raises an error if no background series were
             provided and `model` was fit using multiple series.
+        requires_covariates_encoding
+            Whether to apply the model's encoders to the input covariates. This is only required if
         check_component_names
             Whether to enforce that, in the case of multiple time series, all series of the same type (target and/or
             *_covariates) must have the same component names.
@@ -87,7 +90,7 @@ class ForecastingModelExplainer(ABC):
             or background_past_covariates is not None
             or background_future_covariates is not None
         ):
-            requires_input_series = True
+            requires_background = True
 
         # if `background_series` was not passed, use `training_series` saved in fitted forecasting model.
         if background_series is None:
@@ -98,7 +101,7 @@ class ForecastingModelExplainer(ABC):
                 "`background_series`.",
             )
             raise_if(
-                requires_input_series and self.model.training_series is None,
+                requires_background and self.model.training_series is None,
                 "`background_series` must be provided if `model` was fit on multiple time series.",
             )
             background_series = self.model.training_series
@@ -145,7 +148,7 @@ class ForecastingModelExplainer(ABC):
             self.past_covariates_components,
             self.future_covariates_components,
             check_component_names=check_component_names,
-            requires_input_series=requires_input_series,
+            requires_background=requires_background,
         )
 
         if test_stationarity and self.background_series is not None:
@@ -154,6 +157,54 @@ class ForecastingModelExplainer(ABC):
                     "At least one time series component of the background time series is not stationary."
                     " Beware of wrong interpretation with chosen explainability."
                 )
+
+        self.requires_foreground = self.background_series is not None
+
+    def _process_foreground(
+        self,
+        foreground_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        foreground_past_covariates: Optional[
+            Union[TimeSeries, Sequence[TimeSeries]]
+        ] = None,
+        foreground_future_covariates: Optional[
+            Union[TimeSeries, Sequence[TimeSeries]]
+        ] = None,
+    ):
+        if foreground_series is None:
+            if self.requires_foreground:
+                raise_log(ValueError("Must provide a `foreground_series`."), logger)
+            if (foreground_past_covariates is not None) or (
+                foreground_future_covariates is not None
+            ):
+                raise_log(
+                    ValueError(
+                        "Supplied foreground past or future covariates but no foreground series. Please provide "
+                        "`foreground_series`."
+                    ),
+                    logger,
+                )
+            foreground_series = self.background_series
+            foreground_past_covariates = self.background_past_covariates
+            foreground_future_covariates = self.background_future_covariates
+        else:
+            if self.model.encoders.encoding_available:
+                (
+                    foreground_past_covariates,
+                    foreground_future_covariates,
+                ) = self.model.generate_fit_encodings(
+                    series=foreground_series,
+                    past_covariates=foreground_past_covariates,
+                    future_covariates=foreground_future_covariates,
+                )
+
+        foreground_series = series2seq(foreground_series)
+        foreground_past_covariates = series2seq(foreground_past_covariates)
+        foreground_future_covariates = series2seq(foreground_future_covariates)
+        return (
+            foreground_series,
+            foreground_past_covariates,
+            foreground_future_covariates,
+        )
 
     @staticmethod
     def _check_background_covariates(
@@ -165,7 +216,7 @@ class ForecastingModelExplainer(ABC):
         past_covariates_components,
         future_covariates_components,
         check_component_names: bool = True,
-        requires_input_series: bool = True,
+        requires_background: bool = True,
     ) -> None:
         if background_past_covariates is not None:
             raise_if_not(
@@ -179,7 +230,7 @@ class ForecastingModelExplainer(ABC):
                 "The number of background series and future covariates must be the same.",
             )
 
-        if requires_input_series:
+        if requires_background:
             raise_if(
                 model.uses_past_covariates and background_past_covariates is None,
                 "A background past covariates is not provided, but the model needs past covariates.",
@@ -317,7 +368,7 @@ class ForecastingModelExplainer(ABC):
             ]
         )
 
-    def _check_horizons_and_targets(
+    def _process_horizons_and_targets(
         self,
         horizons: Optional[Union[int, Sequence[int]]],
         target_components: Optional[Union[str, Sequence[str]]],

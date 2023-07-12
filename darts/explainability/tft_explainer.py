@@ -73,7 +73,7 @@ class TFTExplainer(ForecastingModelExplainer):
         """
         super().__init__(
             model,
-            requires_input_series=False,
+            requires_background=False,
             check_component_names=False,
             background_series=background_series,
             background_past_covariates=background_past_covariates,
@@ -184,7 +184,7 @@ class TFTExplainer(ForecastingModelExplainer):
             foreground_series, foreground_past_covariates, foreground_future_covariates
         )
 
-        horizons, _ = self._check_horizons_and_targets(
+        horizons, _ = self._process_horizons_and_targets(
             horizons=horizons, target_components=None
         )
         _ = self._model.predict(
