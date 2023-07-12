@@ -234,3 +234,24 @@ class ShapExplainabilityResult(ExplainabilityResult):
         return self._query_explainability_result(
             self.shap_explanation_object, horizon, component
         )
+
+
+# class TFTExplainabilityResult(ExplainabilityResult):
+#     def __init__(
+#         self,
+#         attention_series: Union[
+#             Dict[int, Dict[str, TimeSeries]],
+#             Sequence[Dict[int, Dict[str, TimeSeries]]],
+#         ],
+#         encoder_weights: Union[
+#             Dict[int, Dict[str, TimeSeries]],
+#             Sequence[Dict[int, Dict[str, TimeSeries]]],
+#         ],
+#         shap_explanation_object: Union[
+#             Dict[int, Dict[str, shap.Explanation]],
+#             Sequence[Dict[int, Dict[str, shap.Explanation]]],
+#         ],
+#     ):
+#         super().__init__(explained_forecasts)
+#         self.feature_values = feature_values
+#         self.shap_explanation_object = shap_explanation_object

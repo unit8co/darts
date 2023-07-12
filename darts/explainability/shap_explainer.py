@@ -20,7 +20,7 @@ each of the (lagged) series.
 """
 
 from enum import Enum
-from typing import Dict, NewType, Optional, Sequence, Tuple, Union
+from typing import Dict, NewType, Optional, Sequence, Union
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -145,15 +145,18 @@ class ShapExplainer(ForecastingModelExplainer):
             )
 
         super().__init__(
-            model,
-            background_series,
-            background_past_covariates,
-            background_future_covariates,
+            model=model,
+            requires_input_series=True,
+            check_component_names=True,
+            background_series=background_series,
+            background_past_covariates=background_past_covariates,
+            background_future_covariates=background_future_covariates,
         )
 
-        # As we only use RegressionModel, we fix the forecast n step ahead we want to explain as
-        # output_chunk_length
-        self.n = self.model.output_chunk_length
+        if model._is_probabilistic():
+            logger.warning(
+                "The model is probabilistic, but num_samples=1 will be used for explainability."
+            )
 
         if shap_method is not None:
             shap_method = shap_method.upper()
@@ -413,38 +416,6 @@ class ShapExplainer(ForecastingModelExplainer):
             out_names=target_component,
             **kwargs,
         )
-
-    def _check_horizons_and_targets(
-        self,
-        horizons: Union[int, Sequence[int]],
-        target_components: Union[str, Sequence[str]],
-    ) -> Tuple[Sequence[int], Sequence[str]]:
-
-        if target_components is not None:
-            if isinstance(target_components, str):
-                target_components = [target_components]
-            raise_if(
-                any(
-                    [
-                        target_name not in self.target_components
-                        for target_name in target_components
-                    ]
-                ),
-                "One of the target names doesn't exist. Please review your target_names input",
-            )
-        else:
-            target_components = self.target_components
-
-        if horizons is not None:
-            if isinstance(horizons, int):
-                horizons = [horizons]
-
-            raise_if(max(horizons) > self.n, "One of the horizons is too large.")
-            raise_if(min(horizons) < 1, "One of the horizons is too small.")
-        else:
-            horizons = range(1, self.n + 1)
-
-        return horizons, target_components
 
 
 class _RegressionShapExplainers:

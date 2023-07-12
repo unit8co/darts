@@ -325,9 +325,10 @@ class _TFTModule(PLMixedCovariatesModule):
 
         self.output_layer = nn.Linear(self.hidden_size, self.n_targets * self.loss_size)
 
+        self._attn_out_weights = None
+        self._static_covariate_var = None
         self._encoder_sparse_weights = None
         self._decoder_sparse_weights = None
-        self._attn_out_weights = None
 
     @property
     def reals(self) -> List[str]:
@@ -548,6 +549,7 @@ class _TFTModule(PLMixedCovariatesModule):
                 dtype=x_cont_past.dtype,
                 device=device,
             )
+            static_covariate_var = None
 
         static_context_expanded = self.expand_static_context(
             context=self.static_context_grn(static_embedding), time_steps=time_steps
@@ -637,9 +639,10 @@ class _TFTModule(PLMixedCovariatesModule):
         out = out.view(
             batch_size, self.output_chunk_length, self.n_targets, self.loss_size
         )
+        self._attn_out_weights = attn_out_weights
+        self._static_covariate_var = static_covariate_var
         self._encoder_sparse_weights = encoder_sparse_weights
         self._decoder_sparse_weights = decoder_sparse_weights
-        self._attn_out_weights = attn_out_weights
 
         # TODO: (Darts) remember this in case we want to output interpretation
         # return self.to_network_output(
