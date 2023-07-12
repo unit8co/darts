@@ -1150,9 +1150,41 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             TimeSeries.from_times_and_values(
                 pd.date_range("20130101", "20130102"), range(2), fill_missing_dates=True
             )
-        # test empty pandas series error
+        # test empty pandas series with DatetimeIndex
+        freq = "D"
+        # fails without freq
         with self.assertRaises(ValueError):
-            TimeSeries.from_series(pd.Series(dtype="object"), freq="D")
+            TimeSeries.from_series(pd.Series(index=pd.DatetimeIndex([])))
+        # works with index having freq, or setting freq at TimeSeries creation
+        series_a = TimeSeries.from_series(
+            pd.Series(index=pd.DatetimeIndex([], freq=freq))
+        )
+        assert series_a.freq == freq
+        assert len(series_a) == 0
+        series_b = TimeSeries.from_series(
+            pd.Series(index=pd.DatetimeIndex([])), freq=freq
+        )
+        assert series_a == series_b
+
+        # test empty pandas series with DatetimeIndex
+        freq = 2
+        # fails pd.Index (IntIndex)
+        with self.assertRaises(ValueError):
+            TimeSeries.from_series(pd.Series(index=pd.Index([])))
+        # works with pd.RangeIndex as freq (step) is given by default (step=1)
+        series_a = TimeSeries.from_series(pd.Series(index=pd.RangeIndex(start=0)))
+        assert series_a.freq == 1
+        # works with RangeIndex of different freq, or setting freq at TimeSeries creation
+        series_a = TimeSeries.from_series(
+            pd.Series(index=pd.RangeIndex(start=0, step=freq))
+        )
+        assert series_a.freq == freq
+        assert len(series_a) == 0
+        series_b = TimeSeries.from_series(
+            pd.Series(index=pd.RangeIndex(start=0)), freq=freq
+        )
+        assert series_a == series_b
+
         # frequency should be ignored when fill_missing_dates is False
         seriesA = TimeSeries.from_times_and_values(
             pd.date_range("20130101", "20130105"),
