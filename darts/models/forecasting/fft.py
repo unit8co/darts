@@ -260,6 +260,10 @@ class FFT(LocalForecastingModel):
         self.trend = trend
         self.trend_poly_degree = trend_poly_degree
 
+    @property
+    def supports_multivariate(self) -> bool:
+        return False
+
     def _exp_trend(self, x) -> Callable:
         """Helper function, used to make FFT model pickable."""
         return np.exp(self.trend_coefficients[1]) * np.exp(

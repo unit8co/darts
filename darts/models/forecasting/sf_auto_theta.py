@@ -80,6 +80,10 @@ class StatsForecastAutoTheta(LocalForecastingModel):
         return self._build_forecast_series(samples)
 
     @property
+    def supports_multivariate(self) -> bool:
+        return False
+
+    @property
     def min_train_series_length(self) -> int:
         return 10
 
