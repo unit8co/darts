@@ -537,15 +537,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             else series.start_time() - min_target_lag * series.freq
         )
         end = series.end_time() + 1 * series.freq
-        intersect_ = (
-            generate_index(
-                start=start,
-                end=end,
-                freq=series.freq,
-            )
-            if not reduce_to_bounds
-            else (start, end)
-        )
+
+        intersect_ = (start, end)
 
         # longest possible time index for past covariates
         if (min_past_cov_lag is not None) and (past_covariates is not None):
@@ -554,63 +547,50 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 - (min_past_cov_lag - max_target_lag - 1) * past_covariates.freq
                 if is_training
                 else past_covariates.start_time()
+                - min_past_cov_lag * past_covariates.freq
             )
             end_pc = (
                 past_covariates.end_time() - max_past_cov_lag * past_covariates.freq
             )
-            tmp_ = (
-                generate_index(
-                    start=start_pc,
-                    end=end_pc,
-                    freq=past_covariates.freq,
-                )
-                if not reduce_to_bounds
-                else (start_pc, end_pc)
-            )
+            tmp_ = (start_pc, end_pc)
+
             if intersect_ is not None:
-                if not reduce_to_bounds:
-                    intersect_ = intersect_.intersection(tmp_)
-                else:
-                    intersect_ = (
-                        max([intersect_[0], tmp_[0]]),
-                        min([intersect_[1], tmp_[1]]),
-                    )
+                intersect_ = (
+                    max([intersect_[0], tmp_[0]]),
+                    min([intersect_[1], tmp_[1]]),
+                )
             else:
                 intersect_ = tmp_
 
         # longest possible time index for future covariates
         if (min_future_cov_lag is not None) and (future_covariates is not None):
+            neg_min_future_cov_lag = min(0, min_future_cov_lag)
+            pos_max_future_cov_lag = max(0, max_future_cov_lag)
             start_fc = (
                 future_covariates.start_time()
-                - (min_future_cov_lag - max_target_lag - 1) * future_covariates.freq
+                - (neg_min_future_cov_lag - max_target_lag - 1) * future_covariates.freq
                 if is_training
                 else future_covariates.start_time()
-                - min_future_cov_lag * future_covariates.freq
+                - neg_min_future_cov_lag * future_covariates.freq
             )
             end_fc = (
                 future_covariates.end_time()
-                - max_future_cov_lag * future_covariates.freq
+                - pos_max_future_cov_lag * future_covariates.freq
             )
-            tmp_ = (
-                generate_index(
-                    start=start_fc,
-                    end=end_fc,
-                    freq=future_covariates.freq,
-                )
-                if not reduce_to_bounds
-                else (start_fc, end_fc)
-            )
+            tmp_ = (start_fc, end_fc)
 
             if intersect_ is not None:
-                if not reduce_to_bounds:
-                    intersect_ = intersect_.intersection(tmp_)
-                else:
-                    intersect_ = (
-                        max([intersect_[0], tmp_[0]]),
-                        min([intersect_[1], tmp_[1]]),
-                    )
+                intersect_ = (
+                    max([intersect_[0], tmp_[0]]),
+                    min([intersect_[1], tmp_[1]]),
+                )
             else:
                 intersect_ = tmp_
+
+        if not reduce_to_bounds:
+            intersect_ = generate_index(
+                start=intersect_[0], end=intersect_[1], freq=series.freq
+            )
 
         return intersect_ if len(intersect_) > 0 else None
 
