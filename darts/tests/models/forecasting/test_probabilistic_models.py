@@ -285,7 +285,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
                             1,
                             len(lkl["expected"]) * n_comp,
                             1,
-                        ) == pred_lkl_params.values().shape, (
+                        ) == pred_lkl_params.all_values().shape, (
                             "The shape of the predicted likelihood parameters do not match expectation "
                             "for multivariate series."
                         )

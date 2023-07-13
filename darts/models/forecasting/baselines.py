@@ -256,7 +256,8 @@ class NaiveEnsembleModel(EnsembleModel):
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Average the `forecasting_models` predictions, component-wise"""
         raise_if(
-            predict_likelihood_parameters and not self._models_same_likelihood(),
+            predict_likelihood_parameters
+            and not self.supports_likelihood_parameter_prediction,
             "`predict_likelihood_parameters=True` is supported only if all the `forecasting_models` "
             "are probabilistic and fitting the same likelihood.",
             logger,

@@ -223,7 +223,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return False
 
     @property
-    @abstractmethod
     def supports_likelihood_parameter_prediction(self) -> bool:
         """
         Whether model instance supports direct prediction of likelihood parameters
