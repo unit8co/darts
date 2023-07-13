@@ -869,6 +869,12 @@ class RegressionModel(GlobalForecastingModel):
                 logger,
             )
 
+        # retrieve stored covariates, usually handled by RegressionModel.predict()
+        if past_covariates is None and self.past_covariate_series is not None:
+            past_covariates = series2seq(self.past_covariate_series)
+        if future_covariates is None and self.future_covariate_series is not None:
+            future_covariates = series2seq(self.future_covariate_series)
+
         # TODO: move the loop here instead of duplicated code in each sub-routine?
         if last_points_only:
             return _optimised_historical_forecasts_regression_last_points_only(
