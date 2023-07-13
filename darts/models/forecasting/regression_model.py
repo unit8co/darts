@@ -869,10 +869,6 @@ class RegressionModel(GlobalForecastingModel):
                 logger,
             )
 
-        series = series2seq(series)
-        past_covariates = series2seq(past_covariates)
-        future_covariates = series2seq(future_covariates)
-
         # TODO: move the loop here instead of duplicated code in each sub-routine?
         if last_points_only:
             return _optimised_historical_forecasts_regression_last_points_only(
