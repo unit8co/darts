@@ -1950,10 +1950,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             else self.pl_module_params["output_chunk_length"]
         )
 
-    @property
-    def supports_likelihood_parameter_prediction(self) -> bool:
-        return True
-
     def _is_probabilistic(self) -> bool:
         return (
             self.model._is_probabilistic()

@@ -225,6 +225,11 @@ class RegressionEnsembleModel(EnsembleModel):
         return self.regression_model.output_chunk_length
 
     @property
+    def supports_likelihood_parameter_prediction(self) -> bool:
+        """RegressionEnsembleModel supports likelihood parameters predictions if its regression model does"""
+        return self.regression_model.supports_likelihood_parameter_prediction
+
+    @property
     def supports_multivariate(self) -> bool:
         return (
             super().supports_multivariate

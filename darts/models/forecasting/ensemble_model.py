@@ -379,14 +379,15 @@ class EnsembleModel(GlobalForecastingModel):
 
     @property
     def output_chunk_length(self) -> Optional[int]:
-        """Return `None` if `output_chunk_length` is not defined for all the forecasting models,
+        """Return `None` if none of the forecasting models have a `output_chunk_length`,
         otherwise return the smallest output_chunk_length.
         """
-        tmp = []
-        for m in self.models:
-            m_output_chunk_length = getattr(m, "output_chunk_length", None)
-            if m_output_chunk_length:
-                tmp.append(m_output_chunk_length)
+        tmp = [
+            m.output_chunk_length
+            for m in self.models
+            if m.output_chunk_length is not None
+        ]
+
         if len(tmp) == 0:
             return None
         else:
@@ -399,30 +400,30 @@ class EnsembleModel(GlobalForecastingModel):
         """Return `True` if all the `forecasting_models` are probabilistic and fit the same distribution."""
         if not self._models_are_probabilistic:
             return False
-        else:
-            models_likelihood = set()
-            lkl_same_params = True
-            tmp_quantiles = None
-            for m in self.models:
-                # regression model likelihood is a string, torch-based model likelihoods is an object
-                likelihood = getattr(m, "likelihood")
-                is_obj_lkl = isinstance(likelihood, Likelihood)
-                lkl_simplified_name = (
-                    likelihood.simplified_name() if is_obj_lkl else likelihood
+
+        models_likelihood = set()
+        lkl_same_params = True
+        tmp_quantiles = None
+        for m in self.models:
+            # regression model likelihood is a string, torch-based model likelihoods is an object
+            likelihood = getattr(m, "likelihood")
+            is_obj_lkl = isinstance(likelihood, Likelihood)
+            lkl_simplified_name = (
+                likelihood.simplified_name() if is_obj_lkl else likelihood
+            )
+            models_likelihood.add(lkl_simplified_name)
+
+            # check the quantiles
+            if lkl_simplified_name == "quantile":
+                quantiles: List[str] = (
+                    likelihood.quantiles if is_obj_lkl else m.quantiles
                 )
-                models_likelihood.add(lkl_simplified_name)
+                if tmp_quantiles is None:
+                    tmp_quantiles = quantiles
+                elif tmp_quantiles != quantiles:
+                    lkl_same_params = False
 
-                # check the quantiles
-                if lkl_simplified_name == "quantile":
-                    quantiles: List[str] = (
-                        likelihood.quantiles if is_obj_lkl else m.quantiles
-                    )
-                    if tmp_quantiles is None:
-                        tmp_quantiles = quantiles
-                    elif tmp_quantiles != quantiles:
-                        lkl_same_params = False
-
-            return len(models_likelihood) == 1 and lkl_same_params
+        return len(models_likelihood) == 1 and lkl_same_params
 
     def _is_probabilistic(self) -> bool:
         return self._models_are_probabilistic()
@@ -438,10 +439,6 @@ class EnsembleModel(GlobalForecastingModel):
     @property
     def supports_future_covariates(self) -> bool:
         return any([model.supports_future_covariates for model in self.models])
-
-    @property
-    def supports_likelihood_parameter_prediction(self) -> bool:
-        return True
 
     def _full_past_covariates_support(self) -> bool:
         return all([model.supports_past_covariates for model in self.models])

@@ -228,7 +228,3 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
 
     def _is_probabilistic(self) -> bool:
         return self.likelihood is not None
-
-    @property
-    def supports_likelihood_parameter_prediction(self) -> bool:
-        return True

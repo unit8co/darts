@@ -226,9 +226,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     @abstractmethod
     def supports_likelihood_parameter_prediction(self) -> bool:
         """
-        Whether model supports direct prediction of likelihood parameters
+        Whether model instance supports direct prediction of likelihood parameters
         """
-        pass
+        return getattr(self, "likelihood", None) is not None
 
     @property
     def uses_past_covariates(self) -> bool:
@@ -2031,10 +2031,6 @@ class LocalForecastingModel(ForecastingModel, ABC):
         #  that use an input to predict an output.
         return -self.min_train_series_length, -1, None, None, None, None
 
-    @property
-    def supports_likelihood_parameter_prediction(self) -> bool:
-        return False
-
 
 class GlobalForecastingModel(ForecastingModel, ABC):
     """The base class for "global" forecasting models, handling several time series and optional covariates.
@@ -2263,18 +2259,16 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     def _sanity_check_predict_likelihood_parameters(
         self, n: int, output_chunk_length: Union[int, None], num_samples: int
     ):
-        """Verify that the assumptions for likelihood parameters prediction are verified."""
+        """Verify that the assumptions for likelihood parameters prediction are verified:
+        - Probabilistic models fitted with a likelihood
+        - `num_samples=1`
+        - `n <= output_chunk_length`
+        """
         if not self.supports_likelihood_parameter_prediction:
             raise_log(
                 ValueError(
-                    "`predict_likelihood_parameters=True` is not supported for this model."
-                ),
-                logger,
-            )
-        if not self._is_probabilistic():
-            raise_log(
-                ValueError(
-                    "`predict_likelihood_parameters=True` is only supported for probabilistic models."
+                    "`predict_likelihood_parameters=True` is only supported for probabilistic models fitted with "
+                    "a likelihood."
                 ),
                 logger,
             )

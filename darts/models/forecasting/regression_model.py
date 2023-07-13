@@ -339,10 +339,6 @@ class RegressionModel(GlobalForecastingModel):
     def output_chunk_length(self) -> int:
         return self._output_chunk_length
 
-    @property
-    def supports_likelihood_parameter_prediction(self) -> bool:
-        return False
-
     def get_multioutput_estimator(self, horizon, target_dim):
         raise_if_not(
             isinstance(self.model, MultiOutputRegressor),
