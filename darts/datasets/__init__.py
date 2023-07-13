@@ -623,7 +623,7 @@ class UberTLCDataset(DatasetLoaderCSV):
                 if sample_freq == "hourly"
                 else "24f9fd67e4b9e53f0214a90268cd9bee",
                 header_time="Pickup_date",
-                format_time="%Y-%m-%d %H:%M",
+                format_time="%Y-%m-%d %H:%M:%S",
                 pre_process_zipped_csv_fn=pre_proces_fn,
                 multivariate=multivariate,
             )
