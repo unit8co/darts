@@ -103,7 +103,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         self.likelihood = likelihood
         self.quantiles = None
 
-        self.output_chunk_length = output_chunk_length
+        self._output_chunk_length = output_chunk_length
 
         likelihood_map = {
             "quantile": None,

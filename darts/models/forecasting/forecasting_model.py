@@ -258,6 +258,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         return self._considers_static_covariates
 
+    @property
+    def output_chunk_length(self) -> Optional[int]:
+        """
+        Number of time steps predicted at once by the model, not defined for statistical models.
+        """
+        return None
+
     @abstractmethod
     def predict(self, n: int, num_samples: int = 1) -> TimeSeries:
         """Forecasts values for `n` time steps after the end of the training series.
@@ -2186,9 +2193,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         """
         super().predict(n, num_samples)
         if predict_likelihood_parameters:
-            # output_chunk_length can be an attribute (regression model) or a property (torch-based model)
             self._sanity_check_predict_likelihood_parameters(
-                n, getattr(self, "output_chunk_length", None), num_samples
+                n, self.output_chunk_length, num_samples
             )
 
         if self.uses_past_covariates and past_covariates is None:
@@ -2257,7 +2263,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
     def _sanity_check_predict_likelihood_parameters(
         self, n: int, output_chunk_length: Union[int, None], num_samples: int
     ):
-        """Verudy that the assumptions for likelihood parameters prediction are verified."""
+        """Verify that the assumptions for likelihood parameters prediction are verified."""
         if not self.supports_likelihood_parameter_prediction:
             raise_log(
                 ValueError(

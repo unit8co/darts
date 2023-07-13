@@ -144,7 +144,7 @@ class RegressionModel(GlobalForecastingModel):
             f"output_chunk_length must be an integer greater than 0. Given: {output_chunk_length}",
             logger=logger,
         )
-        self.output_chunk_length = output_chunk_length
+        self._output_chunk_length = output_chunk_length
 
         # model checks
         if self.model is None:
@@ -334,6 +334,10 @@ class RegressionModel(GlobalForecastingModel):
     @property
     def min_train_samples(self) -> int:
         return 2
+
+    @property
+    def output_chunk_length(self) -> int:
+        return self._output_chunk_length
 
     @property
     def supports_likelihood_parameter_prediction(self) -> bool:
