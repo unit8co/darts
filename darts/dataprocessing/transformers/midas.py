@@ -53,6 +53,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             Whether to remove the NaNs from the start and the end of the transformed series.
         drop_static_covariates
             If set to `True`, the statics covariates of the input series won't be transferred to the output.
+            Recommended for multivariate series with component-specific static covariates.
 
         Examples
         --------
@@ -86,6 +87,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         """
         self._low_freq = low_freq
         self._strip = strip
+        self._drop_static_covariates = drop_static_covariates
         # Original high frequency should be fitted on TimeSeries independently
         super().__init__(name=name, n_jobs=n_jobs, verbose=verbose, global_fit=False)
 
@@ -129,7 +131,9 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             (4) Transform every column of the high frequency series into multiple columns for the low frequency series
             (5) Transform the low frequency series back into a TimeSeries
         """
-        low_freq, strip = params["fixed"]["_low_freq"], params["fixed"]["_strip"]
+        low_freq = params["fixed"]["_low_freq"]
+        strip = params["fixed"]["_strip"]
+        drop_static_covariates = params["fixed"]["_drop_static_covariates"]
         high_freq = params["fitted"]["high_freq"]
         MIDAS._verify_series(series, high_freq=high_freq)
 
@@ -175,17 +179,38 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             )
             series_df.loc[series_copy_df.index, :] = series_copy_df.values
 
+        n_high = series_df.shape[0]
+        n_low = len(low_index_datetime)
+
+        raise_if_not(
+            n_high % n_low == 0,
+            "The frequency of the high frequency input series should be an exact multiple of the targeted"
+            "low frequency output. For example, you could go from a monthly series to a quarterly series.",
+            logger,
+        )
+
+        multiple = n_high // n_low
+
         # make multiple low frequency columns out of the high frequency column(s)
-        midas_df = _create_midas_df(
+        midas_df = MIDAS._create_midas_df(
             series_df=series_df,
             low_index_datetime=low_index_datetime,
+            multiple=multiple,
+        )
+
+        new_static_covariates = MIDAS._process_static_covariates(
+            static_covariates=series.static_covariates,
+            index_or_multiple=multiple,
+            drop_static_covariates=drop_static_covariates,
+            inverse_transform=False,
         )
 
         # back to TimeSeries
         midas_ts = TimeSeries.from_dataframe(
             midas_df,
-            static_covariates=series.static_covariates,
+            static_covariates=new_static_covariates,
         )
+
         if strip:
             midas_ts = midas_ts.strip()
 
@@ -213,6 +238,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         .. [1] https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#anchored-offsets
         """
         low_freq = params["fixed"]["_low_freq"]
+        drop_static_covariates = params["fixed"]["_drop_static_covariates"]
         high_freq = params["fitted"]["high_freq"]
         orig_ts_start_time = params["fitted"]["start"]
         orig_ts_end_time = params["fitted"]["end"]
@@ -254,6 +280,13 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
                 start_time = orig_ts_end_time
                 shift = 1
 
+        new_static_covariates = MIDAS._process_static_covariates(
+            static_covariates=series.static_covariates,
+            index_or_multiple=n_orig_components,
+            drop_static_covariates=drop_static_covariates,
+            inverse_transform=True,
+        )
+
         inversed_midas_ts = TimeSeries.from_times_and_values(
             times=generate_index(
                 start=start_time,
@@ -264,7 +297,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             values=series_values,
             freq=high_freq,
             columns=component_names,
-            static_covariates=series.static_covariates,
+            static_covariates=new_static_covariates,
         )
 
         return inversed_midas_ts
@@ -306,36 +339,49 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             f"expected {low_freq} but received {series.freq_str}.",
         )
 
+    @staticmethod
+    def _process_static_covariates(
+        static_covariates: Union[None, pd.Series, pd.DataFrame],
+        index_or_multiple: int,
+        drop_static_covariates: bool,
+        inverse_transform: bool,
+    ) -> Optional[Union[pd.Series, pd.DataFrame]]:
+        """If static covariates are component-specific, they must be reshaped appropriately.
+        `index_or_multiple` has a different meaning depending on the transformation:
+        - transform : multiple, to repeat the static covariates for the new components
+        - inverse_transform : index, to remove the duplciated static covariates
+        """
+        if drop_static_covariates:
+            return None
+        elif (
+            static_covariates is not None
+            and static_covariates.index.name == "component"
+        ):
+            if inverse_transform:
+                return static_covariates[:index_or_multiple]
+            else:
+                return pd.concat([static_covariates] * index_or_multiple)
+        else:
+            return static_covariates
 
-def _create_midas_df(
-    series_df: pd.DataFrame,
-    low_index_datetime: DatetimeIndex,
-) -> pd.DataFrame:
-    """
-    Function creating the lower frequency dataframe out of a higher frequency dataframe.
-    """
-    # calculate the multiple
-    n_high = series_df.shape[0]
-    n_low = len(low_index_datetime)
-
-    raise_if_not(
-        n_high % n_low == 0,
-        "The frequency of the high frequency input series should be an exact multiple of the targeted"
-        "low frequency output. For example, you could go from a monthly series to a quarterly series.",
-        logger,
-    )
-
-    multiple = n_high // n_low
-
-    # set up integer index
-    cols_out = []
-    midas_lst = []
-    # for every column we now create 'multiple' columns
-    # by going through a column and picking every one in 'multiple' values
-    for f in range(multiple):
-        cols_out += (series_df.columns + f"_{f}").tolist()
-        midas_lst.append(series_df.iloc[f::multiple].reset_index(drop=True))
-    transformed = pd.concat(midas_lst, axis=1)
-    transformed.index = low_index_datetime
-    transformed.columns = cols_out
-    return transformed
+    @staticmethod
+    def _create_midas_df(
+        series_df: pd.DataFrame,
+        low_index_datetime: DatetimeIndex,
+        multiple: int,
+    ) -> pd.DataFrame:
+        """
+        Function creating the lower frequency dataframe out of a higher frequency dataframe.
+        """
+        # set up integer index
+        cols_out = []
+        midas_lst = []
+        # for every column we now create 'multiple' columns
+        # by going through a column and picking every one in 'multiple' values
+        for f in range(multiple):
+            cols_out += (series_df.columns + f"_{f}").tolist()
+            midas_lst.append(series_df.iloc[f::multiple].reset_index(drop=True))
+        transformed = pd.concat(midas_lst, axis=1)
+        transformed.index = low_index_datetime
+        transformed.columns = cols_out
+        return transformed
