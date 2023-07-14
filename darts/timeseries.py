@@ -237,18 +237,20 @@ class TimeSeries:
                 logger,
             )
             static_covariates = static_covariates.copy()
+            # single-row pandas is considered as a pd.Series, ie 'global static covariates'
+            static_covariates.index = (
+                [DEFAULT_GLOBAL_STATIC_COV_NAME]
+                if len(static_covariates) == 1
+                else self.components
+            )
         elif isinstance(static_covariates, pd.Series):
             static_covariates = static_covariates.to_frame().T
+            static_covariates.index = [DEFAULT_GLOBAL_STATIC_COV_NAME]
         else:  # None
             pass
 
         # prepare static covariates:
         if static_covariates is not None:
-            static_covariates.index = (
-                self.components
-                if len(static_covariates) == self.n_components
-                else [DEFAULT_GLOBAL_STATIC_COV_NAME]
-            )
             static_covariates.columns.name = STATIC_COV_TAG
             # convert numerical columns to same dtype as series
             # we get all numerical columns, except those that have right dtype already
