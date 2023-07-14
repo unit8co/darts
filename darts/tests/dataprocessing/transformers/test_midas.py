@@ -41,32 +41,12 @@ class MIDASTestCase(unittest.TestCase):
         columns=["values_0", "values_1", "values_2"],
     )
 
-    daily_times = pd.date_range(start="01-2020", end="09-30-2020", freq="D")
-    daily_values = np.arange(1, len(daily_times) + 1)
-    daily_ts = TimeSeries.from_times_and_values(
-        times=daily_times, values=daily_values, columns=["values"]
-    )
-
-    second_times = pd.date_range(start="01-2020", periods=120, freq="S")
-    second_values = np.arange(1, len(second_times) + 1)
-    second_ts = TimeSeries.from_times_and_values(
-        times=second_times, values=second_values, columns=["values"]
-    )
-
-    minute_times = pd.date_range(start="01-2020", periods=2, freq="T")
-    minute_values = np.array([[i for i in range(1, 61)], [i for i in range(61, 121)]])
-    minute_ts = TimeSeries.from_times_and_values(
-        times=minute_times,
-        values=minute_values,
-        columns=[f"values_{i}" for i in range(60)],
-    )
-
     def test_complete_monthly_to_quarterly(self):
         """
         Tests if monthly series aligned with quarters is transformed into a quarterly series in the expected way.
         """
         # to quarter start
-        midas_1 = MIDAS(rule="QS")
+        midas_1 = MIDAS(low_freq="QS")
         quarterly_ts_midas = midas_1.fit_transform(self.monthly_ts)
         self.assertEqual(
             quarterly_ts_midas,
@@ -84,13 +64,13 @@ class MIDASTestCase(unittest.TestCase):
         )
 
         # to quarter end
-        midas_2 = MIDAS(rule="Q")
+        midas_2 = MIDAS(low_freq="Q")
         quarterly_ts_midas = midas_2.fit_transform(self.monthly_ts)
         self.assertEqual(
             quarterly_ts_midas,
             self.quarterly_with_quarter_end_index_ts,
             "Monthly TimeSeries is not correctly transformed "
-            "into a quarterly TimeSeries. Specifically, when the rule requires an QuarterEnd index.",
+            "into a quarterly TimeSeries. Specifically, when the low_freq requires an QuarterEnd index.",
         )
 
         inversed_quarterly_ts_midas = midas_2.inverse_transform(quarterly_ts_midas)
@@ -107,7 +87,7 @@ class MIDASTestCase(unittest.TestCase):
         in the expected way.
         """
         # monthly series with missing values
-        midas = MIDAS(rule="QS", strip=False)
+        midas = MIDAS(low_freq="QS", strip=False)
         quarterly_not_complete_ts_midas = midas.fit_transform(
             self.monthly_not_complete_ts
         )
@@ -156,7 +136,7 @@ class MIDASTestCase(unittest.TestCase):
             ],
         )
 
-        midas_1 = MIDAS(rule="QS")
+        midas_1 = MIDAS(low_freq="QS")
         multivar_quarterly_ts_midas = midas_1.fit_transform(stacked_monthly_ts)
         self.assertEqual(
             multivar_quarterly_ts_midas,
@@ -207,7 +187,7 @@ class MIDASTestCase(unittest.TestCase):
             ],
         )
 
-        midas_1 = MIDAS(rule="QS")
+        midas_1 = MIDAS(low_freq="QS")
         multivar_quarterly_ts_midas = midas_1.fit_transform(stacked_monthly_ts_missing)
         self.assertEqual(
             multivar_quarterly_ts_midas,
@@ -226,22 +206,39 @@ class MIDASTestCase(unittest.TestCase):
         """
         Test to see if other frequencies transforms like second to minute work as well.
         """
-        midas = MIDAS(rule="T")
-        minute_ts_midas = midas.fit_transform(self.second_ts)
-        self.assertEqual(minute_ts_midas, self.minute_ts)
+
+        second_times = pd.date_range(start="01-2020", periods=120, freq="S")
+        second_values = np.arange(1, len(second_times) + 1)
+        second_ts = TimeSeries.from_times_and_values(
+            times=second_times, values=second_values, columns=["values"]
+        )
+
+        minute_times = pd.date_range(start="01-2020", periods=2, freq="T")
+        minute_values = np.array(
+            [[i for i in range(1, 61)], [i for i in range(61, 121)]]
+        )
+        minute_ts = TimeSeries.from_times_and_values(
+            times=minute_times,
+            values=minute_values,
+            columns=[f"values_{i}" for i in range(60)],
+        )
+
+        midas = MIDAS(low_freq="T")
+        minute_ts_midas = midas.fit_transform(second_ts)
+        self.assertEqual(minute_ts_midas, minute_ts)
         second_ts_midas = midas.inverse_transform(minute_ts_midas)
-        self.assertEqual(second_ts_midas, self.second_ts)
+        self.assertEqual(second_ts_midas, second_ts)
 
     def test_error_when_from_low_to_high(self):
         """
         Tests if the transformer raises an error when the user asks for a transform in the wrong direction.
         """
         # wrong direction / low to high freq
-        midas_1 = MIDAS(rule="M")
+        midas_1 = MIDAS(low_freq="M")
         self.assertRaises(ValueError, midas_1.fit_transform, self.quarterly_ts)
 
         # transform to same index requested
-        midas_2 = MIDAS(rule="Q")
+        midas_2 = MIDAS(low_freq="Q")
         self.assertRaises(ValueError, midas_2.fit_transform, self.quarterly_ts)
 
     def test_error_when_frequency_not_suitable_for_midas(self):
@@ -251,13 +248,19 @@ class MIDASTestCase(unittest.TestCase):
         So the monthly to quarterly transformation is possible, while the daily to monthly MIDAS transform is
         impossible.
         """
-        midas = MIDAS(rule="M")
-        self.assertRaises(ValueError, midas.fit_transform, self.daily_ts)
+        daily_times = pd.date_range(start="01-2020", end="09-30-2020", freq="D")
+        daily_values = np.arange(1, len(daily_times) + 1)
+        daily_ts = TimeSeries.from_times_and_values(
+            times=daily_times, values=daily_values, columns=["values"]
+        )
+
+        midas = MIDAS(low_freq="M")
+        self.assertRaises(ValueError, midas.fit_transform, daily_ts)
 
     def test_inverse_transform_prediction(self):
         """
         Check that inverse-transforming the prediction of a model generate the correct time index when
-        using frequency anchored either at the start or the end of the quarter
+        using frequency anchored either at the start or the end of the quarter.
         """
         # low frequency : QuarterStart
         monthly_ts = TimeSeries.from_times_and_values(
@@ -269,7 +272,7 @@ class MIDASTestCase(unittest.TestCase):
 
         model = LinearRegressionModel(lags=2)
 
-        midas_quarterly = MIDAS(rule="QS")
+        midas_quarterly = MIDAS(low_freq="QS")
         # shape : [6 quarters, 3 months, 1 sample]
         quarterly_train_ts = midas_quarterly.fit_transform(monthly_train_ts)
         # shape : [2 quarters, 3 months, 1 sample]
@@ -285,7 +288,7 @@ class MIDASTestCase(unittest.TestCase):
         self.assertTrue(pred_monthly.time_index.equals(monthly_test_ts.time_index))
 
         # "Q" = QuarterEnd, the 2 "hidden" months must be retrieved
-        midas_quarterly = MIDAS(rule="Q")
+        midas_quarterly = MIDAS(low_freq="Q")
         quarterly_train_ts = midas_quarterly.fit_transform(monthly_train_ts)
         quarterly_test_ts = midas_quarterly.transform(monthly_test_ts)
 
@@ -296,3 +299,50 @@ class MIDASTestCase(unittest.TestCase):
         # verify prediction time index in both frequencies
         self.assertTrue(pred_quarterly.time_index.equals(quarterly_test_ts.time_index))
         self.assertTrue(pred_monthly.time_index.equals(monthly_test_ts.time_index))
+
+    def test_multiple_ts(self):
+        """
+        Verify that MIDAS works as expected with multiple series of different "high" frequencies.
+        """
+        quarterly_univariate_ts = TimeSeries.from_times_and_values(
+            times=pd.date_range(start="2000-01-01", periods=12, freq="Q"),
+            values=np.arange(0, 12),
+        )
+        quarterly_multivariate_ts = TimeSeries.from_times_and_values(
+            times=pd.date_range(start="2020-01-01", periods=12, freq="Q"),
+            values=np.arange(0, 24).reshape(-1, 2),
+        )
+
+        ts_to_transform = [self.monthly_ts, quarterly_univariate_ts]
+        midas_yearly = MIDAS(low_freq="AS")
+        list_yearly_ts = midas_yearly.fit_transform(ts_to_transform)
+        self.assertEqual(len(list_yearly_ts), 2)
+        # 12 months in a year, original ts contains only 9 values, the missing data are nan
+        self.assertTrue(
+            np.allclose(list_yearly_ts[0].values()[:, :9], self.monthly_ts.values().T)
+        )
+        self.assertEqual(np.isnan(list_yearly_ts[0].values()[:, 9:]).sum(), 3)
+        # 4 quarters in a year
+        self.assertTrue(
+            np.allclose(
+                list_yearly_ts[1].values(),
+                quarterly_univariate_ts.values().reshape(3, 4),
+            )
+        )
+        # verify inverse-transform
+        self.assertEqual(
+            ts_to_transform, midas_yearly.inverse_transform(list_yearly_ts)
+        )
+
+        # replacing the univariate ts with a multivariate ts (same frequency, different start)
+        ts_to_transform = [self.monthly_ts, quarterly_multivariate_ts]
+        list_yearly_ts = midas_yearly.transform(ts_to_transform)
+        self.assertTrue(
+            np.allclose(
+                list_yearly_ts[1].values(),
+                quarterly_multivariate_ts.values().reshape(3, 8),
+            )
+        )
+        self.assertEqual(
+            quarterly_multivariate_ts, midas_yearly.inverse_transform(list_yearly_ts)[1]
+        )

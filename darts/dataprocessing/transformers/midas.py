@@ -2,7 +2,7 @@
 Mixed-data sampling (MIDAS) Transformer
 ------------------
 """
-from typing import Any, Dict, List, Mapping, Sequence, Union
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Union
 
 import numpy as np
 import pandas as pd
@@ -14,6 +14,7 @@ from darts.dataprocessing.transformers import (
     InvertibleDataTransformer,
 )
 from darts.logging import get_logger, raise_if, raise_if_not
+from darts.utils.timeseries_generation import generate_index
 
 logger = get_logger(__name__)
 
@@ -21,9 +22,10 @@ logger = get_logger(__name__)
 class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
     def __init__(
         self,
-        rule: str,
+        low_freq: str,
         strip: bool = True,
-        name: str = "MIDASTransformer",
+        drop_static_covariates: bool = False,
+        name: str = "MIDAS",
         n_jobs: int = 1,
         verbose: bool = False,
     ):
@@ -39,60 +41,50 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         example, there's always three months in quarter. However, the number of days in a month varies per month. So in
         the latter case a MIDAS transformation does not work and the transformer will raise an error.
 
+        For anchored low frequency, the transformed series must contain at least 2 samples in order to be
+        able to retrieve the original time index.
+
         Parameters
         ----------
-        rule
-            The offset string or object representing target conversion. Passed on to the rule parameter in
-            pandas.DataFrame.resample and therefore it is equivalent to it.
-
-        .. note::
-                For anchored low frequency, the transformed series must contain at least 2 samples in order to be
-                able to retrieve the original time index.
-        ..
+        low_freq
+            The pd.DateOffset string alias corresponding to the target low
+            frequency [2]_. Passed on to the `rule` parameter of pandas.DataFrame.resample().
         strip
-            Whether to strip -remove the NaNs from the start and the end of- the transformed series.
+            Whether to remove the NaNs from the start and the end of the transformed series.
+        drop_static_covariates
+            If set to `True`, the statics covariates of the input series won't be transferred to the output.
 
         Examples
         --------
         >>> from darts.datasets import AirPassengersDataset
         >>> from darts.dataprocessing.transformers import MIDAS
         >>> monthly_series = AirPassengersDataset().load()
-        >>> midas = MIDAS(rule="QS")
-        >>> quarterly_series = midas.transform(monthly_series)
-        >>> print(quarterly_series.head())
-        <TimeSeries (DataArray) (Month: 5, component: 3, sample: 1)>
-        array([[[112.],
-                [118.],
-                [132.]],
-        <BLANKLINE>
-               [[129.],
-                [121.],
-                [135.]],
-        <BLANKLINE>
-               [[148.],
-                [148.],
-                [136.]],
-        <BLANKLINE>
-               [[119.],
-                [104.],
-                [118.]],
-        <BLANKLINE>
-               [[115.],
-                [126.],
-                [141.]]])
-        Coordinates:
-          * Month      (Month) datetime64[ns] 1949-01-01 1949-04-01 ... 1950-01-01
-          * component  (component) object '#Passengers_0' ... '#Passengers_2'
-        Dimensions without coordinates: sample
-        Attributes:
-            static_covariates:  None
-            hierarchy:          None
+        >>> print(monthly_series.time_index[:4])
+        DatetimeIndex(['1949-01-01', '1949-02-01', '1949-03-01', '1949-04-01'], dtype='datetime64[ns]',
+        name='Month', freq='MS')
+        >>> print(monthly_series.values()[:4])
+        [[112.], [118.], [132.], [129.]]
+
+        >>> midas = MIDAS(low_freq="QS")
+        >>> quarterly_series = midas.fit_transform(monthly_series)
+        >>> print(quarterly_series.time_index[:3])
+        DatetimeIndex(['1949-01-01', '1949-04-01', '1949-07-01'], dtype='datetime64[ns]', name='Month', freq='QS-JAN')
+        >>> print(quarterly_series.values()[:3])
+        [[112. 118. 132.], [129. 121. 135.], [148. 148. 136.]]
+
+        >>> inversed_quaterly = midas.inverse_transform(quarterly_series)
+        >>> print(inversed_quaterly.time_index[:4])
+        DatetimeIndex(['1949-01-01', '1949-02-01', '1949-03-01', '1949-04-01'], dtype='datetime64[ns]',
+        name='time', freq='MS')
+        >>> print(inversed_quaterly.values()[:4])
+        [[112.], [118.], [132.], [129.]]
 
         References
         ----------
         .. [1] https://en.wikipedia.org/wiki/Mixed-data_sampling
+        .. [2] https://pandas.pydata.org/docs/user_guide/timeseries.html#dateoffset-objects
         """
-        self._rule = rule
+        self._low_freq = low_freq
         self._strip = strip
         # Original high frequency should be fitted on TimeSeries independently
         super().__init__(name=name, n_jobs=n_jobs, verbose=verbose, global_fit=False)
@@ -115,7 +107,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
 
         fitted_params = [
             {
-                "high_freq_name": ts.freq_str,
+                "high_freq": ts.freq_str,
                 "start": ts.start_time(),
                 "end": ts.end_time(),
             }
@@ -137,8 +129,9 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             (4) Transform every column of the high frequency series into multiple columns for the low frequency series
             (5) Transform the low frequency series back into a TimeSeries
         """
-        MIDAS._verify_series(series)
-        rule, strip = params["fixed"]["_rule"], params["fixed"]["_strip"]
+        low_freq, strip = params["fixed"]["_low_freq"], params["fixed"]["_strip"]
+        high_freq = params["fitted"]["high_freq"]
+        MIDAS._verify_series(series, high_freq=high_freq)
 
         # TimeSeries to pd.DataFrame
         series_df = series.pd_dataframe(copy=True)
@@ -150,13 +143,13 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         high_freq_period = series_df.index.to_period().freqstr
 
         # downsample
-        low_freq_series_df = series_df.resample(rule).last()
+        low_freq_series_df = series_df.resample(rule=low_freq).last()
         # save the downsampled index
         low_index_datetime = low_freq_series_df.index
 
         # upsample again to get full range of high freq periods for every low freq period
         low_freq_series_df.index = low_index_datetime.to_period()
-        high_freq_series_df = low_freq_series_df.resample(high_freq_period).last()
+        high_freq_series_df = low_freq_series_df.resample(rule=high_freq_period).last()
 
         # make sure the extension of the index matches the original index
         if "End" in str(series.freq):
@@ -171,7 +164,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             low_freq_series_df.shape[0] < high_freq_series_df.shape[0],
             f"The target conversion should go from a high to a "
             f"low frequency, instead the targeted frequency is "
-            f"{rule}, while the original frequency is {high_freq_datetime}.",
+            f"{low_freq}, while the original frequency is {high_freq_datetime}.",
             logger,
         )
 
@@ -219,29 +212,30 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         ----------
         .. [1] https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#anchored-offsets
         """
-        MIDAS._verify_series(series)
-        high_freq_name = params["fitted"]["high_freq_name"]
+        low_freq = params["fixed"]["_low_freq"]
+        high_freq = params["fitted"]["high_freq"]
         orig_ts_start_time = params["fitted"]["start"]
         orig_ts_end_time = params["fitted"]["end"]
+        MIDAS._verify_series(series, low_freq=low_freq)
 
         # retrieve the number of component introduced by midas
         n_midas_components = int(series.components[-1].split("_")[-1]) + 1
         series_n_components = series.n_components
 
+        n_orig_components = series_n_components // n_midas_components
         # original ts was univariate
-        if n_midas_components == series_n_components:
-            n_orig_components = 1
-            series_values = series.values().flatten()
+        if n_orig_components == 1:
+            series_values = series.values(copy=False).flatten()
         else:
-            n_orig_components = series_n_components // n_midas_components
-            series_values = series.values().reshape((-1, n_orig_components))
+            series_values = series.values(copy=False).reshape((-1, n_orig_components))
 
         # retrieve original components name by removing the "_0" suffix
         component_names = [
-            series.components[i][:-2] for i in range(0, n_orig_components)
+            "_".join(series.components[i].split("_")[:-1])
+            for i in range(0, n_orig_components)
         ]
 
-        # remove the rows containing NaNs at the extremes, necessary to adjust the time index
+        # remove the rows containing only NaNs at the extremities of the array, necessary to adjust the time index
         first_finite_row = pd.core.missing.find_valid_index(series_values, how="first")
         last_finite_row = pd.core.missing.find_valid_index(series_values, how="last")
         series_values = series_values[first_finite_row : last_finite_row + 1]
@@ -260,15 +254,15 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
                 start_time = orig_ts_end_time
                 shift = 1
 
-        # create new time index and shift it if necessary
-        new_times = pd.date_range(
-            start=start_time, periods=len(series_values) + shift, freq=high_freq_name
-        )[shift:]
-
         inversed_midas_ts = TimeSeries.from_times_and_values(
-            times=new_times,
+            times=generate_index(
+                start=start_time,
+                length=len(series_values) + shift,
+                freq=high_freq,
+                name=series.time_index.name,
+            )[shift:],
             values=series_values,
-            freq=high_freq_name,
+            freq=high_freq,
             columns=component_names,
             static_covariates=series.static_covariates,
         )
@@ -276,7 +270,12 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         return inversed_midas_ts
 
     @staticmethod
-    def _verify_series(series: TimeSeries):
+    def _verify_series(
+        series: TimeSeries,
+        high_freq: Optional[str] = None,
+        low_freq: Optional[str] = None,
+    ):
+        """Some sanity checks on the input, the high_freq and low_freq arguments are mutually exclusive"""
         raise_if(
             series.is_probabilistic,
             "MIDAS Transformer cannot be applied to probabilistic/stochastic TimeSeries",
@@ -287,6 +286,24 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             isinstance(series.time_index, pd.DatetimeIndex),
             "MIDAS input series must have a pd.Datetime index",
             logger,
+        )
+
+        series_freq_str = series.freq_str
+        input_freq = [series_freq_str]
+        # flexibility on anchoring
+        if isinstance(series_freq_str, str) and "-" in series_freq_str:
+            input_freq.append(series_freq_str.split("-")[0])
+
+        raise_if(
+            high_freq is not None and high_freq not in input_freq,
+            f"The frequency string of the series to transform must be identical to the fitted one, expected "
+            f"{high_freq} but received {series.freq_str}.",
+        )
+
+        raise_if(
+            low_freq is not None and low_freq not in input_freq,
+            f"The frequency string of the series to inverse-transform must be identical to the fitted one, "
+            f"expected {low_freq} but received {series.freq_str}.",
         )
 
 
@@ -311,18 +328,14 @@ def _create_midas_df(
     multiple = n_high // n_low
 
     # set up integer index
-    range_lst = list(range(n_high))
-    col_names = list(series_df.columns)
+    cols_out = []
     midas_lst = []
-
     # for every column we now create 'multiple' columns
     # by going through a column and picking every one in 'multiple' values
     for f in range(multiple):
-        range_lst_tmp = range_lst[f:][0::multiple]
-        series_tmp_df = series_df.iloc[range_lst_tmp, :]
-        series_tmp_df.index = low_index_datetime
-        col_names_tmp = [f"{col_name}_{f}" for col_name in col_names]
-        rename_dict_tmp = dict(zip(col_names, col_names_tmp))
-        midas_lst += [series_tmp_df.rename(columns=rename_dict_tmp)]
-
-    return pd.concat(midas_lst, axis=1)
+        cols_out += (series_df.columns + f"_{f}").tolist()
+        midas_lst.append(series_df.iloc[f::multiple].reset_index(drop=True))
+    transformed = pd.concat(midas_lst, axis=1)
+    transformed.index = low_index_datetime
+    transformed.columns = cols_out
+    return transformed
