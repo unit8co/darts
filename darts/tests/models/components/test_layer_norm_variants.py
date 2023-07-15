@@ -1,5 +1,7 @@
 import itertools
 
+import numpy as np
+
 from darts.logging import get_logger
 
 logger = get_logger(__name__)
@@ -30,6 +32,9 @@ if TORCH_AVAILABLE:
                 ln(inputs)
 
         def test_rin(self):
+
+            np.random.seed(42)
+            torch.manual_seed(42)
 
             x = torch.randn(3, 4, 7)
 
