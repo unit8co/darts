@@ -95,9 +95,7 @@ class ReversibleInstanceNorm(nn.Module):
         x = x / self.std
         if self.affine:
 
-            massage_shape = not (
-                (self.axis != -1) and (self.axis != x.ndim - 1)
-            )
+            massage_shape = not ((self.axis != -1) and (self.axis != x.ndim - 1))
 
             # if axis isn't the last dimension, swap it to the last dimension
             if massage_shape:
@@ -124,7 +122,7 @@ class ReversibleInstanceNorm(nn.Module):
                 x = x.swapaxes(-2, self.axis)
 
             x = x - self.affine_bias[target_slice]
-            x = x / self.affine_weight[target_slice]
+            x = x / (self.affine_weight[target_slice] + self.eps * self.eps)
 
             # swap axis back
             if massage_shape:
