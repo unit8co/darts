@@ -511,6 +511,10 @@ class TiDEModel(MixedCovariatesTorchModel):
     def supports_static_covariates(self) -> bool:
         return True
 
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
+
     def _create_model(
         self, train_sample: MixedCovariatesTrainTensorType
     ) -> torch.nn.Module:
