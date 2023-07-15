@@ -56,7 +56,7 @@ class LayerNorm(nn.LayerNorm):
         super().__init__(input_size, **kwargs)
 
 
-class ReversibleInstanceNorm(nn.Module):
+class RINorm(nn.Module):
     def __init__(
         self,
         axis: int,
