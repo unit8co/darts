@@ -167,7 +167,6 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
                 self.ts, freq=6, method="STL", model=ModelMode.MULTIPLICATIVE
             )
 
-        # make sure non MSTL methods fail with multiplicative model
         with self.assertRaises(ValueError):
             calc_trend, _ = extract_trend_and_seasonality(
                 self.ts, freq=[3, 6], method="MSTL", model=ModelMode.MULTIPLICATIVE
