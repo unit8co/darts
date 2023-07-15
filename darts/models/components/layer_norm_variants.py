@@ -105,8 +105,10 @@ class RINorm(nn.Module):
         return x
 
     def _get_statistics(self, x):
-        self.mean = torch.mean(x, dim=self.axis, keepdim=True)
-        self.std = torch.sqrt(torch.var(x, dim=self.axis, keepdim=True) + self.eps)
+        self.mean = torch.mean(x, dim=self.axis, keepdim=True).detach()
+        self.std = torch.sqrt(
+            torch.var(x, dim=self.axis, keepdim=True, unbiased=False) + self.eps
+        ).detach()
 
     def _normalize(self, x):
         x = x - self.mean
