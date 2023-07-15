@@ -96,7 +96,7 @@ class ReversibleInstanceNorm(nn.Module):
         if self.affine:
 
             massage_shape = not (
-                (self.axis is not -1) and (self.axis is not x.ndim - 1)
+                (self.axis != -1) and (self.axis != x.ndim - 1)
             )
 
             # if axis isn't the last dimension, swap it to the last dimension

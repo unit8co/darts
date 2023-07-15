@@ -47,12 +47,13 @@ if TORCH_AVAILABLE:
 
                 if (x.shape[axis] is input_dim) and affine:
 
+                    rin = ReversibleInstanceNorm(
+                        axis=axis, input_dim=input_dim, affine=affine
+                    )
                     with self.assertRaises(RuntimeError):
-                        rin = ReversibleInstanceNorm(
-                            axis=axis, input_dim=input_dim, affine=affine
-                        )
-                        x_norm = rin(x, "norm")
-                        x_denorm = rin(x_norm, "denorm")
+                        _ = rin(x, "norm")
+                    with self.assertRaises(RuntimeError):
+                        _ = rin(x, "denorm")
 
                     continue
 
