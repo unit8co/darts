@@ -57,15 +57,33 @@ class LayerNorm(nn.LayerNorm):
 
 
 class ReversibleInstanceNorm(nn.Module):
-    """Reversible Instance Normalization based on [1]
+    def __init__(
+        self,
+        axis: int,
+        input_dim: int,
+        eps: float = 1e-5,
+        affine: bool = True,
+    ):
 
-    References
-    ----------
-    .. [1] Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
-            Distribution Shift" International Conference on Learning Representations (2022)
-    """
+        """Reversible Instance Normalization based on [1]
 
-    def __init__(self, axis, input_dim, eps=1e-5, affine=True):
+        Parameters
+        ----------
+        axis
+            The axis to normalize over
+        input_dim
+            The dimension of the input axis being normalized
+        eps
+            The epsilon value for numerical stability
+        affine
+            Whether to apply an affine transformation after normalization
+
+        References
+        ----------
+        .. [1] Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift" International Conference on Learning Representations (2022)
+        """
+
         super().__init__()
         self.axis = axis
         self.input_dim = input_dim
