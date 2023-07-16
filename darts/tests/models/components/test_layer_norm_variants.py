@@ -1,5 +1,3 @@
-import itertools
-
 import numpy as np
 
 from darts.logging import get_logger
@@ -37,30 +35,17 @@ if TORCH_AVAILABLE:
             torch.manual_seed(42)
 
             x = torch.randn(3, 4, 7)
-
             affine_options = [True, False]
-            axis_options = [1, 2, -1, -2]
-            input_dim_options = list(x.shape[1:])
 
-            test_runs = itertools.product(
-                affine_options, axis_options, input_dim_options
-            )
+            # test with and without affine and correct input dim
+            for affine in affine_options:
 
-            for run in test_runs:
-
-                affine, axis, input_dim = run
-
-                if (x.shape[axis] is input_dim) and affine:
-
-                    rin = RINorm(axis=axis, input_dim=input_dim, affine=affine)
-                    with self.assertRaises(RuntimeError):
-                        _ = rin(x, "norm")
-                    with self.assertRaises(RuntimeError):
-                        _ = rin(x, "denorm")
-
-                    continue
-
-                rin = RINorm(axis=axis, input_dim=input_dim, affine=affine)
-                x_norm = rin(x, "norm")
-                x_denorm = rin(x_norm, "denorm")
+                rin = RINorm(input_dim=7, affine=affine)
+                x_norm = rin.forward(x)
+                x_denorm = rin.inverse(x_norm)
                 assert torch.all(torch.isclose(x, x_denorm)).item()
+
+            # try invalid input_dim
+            rin = RINorm(input_dim=3, affine=True)
+            with self.assertRaises(RuntimeError):
+                x_norm = rin.forward(x)
