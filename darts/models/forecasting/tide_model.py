@@ -27,6 +27,7 @@ class _ResidualBlock(nn.Module):
         output_dim: int,
         hidden_size: int,
         dropout: float,
+        use_layer_norm: bool = False,
     ):
         """Pytorch module implementing the Residual Block from the TiDE paper."""
         super().__init__()
@@ -43,7 +44,10 @@ class _ResidualBlock(nn.Module):
         self.skip = nn.Linear(input_dim, output_dim)
 
         # layer normalization as output
-        self.layer_norm = nn.LayerNorm(output_dim)
+        if use_layer_norm:
+            self.layer_norm = nn.LayerNorm(output_dim)
+        else:
+            self.layer_norm = None
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
 
@@ -51,7 +55,8 @@ class _ResidualBlock(nn.Module):
         x = self.dense(x) + self.skip(x)
 
         # layer normalization
-        x = self.layer_norm(x)
+        if self.layer_norm is not None:
+            x = self.layer_norm(x)
 
         return x
 
@@ -70,6 +75,7 @@ class _TideModule(PLMixedCovariatesModule):
         hidden_size: int,
         temporal_decoder_hidden: int,
         temporal_width: int,
+        use_layer_norm: bool,
         dropout: float,
         **kwargs,
     ):
@@ -99,6 +105,8 @@ class _TideModule(PLMixedCovariatesModule):
             The width of the hidden layers in the temporal decoder.
         temporal_width
             The width of the future covariate embedding space.
+        use_layer_norm
+            Whether to use layer normalization in the Residual Blocks.
         dropout
             Dropout probability
         **kwargs
@@ -128,6 +136,7 @@ class _TideModule(PLMixedCovariatesModule):
         self.decoder_output_dim = decoder_output_dim
         self.hidden_size = hidden_size
         self.temporal_decoder_hidden = temporal_decoder_hidden
+        self.use_layer_norm = use_layer_norm
         self.dropout = dropout
         self.temporal_width = temporal_width
 
@@ -159,6 +168,7 @@ class _TideModule(PLMixedCovariatesModule):
                 input_dim=encoder_dim,
                 output_dim=hidden_size,
                 hidden_size=hidden_size,
+                use_layer_norm=use_layer_norm,
                 dropout=dropout,
             ),
             *[
@@ -166,6 +176,7 @@ class _TideModule(PLMixedCovariatesModule):
                     input_dim=hidden_size,
                     output_dim=hidden_size,
                     hidden_size=hidden_size,
+                    use_layer_norm=use_layer_norm,
                     dropout=dropout,
                 )
                 for _ in range(num_encoder_layers - 1)
@@ -178,6 +189,7 @@ class _TideModule(PLMixedCovariatesModule):
                     input_dim=hidden_size,
                     output_dim=hidden_size,
                     hidden_size=hidden_size,
+                    use_layer_norm=use_layer_norm,
                     dropout=dropout,
                 )
                 for _ in range(num_decoder_layers - 1)
@@ -189,6 +201,7 @@ class _TideModule(PLMixedCovariatesModule):
                 * self.output_chunk_length
                 * self.nr_params,
                 hidden_size=hidden_size,
+                use_layer_norm=use_layer_norm,
                 dropout=dropout,
             ),
         )
@@ -198,6 +211,7 @@ class _TideModule(PLMixedCovariatesModule):
             + (temporal_width if future_cov_dim > 0 else 0),
             output_dim=output_dim * self.nr_params,
             hidden_size=temporal_decoder_hidden,
+            use_layer_norm=use_layer_norm,
             dropout=dropout,
         )
 
@@ -316,6 +330,7 @@ class TiDEModel(MixedCovariatesTorchModel):
         hidden_size: int = 128,
         temporal_width: int = 4,
         temporal_decoder_hidden: int = 32,
+        use_layer_norm: bool = False,
         dropout: float = 0.1,
         use_static_covariates: bool = True,
         **kwargs,
@@ -354,6 +369,8 @@ class TiDEModel(MixedCovariatesTorchModel):
             The width of the layers in the future covariate projection residual block.
         temporal_decoder_hidden
             The width of the layers in the temporal decoder.
+        use_layer_norm
+            Whether to use layer normalization in the residual blocks.
         dropout
             The dropout probability to be used in fully connected layers. This is compatible with Monte Carlo dropout
             at inference time for model uncertainty estimation (enabled with ``mc_dropout=True`` at
@@ -505,6 +522,7 @@ class TiDEModel(MixedCovariatesTorchModel):
 
         self._considers_static_covariates = use_static_covariates
 
+        self.use_layer_norm = use_layer_norm
         self.dropout = dropout
 
     @property
@@ -563,6 +581,7 @@ class TiDEModel(MixedCovariatesTorchModel):
             hidden_size=self.hidden_size,
             temporal_width=self.temporal_width,
             temporal_decoder_hidden=self.temporal_decoder_hidden,
+            use_layer_norm=self.use_layer_norm,
             dropout=self.dropout,
             **self.pl_module_params,
         )
