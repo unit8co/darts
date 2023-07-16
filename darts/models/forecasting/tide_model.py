@@ -27,7 +27,7 @@ class _ResidualBlock(nn.Module):
         output_dim: int,
         hidden_size: int,
         dropout: float,
-        use_layer_norm: bool = False,
+        use_layer_norm: bool,
     ):
         """Pytorch module implementing the Residual Block from the TiDE paper."""
         super().__init__()
