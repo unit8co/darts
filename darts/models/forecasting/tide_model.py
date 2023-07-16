@@ -147,6 +147,7 @@ class _TideModule(PLMixedCovariatesModule):
                 input_dim=future_cov_dim,
                 output_dim=temporal_width,
                 hidden_size=hidden_size,
+                use_layer_norm=use_layer_norm,
                 dropout=dropout,
             )
         else:
