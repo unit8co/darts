@@ -57,20 +57,11 @@ class LayerNorm(nn.LayerNorm):
 
 
 class RINorm(nn.Module):
-    def __init__(
-        self,
-        axis: int,
-        input_dim: int,
-        eps: float = 1e-5,
-        affine: bool = True,
-    ):
-
+    def __init__(self, input_dim: int, eps=1e-5, affine=True):
         """Reversible Instance Normalization based on [1]
 
         Parameters
         ----------
-        axis
-            The axis to normalize over
         input_dim
             The dimension of the input axis being normalized
         eps
@@ -85,7 +76,6 @@ class RINorm(nn.Module):
         """
 
         super().__init__()
-        self.axis = axis
         self.input_dim = input_dim
         self.eps = eps
         self.affine = affine
@@ -94,60 +84,25 @@ class RINorm(nn.Module):
             self.affine_weight = nn.Parameter(torch.ones(self.input_dim))
             self.affine_bias = nn.Parameter(torch.zeros(self.input_dim))
 
-    def forward(self, x, mode, target_slice=None):
-        if mode == "norm":
-            self._get_statistics(x)
-            x = self._normalize(x)
-        elif mode == "denorm":
-            x = self._denormalize(x, target_slice)
-        else:
-            raise NotImplementedError
-        return x
-
-    def _get_statistics(self, x):
-        self.mean = torch.mean(x, dim=self.axis, keepdim=True).detach()
-        self.std = torch.sqrt(
-            torch.var(x, dim=self.axis, keepdim=True, unbiased=False) + self.eps
+    def forward(self, x):
+        calc_dims = tuple(range(1, x.ndim - 1))
+        self.mean = torch.mean(x, dim=calc_dims, keepdim=True).detach()
+        self.stdev = torch.sqrt(
+            torch.var(x, dim=calc_dims, keepdim=True, unbiased=False) + self.eps
         ).detach()
 
-    def _normalize(self, x):
         x = x - self.mean
-        x = x / self.std
+        x = x / self.stdev
         if self.affine:
-
-            massage_shape = not ((self.axis != -1) and (self.axis != x.ndim - 1))
-
-            # if axis isn't the last dimension, swap it to the last dimension
-            if massage_shape:
-                x = x.swapaxes(-2, self.axis)
-
             x = x * self.affine_weight
             x = x + self.affine_bias
 
-            # swap axis back
-            if massage_shape:
-                x = x.swapaxes(-2, self.axis)
-
         return x
 
-    def _denormalize(self, x, target_slice=None):
+    def inverse(self, x):
         if self.affine:
-
-            massage_shape = not (
-                (self.axis is not -1) and (self.axis is not x.ndim - 1)
-            )
-
-            # if axis isn't the last dimension, swap it to the last dimension
-            if massage_shape:
-                x = x.swapaxes(-2, self.axis)
-
-            x = x - self.affine_bias[target_slice]
-            x = x / (self.affine_weight[target_slice] + self.eps * self.eps)
-
-            # swap axis back
-            if massage_shape:
-                x = x.swapaxes(-2, self.axis)
-
-        x = x * self.std
+            x = x - self.affine_bias
+            x = x / (self.affine_weight + self.eps * self.eps)
+        x = x * self.stdev
         x = x + self.mean
         return x
