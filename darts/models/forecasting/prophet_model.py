@@ -424,7 +424,8 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         seasonal_periods
             number of timesteps after which the seasonal cycle repeats. This value will be multiplied by the inferred
             number of days for the TimeSeries frequency (e.g. 365.25 for a yearly frequency) to be consistent with the
-            `add_seasonality()` method of Facebook Prophet.
+            `add_seasonality()` method of Facebook Prophet. The inferred number of days can be obtained with
+            `model._freq_to_days(series.freq)`, where `model` is the `Prophet` model and `series` is the target series.
         fourier_order
             number of Fourier components to use
         prior_scale
