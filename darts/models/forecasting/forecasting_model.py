@@ -564,18 +564,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # longest possible time index for future covariates
         if (min_future_cov_lag is not None) and (future_covariates is not None):
-            neg_min_future_cov_lag = min(0, min_future_cov_lag)
-            pos_max_future_cov_lag = max(0, max_future_cov_lag)
             start_fc = (
                 future_covariates.start_time()
-                - (neg_min_future_cov_lag - max_target_lag - 1) * future_covariates.freq
+                - (min_future_cov_lag - max_target_lag - 1) * future_covariates.freq
                 if is_training
                 else future_covariates.start_time()
-                - neg_min_future_cov_lag * future_covariates.freq
+                - min_future_cov_lag * future_covariates.freq
             )
             end_fc = (
                 future_covariates.end_time()
-                - pos_max_future_cov_lag * future_covariates.freq
+                - max_future_cov_lag * future_covariates.freq
             )
             tmp_ = (start_fc, end_fc)
 
