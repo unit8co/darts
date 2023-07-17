@@ -14,6 +14,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - General model improvements:
   - Added support for `PathLike` to the `save()` and `load()` functions of all non-deep learning based models. [#1754](https://github.com/unit8co/darts/pull/1754) by [Simon Sudrich](https://github.com/sudrich).
   - Improved efficiency of `historical_forecasts()` and `backtest()` for all models giving significant process time reduction for larger number of predict iterations and series. [#1801](https://github.com/unit8co/darts/pull/1801) by [Dennis Bader](https://github.com/dennisbader).
+  - Optimized `historical_forecasts()` for `RegressionModel` when `retrain=False` and `forecast_horizon <= output_chunk_length` by vectorizing the prediction. [#1885](https://github.com/unit8co/darts/pull/1885) by [Antoine Madrona](https://github.com/madtoinou).
   - Added model property `ForecastingModel.supports_multivariate` to indicate whether the model supports multivariate forecasting. [#1848](https://github.com/unit8co/darts/pull/1848) by [Felix Divo](https://github.com/felixdivo).
 - Improvements to `EnsembleModel`:
   - Model creation parameter `forecasting_models` now supports a mix of `LocalForecastingModel` and `GlobalForecastingModel` (single `TimeSeries` training/inference only, due to the local models). [#1745](https://github.com/unit8co/darts/pull/1745) by [Antoine Madrona](https://github.com/madtoinou).
