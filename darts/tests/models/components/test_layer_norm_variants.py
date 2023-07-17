@@ -48,4 +48,4 @@ if TORCH_AVAILABLE:
             # try invalid input_dim
             rin = RINorm(input_dim=3, affine=True)
             with self.assertRaises(RuntimeError):
-                x_norm = rin.forward(x)
+                x_norm = rin(x)
