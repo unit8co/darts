@@ -252,8 +252,10 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         # original ts was univariate
         if n_orig_components == 1:
             series_values = series.values(copy=False).flatten()
+            finite_rows = ~np.isnan(series_values)
         else:
             series_values = series.values(copy=False).reshape((-1, n_orig_components))
+            finite_rows = ~np.isnan(series_values).all(axis=1)
 
         # retrieve original components name by removing the "_0" suffix
         component_names = [
@@ -262,12 +264,8 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         ]
 
         # remove the rows containing only NaNs at the extremities of the array, necessary to adjust the time index
-        first_finite_row = pd.core.missing.find_valid_index(
-            series_values, how="first", is_valid=~np.isnan(series_values)
-        )
-        last_finite_row = pd.core.missing.find_valid_index(
-            series_values, how="last", is_valid=~np.isnan(series_values)
-        )
+        first_finite_row = finite_rows.argmax()
+        last_finite_row = len(finite_rows) - 1 - finite_rows[::-1].argmax()
         series_values = series_values[first_finite_row : last_finite_row + 1]
 
         start_time = series.start_time()
