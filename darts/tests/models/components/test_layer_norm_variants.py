@@ -41,7 +41,7 @@ if TORCH_AVAILABLE:
             for affine in affine_options:
 
                 rin = RINorm(input_dim=7, affine=affine)
-                x_norm = rin.forward(x)
+                x_norm = rin(x)
                 x_denorm = rin.inverse(x_norm)
                 assert torch.all(torch.isclose(x, x_denorm)).item()
 
