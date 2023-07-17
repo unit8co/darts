@@ -109,6 +109,23 @@ class MIDASTestCase(unittest.TestCase):
             "back into into a monthly TimeSeries with missing values.",
         )
 
+        # verify that the result is identical when strip=True
+        midas = MIDAS(low_freq="QS", strip=True)
+        quarterly_not_complete_ts_midas = midas.fit_transform(
+            self.monthly_not_complete_ts
+        )
+        self.assertEqual(
+            quarterly_not_complete_ts_midas,
+            self.quarterly_not_complete_ts,
+        )
+        inversed_quarterly_not_complete_ts_midas = midas.inverse_transform(
+            quarterly_not_complete_ts_midas
+        )
+        self.assertEqual(
+            self.monthly_not_complete_ts,
+            inversed_quarterly_not_complete_ts_midas,
+        )
+
     def test_multivariate_monthly_to_quarterly(self):
         """
         Check that multivariate monthly to quarterly is properly transformed
