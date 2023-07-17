@@ -349,13 +349,13 @@ class MIDASTestCase(unittest.TestCase):
         )
 
     def test_ts_with_static_covariates(self):
-        # univarite ts, "global" static covariates
+        # univarite ts, same number of static covariates as components
         global_static_covs = pd.Series(data=[0, 1], index=["static_0", "static_1"])
         monthly_with_static_covs = self.monthly_ts.with_static_covariates(
             global_static_covs
         )
 
-        # multivariate ts, component-specific static covariates
+        # multivariate ts, different number of static covariates than components
         components_static_covs = pd.DataFrame(
             data=[["low", 1, 9], ["high", 0, 2]],
             columns=["static_2", "static_3", "static_4"],
@@ -368,7 +368,7 @@ class MIDASTestCase(unittest.TestCase):
 
         # dropping the static covariates
         midas_drop_static_covs = MIDAS(low_freq="QS", drop_static_covariates=True)
-        # testing univariate (no/global static covariates), multivariate (component-wise static covariates)
+        # testing univariate (with/without static covariates), multivariate with static covariates
         for ts in [
             self.monthly_ts,
             monthly_with_static_covs,
@@ -389,24 +389,31 @@ class MIDASTestCase(unittest.TestCase):
         )
         self.assertTrue(inv_quartely_no_static.static_covariates is None)
 
-        # univariate, with global static covariates : transform does not change static covariates
-        expected_static_covs = monthly_with_static_covs.static_covariates
+        # univariate, with static covariates
+        expected_static_covs = pd.concat(
+            [monthly_with_static_covs.static_covariates] * 3
+        )
+        expected_static_covs.index = [
+            "values_0",
+            "values_1",
+            "values_2",
+        ]
         quartely_univ_dropped_static = midas_with_static_covs.fit_transform(
             monthly_with_static_covs
         )
         self.assertTrue(
-            quartely_univ_dropped_static.static_covariates.equals(expected_static_covs)
+            quartely_univ_dropped_static.static_covariates.equals(expected_static_covs),
         )
         inv_quartely_univ_dropped_static = midas_with_static_covs.inverse_transform(
             quartely_univ_dropped_static
         )
         self.assertTrue(
             inv_quartely_univ_dropped_static.static_covariates.equals(
-                expected_static_covs
+                monthly_with_static_covs.static_covariates
             )
         )
 
-        # testing multivariate, component-wise static covariates : covariates are duplicated for each new component
+        # testing multivariate, with static covariates
         expected_static_covs = pd.concat(
             [monthly_multivar_with_static_covs.static_covariates] * 3
         )
