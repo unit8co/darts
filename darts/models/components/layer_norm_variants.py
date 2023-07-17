@@ -84,8 +84,12 @@ class RINorm(nn.Module):
             self.affine_weight = nn.Parameter(torch.ones(self.input_dim))
             self.affine_bias = nn.Parameter(torch.zeros(self.input_dim))
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
+
+        # select all dimensions except batch and input_dim (0, -1)
+        # TL;DR: calculate mean and variance over all dimensions except batch and input_dim
         calc_dims = tuple(range(1, x.ndim - 1))
+
         self.mean = torch.mean(x, dim=calc_dims, keepdim=True).detach()
         self.stdev = torch.sqrt(
             torch.var(x, dim=calc_dims, keepdim=True, unbiased=False) + self.eps
@@ -99,7 +103,7 @@ class RINorm(nn.Module):
 
         return x
 
-    def inverse(self, x):
+    def inverse(self, x: torch.Tensor):
         if self.affine:
             x = x - self.affine_bias
             x = x / (self.affine_weight + self.eps * self.eps)
