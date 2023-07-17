@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -11,7 +11,9 @@ from darts.utils.utils import series2seq
 logger = get_logger(__name__)
 
 
-def _historical_forecasts_general_checks(series: TimeSeries, kwargs):
+def _historical_forecasts_general_checks(
+    series: Union[TimeSeries, Sequence[TimeSeries]], kwargs
+):
     """
     Performs checks common to ForecastingModel and RegressionModel backtest() methods
     Parameters
@@ -245,7 +247,7 @@ def _get_historical_forecast_boundaries(
         min_target_lag,
         _,
         min_past_cov_lag,
-        _,
+        max_past_cov_lag,
         min_future_cov_lag,
         max_future_cov_lag,
     ) = model.extreme_lags
@@ -259,12 +261,13 @@ def _get_historical_forecast_boundaries(
     hist_fct_pc_start, hist_fct_pc_end = historical_forecasts_time_index
     if min_past_cov_lag is not None:
         hist_fct_pc_start += min_past_cov_lag * freq
-    hist_fct_pc_end = hist_fct_tgt_end
+    if max_past_cov_lag is not None:
+        hist_fct_pc_end += max_past_cov_lag * freq
     # future lags can be anything
     hist_fct_fc_start, hist_fct_fc_end = historical_forecasts_time_index
-    if min_future_cov_lag is not None and min_future_cov_lag < 0:
+    if min_future_cov_lag is not None:
         hist_fct_fc_start += min_future_cov_lag * freq
-    if max_future_cov_lag is not None and max_future_cov_lag > 0:
+    if max_future_cov_lag is not None:
         hist_fct_fc_end += max_future_cov_lag * freq
 
     # convert relative integer index to absolute, make end bound inclusive
