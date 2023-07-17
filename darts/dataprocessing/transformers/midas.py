@@ -262,8 +262,12 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         ]
 
         # remove the rows containing only NaNs at the extremities of the array, necessary to adjust the time index
-        first_finite_row = pd.core.missing.find_valid_index(series_values, how="first")
-        last_finite_row = pd.core.missing.find_valid_index(series_values, how="last")
+        first_finite_row = pd.core.missing.find_valid_index(
+            series_values, how="first", is_valid=~np.isnan(series_values)
+        )
+        last_finite_row = pd.core.missing.find_valid_index(
+            series_values, how="last", is_valid=~np.isnan(series_values)
+        )
         series_values = series_values[first_finite_row : last_finite_row + 1]
 
         start_time = series.start_time()
