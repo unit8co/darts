@@ -27,7 +27,7 @@ When static covariates are present, they are appended to the lagged features. Wh
 if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.
 """
 from collections import OrderedDict
-from typing import Any, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -41,12 +41,12 @@ from darts.utils.data.tabularization import (
     create_lagged_component_names,
     create_lagged_training_data,
 )
-from darts.utils.multioutput import MultiOutputRegressor
-from darts.utils.optimised_historical_forecasts import (
+from darts.utils.historical_forecasts import (
     _optimised_historical_forecasts_regression_all_points,
     _optimised_historical_forecasts_regression_last_points_only,
 )
-from darts.utils.utils import (  # drop_after_index,; drop_before_index,
+from darts.utils.multioutput import MultiOutputRegressor
+from darts.utils.utils import (
     _check_quantiles,
     get_single_series,
     seq2series,
@@ -830,7 +830,38 @@ class RegressionModel(GlobalForecastingModel):
     def supports_optimized_historical_forecasts(self) -> bool:
         return True
 
-    def _optimized_historical_forecasts(
+    def _check_optimisable_historical_forecasts(
+        self,
+        forecast_horizon: int,
+        retrain: Union[bool, int, Callable[..., bool]],
+        show_warnings=bool,
+    ) -> bool:
+        """
+        Historical forecast can be optimized only if `retrain=False` and `forecast_horizon <= self.output_chunk_length`
+        (no auto-regression required).
+        """
+
+        supported_retrain = (retrain is False) or (retrain == 0)
+        supported_forecast_horizon = forecast_horizon <= self.output_chunk_length
+        if supported_retrain and supported_forecast_horizon:
+            return True
+
+        if show_warnings:
+            if not supported_retrain:
+                logger.warning(
+                    "`enable_optimisation=True` is ignored because `retrain` is not `False`"
+                    "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
+                )
+            if not supported_forecast_horizon:
+                logger.warning(
+                    "`enable_optimisation=True` is ignored because "
+                    "`forecast_horizon > self.output_chunk_length`."
+                    "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
+                )
+
+        return False
+
+    def _optimised_historical_forecasts(
         self,
         series: Sequence[TimeSeries],
         past_covariates: Optional[Sequence[TimeSeries]] = None,
@@ -853,14 +884,11 @@ class RegressionModel(GlobalForecastingModel):
         if not self._fit_called:
             raise_log(
                 ValueError(
-                    "The model has not been fitted yet, this optimized routine cannot be used."
+                    "Model has not been fit before the first predict iteration at prediction point (in time)"
                 ),
                 logger,
             )
-        if (
-            self.output_chunk_length is not None
-            and forecast_horizon > self.output_chunk_length
-        ):
+        if forecast_horizon > self.output_chunk_length:
             raise_log(
                 ValueError(
                     "As `forecast_horizon > model.output_chunk_length`, historical forecast "
@@ -929,7 +957,7 @@ class RegressionModel(GlobalForecastingModel):
             return intersect_
 
         # if not multi_models, the model looks further in the past
-        if (not self.multi_models) and self.output_chunk_length is not None:
+        if not self.multi_models:
             if reduce_to_bounds:
                 intersect_ = (
                     intersect_[0] + (self.output_chunk_length - 1) * series.freq,

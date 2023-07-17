@@ -1,138 +1,16 @@
-from typing import Any, List, Optional, Sequence, Tuple, Union
+from typing import List, Optional, Sequence, Union
 
 import numpy as np
 import pandas as pd
 from numpy.lib.stride_tricks import sliding_window_view
 
-from darts.logging import get_logger, raise_log
-from darts.models.forecasting.forecasting_model import ForecastingModel
+from darts.logging import get_logger
 from darts.timeseries import TimeSeries
 from darts.utils.data.tabularization import create_lagged_prediction_data
+from darts.utils.historical_forecasts.utils import _get_historical_forecast_boundaries
 from darts.utils.timeseries_generation import generate_index
 
 logger = get_logger(__name__)
-
-
-def _get_historical_forecast_boundaries(
-    model: ForecastingModel,
-    series: TimeSeries,
-    series_idx: int,
-    past_covariates: Optional[TimeSeries],
-    future_covariates: Optional[TimeSeries],
-    start: Optional[Union[pd.Timestamp, float, int]],
-    forecast_horizon: int,
-    overlap_end: bool,
-    freq: pd.DateOffset,
-    show_warnings: bool = True,
-) -> Tuple[Any, ...]:
-    """
-    Based on the boundaries of the forecastable time index, generates the boundaries of each covariates using the lags.
-
-    For TimeSeries with a RangeIndex, the boundaries are converted to absolute indexes to slice the array appropriately
-    when start > 0.
-
-    When applicable, move the start boundaries to the value provided by the user.
-    """
-    # obtain forecastable indexes boundaries, as values from the time index
-    historical_forecasts_time_index = model._get_historical_forecastable_time_index(
-        series,
-        past_covariates,
-        future_covariates,
-        is_training=False,
-        reduce_to_bounds=True,
-    )
-
-    if historical_forecasts_time_index is None:
-        raise_log(
-            ValueError(
-                "Cannot build a single input for prediction with the provided model, "
-                f"`series` and `*_covariates` at series index: {series_idx}. The minimum "
-                "prediction input time index requirements were not met. "
-                "Please check the time index of `series` and `*_covariates`."
-            )
-        )
-        return ()
-
-    # shift the end of the forecastable index based on `overlap_end`` and `forecast_horizon``
-    last_valid_pred_time = model._get_last_prediction_time(
-        series,
-        forecast_horizon,
-        overlap_end,
-    )
-
-    historical_forecasts_time_index = (
-        historical_forecasts_time_index[0],
-        min(historical_forecasts_time_index[1], last_valid_pred_time),
-    )
-
-    # when applicable, shift the start of the forecastable index based on `start`
-    if start is not None:
-        start_time_ = series.get_timestamp_at_point(start)
-        # ignore user-defined `start`
-        if (
-            not historical_forecasts_time_index[0]
-            <= start_time_
-            <= historical_forecasts_time_index[-1]
-        ):
-            if show_warnings:
-                model._historical_forecasts_start_warnings(
-                    idx=series_idx,
-                    start=start,
-                    start_time_=start_time_,
-                    historical_forecasts_time_index=historical_forecasts_time_index,
-                )
-        else:
-            historical_forecasts_time_index = (
-                max(historical_forecasts_time_index[0], start_time_),
-                historical_forecasts_time_index[1],
-            )
-
-    # re-adjust the slicing indexes to account for the lags
-    (
-        min_target_lag,
-        _,
-        min_past_cov_lag,
-        _,
-        min_future_cov_lag,
-        max_future_cov_lag,
-    ) = model.extreme_lags
-
-    # target lags are <= 0
-    hist_fct_tgt_start, hist_fct_tgt_end = historical_forecasts_time_index
-    if min_target_lag is not None:
-        hist_fct_tgt_start += min_target_lag * freq
-    hist_fct_tgt_end -= 1 * freq
-    # past lags are <= 0
-    hist_fct_pc_start, hist_fct_pc_end = historical_forecasts_time_index
-    if min_past_cov_lag is not None:
-        hist_fct_pc_start += min_past_cov_lag * freq
-    hist_fct_pc_end = hist_fct_tgt_end
-    # future lags can be anything
-    hist_fct_fc_start, hist_fct_fc_end = historical_forecasts_time_index
-    if min_future_cov_lag is not None and min_future_cov_lag < 0:
-        hist_fct_fc_start += min_future_cov_lag * freq
-    if max_future_cov_lag is not None and max_future_cov_lag > 0:
-        hist_fct_fc_end += max_future_cov_lag * freq
-
-    # convert relative integer index to absolute, make end bound inclusive
-    if series.has_range_index:
-        hist_fct_tgt_start = series.get_index_at_point(hist_fct_tgt_start)
-        hist_fct_tgt_end = series.get_index_at_point(hist_fct_tgt_end) + 1
-        hist_fct_pc_start = series.get_index_at_point(hist_fct_pc_start)
-        hist_fct_pc_end = series.get_index_at_point(hist_fct_pc_end) + 1
-        hist_fct_fc_start = series.get_index_at_point(hist_fct_fc_start)
-        hist_fct_fc_end = series.get_index_at_point(hist_fct_fc_end) + 1
-
-    return (
-        historical_forecasts_time_index[0],
-        historical_forecasts_time_index[1],
-        hist_fct_tgt_start,
-        hist_fct_tgt_end,
-        hist_fct_pc_start,
-        hist_fct_pc_end,
-        hist_fct_fc_start,
-        hist_fct_fc_end,
-    )
 
 
 def _optimised_historical_forecasts_regression_last_points_only(
@@ -149,11 +27,10 @@ def _optimised_historical_forecasts_regression_last_points_only(
 ) -> Union[
     TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
 ]:
-    """Optimized historical forecasts for RegressionModel with last_points_only = True
+    """
+    Optimized historical forecasts for RegressionModel with last_points_only = True
 
-
-    if multi_models is True, needs to shift the start so that the "last point" is on the first forcatable time index
-
+    Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
     """
     forecasts_list = []
     for idx, series_ in enumerate(series):
@@ -227,6 +104,8 @@ def _optimised_historical_forecasts_regression_last_points_only(
         forecast = model._predict_and_sample(
             np.repeat(X, num_samples, axis=0), num_samples
         )
+        # forecast has shape ((forecastable_index_length-1)*num_samples, k, n_component)
+        # where k = output_chunk length if multi_models, 1 otherwise
 
         # reshape into (forecasted indexes, n_components, n_samples), components are interleaved
         forecast = forecast.reshape(X.shape[0], -1, num_samples)
@@ -273,7 +152,11 @@ def _optimised_historical_forecasts_regression_all_points(
 ) -> Union[
     TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
 ]:
-    """Optimized historical forecasts for RegressionModel with last_points_only = False"""
+    """
+    Optimized historical forecasts for RegressionModel with last_points_only = False.
+
+    Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
+    """
     forecasts_list = []
     for idx, series_ in enumerate(series):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
@@ -319,6 +202,7 @@ def _optimised_historical_forecasts_regression_all_points(
                 hist_fct_pc_start -= shift_start * unit
                 hist_fct_fc_start -= shift_start * unit
 
+            # last lagged inputs are removed as the last prediction of length output_chunk_length will include them
             if model.output_chunk_length == forecast_horizon:
                 shift_end = model.output_chunk_length - 1
 
@@ -353,54 +237,48 @@ def _optimised_historical_forecasts_regression_all_points(
             np.repeat(X, num_samples, axis=0), num_samples
         )
 
-        require_auto_regression: bool = forecast_horizon > model.output_chunk_length
-
         # reshape and stride the forecast into (forecastable_index, forecast_horizon, n_components, num_samples)
         if model.multi_models:
-            if require_auto_regression:
-                raise_log(ValueError("Not supported"))
-            else:
-                # components are interleaved
-                forecast = forecast.reshape(
-                    X.shape[0],
-                    model.output_chunk_length,
-                    series_.n_components,
-                    num_samples,
-                )
+            # forecast has shape ((forecastable_index_length-1)*num_samples, output_chunk_length, n_component)
+            # and the components are interleaved
+            forecast = forecast.reshape(
+                X.shape[0],
+                model.output_chunk_length,
+                series_.n_components,
+                num_samples,
+            )
 
-                if (
-                    forecast_horizon == model.output_chunk_length
-                    and forecast_horizon > 1
-                ):
-                    forecast = forecast[:-shift_end:stride, :forecast_horizon]
-                else:
-                    forecast = forecast[::stride, :forecast_horizon]
+            if forecast_horizon == model.output_chunk_length and forecast_horizon > 1:
+                forecast = forecast[:-shift_end:stride]
+            # only keep the prediction of the first forecast_horizon sub-models
+            else:
+                forecast = forecast[::stride, :forecast_horizon]
         else:
-            if require_auto_regression:
-                raise_log(ValueError("Not supported"))
+            # forecast has shape ((forecastable_index_length-1)*num_samples, 1, n_component)
+            # and the components are interleaved
+            forecast = forecast.reshape(X.shape[0], -1, num_samples)
+
+            # forecasts depend on lagged data only, output_chunk_length is reconstitued by applying a sliding window
+            forecast = sliding_window_view(
+                forecast, (forecast_horizon, series_.n_components, num_samples)
+            )
+
+            # apply stride, remove the last windows, slice output_chunk_length to keep forecast_horizon values
+            if forecast_horizon != model.output_chunk_length:
+                forecast = forecast[
+                    : -shift_start + forecast_horizon - 1 : stride,
+                    0,
+                    0,
+                    :forecast_horizon,
+                    :,
+                    :,
+                ]
+            # apply stride, remove the last windows
+            elif forecast_horizon > 1:
+                forecast = forecast[: -forecast_horizon + 1 : stride, 0, 0, :, :, :]
+            # apply stride
             else:
-                # components are interleaved
-                forecast = forecast.reshape(X.shape[0], -1, num_samples)
-
-                forecast = sliding_window_view(
-                    forecast, (forecast_horizon, series_.n_components, num_samples)
-                )
-
-                if forecast_horizon != model.output_chunk_length:
-                    forecast = forecast[
-                        : -shift_start + forecast_horizon - 1 : stride,
-                        0,
-                        0,
-                        :forecast_horizon,
-                        :,
-                        :,
-                    ]
-                elif forecast_horizon > 1:
-                    forecast = forecast[
-                        : -forecast_horizon + 1 : stride, 0, 0, :forecast_horizon, :, :
-                    ]
-                else:
-                    forecast = forecast[::stride, 0, 0, :forecast_horizon, :, :]
+                forecast = forecast[::stride, 0, 0, :, :, :]
 
         # TODO: check if faster to create in the loop
         new_times = generate_index(

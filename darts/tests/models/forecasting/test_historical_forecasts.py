@@ -1269,7 +1269,9 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
         # `retrain=0` with not-trained model, encountering directly a predictable time index
         with pytest.raises(ValueError) as error_msg:
             helper_hist_forecasts(0, 0.9)
-        self.assertTrue(str(error_msg.value).startswith(expected_msg))
+        self.assertTrue(
+            str(error_msg.value).startswith(expected_msg), str(error_msg.value)
+        )
 
         # test bool
         helper_hist_forecasts(True, 0.9)
