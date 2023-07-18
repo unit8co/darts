@@ -212,36 +212,47 @@ on bringing more models and features.
 
 Model | Univariate | Multivariate | Probabilistic | Multiple series (global) | Past-observed covariates | Future-known covariates | Static covariates | Reference
 --- | --- | --- | --- | --- | --- | --- | --- | ---
-`ARIMA` | ✅ | | ✅ | | | ✅ | |
-`VARIMA` | | ✅ | | | | ✅ | |
-`AutoARIMA` | ✅ | | | | | ✅ | |
-`StatsForecastAutoARIMA` (faster AutoARIMA) | ✅ | | ✅ | | | ✅ | | [Nixtla's statsforecast](https://github.com/Nixtla/statsforecast)
-`ExponentialSmoothing` | ✅ | | ✅ | | | | |
-`StatsForecastETS` | ✅ | | ✅ | | | ✅ | | [Nixtla's statsforecast](https://github.com/Nixtla/statsforecast)
-`StatsForecastAutoCES` | ✅ | | | | | | | [Nixtla's statsforecast](https://github.com/Nixtla/statsforecast)
-`BATS` and `TBATS` | ✅ | | ✅ | | | | | [TBATS paper](https://robjhyndman.com/papers/ComplexSeasonality.pdf)
-`Theta` and `FourTheta` | ✅ | | | | | | | [Theta](https://robjhyndman.com/papers/Theta.pdf) & [4 Theta](https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R)
-`StatsForecastAutoTheta` | ✅ | | ✅ | | | | | [Nixtla's statsforecast](https://github.com/Nixtla/statsforecast)
-`Prophet` (see [install notes](https://github.com/unit8co/darts/blob/master/INSTALL.md#enabling-support-for-facebook-prophet)) | ✅ | | ✅ | | | ✅ | | [Prophet repo](https://github.com/facebook/prophet)
-`FFT` (Fast Fourier Transform) | ✅ | | | | | | |
-`KalmanForecaster` using the Kalman filter and N4SID for system identification | ✅ | ✅ | ✅ | | | ✅ | | [N4SID paper](https://people.duke.edu/~hpgavin/SystemID/References/VanOverschee-Automatica-1994.pdf)
-`Croston` method | ✅ | | | | | | |
-`RegressionModel`; generic wrapper around any sklearn regression model | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ |
-`RandomForest` | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ |
-`LinearRegressionModel` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-`LightGBMModel` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-`CatBoostModel` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-`XGBModel` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-`RNNModel` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version | ✅ | ✅ | ✅ | ✅ | | ✅ | | [DeepAR paper](https://arxiv.org/abs/1704.04110)
-`BlockRNNModel` (incl. LSTM and GRU) | ✅ | ✅ | ✅ | ✅ | ✅ | | |
-`NBEATSModel` | ✅ | ✅ | ✅ | ✅ | ✅ | | | [N-BEATS paper](https://arxiv.org/abs/1905.10437)
-`NHiTSModel` | ✅ | ✅ | ✅ | ✅ | ✅ | | | [N-HiTS paper](https://arxiv.org/abs/2201.12886)
-`TCNModel` | ✅ | ✅ | ✅ | ✅ | ✅ | | | [TCN paper](https://arxiv.org/abs/1803.01271), [DeepTCN paper](https://arxiv.org/abs/1906.04397), [blog post](https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4)
-`TransformerModel` | ✅ | ✅ | ✅ | ✅ | ✅ | | |
-`TFTModel` (Temporal Fusion Transformer) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [TFT paper](https://arxiv.org/pdf/1912.09363.pdf), [PyTorch Forecasting](https://pytorch-forecasting.readthedocs.io/en/latest/models.html)
-`DLinearModel` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [DLinear paper](https://arxiv.org/pdf/2205.13504.pdf)
-`NLinearModel` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [NLinear paper](https://arxiv.org/pdf/2205.13504.pdf)
-Naive Baselines | ✅ | ✅ | | | | | |
+**Baseline Models** ([LocalForecastingModel](https://unit8co.github.io/darts/userguide/covariates.html#local-forecasting-models-lfms))|  |  |  |  |  |  |  |
+[NaiveMean](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMean) | ✅ | ✅ | | | | | |
+[NaiveSeasonal](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveSeasonal) | ✅ | ✅ | | | | | |
+[NaiveDrift](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveDrift) | ✅ | ✅ | | | | | |
+[NaiveMovingAverage](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMovingAverage) | ✅ | ✅ | | | | | |
+**Statistical / Simpler Models** ([LocalForecastingModel](https://unit8co.github.io/darts/userguide/covariates.html#local-forecasting-models-lfms)) |  |  |  |  |  |  |  |
+[ARIMA](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.arima.html#darts.models.forecasting.arima.ARIMA) | ✅ | | ✅ | | | ✅ | |
+[VARIMA](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.varima.html#darts.models.forecasting.varima.VARIMA) | | ✅ | | | | ✅ | |
+[AutoARIMA](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.auto_arima.html#darts.models.forecasting.auto_arima.AutoARIMA) | ✅ | | | | | ✅ | |
+[StatsForecastAutoArima](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_arima.html#darts.models.forecasting.sf_auto_arima.StatsForecastAutoARIMA) (faster AutoARIMA) | ✅ | | ✅ | | | ✅ | | [Nixtla's statsforecast](https://github.com/Nixtla/statsforecast)
+[ExponentialSmoothing](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.exponential_smoothing.html#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing) | ✅ | | ✅ | | | | |
+[StatsforecastAutoETS](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_ets.html#darts.models.forecasting.sf_auto_ets.StatsForecastAutoETS) | ✅ | | ✅ | | | ✅ | | [Nixtla's statsforecast](https://github.com/Nixtla/statsforecast)
+[StatsforecastAutoCES](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_ces.html#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES) | ✅ | | | | | | | [Nixtla's statsforecast](https://github.com/Nixtla/statsforecast)
+[BATS](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tbats_model.html#darts.models.forecasting.tbats_model.BATS) and [TBATS](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tbats_model.html#darts.models.forecasting.tbats_model.TBATS) | ✅ | | ✅ | | | | | [TBATS paper](https://robjhyndman.com/papers/ComplexSeasonality.pdf)
+[Theta](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.Theta) and [FourTheta](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.FourTheta) | ✅ | | | | | | | [Theta](https://robjhyndman.com/papers/Theta.pdf) & [4 Theta](https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R)
+[StatsForecastAutoTheta](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_theta.html#darts.models.forecasting.sf_auto_theta.StatsForecastAutoTheta) | ✅ | | ✅ | | | | | [Nixtla's statsforecast](https://github.com/Nixtla/statsforecast)
+[Prophet](file:///Users/dennisbader/projects/unit8/darts/docs/build/html/generated_api/darts.models.forecasting.prophet_model.html#darts.models.forecasting.prophet_model.Prophet) (see [install notes](https://github.com/unit8co/darts/blob/master/INSTALL.md#enabling-support-for-facebook-prophet)) | ✅ | | ✅ | | | ✅ | | [Prophet repo](https://github.com/facebook/prophet)
+[FFT](file:///Users/dennisbader/projects/unit8/darts/docs/build/html/generated_api/darts.models.forecasting.fft.html#darts.models.forecasting.fft.FFT) (Fast Fourier Transform) | ✅ | | | | | | |
+[KalmanForecaster](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.kalman_forecaster.html#darts.models.forecasting.kalman_forecaster.KalmanForecaster) using the Kalman filter and N4SID for system identification | ✅ | ✅ | ✅ | | | ✅ | | [N4SID paper](https://people.duke.edu/~hpgavin/SystemID/References/VanOverschee-Automatica-1994.pdf)
+[Croston](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.croston.html#darts.models.forecasting.croston.Croston) method | ✅ | | | | | | |
+**Regression Models** ([GlobalForecastingModel](https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms))|  |  |  |  |  |  |  |
+[RegressionModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel): generic wrapper around any sklearn regression model | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ |
+[LinearRegressionModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+[RandomForest](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForest) | ✅ | ✅ | | ✅ | ✅ | ✅ | ✅ |
+[LightGBMModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel), | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+[XGBModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBModel)| ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+[CatBoostModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostModel) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+**PyTorch (Lightning)-based Models** ([GlobalForecastingModel](https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms))|  |  |  |  |  |  |  |
+[RNNModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.rnn_model.html#darts.models.forecasting.rnn_model.RNNModel) (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version | ✅ | ✅ | ✅ | ✅ | | ✅ | | [DeepAR paper](https://arxiv.org/abs/1704.04110)
+[BlockRNNModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel) (incl. LSTM and GRU) | ✅ | ✅ | ✅ | ✅ | ✅ | | |
+[NBEATSModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nbeats.html#darts.models.forecasting.nbeats.NBEATSModel) | ✅ | ✅ | ✅ | ✅ | ✅ | | | [N-BEATS paper](https://arxiv.org/abs/1905.10437)
+[NHiTSModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nhits.html#darts.models.forecasting.nhits.NHiTSModel) | ✅ | ✅ | ✅ | ✅ | ✅ | | | [N-HiTS paper](https://arxiv.org/abs/2201.12886)
+[TCNModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tcn_model.html#darts.models.forecasting.tcn_model.TCNModel) | ✅ | ✅ | ✅ | ✅ | ✅ | | | [TCN paper](https://arxiv.org/abs/1803.01271), [DeepTCN paper](https://arxiv.org/abs/1906.04397), [blog post](https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4)
+[TransformerModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.transformer_model.html#darts.models.forecasting.transformer_model.TransformerModel) | ✅ | ✅ | ✅ | ✅ | ✅ | | |
+[TFTModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel) (Temporal Fusion Transformer) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [TFT paper](https://arxiv.org/pdf/1912.09363.pdf), [PyTorch Forecasting](https://pytorch-forecasting.readthedocs.io/en/latest/models.html)
+[DLinearModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.dlinear.html#darts.models.forecasting.dlinear.DLinearModel) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [DLinear paper](https://arxiv.org/pdf/2205.13504.pdf)
+[NLinearModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nlinear.html#darts.models.forecasting.nlinear.NLinearModel) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [NLinear paper](https://arxiv.org/pdf/2205.13504.pdf)
+**Ensemble Models** ([GlobalForecastingModel](https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms)): Model support is dependent on ensembled forecasting models and the ensemble model itself |  |  |  |  |  |  |  |
+[NaiveEnsembleModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+[RegressionEnsembleModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
 
 
 ## Community & Contact
