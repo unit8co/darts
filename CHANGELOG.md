@@ -15,6 +15,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Added support for `PathLike` to the `save()` and `load()` functions of all non-deep learning based models. [#1754](https://github.com/unit8co/darts/pull/1754) by [Simon Sudrich](https://github.com/sudrich).
   - Improved efficiency of `historical_forecasts()` and `backtest()` for all models giving significant process time reduction for larger number of predict iterations and series. [#1801](https://github.com/unit8co/darts/pull/1801) by [Dennis Bader](https://github.com/dennisbader).
   - Added model property `ForecastingModel.supports_multivariate` to indicate whether the model supports multivariate forecasting. [#1848](https://github.com/unit8co/darts/pull/1848) by [Felix Divo](https://github.com/felixdivo).
+  - `Prophet` now supports conditional seasonalities, and properly handles all parameters passed to `Prophet.add_seasonality()` and model creation parameter `add_seasonalities` [#1829](https://github.com/unit8co/darts/pull/#1829) by [Idan Shilon](https://github.com/id5h).
+
 - Improvements to `EnsembleModel`:
   - Model creation parameter `forecasting_models` now supports a mix of `LocalForecastingModel` and `GlobalForecastingModel` (single `TimeSeries` training/inference only, due to the local models). [#1745](https://github.com/unit8co/darts/pull/1745) by [Antoine Madrona](https://github.com/madtoinou).
   - Future and past covariates can now be used even if `forecasting_models` have different covariates support. The covariates passed to `fit()`/`predict()` are used only by models that support it. [#1745](https://github.com/unit8co/darts/pull/1745) by [Antoine Madrona](https://github.com/madtoinou).
@@ -25,6 +27,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Improvements to documentation [#1904](https://github.com/unit8co/darts/pull/#1904) by [Dennis Bader](https://github.com/dennisbader):
   - made model sections in README.md, covariates user guide and forecasting model API Reference more user friendly by adding model links and reorganizing them into model categories.
   - added the Dynamic Time Warping (DTW) module and improved its appearance.
+- Added `MSTL` (Season-Trend decomposition using LOESS for multiple seasonalities) as a `method` option for `extract_trend_and_seasonality()`. [#1879](https://github.com/unit8co/darts/pull/1879) by [Alex Colpitts](https://github.com/alexcolpitts96)
 - Added `RINorm` (Reversible Instance Norm) as a new layer normalization option. [#1121](https://github.com/unit8co/darts/issues/1121) by [Alex Colpitts](https://github.com/alexcolpitts96)
 
 **Fixed**
