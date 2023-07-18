@@ -143,8 +143,33 @@ def _fast_dtw(
     return cost
 
 
+def _default_distance_multi(x_values: np.ndarray, y_values: np.ndarray):
+    return np.sum(np.abs(x_values - y_values))
+
+
+def _default_distance_uni(x_value: float, y_value: float):
+    return abs(x_value - y_value)
+
+
 # Public API Functions
 class DTWAlignment:
+    """
+    Dynamic Time Warping (DTW) Alignment.
+
+    Attributes
+    ----------
+    n
+        The length of `series1`
+    m
+        The length of `series2`
+    series1
+        A `TimeSeries` to align with `series2`.
+    series2
+        A `TimeSeries` to align with `series1`.
+    cost
+        The `CostMatrix` for DTW.
+    """
+
     n: int
     m: int
     series1: TimeSeries
@@ -152,7 +177,6 @@ class DTWAlignment:
     cost: CostMatrix
 
     def __init__(self, series1: TimeSeries, series2: TimeSeries, cost: CostMatrix):
-
         self.n = len(series1)
         self.m = len(series2)
         self.series1 = series1
@@ -162,7 +186,8 @@ class DTWAlignment:
     from ._plot import plot, plot_alignment
 
     def path(self) -> np.ndarray:
-        """
+        """Gives the index paths from `series1` to `series2`.
+
         Returns
         -------
         np.ndarray of shape `(len(path), 2)`
@@ -177,7 +202,8 @@ class DTWAlignment:
         return self._path
 
     def distance(self) -> float:
-        """
+        """Gives the total distance between pair-wise elements in the two series after warping.
+
         Returns
         -------
         float
@@ -186,7 +212,8 @@ class DTWAlignment:
         return self.cost[(self.n, self.m)]
 
     def mean_distance(self) -> float:
-        """
+        """Gives the mean distance between pair-wise elements in the two series after warping.
+
         Returns
         -------
         float
@@ -200,9 +227,8 @@ class DTWAlignment:
         return self._mean_distance
 
     def warped(self) -> (TimeSeries, TimeSeries):
-        """
-        Warps the two time series according to the warp path returned by .path(), which minimizes
-        the pair-wise distance.
+        """Warps the two time series according to the warp path returned by `DTWAlignment.path()`, which minimizes the
+        pair-wise distance.
         This will bring two time series that are out-of-phase back into phase.
 
         Returns
@@ -257,14 +283,6 @@ class DTWAlignment:
         return TimeSeries.from_xarray(warped_series1), TimeSeries.from_xarray(
             warped_series2
         )
-
-
-def default_distance_multi(x_values: np.ndarray, y_values: np.ndarray):
-    return np.sum(np.abs(x_values - y_values))
-
-
-def default_distance_uni(x_value: float, y_value: float):
-    return abs(x_value - y_value)
 
 
 def dtw(
@@ -335,7 +353,7 @@ def dtw(
             logger,
         )
 
-        distance = default_distance_uni if both_univariate else default_distance_multi
+        distance = _default_distance_uni if both_univariate else _default_distance_multi
 
     if both_univariate:
         values_x = series1.univariate_values(copy=False)
