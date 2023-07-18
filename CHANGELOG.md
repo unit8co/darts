@@ -22,6 +22,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Improvements to `ShapExplainer`:
   - Added static covariates support to `ShapeExplainer`. [#1803](https://github.com/unit8co/darts/pull/#1803) by [Anne de Vries](https://github.com/anne-devries) and [Dennis Bader](https://github.com/dennisbader).
   - Improved static covariates column naming when applying a `sklearn.preprocessing.OneHotEncoder` with `StaticCovariatesTransformer` [#1863](https://github.com/unit8co/darts/pull/1863) by [Anne de Vries](https://github.com/anne-devries)
+- Improvements to documentation [#1904](https://github.com/unit8co/darts/pull/#1904) by [Dennis Bader](https://github.com/dennisbader):
+  - made model sections in README.md, covariates user guide and forecasting model API Reference more user friendly by adding model links and reorganizing them into model categories.
+  - added the Dynamic Time Warping (DTW) module and improved its appearance.
 - Added `RINorm` (Reversible Instance Norm) as a new layer normalization option. [#1121](https://github.com/unit8co/darts/issues/1121) by [Alex Colpitts](https://github.com/alexcolpitts96)
 
 **Fixed**
