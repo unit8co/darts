@@ -1,3 +1,8 @@
+"""
+DTW Windows
+-----------
+"""
+
 import array
 from abc import ABC, abstractmethod
 from math import atan, tan
@@ -106,6 +111,7 @@ class NoWindow(Window):
         result = np.empty(self.n + 1)
         result.fill(self.m)
         result[0] = 1
+        return result
 
     def __iter__(self):
         for i in range(1, self.n + 1):
@@ -117,7 +123,7 @@ def gtz(value):  # greater than zero
     return value if value > 0 else 0
 
 
-class CRWindow:
+class CRWindow(Window):
     """
     Compressed row representation window.
     Stores the range of active grid cells in each column.
@@ -186,7 +192,7 @@ class CRWindow:
             Column int index
         start
             Row element int index where start >= 1 and start <= end
-        end:
+        end
             Row element int index where end >= 1 and end <= m+1
         """
 

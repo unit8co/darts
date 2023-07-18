@@ -4,7 +4,7 @@ Dynamic Time Warping (DTW)
 """
 
 import copy
-from typing import Callable, Union
+from typing import Callable, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -26,7 +26,7 @@ DistanceFunc = Callable[[SeriesValue, SeriesValue], float]
 # CORE ALGORITHM
 def _dtw_cost_matrix(
     x: np.ndarray, y: np.ndarray, dist: DistanceFunc, window: Window
-) -> np.ndarray:
+) -> CostMatrix:
 
     dtw = CostMatrix._from_window(window)
 
@@ -270,13 +270,13 @@ def default_distance_uni(x_value: float, y_value: float):
 def dtw(
     series1: TimeSeries,
     series2: TimeSeries,
-    window: Window = NoWindow(),
+    window: Optional[Window] = None,
     distance: Union[DistanceFunc, None] = None,
     multi_grid_radius: int = -1,
 ) -> DTWAlignment:
     """
-    Determines the optimal alignment between two time series series1 and series2,
-    according to the Dynamic Time Warping algorithm.
+    Determines the optimal alignment between two time series `series1` and `series2`, according to the Dynamic Time
+    Warping algorithm.
     The alignment minimizes the distance between pair-wise elements after warping.
     All elements in the two series are matched and are in strictly monotonically increasing order.
     Considers only the values in the series, ignoring the time axis.
@@ -287,12 +287,12 @@ def dtw(
     Parameters
     ----------
     series1
-        `TimeSeries`
+        A `TimeSeries` to align with `series2`.
     series2
-        A `TimeSeries`
+        A `TimeSeries` to align with `series1`.
     window
-        Used to constrain the search for the optimal alignment: see SakoeChiba and Itakura.
-        Default considers all possible alignments.
+        Optionally, a `Window` Uued to constrain the search for the optimal alignment: see `SakoeChiba` and `Itakura`.
+        Default considers all possible alignments (`NoWindow`).
     distance
         Function taking as input either two `floats` for univariate series or two `np.ndarray`,
         and returning the distance between them.
@@ -304,7 +304,7 @@ def dtw(
         Without constraints DTW runs in O(nxm) time where n,m are the size of the series.
         Exact evaluation with no constraints, will result in a performance warning on large datasets.
 
-        Setting multi_grid_radius to a value other than -1, will enable the approximate multi-grid solver,
+        Setting `multi_grid_radius` to a value other than `-1`, will enable the approximate multi-grid solver,
         which executes in linear time, vs quadratic time for exact evaluation.
         Increasing radius trades solution accuracy for performance.
 
@@ -313,6 +313,8 @@ def dtw(
     DTWAlignment
         Helper object for getting warp path, mean_distance, distance and warped time series
     """
+    if window is None:
+        window = NoWindow()
 
     if (
         multi_grid_radius == -1
