@@ -300,7 +300,7 @@ def dtw(
         Defaults to the abs difference for univariate-data and the
         sum of the abs difference for multi-variate series.
     multi_grid_radius
-        Default radius of -1 results in an exact evaluation of the dynamic time warping algorithm.
+        Default radius of `-1` results in an exact evaluation of the dynamic time warping algorithm.
         Without constraints DTW runs in O(nxm) time where n,m are the size of the series.
         Exact evaluation with no constraints, will result in a performance warning on large datasets.
 

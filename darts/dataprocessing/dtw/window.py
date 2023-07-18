@@ -23,9 +23,9 @@ class Window(ABC):
         Parameters
         ----------
         n
-            The width of the window, must be equal to the length of series1
+            The width of the window, must be equal to the length of `series1` used for DTW
         m
-            The height of the window, must be equal to the length of series2
+            The height of the window, must be equal to the length of `series2` used for DTW
         """
         self.n = n
         self.m = m
@@ -127,7 +127,7 @@ class CRWindow(Window):
     """
     Compressed row representation window.
     Stores the range of active grid cells in each column.
-    Any window with contiguous columns can be expressed as an CRWindow.
+    Any window with contiguous columns can be expressed as a CRWindow.
     Supports efficient iterative construction and updates.
     """
 
@@ -143,7 +143,7 @@ class CRWindow(Window):
         m
             The height of the window, must be equal to the length of series2
         ranges
-            Ranges of active cells within a column [[start_column0, end_column0], ...]
+            The ranges of active cells within a column [[start_column0, end_column0], ...]
             with shape (n, 2) and where start >= 0 and end <= m.
         """
 
@@ -292,6 +292,12 @@ class Itakura(CRWindow):
     """
 
     def __init__(self, max_slope: float):
+        """
+        Parameters
+        ----------
+        max_slope
+            The slope of the steeper parallelogram side.
+        """
         self.max_slope = max_slope
 
     def init_size(self, n: int, m: int):
@@ -356,6 +362,12 @@ class SakoeChiba(CRWindow):
     """
 
     def __init__(self, window_size: int):
+        """
+        Parameters
+        ----------
+        window_size
+            The maximum allowed shift between the two series used in DTW.
+        """
         self.window_size = window_size
 
     def init_size(self, n: int, m: int):
