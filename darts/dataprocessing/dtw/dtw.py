@@ -1,3 +1,8 @@
+"""
+Dynamic Time Warping (DTW)
+--------------------------
+"""
+
 import copy
 from typing import Callable, Union
 
