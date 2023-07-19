@@ -236,7 +236,7 @@ def train_test_split(
 
     And the formula to calculate the first timestep of the test dataset is:
 
-        ``test start index = ts_length - horizon - input_size - test_size + 1``
+        ``test start index = ts_length - horizon - test_size - input_size + 1``
 
     Parameters
     ----------
@@ -261,7 +261,7 @@ def train_test_split(
         partially overlap. [default: ``'simple'``]
     lazy
         by default, train and test datasets are returned as a list of timeseries. This may be memory
-        inefficient if the dataset is large, so setting this flag allows instead to return a ``Sequence`` object
+        inefficient if the dataset is large, so setting this flag instead allows to return a ``Sequence`` object
         loading the data lazily. Warning: turning ``lazy`` on disables some sanity checks for the datasets
         that may result in exceptions during sample generation. [default: False]
 
