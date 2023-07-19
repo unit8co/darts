@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 
 from darts.logging import get_logger
+from darts.models.components.layer_norm_variants import RINorm
 from darts.models.forecasting.pl_forecasting_module import PLMixedCovariatesModule
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 
@@ -76,6 +77,7 @@ class _TideModule(PLMixedCovariatesModule):
         temporal_decoder_hidden: int,
         temporal_width: int,
         use_layer_norm: bool,
+        use_reversible_instance_norm: bool,
         dropout: float,
         **kwargs,
     ):
@@ -107,6 +109,8 @@ class _TideModule(PLMixedCovariatesModule):
             The width of the future covariate embedding space.
         use_layer_norm
             Whether to use layer normalization in the Residual Blocks.
+        use_reversible_instance_norm
+            Whether to use reversible instance normalization.
         dropout
             Dropout probability
         **kwargs
@@ -137,6 +141,7 @@ class _TideModule(PLMixedCovariatesModule):
         self.hidden_size = hidden_size
         self.temporal_decoder_hidden = temporal_decoder_hidden
         self.use_layer_norm = use_layer_norm
+        self.use_reversible_instance_norm = use_reversible_instance_norm
         self.dropout = dropout
         self.temporal_width = temporal_width
 
@@ -220,6 +225,11 @@ class _TideModule(PLMixedCovariatesModule):
             self.input_chunk_length, self.output_chunk_length * self.nr_params
         )
 
+        if self.use_reversible_instance_norm:
+            self.rin = RINorm(input_dim=input_dim)
+        else:
+            self.rin = None
+
     def forward(
         self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
     ) -> torch.Tensor:
@@ -239,6 +249,9 @@ class _TideModule(PLMixedCovariatesModule):
         # x_future_covariates has shape (batch_size, input_chunk_length, future_cov_dim)
         # x_static_covariates has shape (batch_size, static_cov_dim)
         x, x_future_covariates, x_static_covariates = x_in
+
+        if self.use_reversible_instance_norm:
+            x = self.rin(x)
 
         x_lookback = x[:, :, : self.output_dim]
 
@@ -288,7 +301,6 @@ class _TideModule(PLMixedCovariatesModule):
         # encoder, decode, reshape
         encoded = self.encoders(encoded)
         decoded = self.decoders(encoded)
-        # decoded = decoded.view(-1, self.output_chunk_length, self.decoder_output_dim)
 
         # get view that is batch size x output chunk length x self.decoder_output_dim x nr params
         decoded = decoded.view(x.shape[0], self.output_chunk_length, -1)
@@ -317,6 +329,10 @@ class _TideModule(PLMixedCovariatesModule):
 
         y = y.view(-1, self.output_chunk_length, self.output_dim, self.nr_params)
 
+        if self.use_reversible_instance_norm:
+            for i in range(self.nr_params):
+                y[:, :, :, i] = self.rin.inverse(y[:, :, :, i])
+
         return y
 
 
@@ -332,6 +348,7 @@ class TiDEModel(MixedCovariatesTorchModel):
         temporal_width: int = 4,
         temporal_decoder_hidden: int = 32,
         use_layer_norm: bool = False,
+        use_reversible_instance_norm: bool = False,
         dropout: float = 0.1,
         use_static_covariates: bool = True,
         **kwargs,
@@ -372,6 +389,8 @@ class TiDEModel(MixedCovariatesTorchModel):
             The width of the layers in the temporal decoder.
         use_layer_norm
             Whether to use layer normalization in the residual blocks.
+        use_reversible_instance_norm
+            Whether to use reversible instance normalization.
         dropout
             The dropout probability to be used in fully connected layers. This is compatible with Monte Carlo dropout
             at inference time for model uncertainty estimation (enabled with ``mc_dropout=True`` at
@@ -524,6 +543,7 @@ class TiDEModel(MixedCovariatesTorchModel):
         self._considers_static_covariates = use_static_covariates
 
         self.use_layer_norm = use_layer_norm
+        self.use_reversible_instance_norm = use_reversible_instance_norm
         self.dropout = dropout
 
     @property
@@ -583,6 +603,7 @@ class TiDEModel(MixedCovariatesTorchModel):
             temporal_width=self.temporal_width,
             temporal_decoder_hidden=self.temporal_decoder_hidden,
             use_layer_norm=self.use_layer_norm,
+            use_reversible_instance_norm=self.use_reversible_instance_norm,
             dropout=self.dropout,
             **self.pl_module_params,
         )
