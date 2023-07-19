@@ -15,6 +15,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Added support for `PathLike` to the `save()` and `load()` functions of all non-deep learning based models. [#1754](https://github.com/unit8co/darts/pull/1754) by [Simon Sudrich](https://github.com/sudrich).
   - Improved efficiency of `historical_forecasts()` and `backtest()` for all models giving significant process time reduction for larger number of predict iterations and series. [#1801](https://github.com/unit8co/darts/pull/1801) by [Dennis Bader](https://github.com/dennisbader).
   - Added model property `ForecastingModel.supports_multivariate` to indicate whether the model supports multivariate forecasting. [#1848](https://github.com/unit8co/darts/pull/1848) by [Felix Divo](https://github.com/felixdivo).
+  - `Prophet` now supports conditional seasonalities, and properly handles all parameters passed to `Prophet.add_seasonality()` and model creation parameter `add_seasonalities` [#1829](https://github.com/unit8co/darts/pull/#1829) by [Idan Shilon](https://github.com/id5h).
+
 - Improvements to `EnsembleModel`:
   - Model creation parameter `forecasting_models` now supports a mix of `LocalForecastingModel` and `GlobalForecastingModel` (single `TimeSeries` training/inference only, due to the local models). [#1745](https://github.com/unit8co/darts/pull/1745) by [Antoine Madrona](https://github.com/madtoinou).
   - Future and past covariates can now be used even if `forecasting_models` have different covariates support. The covariates passed to `fit()`/`predict()` are used only by models that support it. [#1745](https://github.com/unit8co/darts/pull/1745) by [Antoine Madrona](https://github.com/madtoinou).
@@ -22,6 +24,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Improvements to `ShapExplainer`:
   - Added static covariates support to `ShapeExplainer`. [#1803](https://github.com/unit8co/darts/pull/#1803) by [Anne de Vries](https://github.com/anne-devries) and [Dennis Bader](https://github.com/dennisbader).
   - Improved static covariates column naming when applying a `sklearn.preprocessing.OneHotEncoder` with `StaticCovariatesTransformer` [#1863](https://github.com/unit8co/darts/pull/1863) by [Anne de Vries](https://github.com/anne-devries)
+- Added `MSTL` (Season-Trend decomposition using LOESS for multiple seasonalities) as a `method` option for `extract_trend_and_seasonality()`. [#1879](https://github.com/unit8co/darts/pull/1879) by [Alex Colpitts](https://github.com/alexcolpitts96)
+- Added `RINorm` (Reversible Instance Norm) as a new layer normalization option. [#1121](https://github.com/unit8co/darts/issues/1121) by [Alex Colpitts](https://github.com/alexcolpitts96)
 
 **Fixed**
 - Fixed an issue not considering original component names for `TimeSeries.plot()` when providing a label prefix. [#1783](https://github.com/unit8co/darts/pull/1783) by [Simon Sudrich](https://github.com/sudrich).
@@ -29,6 +33,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed a bug when loading the weights of a `TorchForecastingModel` trained with encoders or a Likelihood. [#1744](https://github.com/unit8co/darts/pull/1744) by [Antoine Madrona](https://github.com/madtoinou).
 - Fixed a bug when using selected `target_components` with `ShapExplainer. [#1803](https://github.com/unit8co/darts/pull/#1803) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed `TimeSeries.__getitem__()` for series with a RangeIndex with start != 0 and freq != 1. [#1868](https://github.com/unit8co/darts/pull/#1868) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed an issue where `DTWAlignment.plot_alignment()` was not plotting the alignment plot of series with a RangeIndex correctly. [#1880](https://github.com/unit8co/darts/pull/1880) by [Ahmet Zamanis](https://github.com/AhmetZamanis) and [Dennis Bader](https://github.com/dennisbader).
+- Fixed an issue when calling `ARIMA.predict()` and `num_samples > 1` (probabilistic forecasting), where the start point of the simulation was not anchored to the end of the target series. [#1893](https://github.com/unit8co/darts/pull/1893) by [Dennis Bader](https://github.com/dennisbader).
 
 **Removed**
 - Removed support for Python 3.7 [#1864](https://github.com/unit8co/darts/pull/#1864) by [Dennis Bader](https://github.com/dennisbader).

@@ -148,21 +148,28 @@ def plot_alignment(
     path = self.path()
     n = len(path)
 
-    time_dim1 = series1._time_dim
-    time_dim2 = series2._time_dim
+    time_dim1 = series1.time_dim
+    time_dim2 = series2.time_dim
 
-    x_coords1 = np.array(xa1[time_dim1], dtype="datetime64[s]")[path[:, 0]]
-    x_coords2 = np.array(xa2[time_dim2], dtype="datetime64[s]")[path[:, 1]]
+    x_coords1 = np.array(xa1[time_dim1], dtype=xa1[time_dim1].dtype)[path[:, 0]]
+    x_coords2 = np.array(xa2[time_dim2], dtype=xa2[time_dim2].dtype)[path[:, 1]]
 
     y_coords1 = series1.univariate_values()[path[:, 0]]
     y_coords2 = series2.univariate_values()[path[:, 1]]
 
-    x_coords = np.empty(n * 3, dtype="datetime64[s]")
+    if series1.has_datetime_index:
+        x_dtype = xa1[time_dim1].dtype
+        x_nan = np.datetime64("NaT")
+    else:
+        x_dtype = np.float64
+        x_nan = np.nan
+
+    x_coords = np.empty(n * 3, dtype=x_dtype)
     y_coords = np.empty(n * 3, dtype=np.float64)
 
     x_coords[0::3] = x_coords1
     x_coords[1::3] = x_coords2
-    x_coords[2::3] = np.datetime64("NaT")
+    x_coords[2::3] = x_nan
 
     y_coords[0::3] = y_coords1
     y_coords[1::3] = y_coords2

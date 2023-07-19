@@ -3600,7 +3600,7 @@ class TimeSeries:
                     if isinstance(treat_na, (int, float))
                     else resulting_transformations.values[s_idx, i : (i + n_samples)]
                 )
-                resulting_transformations.values[:s_idx, i : (i + n_samples)] = value
+                resulting_transformations.iloc[:s_idx, i : (i + n_samples)] = value
         elif treat_na == "dropna":
             # can only drop the NaN rows that are common among the columns
             drop_before_index = original_index[np.min(added_na)]
