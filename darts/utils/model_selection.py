@@ -257,8 +257,8 @@ def train_test_split(
     vertical_split_type
         can be either ``'simple'``, where the exact number from test size will be deducted from timeseries for test set
         and remaining will go to training set; or ``'model-aware'``, where you have to provide `input_size` and
-        `horizon` as well. Note, that the second option is more efficient timestep-wise, since training and test sets will
-        partially overlap. [default: ``'simple'``]
+        `horizon` as well. Note, that the second option is more efficient timestep-wise, since training and test sets
+        will partially overlap. [default: ``'simple'``]
     lazy
         by default, train and test datasets are returned as a list of timeseries. This may be memory
         inefficient if the dataset is large, so setting this flag instead allows to return a ``Sequence`` object
