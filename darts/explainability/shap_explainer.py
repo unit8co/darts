@@ -33,7 +33,6 @@ from darts.explainability.explainability_result import ShapExplainabilityResult
 from darts.logging import get_logger, raise_if, raise_log
 from darts.models.forecasting.regression_model import RegressionModel
 from darts.utils.data.tabularization import create_lagged_prediction_data
-from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
 
@@ -56,6 +55,8 @@ ShapMethod = NewType("ShapMethod", _ShapMethod)
 
 
 class ShapExplainer(ForecastingModelExplainer):
+    model: RegressionModel
+
     def __init__(
         self,
         model: RegressionModel,
@@ -146,11 +147,13 @@ class ShapExplainer(ForecastingModelExplainer):
 
         super().__init__(
             model=model,
-            requires_background=True,
-            check_component_names=True,
             background_series=background_series,
             background_past_covariates=background_past_covariates,
             background_future_covariates=background_future_covariates,
+            requires_background=True,
+            requires_covariates_encoding=True,
+            check_component_names=True,
+            test_stationarity=True,
         )
 
         if model._is_probabilistic():
@@ -201,28 +204,20 @@ class ShapExplainer(ForecastingModelExplainer):
         super().explain(
             foreground_series, foreground_past_covariates, foreground_future_covariates
         )
-
-        if foreground_series is None:
-            foreground_series = self.background_series
-            foreground_past_covariates = self.background_past_covariates
-            foreground_future_covariates = self.background_future_covariates
-        else:
-            foreground_series = series2seq(foreground_series)
-            foreground_past_covariates = series2seq(foreground_past_covariates)
-            foreground_future_covariates = series2seq(foreground_future_covariates)
-
-            if self.model.encoders.encoding_available:
-                (
-                    foreground_past_covariates,
-                    foreground_future_covariates,
-                ) = self.model.generate_fit_encodings(
-                    series=foreground_series,
-                    past_covariates=foreground_past_covariates,
-                    future_covariates=foreground_future_covariates,
-                )
-
+        (
+            foreground_series,
+            foreground_past_covariates,
+            foreground_future_covariates,
+            _,
+            _,
+            _,
+        ) = self._process_foreground(
+            foreground_series=foreground_series,
+            foreground_past_covariates=foreground_past_covariates,
+            foreground_future_covariates=foreground_future_covariates,
+        )
         horizons, target_names = self._process_horizons_and_targets(
-            horizons, target_components
+            horizons=horizons, target_components=target_components
         )
 
         shap_values_list = []
@@ -479,7 +474,7 @@ class _RegressionShapExplainers:
         background_series: Sequence[TimeSeries],
         background_past_covariates: Sequence[TimeSeries],
         background_future_covariates: Sequence[TimeSeries],
-        shap_method: ShapMethod,
+        shap_method: _ShapMethod,
         background_num_samples: Optional[int] = None,
         **kwargs,
     ):

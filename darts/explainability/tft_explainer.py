@@ -43,6 +43,8 @@ except ImportError:
 
 
 class TFTExplainer(ForecastingModelExplainer):
+    model: TFTModel
+
     def __init__(
         self,
         model: TFTModel,
@@ -73,13 +75,14 @@ class TFTExplainer(ForecastingModelExplainer):
         """
         super().__init__(
             model,
-            requires_background=False,
-            check_component_names=False,
             background_series=background_series,
             background_past_covariates=background_past_covariates,
             background_future_covariates=background_future_covariates,
+            requires_background=False,
+            requires_covariates_encoding=False,
+            check_component_names=False,
+            test_stationarity=False,
         )
-        self._model = model
 
     @property
     def encoder_importance(self):
@@ -97,8 +100,8 @@ class TFTExplainer(ForecastingModelExplainer):
             The encoder variable importance.
         """
         return self._get_importance(
-            weight=self._model.model._encoder_sparse_weights,
-            names=self._model.model.encoder_variables,
+            weight=self.model.model._encoder_sparse_weights,
+            names=self.model.model.encoder_variables,
         )
 
     @property
@@ -117,8 +120,8 @@ class TFTExplainer(ForecastingModelExplainer):
             The importance of the decoder variables.
         """
         return self._get_importance(
-            weight=self._model.model._decoder_sparse_weights,
-            names=self._model.model.decoder_variables,
+            weight=self.model.model._decoder_sparse_weights,
+            names=self.model.model.decoder_variables,
         )
 
     def get_variable_selection_weight(self, plot=False) -> Dict[str, pd.DataFrame]:
@@ -187,7 +190,7 @@ class TFTExplainer(ForecastingModelExplainer):
         horizons, _ = self._process_horizons_and_targets(
             horizons=horizons, target_components=None
         )
-        _ = self._model.predict(
+        _ = self.model.predict(
             n=self.n,
             series=foreground_series,
             past_covariates=foreground_past_covariates,
@@ -195,7 +198,7 @@ class TFTExplainer(ForecastingModelExplainer):
         )
         # get the weights and the attention head from the trained model for the prediction
         attention_heads = (
-            self._model.model._attn_out_weights.squeeze().sum(axis=1).detach()
+            self.model.model._attn_out_weights.squeeze().sum(axis=1).detach()
         )
         index = torch.tensor([i - 1 for i in horizons])
         return ExplainabilityResult(
@@ -207,13 +210,13 @@ class TFTExplainer(ForecastingModelExplainer):
             }
         )
         # if "n" not in kwargs:
-        #     kwargs["n"] = self._model.model.output_chunk_length
+        #     kwargs["n"] = self.model.model.output_chunk_length
         #
-        # _ = self._model.predict(**kwargs)
+        # _ = self.model.predict(**kwargs)
         #
         # # get the weights and the attention head from the trained model for the prediction
         # attention_heads = (
-        #     self._model.model._attn_out_weights.squeeze().sum(axis=1).detach()
+        #     self.model.model._attn_out_weights.squeeze().sum(axis=1).detach()
         # )
         #
         # # return the explainer result to be used in other methods
@@ -312,15 +315,15 @@ class TFTExplainer(ForecastingModelExplainer):
         """
         past_covariates_name_mapping = {
             f"past_covariate_{i}": colname
-            for i, colname in enumerate(self._model.past_covariate_series.components)
+            for i, colname in enumerate(self.model.past_covariate_series.components)
         }
         future_covariates_name_mapping = {
             f"future_covariate_{i}": colname
-            for i, colname in enumerate(self._model.future_covariate_series.components)
+            for i, colname in enumerate(self.model.future_covariate_series.components)
         }
         target_name_mapping = {
             f"target_{i}": colname
-            for i, colname in enumerate(self._model.training_series.components)
+            for i, colname in enumerate(self.model.training_series.components)
         }
 
         return {
