@@ -389,7 +389,8 @@ class TiDEModel(MixedCovariatesTorchModel):
         use_layer_norm
             Whether to use layer normalization in the residual blocks.
         use_reversible_instance_norm
-            Whether to use reversible instance normalization.
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
+            It is only applied to the features of the target series and not the covariates.
         dropout
             The dropout probability to be used in fully connected layers. This is compatible with Monte Carlo dropout
             at inference time for model uncertainty estimation (enabled with ``mc_dropout=True`` at
@@ -525,7 +526,9 @@ class TiDEModel(MixedCovariatesTorchModel):
         References
         ----------
         .. [1] A. Das et al. "Long-term Forecasting with TiDE: Time-series Dense Encoder",
-               http://arxiv.org/abs/2304.08424
+                http://arxiv.org/abs/2304.08424
+        .. [2] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", http://arxiv.org/abs/2304.08424
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 
