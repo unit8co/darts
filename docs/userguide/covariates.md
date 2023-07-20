@@ -146,6 +146,7 @@ Model | Past Covariates | Future Covariates | Static Covariates
 `TFTModel` | ✅ | ✅ | ✅ 
 `DLinearModel` | ✅ | ✅ | ✅ 
 `NLinearModel` | ✅ | ✅ | ✅ 
+`TiDEModel` | ✅ | ✅ | ✅ 
 
 **Table 1: Darts' forecasting models and their covariate support**
 
