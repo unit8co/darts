@@ -528,7 +528,7 @@ class TiDEModel(MixedCovariatesTorchModel):
         .. [1] A. Das et al. "Long-term Forecasting with TiDE: Time-series Dense Encoder",
                 http://arxiv.org/abs/2304.08424
         .. [2] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
-                Distribution Shift", http://arxiv.org/abs/2304.08424
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 
