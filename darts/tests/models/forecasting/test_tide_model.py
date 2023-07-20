@@ -97,6 +97,15 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 add_encoders={"cyclic": {"future": "hour"}},
+                use_reversible_instance_norm=False,
+            )
+            model.fit(ts_time_index, verbose=False, epochs=1)
+
+            model = TiDEModel(
+                input_chunk_length=1,
+                output_chunk_length=1,
+                add_encoders={"cyclic": {"future": "hour"}},
+                use_reversible_instance_norm=True,
             )
             model.fit(ts_time_index, verbose=False, epochs=1)
 
@@ -123,23 +132,27 @@ if TORCH_AVAILABLE:
         def test_future_and_past_covariate_as_timeseries_handling(self):
             ts_time_index = tg.sine_timeseries(length=2, freq="h")
 
-            # test with past_covariates timeseries
-            model = TiDEModel(
-                input_chunk_length=1,
-                output_chunk_length=1,
-                add_encoders={"cyclic": {"future": "hour", "past": "hour"}},
-            )
-            model.fit(ts_time_index, ts_time_index, verbose=False, epochs=1)
+            for enable_rin in [True, False]:
 
-            # test with past_covariates and future_covariates timeseries
-            model = TiDEModel(
-                input_chunk_length=1,
-                output_chunk_length=1,
-                add_encoders={"cyclic": {"future": "hour", "past": "hour"}},
-            )
-            model.fit(
-                ts_time_index, ts_time_index, ts_time_index, verbose=False, epochs=1
-            )
+                # test with past_covariates timeseries
+                model = TiDEModel(
+                    input_chunk_length=1,
+                    output_chunk_length=1,
+                    add_encoders={"cyclic": {"future": "hour", "past": "hour"}},
+                    use_reversible_instance_norm=enable_rin,
+                )
+                model.fit(ts_time_index, ts_time_index, verbose=False, epochs=1)
+
+                # test with past_covariates and future_covariates timeseries
+                model = TiDEModel(
+                    input_chunk_length=1,
+                    output_chunk_length=1,
+                    add_encoders={"cyclic": {"future": "hour", "past": "hour"}},
+                    use_reversible_instance_norm=enable_rin,
+                )
+                model.fit(
+                    ts_time_index, ts_time_index, ts_time_index, verbose=False, epochs=1
+                )
 
         def test_static_covariates_support(self):
             target_multi = concatenate(
