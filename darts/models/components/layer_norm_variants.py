@@ -85,7 +85,8 @@ class RINorm(nn.Module):
             self.affine_bias = nn.Parameter(torch.zeros(self.input_dim))
 
     def forward(self, x: torch.Tensor):
-
+        # at the beginning of `PLForecastingModule.forward()`, `x` has shape 
+        # (batch_size, input_chunk_length, n_targets).
         # select all dimensions except batch and input_dim (0, -1)
         # TL;DR: calculate mean and variance over all dimensions except batch and input_dim
         calc_dims = tuple(range(1, x.ndim - 1))
@@ -104,6 +105,8 @@ class RINorm(nn.Module):
         return x
 
     def inverse(self, x: torch.Tensor):
+        # x is assumed to be the output of PLForecastingModule.forward(), and has shape
+        # (batch_size, output_chunk_length, n_targets, nr_params). we ha
         if self.affine:
             x = x - self.affine_bias.view(self.affine_bias.shape + (1,))
             x = x / (
