@@ -330,8 +330,7 @@ class _TideModule(PLMixedCovariatesModule):
         y = y.view(-1, self.output_chunk_length, self.output_dim, self.nr_params)
 
         if self.use_reversible_instance_norm:
-            for i in range(self.nr_params):
-                y[:, :, :, i] = self.rin.inverse(y[:, :, :, i])
+            y = self.rin.inverse(y)
 
         return y
 

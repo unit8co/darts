@@ -105,8 +105,11 @@ class RINorm(nn.Module):
 
     def inverse(self, x: torch.Tensor):
         if self.affine:
-            x = x - self.affine_bias
-            x = x / (self.affine_weight + self.eps * self.eps)
-        x = x * self.stdev
-        x = x + self.mean
+            x = x - self.affine_bias.view(self.affine_bias.shape + (1,))
+            x = x / (
+                self.affine_weight.view(self.affine_weight.shape + (1,))
+                + self.eps * self.eps
+            )
+        x = x * self.stdev.view(self.stdev.shape + (1,))
+        x = x + self.mean.view(self.mean.shape + (1,))
         return x
