@@ -226,7 +226,7 @@ class _TideModule(PLMixedCovariatesModule):
         )
 
         if self.use_reversible_instance_norm:
-            self.rin = RINorm(input_dim=input_dim)
+            self.rin = RINorm(input_dim=output_dim)
         else:
             self.rin = None
 
@@ -251,7 +251,7 @@ class _TideModule(PLMixedCovariatesModule):
         x, x_future_covariates, x_static_covariates = x_in
 
         if self.use_reversible_instance_norm:
-            x = self.rin(x)
+            x[:, :, : self.output_dim] = self.rin(x[:, :, : self.output_dim])
 
         x_lookback = x[:, :, : self.output_dim]
 
