@@ -1,8 +1,10 @@
 bump2version==1.0.1
+jupyterlab
 docutils==0.17.1
 ipython==8.10.0
 ipykernel==5.3.4
 ipywidgets==7.5.1
+ipython_genutils
 jinja2==3.0.3
 m2r2==0.3.2
 nbsphinx==0.8.7
