@@ -105,10 +105,11 @@ def process_input(
         series = fallback_series
         past_covariates = fallback_past_covariates
         future_covariates = fallback_future_covariates
-    # otherwise use the passed input, and optionally generate the covariate encodings
+    # otherwise use the passed input, and generate the covariate encodings (they will be removed again later on
+    # if `requires_covariates_encoding=False`)
     else:
-        if model.encoders.encoding_available and requires_covariates_encoding:
-            (past_covariates, future_covariates,) = model.generate_fit_encodings(
+        if model.encoders.encoding_available:
+            past_covariates, future_covariates = model.generate_fit_encodings(
                 series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
@@ -118,15 +119,16 @@ def process_input(
     past_covariates = series2seq(past_covariates)
     future_covariates = series2seq(future_covariates)
 
-    target_components = None
-    if series is not None:
-        target_components = series[0].columns.to_list()
-    past_covariates_components = None
-    if past_covariates is not None:
-        past_covariates_components = past_covariates[0].columns.to_list()
-    future_covariates_components = None
-    if future_covariates is not None:
-        future_covariates_components = future_covariates[0].columns.to_list()
+    (
+        target_components,
+        static_covariates_components,
+        past_covariates_components,
+        future_covariates_components,
+    ) = get_component_names(
+        series=series,
+        past_covariates=past_covariates,
+        future_covariates=future_covariates,
+    )
 
     _check_valid_input(
         model,
@@ -142,11 +144,31 @@ def process_input(
         test_stationarity=test_stationarity,
     )
 
+    # make sure to remove any encodings from covariates if downstream tasks do not require covariates without encodings
+    if not requires_covariates_encoding and model.encoders.encoding_available:
+        if past_covariates is not None and model.encoders.past_encoders:
+            pc_encoded = model.encoders.past_components.tolist()
+            if len(pc_encoded) == past_covariates[0].n_components:
+                past_covariates = None
+            else:
+                past_covariates = [
+                    pc[pc.components.drop(pc_encoded)] for pc in past_covariates
+                ]
+        if future_covariates is not None and model.encoders.future_encoders:
+            fc_encoded = model.encoders.future_components.tolist()
+            if len(fc_encoded) == future_covariates[0].n_components:
+                future_covariates = None
+            else:
+                future_covariates = [
+                    fc[fc.components.drop(fc_encoded)] for fc in future_covariates
+                ]
+
     return (
         series,
         past_covariates,
         future_covariates,
         target_components,
+        static_covariates_components,
         past_covariates_components,
         future_covariates_components,
     )
@@ -208,6 +230,50 @@ def process_horizons_and_targets(
         horizons = range(1, fallback_horizon + 1)
 
     return horizons, target_components
+
+
+def get_component_names(
+    series: Sequence[TimeSeries],
+    past_covariates: Optional[Sequence[TimeSeries]] = None,
+    future_covariates: Optional[Sequence[TimeSeries]] = None,
+    idx: int = 0,
+) -> Tuple[List[str], Optional[List[str]], Optional[List[str]], Optional[List[str]]]:
+    """Extract and return the components of target series, static covariate, past and future covariates series.
+
+    Parameters
+    ----------
+    model
+        any `ForecastingModel`.
+    series
+         A sequence of target `TimeSeries`.
+    past_covariates
+         Optionally, a sequence of past covariates `TimeSeries`.
+    future_covariates
+         Optionally, a sequence of future covariates `TimeSeries`.
+    idx
+        the index of the input sequences to extract the components from.
+    """
+    target_components = series[idx].components.tolist()
+
+    # covariates
+    static_covariates = series[idx].static_covariates
+    sc_components = (
+        static_covariates.columns.tolist() if static_covariates is not None else []
+    )
+    pc_components = (
+        past_covariates[idx].components.tolist() if past_covariates is not None else []
+    )
+    fc_components = (
+        future_covariates[idx].components.tolist()
+        if future_covariates is not None
+        else []
+    )
+
+    # set to None if not available
+    sc_components = sc_components if sc_components else None
+    pc_components = pc_components if pc_components else None
+    fc_components = fc_components if fc_components else None
+    return target_components, sc_components, pc_components, fc_components
 
 
 def _check_valid_input(

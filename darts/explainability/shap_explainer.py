@@ -211,6 +211,7 @@ class ShapExplainer(ForecastingModelExplainer):
             _,
             _,
             _,
+            _,
         ) = self._process_foreground(
             foreground_series,
             foreground_past_covariates,
@@ -384,6 +385,7 @@ class ShapExplainer(ForecastingModelExplainer):
             foreground_series,
             foreground_past_covariates,
             foreground_future_covariates,
+            _,
             _,
             _,
             _,

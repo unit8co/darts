@@ -685,7 +685,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self
             Fitted model.
         """
-        params = self._setup_for_fit_from_dataset(
+        series_input, params = self._setup_for_fit_from_dataset(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
@@ -699,11 +699,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             num_loader_workers=num_loader_workers,
         )
         # call super fit only if user is actually fitting the model
-        super().fit(
-            series=seq2series(series),
-            past_covariates=seq2series(past_covariates),
-            future_covariates=seq2series(future_covariates),
-        )
+        super().fit(*(seq2series(s) for s in series_input))
         return self.fit_from_dataset(*params)
 
     def _setup_for_fit_from_dataset(
@@ -720,12 +716,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         max_samples_per_ts: Optional[int] = None,
         num_loader_workers: int = 0,
     ) -> Tuple[
-        TrainingDataset,
-        Optional[TrainingDataset],
-        Optional[pl.Trainer],
-        Optional[bool],
-        int,
-        int,
+        Tuple[
+            Sequence[TimeSeries],
+            Optional[Sequence[TimeSeries]],
+            Optional[Sequence[TimeSeries]],
+        ],
+        Tuple[
+            TrainingDataset,
+            Optional[TrainingDataset],
+            Optional[pl.Trainer],
+            Optional[bool],
+            int,
+            int,
+        ],
     ]:
         """This method acts on `TimeSeries` inputs. It performs sanity checks, and sets up / returns the datasets and
         additional inputs required for training the model with `fit_from_dataset()`.
@@ -836,7 +839,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             ),
         )
         logger.info(f"Train dataset contains {len(train_dataset)} samples.")
-        return (
+        series_input = (series, past_covariates, future_covariates)
+        fit_from_ds_params = (
             train_dataset,
             val_dataset,
             trainer,
@@ -844,6 +848,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             epochs,
             num_loader_workers,
         )
+        return series_input, fit_from_ds_params
 
     @random_method
     def fit_from_dataset(

@@ -35,6 +35,7 @@ from darts.explainability.explainability import (
     ForecastingModelExplainer,
 )
 from darts.models import TFTModel
+from darts.utils.timeseries_generation import generate_index
 
 try:
     from typing import Literal
@@ -78,11 +79,103 @@ class TFTExplainer(ForecastingModelExplainer):
             background_series=background_series,
             background_past_covariates=background_past_covariates,
             background_future_covariates=background_future_covariates,
-            requires_background=False,
+            requires_background=True,
             requires_covariates_encoding=False,
             check_component_names=False,
             test_stationarity=False,
         )
+        # add the relative index that generated inside the model (not in the input data)
+        if model.add_relative_index:
+            self.future_covariates_components.append("add_relative_index")
+
+    def explain(
+        self,
+        foreground_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        foreground_past_covariates: Optional[
+            Union[TimeSeries, Sequence[TimeSeries]]
+        ] = None,
+        foreground_future_covariates: Optional[
+            Union[TimeSeries, Sequence[TimeSeries]]
+        ] = None,
+        horizons: Optional[Sequence[int]] = None,
+        target_components: Optional[Sequence[str]] = None,
+    ) -> ExplainabilityResult:
+        # """Returns the explainability result of the TFT model.
+        #
+        # The explainability result contains the attention heads of the TFT model.
+        # The attention heads determine the contribution of time-varying inputs.
+        #
+        # Parameters
+        # ----------
+        # kwargs
+        #     Arguments passed to the `predict` method of the TFT model.
+        #
+        # Returns
+        # -------
+        # ExplainabilityResult
+        #     The explainability result containing the attention heads.
+        #
+        # """
+        super().explain(
+            foreground_series, foreground_past_covariates, foreground_future_covariates
+        )
+        (
+            foreground_series,
+            foreground_past_covariates,
+            foreground_future_covariates,
+            _,
+            _,
+            _,
+            _,
+        ) = self._process_foreground(
+            foreground_series,
+            foreground_past_covariates,
+            foreground_future_covariates,
+        )
+        horizons, _ = self._process_horizons_and_targets(
+            horizons,
+            None,
+        )
+        _ = self.model.predict(
+            n=self.n,
+            series=foreground_series,
+            past_covariates=foreground_past_covariates,
+            future_covariates=foreground_future_covariates,
+        )
+        # get the weights and the attention head from the trained model for the prediction
+        attention_heads = (
+            self.model.model._attn_out_weights.squeeze().sum(axis=1).detach()
+        )
+        index = torch.tensor([i - 1 for i in horizons])
+        return ExplainabilityResult(
+            {
+                "attention_heads": TimeSeries.from_times_and_values(
+                    values=torch.index_select(attention_heads, dim=0, index=index).T,
+                    times=generate_index(
+                        start=-self.model.input_chunk_length,
+                        end=self.model.output_chunk_length - 1,
+                        freq=1,
+                    ),
+                    columns=[str(i) for i in horizons],
+                ),
+            }
+        )
+        # if "n" not in kwargs:
+        #     kwargs["n"] = self.model.model.output_chunk_length
+        #
+        # _ = self.model.predict(**kwargs)
+        #
+        # # get the weights and the attention head from the trained model for the prediction
+        # attention_heads = (
+        #     self.model.model._attn_out_weights.squeeze().sum(axis=1).detach()
+        # )
+        #
+        # # return the explainer result to be used in other methods
+        # return ExplainabilityResult(
+        #     {
+        #         "attention_heads": TimeSeries.from_values(attention_heads.T),
+        #     }
+        # )
 
     @property
     def encoder_importance(self):
@@ -154,89 +247,6 @@ class TFTExplainer(ForecastingModelExplainer):
             "encoder_importance": self.encoder_importance,
             "decoder_importance": self.decoder_importance,
         }
-
-    def explain(
-        self,
-        foreground_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        foreground_past_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        foreground_future_covariates: Optional[
-            Union[TimeSeries, Sequence[TimeSeries]]
-        ] = None,
-        horizons: Optional[Sequence[int]] = None,
-        target_components: Optional[Sequence[str]] = None,
-    ) -> ExplainabilityResult:
-        # """Returns the explainability result of the TFT model.
-        #
-        # The explainability result contains the attention heads of the TFT model.
-        # The attention heads determine the contribution of time-varying inputs.
-        #
-        # Parameters
-        # ----------
-        # kwargs
-        #     Arguments passed to the `predict` method of the TFT model.
-        #
-        # Returns
-        # -------
-        # ExplainabilityResult
-        #     The explainability result containing the attention heads.
-        #
-        # """
-        super().explain(
-            foreground_series, foreground_past_covariates, foreground_future_covariates
-        )
-        (
-            foreground_series,
-            foreground_past_covariates,
-            foreground_future_covariates,
-            _,
-            _,
-            _,
-        ) = self._process_foreground(
-            foreground_series,
-            foreground_past_covariates,
-            foreground_future_covariates,
-        )
-        horizons, _ = self._process_horizons_and_targets(
-            horizons,
-            None,
-        )
-        _ = self.model.predict(
-            n=self.n,
-            series=foreground_series,
-            past_covariates=foreground_past_covariates,
-            future_covariates=foreground_future_covariates,
-        )
-        # get the weights and the attention head from the trained model for the prediction
-        attention_heads = (
-            self.model.model._attn_out_weights.squeeze().sum(axis=1).detach()
-        )
-        index = torch.tensor([i - 1 for i in horizons])
-        return ExplainabilityResult(
-            {
-                "attention_heads": TimeSeries.from_values(
-                    values=torch.index_select(attention_heads, dim=0, index=index).T,
-                    columns=[str(i) for i in horizons],
-                ),
-            }
-        )
-        # if "n" not in kwargs:
-        #     kwargs["n"] = self.model.model.output_chunk_length
-        #
-        # _ = self.model.predict(**kwargs)
-        #
-        # # get the weights and the attention head from the trained model for the prediction
-        # attention_heads = (
-        #     self.model.model._attn_out_weights.squeeze().sum(axis=1).detach()
-        # )
-        #
-        # # return the explainer result to be used in other methods
-        # return ExplainabilityResult(
-        #     {
-        #         "attention_heads": TimeSeries.from_values(attention_heads.T),
-        #     }
-        # )
 
     @staticmethod
     def plot_attention_heads(
@@ -316,32 +326,24 @@ class TFTExplainer(ForecastingModelExplainer):
         Dict[str, str]
             The feature name mapping. For example
             {
+                'target_0': 'ice cream',
                 'past_covariate_0': 'heater',
                 'past_covariate_1': 'year',
                 'past_covariate_2': 'month',
                 'future_covariate_0': 'darts_enc_fc_cyc_month_sin',
                 'future_covariate_1': 'darts_enc_fc_cyc_month_cos',
-                'target_0': 'ice cream',
              }
-
         """
-        past_covariates_name_mapping = {
-            f"past_covariate_{i}": colname
-            for i, colname in enumerate(self.model.past_covariate_series.components)
-        }
-        future_covariates_name_mapping = {
-            f"future_covariate_{i}": colname
-            for i, colname in enumerate(self.model.future_covariate_series.components)
-        }
-        target_name_mapping = {
-            f"target_{i}": colname
-            for i, colname in enumerate(self.model.training_series.components)
-        }
+
+        def map_cols(comps, name):
+            comps = comps if comps is not None else []
+            return {f"{name}_{i}": colname for i, colname in enumerate(comps)}
 
         return {
-            **past_covariates_name_mapping,
-            **future_covariates_name_mapping,
-            **target_name_mapping,
+            **map_cols(self.target_components, "target"),
+            **map_cols(self.static_covariates_components, "static_covariate"),
+            **map_cols(self.past_covariates_components, "past_covariate"),
+            **map_cols(self.future_covariates_components, "future_covariate"),
         }
 
     @staticmethod

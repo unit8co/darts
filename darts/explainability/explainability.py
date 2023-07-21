@@ -90,6 +90,7 @@ class ForecastingModelExplainer(ABC):
             self.background_past_covariates,
             self.background_future_covariates,
             self.target_components,
+            self.static_covariates_components,
             self.past_covariates_components,
             self.future_covariates_components,
         ) = process_input(

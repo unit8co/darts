@@ -243,13 +243,17 @@ class ShapExplainabilityResult(ExplainabilityResult):
 #             Dict[int, Dict[str, TimeSeries]],
 #             Sequence[Dict[int, Dict[str, TimeSeries]]],
 #         ],
-#         encoder_weights: Union[
+#         encoder_importance: Union[
 #             Dict[int, Dict[str, TimeSeries]],
 #             Sequence[Dict[int, Dict[str, TimeSeries]]],
 #         ],
-#         shap_explanation_object: Union[
-#             Dict[int, Dict[str, shap.Explanation]],
-#             Sequence[Dict[int, Dict[str, shap.Explanation]]],
+#         decoder_importance: Union[
+#             Dict[int, Dict[str, TimeSeries]],
+#             Sequence[Dict[int, Dict[str, TimeSeries]]],
+#         ],
+#         static_importance: Union[
+#             Dict[int, Dict[str, TimeSeries]],
+#             Sequence[Dict[int, Dict[str, TimeSeries]]],
 #         ],
 #     ):
 #         super().__init__(explained_forecasts)

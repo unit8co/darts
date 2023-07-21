@@ -1266,52 +1266,55 @@ class TimeSeries:
         )
 
     @property
-    def n_samples(self):
+    def n_samples(self) -> int:
         """Number of samples contained in the series."""
         return len(self._xa.sample)
 
     @property
-    def n_components(self):
+    def n_components(self) -> int:
         """Number of components (dimensions) contained in the series."""
         return len(self._xa.component)
 
     @property
-    def width(self):
+    def width(self) -> int:
         """ "Width" (= number of components) of the series."""
         return self.n_components
 
     @property
-    def n_timesteps(self):
+    def n_timesteps(self) -> int:
         """Number of time steps in the series."""
         return len(self._time_index)
 
     @property
-    def is_deterministic(self):
+    def is_deterministic(self) -> bool:
         """Whether this series is deterministic."""
         return self.n_samples == 1
 
     @property
-    def is_stochastic(self):
+    def is_stochastic(self) -> bool:
         """Whether this series is stochastic."""
         return not self.is_deterministic
 
     @property
-    def is_probabilistic(self):
+    def is_probabilistic(self) -> bool:
         """Whether this series is stochastic (= probabilistic)."""
         return self.is_stochastic
 
     @property
-    def is_univariate(self):
+    def is_univariate(self) -> bool:
         """Whether this series is univariate."""
         return self.n_components == 1
 
     @property
-    def freq(self):
-        """The frequency of the series."""
+    def freq(self) -> Union[pd.DateOffset, int]:
+        """The frequency of the series.
+        A `pd.DateOffset` if series is indexed with a `pd.DatetimeIndex`.
+        An integer (step size) if series is indexed with a `pd.RangeIndex`.
+        """
         return self._freq
 
     @property
-    def freq_str(self):
+    def freq_str(self) -> str:
         """The frequency string representation of the series."""
         return self._freq_str
 
@@ -1321,12 +1324,12 @@ class TimeSeries:
         return self._xa.values.dtype
 
     @property
-    def components(self):
+    def components(self) -> pd.Index:
         """The names of the components, as a Pandas Index."""
         return self._xa.get_index(DIMS[1]).copy()
 
     @property
-    def columns(self):
+    def columns(self) -> pd.Index:
         """The names of the components, as a Pandas Index."""
         return self.components
 
@@ -1418,10 +1421,10 @@ class TimeSeries:
             logger,
         )
 
-    def _get_first_timestamp_after(self, ts: pd.Timestamp) -> pd.Timestamp:
+    def _get_first_timestamp_after(self, ts: pd.Timestamp) -> Union[pd.Timestamp, int]:
         return next(filter(lambda t: t >= ts, self._time_index))
 
-    def _get_last_timestamp_before(self, ts: pd.Timestamp) -> pd.Timestamp:
+    def _get_last_timestamp_before(self, ts: pd.Timestamp) -> Union[pd.Timestamp, int]:
         return next(filter(lambda t: t <= ts, self._time_index[::-1]))
 
     """
@@ -2125,7 +2128,7 @@ class TimeSeries:
 
     def get_timestamp_at_point(
         self, point: Union[pd.Timestamp, float, int]
-    ) -> pd.Timestamp:
+    ) -> Union[pd.Timestamp, int]:
         """
         Converts a point into a pandas.Timestamp (if Datetime-indexed) or into an integer (if Int64-indexed).
 
