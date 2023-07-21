@@ -22,7 +22,7 @@ For an examples on how to use the TFT explainer, please have a look at the TFT n
 
 """
 
-from typing import Collection, Dict, List, Optional, Sequence, Union
+from typing import Dict, List, Optional, Sequence, Union
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -164,8 +164,8 @@ class TFTExplainer(ForecastingModelExplainer):
         foreground_future_covariates: Optional[
             Union[TimeSeries, Sequence[TimeSeries]]
         ] = None,
-        horizons: Optional[Collection[int]] = None,
-        target_components: Optional[Collection[str]] = None,
+        horizons: Optional[Sequence[int]] = None,
+        target_components: Optional[Sequence[str]] = None,
     ) -> ExplainabilityResult:
         # """Returns the explainability result of the TFT model.
         #
@@ -186,9 +186,21 @@ class TFTExplainer(ForecastingModelExplainer):
         super().explain(
             foreground_series, foreground_past_covariates, foreground_future_covariates
         )
-
+        (
+            foreground_series,
+            foreground_past_covariates,
+            foreground_future_covariates,
+            _,
+            _,
+            _,
+        ) = self._process_foreground(
+            foreground_series,
+            foreground_past_covariates,
+            foreground_future_covariates,
+        )
         horizons, _ = self._process_horizons_and_targets(
-            horizons=horizons, target_components=None
+            horizons,
+            None,
         )
         _ = self.model.predict(
             n=self.n,

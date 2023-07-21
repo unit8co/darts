@@ -212,12 +212,13 @@ class ShapExplainer(ForecastingModelExplainer):
             _,
             _,
         ) = self._process_foreground(
-            foreground_series=foreground_series,
-            foreground_past_covariates=foreground_past_covariates,
-            foreground_future_covariates=foreground_future_covariates,
+            foreground_series,
+            foreground_past_covariates,
+            foreground_future_covariates,
         )
         horizons, target_names = self._process_horizons_and_targets(
-            horizons=horizons, target_components=target_components
+            horizons,
+            target_components,
         )
 
         shap_values_list = []
@@ -283,8 +284,8 @@ class ShapExplainer(ForecastingModelExplainer):
 
     def summary_plot(
         self,
-        horizons: Optional[Sequence[int]] = None,
-        target_components: Optional[Sequence[str]] = None,
+        horizons: Optional[Union[int, Sequence[int]]] = None,
+        target_components: Optional[Union[str, Sequence[str]]] = None,
         num_samples: Optional[int] = None,
         plot_type: Optional[str] = "dot",
         **kwargs,
@@ -298,18 +299,16 @@ class ShapExplainer(ForecastingModelExplainer):
         Parameters
         ----------
         horizons
-            Optionally, a list of integers representing which points/steps in the future to explain,
-            starting from the first prediction step at 1. `horizons` must not be larger than
-            `output_chunk_length`.
+            Optionally, an integer or sequence of integers representing which points/steps in the future to explain,
+            starting from the first prediction step at 1. `horizons` must `<=output_chunk_length` of the forecasting
+            model.
         target_components
-            Optionally, a list of strings with the target components to be explained.
+            Optionally, a string or sequence of strings with the target components to explain.
         num_samples
-            Optionally, an integer for sampling the foreground series (based on the backgound),
+            Optionally, an integer for sampling the foreground series (based on the background),
             for the sake of performance.
         plot_type
-            Optionally, specify which of the propres shap library plot type to use. Can be one of
-            ``'dot', 'bar', 'violin'``.
-
+            Optionally, specify which of the shap library plot type to use. Can be one of ``'dot', 'bar', 'violin'``.
         """
 
         horizons, target_components = self._process_horizons_and_targets(
@@ -339,7 +338,7 @@ class ShapExplainer(ForecastingModelExplainer):
 
     def force_plot_from_ts(
         self,
-        foreground_series: TimeSeries = None,
+        foreground_series: Optional[TimeSeries] = None,
         foreground_past_covariates: Optional[TimeSeries] = None,
         foreground_future_covariates: Optional[TimeSeries] = None,
         horizon: Optional[int] = 1,
@@ -356,19 +355,19 @@ class ShapExplainer(ForecastingModelExplainer):
         Parameters
         ----------
         foreground_series
-            The target series to explain. Can be multivariate.
+            Optionally, the target series to explain. Can be multivariate. If `None`, will use the `background_series`.
         foreground_past_covariates
-            Optionally, a past covariate series if required by the forecasting model.
+            Optionally, a past covariate series if required by the forecasting model. If `None`, will use the
+            `background_past_covariates`.
         foreground_future_covariates
-            Optionally, a future covariate series if required by the forecasting model.
+            Optionally, a future covariate series if required by the forecasting model. If `None`, will use the
+            `background_future_covariates`.
         horizon
-            Optionally, an integer for the point/step in the future to explain,
-            starting from the first
-            prediction step at 1. `horizons` must not be larger than `output_chunk_length`.
-            by default, horizon = 1.
+            Optionally, an integer for the point/step in the future to explain, starting from the first prediction
+            step at 1. `horizons` must not be larger than `output_chunk_length`.
         target_component
-            Optionally, the target component to plot. If the target series is multivariate,
-            the target component must be specified.
+            Optionally, the target component to plot. If the target series is multivariate, the target component
+            must be specified.
         **kwargs
             Optionally, additional keyword arguments passed to `shap.force_plot()`.
         """
@@ -381,21 +380,23 @@ class ShapExplainer(ForecastingModelExplainer):
         if target_component is None:
             target_component = self.target_components[0]
 
-        horizon, target_component = self._process_horizons_and_targets(
-            horizon, target_component
+        (
+            foreground_series,
+            foreground_past_covariates,
+            foreground_future_covariates,
+            _,
+            _,
+            _,
+        ) = self._process_foreground(
+            foreground_series,
+            foreground_past_covariates,
+            foreground_future_covariates,
         )
-
-        horizon, target_component = horizon[0], target_component[0]
-
-        if self.model.encoders.encoding_available:
-            (
-                foreground_past_covariates,
-                foreground_future_covariates,
-            ) = self.model.generate_fit_encodings(
-                series=foreground_series,
-                past_covariates=foreground_past_covariates,
-                future_covariates=foreground_future_covariates,
-            )
+        horizons, target_components = self._process_horizons_and_targets(
+            horizon,
+            target_component,
+        )
+        horizon, target_component = horizons[0], target_components[0]
 
         foreground_X = self.explainers._create_regression_model_shap_X(
             foreground_series, foreground_past_covariates, foreground_future_covariates
