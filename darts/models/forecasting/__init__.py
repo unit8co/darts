@@ -41,6 +41,7 @@ PyTorch (Lightning)-based Models (`GlobalForecastingModel <https://unit8co.githu
     - :class:`TFTModel <darts.models.forecasting.tft_model.TFTModel>`
     - :class:`DLinearModel <darts.models.forecasting.dlinear.DLinearModel>`
     - :class:`NLinearModel <darts.models.forecasting.nlinear.NLinearModel>`
+    - :class:`TiDEModel <darts.models.forecasting.tide_model.TiDEModel>`
 Ensemble Models (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_)
     - :class:`NaiveEnsembleModel <darts.models.forecasting.baselines.NaiveEnsembleModel>`
     - :class:`RegressionEnsembleModel <darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel>`

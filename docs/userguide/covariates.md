@@ -149,7 +149,8 @@ Regression Models (b) | ✅ | ✅ |
 [TransformerModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.transformer_model.html#darts.models.forecasting.transformer_model.TransformerModel) | ✅ | |
 [TFTModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel) | ✅ | ✅ | ✅ 
 [DLinearModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.dlinear.html#darts.models.forecasting.dlinear.DLinearModel) | ✅ | ✅ | ✅ 
-[NLinearModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nlinear.html#darts.models.forecasting.nlinear.NLinearModel) | ✅ | ✅ | ✅ 
+[NLinearModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nlinear.html#darts.models.forecasting.nlinear.NLinearModel) | ✅ | ✅ | ✅
+[TiDEModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tide_model.html#darts.models.forecasting.tide_model.TiDEModel) | ✅ | ✅ | ✅
 Ensemble Models (e) | ✅ | ✅ | ✅
 
 **Table 1: Darts' forecasting models and their covariate support**

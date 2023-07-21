@@ -9,8 +9,8 @@
 ![Docker Image Version (latest by date)](https://img.shields.io/docker/v/unit8/darts?label=docker&sort=date)
 ![GitHub Release Date](https://img.shields.io/github/release-date/unit8co/darts)
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/unit8co/darts/release.yml?branch=master)
-[![Downloads](https://pepy.tech/badge/u8darts)](https://pepy.tech/project/u8darts)
 [![Downloads](https://pepy.tech/badge/darts)](https://pepy.tech/project/darts)
+[![Downloads](https://pepy.tech/badge/u8darts)](https://pepy.tech/project/u8darts)
 [![codecov](https://codecov.io/gh/unit8co/darts/branch/master/graph/badge.svg?token=7F1TLUFHQW)](https://codecov.io/gh/unit8co/darts)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![Join the chat at https://gitter.im/u8darts/darts](https://badges.gitter.im/u8darts/darts.svg)](https://gitter.im/u8darts/darts?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -249,10 +249,10 @@ Model | Univariate | Multivariate | Probabilistic | Multiple series (global) | P
 [TFTModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel) (Temporal Fusion Transformer) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [TFT paper](https://arxiv.org/pdf/1912.09363.pdf), [PyTorch Forecasting](https://pytorch-forecasting.readthedocs.io/en/latest/models.html)
 [DLinearModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.dlinear.html#darts.models.forecasting.dlinear.DLinearModel) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [DLinear paper](https://arxiv.org/pdf/2205.13504.pdf)
 [NLinearModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nlinear.html#darts.models.forecasting.nlinear.NLinearModel) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [NLinear paper](https://arxiv.org/pdf/2205.13504.pdf)
+[TiDEModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tide_model.html#darts.models.forecasting.tide_model.TiDEModel) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [TiDE paper](https://arxiv.org/pdf/2304.08424.pdf)
 **Ensemble Models** ([GlobalForecastingModel](https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms)): Model support is dependent on ensembled forecasting models and the ensemble model itself |  |  |  |  |  |  |  |
 [NaiveEnsembleModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 [RegressionEnsembleModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-
 
 
 ## Community & Contact

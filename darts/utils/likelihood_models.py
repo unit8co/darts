@@ -1011,8 +1011,8 @@ class QuantileRegression(Likelihood):
         This class can be used as any other Likelihood objects even though it is not
         representing the likelihood of a well defined distribution.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         quantiles
             list of quantiles
         """
