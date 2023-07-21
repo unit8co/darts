@@ -157,6 +157,16 @@ TFT model example notebook:
 
    examples/13-TFT-examples.ipynb
 
+TimeSeries Dense Encoder (TiDE) Model
+=======================================
+
+TiDE model example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/18-TiDE-examples.ipynb
+
 Kalman Filter Model
 ===================
 
