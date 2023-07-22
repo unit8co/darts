@@ -8,6 +8,7 @@ from typing import Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.components import glu_variants, layer_norm_variants
@@ -184,7 +185,8 @@ class _TransformerModule(PLPastCovariatesModule):
         self.nr_params = nr_params
         self.target_length = self.output_chunk_length
 
-        self.encoder = nn.Linear(input_size, d_model)
+        self.encoder_src = nn.Linear(input_size, d_model)
+        self.encoder_tgt = nn.Linear(self.target_size, d_model)
         self.positional_encoding = _PositionalEncoding(
             d_model, dropout, self.input_chunk_length
         )
@@ -276,46 +278,105 @@ class _TransformerModule(PLPastCovariatesModule):
             custom_decoder=custom_decoder,
         )
 
-        self.decoder = nn.Linear(
-            d_model, self.output_chunk_length * self.target_size * self.nr_params
-        )
+        self.decoder = nn.Linear(d_model, self.target_size * self.nr_params)
 
-    def _create_transformer_inputs(self, data):
+    def _permute_transformer_inputs(self, data):
         # '_TimeSeriesSequentialDataset' stores time series in the
         # (batch_size, input_chunk_length, input_size) format. PyTorch's nn.Transformer
         # module needs it the (input_chunk_length, batch_size, input_size) format.
         # Therefore, the first two dimensions need to be swapped.
-        src = data.permute(1, 0, 2)
-        tgt = src[-1:, :, :]
-
-        return src, tgt
+        return data.permute(1, 0, 2)
 
     def forward(self, x_in: Tuple):
-        data, _ = x_in
-        # Here we create 'src' and 'tgt', the inputs for the encoder and decoder
-        # side of the Transformer architecture
-        src, tgt = self._create_transformer_inputs(data)
+        """
+        When teacher forcing, x_in = (past_target + past_covariates, static_covariates, future_targets)
+        When inference, x_in = (past_target + past_covariates, static_covariates)
 
+        """
+        data = x_in[0]
+
+        start_token = self._permute_transformer_inputs(data[:, -1:, :])
+        if len(x_in) == 3:
+            src, _, tgt = x_in
+            src = self._permute_transformer_inputs(src)
+            tgt_permuted = self._permute_transformer_inputs(tgt)
+            tgt_padded = F.pad(tgt_permuted, (0, self.input_size - self.target_size))
+            tgt = torch.cat([start_token, tgt_padded], dim=0)
+            return self._prediction_step(src, tgt)[:, :-1, :, :]
+
+        data, _ = x_in
+
+        src = self._permute_transformer_inputs(data)
+        tgt = start_token
+
+        predictions = []
+        for _ in range(self.output_chunk_length):
+            pred = self._prediction_step(src, tgt)[:, -1, :, :]
+            predictions.append(pred)
+            tgt = torch.cat(
+                [tgt, pred.mean(dim=2).unsqueeze(dim=0)],
+                dim=0,
+            )  # take average of quantiles
+        return torch.stack(predictions, dim=1)
+
+    def _prediction_step(self, src: torch.Tensor, tgt: torch.Tensor):
+        batch_size = src.shape[1]
         # "math.sqrt(self.input_size)" is a normalization factor
         # see section 3.2.1 in 'Attention is All you Need' by Vaswani et al. (2017)
-        src = self.encoder(src) * math.sqrt(self.input_size)
+        src = self.encoder_src(src) * math.sqrt(self.input_size)
         src = self.positional_encoding(src)
 
-        tgt = self.encoder(tgt) * math.sqrt(self.input_size)
+        tgt = self.encoder_src(tgt) * math.sqrt(self.input_size)
         tgt = self.positional_encoding(tgt)
 
-        x = self.transformer(src=src, tgt=tgt)
+        tgt_mask = self.transformer.generate_square_subsequent_mask(
+            tgt.shape[0], src.get_device()
+        )
+        x = self.transformer(src=src, tgt=tgt, tgt_mask=tgt_mask)
         out = self.decoder(x)
 
         # Here we change the data format
         # from (1, batch_size, output_chunk_length * output_size)
         # to (batch_size, output_chunk_length, output_size, nr_params)
-        predictions = out[0, :, :]
-        predictions = predictions.view(
-            -1, self.target_length, self.target_size, self.nr_params
-        )
+        predictions = out.permute(1, 0, 2)
+        predictions = predictions.view(batch_size, -1, self.target_size, self.nr_params)
 
         return predictions
+
+    # Allow teacher forcing
+    def training_step(self, train_batch, batch_idx) -> torch.Tensor:
+        """performs the training step"""
+        future_targets = train_batch[-1]
+        train_batch.append(future_targets)
+        return super().training_step(train_batch, batch_idx)
+
+    def _produce_train_output(self, input_batch: Tuple):
+        """
+        Feeds PastCovariatesTorchModel with input and output chunks of a PastCovariatesSequentialDataset for
+        training.
+
+        Parameters:        if len(inp
+        # print([x.shape if x is not None else x for x in train_batch], "TRAIN")ut_batch) != 4:
+            a = 1
+        ----------
+        a = 1
+        input_batch
+            ``(past_target, past_covariates, static_covariates)``
+        """
+
+        past_target, past_covariates, static_covariates = input_batch[:3]
+        # Currently all our PastCovariates models require past target and covariates concatenated
+        inpt = [
+            torch.cat([past_target, past_covariates], dim=2)
+            if past_covariates is not None
+            else past_target,
+            static_covariates,
+        ]
+
+        # add future targets when teacher forcing
+        if len(input_batch) == 4:
+            inpt.append(input_batch[-1])
+        return self(inpt)
 
 
 class TransformerModel(PastCovariatesTorchModel):
