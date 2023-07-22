@@ -567,7 +567,9 @@ class BacktestingTestCase(DartsBaseTestClass):
         best_parameters as the single worker run.
         """
 
-        np.random.seed(1)
+        rng_seed = 1
+
+        np.random.seed(rng_seed)
 
         dummy_series = get_dummy_series(
             ts_length=100, lt_end_value=1, st_value_offset=0
@@ -577,7 +579,7 @@ class BacktestingTestCase(DartsBaseTestClass):
         test_cases = [
             {
                 "model": ARIMA,  # ExtendedForecastingModel
-                "parameters": {"p": [18, 4], "q": [2, 3]},
+                "parameters": {"p": [18, 4], "q": [2, 3], "random_state": [rng_seed]},
             },
             {
                 "model": BlockRNNModel,  # TorchForecastingModel
@@ -585,9 +587,7 @@ class BacktestingTestCase(DartsBaseTestClass):
                     "input_chunk_length": [5, 10],
                     "output_chunk_length": [1, 3],
                     "n_epochs": [1, 5],
-                    "random_state": [
-                        42
-                    ],  # necessary to avoid randomness among runs with same parameters
+                    "random_state": [rng_seed],
                 },
             },
         ]
@@ -597,14 +597,14 @@ class BacktestingTestCase(DartsBaseTestClass):
             model = test["model"]
             parameters = test["parameters"]
 
-            np.random.seed(1)
+            np.random.seed(rng_seed)
             _, best_params1, _ = model.gridsearch(
                 parameters=parameters, series=ts_train, val_series=ts_val, n_jobs=1
             )
 
-            np.random.seed(1)
+            np.random.seed(rng_seed)
             _, best_params2, _ = model.gridsearch(
-                parameters=parameters, series=ts_train, val_series=ts_val, n_jobs=-1
+                parameters=parameters, series=ts_train, val_series=ts_val, n_jobs=2
             )
 
             self.assertEqual(best_params1, best_params2)
