@@ -184,9 +184,9 @@ class _TransformerModule(PLPastCovariatesModule):
         self.target_size = output_size
         self.nr_params = nr_params
         self.target_length = self.output_chunk_length
+        self.d_model = d_model
 
-        self.encoder_src = nn.Linear(input_size, d_model)
-        self.encoder_tgt = nn.Linear(self.target_size, d_model)
+        self.encoder = nn.Linear(input_size, d_model)
         self.positional_encoding = _PositionalEncoding(
             d_model, dropout, self.input_chunk_length
         )
@@ -323,10 +323,10 @@ class _TransformerModule(PLPastCovariatesModule):
         batch_size = src.shape[1]
         # "math.sqrt(self.input_size)" is a normalization factor
         # see section 3.2.1 in 'Attention is All you Need' by Vaswani et al. (2017)
-        src = self.encoder_src(src) * math.sqrt(self.input_size)
-        src = self.positional_encoding(src)
+        src = self.encoder(src) * math.sqrt(self.d_model)
+        tgt = self.encoder(tgt) * math.sqrt(self.d_model)
 
-        tgt = self.encoder_src(tgt) * math.sqrt(self.input_size)
+        src = self.positional_encoding(src)
         tgt = self.positional_encoding(tgt)
 
         tgt_mask = self.transformer.generate_square_subsequent_mask(
