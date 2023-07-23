@@ -666,6 +666,9 @@ def add_static_covariates_to_lagged_data(
                     np.broadcast_to(static_covs, shape_out[:2]).reshape(shape_out),
                 ]
             )
+        # we add an empty row if we are in predict mode, as we also want the potential predictable next point
+        if not is_training:
+            df_target.loc[df_target.index[-1] + 1 * target_ts.freq, :] = np.nan
 
     if input_not_list:
         features = features[0]
