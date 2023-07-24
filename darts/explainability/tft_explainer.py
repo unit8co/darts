@@ -27,7 +27,6 @@ from typing import Dict, List, Optional, Sequence, Union
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import torch
 from torch import Tensor
 
 from darts import TimeSeries
@@ -35,6 +34,7 @@ from darts.explainability.explainability import (
     ExplainabilityResult,
     ForecastingModelExplainer,
 )
+from darts.logging import get_logger, raise_log
 from darts.models import TFTModel
 from darts.utils.timeseries_generation import generate_index
 
@@ -42,6 +42,9 @@ try:
     from typing import Literal
 except ImportError:
     from typing_extensions import Literal
+
+
+logger = get_logger(__name__)
 
 
 class TFTExplainer(ForecastingModelExplainer):
@@ -137,30 +140,35 @@ class TFTExplainer(ForecastingModelExplainer):
             horizons,
             None,
         )
-        _ = self.model.predict(
+        preds = self.model.predict(
             n=self.n,
             series=foreground_series,
             past_covariates=foreground_past_covariates,
             future_covariates=foreground_future_covariates,
         )
         # get the weights and the attention head from the trained model for the prediction
+        # aggregate over attention heads
         attention_heads = (
-            self.model.model._attn_out_weights.squeeze().sum(axis=1).detach()
+            self.model.model._attn_out_weights.detach().numpy().sum(axis=-2)
         )
-        index = torch.tensor([i - 1 for i in horizons])
-        return ExplainabilityResult(
-            {
-                "attention_heads": TimeSeries.from_times_and_values(
-                    values=torch.index_select(attention_heads, dim=0, index=index).T,
-                    times=generate_index(
-                        start=-self.model.input_chunk_length,
-                        end=self.model.output_chunk_length - 1,
-                        freq=1,
-                    ),
-                    columns=[f"horizon {str(i)}" for i in horizons],
-                ),
-            }
-        )
+        index = [h - 1 for h in horizons]
+        results = []
+
+        icl = self.model.input_chunk_length
+        for idx, (series, pred_series) in enumerate(zip(foreground_series, preds)):
+            results.append(
+                ExplainabilityResult(
+                    {
+                        "attention_heads": TimeSeries.from_times_and_values(
+                            values=np.take(attention_heads[idx], index, axis=0).T,
+                            times=series.time_index[-icl:].union(
+                                pred_series.time_index
+                            ),
+                            columns=[f"horizon {str(i)}" for i in horizons],
+                        ),
+                    }
+                )
+            )
         # if "n" not in kwargs:
         #     kwargs["n"] = self.model.model.output_chunk_length
         #
@@ -177,6 +185,7 @@ class TFTExplainer(ForecastingModelExplainer):
         #         "attention_heads": TimeSeries.from_values(attention_heads.T),
         #     }
         # )
+        return results
 
     @property
     def encoder_importance(self):
@@ -286,33 +295,114 @@ class TFTExplainer(ForecastingModelExplainer):
             "static_covariates_importance": static_covariates_importance,
         }
 
-    @staticmethod
     def plot_attention_heads(
+        self,
         expl_result: ExplainabilityResult,
-        plot_type: Optional[Literal["all", "time", "heatmap"]] = "time",
+        plot_type: Optional[Literal["all", "time", "heatmap"]] = "all",
+        show_index_as: Literal["relative", "time"] = "relative",
+        ax=None,
+        max_nr_series: int = 5,
     ):
-        """Plots the attention heads of the TFT model."""
-        attention_heads = expl_result.get_explanation(component="attention_heads")
-        if plot_type == "all":
-            fig = plt.figure()
-            attention_heads.plot(max_nr_components=-1, figure=fig)
-            # move legend to the right side of the figure
-            plt.legend(bbox_to_anchor=(0.95, 1), loc="upper left")
-            plt.xlabel("Time steps in the past (# lags)")
-            plt.ylabel("Attention")
-        elif plot_type == "time":
-            fig = plt.figure()
-            attention_heads.mean(1).plot(label="Mean Attention Head", figure=fig)
-            plt.xlabel("Time steps in the past (# lags)")
-            plt.ylabel("Attention")
-        elif plot_type == "heatmap":
-            avg_attention = attention_heads.values().transpose()
-            fig = plt.figure()
-            plt.imshow(avg_attention, cmap="hot", interpolation="nearest", figure=fig)
-            plt.xlabel("Time steps in the past (# lags)")
-            plt.ylabel("Horizon")
-        else:
-            raise ValueError("`plot_type` must be either 'all', 'time' or 'heatmap'")
+        """Plots the attention heads of the TFT model.
+
+        Parameters
+        ----------
+        expl_result
+            One or a list of `TFTExplainabilityResult`. Corresponds to the output of `TFTExplainer.explain()`
+        plot_type
+            The type of attention head plot. One of ("all", "time", "heatmap").
+            If "all", will plot the attention per horizon (given the horizons in the ExplainabilityResult).
+            The maximum horizon corresponds to the `output_chunk_length` of the trained `TFTModel`.
+            If "time", will plot the mean attention over all horizons.
+            If "heatmap", will plot the attention per horizon on a heat map. The horizons are shown on the y-axis,
+            and times / relative indices on the x-axis.
+        show_index_as
+            The type of index to be shown. One of ("relative", "time").
+            If "relative", will plot the x-axis from `(-input_chunk_length, output_chunk_length - 1)`. `0` corresponds
+            to the first prediction point.
+            If "time", will plot the x-axis with the actual time index (or range index) of the corresponding
+            ExplainabilityResult.
+        ax
+            Optionally, an axis to plot on. Only effective on a single `expl_result`.
+        max_nr_series
+            The maximum number of plots to show in case of a list of `expl_result`.
+        """
+        single_series = False
+        if isinstance(expl_result, ExplainabilityResult):
+            expl_result = [expl_result]
+            single_series = True
+
+        for idx, res in enumerate(expl_result):
+            attention_heads = res.get_explanation(component="attention_heads")
+            if ax is None or not single_series:
+                fig, ax = plt.subplots()
+            if show_index_as == "relative":
+                x_ticks = generate_index(
+                    start=-self.model.input_chunk_length, end=self.n - 1
+                )
+                attention_heads = TimeSeries.from_times_and_values(
+                    times=generate_index(
+                        start=-self.model.input_chunk_length, end=self.n - 1
+                    ),
+                    values=attention_heads.values(copy=False),
+                )
+                x_label = "Index relative to first prediction point"
+            elif show_index_as == "time":
+                x_ticks = attention_heads.time_index
+                x_label = "Time index"
+            else:
+                x_label, x_ticks = None, None
+                raise_log(
+                    ValueError("`show_index_as` must either be 'relative', or 'time'.")
+                )
+
+            prediction_start_color = "red"
+            if plot_type == "all":
+                ax_title = "Mean Attention"
+                y_label = "Attention"
+                attention_heads.plot(max_nr_components=-1, ax=ax)
+            elif plot_type == "time":
+                ax_title = "Attention per Horizon"
+                y_label = "Attention"
+                attention_heads.mean(1).plot(label="Mean Attention Head", ax=ax)
+            elif plot_type == "heatmap":
+                ax_title = "Attention Heat Map"
+                y_label = "Horizon"
+
+                # generate a heat map
+                x, y = np.meshgrid(x_ticks, np.arange(1, self.n + 1))
+                c = ax.pcolormesh(
+                    x, y, attention_heads.values().transpose(), cmap="hot"
+                )
+                ax.axis([x.min(), x.max(), y.max(), y.min()])
+                prediction_start_color = "lightblue"
+                fig.colorbar(c, ax=ax, orientation="horizontal")
+            else:
+                raise raise_log(
+                    ValueError("`plot_type` must be either 'all', 'time' or 'heatmap'"),
+                    logger=logger,
+                )
+
+            # draw the prediction start point
+            y_min, y_max = ax.get_ylim()
+            ax.vlines(
+                x=x_ticks[-12],
+                ymin=y_min,
+                ymax=y_max,
+                label="prediction start",
+                ls="dashed",
+                lw=2,
+                colors=prediction_start_color,
+            )
+            ax.set_xlabel(x_label)
+            ax.set_ylabel(y_label)
+            title_suffix = "" if single_series else f": series index {idx}"
+            ax.set_title(ax_title + title_suffix)
+            ax.legend(bbox_to_anchor=(1, 1), loc="upper left")
+            plt.show()
+
+            if idx + 1 == max_nr_series:
+                break
 
     def _get_importance(
         self,
