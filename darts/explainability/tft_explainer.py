@@ -25,6 +25,7 @@ For an examples on how to use the TFT explainer, please have a look at the TFT n
 from typing import Dict, List, Optional, Sequence, Union
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import torch
 from torch import Tensor
@@ -156,7 +157,7 @@ class TFTExplainer(ForecastingModelExplainer):
                         end=self.model.output_chunk_length - 1,
                         freq=1,
                     ),
-                    columns=[str(i) for i in horizons],
+                    columns=[f"horizon {str(i)}" for i in horizons],
                 ),
             }
         )
@@ -198,6 +199,25 @@ class TFTExplainer(ForecastingModelExplainer):
         )
 
     @property
+    def static_covariates_importance(self):
+        """Returns the static covariates importance of the TFT model.
+
+        The static covariate importances are calculated for the static inputs of the model (numeric and / or
+        categorical). The static variable selection network is used to select the most important static covariates.
+        It provides insights which variable are most significant for the prediction problem.
+        See section 4.2, and 4.3 of the paper for more details.
+
+        Returns
+        -------
+        pd.DataFrame
+            The static covariates importance.
+        """
+        return self._get_importance(
+            weight=self.model.model._static_covariate_var,
+            names=self.model.model.static_variables,
+        )
+
+    @property
     def decoder_importance(self):
         """Returns the decoder variable importance of the TFT model.
 
@@ -217,7 +237,9 @@ class TFTExplainer(ForecastingModelExplainer):
             names=self.model.model.decoder_variables,
         )
 
-    def get_variable_selection_weight(self, plot=False) -> Dict[str, pd.DataFrame]:
+    def get_variable_selection_weight(
+        self, plot=False, figsize=None
+    ) -> Dict[str, pd.DataFrame]:
         """Returns the variable selection weight of the TFT model.
 
         Parameters
@@ -232,20 +254,36 @@ class TFTExplainer(ForecastingModelExplainer):
 
         """
 
+        encoder_importance = self.encoder_importance
+        decoder_importance = self.decoder_importance
+        static_covariates_importance = self.static_covariates_importance
+        uses_static_covariates = not static_covariates_importance.empty
         if plot:
             # plot the encoder and decoder weights
-            self._plot_cov_selection(
-                self.encoder_importance,
-                title="Encoder variable importance",
+            fig, axes = plt.subplots(
+                nrows=3 if uses_static_covariates else 2, sharex=True, figsize=figsize
             )
             self._plot_cov_selection(
-                self.decoder_importance,
-                title="Decoder variable importance",
+                encoder_importance, title="Encoder variable importance", ax=axes[0]
             )
+            axes[0].set_xlabel("")
+            self._plot_cov_selection(
+                decoder_importance, title="Decoder variable importance", ax=axes[1]
+            )
+            if uses_static_covariates:
+                axes[1].set_xlabel("")
+                self._plot_cov_selection(
+                    static_covariates_importance,
+                    title="Static variable importance",
+                    ax=axes[2],
+                )
+            fig.tight_layout()
+            plt.show()
 
         return {
-            "encoder_importance": self.encoder_importance,
-            "decoder_importance": self.decoder_importance,
+            "encoder_importance": encoder_importance,
+            "decoder_importance": decoder_importance,
+            "static_covariates_importance": static_covariates_importance,
         }
 
     @staticmethod
@@ -257,11 +295,7 @@ class TFTExplainer(ForecastingModelExplainer):
         attention_heads = expl_result.get_explanation(component="attention_heads")
         if plot_type == "all":
             fig = plt.figure()
-            attention_heads.plot(
-                label="Attention Head",
-                max_nr_components=-1,
-                figure=fig,
-            )
+            attention_heads.plot(max_nr_components=-1, figure=fig)
             # move legend to the right side of the figure
             plt.legend(bbox_to_anchor=(0.95, 1), loc="upper left")
             plt.xlabel("Time steps in the past (# lags)")
@@ -302,11 +336,16 @@ class TFTExplainer(ForecastingModelExplainer):
         pd.DataFrame
             The importance of the variables.
         """
+        if weight is None:
+            return pd.DataFrame()
+
         # transform the encoder/decoder weights to percentages, rounded to n_decimals
         weights_percentage = (
             weight.mean(axis=1).detach().numpy().mean(axis=0).round(n_decimals) * 100
         )
-
+        # static covariates aggregation needs expansion in first dimension
+        if len(weights_percentage.shape) == 1:
+            weights_percentage = np.expand_dims(weights_percentage, 0)
         # create a dataframe with the variable names and the weights
         name_mapping = self._name_mapping
         importance = pd.DataFrame(
@@ -315,7 +354,7 @@ class TFTExplainer(ForecastingModelExplainer):
         )
 
         # return the importance sorted descending
-        return importance.transpose().sort_values(0, ascending=False).transpose()
+        return importance.transpose().sort_values(0, ascending=True).transpose()
 
     @property
     def _name_mapping(self) -> Dict[str, str]:
@@ -348,7 +387,9 @@ class TFTExplainer(ForecastingModelExplainer):
 
     @staticmethod
     def _plot_cov_selection(
-        importance: pd.DataFrame, title: str = "Variable importance"
+        importance: pd.DataFrame,
+        title: str = "Variable importance",
+        ax=None,
     ):
         """Plots the variable importance of the TFT model.
 
@@ -360,9 +401,10 @@ class TFTExplainer(ForecastingModelExplainer):
             The title of the plot.
 
         """
-        fig = plt.figure()
-        plt.bar(importance.columns.tolist(), importance.values[0].tolist(), figure=fig)
-        plt.title(title)
-        plt.xlabel("Variable", fontsize=12)
-        plt.ylabel("Variable importance in %")
-        plt.show()
+        if ax is None:
+            _, ax = plt.subplots()
+        ax.barh(importance.columns.tolist(), importance.values[0].tolist())
+        ax.set_title(title)
+        ax.set_ylabel("Variable", fontsize=12)
+        ax.set_xlabel("Variable importance in %")
+        return ax
