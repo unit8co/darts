@@ -2,23 +2,23 @@
 TFT Explainer for Temporal Fusion Transformer models.
 ------------------------------------
 
-This module contains the implementation of the TFT Explainer class. The TFTExplainer uses a trained TFT model
-and extracts the explainability information from the model.
+The `TFTExplainer` uses a trained TFT model and extracts the explainability information from the model.
 
-The .get_variable_selection_weights() method returns the variable selection weights for each of the input features.
-This reflects the feature importance for the model. The weights of the encoder and decoder matrix are returned.
-An optional plot parameter can be used to plot the variable selection weights.
+The method :func:`plot_variable_selection() <TFTExplainer.plot_variable_selection>` plots the
+variable selection weights for each of the input features.
+- encoder importance: historic part of target, past covariates and historic part of future covariates
+- decoder importance: future part of future covariates
+- static covariates importance: the numeric and catageorical static covariates importance
 
-The .plot_attention_heads() method shows the transformer attention heads learned by the TFT model.
-The attention heads reflect the effect of past values of the dependent variable onto the prediction and
-what autoregressive pattern the model has learned.
+The method :func:`plot_attention() <TFTExplainer.plot_attention>` plots the transformer attention that
+the `TFTModel` applies on the given past (and future) input. The attention is aggregated over the over all attention
+heads.
 
-The values of the attention heads can also be extracted using the .get_attention_heads() method.
-explain_result = .explain()
-res_attention_heads = explain_result.get_explanation(component="attention_heads", horizon=0)
+The attention and feature importance values can be extracted using the `TFTExplainabilityResult` returned by
+`TFTExplainer.explain()`. An example of this is given in :func:`explain() <TFTExplainer.explain>`.
 
-For an examples on how to use the TFT explainer, please have a look at the TFT notebook in the /examples directory
- <https://github.com/unit8co/darts/blob/master/examples/13-TFT-examples.ipynb>`_.
+We also show how to use the `TFTExplainer` in the example notebook of the `TFTModel` (see `here
+<https://unit8co.github.io/darts/examples/13-TFT-examples.html#Explainability>`_.
 
 """
 
@@ -30,10 +30,8 @@ import pandas as pd
 from torch import Tensor
 
 from darts import TimeSeries
-from darts.explainability.explainability import (
-    ExplainabilityResult,
-    ForecastingModelExplainer,
-)
+from darts.explainability import TFTExplainabilityResult
+from darts.explainability.explainability import ForecastingModelExplainer
 from darts.logging import get_logger, raise_log
 from darts.models import TFTModel
 from darts.utils.timeseries_generation import generate_index
@@ -62,7 +60,7 @@ class TFTExplainer(ForecastingModelExplainer):
         ] = None,
     ):
         """
-        Explainer class for the TFT model.
+        Explainer class for the `TFTModel`.
 
         Parameters
         ----------
@@ -70,13 +68,34 @@ class TFTExplainer(ForecastingModelExplainer):
             The fitted `TFTModel` to be explained.
         background_series
             Optionally, a series or list of series to use as a default target series for the explanations.
-            If `None`, some `TFTExplainer` methods will require a `foreground_series`.
+            - optional if `model` was trained on a single target series. By default, it is the `series` used
+                at fitting time.
+            - mandatory if `model` was trained on multiple (sequence of) target series.
         background_past_covariates
             Optionally, a past covariates series or list of series to use as a default past covariates series
-            for the explanations. If `None`, some `TFTExplainer` methods will require `foreground_past_covariates`.
+            for the explanations. The same requirements apply as for `background_series` .
         background_future_covariates
             Optionally, a future covariates series or list of series to use as a default future covariates series
-            for the explanations. If `None`, some `TFTExplainer` methods will require `foreground_future_covariates`.
+            for the explanations. The same requirements apply as for `background_series`.
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.explainability.shap_explainer import ShapExplainer
+        >>> from darts.models import TFTModel
+        >>> series = AirPassengersDataset().load()
+        >>> model = TFTModel(
+        >>>     input_chunk_length=12,
+        >>>     output_chunk_length=6,
+        >>>     add_encoders={"cyclic": {"future": ["hour"]}}
+        >>> )
+        >>> model.fit(series)
+        >>> # create the explainer and generate explanations
+        >>> explainer = TFTExplainer(model)
+        >>> results = explainer.explain()
+        >>> # plot the results
+        >>> explainer.plot_attention(results, plot_type="all")
+        >>> explainer.plot_variable_selection(results)
         """
         super().__init__(
             model,
@@ -103,23 +122,51 @@ class TFTExplainer(ForecastingModelExplainer):
         ] = None,
         horizons: Optional[Sequence[int]] = None,
         target_components: Optional[Sequence[str]] = None,
-    ) -> ExplainabilityResult:
-        # """Returns the explainability result of the TFT model.
-        #
-        # The explainability result contains the attention heads of the TFT model.
-        # The attention heads determine the contribution of time-varying inputs.
-        #
-        # Parameters
-        # ----------
-        # kwargs
-        #     Arguments passed to the `predict` method of the TFT model.
-        #
-        # Returns
-        # -------
-        # ExplainabilityResult
-        #     The explainability result containing the attention heads.
-        #
-        # """
+    ) -> TFTExplainabilityResult:
+        """Returns the `TFTExplainability` result for all series in `foreground_series` and given horizons.
+        If `foreground_series` is `None`, will use the `background` input from `TFTExplainer` creation
+        (either the `background` passed to creation, or the series stored in the `TFTModel` in case it was only
+        trained on a single series).
+        For each series, the results contain the attention heads, encoder variable importances, decoder variable
+        importances, and static covariates importances.
+
+        Parameters
+        ----------
+        foreground_series
+            Optionally, one or a sequence of target `TimeSeries` to be explained. Can be multivariate.
+            If not provided, the background `TimeSeries` will be explained instead.
+        foreground_past_covariates
+            Optionally, one or a sequence of past covariates `TimeSeries` if required by the forecasting model.
+        foreground_future_covariates
+            Optionally, one or a sequence of future covariates `TimeSeries` if required by the forecasting model.
+        horizons
+            Optionally, an integer or sequence of integers representing the future time step/s to be explained.
+            `1` corresponds to the first timestamp being forecasted.
+            All values must be `<=output_chunk_length` of the explained `TFTModel`.
+        target_components
+            This parameter is not used by the `TFTExplainer`.
+
+        Returns
+        -------
+        TFTExplainabilityResult
+            The explainability result containing the attention heads, encoder variable importances, decoder variable
+            importances, and static covariates importances.
+
+        Examples
+        --------
+        >>> explainer = TFTExplainer(model)  # requires `background` if model was trained on multiple series
+        >>> explain_results = explainer.explain(
+        >>>     foreground_series=foreground_series,
+        >>>     foreground_past_covariates=foreground_past_covariates,
+        >>>     foreground_future_covariates=foreground_future_covariates,
+        >>> )
+        >>> attn = explain_results.get_attention()
+        >>> importances = explain_results.get_feature_importances()
+        """
+        if target_components is not None:
+            logger.warning(
+                "`target_components` is not supported by `TFTExplainer` and will be ignored."
+            )
         super().explain(
             foreground_series, foreground_past_covariates, foreground_future_covariates
         )
@@ -151,164 +198,97 @@ class TFTExplainer(ForecastingModelExplainer):
         attention_heads = (
             self.model.model._attn_out_weights.detach().numpy().sum(axis=-2)
         )
-        index = [h - 1 for h in horizons]
-        results = []
+        horizon_idx = [h - 1 for h in horizons]
 
+        results = []
         icl = self.model.input_chunk_length
         for idx, (series, pred_series) in enumerate(zip(foreground_series, preds)):
-            results.append(
-                ExplainabilityResult(
-                    {
-                        "attention_heads": TimeSeries.from_times_and_values(
-                            values=np.take(attention_heads[idx], index, axis=0).T,
-                            times=series.time_index[-icl:].union(
-                                pred_series.time_index
-                            ),
-                            columns=[f"horizon {str(i)}" for i in horizons],
-                        ),
-                    }
-                )
+            times = series.time_index[-icl:].union(pred_series.time_index)
+            attention = TimeSeries.from_times_and_values(
+                values=np.take(attention_heads[idx], horizon_idx, axis=0).T,
+                times=times,
+                columns=[f"horizon {str(i)}" for i in horizons],
             )
-        # if "n" not in kwargs:
-        #     kwargs["n"] = self.model.model.output_chunk_length
-        #
-        # _ = self.model.predict(**kwargs)
-        #
-        # # get the weights and the attention head from the trained model for the prediction
-        # attention_heads = (
-        #     self.model.model._attn_out_weights.squeeze().sum(axis=1).detach()
-        # )
-        #
-        # # return the explainer result to be used in other methods
-        # return ExplainabilityResult(
-        #     {
-        #         "attention_heads": TimeSeries.from_values(attention_heads.T),
-        #     }
-        # )
-        return results
-
-    @property
-    def encoder_importance(self):
-        """Returns the encoder variable importance of the TFT model.
-
-        The encoder_weights are calculated for the past inputs of the model.
-        The encoder_importance contains the weights of the encoder variable selection network.
-        The encoder variable selection network is used to select the most important static and time dependent
-        covariates. It provides insights which variable are most significant for the prediction problem.
-        See section 4.2 of the paper for more details.
-
-        Returns
-        -------
-        pd.DataFrame
-            The encoder variable importance.
-        """
-        return self._get_importance(
-            weight=self.model.model._encoder_sparse_weights,
-            names=self.model.model.encoder_variables,
+            results.append(
+                {
+                    "attention": attention,
+                    "encoder_importance": self._encoder_importance,
+                    "decoder_importance": self._decoder_importance,
+                    "static_covariate_importance": self._static_covariates_importance,
+                }
+            )
+        return TFTExplainabilityResult(
+            explanations=results[0] if len(results) == 1 else results
         )
 
-    @property
-    def static_covariates_importance(self):
-        """Returns the static covariates importance of the TFT model.
-
-        The static covariate importances are calculated for the static inputs of the model (numeric and / or
-        categorical). The static variable selection network is used to select the most important static covariates.
-        It provides insights which variable are most significant for the prediction problem.
-        See section 4.2, and 4.3 of the paper for more details.
-
-        Returns
-        -------
-        pd.DataFrame
-            The static covariates importance.
-        """
-        return self._get_importance(
-            weight=self.model.model._static_covariate_var,
-            names=self.model.model.static_variables,
-        )
-
-    @property
-    def decoder_importance(self):
-        """Returns the decoder variable importance of the TFT model.
-
-        The decoder_weights are calculated for the known future inputs of the model.
-        The decoder_importance contains the weights of the decoder variable selection network.
-        The decoder variable selection network is used to select the most important static and time dependent
-        covariates. It provides insights which variable are most significant for the prediction problem.
-        See section 4.2 of the paper for more details.
-
-        Returns
-        -------
-        pd.DataFrame
-            The importance of the decoder variables.
-        """
-        return self._get_importance(
-            weight=self.model.model._decoder_sparse_weights,
-            names=self.model.model.decoder_variables,
-        )
-
-    def get_variable_selection_weight(
-        self, plot=False, figsize=None
-    ) -> Dict[str, pd.DataFrame]:
-        """Returns the variable selection weight of the TFT model.
+    def plot_variable_selection(
+        self,
+        expl_result: TFTExplainabilityResult,
+        fig_size=None,
+        max_nr_series: int = 5,
+    ):
+        """Plots the variable selection / feature importances of the `TFTModel` based on the input.
 
         Parameters
         ----------
-        plot
-            Whether to plot the variable selection weight.
-
-        Returns
-        -------
-        TimeSeries
-            The variable selection weight.
-
+        expl_result
+            A `TFTExplainabilityResult` object. Corresponds to the output of `TFTExplainer.explain()`
+        fig_size
+            The size of the figure to be plotted.
+        max_nr_series
+            The maximum number of plots to show in case `expl_result` was computed on multiple series.
         """
+        encoder_importance = expl_result.get_encoder_importance()
+        decoder_importance = expl_result.get_decoder_importance()
+        static_covariates_importance = expl_result.get_static_covariates_importance()
+        if not isinstance(encoder_importance, list):
+            encoder_importance = [encoder_importance]
+            decoder_importance = [decoder_importance]
+            static_covariates_importance = [static_covariates_importance]
 
-        encoder_importance = self.encoder_importance
-        decoder_importance = self.decoder_importance
-        static_covariates_importance = self.static_covariates_importance
-        uses_static_covariates = not static_covariates_importance.empty
-        if plot:
+        uses_static_covariates = not static_covariates_importance[0].empty
+
+        for idx, (enc_imp, dec_imp, stc_imp) in enumerate(
+            zip([encoder_importance, decoder_importance, static_covariates_importance])
+        ):
             # plot the encoder and decoder weights
             fig, axes = plt.subplots(
-                nrows=3 if uses_static_covariates else 2, sharex=True, figsize=figsize
+                nrows=3 if uses_static_covariates else 2, sharex=True, figsize=fig_size
             )
             self._plot_cov_selection(
-                encoder_importance, title="Encoder variable importance", ax=axes[0]
+                enc_imp, title="Encoder variable importance", ax=axes[0]
             )
             axes[0].set_xlabel("")
             self._plot_cov_selection(
-                decoder_importance, title="Decoder variable importance", ax=axes[1]
+                dec_imp, title="Decoder variable importance", ax=axes[1]
             )
             if uses_static_covariates:
                 axes[1].set_xlabel("")
                 self._plot_cov_selection(
-                    static_covariates_importance,
+                    stc_imp,
                     title="Static variable importance",
                     ax=axes[2],
                 )
             fig.tight_layout()
             plt.show()
 
-        return {
-            "encoder_importance": encoder_importance,
-            "decoder_importance": decoder_importance,
-            "static_covariates_importance": static_covariates_importance,
-        }
+            if idx + 1 == max_nr_series:
+                break
 
-    def plot_attention_heads(
+    def plot_attention(
         self,
-        expl_result: ExplainabilityResult,
+        expl_result: TFTExplainabilityResult,
         plot_type: Optional[Literal["all", "time", "heatmap"]] = "all",
         show_index_as: Literal["relative", "time"] = "relative",
         ax=None,
         max_nr_series: int = 5,
     ):
-        """Plots the attention heads of the TFT model.
+        """Plots the attention heads of the `TFTModel`.
 
         Parameters
         ----------
         expl_result
-            One or a list of `TFTExplainabilityResult`. Corresponds to the output of `TFTExplainer.explain()`
+            A `TFTExplainabilityResult` object. Corresponds to the output of `TFTExplainer.explain()`
         plot_type
             The type of attention head plot. One of ("all", "time", "heatmap").
             If "all", will plot the attention per horizon (given the horizons in the ExplainabilityResult).
@@ -325,30 +305,30 @@ class TFTExplainer(ForecastingModelExplainer):
         ax
             Optionally, an axis to plot on. Only effective on a single `expl_result`.
         max_nr_series
-            The maximum number of plots to show in case of a list of `expl_result`.
+            The maximum number of plots to show in case `expl_result` was computed on multiple series.
         """
         single_series = False
-        if isinstance(expl_result, ExplainabilityResult):
-            expl_result = [expl_result]
+        attentions = expl_result.get_explanation(component="attention")
+        if isinstance(attentions, TimeSeries):
+            attentions = [attentions]
             single_series = True
 
-        for idx, res in enumerate(expl_result):
-            attention_heads = res.get_explanation(component="attention_heads")
+        for idx, attention in enumerate(attentions):
             if ax is None or not single_series:
                 fig, ax = plt.subplots()
             if show_index_as == "relative":
                 x_ticks = generate_index(
                     start=-self.model.input_chunk_length, end=self.n - 1
                 )
-                attention_heads = TimeSeries.from_times_and_values(
+                attention = TimeSeries.from_times_and_values(
                     times=generate_index(
                         start=-self.model.input_chunk_length, end=self.n - 1
                     ),
-                    values=attention_heads.values(copy=False),
+                    values=attention.values(copy=False),
                 )
                 x_label = "Index relative to first prediction point"
             elif show_index_as == "time":
-                x_ticks = attention_heads.time_index
+                x_ticks = attention.time_index
                 x_label = "Time index"
             else:
                 x_label, x_ticks = None, None
@@ -360,20 +340,18 @@ class TFTExplainer(ForecastingModelExplainer):
             if plot_type == "all":
                 ax_title = "Mean Attention"
                 y_label = "Attention"
-                attention_heads.plot(max_nr_components=-1, ax=ax)
+                attention.plot(max_nr_components=-1, ax=ax)
             elif plot_type == "time":
                 ax_title = "Attention per Horizon"
                 y_label = "Attention"
-                attention_heads.mean(1).plot(label="Mean Attention Head", ax=ax)
+                attention.mean(1).plot(label="Mean Attention Head", ax=ax)
             elif plot_type == "heatmap":
                 ax_title = "Attention Heat Map"
                 y_label = "Horizon"
 
                 # generate a heat map
                 x, y = np.meshgrid(x_ticks, np.arange(1, self.n + 1))
-                c = ax.pcolormesh(
-                    x, y, attention_heads.values().transpose(), cmap="hot"
-                )
+                c = ax.pcolormesh(x, y, attention.values().transpose(), cmap="hot")
                 ax.axis([x.min(), x.max(), y.max(), y.min()])
                 prediction_start_color = "lightblue"
                 fig.colorbar(c, ax=ax, orientation="horizontal")
@@ -403,6 +381,65 @@ class TFTExplainer(ForecastingModelExplainer):
 
             if idx + 1 == max_nr_series:
                 break
+
+    @property
+    def _encoder_importance(self) -> pd.DataFrame:
+        """Returns the encoder variable importance of the TFT model.
+
+        The encoder_weights are calculated for the past inputs of the model.
+        The encoder_importance contains the weights of the encoder variable selection network.
+        The encoder variable selection network is used to select the most important static and time dependent
+        covariates. It provides insights which variable are most significant for the prediction problem.
+        See section 4.2 of the paper for more details.
+
+        Returns
+        -------
+        pd.DataFrame
+            The encoder variable importance.
+        """
+        return self._get_importance(
+            weight=self.model.model._encoder_sparse_weights,
+            names=self.model.model.encoder_variables,
+        )
+
+    @property
+    def _decoder_importance(self) -> pd.DataFrame:
+        """Returns the decoder variable importance of the TFT model.
+
+        The decoder_weights are calculated for the known future inputs of the model.
+        The decoder_importance contains the weights of the decoder variable selection network.
+        The decoder variable selection network is used to select the most important static and time dependent
+        covariates. It provides insights which variable are most significant for the prediction problem.
+        See section 4.2 of the paper for more details.
+
+        Returns
+        -------
+        pd.DataFrame
+            The importance of the decoder variables.
+        """
+        return self._get_importance(
+            weight=self.model.model._decoder_sparse_weights,
+            names=self.model.model.decoder_variables,
+        )
+
+    @property
+    def _static_covariates_importance(self) -> pd.DataFrame:
+        """Returns the static covariates importance of the TFT model.
+
+        The static covariate importances are calculated for the static inputs of the model (numeric and / or
+        categorical). The static variable selection network is used to select the most important static covariates.
+        It provides insights which variable are most significant for the prediction problem.
+        See section 4.2, and 4.3 of the paper for more details.
+
+        Returns
+        -------
+        pd.DataFrame
+            The static covariates importance.
+        """
+        return self._get_importance(
+            weight=self.model.model._static_covariate_var,
+            names=self.model.model.static_variables,
+        )
 
     def _get_importance(
         self,

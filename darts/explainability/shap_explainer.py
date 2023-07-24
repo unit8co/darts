@@ -111,6 +111,7 @@ class ShapExplainer(ForecastingModelExplainer):
             Optionally, additional keyword arguments passed to `shap_method`.
         Examples
         --------
+        >>> from darts.datasets import AirPassengersDataset
         >>> from darts.explainability.shap_explainer import ShapExplainer
         >>> from darts.models import LinearRegressionModel
         >>> series = AirPassengersDataset().load()
