@@ -132,7 +132,7 @@ class TFTExplainer(_ForecastingModelExplainer):
     ) -> TFTExplainabilityResult:
         """Returns the :class:`TFTExplainabilityResult
         <darts.explainability.explainability_result.TFTExplainabilityResult>` result for all series in
-        `foreground_series` and given horizons. If `foreground_series` is `None`, will use the `background` input
+        `foreground_series`. If `foreground_series` is `None`, will use the `background` input
         from `TFTExplainer` creation (either the `background` passed to creation, or the series stored in the
         `TFTModel` in case it was only trained on a single series).
         For each series, the results contain the attention heads, encoder variable importances, decoder variable
@@ -148,9 +148,7 @@ class TFTExplainer(_ForecastingModelExplainer):
         foreground_future_covariates
             Optionally, one or a sequence of future covariates `TimeSeries` if required by the forecasting model.
         horizons
-            Optionally, an integer or sequence of integers representing the future time step/s to be explained.
-            `1` corresponds to the first timestamp being forecasted.
-            All values must be `<=output_chunk_length` of the explained `TFTModel`.
+            This parameter is not used by the `TFTExplainer`.
         target_components
             This parameter is not used by the `TFTExplainer`.
 
@@ -175,9 +173,9 @@ class TFTExplainer(_ForecastingModelExplainer):
         >>> attn = explain_results.get_attention()
         >>> importances = explain_results.get_feature_importances()
         """
-        if target_components is not None:
+        if target_components is not None or horizons is not None:
             logger.warning(
-                "`target_components` is not supported by `TFTExplainer` and will be ignored."
+                "`horizons`, and `target_components` are not supported by `TFTExplainer` and will be ignored."
             )
         super().explain(
             foreground_series, foreground_past_covariates, foreground_future_covariates
@@ -195,10 +193,7 @@ class TFTExplainer(_ForecastingModelExplainer):
             foreground_past_covariates,
             foreground_future_covariates,
         )
-        horizons, _ = self._process_horizons_and_targets(
-            horizons,
-            None,
-        )
+        horizons, _ = self._process_horizons_and_targets(None, None)
         preds = self.model.predict(
             n=self.n,
             series=foreground_series,
@@ -210,6 +205,11 @@ class TFTExplainer(_ForecastingModelExplainer):
         attention_heads = (
             self.model.model._attn_out_weights.detach().numpy().sum(axis=-2)
         )
+        # get the variable importances (pd.DataFrame with rows corresponding to the number of input series)
+        encoder_importance = self._encoder_importance
+        decoder_importance = self._decoder_importance
+        static_covariates_importance = self._static_covariates_importance
+
         horizon_idx = [h - 1 for h in horizons]
 
         results = []
@@ -224,9 +224,11 @@ class TFTExplainer(_ForecastingModelExplainer):
             results.append(
                 {
                     "attention": attention,
-                    "encoder_importance": self._encoder_importance,
-                    "decoder_importance": self._decoder_importance,
-                    "static_covariate_importance": self._static_covariates_importance,
+                    "encoder_importance": encoder_importance.iloc[idx : idx + 1],
+                    "decoder_importance": decoder_importance.iloc[idx : idx + 1],
+                    "static_covariates_importance": static_covariates_importance.iloc[
+                        idx : idx + 1
+                    ],
                 }
             )
         return TFTExplainabilityResult(
@@ -381,7 +383,7 @@ class TFTExplainer(_ForecastingModelExplainer):
             # draw the prediction start point
             y_min, y_max = ax.get_ylim()
             ax.vlines(
-                x=x_ticks[-12],
+                x=x_ticks[-self.n],
                 ymin=y_min,
                 ymax=y_max,
                 label="prediction start",
@@ -483,13 +485,14 @@ class TFTExplainer(_ForecastingModelExplainer):
         if weight is None:
             return pd.DataFrame()
 
+        # static covariates aggregation needs expansion in first dimension
+        if weight.ndim == 3:
+            weight = weight.unsqueeze(1)
+
         # transform the encoder/decoder weights to percentages, rounded to n_decimals
         weights_percentage = (
-            weight.mean(axis=1).detach().numpy().mean(axis=0).round(n_decimals) * 100
+            weight.detach().numpy().mean(axis=1).squeeze(axis=1).round(n_decimals) * 100
         )
-        # static covariates aggregation needs expansion in first dimension
-        if len(weights_percentage.shape) == 1:
-            weights_percentage = np.expand_dims(weights_percentage, 0)
         # create a dataframe with the variable names and the weights
         name_mapping = self._name_mapping
         importance = pd.DataFrame(

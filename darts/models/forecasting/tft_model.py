@@ -411,18 +411,30 @@ class _TFTModule(PLMixedCovariatesModule):
 
     @staticmethod
     def get_attention_mask_future(
-        encoder_length: int, decoder_length: int, batch_size: int, device: str
+        encoder_length: int,
+        decoder_length: int,
+        batch_size: int,
+        device: str,
+        full_attention: bool,
     ) -> torch.Tensor:
         """
         Returns causal mask to apply for self-attention layer that acts on future input only.
+        The model will attend to all `False` values.
         """
-        # indices to which is attended
-        attend_step = torch.arange(decoder_length, device=device)
-        # indices for which is predicted
-        predict_step = torch.arange(0, decoder_length, device=device)[:, None]
-        # do not attend to steps to self or after prediction
-        decoder_mask = attend_step >= predict_step
-        # do not attend to past input
+        if full_attention:
+            # attend to entire past and future input
+            decoder_mask = torch.zeros(
+                (decoder_length, decoder_length), dtype=torch.bool, device=device
+            )
+        else:
+            # attend only to past steps relative to forecasting step in the future
+            # indices to which is attended
+            attend_step = torch.arange(decoder_length, device=device)
+            # indices for which is predicted
+            predict_step = torch.arange(0, decoder_length, device=device)[:, None]
+            # do not attend to steps to self or after prediction
+            decoder_mask = attend_step >= predict_step
+        # attend to all past input
         encoder_mask = torch.zeros(
             batch_size, encoder_length, dtype=torch.bool, device=device
         )
@@ -464,20 +476,13 @@ class _TFTModule(PLMixedCovariatesModule):
 
         # avoid unnecessary regeneration of attention mask
         if batch_size != self.batch_size_last:
-            if self.full_attention:
-                self.attention_mask = self.get_attention_mask_full(
-                    time_steps=time_steps,
-                    batch_size=batch_size,
-                    dtype=x_cont_past.dtype,
-                    device=device,
-                )
-            else:
-                self.attention_mask = self.get_attention_mask_future(
-                    encoder_length=encoder_length,
-                    decoder_length=decoder_length,
-                    batch_size=batch_size,
-                    device=device,
-                )
+            self.attention_mask = self.get_attention_mask_future(
+                encoder_length=encoder_length,
+                decoder_length=decoder_length,
+                batch_size=batch_size,
+                device=device,
+                full_attention=self.full_attention,
+            )
             if self.add_relative_index:
                 self.relative_index = self.get_relative_index(
                     encoder_length=encoder_length,
@@ -613,7 +618,7 @@ class _TFTModule(PLMixedCovariatesModule):
 
         # multi-head attention
         attn_out, attn_out_weights = self.multihead_attn(
-            q=attn_input if self.full_attention else attn_input[:, encoder_length:],
+            q=attn_input[:, encoder_length:],
             k=attn_input,
             v=attn_input,
             mask=self.attention_mask,
@@ -622,7 +627,7 @@ class _TFTModule(PLMixedCovariatesModule):
         # skip connection over attention
         attn_out = self.post_attn_gan(
             x=attn_out,
-            skip=attn_input if self.full_attention else attn_input[:, encoder_length:],
+            skip=attn_input[:, encoder_length:],
         )
 
         # feed-forward
@@ -631,11 +636,11 @@ class _TFTModule(PLMixedCovariatesModule):
         # skip connection over temporal fusion decoder from LSTM post _GateAddNorm
         out = self.pre_output_gan(
             x=out,
-            skip=lstm_out if self.full_attention else lstm_out[:, encoder_length:],
+            skip=lstm_out[:, encoder_length:],
         )
 
         # generate output for n_targets and loss_size elements for loss evaluation
-        out = self.output_layer(out[:, encoder_length:] if self.full_attention else out)
+        out = self.output_layer(out)
         out = out.view(
             batch_size, self.output_chunk_length, self.n_targets, self.loss_size
         )

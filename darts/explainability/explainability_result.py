@@ -463,18 +463,11 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
 
     def get_attention(self) -> Union[TimeSeries, List[TimeSeries]]:
         """
-        Returns the time-dependent attention on the encoder and decoder for a given `horizon`.
-        The time index ranges from the prediction series' start time - input_chunk-length and ends
-        at the prediction series' end time. If multiple series were used when calling
+        Returns the time-dependent attention on the encoder and decoder for each `horizon` in (1,
+        `output_chunk_length`). The time index ranges from the prediction series' start time - input_chunk-length and
+        ends at the prediction series' end time. If multiple series were used when calling
         :func:`TFTExplainer.explain() <darts.explainability.tft_explainer.TFTExplainer.explain>`, returns a list of
         TimeSeries.
-
-        Parameters
-        ----------
-        horizon
-            Optionally, an integer or list of integers for which to extract the attention.
-            Maximum value corresponds to either `output_chunk_length` of the trained `TFTModel` or
-            the maximum used when calling `TFTExplainer.explain()`
         """
         attention = self.get_explanation("attention")
         return attention
@@ -513,4 +506,4 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
         If multiple series were used in :func:`TFTExplainer.explain()
         <darts.explainability.tft_explainer.TFTExplainer.explain>`, returns a list of pd.DataFrames.
         """
-        return self.get_explanation("static_covariate_importance")
+        return self.get_explanation("static_covariates_importance")
