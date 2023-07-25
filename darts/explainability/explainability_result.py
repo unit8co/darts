@@ -17,7 +17,6 @@ Contains the explainability results obtained from :func:`_ForecastingModelExplai
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Union
 
-import numpy as np
 import pandas as pd
 import shap
 
@@ -191,8 +190,6 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
     def __init__(
         self,
         explained_forecasts: Union[
-            Dict[str, Union[TimeSeries, pd.DataFrame, np.ndarray]],
-            List[Dict[str, Union[TimeSeries, pd.DataFrame, np.ndarray]]],
             Dict[int, Dict[str, TimeSeries]],
             List[Dict[int, Dict[str, TimeSeries]]],
         ],
@@ -217,13 +214,10 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
                 self.available_horizons = list(self.explained_forecasts.keys())
                 h_0 = self.available_horizons[0]
                 self.available_components = list(self.explained_forecasts[h_0].keys())
-            elif all(isinstance(key, str) for key in self.explained_forecasts.keys()):
-                self.available_horizons = []
-                self.available_components = list(self.explained_forecasts.keys())
             else:
                 raise_log(
                     ValueError(
-                        "The explained_forecasts dictionary must have all integer or all string keys."
+                        "The explained_forecasts dictionary must have all integer keys."
                     ),
                     logger,
                 )
@@ -236,7 +230,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
             )
 
     def get_explanation(
-        self, horizon: Optional[int] = None, component: Optional[str] = None
+        self, horizon: int, component: Optional[str] = None
     ) -> Union[TimeSeries, List[TimeSeries]]:
         """
         Returns one or several `TimeSeries` representing the explanations
@@ -257,7 +251,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
     def _query_explainability_result(
         self,
         attr: Union[Dict[int, Dict[str, Any]], List[Dict[int, Dict[str, Any]]]],
-        horizon: Optional[int] = None,
+        horizon: int,
         component: Optional[str] = None,
     ) -> Any:
         """
@@ -282,8 +276,6 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
             return [attr[i][horizon][component] for i in range(len(attr))]
         elif all(isinstance(key, int) for key in attr.keys()):
             return attr[horizon][component]
-        elif all(isinstance(key, str) for key in attr.keys()):
-            return attr[component]
         else:
             raise_log(
                 ValueError(
@@ -293,7 +285,7 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
             )
 
     def _validate_input_for_querying_explainability_result(
-        self, horizon: Optional[int] = None, component: Optional[str] = None
+        self, horizon: int, component: Optional[str] = None
     ) -> str:
         """
         Helper that validates the input parameters of a method that queries the `HorizonBasedExplainabilityResult`.
@@ -322,19 +314,11 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
             logger,
         )
 
-        # validate horizon argument
-        if horizon is not None:
-            raise_if(
-                len(self.available_horizons) == 0,
-                "The horizon parameter can not be used for a model where all time horizons are saved in the component.",
-                logger,
-            )
-
-            raise_if_not(
-                horizon in self.available_horizons,
-                f"Horizon {horizon} is not available. Available horizons are: {self.available_horizons}",
-                logger,
-            )
+        raise_if_not(
+            horizon in self.available_horizons,
+            f"Horizon {horizon} is not available. Available horizons are: {self.available_horizons}",
+            logger,
+        )
         return component
 
 
