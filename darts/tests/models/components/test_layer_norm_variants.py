@@ -42,7 +42,9 @@ if TORCH_AVAILABLE:
 
                 rin = RINorm(input_dim=7, affine=affine)
                 x_norm = rin(x)
-                x_denorm = rin.inverse(x_norm)
+
+                # expand dims to simulate probablistic forecasting
+                x_denorm = rin.inverse(x_norm.view(x_norm.shape + (1,))).squeeze(-1)
                 assert torch.all(torch.isclose(x, x_denorm)).item()
 
             # try invalid input_dim
