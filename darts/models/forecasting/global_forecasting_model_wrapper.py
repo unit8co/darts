@@ -21,49 +21,15 @@ logger = get_logger(__name__)
 class GlobalForecastingModelWrapper(GlobalForecastingModel):
     def __init__(self, model: FutureCovariatesLocalForecastingModel):
         """
-        Use a regression model for ensembling individual models' predictions using the stacking technique [1]_.
+        Wrapper around LocalForecastingModel allowing it to act like a GlobalForecastingModel
 
-        The provided regression model must implement ``fit()`` and ``predict()`` methods
-        (e.g. scikit-learn regression models). Note that here the regression model is used to learn how to
-        best ensemble the individual forecasting models' forecasts. It is not the same usage of regression
-        as in :class:`RegressionModel`, where the regression model is used to produce forecasts based on the
-        lagged series.
-
-        If `future_covariates` or `past_covariates` are provided at training or inference time,
-        they will be passed only to the forecasting models supporting them.
-
-        The regression model does not leverage the covariates passed to ``fit()`` and ``predict()``.
+        A copy of the provided model will be trained on each of the components of the provided series separately.
+        The model doesn't use series supplied during predict() and instead predicts on the series it trained on.
 
         Parameters
         ----------
-        forecasting_models
-            List of forecasting models whose predictions to ensemble
-        regression_train_n_points
-            The number of points to use to train the regression model
-        regression_model
-            Any regression model with ``predict()`` and ``fit()`` methods (e.g. from scikit-learn)
-            Default: ``darts.model.LinearRegressionModel(fit_intercept=False)``
-
-            .. note::
-                if `regression_model` is probabilistic, the `RegressionEnsembleModel` will also be probabilistic.
-            ..
-        regression_train_num_samples
-            Number of prediction samples from each forecasting model to train the regression model (samples are
-            averaged). Should be set to 1 for deterministic models. Default: 1.
-
-            .. note::
-                if `forecasting_models` contains a mix of probabilistic and deterministic models,
-                `regression_train_num_samples will be passed only to the probabilistic ones.
-            ..
-        regression_train_samples_reduction
-            If `forecasting models` are probabilistic and `regression_train_num_samples` > 1, method used to
-            reduce the samples before passing them to the regression model. Possible values: "mean", "median"
-            or float value corresponding to the desired quantile. Default: "median"
-        show_warnings
-            Whether to show warnings related to forecasting_models covariates support.
-        References
-        ----------
-        .. [1] D. H. Wolpert, “Stacked generalization”, Neural Networks, vol. 5, no. 2, pp. 241–259, Jan. 1992
+        model
+            Model used to predict individual components
         """
         super().__init__()
 
@@ -117,7 +83,7 @@ class GlobalForecastingModelWrapper(GlobalForecastingModel):
         return seq2series(result)
 
     def _split_multivariate(self, time_series: TimeSeries):
-        """ " split multivariate TimeSeries into a list of univariate TimeSeries"""
+        """split multivariate TimeSeries into a list of univariate TimeSeries"""
         return [
             time_series.univariate_component(i) for i in range(time_series.n_components)
         ]
@@ -166,8 +132,8 @@ class GlobalForecastingModelWrapper(GlobalForecastingModel):
 
     def _is_probabilistic(self) -> bool:
         """
-        A RegressionEnsembleModel is probabilistic if its regression
-        model is probabilistic (ensembling layer)
+        A GlobalForecastingModelWrappers is probabilistic if the base_model
+        is probabilistic
         """
         return self.base_model._is_probabilistic()
 
