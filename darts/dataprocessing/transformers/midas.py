@@ -25,6 +25,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         self,
         low_freq: str,
         strip: bool = True,
+        how: str = "all",
         drop_static_covariates: bool = False,
         name: str = "MIDAS",
         n_jobs: int = 1,
@@ -52,6 +53,9 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             frequency [2]_. Passed on to the `rule` parameter of pandas.DataFrame.resample().
         strip
             Whether to remove the NaNs from the start and the end of the transformed series.
+        how
+            Define if the entries containing `NaN` in all the components ('all') or in any of the components ('any')
+            should be stripped. Default: 'all'
         drop_static_covariates
             If set to `True`, the statics covariates of the input series won't be transferred to the output.
             Recommended for multivariate series with component-specific static covariates.
@@ -88,6 +92,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         """
         self._low_freq = low_freq
         self._strip = strip
+        self._how = how
         self._drop_static_covariates = drop_static_covariates
         # Original high frequency should be fitted on TimeSeries independently
         super().__init__(name=name, n_jobs=n_jobs, verbose=verbose, global_fit=False)
@@ -134,6 +139,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         """
         low_freq = params["fixed"]["_low_freq"]
         strip = params["fixed"]["_strip"]
+        how = params["fixed"]["_how"]
         drop_static_covariates = params["fixed"]["_drop_static_covariates"]
         high_freq = params["fitted"]["high_freq"]
         MIDAS._verify_series(series, high_freq=high_freq)
@@ -213,7 +219,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         )
 
         if strip:
-            midas_ts = midas_ts.strip()
+            midas_ts = midas_ts.strip(how=how)
 
         # components: comp0_0, comp1_0, comp0_1, comp1_1, ...
         return midas_ts
