@@ -2009,6 +2009,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         logger.warning(
             "`optimised historical forecasts is not available for this model, use `historical_forecasts` instead."
         )
+        return []
 
 
 class LocalForecastingModel(ForecastingModel, ABC):
