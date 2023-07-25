@@ -125,6 +125,9 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
         series1 = TimeSeries.from_dataframe(dataframe1)
 
         self.assertTrue((series1.strip().time_index == self.times1[1:-1]).all())
+        self.assertTrue(
+            (series1.strip(how="any").time_index == self.times1[2:-2]).all()
+        )
 
     """
     Testing new multivariate methods.
