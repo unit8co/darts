@@ -320,7 +320,8 @@ class MIDASTestCase(unittest.TestCase):
 
     def test_multiple_ts(self):
         """
-        Verify that MIDAS works as expected with multiple series of different "high" frequencies.
+        Verify that MIDAS works as expected with multiple series of different "high" frequencies (monthly and quarterly
+        to yearly).
         """
         quarterly_univariate_ts = TimeSeries.from_times_and_values(
             times=pd.date_range(start="2000-01-01", periods=12, freq="Q"),

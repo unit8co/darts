@@ -14,6 +14,7 @@ from darts.dataprocessing.transformers import (
     InvertibleDataTransformer,
 )
 from darts.logging import get_logger, raise_if, raise_if_not
+from darts.timeseries import _finite_rows_boundaries
 from darts.utils.timeseries_generation import generate_index
 
 logger = get_logger(__name__)
@@ -252,10 +253,8 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         # original ts was univariate
         if n_orig_components == 1:
             series_values = series.values(copy=False).flatten()
-            finite_rows = ~np.isnan(series_values)
         else:
             series_values = series.values(copy=False).reshape((-1, n_orig_components))
-            finite_rows = ~np.isnan(series_values).all(axis=1)
 
         # retrieve original components name by removing the "_0" suffix
         component_names = [
@@ -264,8 +263,10 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         ]
 
         # remove the rows containing only NaNs at the extremities of the array, necessary to adjust the time index
-        first_finite_row = finite_rows.argmax()
-        last_finite_row = len(finite_rows) - 1 - finite_rows[::-1].argmax()
+        first_finite_row, last_finite_row = _finite_rows_boundaries(
+            series_values, how="all"
+        )
+        # adding one to make the end bound inclusive
         series_values = series_values[first_finite_row : last_finite_row + 1]
 
         start_time = series.start_time()
