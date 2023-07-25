@@ -1,16 +1,13 @@
 """
 Forecasting Model Explainer Base Class
 
-A forecasting model explainer takes a fitted forecasting model as input and applies an Explainability model
-to it. Its purpose is to explain each past input contribution to a given model forecast. This 'explanation'
-depends on the characteristics of the XAI model chosen (shap, lime etc...).
-
+A `_ForecastingModelExplainer` takes a fitted forecasting model as input and generates explanations for it.
 """
 from abc import ABC, abstractmethod
 from typing import Optional, Sequence, Tuple, Union
 
 from darts import TimeSeries
-from darts.explainability.explainability_result import ExplainabilityResult
+from darts.explainability.explainability_result import _ExplainabilityResult
 from darts.explainability.utils import process_horizons_and_targets, process_input
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import ForecastingModel
@@ -20,7 +17,7 @@ logger = get_logger(__name__)
 MIN_BACKGROUND_SAMPLE = 10
 
 
-class ForecastingModelExplainer(ABC):
+class _ForecastingModelExplainer(ABC):
     @abstractmethod
     def __init__(
         self,
@@ -51,12 +48,10 @@ class ForecastingModelExplainer(ABC):
         model
             A `ForecastingModel` to be explained. It must be fitted first.
         background_series
-            A series or list of series to *train* the `ForecastingModelExplainer` along with any foreground series.
+            A series or list of series to *train* the `_ForecastingModelExplainer` along with any foreground series.
             Consider using a reduced well-chosen background to reduce computation time.
-
-                - optional if `model` was fit on a single target series. By default, it is the `series` used
-                at fitting time.
-                - mandatory if `model` was fit on multiple (sequence of) target series.
+            Optional if `model` was fit on a single target series. By default, it is the `series` used at fitting time.
+            Mandatory if `model` was fit on multiple (sequence of) target series.
         background_past_covariates
             A past covariates series or list of series that the model needs once fitted.
         background_future_covariates
@@ -76,7 +71,7 @@ class ForecastingModelExplainer(ABC):
         if not model._fit_called:
             raise_log(
                 ValueError(
-                    "The model must be fitted before instantiating a ForecastingModelExplainer."
+                    f"The model must be fitted before instantiating a {self.__class__.__name__}."
                 ),
                 logger,
             )
@@ -124,64 +119,10 @@ class ForecastingModelExplainer(ABC):
         ] = None,
         horizons: Optional[Sequence[int]] = None,
         target_components: Optional[Sequence[str]] = None,
-    ) -> ExplainabilityResult:
+    ) -> _ExplainabilityResult:
         """
-        Explains a foreground time series, returns an :class:`ExplainabilityResult
-        <darts.explainability.explainability_result.ExplainabilityResult>`.
-        Results can be retrieved via the method
-        :func:`ExplainabilityResult.get_explanation(horizon, target_component)
-        <darts.explainability.explainability_result.ExplainabilityResult.get_explanation>`.
-        The result is a multivariate `TimeSeries` instance containing the 'explanation'
-        for the (horizon, target_component) forecast at any timestamp forecastable corresponding to
-        the foreground `TimeSeries` input.
-
-        The component name convention of this multivariate `TimeSeries` is:
-        ``"{name}_{type_of_cov}_lag_{idx}"``, where:
-
-        - ``{name}`` is the component name from the original foreground series (target, past, or future).
-        - ``{type_of_cov}`` is the covariates type. It can take 3 different values:
-          ``"target"``, ``"past_cov"`` or ``"future_cov"``.
-        - ``{idx}`` is the lag index.
-
-        **Example:**
-
-        Say we have a model with 2 target components named ``"T_0"`` and ``"T_1"``,
-        3 past covariates with default component names ``"0"``, ``"1"``, and ``"2"``,
-        and one future covariate with default component name ``"0"``.
-        Also, ``horizons = [1, 2]``.
-        The model is a regression model, with ``lags = 3``, ``lags_past_covariates=[-1, -3]``,
-        ``lags_future_covariates = [0]``.
-
-        We provide `foreground_series`, `foreground_past_covariates`, `foreground_future_covariates` each of length 5.
-
-
-        >>> explain_results = explainer.explain(
-        >>>     foreground_series=foreground_series,
-        >>>     foreground_past_covariates=foreground_past_covariates,
-        >>>     foreground_future_covariates=foreground_future_covariates,
-        >>>     horizons=[1, 2],
-        >>>     target_names=["T_0", "T_1"])
-        >>> output = explain_results.get_explanation(horizon=1, target="T_1")
-
-        Then the method returns a multivariate TimeSeries containing the *explanations* of
-        the corresponding `ForecastingModelExplainer`, with the following component names:
-
-             - T_0_target_lag-1
-             - T_0_target_lag-2
-             - T_0_target_lag-3
-             - T_1_target_lag-1
-             - T_1_target_lag-2
-             - T_1_target_lag-3
-             - 0_past_cov_lag-1
-             - 0_past_cov_lag-3
-             - 1_past_cov_lag-1
-             - 1_past_cov_lag-3
-             - 2_past_cov_lag-1
-             - 2_past_cov_lag-3
-             - 0_fut_cov_lag_0
-
-        This series has length 3, as the model can explain 5-3+1 forecasts
-        (timestamp indexes 4, 5, and 6)
+        Explains a foreground time series, and returns a :class:`_ExplainabilityResult
+        <darts.explainability.explainability_result._ExplainabilityResult>` that can be used for downstream tasks.
 
         Parameters
         ----------
@@ -201,8 +142,8 @@ class ForecastingModelExplainer(ABC):
 
         Returns
         -------
-        ExplainabilityResult
-            The forecast explanations
+        _ExplainabilityResult
+            The explainability result.
         """
         pass
 

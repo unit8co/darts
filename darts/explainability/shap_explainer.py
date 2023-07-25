@@ -4,12 +4,10 @@ Shap Explainer for RegressionModels
 A `shap explainer <https://github.com/slundberg/shap>`_ specifically for time series
 forecasting models.
 
-This class is (currently) limited to Darts' `RegressionModel` instances of forecasting models.
-It uses shap values to provide "explanations" of each input features.
-The input features are the different past lags (of the target and/or past covariates),
-as well as potential future lags of future covariates used as inputs by the forecasting
-model to produce its forecasts.
-Furthermore, in the case of multivariate series, the features contain each dimension of
+This class is (currently) limited to Darts' `RegressionModel` instances of forecasting models. It uses shap values to
+provide "explanations" of each input features. The input features are the different past lags (of the target and/or
+past covariates), as well as potential future lags of future covariates used as inputs by the forecasting model to
+produce its forecasts. Furthermore, in the case of multivariate series, the features contain each dimension of
 each of the (lagged) series.
 
 .. note::
@@ -17,6 +15,13 @@ each of the (lagged) series.
    This means that it does not capture potential indirect influence that some lags
    may have on the target by influencing other lags.
 
+- :func:`explain() <ShapExplainer.explain>` generates the explanations for a given foreground series (or
+  background series, if foreground is not provided).
+- :func:`summary_plot() <ShapExplainer.summary_plot>` displays a shap plot summary for each horizon and each
+  component dimension of the target series.
+- :func:`force_plot_from_ts() <ShapExplainer.force_plot_from_ts>` displays a shap force_plot for one target
+  and one horizon, for a given target series. It displays shap values of each lag/covariate with an additive force
+   layout.
 """
 
 from enum import Enum
@@ -28,7 +33,7 @@ import shap
 from sklearn.multioutput import MultiOutputRegressor
 
 from darts import TimeSeries
-from darts.explainability.explainability import ForecastingModelExplainer
+from darts.explainability.explainability import _ForecastingModelExplainer
 from darts.explainability.explainability_result import ShapExplainabilityResult
 from darts.logging import get_logger, raise_if, raise_log
 from darts.models.forecasting.regression_model import RegressionModel
@@ -54,7 +59,7 @@ class _ShapMethod(Enum):
 ShapMethod = NewType("ShapMethod", _ShapMethod)
 
 
-class ShapExplainer(ForecastingModelExplainer):
+class ShapExplainer(_ForecastingModelExplainer):
     model: RegressionModel
 
     def __init__(
@@ -78,20 +83,18 @@ class ShapExplainer(ForecastingModelExplainer):
         - A background series is a `TimeSeries` used to train the shap explainer.
         - A foreground series is a `TimeSeries` that can be explained by a shap explainer after it has been fitted.
 
-        Currently, ShapExplainer only works with `RegressionModel` forecasting models.
+        Currently, `ShapExplainer` only works with `RegressionModel` forecasting models.
         The number of explained horizons (t+1, t+2, ...) can be at most equal to `output_chunk_length` of `model`.
 
         Parameters
         ----------
         model
-            A `ForecastingModel` to be explained. It must be fitted first.
+            A `RegressionModel` to be explained. It must be fitted first.
         background_series
-            One or several series to *train* the `ForecastingModelExplainer` along with any foreground series.
-            Consider using a reduced well-chosen backgroundto to reduce computation time.
-                - optional if `model` was fit on a single target series. By default,
-                  it is the `series` used at fitting time.
-
-                - mandatory if `model` was fit on multiple (list of) target series.
+            One or several series to *train* the `ShapExplainer` along with any foreground series.
+            Consider using a reduced well-chosen background to reduce computation time.
+            Optional if `model` was fit on a single target series. By default, it is the `series` used at fitting time.
+            Mandatory if `model` was fit on multiple (list of) target series.
         background_past_covariates
             A past covariates series or list of series that the model needs once fitted.
         background_future_covariates
@@ -118,7 +121,9 @@ class ShapExplainer(ForecastingModelExplainer):
         >>> model = LinearRegressionModel(lags=12)
         >>> model.fit(series[:-36])
         >>> shap_explain = ShapExplainer(model)
+        >>> results = shap_explain.explain()
         >>> shap_explain.summary_plot()
+        >>> shap_explain.force_plot_from_ts()
         """
 
         # TODO
@@ -202,6 +207,85 @@ class ShapExplainer(ForecastingModelExplainer):
         horizons: Optional[Sequence[int]] = None,
         target_components: Optional[Sequence[str]] = None,
     ) -> ShapExplainabilityResult:
+        """
+        Explains a foreground time series and returns a :class:`ShapExplainabilityResult
+        <darts.explainability.explainability_result.ShapExplainabilityResult>`.
+        The results can be retrieved with method :func:`get_explanation()
+        <darts.explainability.explainability_result.ShapExplainabilityResult.get_explanation>`.
+        The result is a multivariate `TimeSeries` instance containing the 'explanation'
+        for the (horizon, target_component) forecast at any timestamp forecastable corresponding to
+        the foreground `TimeSeries` input.
+
+        The component name convention of this multivariate `TimeSeries` is:
+        ``"{name}_{type_of_cov}_lag_{idx}"``, where:
+
+        - ``{name}`` is the component name from the original foreground series (target, past, or future).
+        - ``{type_of_cov}`` is the covariates type. It can take 3 different values:
+          ``"target"``, ``"past_cov"`` or ``"future_cov"``.
+        - ``{idx}`` is the lag index.
+
+        Parameters
+        ----------
+        foreground_series
+            Optionally, one or a sequence of target `TimeSeries` to be explained. Can be multivariate.
+            If not provided, the background `TimeSeries` will be explained instead.
+        foreground_past_covariates
+            Optionally, one or a sequence of past covariates `TimeSeries` if required by the forecasting model.
+        foreground_future_covariates
+            Optionally, one or a sequence of future covariates `TimeSeries` if required by the forecasting model.
+        horizons
+            Optionally, an integer or sequence of integers representing the future time step/s to be explained.
+            `1` corresponds to the first timestamp being forecasted.
+            All values must be `<=output_chunk_length` of the explained forecasting model.
+        target_components
+            Optionally, a string or sequence of strings with the target components to explain.
+
+        Returns
+        -------
+        ShapExplainabilityResult
+            The forecast explanations
+
+        Examples
+        --------
+        Say we have a model with 2 target components named ``"T_0"`` and ``"T_1"``,
+        3 past covariates with default component names ``"0"``, ``"1"``, and ``"2"``,
+        and one future covariate with default component name ``"0"``.
+        Also, ``horizons = [1, 2]``.
+        The model is a regression model, with ``lags = 3``, ``lags_past_covariates=[-1, -3]``,
+        ``lags_future_covariates = [0]``.
+
+        We provide `foreground_series`, `foreground_past_covariates`, `foreground_future_covariates` each of length 5.
+
+        >>> explain_results = explainer.explain(
+        >>>     foreground_series=foreground_series,
+        >>>     foreground_past_covariates=foreground_past_covariates,
+        >>>     foreground_future_covariates=foreground_future_covariates,
+        >>>     horizons=[1, 2],
+        >>>     target_names=["T_0", "T_1"])
+        >>> output = explain_results.get_explanation(horizon=1, component="T_1")
+        >>> feature_values = explain_results.get_feature_values(horizon=1, component="T_1")
+        >>> shap_objects = explain_results.get_shap_explanation_objects(horizon=1, component="T_1")
+
+        Then the method returns a multivariate TimeSeries containing the *explanations* of
+        the `ShapExplainer`, with the following component names:
+
+             - T_0_target_lag-1
+             - T_0_target_lag-2
+             - T_0_target_lag-3
+             - T_1_target_lag-1
+             - T_1_target_lag-2
+             - T_1_target_lag-3
+             - 0_past_cov_lag-1
+             - 0_past_cov_lag-3
+             - 1_past_cov_lag-1
+             - 1_past_cov_lag-3
+             - 2_past_cov_lag-1
+             - 2_past_cov_lag-3
+             - 0_fut_cov_lag_0
+
+        This series has length 3, as the model can explain 5-3+1 forecasts
+        (timestamp indexes 4, 5, and 6)
+        """
         super().explain(
             foreground_series, foreground_past_covariates, foreground_future_covariates
         )

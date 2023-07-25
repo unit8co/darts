@@ -1,25 +1,25 @@
 """
-TFT Explainer for Temporal Fusion Transformer models.
+TFT Explainer for Temporal Fusion Transformer (TFTModel)
 ------------------------------------
 
-The `TFTExplainer` uses a trained TFT model and extracts the explainability information from the model.
+The `TFTExplainer` uses a trained :class:`TFTModel <darts.models.forecasting.tft_model.TFTModel>` and extracts the
+explainability information from the model.
 
-The method :func:`plot_variable_selection() <TFTExplainer.plot_variable_selection>` plots the
-variable selection weights for each of the input features.
-- encoder importance: historic part of target, past covariates and historic part of future covariates
-- decoder importance: future part of future covariates
-- static covariates importance: the numeric and catageorical static covariates importance
+- :func:`plot_variable_selection() <TFTExplainer.plot_variable_selection>` plots the variable selection weights for
+  each of the input features.
+  - encoder importance: historic part of target, past covariates and historic part of future covariates
+  - decoder importance: future part of future covariates
+  - static covariates importance: the numeric and catageorical static covariates importance
 
-The method :func:`plot_attention() <TFTExplainer.plot_attention>` plots the transformer attention that
-the `TFTModel` applies on the given past (and future) input. The attention is aggregated over the over all attention
-heads.
+- :func:`plot_attention() <TFTExplainer.plot_attention>` plots the transformer attention that the `TFTModel` applies
+  on the given past and future input. The attention is aggregated over all attention heads.
 
-The attention and feature importance values can be extracted using the `TFTExplainabilityResult` returned by
-`TFTExplainer.explain()`. An example of this is given in :func:`explain() <TFTExplainer.explain>`.
+The attention and feature importance values can be extracted using the :class:`TFTExplainabilityResult
+<darts.explainability.explainability_result.TFTExplainabilityResult>` returned by
+:func:`explain() <TFTExplainer.explain>`. An example of this is shown in the method description.
 
-We also show how to use the `TFTExplainer` in the example notebook of the `TFTModel` (see `here
+We also show how to use the `TFTExplainer` in the example notebook of the `TFTModel` `here
 <https://unit8co.github.io/darts/examples/13-TFT-examples.html#Explainability>`_.
-
 """
 
 from typing import Dict, List, Optional, Sequence, Union
@@ -31,7 +31,7 @@ from torch import Tensor
 
 from darts import TimeSeries
 from darts.explainability import TFTExplainabilityResult
-from darts.explainability.explainability import ForecastingModelExplainer
+from darts.explainability.explainability import _ForecastingModelExplainer
 from darts.logging import get_logger, raise_log
 from darts.models import TFTModel
 from darts.utils.timeseries_generation import generate_index
@@ -45,7 +45,7 @@ except ImportError:
 logger = get_logger(__name__)
 
 
-class TFTExplainer(ForecastingModelExplainer):
+class TFTExplainer(_ForecastingModelExplainer):
     model: TFTModel
 
     def __init__(
@@ -62,15 +62,22 @@ class TFTExplainer(ForecastingModelExplainer):
         """
         Explainer class for the `TFTModel`.
 
+        **Definitions**
+
+        - A background series is a `TimeSeries` that is used as a default for generating the explainability result
+          (if no `foreground` is passed to :func:`explain() <TFTExplainer.explain>`).
+        - A foreground series is a `TimeSeries` that can be passed to :func:`explain() <TFTExplainer.explain>` to use
+          instead of the background for generating the explainability result.
+
         Parameters
         ----------
         model
             The fitted `TFTModel` to be explained.
         background_series
             Optionally, a series or list of series to use as a default target series for the explanations.
-            - optional if `model` was trained on a single target series. By default, it is the `series` used
-                at fitting time.
-            - mandatory if `model` was trained on multiple (sequence of) target series.
+            Optional if `model` was trained on a single target series. By default, it is the `series` used at fitting
+            time.
+            Mandatory if `model` was trained on multiple (sequence of) target series.
         background_past_covariates
             Optionally, a past covariates series or list of series to use as a default past covariates series
             for the explanations. The same requirements apply as for `background_series` .
@@ -123,10 +130,11 @@ class TFTExplainer(ForecastingModelExplainer):
         horizons: Optional[Sequence[int]] = None,
         target_components: Optional[Sequence[str]] = None,
     ) -> TFTExplainabilityResult:
-        """Returns the `TFTExplainability` result for all series in `foreground_series` and given horizons.
-        If `foreground_series` is `None`, will use the `background` input from `TFTExplainer` creation
-        (either the `background` passed to creation, or the series stored in the `TFTModel` in case it was only
-        trained on a single series).
+        """Returns the :class:`TFTExplainabilityResult
+        <darts.explainability.explainability_result.TFTExplainabilityResult>` result for all series in
+        `foreground_series` and given horizons. If `foreground_series` is `None`, will use the `background` input
+        from `TFTExplainer` creation (either the `background` passed to creation, or the series stored in the
+        `TFTModel` in case it was only trained on a single series).
         For each series, the results contain the attention heads, encoder variable importances, decoder variable
         importances, and static covariates importances.
 
@@ -155,6 +163,10 @@ class TFTExplainer(ForecastingModelExplainer):
         Examples
         --------
         >>> explainer = TFTExplainer(model)  # requires `background` if model was trained on multiple series
+
+        Optionally, give a foreground input to generate the explanation on a new input.
+        Otherwise, leave it empty to compute the explanation on the background from `TFTExplainer` creation
+
         >>> explain_results = explainer.explain(
         >>>     foreground_series=foreground_series,
         >>>     foreground_past_covariates=foreground_past_covariates,
@@ -228,11 +240,17 @@ class TFTExplainer(ForecastingModelExplainer):
         max_nr_series: int = 5,
     ):
         """Plots the variable selection / feature importances of the `TFTModel` based on the input.
+        The figure includes three subplots:
+
+        - encoder importances: contains the past target, past covariates, and historic future covariates importance
+          on the encoder (input chunk)
+        - decoder importances: contains the future covariates importance on the decoder (output chunk)
+        - static covariates importances: contains the numeric and / or categorical static covariates importance
 
         Parameters
         ----------
         expl_result
-            A `TFTExplainabilityResult` object. Corresponds to the output of `TFTExplainer.explain()`
+            A `TFTExplainabilityResult` object. Corresponds to the output of :func:`explain() <TFTExplainer.explain>`.
         fig_size
             The size of the figure to be plotted.
         max_nr_series
@@ -247,9 +265,8 @@ class TFTExplainer(ForecastingModelExplainer):
             static_covariates_importance = [static_covariates_importance]
 
         uses_static_covariates = not static_covariates_importance[0].empty
-
         for idx, (enc_imp, dec_imp, stc_imp) in enumerate(
-            zip([encoder_importance, decoder_importance, static_covariates_importance])
+            zip(encoder_importance, decoder_importance, static_covariates_importance)
         ):
             # plot the encoder and decoder weights
             fig, axes = plt.subplots(
@@ -288,10 +305,10 @@ class TFTExplainer(ForecastingModelExplainer):
         Parameters
         ----------
         expl_result
-            A `TFTExplainabilityResult` object. Corresponds to the output of `TFTExplainer.explain()`
+            A `TFTExplainabilityResult` object. Corresponds to the output of :func:`explain() <TFTExplainer.explain>`.
         plot_type
             The type of attention head plot. One of ("all", "time", "heatmap").
-            If "all", will plot the attention per horizon (given the horizons in the ExplainabilityResult).
+            If "all", will plot the attention per horizon (given the horizons in the `TFTExplainabilityResult`).
             The maximum horizon corresponds to the `output_chunk_length` of the trained `TFTModel`.
             If "time", will plot the mean attention over all horizons.
             If "heatmap", will plot the attention per horizon on a heat map. The horizons are shown on the y-axis,
@@ -301,7 +318,7 @@ class TFTExplainer(ForecastingModelExplainer):
             If "relative", will plot the x-axis from `(-input_chunk_length, output_chunk_length - 1)`. `0` corresponds
             to the first prediction point.
             If "time", will plot the x-axis with the actual time index (or range index) of the corresponding
-            ExplainabilityResult.
+            `TFTExplainabilityResult`.
         ax
             Optionally, an axis to plot on. Only effective on a single `expl_result`.
         max_nr_series

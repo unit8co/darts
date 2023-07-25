@@ -8,7 +8,7 @@ from darts import TimeSeries, concatenate
 from darts.dataprocessing.transformers import Scaler
 from darts.datasets import IceCreamHeaterDataset
 from darts.explainability import TFTExplainer
-from darts.explainability.explainability import ExplainabilityResult
+from darts.explainability.explainability import _ExplainabilityResult
 from darts.models import TFTModel
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.timeseries_generation import datetime_attribute_timeseries
@@ -337,7 +337,7 @@ class TFTExplainerTestCase(DartsBaseTestClass):
         res = explainer.explain()
 
         # assert
-        self.assertTrue(isinstance(res, ExplainabilityResult))
+        self.assertTrue(isinstance(res, _ExplainabilityResult))
         res_attention_heads = res.get_explanation(component="attention_heads")
         self.assertTrue(len(res_attention_heads) == 48)
         self.assertTrue(

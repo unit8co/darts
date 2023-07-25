@@ -26,14 +26,14 @@ def process_input(
     test_stationarity: bool = False,
 ):
     """Helper function to process and check either of the background or foreground series input to
-    `ForecastingModelExplainer`.
+    `_ForecastingModelExplainer`.
 
     If no input was provided (`series`, `past/future_covariates`), the fallback will be used for downstream tasks.
     Will raise an error if both input and fallback are not available.
 
     The fallback is dependent on the input type ("background" or "foreground"):
     - for background `input_type`: fallback are the series saved in fitted forecasting model
-    - for foreground `input_type`: fallback are the background series from `ForecastingModelExplainer`
+    - for foreground `input_type`: fallback are the background series from `_ForecastingModelExplainer`
 
     Parameters
     ----------
@@ -84,7 +84,7 @@ def process_input(
 
     # if `series` was not passed, use the fallback input
     # - for background input type: fallback are the series saved in fitted forecasting model
-    # - for foreground input type: fallback are the background series from `ForecastingModelExplainer`
+    # - for foreground input type: fallback are the background series from `_ForecastingModelExplainer`
     if series is None:
         raise_if(
             (past_covariates is not None) or (future_covariates is not None),
