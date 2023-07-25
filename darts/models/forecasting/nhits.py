@@ -388,7 +388,7 @@ class _NHiTSModule(PLPastCovariatesModule):
         self.input_chunk_length_multi = self.input_chunk_length * input_dim
 
         # TODO: shouldn't this be output_dim?
-        self.output_chunk_length_multi = self.output_chunk_length * input_dim
+        self.output_chunk_length_multi = self._output_chunk_length * input_dim
 
         self.stacks_list = [
             _Stack(
@@ -450,7 +450,7 @@ class _NHiTSModule(PLPastCovariatesModule):
         # The covariates are by construction added as extra time series on the right side. So we need to get rid of this
         # right output (keeping only :self.output_dim).
         y = y.view(
-            y.shape[0], self.output_chunk_length, self.input_dim, self.nr_params
+            y.shape[0], self._output_chunk_length, self.input_dim, self.nr_params
         )[:, :, : self.output_dim, :]
 
         return y

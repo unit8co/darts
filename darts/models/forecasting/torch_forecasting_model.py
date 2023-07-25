@@ -1945,7 +1945,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @property
     def output_chunk_length(self) -> int:
         return (
-            self.model.output_chunk_length
+            self.model._output_chunk_length
             if self.model_created
             else self.pl_module_params["output_chunk_length"]
         )

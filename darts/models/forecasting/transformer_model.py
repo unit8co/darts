@@ -182,7 +182,7 @@ class _TransformerModule(PLPastCovariatesModule):
         self.input_size = input_size
         self.target_size = output_size
         self.nr_params = nr_params
-        self.target_length = self.output_chunk_length
+        self.target_length = self._output_chunk_length
 
         self.encoder = nn.Linear(input_size, d_model)
         self.positional_encoding = _PositionalEncoding(
@@ -277,7 +277,7 @@ class _TransformerModule(PLPastCovariatesModule):
         )
 
         self.decoder = nn.Linear(
-            d_model, self.output_chunk_length * self.target_size * self.nr_params
+            d_model, self.target_length * self.target_size * self.nr_params
         )
 
     def _create_transformer_inputs(self, data):

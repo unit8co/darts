@@ -84,7 +84,7 @@ class _BlockRNNModule(PLPastCovariatesModule):
         self.target_size = target_size
         self.nr_params = nr_params
         num_layers_out_fc = [] if num_layers_out_fc is None else num_layers_out_fc
-        self.out_len = self.output_chunk_length
+        self.out_len = self._output_chunk_length
         self.name = name
 
         # Defining the RNN module
@@ -96,9 +96,7 @@ class _BlockRNNModule(PLPastCovariatesModule):
         # to the output of desired length
         last = hidden_dim
         feats = []
-        for feature in num_layers_out_fc + [
-            self.output_chunk_length * target_size * nr_params
-        ]:
+        for feature in num_layers_out_fc + [self.out_len * target_size * nr_params]:
             feats.append(nn.Linear(last, feature))
             last = feature
         self.fc = nn.Sequential(*feats)
