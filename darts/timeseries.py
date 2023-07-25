@@ -2679,8 +2679,8 @@ class TimeSeries:
         values
             An array with the values to append.
 
-        Return
-        ------
+        Returns
+        -------
         TimeSeries
             A new TimeSeries with the new values appended
         """
@@ -2738,8 +2738,8 @@ class TimeSeries:
         values
             An array with the values to prepend to the start.
 
-        Return
-        ------
+        Returns
+        -------
         TimeSeries
             A new TimeSeries with the new values prepended.
         """
@@ -2778,8 +2778,8 @@ class TimeSeries:
             A Numpy array with new values. It must have the dimensions for time
             and componentns, but may contain a different number of samples.
 
-        Return
-        ------
+        Returns
+        -------
         TimeSeries
             A new TimeSeries with the new values and same index, static covariates and hierarchy
         """
@@ -2917,8 +2917,8 @@ class TimeSeries:
         other
             A TimeSeries instance with the same index and the same number of samples as the current one.
 
-        Return
-        ------
+        Returns
+        -------
         TimeSeries
             A new multivariate TimeSeries instance.
         """
@@ -5095,7 +5095,7 @@ def concatenate(
         names of the resulting series and that of the merged hierarchy do not match.
         When `axis=0` or `axis=2`, the hierarchy of the first series is always kept.
 
-    Return
+    Returns
     -------
     TimeSeries
         concatenated series
