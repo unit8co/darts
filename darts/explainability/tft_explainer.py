@@ -24,6 +24,7 @@ We also show how to use the `TFTExplainer` in the example notebook of the `TFTMo
 
 from typing import Dict, List, Optional, Sequence, Union
 
+import matplotlib.axes
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -301,7 +302,8 @@ class TFTExplainer(_ForecastingModelExplainer):
         show_index_as: Literal["relative", "time"] = "relative",
         ax=None,
         max_nr_series: int = 5,
-    ):
+        show_plot: bool = True,
+    ) -> matplotlib.axes.Axes:
         """Plots the attention heads of the `TFTModel`.
 
         Parameters
@@ -325,6 +327,8 @@ class TFTExplainer(_ForecastingModelExplainer):
             Optionally, an axis to plot on. Only effective on a single `expl_result`.
         max_nr_series
             The maximum number of plots to show in case `expl_result` was computed on multiple series.
+        show_plot
+            Whether to show the plot.
         """
         single_series = False
         attentions = expl_result.get_explanation(component="attention")
@@ -344,6 +348,7 @@ class TFTExplainer(_ForecastingModelExplainer):
                         start=-self.model.input_chunk_length, end=self.n - 1
                     ),
                     values=attention.values(copy=False),
+                    columns=attention.components,
                 )
                 x_label = "Index relative to first prediction point"
             elif show_index_as == "time":
@@ -396,10 +401,12 @@ class TFTExplainer(_ForecastingModelExplainer):
             title_suffix = "" if single_series else f": series index {idx}"
             ax.set_title(ax_title + title_suffix)
             ax.legend(bbox_to_anchor=(1, 1), loc="upper left")
-            plt.show()
+            if show_plot:
+                plt.show()
 
             if idx + 1 == max_nr_series:
                 break
+        return ax
 
     @property
     def _encoder_importance(self) -> pd.DataFrame:

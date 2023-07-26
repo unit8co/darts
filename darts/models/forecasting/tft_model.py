@@ -648,18 +648,6 @@ class _TFTModule(PLMixedCovariatesModule):
         self._static_covariate_var = static_covariate_var
         self._encoder_sparse_weights = encoder_sparse_weights
         self._decoder_sparse_weights = decoder_sparse_weights
-
-        # TODO: (Darts) remember this in case we want to output interpretation
-        # return self.to_network_output(
-        #     prediction=self.transform_output(out, target_scale=x["target_scale"]),
-        #     attention=attn_out_weights,
-        #     static_variables=static_covariate_var,
-        #     encoder_variables=encoder_sparse_weights,
-        #     decoder_variables=decoder_sparse_weights,
-        #     decoder_lengths=decoder_lengths,
-        #     encoder_lengths=encoder_lengths,
-        # )
-
         return out
 
 
@@ -717,8 +705,8 @@ class TFTModel(MixedCovariatesTorchModel):
         num_attention_heads
             Number of attention heads (4 is a good default)
         full_attention
-            If ``True``, applies multi-head attention query on past (encoder) and future (decoder) parts. Otherwise,
-            only queries on future part. Defaults to ``False``.
+            If ``False``, only attends to previous time steps in the decoder. If ``True`` attends to previous,
+            current, and future time steps. Defaults to ``False``.
         feed_forward
             A feedforward network is a fully-connected layer with an activation. TFT Can be one of the glu variant's
             FeedForward Network (FFN)[2]. The glu variant's FeedForward Network are a series of FFNs designed to work
