@@ -362,11 +362,11 @@ class TFTExplainer(_ForecastingModelExplainer):
 
             prediction_start_color = "red"
             if plot_type == "all":
-                ax_title = "Mean Attention"
+                ax_title = "Attention per Horizon"
                 y_label = "Attention"
                 attention.plot(max_nr_components=-1, ax=ax)
             elif plot_type == "time":
-                ax_title = "Attention per Horizon"
+                ax_title = "Mean Attention"
                 y_label = "Attention"
                 attention.mean(1).plot(label="Mean Attention Head", ax=ax)
             elif plot_type == "heatmap":
@@ -528,15 +528,19 @@ class TFTExplainer(_ForecastingModelExplainer):
              }
         """
 
-        def map_cols(comps, name):
+        def map_cols(comps, name, suffix):
             comps = comps if comps is not None else []
-            return {f"{name}_{i}": colname for i, colname in enumerate(comps)}
+            return {
+                f"{name}_{i}": colname + f"_{suffix}" for i, colname in enumerate(comps)
+            }
 
         return {
-            **map_cols(self.target_components, "target"),
-            **map_cols(self.static_covariates_components, "static_covariate"),
-            **map_cols(self.past_covariates_components, "past_covariate"),
-            **map_cols(self.future_covariates_components, "future_covariate"),
+            **map_cols(self.target_components, "target", "target"),
+            **map_cols(
+                self.static_covariates_components, "static_covariate", "statcov"
+            ),
+            **map_cols(self.past_covariates_components, "past_covariate", "pastcov"),
+            **map_cols(self.future_covariates_components, "future_covariate", "futcov"),
         }
 
     @staticmethod

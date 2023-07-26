@@ -467,6 +467,8 @@ class RegressionModel(GlobalForecastingModel):
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
+        self._verify_static_covariates(series[0].static_covariates)
+
         self.encoders = self.initialize_encoders()
         if self.encoders.encoding_available:
             past_covariates, future_covariates = self.generate_fit_encodings(
@@ -582,27 +584,43 @@ class RegressionModel(GlobalForecastingModel):
             Additional keyword arguments passed to the `predict` method of the model. Only works with
             univariate target series.
         """
-        raise_if(
-            not self._is_probabilistic() and num_samples > 1,
-            "`num_samples > 1` is only supported for probabilistic models.",
-            logger,
-        )
+        if not self._is_probabilistic() and num_samples > 1:
+            raise_log(
+                ValueError(
+                    "`num_samples > 1` is only supported for probabilistic models.",
+                ),
+                logger,
+            )
 
         if series is None:
             # then there must be a single TS, and that was saved in super().fit as self.training_series
-            raise_if(
-                self.training_series is None,
-                "Input series has to be provided after fitting on multiple series.",
-            )
+            if self.training_series is None:
+                raise_log(
+                    ValueError(
+                        "Input `series` must be provided. This is the result either from fitting on multiple series, "
+                        "or from not having fit the model yet."
+                    ),
+                    logger,
+                )
             series = self.training_series
 
         called_with_single_series = True if isinstance(series, TimeSeries) else False
 
         # guarantee that all inputs are either list of TimeSeries or None
         series = series2seq(series)
+
+        if past_covariates is None and self.past_covariate_series is not None:
+            past_covariates = [self.past_covariate_series] * len(series)
+        if future_covariates is None and self.future_covariate_series is not None:
+            future_covariates = [self.future_covariate_series] * len(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
+        self._verify_static_covariates(series[0].static_covariates)
+
+        # encoders are set when calling fit(), but not when calling fit_from_dataset()
+        # when covariates are loaded from model, they already contain the encodings: this is not a problem as the
+        # encoders regenerate the encodings
         if self.encoders.encoding_available:
             past_covariates, future_covariates = self.generate_predict_encodings(
                 n=n,
@@ -610,12 +628,6 @@ class RegressionModel(GlobalForecastingModel):
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
             )
-
-        if past_covariates is None and self.past_covariate_series is not None:
-            past_covariates = series2seq(self.past_covariate_series)
-        if future_covariates is None and self.future_covariate_series is not None:
-            future_covariates = series2seq(self.future_covariate_series)
-
         super().predict(n, series, past_covariates, future_covariates, num_samples)
 
         # check that the input sizes of the target series and covariates match

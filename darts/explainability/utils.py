@@ -147,22 +147,27 @@ def process_input(
     # make sure to remove any encodings from covariates if downstream tasks do not require covariates without encodings
     if not requires_covariates_encoding and model.encoders.encoding_available:
         if past_covariates is not None and model.encoders.past_encoders:
-            pc_encoded = model.encoders.past_components.tolist()
-            if len(pc_encoded) == past_covariates[0].n_components:
+            cov = past_covariates[0]
+            encoded = model.encoders.past_components
+            drop_cols = cov.components[cov.components.isin(encoded)]
+            if drop_cols and len(drop_cols) == cov.n_components:
                 past_covariates = None
-            else:
+            elif drop_cols:
                 past_covariates = [
-                    pc[pc.components.drop(pc_encoded)] for pc in past_covariates
+                    cov[cov.components.drop(drop_cols).tolist()]
+                    for cov in past_covariates
                 ]
         if future_covariates is not None and model.encoders.future_encoders:
-            fc_encoded = model.encoders.future_components.tolist()
-            if len(fc_encoded) == future_covariates[0].n_components:
+            cov = future_covariates[0]
+            encoded = model.encoders.future_components
+            drop_cols = cov.components[cov.components.isin(encoded)]
+            if not drop_cols.empty and len(drop_cols) == cov.n_components:
                 future_covariates = None
-            else:
+            elif not drop_cols.empty:
                 future_covariates = [
-                    fc[fc.components.drop(fc_encoded)] for fc in future_covariates
+                    cov[cov.components.drop(drop_cols).tolist()]
+                    for cov in future_covariates
                 ]
-
     return (
         series,
         past_covariates,
