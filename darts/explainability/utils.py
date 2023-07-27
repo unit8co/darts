@@ -150,9 +150,9 @@ def process_input(
             cov = past_covariates[0]
             encoded = model.encoders.past_components
             drop_cols = cov.components[cov.components.isin(encoded)]
-            if drop_cols and len(drop_cols) == cov.n_components:
+            if not drop_cols.empty and len(drop_cols) == cov.n_components:
                 past_covariates = None
-            elif drop_cols:
+            elif not drop_cols.empty:
                 past_covariates = [
                     cov[cov.components.drop(drop_cols).tolist()]
                     for cov in past_covariates

@@ -1,421 +1,463 @@
-from copy import deepcopy
+import itertools
 from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
+import pytest
 
-from darts import TimeSeries, concatenate
-from darts.dataprocessing.transformers import Scaler
-from darts.datasets import IceCreamHeaterDataset
-from darts.explainability import TFTExplainer
-from darts.explainability.explainability import _ExplainabilityResult
+from darts import TimeSeries
+from darts.explainability import TFTExplainabilityResult, TFTExplainer
 from darts.models import TFTModel
 from darts.tests.base_test_class import DartsBaseTestClass
-from darts.utils.timeseries_generation import datetime_attribute_timeseries
+from darts.utils import timeseries_generation as tg
 
 
 class TFTExplainerTestCase(DartsBaseTestClass):
-
-    np.random.seed(342)
-
-    # Ice Example from the TFT tutorial
-    series_ice_heater = IceCreamHeaterDataset().load()
-    # convert monthly sales to average daily sales per month
-    converted_series = []
-    for col in ["ice cream", "heater"]:
-        converted_series.append(
-            series_ice_heater[col]
-            / TimeSeries.from_series(series_ice_heater.time_index.days_in_month)
-        )
-    converted_series = concatenate(converted_series, axis=1)
-    converted_series = converted_series[pd.Timestamp("20100101") :]
-
-    # define train/validation cutoff time
-    forecast_horizon_ice = 12
-    training_cutoff_ice = converted_series.time_index[-(2 * forecast_horizon_ice)]
-
-    # use ice cream sales as target, create train and validation sets and transform data
-    series_ice = converted_series["ice cream"]
-    train_ice, val_ice = series_ice.split_before(training_cutoff_ice)
-    transformer_ice = Scaler()
-    train_ice_transformed = transformer_ice.fit_transform(train_ice)
-    val_ice_transformed = transformer_ice.transform(val_ice)
-    series_ice_transformed = transformer_ice.transform(series_ice)
-
-    # use heater sales as past covariates and transform data
-    covariates_heat = converted_series["heater"]
-    cov_heat_train, cov_heat_val = covariates_heat.split_before(training_cutoff_ice)
-    transformer_heat = Scaler()
-    transformer_heat.fit(cov_heat_train)
-    covariates_heat_transformed = transformer_heat.transform(covariates_heat)
-
-    # create input with multiple past covariates
-    multiple_covariates = covariates_heat.stack(
-        datetime_attribute_timeseries(covariates_heat, attribute="year", one_hot=False)
-    ).stack(
-        datetime_attribute_timeseries(covariates_heat, attribute="month", one_hot=False)
+    freq = "MS"
+    series_lin_pos = tg.linear_timeseries(length=10, freq=freq).with_static_covariates(
+        pd.Series([0.0, 0.5], index=["cat", "num"])
     )
-    multi_cov_train, multi_cov_val = multiple_covariates.split_before(
-        training_cutoff_ice
-    )
-    transformer_multi_cov = Scaler()
-    transformer_multi_cov.fit(multi_cov_train)
-    multiple_covariates_transformed = transformer_multi_cov.transform(
-        multiple_covariates
-    )
+    series_sine = tg.sine_timeseries(length=10, freq=freq)
+    series_mv1 = series_lin_pos.stack(series_sine)
 
-    # use the last 3 years as past input data
-    input_chunk_length_ice = 36
+    series_lin_neg = tg.linear_timeseries(
+        start_value=1, end_value=0, length=10, freq=freq
+    ).with_static_covariates(pd.Series([1.0, 0.5], index=["cat", "num"]))
+    series_cos = tg.sine_timeseries(length=10, value_phase=90, freq=freq)
+    series_mv2 = series_lin_neg.stack(series_cos)
 
-    models = [
-        TFTModel(
-            input_chunk_length=input_chunk_length_ice,
-            output_chunk_length=forecast_horizon_ice,
-            hidden_size=32,
-            lstm_layers=1,
-            batch_size=16,
-            n_epochs=10,
-            dropout=0.1,
-            add_encoders={"cyclic": {"future": ["month"]}},
-            add_relative_index=False,
-            optimizer_kwargs={"lr": 1e-3},
-            random_state=42,
-        ),
-    ]
+    series_multi = [series_mv1, series_mv2]
+    pc = tg.constant_timeseries(length=10, freq=freq)
+    pc_multi = [pc] * 2
+    fc = tg.constant_timeseries(length=13, freq=freq)
+    fc_multi = [fc] * 2
 
-    def test_class_init_not_fitted_model_raises_error(self):
-        """The TFTExplainer class should raise an error if the model we want to explain is not fitted."""
-        # arrange
-        model = deepcopy(self.models[0])
+    def helper_get_input(self, series_option: str):
+        if series_option == "univariate":
+            return self.series_lin_pos, self.pc, self.fc
+        elif series_option == "multivariate":
+            return self.series_mv1, self.pc, self.fc
+        else:  # multiple
+            return self.series_multi, self.pc_multi, self.fc_multi
 
-        # act / assert
-        with self.assertRaises(ValueError):
-            TFTExplainer(model)
-
-    def test_class_init_with_fitted_model_works(self):
-        """The TFTExplainer class should work if the model we want to explain is fitted."""
-        # arrange
-        model = deepcopy(self.models[0])
-
-        model.fit(
-            self.train_ice_transformed,
-            past_covariates=self.covariates_heat_transformed,
-            verbose=True,
-        )
-
-        # act
-        res = TFTExplainer(model)
-
-        # assert
-        self.assertTrue(isinstance(res, TFTExplainer))
-        self.assertTrue(hasattr(res, "model"))
-
-    def test_get_variable_selection_weight(self):
-        """The get_variable_selection_weight method returns the feature importance."""
-        # arrange
-        model = deepcopy(self.models[0])
-
-        # fit the model with past covariates
-        np.random.seed(342)
-        _ = model.fit(
-            self.train_ice_transformed,
-            past_covariates=self.covariates_heat_transformed,
-            verbose=False,
-        )
-
-        # call methods for debugging / development
-        explainer = TFTExplainer(model)
-
-        # expected results
-        expected_encoder_importance = pd.DataFrame(
-            [
-                {
-                    "darts_enc_fc_cyc_month_cos": 68.4,
-                    "heater": 16.5,
-                    "ice cream": 10.6,
-                    "darts_enc_fc_cyc_month_sin": 4.5,
-                },
-            ],
-        )
-        expected_decoder_importance = pd.DataFrame(
-            [
-                {
-                    "darts_enc_fc_cyc_month_cos": 87.8,
-                    "darts_enc_fc_cyc_month_sin": 12.2,
-                },
-            ]
-        )
-
-        # act
-        res = explainer.get_variable_selection_weight(plot=False)
-
-        # assert
-        self.assertTrue(isinstance(res, dict))
-        self.assertTrue(res.keys() == {"encoder_importance", "decoder_importance"})
-        pd.testing.assert_frame_equal(
-            res["encoder_importance"], expected_encoder_importance
-        )
-        pd.testing.assert_frame_equal(
-            res["decoder_importance"], expected_decoder_importance
-        )
-
-    def test_get_variable_selection_weight_plot(self):
-        """The get_variable_selection_weight method returns the feature importance."""
-        # arrange
-        model = deepcopy(self.models[0])
-
-        # fit the model with past covariates
-        np.random.seed(342)
-        _ = model.fit(
-            self.train_ice_transformed,
-            past_covariates=self.covariates_heat_transformed,
-            verbose=False,
-        )
-
-        # call methods for debugging / development
-        explainer = TFTExplainer(model)
-
-        # expected results
-        expected_encoder_importance = pd.DataFrame(
-            [
-                {
-                    "darts_enc_fc_cyc_month_cos": 68.4,
-                    "heater": 16.5,
-                    "ice cream": 10.6,
-                    "darts_enc_fc_cyc_month_sin": 4.5,
-                },
-            ],
-        )
-        expected_decoder_importance = pd.DataFrame(
-            [
-                {
-                    "darts_enc_fc_cyc_month_cos": 87.8,
-                    "darts_enc_fc_cyc_month_sin": 12.2,
-                },
-            ]
-        )
-
-        # act
-        with patch("matplotlib.pyplot.show") as _:
-            res = explainer.get_variable_selection_weight(plot=True)
-
-        # assert
-        self.assertTrue(isinstance(res, dict))
-        self.assertTrue(res.keys() == {"encoder_importance", "decoder_importance"})
-        pd.testing.assert_frame_equal(
-            res["encoder_importance"], expected_encoder_importance
-        )
-        pd.testing.assert_frame_equal(
-            res["decoder_importance"], expected_decoder_importance
-        )
-
-    def test_get_variable_selection_weight_multiple_covariates(self):
-        """The get_variable_selection_weight method returns the feature importance for multiple covariates as input."""
-        # arrange
-        model = deepcopy(self.models[0])
-
-        # fit the model with past covariates
-        np.random.seed(342)
-        _ = model.fit(
-            self.train_ice_transformed,
-            past_covariates=self.multiple_covariates_transformed,
-            verbose=False,
-        )
-
-        # call methods for debugging / development
-        explainer = TFTExplainer(model)
-
-        # expected results
-        expected_encoder_importance = pd.DataFrame(
-            [
-                {
-                    "month": 49.1,
-                    "year": 18.9,
-                    "darts_enc_fc_cyc_month_cos": 14.7,
-                    "darts_enc_fc_cyc_month_sin": 9.5,
-                    "ice cream": 5.4,
-                    "heater": 2.4,
-                }
-            ],
-        )
-        expected_decoder_importance = pd.DataFrame(
-            [
-                {
-                    "darts_enc_fc_cyc_month_cos": 80.2,
-                    "darts_enc_fc_cyc_month_sin": 19.8,
-                },
-            ]
-        )
-
-        # act
-        res = explainer.get_variable_selection_weight(plot=False)
-
-        # assert
-        self.assertTrue(isinstance(res, dict))
-        self.assertTrue(res.keys() == {"encoder_importance", "decoder_importance"})
-
-        # Test specific variable selection weights
-        # Because of numerical differences between architectures (mac vs linux) we allow a difference of 1
-        pd.testing.assert_frame_equal(
-            res["encoder_importance"],
-            expected_encoder_importance,
-            atol=1,
-        )
-        pd.testing.assert_frame_equal(
-            res["decoder_importance"],
-            expected_decoder_importance,
-            atol=1,
-        )
-
-    def test_explain(self):
-        """The get_variable_selection_weight method returns the feature importance."""
-        # arrange
-        model = deepcopy(self.models[0])
-        # fit the model with past covariates
-        np.random.seed(342)
-        model.fit(
-            self.train_ice_transformed,
-            past_covariates=self.covariates_heat_transformed,
-            verbose=True,
-        )
-
-        # call methods for debugging / development
-        explainer = TFTExplainer(model)
-
-        expected_average_attention = [
-            [0.1186],
-            [0.1015],
-            [0.094],
-            [0.0955],
-            [0.0996],
-            [0.102],
-            [0.1016],
-            [0.0975],
-            [0.0935],
-            [0.0943],
-            [0.0988],
-            [0.1019],
-            [0.0997],
-            [0.0928],
-            [0.0908],
-            [0.0944],
-            [0.0999],
-            [0.1041],
-            [0.1018],
-            [0.0981],
-            [0.0935],
-            [0.0951],
-            [0.0997],
-            [0.1033],
-            [0.1013],
-            [0.094],
-            [0.0913],
-            [0.0945],
-            [0.0993],
-            [0.1023],
-            [0.102],
-            [0.0981],
-            [0.094],
-            [0.0951],
-            [0.1009],
-            [0.104],
-            [0.0737],
-            [0.0611],
-            [0.0533],
-            [0.0513],
-            [0.0492],
-            [0.0449],
-            [0.0382],
-            [0.0308],
-            [0.0239],
-            [0.0165],
-            [0.0081],
-            [0.0],
+    def helper_create_test_cases(self, series_options: list):
+        covariates_options = [
+            {},
+            {"past_covariates"},
+            {"future_covariates"},
+            {"past_covariates", "future_covariates"},
         ]
-
-        # act
-        res = explainer.explain()
-
-        # assert
-        self.assertTrue(isinstance(res, _ExplainabilityResult))
-        res_attention_heads = res.get_explanation(component="attention_heads")
-        self.assertTrue(len(res_attention_heads) == 48)
-        self.assertTrue(
-            (
-                res_attention_heads.time_index
-                == pd.RangeIndex(start=0, stop=48, step=1, name="time")
-            ).all()
-        )
-        self.assertTrue(
-            res_attention_heads.mean(1).values().round(4).tolist()
-            == expected_average_attention
+        relative_index_options = [False, True]
+        use_encoders_options = [False, True]
+        return itertools.product(
+            *[
+                series_options,
+                covariates_options,
+                relative_index_options,
+                use_encoders_options,
+            ]
         )
 
-    def test_get_explanation(self):
-        """The get_variable_selection_weight method returns the feature importance."""
-        # arrange
-        model = deepcopy(self.models[0])
-        # fit the model with past covariates
-        np.random.seed(342)
-        model.fit(
-            self.train_ice_transformed,
-            past_covariates=self.covariates_heat_transformed,
-            verbose=True,
-        )
+    def test_explainer_single_univariate_multivariate_series(self):
+        """Test TFTExplainer with single univariate and multivariate series and a combination of
+        encoders, covariates, and addition of relative index."""
+        series_option: str
+        cov_option: set
+        add_relative_idx: bool
+        use_encoders: bool
 
-        # call methods for debugging / development
+        series_options = [
+            "univariate",
+            "multivariate",
+            # "multiple",
+        ]
+        test_cases = self.helper_create_test_cases(series_options)
+        for series_option, cov_option, add_relative_idx, use_encoders in test_cases:
+            series, pc, fc = self.helper_get_input(series_option)
+            cov_test_case = dict()
+            use_pc, use_fc = False, False
+            if "past_covariates" in cov_option:
+                cov_test_case["past_covariates"] = pc
+                use_pc = True
+            if "future_covariates" in cov_option:
+                cov_test_case["future_covariates"] = fc
+                use_fc = True
+
+            # expected number of features for past covs, future covs, and static covs, and encoder/decoder
+            n_target_expected = series.n_components
+            n_pc_expected = 1 if "past_covariates" in cov_test_case else 0
+            n_fc_expected = 1 if "future_covariates" in cov_test_case else 0
+            n_sc_expected = 2
+            # encoder is number of past and future covs plus 4 optional encodings (future and past)
+            # plus 1 univariate target plus 1 optional relative index
+            n_enc_expected = (
+                n_pc_expected
+                + n_fc_expected
+                + n_target_expected
+                + (4 if use_encoders else 0)
+                + (1 if add_relative_idx else 0)
+            )
+            # encoder is number of future covs plus 2 optional encodings (future)
+            # plus 1 optional relative index
+            n_dec_expected = (
+                n_fc_expected
+                + (2 if use_encoders else 0)
+                + (1 if add_relative_idx else 0)
+            )
+            model = self.helper_create_model(
+                use_encoders=use_encoders, add_relative_idx=add_relative_idx
+            )
+            # TFTModel requires future covariates
+            if (
+                not add_relative_idx
+                and "future_covariates" not in cov_test_case
+                and not use_encoders
+            ):
+                with pytest.raises(ValueError):
+                    model.fit(series=series, **cov_test_case)
+                continue
+
+            model.fit(series=series, **cov_test_case)
+            explainer = TFTExplainer(model)
+            explainer2 = TFTExplainer(
+                model,
+                background_series=series,
+                background_past_covariates=pc if use_pc else None,
+                background_future_covariates=fc if use_fc else None,
+            )
+            assert explainer.background_series == explainer2.background_series
+            assert (
+                explainer.background_past_covariates
+                == explainer2.background_past_covariates
+            )
+            assert (
+                explainer.background_future_covariates
+                == explainer2.background_future_covariates
+            )
+
+            assert hasattr(explainer, "model")
+            assert explainer.background_series[0] == series
+            if use_pc:
+                assert explainer.background_past_covariates[0] == pc
+                assert (
+                    explainer.background_past_covariates[0].n_components
+                    == n_pc_expected
+                )
+            else:
+                assert explainer.background_past_covariates is None
+            if use_fc:
+                assert explainer.background_future_covariates[0] == fc
+                assert (
+                    explainer.background_future_covariates[0].n_components
+                    == n_fc_expected
+                )
+            else:
+                assert explainer.background_future_covariates is None
+            result = explainer.explain()
+            assert isinstance(result, TFTExplainabilityResult)
+
+            enc_imp = result.get_encoder_importance()
+            dec_imp = result.get_decoder_importance()
+            stc_imp = result.get_static_covariates_importance()
+            imps = [enc_imp, dec_imp, stc_imp]
+            assert all([isinstance(imp, pd.DataFrame) for imp in imps])
+            # importances must sum up to 100 percent
+            assert all(
+                [imp.squeeze().sum() == pytest.approx(100.0, abs=0.11) for imp in imps]
+            )
+            # importances must have the expected number of columns
+            assert all(
+                [
+                    len(imp.columns) == n
+                    for imp, n in zip(
+                        imps, [n_enc_expected, n_dec_expected, n_sc_expected]
+                    )
+                ]
+            )
+
+            attention = result.get_attention()
+            assert isinstance(attention, TimeSeries)
+            # input chunk length + output chunk length = 5 + 2 = 7
+            icl, ocl = 5, 2
+            freq = series.freq
+            assert len(attention) == icl + ocl
+            assert attention.start_time() == series.end_time() - (icl - 1) * freq
+            assert attention.end_time() == series.end_time() + ocl * freq
+            assert attention.n_components == ocl
+
+    def test_explainer_multiple_multivariate_series(self):
+        """Test TFTExplainer with multiple multivaraites series and a combination of encoders, covariates,
+        and addition of relative index."""
+        series_option: str
+        cov_option: set
+        add_relative_idx: bool
+        use_encoders: bool
+
+        series_options = ["multiple"]
+        test_cases = self.helper_create_test_cases(series_options)
+        for series_option, cov_option, add_relative_idx, use_encoders in test_cases:
+            series, pc, fc = self.helper_get_input(series_option)
+            cov_test_case = dict()
+            use_pc, use_fc = False, False
+            if "past_covariates" in cov_option:
+                cov_test_case["past_covariates"] = pc
+                use_pc = True
+            if "future_covariates" in cov_option:
+                cov_test_case["future_covariates"] = fc
+                use_fc = True
+
+            # expected number of features for past covs, future covs, and static covs, and encoder/decoder
+            n_target_expected = series[0].n_components
+            n_pc_expected = 1 if "past_covariates" in cov_test_case else 0
+            n_fc_expected = 1 if "future_covariates" in cov_test_case else 0
+            n_sc_expected = 2
+            # encoder is number of past and future covs plus 4 optional encodings (future and past)
+            # plus 1 univariate target plus 1 optional relative index
+            n_enc_expected = (
+                n_pc_expected
+                + n_fc_expected
+                + n_target_expected
+                + (4 if use_encoders else 0)
+                + (1 if add_relative_idx else 0)
+            )
+            # encoder is number of future covs plus 2 optional encodings (future)
+            # plus 1 optional relative index
+            n_dec_expected = (
+                n_fc_expected
+                + (2 if use_encoders else 0)
+                + (1 if add_relative_idx else 0)
+            )
+            model = self.helper_create_model(
+                use_encoders=use_encoders, add_relative_idx=add_relative_idx
+            )
+            # TFTModel requires future covariates
+            if (
+                not add_relative_idx
+                and "future_covariates" not in cov_test_case
+                and not use_encoders
+            ):
+                with pytest.raises(ValueError):
+                    model.fit(series=series, **cov_test_case)
+                continue
+
+            model.fit(series=series, **cov_test_case)
+            # explainer requires background if model trained on multiple time series
+            with pytest.raises(ValueError):
+                explainer = TFTExplainer(model)
+            explainer = TFTExplainer(
+                model,
+                background_series=series,
+                background_past_covariates=pc if use_pc else None,
+                background_future_covariates=fc if use_fc else None,
+            )
+            assert hasattr(explainer, "model")
+            assert explainer.background_series, series
+            if use_pc:
+                assert explainer.background_past_covariates == pc
+                assert (
+                    explainer.background_past_covariates[0].n_components
+                    == n_pc_expected
+                )
+            else:
+                assert explainer.background_past_covariates is None
+            if use_fc:
+                assert explainer.background_future_covariates == fc
+                assert (
+                    explainer.background_future_covariates[0].n_components
+                    == n_fc_expected
+                )
+            else:
+                assert explainer.background_future_covariates is None
+            result = explainer.explain()
+            assert isinstance(result, TFTExplainabilityResult)
+
+            enc_imp = result.get_encoder_importance()
+            dec_imp = result.get_decoder_importance()
+            stc_imp = result.get_static_covariates_importance()
+            imps = [enc_imp, dec_imp, stc_imp]
+            assert all([isinstance(imp, list) for imp in imps])
+            assert all([len(imp) == len(series) for imp in imps])
+            assert all([isinstance(imp_, pd.DataFrame) for imp in imps for imp_ in imp])
+            # importances must sum up to 100 percent
+            assert all(
+                [
+                    imp_.squeeze().sum() == pytest.approx(100.0, abs=0.11)
+                    for imp in imps
+                    for imp_ in imp
+                ]
+            )
+            # importances must have the expected number of columns
+            assert all(
+                [
+                    len(imp_.columns) == n
+                    for imp, n in zip(
+                        imps, [n_enc_expected, n_dec_expected, n_sc_expected]
+                    )
+                    for imp_ in imp
+                ]
+            )
+
+            attention = result.get_attention()
+            assert isinstance(attention, list)
+            assert len(attention) == len(series)
+            assert all([isinstance(att, TimeSeries) for att in attention])
+            # input chunk length + output chunk length = 5 + 2 = 7
+            icl, ocl = 5, 2
+            freq = series[0].freq
+            assert all([len(att) == icl + ocl for att in attention])
+            assert all(
+                [
+                    att.start_time() == series_.end_time() - (icl - 1) * freq
+                    for att, series_ in zip(attention, series)
+                ]
+            )
+            assert all(
+                [
+                    att.end_time() == series_.end_time() + ocl * freq
+                    for att, series_ in zip(attention, series)
+                ]
+            )
+            assert all([att.n_components == ocl for att in attention])
+
+    def test_variable_selection_explanation(self):
+        """Test variable selection (feature importance) explanation results and plotting."""
+        model = self.helper_create_model(use_encoders=True, add_relative_idx=True)
+        series, pc, fc = self.helper_get_input(series_option="multivariate")
+        model.fit(series, past_covariates=pc, future_covariates=fc)
         explainer = TFTExplainer(model)
+        results = explainer.explain()
 
-        expl_result = explainer.explain()
+        imps = results.get_feature_importances()
+        enc_imp = results.get_encoder_importance()
+        dec_imp = results.get_decoder_importance()
+        stc_imp = results.get_static_covariates_importance()
+        imps_direct = [enc_imp, dec_imp, stc_imp]
 
-        # act
-        res = expl_result.get_explanation(component="attention_heads")
+        imp_names = [
+            "encoder_importance",
+            "decoder_importance",
+            "static_covariates_importance",
+        ]
+        assert list(imps.keys()) == imp_names
+        for imp, imp_name in zip(imps_direct, imp_names):
+            assert imps[imp_name].equals(imp)
 
-        # assert
-        self.assertTrue(isinstance(res, TimeSeries))
-
-    def test_plot_attention_heads(self):
-        """The get_variable_selection_weight method returns the feature importance."""
-        # arrange
-        model = deepcopy(self.models[0])
-        # fit the model with past covariates
-        model.fit(
-            self.train_ice_transformed,
-            past_covariates=self.covariates_heat_transformed,
-            verbose=True,
+        enc_expected = pd.DataFrame(
+            {
+                "linear_target": 1.6,
+                "sine_target": 3.0,
+                "add_relative_index_futcov": 3.0,
+                "constant_pastcov": 4.0,
+                "darts_enc_fc_cyc_month_sin_futcov": 6.2,
+                "darts_enc_pc_cyc_month_sin_pastcov": 8.6,
+                "darts_enc_pc_cyc_month_cos_pastcov": 20.0,
+                "constant_futcov": 20.2,
+                "darts_enc_fc_cyc_month_cos_futcov": 33.3,
+            },
+            index=[0],
         )
+        assert enc_imp.round(decimals=1).equals(enc_expected)
 
-        # call methods for debugging / development
-        explainer = TFTExplainer(model)
+        dec_expected = pd.DataFrame(
+            {
+                "darts_enc_fc_cyc_month_cos_futcov": 4.3,
+                "darts_enc_fc_cyc_month_sin_futcov": 17.1,
+                "constant_futcov": 19.3,
+                "add_relative_index_futcov": 59.3,
+            },
+            index=[0],
+        )
+        assert dec_imp.round(decimals=1).equals(dec_expected)
 
-        expl_result = explainer.explain()
+        stc_expected = pd.DataFrame(
+            {"num_statcov": 11.9, "cat_statcov": 88.1}, index=[0]
+        )
+        assert stc_imp.round(decimals=1).equals(stc_expected)
 
-        # act / assert
-        #
         with patch("matplotlib.pyplot.show") as _:
-            _ = explainer.plot_attention_heads(expl_result, plot_type="all")
-            _ = explainer.plot_attention_heads(expl_result, plot_type="time")
-            _ = explainer.plot_attention_heads(expl_result, plot_type="heatmap")
+            _ = explainer.plot_variable_selection(results)
 
-    def test_plot_attention_heads_multiple_covariates(self):
-        """The get_variable_selection_weight method returns the feature importance."""
-        # arrange
-        model = deepcopy(self.models[0])
-        # fit the model with past covariates
-        model.fit(
-            self.train_ice_transformed,
-            past_covariates=self.multiple_covariates_transformed,
-            verbose=True,
+    def test_attention_explanation(self):
+        """Test attention (feature importance) explanation results and plotting."""
+        # past attention (full_attention=False) on attends to values in the past relative to each horizon
+        # (look at the last 0 values in the array)
+        att_exp_past_att = np.array(
+            [
+                [1.1, 1.1],
+                [0.7, 0.7],
+                [0.6, 0.5],
+                [0.7, 0.5],
+                [0.8, 0.5],
+                [0.0, 0.7],
+                [0.0, 0.0],
+            ]
         )
+        # full attention (full_attention=True) attends to all values in past, present, and future
+        # see the that all values are non-0
+        att_exp_full_att = np.array(
+            [
+                [0.9, 1.0],
+                [0.6, 0.6],
+                [0.3, 0.4],
+                [0.3, 0.4],
+                [0.4, 0.4],
+                [0.6, 0.5],
+                [0.9, 0.8],
+            ]
+        )
+        for full_attention, att_exp in zip(
+            [False, True], [att_exp_past_att, att_exp_full_att]
+        ):
+            model = self.helper_create_model(
+                use_encoders=True, add_relative_idx=True, full_attention=full_attention
+            )
+            series, pc, fc = self.helper_get_input(series_option="multivariate")
+            model.fit(series, past_covariates=pc, future_covariates=fc)
+            explainer = TFTExplainer(model)
+            results = explainer.explain()
 
-        # call methods for debugging / development
-        explainer = TFTExplainer(model)
+            att = results.get_attention()
+            assert np.all(np.round(att.values(), decimals=1) == att_exp)
+            assert att.columns.tolist() == ["horizon 1", "horizon 2"]
+            with patch("matplotlib.pyplot.show") as _:
+                _ = explainer.plot_attention(
+                    results, plot_type="all", show_index_as="relative"
+                )
+            with patch("matplotlib.pyplot.show") as _:
+                _ = explainer.plot_attention(
+                    results, plot_type="all", show_index_as="time"
+                )
+            with patch("matplotlib.pyplot.show") as _:
+                _ = explainer.plot_attention(
+                    results, plot_type="time", show_index_as="relative"
+                )
+            with patch("matplotlib.pyplot.show") as _:
+                _ = explainer.plot_attention(
+                    results, plot_type="time", show_index_as="time"
+                )
+            with patch("matplotlib.pyplot.show") as _:
+                _ = explainer.plot_attention(
+                    results, plot_type="heatmap", show_index_as="relative"
+                )
+            with patch("matplotlib.pyplot.show") as _:
+                _ = explainer.plot_attention(
+                    results, plot_type="heatmap", show_index_as="time"
+                )
 
-        expl_result = explainer.explain()
-
-        # act / assert
-        #
-        with patch("matplotlib.pyplot.show") as _:
-            _ = explainer.plot_attention_heads(expl_result, plot_type="all")
-            _ = explainer.plot_attention_heads(expl_result, plot_type="time")
-            _ = explainer.plot_attention_heads(expl_result, plot_type="heatmap")
+    def helper_create_model(
+        self, use_encoders=True, add_relative_idx=True, full_attention=False
+    ):
+        add_encoders = (
+            {"cyclic": {"past": ["month"], "future": ["month"]}}
+            if use_encoders
+            else None
+        )
+        return TFTModel(
+            input_chunk_length=5,
+            output_chunk_length=2,
+            n_epochs=1,
+            add_encoders=add_encoders,
+            add_relative_index=add_relative_idx,
+            full_attention=full_attention,
+            random_state=42,
+        )

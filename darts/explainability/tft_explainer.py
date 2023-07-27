@@ -117,7 +117,10 @@ class TFTExplainer(_ForecastingModelExplainer):
         )
         # add the relative index that generated inside the model (not in the input data)
         if model.add_relative_index:
-            self.future_covariates_components.append("add_relative_index")
+            if self.future_covariates_components is not None:
+                self.future_covariates_components.append("add_relative_index")
+            else:
+                self.future_covariates_components = ["add_relative_index"]
 
     def explain(
         self,
