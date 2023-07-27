@@ -134,10 +134,10 @@ class _DLinearModule(PLMixedCovariatesModule):
 
         if self.shared_weights:
             layer_in_dim = self.input_chunk_length
-            layer_out_dim = self._output_chunk_length * self.nr_params
+            layer_out_dim = self.output_chunk_length * self.nr_params
         else:
             layer_in_dim = self.input_chunk_length * self.input_dim
-            layer_out_dim = self._output_chunk_length * self.output_dim * self.nr_params
+            layer_out_dim = self.output_chunk_length * self.output_dim * self.nr_params
 
             # for static cov, we take the number of components of the target, times static cov dim
             layer_in_dim_static_cov = self.output_dim * self.static_cov_dim
@@ -181,9 +181,7 @@ class _DLinearModule(PLMixedCovariatesModule):
             x = seasonal_output + trend_output
 
             # extract nr_params
-            x = x.view(
-                batch, self.output_dim, self._output_chunk_length, self.nr_params
-            )
+            x = x.view(batch, self.output_dim, self.output_chunk_length, self.nr_params)
 
             # permute back to (batch, out_len, out_dim, nr_params)
             x = x.permute(0, 2, 1, 3)
@@ -195,10 +193,10 @@ class _DLinearModule(PLMixedCovariatesModule):
             seasonal_output = self.linear_seasonal(res.view(batch, -1))
             trend_output = self.linear_trend(trend.view(batch, -1))
             seasonal_output = seasonal_output.view(
-                batch, self._output_chunk_length, self.output_dim * self.nr_params
+                batch, self.output_chunk_length, self.output_dim * self.nr_params
             )
             trend_output = trend_output.view(
-                batch, self._output_chunk_length, self.output_dim * self.nr_params
+                batch, self.output_chunk_length, self.output_dim * self.nr_params
             )
 
             x = seasonal_output + trend_output
@@ -208,26 +206,24 @@ class _DLinearModule(PLMixedCovariatesModule):
                 # so we need to pad it with zeros at the end to match the output_chunk_length
                 x_future = torch.nn.functional.pad(
                     input=x_future,
-                    pad=(0, 0, 0, self._output_chunk_length - x_future.shape[1]),
+                    pad=(0, 0, 0, self.output_chunk_length - x_future.shape[1]),
                     mode="constant",
                     value=0,
                 )
 
                 fut_cov_output = self.linear_fut_cov(x_future)
                 x = x + fut_cov_output.view(
-                    batch, self._output_chunk_length, self.output_dim * self.nr_params
+                    batch, self.output_chunk_length, self.output_dim * self.nr_params
                 )
 
             if self.static_cov_dim != 0:
                 static_cov_output = self.linear_static_cov(x_static.reshape(batch, -1))
                 x = x + static_cov_output.view(
-                    batch, self._output_chunk_length, self.output_dim * self.nr_params
+                    batch, self.output_chunk_length, self.output_dim * self.nr_params
                 )
 
             # extract nr_params
-            x = x.view(
-                batch, self._output_chunk_length, self.output_dim, self.nr_params
-            )
+            x = x.view(batch, self.output_chunk_length, self.output_dim, self.nr_params)
 
         return x
 

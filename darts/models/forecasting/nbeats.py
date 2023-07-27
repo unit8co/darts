@@ -428,7 +428,7 @@ class _NBEATSModule(PLPastCovariatesModule):
         self.output_dim = output_dim
         self.nr_params = nr_params
         self.input_chunk_length_multi = self.input_chunk_length * input_dim
-        self.target_length = self._output_chunk_length * input_dim
+        self.target_length = self.output_chunk_length * input_dim
         self.dropout = dropout
         self.batch_norm = batch_norm
         self.activation = activation
@@ -523,7 +523,7 @@ class _NBEATSModule(PLPastCovariatesModule):
         # The covariates are by construction added as extra time series on the right side. So we need to get rid of this
         # right output (keeping only :self.output_dim).
         y = y.view(
-            y.shape[0], self._output_chunk_length, self.input_dim, self.nr_params
+            y.shape[0], self.output_chunk_length, self.input_dim, self.nr_params
         )[:, :, : self.output_dim, :]
 
         return y

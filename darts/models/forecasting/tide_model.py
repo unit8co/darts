@@ -161,7 +161,7 @@ class _TideModule(PLMixedCovariatesModule):
         # original paper doesn't specify how to use past covariates
         # we assume that they pass them raw to the encoder
         historical_future_covariates_flat_dim = (
-            self.input_chunk_length + self._output_chunk_length
+            self.input_chunk_length + self.output_chunk_length
         ) * (self.temporal_width if future_cov_dim > 0 else 0)
         encoder_dim = (
             self.input_chunk_length * (input_dim - future_cov_dim)
@@ -204,7 +204,7 @@ class _TideModule(PLMixedCovariatesModule):
             _ResidualBlock(
                 input_dim=hidden_size,
                 output_dim=decoder_output_dim
-                * self._output_chunk_length
+                * self.output_chunk_length
                 * self.nr_params,
                 hidden_size=hidden_size,
                 use_layer_norm=use_layer_norm,
@@ -222,7 +222,7 @@ class _TideModule(PLMixedCovariatesModule):
         )
 
         self.lookback_skip = nn.Linear(
-            self.input_chunk_length, self._output_chunk_length * self.nr_params
+            self.input_chunk_length, self.output_chunk_length * self.nr_params
         )
 
         if self.use_reversible_instance_norm:
@@ -303,12 +303,12 @@ class _TideModule(PLMixedCovariatesModule):
         decoded = self.decoders(encoded)
 
         # get view that is batch size x output chunk length x self.decoder_output_dim x nr params
-        decoded = decoded.view(x.shape[0], self._output_chunk_length, -1)
+        decoded = decoded.view(x.shape[0], self.output_chunk_length, -1)
 
         # stack and temporally decode with future covariate last output steps
         temporal_decoder_input = [
             decoded,
-            x_dynamic_covariates_proj[:, -self._output_chunk_length :, :]
+            x_dynamic_covariates_proj[:, -self.output_chunk_length :, :]
             if self.future_cov_dim > 0
             else None,
         ]
@@ -327,7 +327,7 @@ class _TideModule(PLMixedCovariatesModule):
             temporal_decoded
         )  # skip.view(temporal_decoded.shape)
 
-        y = y.view(-1, self._output_chunk_length, self.output_dim, self.nr_params)
+        y = y.view(-1, self.output_chunk_length, self.output_dim, self.nr_params)
 
         if self.use_reversible_instance_norm:
             y = self.rin.inverse(y)

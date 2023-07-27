@@ -97,6 +97,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         )
 
         self.input_chunk_length = input_chunk_length
+        # output_chunk_length is a property
         self._output_chunk_length = output_chunk_length
 
         # define the loss function
@@ -428,6 +429,13 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         return current_epoch
 
+    @property
+    def output_chunk_length(self) -> Optional[int]:
+        """
+        Number of time steps predicted at once by the model.
+        """
+        return self._output_chunk_length
+
     @staticmethod
     def configure_torch_metrics(
         torch_metrics: Union[torchmetrics.Metric, torchmetrics.MetricCollection]
@@ -516,9 +524,9 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
             # we want the last prediction to end exactly at `n` into the future.
             # this means we may have to truncate the previous prediction and step
             # back the roll size for the last chunk
-            if prediction_length + self._output_chunk_length > n:
+            if prediction_length + self.output_chunk_length > n:
                 spillover_prediction_length = (
-                    prediction_length + self._output_chunk_length - n
+                    prediction_length + self.output_chunk_length - n
                 )
                 roll_size -= spillover_prediction_length
                 prediction_length -= spillover_prediction_length
@@ -559,7 +567,7 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
             ]
 
             batch_prediction.append(out)
-            prediction_length += self._output_chunk_length
+            prediction_length += self.output_chunk_length
 
         # bring predictions into desired format and drop unnecessary values
         batch_prediction = torch.cat(batch_prediction, dim=1)
@@ -699,9 +707,9 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
             # we want the last prediction to end exactly at `n` into the future.
             # this means we may have to truncate the previous prediction and step
             # back the roll size for the last chunk
-            if prediction_length + self._output_chunk_length > n:
+            if prediction_length + self.output_chunk_length > n:
                 spillover_prediction_length = (
-                    prediction_length + self._output_chunk_length - n
+                    prediction_length + self.output_chunk_length - n
                 )
                 roll_size -= spillover_prediction_length
                 prediction_length -= spillover_prediction_length
@@ -749,7 +757,7 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
             # ==========> FUTURE INPUT <==========
             left_future, right_future = (
                 right_past,
-                right_past + self._output_chunk_length,
+                right_past + self.output_chunk_length,
             )
             # update future covariates to include next `roll_size` future covariates elements
             if n_future_covs:
@@ -761,7 +769,7 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
             )[:, self.first_prediction_index :, :]
 
             batch_prediction.append(out)
-            prediction_length += self._output_chunk_length
+            prediction_length += self.output_chunk_length
 
         # bring predictions into desired format and drop unnecessary values
         batch_prediction = torch.cat(batch_prediction, dim=1)

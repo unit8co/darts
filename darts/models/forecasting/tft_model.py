@@ -454,7 +454,7 @@ class _TFTModule(PLMixedCovariatesModule):
 
         batch_size = x_cont_past.shape[dim_samples]
         encoder_length = self.input_chunk_length
-        decoder_length = self._output_chunk_length
+        decoder_length = self.output_chunk_length
         time_steps = encoder_length + decoder_length
 
         # avoid unnecessary regeneration of attention mask
@@ -631,7 +631,7 @@ class _TFTModule(PLMixedCovariatesModule):
         # generate output for n_targets and loss_size elements for loss evaluation
         out = self.output_layer(out[:, encoder_length:] if self.full_attention else out)
         out = out.view(
-            batch_size, self._output_chunk_length, self.n_targets, self.loss_size
+            batch_size, self.output_chunk_length, self.n_targets, self.loss_size
         )
 
         # TODO: (Darts) remember this in case we want to output interpretation

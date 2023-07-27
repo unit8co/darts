@@ -249,7 +249,7 @@ class _TCNModule(PLPastCovariatesModule):
 
     @property
     def first_prediction_index(self) -> int:
-        return -self._output_chunk_length
+        return -self.output_chunk_length
 
 
 class TCNModel(PastCovariatesTorchModel):
