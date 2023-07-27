@@ -955,6 +955,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 last_points_only=last_points_only,
                 verbose=verbose,
                 show_warnings=show_warnings,
+                predict_likelihood_parameters=predict_likelihood_parameters,
             )
 
         if len(series) == 1:
@@ -1055,7 +1056,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             last_points_times = []
             last_points_values = []
             _counter_train = 0
-
             forecast_components = None
             # iterate and forecast
             for _counter, pred_time in enumerate(iterator):
@@ -1986,6 +1986,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         last_points_only: bool = True,
         verbose: bool = False,
         show_warnings: bool = True,
+        predict_likelihood_parameters: bool = False,
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:

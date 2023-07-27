@@ -904,6 +904,7 @@ class RegressionModel(GlobalForecastingModel):
         last_points_only: bool = True,
         verbose: bool = False,
         show_warnings: bool = True,
+        predict_likelihood_parameters: bool = False,
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:
@@ -946,6 +947,7 @@ class RegressionModel(GlobalForecastingModel):
                 stride=stride,
                 overlap_end=overlap_end,
                 show_warnings=show_warnings,
+                predict_likelihood_parameters=predict_likelihood_parameters,
             )
         else:
             return _optimised_historical_forecasts_regression_all_points(
@@ -959,6 +961,7 @@ class RegressionModel(GlobalForecastingModel):
                 stride=stride,
                 overlap_end=overlap_end,
                 show_warnings=show_warnings,
+                predict_likelihood_parameters=predict_likelihood_parameters,
             )
 
     def _get_historical_forecastable_time_index(

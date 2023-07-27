@@ -24,6 +24,7 @@ def _optimised_historical_forecasts_regression_last_points_only(
     stride: int = 1,
     overlap_end: bool = False,
     show_warnings: bool = True,
+    predict_likelihood_parameters: bool = False,
 ) -> Union[
     TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
 ]:
@@ -39,6 +40,11 @@ def _optimised_historical_forecasts_regression_last_points_only(
             future_covariates[idx] if future_covariates is not None else None
         )
         freq = series_.freq
+        forecast_components = (
+            model._likelihood_components_names(series_)
+            if predict_likelihood_parameters
+            else series_.columns
+        )
 
         # obtain forecastable indexes boundaries, adjust target & covariates boundaries accordingly
         (
@@ -102,7 +108,9 @@ def _optimised_historical_forecasts_regression_last_points_only(
 
         # repeat rows for probabilistic forecast
         forecast = model._predict_and_sample(
-            np.repeat(X, num_samples, axis=0), num_samples
+            x=np.repeat(X, num_samples, axis=0),
+            num_samples=num_samples,
+            predict_likelihood_parameters=predict_likelihood_parameters,
         )
         # forecast has shape ((forecastable_index_length-1)*num_samples, k, n_component)
         # where k = output_chunk length if multi_models, 1 otherwise
@@ -115,8 +123,8 @@ def _optimised_historical_forecasts_regression_last_points_only(
             forecast = forecast[
                 :,
                 (forecast_horizon - 1)
-                * series_.n_components : (forecast_horizon)
-                * series_.n_components,
+                * len(forecast_components) : (forecast_horizon)
+                * len(forecast_components),
                 :,
             ]
 
@@ -128,9 +136,10 @@ def _optimised_historical_forecasts_regression_last_points_only(
                     start=hist_fct_start + (forecast_horizon - 1) * freq,
                     length=forecast.shape[0],
                     freq=freq * stride,
+                    name=series_.time_index.name,
                 ),
                 values=forecast,
-                columns=series_.columns,
+                columns=forecast_components,
                 static_covariates=series_.static_covariates,
                 hierarchy=series_.hierarchy,
             )
@@ -149,6 +158,7 @@ def _optimised_historical_forecasts_regression_all_points(
     stride: int = 1,
     overlap_end: bool = False,
     show_warnings: bool = True,
+    predict_likelihood_parameters: bool = False,
 ) -> Union[
     TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
 ]:
@@ -164,6 +174,11 @@ def _optimised_historical_forecasts_regression_all_points(
             future_covariates[idx] if future_covariates is not None else None
         )
         freq = series_.freq
+        forecast_components = (
+            model._likelihood_components_names(series_)
+            if predict_likelihood_parameters
+            else series_.columns
+        )
 
         # obtain forecastable indexes boundaries, adjust target & covariates boundaries accordingly
         (
@@ -234,7 +249,9 @@ def _optimised_historical_forecasts_regression_all_points(
 
         # repeat rows for probabilistic forecast
         forecast = model._predict_and_sample(
-            np.repeat(X, num_samples, axis=0), num_samples
+            x=np.repeat(X, num_samples, axis=0),
+            num_samples=num_samples,
+            predict_likelihood_parameters=predict_likelihood_parameters,
         )
 
         # reshape and stride the forecast into (forecastable_index, forecast_horizon, n_components, num_samples)
@@ -244,7 +261,7 @@ def _optimised_historical_forecasts_regression_all_points(
             forecast = forecast.reshape(
                 X.shape[0],
                 model.output_chunk_length,
-                series_.n_components,
+                len(forecast_components),
                 num_samples,
             )
 
@@ -260,7 +277,7 @@ def _optimised_historical_forecasts_regression_all_points(
 
             # forecasts depend on lagged data only, output_chunk_length is reconstitued by applying a sliding window
             forecast = sliding_window_view(
-                forecast, (forecast_horizon, series_.n_components, num_samples)
+                forecast, (forecast_horizon, len(forecast_components), num_samples)
             )
 
             # apply stride, remove the last windows, slice output_chunk_length to keep forecast_horizon values
@@ -285,6 +302,7 @@ def _optimised_historical_forecasts_regression_all_points(
             start=hist_fct_start,
             length=forecast_horizon * stride * forecast.shape[0],
             freq=freq,
+            name=series_.time_index.name,
         )
 
         forecasts_ = []
@@ -295,7 +313,7 @@ def _optimised_historical_forecasts_regression_all_points(
                 TimeSeries.from_times_and_values(
                     times=new_times[step_fct : step_fct + forecast_horizon],
                     values=forecast[idx_ftc],
-                    columns=series_.columns,
+                    columns=forecast_components,
                     static_covariates=series_.static_covariates,
                     hierarchy=series_.hierarchy,
                 )
