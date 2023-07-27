@@ -168,46 +168,16 @@ def _historical_forecasts_start_warnings(
         )
 
 
-def _get_historical_forecast_boundaries(
+def _adjust_historical_forecasts_time_index(
     model,
-    series: TimeSeries,
-    series_idx: int,
-    past_covariates: Optional[TimeSeries],
-    future_covariates: Optional[TimeSeries],
-    start: Optional[Union[pd.Timestamp, float, int]],
-    forecast_horizon: int,
-    overlap_end: bool,
-    freq: pd.DateOffset,
-    show_warnings: bool = True,
-) -> Tuple[Any, ...]:
-    """
-    Based on the boundaries of the forecastable time index, generates the boundaries of each covariates using the lags.
-
-    For TimeSeries with a RangeIndex, the boundaries are converted to absolute indexes to slice the array appropriately
-    when start > 0.
-
-    When applicable, move the start boundaries to the value provided by the user.
-    """
-    # obtain forecastable indexes boundaries, as values from the time index
-    historical_forecasts_time_index = model._get_historical_forecastable_time_index(
-        series,
-        past_covariates,
-        future_covariates,
-        is_training=False,
-        reduce_to_bounds=True,
-    )
-
-    if historical_forecasts_time_index is None:
-        raise_log(
-            ValueError(
-                "Cannot build a single input for prediction with the provided model, "
-                f"`series` and `*_covariates` at series index: {series_idx}. The minimum "
-                "prediction input time index requirements were not met. "
-                "Please check the time index of `series` and `*_covariates`."
-            )
-        )
-        return ()
-
+    series_idx,
+    series,
+    historical_forecasts_time_index,
+    forecast_horizon,
+    overlap_end,
+    start,
+    show_warnings: bool,
+):
     # shift the end of the forecastable index based on `overlap_end`` and `forecast_horizon``
     last_valid_pred_time = model._get_last_prediction_time(
         series,
@@ -217,7 +187,7 @@ def _get_historical_forecast_boundaries(
 
     historical_forecasts_time_index = (
         historical_forecasts_time_index[0],
-        min(historical_forecasts_time_index[1], last_valid_pred_time),
+        min(historical_forecasts_time_index[-1], last_valid_pred_time),
     )
 
     # when applicable, shift the start of the forecastable index based on `start`
@@ -241,6 +211,106 @@ def _get_historical_forecast_boundaries(
                 max(historical_forecasts_time_index[0], start_time_),
                 historical_forecasts_time_index[1],
             )
+
+    return historical_forecasts_time_index
+
+
+def _get_historical_forecast_predict_index(
+    model,
+    series: TimeSeries,
+    series_idx: int,
+    past_covariates: Optional[TimeSeries],
+    future_covariates: Optional[TimeSeries],
+):
+    historical_forecasts_time_index = model._get_historical_forecastable_time_index(
+        series,
+        past_covariates,
+        future_covariates,
+        is_training=False,
+        reduce_to_bounds=True,
+    )
+
+    if historical_forecasts_time_index is None:
+        raise_log(
+            ValueError(
+                "Cannot build a single input for prediction with the provided model, "
+                f"`series` and `*_covariates` at series index: {series_idx}. The minimum "
+                "prediction input time index requirements were not met. "
+                "Please check the time index of `series` and `*_covariates`."
+            )
+        )
+
+    return historical_forecasts_time_index
+
+
+def _get_historical_forecast_train_index(
+    model,
+    series: TimeSeries,
+    series_idx: int,
+    past_covariates: Optional[TimeSeries],
+    future_covariates: Optional[TimeSeries],
+    retrain: bool,
+):
+    historical_forecasts_time_index = model._get_historical_forecastable_time_index(
+        series,
+        past_covariates,
+        future_covariates,
+        is_training=True,
+        reduce_to_bounds=True,
+    )
+
+    if (
+        (retrain is not False) or (not model._fit_called)
+    ) and historical_forecasts_time_index is None:
+        raise_log(
+            ValueError(
+                "Cannot build a single input for training with the provided untrained model, "
+                f"`series` and `*_covariates` at series index: {series_idx}. The minimum "
+                "training input time index requirements were not met. "
+                "Please check the time index of `series` and `*_covariates`."
+            ),
+            logger,
+        )
+
+    return historical_forecasts_time_index
+
+
+def _get_historical_forecast_boundaries(
+    model,
+    series: TimeSeries,
+    series_idx: int,
+    past_covariates: Optional[TimeSeries],
+    future_covariates: Optional[TimeSeries],
+    start: Optional[Union[pd.Timestamp, float, int]],
+    forecast_horizon: int,
+    overlap_end: bool,
+    freq: pd.DateOffset,
+    show_warnings: bool = True,
+) -> Tuple[Any, ...]:
+    """
+    Based on the boundaries of the forecastable time index, generates the boundaries of each covariates using the lags.
+
+    For TimeSeries with a RangeIndex, the boundaries are converted to absolute indexes to slice the array appropriately
+    when start > 0.
+
+    When applicable, move the start boundaries to the value provided by the user.
+    """
+    # obtain forecastable indexes boundaries, as values from the time index
+    historical_forecasts_time_index = _get_historical_forecast_predict_index(
+        model, series, series_idx, past_covariates, future_covariates
+    )
+
+    # adjust boundaries based on start, forecast_horizon and overlap_end
+    historical_forecasts_time_index = _adjust_historical_forecasts_time_index(
+        model,
+        series_idx,
+        series,
+        historical_forecasts_time_index,
+        forecast_horizon,
+        overlap_end,
+        start,
+        show_warnings,
+    )
 
     # re-adjust the slicing indexes to account for the lags
     (

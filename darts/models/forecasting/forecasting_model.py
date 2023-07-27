@@ -33,20 +33,17 @@ from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
+    _adjust_historical_forecasts_time_index,
+    _get_historical_forecast_predict_index,
+    _get_historical_forecast_train_index,
     _historical_forecasts_general_checks,
-    _historical_forecasts_start_warnings,
 )
 from darts.utils.timeseries_generation import (
     _build_forecast_series,
     _generate_new_dates,
     generate_index,
 )
-from darts.utils.utils import (
-    drop_after_index,
-    drop_before_index,
-    get_single_series,
-    series2seq,
-)
+from darts.utils.utils import get_single_series, series2seq
 
 logger = get_logger(__name__)
 
@@ -921,52 +918,27 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             past_covariates_ = past_covariates[idx] if past_covariates else None
             future_covariates_ = future_covariates[idx] if future_covariates else None
 
-            # Prediction
+            # predictable time indexes (assuming model is already trained)
             historical_forecasts_time_index_predict = (
-                model._get_historical_forecastable_time_index(
-                    series_,
-                    past_covariates_,
-                    future_covariates_,
-                    is_training=False,
+                _get_historical_forecast_predict_index(
+                    model, series_, idx, past_covariates_, future_covariates_
                 )
             )
 
-            if historical_forecasts_time_index_predict is None:
-                raise_log(
-                    ValueError(
-                        "Cannot build a single input for prediction with the provided model, "
-                        f"`series` and `*_covariates` at series index: {idx}. The minimum "
-                        "prediction input time index requirements were not met. "
-                        "Please check the time index of `series` and `*_covariates`."
-                    ),
-                    logger,
-                )
-
-            # Train
+            # trainable time indexes (considering lags and available covariates)
             historical_forecasts_time_index_train = (
-                model._get_historical_forecastable_time_index(
+                _get_historical_forecast_train_index(
+                    model,
                     series_,
+                    idx,
                     past_covariates_,
                     future_covariates_,
-                    is_training=True,
+                    bool(retrain),
                 )
             )
-
-            if (
-                (retrain is not False) or (not model._fit_called)
-            ) and historical_forecasts_time_index_train is None:
-                raise_log(
-                    ValueError(
-                        "Cannot build a single input for training with the provided untrained model, "
-                        f"`series` and `*_covariates` at series index: {idx}. The minimum "
-                        "training input time index requirements were not met. "
-                        "Please check the time index of `series` and `*_covariates`."
-                    ),
-                    logger,
-                )
 
             # We need the first value timestamp to be used in order to properly shift the series
-            if retrain is False:
+            if not retrain:
                 # we are only predicting: start of the series does not have to change
                 min_timestamp_series = series_.time_index[0]
             else:
@@ -1007,11 +979,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         train_length - model._training_sample_time_index_length, 0
                     )
                     if step_ahead:
-                        historical_forecasts_time_index = drop_before_index(
-                            historical_forecasts_time_index,
+                        historical_forecasts_time_index = (
                             historical_forecasts_time_index[0]
                             + step_ahead * series_.freq,
+                            historical_forecasts_time_index[-1],
                         )
+
                 # if not we start training right away; some models (sklearn) require more than 1
                 # training samples, so we start after the first trainable point.
                 else:
@@ -1024,52 +997,32 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
                     train_length_ = None
                     if model.min_train_samples > 1:
-                        historical_forecasts_time_index = drop_before_index(
-                            historical_forecasts_time_index,
+                        historical_forecasts_time_index = (
                             historical_forecasts_time_index[0]
                             + (model.min_train_samples - 1) * series_.freq,
+                            historical_forecasts_time_index[1],
                         )
 
-            # Take into account overlap_end, and forecast_horizon.
-            last_valid_pred_time = model._get_last_prediction_time(
+            historical_forecasts_time_index = _adjust_historical_forecasts_time_index(
+                model,
+                idx,
                 series_,
+                historical_forecasts_time_index,
                 forecast_horizon,
                 overlap_end,
+                start,
+                show_warnings,
             )
-
-            # The historical_forecasts_time_index end (which was just model dependent so far) is readjusted
-            # by function parameters overlap_end and forecast_horizon.
-            historical_forecasts_time_index = drop_after_index(
-                historical_forecasts_time_index, last_valid_pred_time
-            )
-
-            # adjust maximum index with optional `start` value
-            if start is not None:
-                start_time_ = series_.get_timestamp_at_point(start)
-                if (
-                    not historical_forecasts_time_index[0]
-                    <= start_time_
-                    <= historical_forecasts_time_index[-1]
-                ):
-                    if show_warnings:
-                        _historical_forecasts_start_warnings(
-                            idx=idx,
-                            start=start,
-                            start_time_=start_time_,
-                            historical_forecasts_time_index=historical_forecasts_time_index,
-                        )
-                    # ignore user-defined `start`
-                    start_time_ = None
-
-                if start_time_ is not None:
-                    historical_forecasts_time_index = drop_before_index(
-                        historical_forecasts_time_index,
-                        start_time_,
-                    )
 
             # adjust the start of the series depending on whether we train (at some point), or predict only
             if min_timestamp_series > series_.time_index[0]:
                 series_ = series_.drop_before(min_timestamp_series - 1 * series_.freq)
+
+            historical_forecasts_time_index = generate_index(
+                start=historical_forecasts_time_index[0],
+                end=historical_forecasts_time_index[-1],
+                freq=series_.freq,
+            )
 
             if len(series) == 1:
                 # Only use tqdm if there's no outer loop
@@ -1099,7 +1052,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 if (
                     retrain
                     and historical_forecasts_time_index_train is not None
-                    and pred_time in historical_forecasts_time_index_train
+                    and historical_forecasts_time_index_train[0]
+                    <= pred_time
+                    <= historical_forecasts_time_index_train[-1]
                 ):
                     # retrain_func processes the series that would be used for training
                     if retrain_func(
