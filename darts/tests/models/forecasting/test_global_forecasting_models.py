@@ -6,6 +6,7 @@ from unittest.mock import ANY, patch
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts.dataprocessing.transformers import Scaler
 from darts.datasets import AirPassengersDataset
@@ -302,11 +303,13 @@ if TORCH_AVAILABLE:
                 )
 
                 # Here we rely on the fact that all non-Dual models currently are Past models
-                cov_name = (
-                    "future_covariates"
-                    if isinstance(model, DualCovariatesTorchModel)
-                    else "past_covariates"
-                )
+                if isinstance(model, DualCovariatesTorchModel):
+                    cov_name = "future_covariates"
+                    is_past = False
+                else:
+                    cov_name = "past_covariates"
+                    is_past = True
+
                 cov_kwargs = {
                     cov_name: [self.time_covariates_train, self.time_covariates_train]
                 }
@@ -325,7 +328,14 @@ if TORCH_AVAILABLE:
                 cov_kwargs_notrain = {cov_name: self.time_covariates}
                 with self.assertRaises(ValueError):
                     # when model is fit using covariates, n cannot be greater than output_chunk_length...
-                    model.predict(n=13, series=self.ts_pass_train, **cov_kwargs_train)
+                    # (for short covariates)
+                    # past covariates model can predict up until output_chunk_length
+                    # with train future covariates we cannot predict at all after end of series
+                    model.predict(
+                        n=13 if is_past else 1,
+                        series=self.ts_pass_train,
+                        **cov_kwargs_train,
+                    )
 
                 # ... unless future covariates are provided
                 pred = model.predict(
@@ -349,10 +359,36 @@ if TORCH_AVAILABLE:
                     input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
                 )
                 model.fit(series=self.ts_pass_train, **cov_kwargs_train)
-                pred1 = model.predict(1)
-                pred2 = model.predict(1, series=self.ts_pass_train)
-                pred3 = model.predict(1, **cov_kwargs_train)
-                pred4 = model.predict(1, **cov_kwargs_train, series=self.ts_pass_train)
+                if is_past:
+                    # with past covariates from train we can predict up until output_chunk_length
+                    pred1 = model.predict(1)
+                    pred2 = model.predict(1, series=self.ts_pass_train)
+                    pred3 = model.predict(1, **cov_kwargs_train)
+                    pred4 = model.predict(
+                        1, **cov_kwargs_train, series=self.ts_pass_train
+                    )
+                else:
+                    # with future covariates we need additional time steps to predict
+                    with pytest.raises(ValueError):
+                        _ = model.predict(1)
+                    with pytest.raises(ValueError):
+                        _ = model.predict(1, series=self.ts_pass_train)
+                    with pytest.raises(ValueError):
+                        _ = model.predict(1, **cov_kwargs_train)
+                    with pytest.raises(ValueError):
+                        _ = model.predict(
+                            1, **cov_kwargs_train, series=self.ts_pass_train
+                        )
+
+                    pred1 = model.predict(1, **cov_kwargs_notrain)
+                    pred2 = model.predict(
+                        1, series=self.ts_pass_train, **cov_kwargs_notrain
+                    )
+                    pred3 = model.predict(1, **cov_kwargs_notrain)
+                    pred4 = model.predict(
+                        1, **cov_kwargs_notrain, series=self.ts_pass_train
+                    )
+
                 self.assertEqual(pred1, pred2)
                 self.assertEqual(pred1, pred3)
                 self.assertEqual(pred1, pred4)
