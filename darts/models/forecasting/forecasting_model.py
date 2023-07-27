@@ -723,12 +723,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             If a ``pandas.Timestamp``, the time stamp will be used to determine the first prediction time
             directly.
             If ``None``, the first prediction time will automatically be set to:
+
             - the first predictable point if `retrain` is ``False``, or `retrain` is a Callable and the first
               predictable point is earlier than the first trainable point.
-
             - the first trainable point if `retrain` is ``True`` or ``int`` (given `train_length`),
               or `retrain` is a Callable and the first trainable point is earlier than the first predictable point.
-
             - the first trainable point (given `train_length`) otherwise
 
             Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
