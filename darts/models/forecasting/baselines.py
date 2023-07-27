@@ -16,7 +16,6 @@ from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
 )
 from darts.timeseries import TimeSeries
-from darts.utils.likelihood_models import Likelihood
 
 logger = get_logger(__name__)
 
@@ -309,11 +308,12 @@ class NaiveEnsembleModel(EnsembleModel):
 
     def _params_average(self, prediction: TimeSeries, series: TimeSeries) -> TimeSeries:
         """Average across the components after grouping by likelihood parameter, rename components"""
-        likelihood: Union[str, Likelihood] = getattr(self.models[0], "likelihood")
-        if isinstance(likelihood, Likelihood):
-            likelihood_n_params = likelihood.num_parameters
-        else:
+        # str or torch Likelihood
+        likelihood = getattr(self.models[0], "likelihood")
+        if isinstance(likelihood, str):
             likelihood_n_params = self.models[0].num_parameters
+        else:  # Likelihood
+            likelihood_n_params = likelihood.num_parameters
         n_forecasting_models = len(self.models)
         n_components = series.n_components
         # aggregate across predictions [model1_param0, model1_param1, ..., modeln_param0, modeln_param1]
