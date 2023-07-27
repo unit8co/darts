@@ -92,7 +92,7 @@ class EnsembleModel(GlobalForecastingModel):
         raise_if(
             train_num_samples is not None
             and train_num_samples > 1
-            and all([not m._is_probabilistic() for m in models]),
+            and all([not m._is_probabilistic for m in models]),
             "`train_num_samples` is greater than 1 but the `RegressionEnsembleModel` "
             "contains only deterministic models.",
             logger,
@@ -230,7 +230,7 @@ class EnsembleModel(GlobalForecastingModel):
                 future_covariates=future_covariates
                 if model.supports_future_covariates
                 else None,
-                num_samples=num_samples if model._is_probabilistic() else 1,
+                num_samples=num_samples if model._is_probabilistic else 1,
                 predict_likelihood_parameters=predict_likelihood_parameters,
             )
             for model in self.models
@@ -393,9 +393,11 @@ class EnsembleModel(GlobalForecastingModel):
         else:
             return min(tmp)
 
+    @property
     def _models_are_probabilistic(self) -> bool:
-        return all([model._is_probabilistic() for model in self.models])
+        return all([model._is_probabilistic for model in self.models])
 
+    @property
     def _models_same_likelihood(self) -> bool:
         """Return `True` if all the `forecasting_models` are probabilistic and fit the same distribution."""
         if not self._models_are_probabilistic:
@@ -430,10 +432,11 @@ class EnsembleModel(GlobalForecastingModel):
         """EnsembleModel can predict likelihood parameters if all its forecasting models were fitted with the
         same likelihood.
         """
-        return self._models_same_likelihood()
+        return self._models_same_likelihood
 
+    @property
     def _is_probabilistic(self) -> bool:
-        return self._models_are_probabilistic()
+        return self._models_are_probabilistic
 
     @property
     def supports_multivariate(self) -> bool:

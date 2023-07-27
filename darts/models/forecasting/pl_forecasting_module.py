@@ -378,6 +378,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         for module in self._get_mc_dropout_modules():
             module.mc_dropout_enabled = active
 
+    @property
     def _is_probabilistic(self) -> bool:
         return self.likelihood is not None or len(self._get_mc_dropout_modules()) > 0
 

@@ -236,9 +236,10 @@ class RegressionEnsembleModel(EnsembleModel):
             and self.regression_model.supports_multivariate
         )
 
+    @property
     def _is_probabilistic(self) -> bool:
         """
         A RegressionEnsembleModel is probabilistic if its regression
         model is probabilistic (ensembling layer)
         """
-        return self.regression_model._is_probabilistic()
+        return self.regression_model._is_probabilistic

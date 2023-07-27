@@ -1952,9 +1952,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             else self.pl_module_params["output_chunk_length"]
         )
 
+    @property
     def _is_probabilistic(self) -> bool:
         return (
-            self.model._is_probabilistic()
+            self.model._is_probabilistic
             if self.model_created
             else True  # all torch models can be probabilistic (via Dropout)
         )

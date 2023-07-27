@@ -167,8 +167,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         self._fit_called = True
 
         if series.has_range_index:
-            self._supports_range_index()
+            self._supports_range_index
 
+    @property
     def _supports_range_index(self) -> bool:
         """Checks if the forecasting model supports a range index.
         Some models may not support this, if for instance they rely on underlying dates.
@@ -178,6 +179,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         return True
 
+    @property
     def _is_probabilistic(self) -> bool:
         """
         Checks if the forecasting model supports probabilistic predictions.
@@ -186,6 +188,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         return False
 
+    @property
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
         """
         Checks if the forecasting model supports historical forecasts without retraining
@@ -291,7 +294,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 logger,
             )
 
-        if not self._is_probabilistic() and num_samples > 1:
+        if not self._is_probabilistic and num_samples > 1:
             raise_log(
                 ValueError(
                     "`num_samples > 1` is only supported for probabilistic models."
@@ -798,7 +801,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         raise_if(
             (isinstance(retrain, Callable) or int(retrain) != 1)
-            and (not model._supports_non_retrainable_historical_forecasts()),
+            and (not model._supports_non_retrainable_historical_forecasts),
             f"{base_class_name} does not support historical forecasting with `retrain` set to `False`. "
             f"For now, this is only supported with GlobalForecastingModels such as TorchForecastingModels. "
             f"For more information, read the documentation for `retrain` in `historical_forecasts()`",
@@ -1833,6 +1836,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return model_params
 
     def untrained_model(self):
+        """Returns a new (untrained) model instance create with the same parameters."""
         return self.__class__(**copy.deepcopy(self.model_params))
 
     @property
@@ -2268,6 +2272,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             else None,
         )
 
+    @property
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
         """GlobalForecastingModel supports historical forecasts without retraining the model"""
         return True
@@ -2717,6 +2722,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
             **kwargs,
         )
 
+    @property
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
         return True
 

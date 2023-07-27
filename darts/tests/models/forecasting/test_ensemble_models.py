@@ -157,7 +157,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
 
         # only probabilistic forecasting models
         naive_ensemble_proba = NaiveEnsembleModel([model_proba_1, model_proba_2])
-        self.assertTrue(naive_ensemble_proba._is_probabilistic())
+        self.assertTrue(naive_ensemble_proba._is_probabilistic)
 
         naive_ensemble_proba.fit(self.series1 + self.series2)
         # by default, only 1 sample

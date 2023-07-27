@@ -386,8 +386,8 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             regression_model=linreg_prob.untrained_model(),
         )
 
-        self.assertTrue(ensemble_allproba._models_are_probabilistic())
-        self.assertTrue(ensemble_allproba._is_probabilistic())
+        self.assertTrue(ensemble_allproba._models_are_probabilistic)
+        self.assertTrue(ensemble_allproba._is_probabilistic)
         ensemble_allproba.fit(self.ts_random_walk[:100])
         # probabilistic forecasting is supported
         pred = ensemble_allproba.predict(5, num_samples=10)
@@ -403,8 +403,8 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             regression_model=linreg_prob.untrained_model(),
         )
 
-        self.assertFalse(ensemble_mixproba._models_are_probabilistic())
-        self.assertTrue(ensemble_mixproba._is_probabilistic())
+        self.assertFalse(ensemble_mixproba._models_are_probabilistic)
+        self.assertTrue(ensemble_mixproba._is_probabilistic)
         ensemble_mixproba.fit(self.ts_random_walk[:100])
         # probabilistic forecasting is supported
         pred = ensemble_mixproba.predict(5, num_samples=10)
@@ -423,8 +423,8 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             regression_train_samples_reduction="median",
         )
 
-        self.assertFalse(ensemble_mixproba2._models_are_probabilistic())
-        self.assertTrue(ensemble_mixproba2._is_probabilistic())
+        self.assertFalse(ensemble_mixproba2._models_are_probabilistic)
+        self.assertTrue(ensemble_mixproba2._is_probabilistic)
         ensemble_mixproba2.fit(self.ts_random_walk[:100])
         pred = ensemble_mixproba2.predict(5, num_samples=10)
         self.assertEqual(pred.n_samples, 10)
@@ -439,8 +439,8 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             regression_model=linreg_prob.untrained_model(),
         )
 
-        self.assertFalse(ensemble_proba_reg._models_are_probabilistic())
-        self.assertTrue(ensemble_proba_reg._is_probabilistic())
+        self.assertFalse(ensemble_proba_reg._models_are_probabilistic)
+        self.assertTrue(ensemble_proba_reg._is_probabilistic)
         ensemble_proba_reg.fit(self.ts_random_walk[:100])
         # probabilistic forecasting is supported
         pred = ensemble_proba_reg.predict(5, num_samples=10)
@@ -456,8 +456,8 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             regression_model=linreg_dete.untrained_model(),
         )
 
-        self.assertTrue(ensemble_dete_reg._models_are_probabilistic())
-        self.assertFalse(ensemble_dete_reg._is_probabilistic())
+        self.assertTrue(ensemble_dete_reg._models_are_probabilistic)
+        self.assertFalse(ensemble_dete_reg._is_probabilistic)
         ensemble_dete_reg.fit(self.ts_random_walk[:100])
         # deterministic forecasting is supported
         ensemble_dete_reg.predict(5, num_samples=1)
@@ -475,8 +475,8 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             regression_model=linreg_dete.untrained_model(),
         )
 
-        self.assertFalse(ensemble_alldete._models_are_probabilistic())
-        self.assertFalse(ensemble_alldete._is_probabilistic())
+        self.assertFalse(ensemble_alldete._models_are_probabilistic)
+        self.assertFalse(ensemble_alldete._is_probabilistic)
         ensemble_alldete.fit(self.ts_random_walk[:100])
         # deterministic forecasting is supported
         ensemble_alldete.predict(5, num_samples=1)

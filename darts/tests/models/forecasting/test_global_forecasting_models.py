@@ -504,7 +504,7 @@ if TORCH_AVAILABLE:
                 model.fit(multiple_ts)
 
                 # safe random state for two successive identical predictions
-                if model._is_probabilistic():
+                if model._is_probabilistic:
                     random_state = deepcopy(model._random_instance)
                 else:
                     random_state = None
