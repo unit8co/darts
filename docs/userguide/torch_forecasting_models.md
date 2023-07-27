@@ -113,6 +113,9 @@ Each Torch Forecasting Model inherits from one `{X}CovariatesModel` (covariate c
 | `TCNModel`         | ✅     |         |       |        |        |
 | `TransformerModel` | ✅     |         |       |        |        |
 | `TFTModel`         |       |         |       | ✅      |        |
+| `NLinearModel`     |       |         |       | ✅      |        |
+| `DLinearModel`     |       |         |       | ✅      |        |
+| `TiDEModel`        |       |         |       | ✅      |        |
 
 **Table 2: Darts' Torch Forecasting Model covariate support**
 
