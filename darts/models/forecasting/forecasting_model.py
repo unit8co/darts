@@ -925,44 +925,47 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 )
             )
 
-            # trainable time indexes (considering lags and available covariates)
-            historical_forecasts_time_index_train = (
-                _get_historical_forecast_train_index(
-                    model,
-                    series_,
-                    idx,
-                    past_covariates_,
-                    future_covariates_,
-                    bool(retrain),
+            if retrain:
+                # trainable time indexes (considering lags and available covariates)
+                historical_forecasts_time_index_train = (
+                    _get_historical_forecast_train_index(
+                        model,
+                        series_,
+                        idx,
+                        past_covariates_,
+                        future_covariates_,
+                        bool(retrain),
+                    )
                 )
-            )
 
-            # We need the first value timestamp to be used in order to properly shift the series
-            if not retrain:
-                # we are only predicting: start of the series does not have to change
-                min_timestamp_series = series_.time_index[0]
-            else:
-                # otherwise, we need to prepare for training:
-                # look at both past and future, since the target lags must be taken in consideration
+                # We need the first value timestamp to be used in order to properly shift the series
+                # Look at both past and future, since the target lags must be taken in consideration
                 min_timestamp_series = (
                     historical_forecasts_time_index_train[0]
                     - model._training_sample_time_index_length * series_.freq
                 )
 
-            # based on `retrain`, historical_forecasts_time_index is based either on train or predict
-            (
-                historical_forecasts_time_index,
-                train_length_,
-            ) = _reconciliate_historical_time_indices(
-                model=model,
-                historical_forecasts_time_index_predict=historical_forecasts_time_index_predict,
-                historical_forecasts_time_index_train=historical_forecasts_time_index_train,
-                series=series_,
-                series_idx=idx,
-                retrain=retrain,
-                train_length=train_length,
-                show_warnings=show_warnings,
-            )
+                # based on `retrain`, historical_forecasts_time_index is based either on train or predict
+                (
+                    historical_forecasts_time_index,
+                    train_length_,
+                ) = _reconciliate_historical_time_indices(
+                    model=model,
+                    historical_forecasts_time_index_predict=historical_forecasts_time_index_predict,
+                    historical_forecasts_time_index_train=historical_forecasts_time_index_train,
+                    series=series_,
+                    series_idx=idx,
+                    retrain=retrain,
+                    train_length=train_length,
+                    show_warnings=show_warnings,
+                )
+            else:
+                # we are only predicting: start of the series does not have to change
+                min_timestamp_series = series_.time_index[0]
+                historical_forecasts_time_index = (
+                    historical_forecasts_time_index_predict
+                )
+                train_length_ = None
 
             # based on `forecast_horizon` and `overlap_end`, historical_forecasts_time_index is shortened
             historical_forecasts_time_index = _adjust_historical_forecasts_time_index(
