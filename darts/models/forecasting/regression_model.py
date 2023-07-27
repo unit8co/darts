@@ -588,7 +588,8 @@ class RegressionModel(GlobalForecastingModel):
             Optionally, whether to print progress.
         predict_likelihood_parameters
             If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
-            supported for probabilistic models, with `num_samples = 1` and `n<=output_chunk_length`. Default: `False`.
+            supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
+            Default: ``False``
         **kwargs : dict, optional
             Additional keyword arguments passed to the `predict` method of the model. Only works with
             univariate target series.
