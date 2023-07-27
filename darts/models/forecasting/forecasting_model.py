@@ -37,6 +37,7 @@ from darts.utils.historical_forecasts.utils import (
     _get_historical_forecast_predict_index,
     _get_historical_forecast_train_index,
     _historical_forecasts_general_checks,
+    _reconciliate_historical_time_indices,
 )
 from darts.utils.timeseries_generation import (
     _build_forecast_series,
@@ -914,7 +915,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         forecasts_list = []
         for idx, series_ in enumerate(outer_iterator):
-            train_length_ = None
             past_covariates_ = past_covariates[idx] if past_covariates else None
             future_covariates_ = future_covariates[idx] if future_covariates else None
 
@@ -949,75 +949,39 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     - model._training_sample_time_index_length * series_.freq
                 )
 
-            if isinstance(retrain, Callable):
-                # retain the longer time index, anything can happen
-                if (
-                    historical_forecasts_time_index_train is not None
-                    and historical_forecasts_time_index_train[0]
-                    < historical_forecasts_time_index_predict[0]
-                ):
-                    historical_forecasts_time_index = (
-                        historical_forecasts_time_index_train
-                    )
-                else:
-                    historical_forecasts_time_index = (
-                        historical_forecasts_time_index_predict
-                    )
-            elif retrain:
-                historical_forecasts_time_index = historical_forecasts_time_index_train
-            else:
-                historical_forecasts_time_index = (
-                    historical_forecasts_time_index_predict
-                )
-
-            # compute the maximum forecasts time index assuming that `start=None`
-            if retrain or (not model._fit_called):
-                if train_length and train_length <= len(series_):
-                    train_length_ = train_length
-                    # we have to start later for larger `train_length`
-                    step_ahead = max(
-                        train_length - model._training_sample_time_index_length, 0
-                    )
-                    if step_ahead:
-                        historical_forecasts_time_index = (
-                            historical_forecasts_time_index[0]
-                            + step_ahead * series_.freq,
-                            historical_forecasts_time_index[-1],
-                        )
-
-                # if not we start training right away; some models (sklearn) require more than 1
-                # training samples, so we start after the first trainable point.
-                else:
-                    if train_length and train_length > len(series_) and show_warnings:
-                        logger.warning(
-                            f"`train_length` is larger than the length of series at index: {idx}. "
-                            f"Ignoring `train_length` and using default behavior where all available time steps up "
-                            f"until the end of the expanding training set."
-                        )
-
-                    train_length_ = None
-                    if model.min_train_samples > 1:
-                        historical_forecasts_time_index = (
-                            historical_forecasts_time_index[0]
-                            + (model.min_train_samples - 1) * series_.freq,
-                            historical_forecasts_time_index[1],
-                        )
-
-            historical_forecasts_time_index = _adjust_historical_forecasts_time_index(
-                model,
-                idx,
-                series_,
+            # based on `retrain`, historical_forecasts_time_index is based either on train or predict
+            (
                 historical_forecasts_time_index,
-                forecast_horizon,
-                overlap_end,
-                start,
-                show_warnings,
+                train_length_,
+            ) = _reconciliate_historical_time_indices(
+                model=model,
+                historical_forecasts_time_index_predict=historical_forecasts_time_index_predict,
+                historical_forecasts_time_index_train=historical_forecasts_time_index_train,
+                series=series_,
+                series_idx=idx,
+                retrain=retrain,
+                train_length=train_length,
+                show_warnings=show_warnings,
+            )
+
+            # based on `forecast_horizon` and `overlap_end`, historical_forecasts_time_index is shortened
+            historical_forecasts_time_index = _adjust_historical_forecasts_time_index(
+                model=model,
+                series=series_,
+                series_idx=idx,
+                historical_forecasts_time_index=historical_forecasts_time_index,
+                forecast_horizon=forecast_horizon,
+                overlap_end=overlap_end,
+                start=start,
+                show_warnings=show_warnings,
             )
 
             # adjust the start of the series depending on whether we train (at some point), or predict only
+            # must be performed after the operation on historical_foreacsts_time_index
             if min_timestamp_series > series_.time_index[0]:
                 series_ = series_.drop_before(min_timestamp_series - 1 * series_.freq)
 
+            # generate time index for the iteration
             historical_forecasts_time_index = generate_index(
                 start=historical_forecasts_time_index[0],
                 end=historical_forecasts_time_index[-1],
@@ -1034,11 +998,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             # Either store the whole forecasts or only the last points of each forecast, depending on last_points_only
             forecasts = []
-
             last_points_times = []
             last_points_values = []
             _counter_train = 0
-
             # iterate and forecast
             for _counter, pred_time in enumerate(iterator):
                 # drop everything after `pred_time` to train on / predict with shifting input

@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from typing import Any, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -9,6 +9,13 @@ from darts.timeseries import TimeSeries
 from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
+
+TimeIndex = Union[
+    pd.DatetimeIndex,
+    pd.RangeIndex,
+    Tuple[int, int],
+    Tuple[pd.Timestamp, pd.Timestamp],
+]
 
 
 def _historical_forecasts_general_checks(
@@ -170,14 +177,14 @@ def _historical_forecasts_start_warnings(
 
 def _adjust_historical_forecasts_time_index(
     model,
-    series_idx,
-    series,
-    historical_forecasts_time_index,
-    forecast_horizon,
-    overlap_end,
-    start,
+    series: TimeSeries,
+    series_idx: int,
+    historical_forecasts_time_index: TimeIndex,
+    forecast_horizon: int,
+    overlap_end: bool,
+    start: Optional[Union[pd.Timestamp, float, int]],
     show_warnings: bool,
-):
+) -> Optional[TimeIndex]:
     # shift the end of the forecastable index based on `overlap_end`` and `forecast_horizon``
     last_valid_pred_time = model._get_last_prediction_time(
         series,
@@ -221,7 +228,7 @@ def _get_historical_forecast_predict_index(
     series_idx: int,
     past_covariates: Optional[TimeSeries],
     future_covariates: Optional[TimeSeries],
-):
+) -> Optional[TimeIndex]:
     historical_forecasts_time_index = model._get_historical_forecastable_time_index(
         series,
         past_covariates,
@@ -250,7 +257,7 @@ def _get_historical_forecast_train_index(
     past_covariates: Optional[TimeSeries],
     future_covariates: Optional[TimeSeries],
     retrain: bool,
-):
+) -> Optional[TimeIndex]:
     historical_forecasts_time_index = model._get_historical_forecastable_time_index(
         series,
         past_covariates,
@@ -273,6 +280,65 @@ def _get_historical_forecast_train_index(
         )
 
     return historical_forecasts_time_index
+
+
+def _reconciliate_historical_time_indices(
+    model,
+    historical_forecasts_time_index_predict: TimeIndex,
+    historical_forecasts_time_index_train: TimeIndex,
+    series: TimeSeries,
+    series_idx: int,
+    retrain: bool,
+    train_length: int,
+    show_warnings: bool,
+) -> Tuple[TimeIndex, Optional[int]]:
+    train_length_ = None
+    if isinstance(retrain, Callable):
+        # retain the longer time index, anything can happen
+        if (
+            historical_forecasts_time_index_train is not None
+            and historical_forecasts_time_index_train[0]
+            < historical_forecasts_time_index_predict[0]
+        ):
+            historical_forecasts_time_index = historical_forecasts_time_index_train
+        else:
+            historical_forecasts_time_index = historical_forecasts_time_index_predict
+    elif retrain:
+        historical_forecasts_time_index = historical_forecasts_time_index_train
+    else:
+        historical_forecasts_time_index = historical_forecasts_time_index_predict
+
+    # compute the maximum forecasts time index assuming that `start=None`
+    if retrain or (not model._fit_called):
+        if train_length and train_length <= len(series):
+            train_length_ = train_length
+            # we have to start later for larger `train_length`
+            step_ahead = max(train_length - model._training_sample_time_index_length, 0)
+            if step_ahead:
+                historical_forecasts_time_index = (
+                    historical_forecasts_time_index[0] + step_ahead * series.freq,
+                    historical_forecasts_time_index[-1],
+                )
+
+        # if not we start training right away; some models (sklearn) require more than 1
+        # training samples, so we start after the first trainable point.
+        else:
+            if train_length and train_length > len(series) and show_warnings:
+                logger.warning(
+                    f"`train_length` is larger than the length of series at index: {series_idx}. "
+                    f"Ignoring `train_length` and using default behavior where all available time steps up "
+                    f"until the end of the expanding training set."
+                )
+
+            train_length_ = None
+            if model.min_train_samples > 1:
+                historical_forecasts_time_index = (
+                    historical_forecasts_time_index[0]
+                    + (model.min_train_samples - 1) * series.freq,
+                    historical_forecasts_time_index[1],
+                )
+
+    return historical_forecasts_time_index, train_length_
 
 
 def _get_historical_forecast_boundaries(
@@ -302,14 +368,14 @@ def _get_historical_forecast_boundaries(
 
     # adjust boundaries based on start, forecast_horizon and overlap_end
     historical_forecasts_time_index = _adjust_historical_forecasts_time_index(
-        model,
-        series_idx,
-        series,
-        historical_forecasts_time_index,
-        forecast_horizon,
-        overlap_end,
-        start,
-        show_warnings,
+        model=model,
+        series=series,
+        series_idx=series_idx,
+        historical_forecasts_time_index=historical_forecasts_time_index,
+        forecast_horizon=forecast_horizon,
+        overlap_end=overlap_end,
+        start=start,
+        show_warnings=show_warnings,
     )
 
     # re-adjust the slicing indexes to account for the lags
