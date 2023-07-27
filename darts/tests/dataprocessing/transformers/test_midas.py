@@ -318,6 +318,14 @@ class MIDASTestCase(unittest.TestCase):
         self.assertTrue(pred_quarterly.time_index.equals(quarterly_test_ts.time_index))
         self.assertTrue(pred_monthly.time_index.equals(monthly_test_ts.time_index))
 
+    def test_inverse_transfrom_sliced(self):
+        """Verify that MIDAS works as expected when the series is sliced prior to the inverse transform."""
+        midas = MIDAS(low_freq="QS", strip=False)
+        quarterly_series = midas.fit_transform(self.monthly_ts)
+        inversed_quaterly = midas.inverse_transform(quarterly_series[2:])
+        # the shift introduce by the slicing operation on the transformed ts is : 2 * 3 months per quarter = 6
+        self.assertEqual(inversed_quaterly, self.monthly_ts[6:])
+
     def test_multiple_ts(self):
         """
         Verify that MIDAS works as expected with multiple series of different "high" frequencies (monthly and quarterly

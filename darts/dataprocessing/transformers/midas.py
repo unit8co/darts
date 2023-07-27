@@ -280,12 +280,15 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         # adjust the start if was shifted due to the frequency change
         if len(series.time_index) > 1:
             low_freq_timedelta = series.time_index[1] - series.time_index[0]
-            transform_time_shift = series.time_index[0] - orig_ts_start_time
+            start_to_start_shift = series.time_index[0] - orig_ts_start_time
+            start_to_end_shift = series.time_index[0] - orig_ts_end_time
             # shift is caused by the low frequency anchoring, fitted and inversed ts have the same start
-            if np.abs(transform_time_shift) <= low_freq_timedelta:
+            if np.abs(start_to_start_shift) <= low_freq_timedelta:
+                print("FIRST SCENARIO")
                 start_time = orig_ts_start_time
             # shift is caused by the low frequency anchoring, inversed ts starts after the end of the fitted ts
-            elif series.start_time() - orig_ts_end_time <= low_freq_timedelta:
+            elif pd.Timedelta(0) < start_to_end_shift <= low_freq_timedelta:
+                print("SECOND SCENARIO")
                 start_time = orig_ts_end_time
                 shift = 1
 
