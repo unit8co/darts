@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+import darts
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
 from darts.datasets import AirPassengersDataset
@@ -31,7 +32,7 @@ try:
         TFTModel,
         TransformerModel,
     )
-    from darts.utils.likelihood_models import GaussianLikelihood
+    from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
 
     TORCH_AVAILABLE = True
 except ImportError:
@@ -1245,3 +1246,131 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
         expected_end = pd.Timestamp("1960-12-01 00:00:00")
         res = helper_hist_forecasts(True, expected_end)
         self.assertTrue(res.time_index[0] == expected_end)
+
+    def test_predict_likelihood_parameters(self):
+        """standard checks that historical forecasts work with direct likelihood parameter predictions
+        with regression and torch models."""
+
+        def create_model(ocl, use_ll=True, model_type="regression"):
+            if model_type == "regression":
+                return LinearRegressionModel(
+                    lags=3,
+                    likelihood="quantile" if use_ll else None,
+                    quantiles=[0.05, 0.4, 0.5, 0.6, 0.95] if use_ll else None,
+                    output_chunk_length=ocl,
+                )
+            else:  # model_type == "torch"
+                if not TORCH_AVAILABLE:
+                    return None
+                return NLinearModel(
+                    input_chunk_length=3,
+                    likelihood=QuantileRegression([0.05, 0.4, 0.5, 0.6, 0.95])
+                    if use_ll
+                    else None,
+                    output_chunk_length=ocl,
+                    n_epochs=1,
+                    random_state=42,
+                )
+
+        for model_type in ["regression", "torch"]:
+            model = create_model(1, False, model_type=model_type)
+            # skip torch models if not installed
+            if model is None:
+                continue
+            # model doesn't use likelihood
+            with pytest.raises(ValueError):
+                model.historical_forecasts(
+                    self.ts_pass_train,
+                    predict_likelihood_parameters=True,
+                )
+
+            model = create_model(1, model_type=model_type)
+            # forecast_horizon > output_chunk_length doesn't work
+            with pytest.raises(ValueError):
+                model.historical_forecasts(
+                    self.ts_pass_train,
+                    predict_likelihood_parameters=True,
+                    forecast_horizon=2,
+                )
+
+            model = create_model(1, model_type=model_type)
+            # num_samples != 1 doesn't work
+            with pytest.raises(ValueError):
+                model.historical_forecasts(
+                    self.ts_pass_train,
+                    predict_likelihood_parameters=True,
+                    forecast_horizon=1,
+                    num_samples=2,
+                )
+
+            n = 3
+            target_name = self.ts_pass_train.components[0]
+            qs_expected = ["q0.05", "q0.40", "q0.50", "q0.60", "q0.95"]
+            qs_expected = pd.Index([target_name + "_" + q for q in qs_expected])
+            # check that it works with retrain
+            model = create_model(1, model_type=model_type)
+            hist_fc = model.historical_forecasts(
+                self.ts_pass_train,
+                predict_likelihood_parameters=True,
+                forecast_horizon=1,
+                num_samples=1,
+                start=len(self.ts_pass_train) - n,  # predict on last 10 steps
+                retrain=True,
+            )
+            assert hist_fc.components.equals(qs_expected)
+            assert len(hist_fc) == n
+
+            # check for equal results between predict and hist fc without retraining
+            model = create_model(1, model_type=model_type)
+            model.fit(series=self.ts_pass_train[:-n])
+            hist_fc = model.historical_forecasts(
+                self.ts_pass_train,
+                predict_likelihood_parameters=True,
+                forecast_horizon=1,
+                num_samples=1,
+                start=len(self.ts_pass_train) - n,  # predict on last 10 steps
+                retrain=False,
+            )
+            assert hist_fc.components.equals(qs_expected)
+            assert len(hist_fc) == n
+
+            preds = []
+            for n_i in range(n):
+                preds.append(
+                    model.predict(
+                        n=1,
+                        series=self.ts_pass_train[: -(n - n_i)],
+                        predict_likelihood_parameters=True,
+                    )
+                )
+            preds = darts.concatenate(preds)
+            assert np.all(preds.values() == hist_fc.values())
+
+            # check equal results between predict and hist fc with higher output_chunk_length and horizon,
+            # and last_points_only=False
+            model = create_model(2, model_type=model_type)
+            # we take one more training step so that model trained on ocl=1 has the same training samples
+            # as model above
+            model.fit(series=self.ts_pass_train[: -(n - 1)])
+            hist_fc = model.historical_forecasts(
+                self.ts_pass_train,
+                predict_likelihood_parameters=True,
+                forecast_horizon=2,
+                num_samples=1,
+                start=len(self.ts_pass_train) - n,  # predict on last 10 steps
+                retrain=False,
+                last_points_only=False,
+                overlap_end=True,
+            )
+            # generate the same predictions manually
+            preds = []
+            for n_i in range(n):
+                preds.append(
+                    model.predict(
+                        n=2,
+                        series=self.ts_pass_train[: -(n - n_i)],
+                        predict_likelihood_parameters=True,
+                    )
+                )
+            assert preds == hist_fc
+            assert len(hist_fc) == n
