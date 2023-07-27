@@ -146,9 +146,7 @@ def _historical_forecasts_start_warnings(
     idx: int,
     start: Union[pd.Timestamp, int],
     start_time_: Union[int, pd.Timestamp],
-    historical_forecasts_time_index: Union[
-        pd.DatetimeIndex, pd.RangeIndex, Tuple[Any, Any]
-    ],
+    historical_forecasts_time_index: TimeIndex,
 ):
     """Warnings when start value provided by user is not within the forecastable indexes boundaries"""
     if not isinstance(start, pd.Timestamp):
@@ -184,7 +182,11 @@ def _adjust_historical_forecasts_time_index(
     overlap_end: bool,
     start: Optional[Union[pd.Timestamp, float, int]],
     show_warnings: bool,
-) -> Optional[TimeIndex]:
+) -> TimeIndex:
+    """
+    Shrink the beginning and end of the historical forecasts time index based on the values of `start`,
+    `forecast_horizon` and `overlap_end`.
+    """
     # shift the end of the forecastable index based on `overlap_end`` and `forecast_horizon``
     last_valid_pred_time = model._get_last_prediction_time(
         series,
@@ -228,7 +230,8 @@ def _get_historical_forecast_predict_index(
     series_idx: int,
     past_covariates: Optional[TimeSeries],
     future_covariates: Optional[TimeSeries],
-) -> Optional[TimeIndex]:
+) -> TimeIndex:
+    """Obtain the boundaries of the predictable time indices, raise an exception if None"""
     historical_forecasts_time_index = model._get_historical_forecastable_time_index(
         series,
         past_covariates,
@@ -257,7 +260,11 @@ def _get_historical_forecast_train_index(
     past_covariates: Optional[TimeSeries],
     future_covariates: Optional[TimeSeries],
     retrain: bool,
-) -> Optional[TimeIndex]:
+) -> TimeIndex:
+    """
+    Obtain the boundaries of the time indices usable for training, raise an exception if training is required and
+    no indices are available.
+    """
     historical_forecasts_time_index = model._get_historical_forecastable_time_index(
         series,
         past_covariates,
@@ -288,10 +295,11 @@ def _reconciliate_historical_time_indices(
     historical_forecasts_time_index_train: TimeIndex,
     series: TimeSeries,
     series_idx: int,
-    retrain: bool,
-    train_length: int,
+    retrain: Union[bool, int, Callable[..., bool]],
+    train_length: Optional[int],
     show_warnings: bool,
 ) -> Tuple[TimeIndex, Optional[int]]:
+    """Depending on the value of retrain, select which time indices will be used during the historical forecasts."""
     train_length_ = None
     if isinstance(retrain, Callable):
         # retain the longer time index, anything can happen
