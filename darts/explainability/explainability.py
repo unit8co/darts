@@ -68,7 +68,7 @@ class ForecastingModelExplainer(ABC):
                 logger,
             )
 
-        if model._is_probabilistic():
+        if model._is_probabilistic:
             logger.warning(
                 "The model is probabilistic, but num_samples=1 will be used for explainability."
             )

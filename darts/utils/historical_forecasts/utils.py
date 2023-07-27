@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from typing import Any, Callable, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -18,13 +18,13 @@ TimeIndex = Union[
 ]
 
 
-def _historical_forecasts_general_checks(
-    series: Union[TimeSeries, Sequence[TimeSeries]], kwargs
-):
+def _historical_forecasts_general_checks(model, series, kwargs):
     """
     Performs checks common to ForecastingModel and RegressionModel backtest() methods
     Parameters
     ----------
+    model
+        The forecasting model.
     series
         Either series when called from ForecastingModel, or target_series if called from RegressionModel
     signature_params
@@ -33,7 +33,6 @@ def _historical_forecasts_general_checks(
     kwargs
         Params specified by the caller of backtest(), they take precedence over the arguments' default values
     """
-
     # parse kwargs
     n = SimpleNamespace(**kwargs)
 
@@ -140,6 +139,37 @@ def _historical_forecasts_general_checks(
                     ),
                     logger,
                 )
+
+    # check direct likelihood parameter prediction before fitting a model
+    if n.predict_likelihood_parameters:
+        if not model.supports_likelihood_parameter_prediction:
+            raise_log(
+                ValueError(
+                    f"Model `{model.__class__.__name__}` does not support `predict_likelihood_parameters=True`. "
+                    f"Either the model does not support likelihoods, or no `likelihood` was used at model "
+                    f"creation."
+                )
+            )
+        if n.num_samples != 1:
+            raise_log(
+                ValueError(
+                    f"`predict_likelihood_parameters=True` is only supported for `num_samples=1`, "
+                    f"received {n.num_samples}."
+                ),
+                logger,
+            )
+
+        if (
+            model.output_chunk_length is not None
+            and n.forecast_horizon > model.output_chunk_length
+        ):
+            raise_log(
+                ValueError(
+                    "`predict_likelihood_parameters=True` is only supported for `forecast_horizon` smaller than or "
+                    "equal to model's `output_chunk_length`."
+                ),
+                logger,
+            )
 
 
 def _historical_forecasts_start_warnings(
