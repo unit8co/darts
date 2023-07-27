@@ -225,6 +225,7 @@ class _BaseBatsTbatsModel(LocalForecastingModel, ABC):
     def supports_multivariate(self) -> bool:
         return False
 
+    @property
     def _is_probabilistic(self) -> bool:
         return True
 

@@ -222,9 +222,11 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
     def min_train_series_length(self) -> int:
         return 30
 
+    @property
     def _is_probabilistic(self) -> bool:
         return True
 
+    @property
     def _supports_range_index(self) -> bool:
         raise_if(
             self.trend and self.trend != "c",

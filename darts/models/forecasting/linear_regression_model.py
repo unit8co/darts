@@ -211,14 +211,21 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             return self
 
     def _predict_and_sample(
-        self, x: np.ndarray, num_samples: int, **kwargs
+        self,
+        x: np.ndarray,
+        num_samples: int,
+        predict_likelihood_parameters: bool,
+        **kwargs,
     ) -> np.ndarray:
-        if self.likelihood == "quantile":
-            return self._predict_quantiles(x, num_samples, **kwargs)
-        elif self.likelihood == "poisson":
-            return self._predict_poisson(x, num_samples, **kwargs)
+        if self.likelihood is not None:
+            return self._predict_and_sample_likelihood(
+                x, num_samples, self.likelihood, predict_likelihood_parameters, **kwargs
+            )
         else:
-            return super()._predict_and_sample(x, num_samples, **kwargs)
+            return super()._predict_and_sample(
+                x, num_samples, predict_likelihood_parameters, **kwargs
+            )
 
+    @property
     def _is_probabilistic(self) -> bool:
         return self.likelihood is not None
