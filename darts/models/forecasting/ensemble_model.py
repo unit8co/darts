@@ -13,7 +13,6 @@ from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
 )
 from darts.timeseries import TimeSeries
-from darts.utils.likelihood_models import Likelihood
 from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
@@ -409,7 +408,7 @@ class EnsembleModel(GlobalForecastingModel):
         for m in self.models:
             # regression model likelihood is a string, torch-based model likelihoods is an object
             likelihood = getattr(m, "likelihood")
-            is_obj_lkl = isinstance(likelihood, Likelihood)
+            is_obj_lkl = not isinstance(likelihood, str)
             lkl_simplified_name = (
                 likelihood.simplified_name() if is_obj_lkl else likelihood
             )
