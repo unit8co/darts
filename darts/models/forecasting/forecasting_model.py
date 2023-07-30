@@ -2714,22 +2714,12 @@ class TransferableFutureCovariatesLocalForecastingModel(
             "model with `model.fit()` before.",
             logger=logger,
         )
-        _, future_covariates_future = self.encoders.encode_inference(
+        return self.generate_fit_predict_encodings(
             n=n,
-            target=series,
+            series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
-
-        if future_covariates is not None:
-            return _, future_covariates_future
-
-        _, future_covariates_historic = self.encoders.encode_train(
-            target=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-        )
-        return _, future_covariates_historic.append(future_covariates_future)
 
     @abstractmethod
     def _predict(
