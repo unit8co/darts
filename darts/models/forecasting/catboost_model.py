@@ -103,7 +103,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         self.likelihood = likelihood
         self.quantiles = None
 
-        self.output_chunk_length = output_chunk_length
+        self._output_chunk_length = output_chunk_length
 
         likelihood_map = {
             "quantile": None,
@@ -224,20 +224,42 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         return self
 
     def _predict_and_sample(
-        self, x: np.ndarray, num_samples: int, **kwargs
+        self,
+        x: np.ndarray,
+        num_samples: int,
+        predict_likelihood_parameters: bool,
+        **kwargs,
     ) -> np.ndarray:
-        """Override of RegressionModel's predict method,
-        to allow for the probabilistic case
-        """
-        if self.likelihood == "quantile":
-            return self._predict_quantiles(x, num_samples, **kwargs)
-        elif self.likelihood == "poisson":
-            return self._predict_poisson(x, num_samples, **kwargs)
-        elif self.likelihood in ["gaussian", "RMSEWithUncertainty"]:
-            return self._predict_normal(x, num_samples, **kwargs)
+        """Override of RegressionModel's method to allow for the probabilistic case"""
+        if self.likelihood in ["gaussian", "RMSEWithUncertainty"]:
+            return self._predict_and_sample_likelihood(
+                x, num_samples, "normal", predict_likelihood_parameters, **kwargs
+            )
+        elif self.likelihood is not None:
+            return self._predict_and_sample_likelihood(
+                x, num_samples, self.likelihood, predict_likelihood_parameters, **kwargs
+            )
         else:
-            return super()._predict_and_sample(x, num_samples, **kwargs)
+            return super()._predict_and_sample(
+                x, num_samples, predict_likelihood_parameters, **kwargs
+            )
 
+    def _likelihood_components_names(
+        self, input_series: TimeSeries
+    ) -> Optional[List[str]]:
+        """Override of RegressionModel's method to support the gaussian/normal likelihood"""
+        if self.likelihood == "quantile":
+            return self._quantiles_generate_components_names(input_series)
+        elif self.likelihood == "poisson":
+            return self._likelihood_generate_components_names(input_series, ["lamba"])
+        elif self.likelihood in ["gaussian", "RMSEWithUncertainty"]:
+            return self._likelihood_generate_components_names(
+                input_series, ["mu", "sigma"]
+            )
+        else:
+            return None
+
+    @property
     def _is_probabilistic(self) -> bool:
         return self.likelihood is not None
 

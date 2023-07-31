@@ -178,6 +178,7 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
 
         return self._build_forecast_series(forecast)
 
+    @property
     def _is_probabilistic(self) -> bool:
         return True
 

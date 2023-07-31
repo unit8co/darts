@@ -139,5 +139,6 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
     def supports_multivariate(self) -> bool:
         return True
 
+    @property
     def _is_probabilistic(self) -> bool:
         return True
