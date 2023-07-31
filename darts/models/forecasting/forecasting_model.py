@@ -542,7 +542,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         return last_valid_pred_time
 
-    def _check_optimisable_historical_forecasts(
+    def _check_optimizable_historical_forecasts(
         self,
         forecast_horizon: int,
         retrain: Union[bool, int, Callable[..., bool]],
@@ -568,7 +568,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
-        enable_optimisation: bool = True,
+        enable_optimization: bool = True,
     ) -> Union[
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:
@@ -667,7 +667,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
             supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
             Default: ``False``
-        enable_optimisation
+        enable_optimization
             Whether to use the optimized version of historical_forecasts when supported and available.
 
         Returns
@@ -784,15 +784,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         future_covariates = series2seq(future_covariates)
 
         if (
-            enable_optimisation
+            enable_optimization
             and model.supports_optimized_historical_forecasts
-            and model._check_optimisable_historical_forecasts(
+            and model._check_optimizable_historical_forecasts(
                 forecast_horizon=forecast_horizon,
                 retrain=retrain,
                 show_warnings=show_warnings,
             )
         ):
-            return model._optimised_historical_forecasts(
+            return model._optimized_historical_forecasts(
                 series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
@@ -1821,7 +1821,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             if p.name != "self"
         }
 
-    def _optimised_historical_forecasts(
+    def _optimized_historical_forecasts(
         self,
         series: Sequence[TimeSeries],
         past_covariates: Optional[Sequence[TimeSeries]] = None,
@@ -1839,7 +1839,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
     ]:
         logger.warning(
-            "`optimised historical forecasts is not available for this model, use `historical_forecasts` instead."
+            "`optimized historical forecasts is not available for this model, use `historical_forecasts` instead."
         )
         return []
 

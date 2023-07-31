@@ -42,8 +42,8 @@ from darts.utils.data.tabularization import (
     create_lagged_training_data,
 )
 from darts.utils.historical_forecasts import (
-    _optimised_historical_forecasts_regression_all_points,
-    _optimised_historical_forecasts_regression_last_points_only,
+    _optimized_historical_forecasts_regression_all_points,
+    _optimized_historical_forecasts_regression_last_points_only,
 )
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import (
@@ -860,7 +860,7 @@ class RegressionModel(GlobalForecastingModel):
     def supports_optimized_historical_forecasts(self) -> bool:
         return True
 
-    def _check_optimisable_historical_forecasts(
+    def _check_optimizable_historical_forecasts(
         self,
         forecast_horizon: int,
         retrain: Union[bool, int, Callable[..., bool]],
@@ -879,19 +879,19 @@ class RegressionModel(GlobalForecastingModel):
         if show_warnings:
             if not supported_retrain:
                 logger.warning(
-                    "`enable_optimisation=True` is ignored because `retrain` is not `False`"
+                    "`enable_optimization=True` is ignored because `retrain` is not `False`"
                     "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
                 )
             if not supported_forecast_horizon:
                 logger.warning(
-                    "`enable_optimisation=True` is ignored because "
+                    "`enable_optimization=True` is ignored because "
                     "`forecast_horizon > self.output_chunk_length`."
                     "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
                 )
 
         return False
 
-    def _optimised_historical_forecasts(
+    def _optimized_historical_forecasts(
         self,
         series: Sequence[TimeSeries],
         past_covariates: Optional[Sequence[TimeSeries]] = None,
@@ -933,7 +933,7 @@ class RegressionModel(GlobalForecastingModel):
 
         # TODO: move the loop here instead of duplicated code in each sub-routine?
         if last_points_only:
-            return _optimised_historical_forecasts_regression_last_points_only(
+            return _optimized_historical_forecasts_regression_last_points_only(
                 model=self,
                 series=series,
                 past_covariates=past_covariates,
@@ -947,7 +947,7 @@ class RegressionModel(GlobalForecastingModel):
                 predict_likelihood_parameters=predict_likelihood_parameters,
             )
         else:
-            return _optimised_historical_forecasts_regression_all_points(
+            return _optimized_historical_forecasts_regression_all_points(
                 model=self,
                 series=series,
                 past_covariates=past_covariates,
