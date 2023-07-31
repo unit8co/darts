@@ -46,7 +46,7 @@ except ImportError:
 models_reg_no_cov_cls_kwargs = [
     (LinearRegressionModel, {"lags": 8}, (8, 1)),
     (CatBoostModel, {"lags": 6}, (6, 1)),
-    (LightGBMModel, {"lags": 4, "verbose": -1}, (4, 1)),
+    (LightGBMModel, {"lags": 4}, (4, 1)),
 ]
 
 models_reg_cov_cls_kwargs = [
@@ -636,7 +636,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
             tg.sine_timeseries(length=100, start=start_ts)
         )
         # slightly longer to not affect the last predictable timestamp
-        ts_covs = tg.gaussian_timeseries(length=200, start=start_ts)
+        ts_covs = tg.gaussian_timeseries(length=110, start=start_ts)
         start = 80
         for ts in [ts_univariate, ts_multivariate]:
             # cover several covariates combinations and several regression models
@@ -644,11 +644,11 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 models_reg_no_cov_cls_kwargs + models_reg_cov_cls_kwargs
             ):
                 for multi_models in [True, False]:
-                    model_kwargs["multi_models"] = multi_models
                     for forecast_horizon in [1, 5]:
                         # ocl == forecast horizon
                         model_kwargs_same = model_kwargs.copy()
                         model_kwargs_same["output_chunk_length"] = forecast_horizon
+                        model_kwargs_same["multi_models"] = multi_models
                         model_same = model_cls(**model_kwargs_same)
                         model_same.fit(
                             series=ts[:start],
@@ -662,6 +662,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                         # ocl >= forecast horizon
                         model_kwargs_diff = model_kwargs.copy()
                         model_kwargs_diff["output_chunk_length"] = 5
+                        model_kwargs_diff["multi_models"] = multi_models
                         model_diff = model_cls(**model_kwargs_same)
                         model_diff.fit(
                             series=ts[:start],
@@ -707,30 +708,20 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                                             forecast_horizon=forecast_horizon,
                                         )
                                     )
+                                    # pack the output to generalize the tests
                                     if last_points_only:
+                                        hist_fct = [hist_fct]
+                                        opti_hist_fct = [opti_hist_fct]
+
+                                    for fct, opti_fct in zip(hist_fct, opti_hist_fct):
                                         self.assertTrue(
                                             (
-                                                hist_fct.time_index
-                                                == opti_hist_fct.time_index
+                                                fct.time_index == opti_fct.time_index
                                             ).all()
                                         )
                                         np.testing.assert_array_almost_equal(
-                                            hist_fct.all_values(),
-                                            opti_hist_fct.all_values(),
+                                            fct.all_values(), opti_fct.all_values()
                                         )
-                                    else:
-                                        for fct, opti_fct in zip(
-                                            hist_fct, opti_hist_fct
-                                        ):
-                                            self.assertTrue(
-                                                (
-                                                    fct.time_index
-                                                    == opti_fct.time_index
-                                                ).all()
-                                            )
-                                            np.testing.assert_array_almost_equal(
-                                                fct.all_values(), opti_fct.all_values()
-                                            )
 
     @pytest.mark.slow
     @unittest.skipUnless(
