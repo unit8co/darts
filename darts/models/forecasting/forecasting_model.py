@@ -1867,9 +1867,28 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             if p.name != "self"
         }
 
+    def _verify_static_covariates(self, static_covariates: Optional[pd.DataFrame]):
+        """
+        Verify that all static covariates are numeric.
+        """
+        if static_covariates is not None and self.uses_static_covariates:
+            numeric_mask = static_covariates.columns.isin(
+                static_covariates.select_dtypes(include=np.number)
+            )
+            if sum(~numeric_mask):
+                raise_log(
+                    ValueError(
+                        f"{self.__class__.__name__} can only interpret numeric static covariate data. Consider "
+                        "encoding/transforming categorical static covariates with "
+                        "`darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer` "
+                        "or set `use_static_covariates=False` at model creation to ignore static covariates."
+                    ),
+                    logger,
+                )
+
     def _optimized_historical_forecasts(
         self,
-        series: Sequence[TimeSeries],
+        series: Optional[Sequence[TimeSeries]],
         past_covariates: Optional[Sequence[TimeSeries]] = None,
         future_covariates: Optional[Sequence[TimeSeries]] = None,
         num_samples: int = 1,
