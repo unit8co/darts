@@ -1,4 +1,5 @@
 import unittest
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -45,7 +46,7 @@ except ImportError:
 models_reg_no_cov_cls_kwargs = [
     (LinearRegressionModel, {"lags": 8}, (8, 1)),
     (CatBoostModel, {"lags": 6}, (6, 1)),
-    (LightGBMModel, {"lags": 4}, (4, 1)),
+    (LightGBMModel, {"lags": 4, "verbose": -1}, (4, 1)),
 ]
 
 models_reg_cov_cls_kwargs = [
@@ -625,50 +626,111 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}",
             )
 
-    """
     @pytest.mark.slow
     def test_optimized_historical_forecasts_regression(self):
-        ts_univariate = tg.linear_timeseries(start_value=1, end_value=100, length=100)
-        ts_multivariate = ts_univariate.stack(tg.sine_timeseries(length=100))
+        start_ts = pd.Timestamp("2000-01-01")
+        ts_univariate = tg.linear_timeseries(
+            start_value=1, end_value=100, length=100, start=start_ts
+        )
+        ts_multivariate = ts_univariate.stack(
+            tg.sine_timeseries(length=100, start=start_ts)
+        )
+        # slightly longer to not affect the last predictable timestamp
+        ts_covs = tg.gaussian_timeseries(length=200, start=start_ts)
         start = 80
         for ts in [ts_univariate, ts_multivariate]:
-            for last_points_only in [True, False]:
-                for stride in [1, 2]:
-                    for forecast_horizon in [1,3]:
-                        for multi_models in [True, False]:
-                            model = LinearRegressionModel(multi_models=multi_models,
-                                                        lags=3,
-                                                        output_chunk_length=forecast_horizon,
-                                                        )
-                            model.fit(ts[:start])
-                            hist_fct = model.historical_forecasts(series=ts,
-                                                                start=start,
-                                                                retrain=False,
-                                                                last_points_only=last_points_only,
-                                                                stride=stride,
-                                                                forecast_horizon=forecast_horizon,
-                                                                )
-                            opti_hist_fct =  model._optimized_historical_forecasts(series=ts,
-                                                                                start=start,
-                                                                                last_points_only=last_points_only,
-                                                                                stride=stride,
-                                                                                forecast_horizon=forecast_horizon,
-                                                                                )
+            # cover several covariates combinations and several regression models
+            for model_cls, model_kwargs, _ in (
+                models_reg_no_cov_cls_kwargs + models_reg_cov_cls_kwargs
+            ):
+                for multi_models in [True, False]:
+                    model_kwargs["multi_models"] = multi_models
+                    for forecast_horizon in [1, 5]:
+                        # ocl == forecast horizon
+                        model_kwargs_same = model_kwargs.copy()
+                        model_kwargs_same["output_chunk_length"] = forecast_horizon
+                        model_same = model_cls(**model_kwargs_same)
+                        model_same.fit(
+                            series=ts[:start],
+                            past_covariates=ts_covs
+                            if model_same.supports_past_covariates
+                            else None,
+                            future_covariates=ts_covs
+                            if model_same.supports_future_covariates
+                            else None,
+                        )
+                        # ocl >= forecast horizon
+                        model_kwargs_diff = model_kwargs.copy()
+                        model_kwargs_diff["output_chunk_length"] = 5
+                        model_diff = model_cls(**model_kwargs_same)
+                        model_diff.fit(
+                            series=ts[:start],
+                            past_covariates=ts_covs
+                            if model_diff.supports_past_covariates
+                            else None,
+                            future_covariates=ts_covs
+                            if model_diff.supports_future_covariates
+                            else None,
+                        )
+                        for model in [model_same, model_diff]:
+                            for last_points_only in [True, False]:
+                                for stride in [1, 2]:
+                                    hist_fct = model.historical_forecasts(
+                                        series=ts,
+                                        past_covariates=ts_covs
+                                        if model.supports_past_covariates
+                                        else None,
+                                        future_covariates=ts_covs
+                                        if model.supports_future_covariates
+                                        else None,
+                                        start=start,
+                                        retrain=False,
+                                        last_points_only=last_points_only,
+                                        stride=stride,
+                                        forecast_horizon=forecast_horizon,
+                                        enable_optimization=False,
+                                    )
 
-                        msg = f"failed with the following parameters:\n"\
-                              f"ts.n_comp {ts.n_components} last_points_only {last_points_only} stride {stride} "\
-                              f"forecast_horizon {forecast_horizon} multi_models {multi_models}"
-
-                        print(msg)
-
-                        if last_points_only:
-                            assert all(hist_fct.time_index == opti_hist_fct.time_index), msg
-                            assert np.allclose(hist_fct.values(), opti_hist_fct.values()), msg
-                        else:
-                            for fct, opti_fct in zip(hist_fct, opti_hist_fct):
-                                assert all(fct.time_index == opti_fct.time_index), msg
-                                assert np.allclose(fct.values(), opti_fct.values()), msg
-    """
+                                    # manually packing the series in list to match expected inputs
+                                    opti_hist_fct = (
+                                        model._optimized_historical_forecasts(
+                                            series=[ts],
+                                            past_covariates=[ts_covs]
+                                            if model.supports_past_covariates
+                                            else None,
+                                            future_covariates=[ts_covs]
+                                            if model.supports_future_covariates
+                                            else None,
+                                            start=start,
+                                            last_points_only=last_points_only,
+                                            stride=stride,
+                                            forecast_horizon=forecast_horizon,
+                                        )
+                                    )
+                                    if last_points_only:
+                                        self.assertTrue(
+                                            (
+                                                hist_fct.time_index
+                                                == opti_hist_fct.time_index
+                                            ).all()
+                                        )
+                                        np.testing.assert_array_almost_equal(
+                                            hist_fct.all_values(),
+                                            opti_hist_fct.all_values(),
+                                        )
+                                    else:
+                                        for fct, opti_fct in zip(
+                                            hist_fct, opti_hist_fct
+                                        ):
+                                            self.assertTrue(
+                                                (
+                                                    fct.time_index
+                                                    == opti_fct.time_index
+                                                ).all()
+                                            )
+                                            np.testing.assert_array_almost_equal(
+                                                fct.all_values(), opti_fct.all_values()
+                                            )
 
     @pytest.mark.slow
     @unittest.skipUnless(
@@ -1298,7 +1360,9 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
         """standard checks that historical forecasts work with direct likelihood parameter predictions
         with regression and torch models."""
 
-        def create_model(ocl, use_ll=True, model_type="regression"):
+        def create_model(
+            ocl, use_ll=True, model_type="regression"
+        ) -> Union[LinearRegressionModel, NLinearModel]:
             if model_type == "regression":
                 return LinearRegressionModel(
                     lags=3,
