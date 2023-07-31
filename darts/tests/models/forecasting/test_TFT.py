@@ -372,7 +372,7 @@ if TORCH_AVAILABLE:
                 series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
-                num_samples=(100 if model._is_probabilistic() else 1),
+                num_samples=(100 if model._is_probabilistic else 1),
             )
 
             if isinstance(y_hat, TimeSeries):

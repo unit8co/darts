@@ -114,8 +114,10 @@ class StatsForecastAutoARIMA(FutureCovariatesLocalForecastingModel):
     def min_train_series_length(self) -> int:
         return 10
 
+    @property
     def _supports_range_index(self) -> bool:
         return True
 
+    @property
     def _is_probabilistic(self) -> bool:
         return True

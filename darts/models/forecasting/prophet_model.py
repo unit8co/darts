@@ -349,6 +349,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
     def supports_multivariate(self) -> bool:
         return False
 
+    @property
     def _is_probabilistic(self) -> bool:
         return True
 
@@ -595,6 +596,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             )
         return freq_times * days
 
+    @property
     def _supports_range_index(self) -> bool:
         """Prophet does not support integer range index."""
         raise_if(
