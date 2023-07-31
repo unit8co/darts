@@ -1196,6 +1196,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         num_samples: int = 1,
         num_loader_workers: int = 0,
         mc_dropout: bool = False,
+        predict_likelihood_parameters: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Predict the ``n`` time step following the end of the training series, or of the specified ``series``.
 
@@ -1261,6 +1262,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         mc_dropout
             Optionally, enable monte carlo dropout for predictions using neural network based models.
             This allows bayesian approximation by specifying an implicit prior over learned models.
+        predict_likelihood_parameters
+            If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
+            supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
+            Default: ``False``
 
         Returns
         -------
@@ -1303,7 +1308,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
             )
-        super().predict(n, series, past_covariates, future_covariates)
+        super().predict(
+            n,
+            series,
+            past_covariates,
+            future_covariates,
+            num_samples=num_samples,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+        )
 
         dataset = self._build_inference_dataset(
             target=series,
@@ -1323,6 +1335,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             num_samples=num_samples,
             num_loader_workers=num_loader_workers,
             mc_dropout=mc_dropout,
+            predict_likelihood_parameters=predict_likelihood_parameters,
         )
 
         return predictions[0] if called_with_single_series else predictions
@@ -1340,6 +1353,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         num_samples: int = 1,
         num_loader_workers: int = 0,
         mc_dropout: bool = False,
+        predict_likelihood_parameters: bool = False,
     ) -> Sequence[TimeSeries]:
         """
         This method allows for predicting with a specific :class:`darts.utils.data.InferenceDataset` instance.
@@ -1385,6 +1399,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         mc_dropout
             Optionally, enable monte carlo dropout for predictions using neural network based models.
             This allows bayesian approximation by specifying an implicit prior over learned models.
+        predict_likelihood_parameters
+            If set to `True`, the model predict the parameters of its Likelihood parameters instead of the target. Only
+            supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
+            Default: ``False``
 
         Returns
         -------
@@ -1408,6 +1426,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 "`roll_size` must be an integer between 1 and `self.output_chunk_length`.",
             )
 
+        # prevent auto-regression when prediction the likelihood parameters
+        raise_if(
+            predict_likelihood_parameters and n > self.output_chunk_length,
+            "`n` must be smaller than or equal to `output_chunk_length` when `predict_likelihood_parameters=True`.",
+            logger,
+        )
+
         # check that `num_samples` is a positive integer
         raise_if_not(num_samples > 0, "`num_samples` must be a positive integer.")
 
@@ -1421,6 +1446,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             roll_size=roll_size,
             batch_size=batch_size,
             n_jobs=n_jobs,
+            predict_likelihood_parameters=predict_likelihood_parameters,
         )
 
         pred_loader = DataLoader(
@@ -1899,7 +1925,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return self.model.epochs_trained if self.model_created else 0
 
     @property
-    def likelihood(self) -> Likelihood:
+    def likelihood(self) -> Optional[Likelihood]:
         return (
             self.model.likelihood
             if self.model_created
@@ -1922,9 +1948,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             else self.pl_module_params["output_chunk_length"]
         )
 
+    @property
     def _is_probabilistic(self) -> bool:
         return (
-            self.model._is_probabilistic()
+            self.model._is_probabilistic
             if self.model_created
             else True  # all torch models can be probabilistic (via Dropout)
         )

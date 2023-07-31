@@ -277,7 +277,7 @@ class _TransformerModule(PLPastCovariatesModule):
         )
 
         self.decoder = nn.Linear(
-            d_model, self.output_chunk_length * self.target_size * self.nr_params
+            d_model, self.target_length * self.target_size * self.nr_params
         )
 
     def _create_transformer_inputs(self, data):

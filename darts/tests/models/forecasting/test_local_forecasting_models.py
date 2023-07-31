@@ -284,7 +284,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                 if isinstance(target.time_index, pd.RangeIndex):
                     try:
                         # _supports_range_index raises a ValueError if model does not support RangeIndex
-                        model._supports_range_index()
+                        model._supports_range_index
                     except ValueError:
                         continue
 
