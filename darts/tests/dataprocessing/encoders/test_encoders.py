@@ -323,6 +323,9 @@ class EncoderTestCase(DartsBaseTestClass):
         _ = encoders.encode_inference(
             3, self.target_multi, self.covariates_multi, self.covariates_multi
         )
+        _ = encoders.encode_train_inference(
+            3, self.target_multi, self.covariates_multi, self.covariates_multi
+        )
         return encoders
 
     def test_single_encoders_general(self):
@@ -410,6 +413,15 @@ class EncoderTestCase(DartsBaseTestClass):
                 else:
                     self.assertTrue(comps_expected.isin(covs_inf.components).all())
                     self.assertTrue(covs_inf[list(covs.components)] == covs)
+
+                # check that train_inference gives equal results
+                covs_train_inf = encoder.encode_train_inference(
+                    n=n, target=ts, covariates=covs, merge_covariates=merge_covs
+                )
+                assert covs_train_inf.start_time() == covs_train.start_time()
+                assert covs_train_inf.end_time() == covs_inf.end_time()
+                assert covs_train_inf[covs_train.time_index] == covs_train
+                assert covs_train_inf[covs_inf.time_index] == covs_inf
 
                 # we can use the output of `encode_train()` as input for `encode_train()` and get the same
                 # results (encoded components get overwritten)
@@ -541,6 +553,11 @@ class EncoderTestCase(DartsBaseTestClass):
         _ = enc.encode_inference(
             n=1, target=ts, past_covariates=covs, future_covariates=covs
         )
+        # train_inference works directly
+        enc = SequentialEncoder(**kwargs_copy)
+        _ = enc.encode_train_inference(
+            n=1, target=ts, past_covariates=covs, future_covariates=covs
+        )
 
         # with `transformer`, we have to call `encode_train()` before inference set
         kwargs_copy["add_encoders"] = {
@@ -556,6 +573,11 @@ class EncoderTestCase(DartsBaseTestClass):
         # train first then inference does work
         _ = enc.encode_train(target=ts, past_covariates=covs, future_covariates=covs)
         _ = enc.encode_inference(
+            n=1, target=ts, past_covariates=covs, future_covariates=covs
+        )
+        # train_inference works directly
+        enc = SequentialEncoder(**kwargs_copy)
+        _ = enc.encode_train_inference(
             n=1, target=ts, past_covariates=covs, future_covariates=covs
         )
 
@@ -594,12 +616,32 @@ class EncoderTestCase(DartsBaseTestClass):
         )
         assert pc_train == pc
         assert fc_train == fc
+        pc_train, fc_train = enc.encode_train_inference(
+            n=10, target=ts, past_covariates=pc, future_covariates=fc
+        )
+        assert pc_train == pc
+        assert fc_train == fc
 
         # ==> test `encode_inference()` with all encoders and transformer
         assert enc.fit_called
         pc, fc = enc.encode_inference(
             n=1, target=ts, past_covariates=covs, future_covariates=covs
         )
+        assert enc.past_components.equals(comps_expected_past)
+        assert comps_expected_past.isin(pc.components).all()
+        assert covs.components.isin(pc.components).all()
+
+        assert enc.future_components.equals(comps_expected_future)
+        assert comps_expected_future.isin(fc.components).all()
+        assert covs.components.isin(fc.components).all()
+
+        # ==> test the same for `encode_train_inference`
+        enc = SequentialEncoder(**kwargs)
+        assert not enc.fit_called
+        pc, fc = enc.encode_train_inference(
+            n=1, target=ts, past_covariates=covs, future_covariates=covs
+        )
+        assert enc.fit_called
         assert enc.past_components.equals(comps_expected_past)
         assert comps_expected_past.isin(pc.components).all()
         assert covs.components.isin(pc.components).all()
@@ -622,6 +664,10 @@ class EncoderTestCase(DartsBaseTestClass):
         )
         assert pc_inf2 == pc
         assert fc_inf2 == fc
+
+        pc_train, fc_train = enc.encode_train_inference(
+            n=10, target=ts, past_covariates=pc, future_covariates=fc
+        )
 
     def test_cyclic_encoder(self):
         """Test past and future `CyclicTemporalEncoder``"""
@@ -1281,10 +1327,15 @@ class EncoderTestCase(DartsBaseTestClass):
     ):
         """Test `SingleEncoder.encode_train()`"""
 
-        encoded = []
+        encoded, encoded_train_inf = [], []
         for ts, cov in zip(target, covariates):
             encoded.append(
                 encoder.encode_train(ts, cov, merge_covariates=merge_covariates)
+            )
+            encoded_train_inf.append(
+                encoder.encode_train_inference(
+                    1, ts, cov, merge_covariates=merge_covariates
+                )
             )
 
         expected_result = result
@@ -1296,6 +1347,8 @@ class EncoderTestCase(DartsBaseTestClass):
             expected_result = [res[: -self.output_chunk_length] for res in result]
 
         self.assertTrue(encoded == expected_result)
+        for enc, enc_train_inf in zip(encoded, encoded_train_inf):
+            self.assertEqual(enc, enc_train_inf[enc.time_index])
 
     def helper_test_encoder_single_inference(
         self,
@@ -1308,9 +1361,16 @@ class EncoderTestCase(DartsBaseTestClass):
     ):
         """Test `SingleEncoder.encode_inference()`"""
 
-        encoded = []
+        encoded, encoded_train_inf = [], []
         for ts, cov in zip(target, covariates):
             encoded.append(
                 encoder.encode_inference(n, ts, cov, merge_covariates=merge_covariates)
             )
+            encoded_train_inf.append(
+                encoder.encode_train_inference(
+                    n, ts, cov, merge_covariates=merge_covariates
+                )
+            )
         self.assertTrue(encoded == result)
+        for enc, enc_train_inf in zip(encoded, encoded_train_inf):
+            self.assertEqual(enc, enc_train_inf[enc.time_index])
