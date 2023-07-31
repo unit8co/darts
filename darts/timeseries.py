@@ -3721,10 +3721,8 @@ class TimeSeries:
             this is applied to each component separately (i.e., displaying marginal distributions). No confidence
             interval is shown if `high_quantile` is None (default 0.95).
         default_formatting
-            Whether or not to use the darts default scheme.
+            Whether to use the darts default scheme.
         label
-            A prefix that will appear in front of each component of the TimeSeries or a list of string of
-            length the number of components in the plotted TimeSeries (default "").
             Can either be a string or list of strings. If a string and the series only has a single component, it is
             used as the label for that component. If a string and the series has multiple components, it is used as
             a prefix for each component name. If a list of strings with length equal to the number of components in

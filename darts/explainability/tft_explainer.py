@@ -303,7 +303,7 @@ class TFTExplainer(_ForecastingModelExplainer):
         expl_result: TFTExplainabilityResult,
         plot_type: Optional[Literal["all", "time", "heatmap"]] = "all",
         show_index_as: Literal["relative", "time"] = "relative",
-        ax=None,
+        ax: Optional[matplotlib.axes.Axes] = None,
         max_nr_series: int = 5,
         show_plot: bool = True,
     ) -> matplotlib.axes.Axes:
@@ -550,7 +550,7 @@ class TFTExplainer(_ForecastingModelExplainer):
     def _plot_cov_selection(
         importance: pd.DataFrame,
         title: str = "Variable importance",
-        ax=None,
+        ax: Optional[matplotlib.axes.Axes] = None,
     ):
         """Plots the variable importance of the TFT model.
 
@@ -560,7 +560,8 @@ class TFTExplainer(_ForecastingModelExplainer):
             The encoder / decoder importance.
         title
             The title of the plot.
-
+        ax
+            Optionally, an axis to plot on. Otherwise, will create and plot on a new axis.
         """
         if ax is None:
             _, ax = plt.subplots()

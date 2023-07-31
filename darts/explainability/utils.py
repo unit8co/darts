@@ -144,7 +144,7 @@ def process_input(
         test_stationarity=test_stationarity,
     )
 
-    # make sure to remove any encodings from covariates if downstream tasks do not require covariates without encodings
+    # make sure to remove any encodings from covariates if downstream tasks require covariates without encodings
     if not requires_covariates_encoding and model.encoders.encoding_available:
         if past_covariates is not None and model.encoders.past_encoders:
             cov = past_covariates[0]
@@ -189,7 +189,7 @@ def process_horizons_and_targets(
     """Processes the input horizons and target component names.
 
     horizons
-        Optionally, an integer or sequence of integers representing the future time step/s to be explained.
+        Optionally, an integer or sequence of integers representing the future time steps to be explained.
         `1` corresponds to the first timestamp being forecasted.
         All values must be `<=output_chunk_length` of the explained forecasting model.
     fallback_horizon

@@ -448,7 +448,7 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
     def get_attention(self) -> Union[TimeSeries, List[TimeSeries]]:
         """
         Returns the time-dependent attention on the encoder and decoder for each `horizon` in (1,
-        `output_chunk_length`). The time index ranges from the prediction series' start time - input_chunk-length and
+        `output_chunk_length`). The time index ranges from the prediction series' start time - input_chunk_length and
         ends at the prediction series' end time. If multiple series were used when calling
         :func:`TFTExplainer.explain() <darts.explainability.tft_explainer.TFTExplainer.explain>`, returns a list of
         TimeSeries.

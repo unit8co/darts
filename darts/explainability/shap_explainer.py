@@ -234,7 +234,7 @@ class ShapExplainer(_ForecastingModelExplainer):
         foreground_future_covariates
             Optionally, one or a sequence of future covariates `TimeSeries` if required by the forecasting model.
         horizons
-            Optionally, an integer or sequence of integers representing the future time step/s to be explained.
+            Optionally, an integer or sequence of integers representing the future time steps to be explained.
             `1` corresponds to the first timestamp being forecasted.
             All values must be `<=output_chunk_length` of the explained forecasting model.
         target_components
