@@ -1266,7 +1266,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
 
         # test int
         helper_hist_forecasts(10, 0.9)
-        expected_msg = "Model has not been fit before the first predict iteration at prediction point (in time)"
+        expected_msg = "Model has not been fit yet."
         # `retrain=0` with not-trained model, encountering directly a predictable time index
         with pytest.raises(ValueError) as error_msg:
             helper_hist_forecasts(0, 0.9)

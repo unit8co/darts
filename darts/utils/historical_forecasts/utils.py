@@ -6,6 +6,7 @@ import pandas as pd
 
 from darts.logging import get_logger, raise_if_not, raise_log
 from darts.timeseries import TimeSeries
+from darts.utils.timeseries_generation import generate_index
 from darts.utils.utils import series2seq
 
 logger = get_logger(__name__)
@@ -203,6 +204,162 @@ def _historical_forecasts_start_warnings(
         )
 
 
+def _get_historical_forecastable_time_index(
+    model,
+    series: TimeSeries,
+    past_covariates: Optional[TimeSeries] = None,
+    future_covariates: Optional[TimeSeries] = None,
+    is_training: Optional[bool] = False,
+    reduce_to_bounds: bool = False,
+) -> Union[
+    pd.DatetimeIndex,
+    pd.RangeIndex,
+    Tuple[int, int],
+    Tuple[pd.Timestamp, pd.Timestamp],
+    None,
+]:
+    """
+    Private function that returns the largest time_index representing the subset of each timestamps
+    for which historical forecasts can be made, given the model's properties, the training series
+    and the covariates.
+        - If ``None`` is returned, there is no point where a forecast can be made.
+
+        - If ``is_training=False``, it returns the time_index subset of predictable timestamps.
+
+        - If ``is_training=True``, it returns the time_index subset of trainable timestamps. A trainable
+        timestamp is a timestamp that has a training sample of length at least ``self.training_sample_length``
+            preceding it.
+
+
+    Parameters
+    ----------
+    series
+        A target series.
+    past_covariates
+        Optionally, a past covariates.
+    future_covariates
+        Optionally, a future covariates.
+    is_training
+        Whether the returned time_index should be taking into account the training.
+    reduce_to_bounds
+        Whether to only return the minimum and maximum historical forecastable index
+
+    Returns
+    -------
+    Union[pd.DatetimeIndex, pd.RangeIndex, Tuple[int, int], Tuple[pd.Timestamp, pd.Timestamp], None]
+        The longest time_index that can be used for historical forecasting, either as a range or a tuple.
+
+    Examples
+    --------
+    >>> model = LinearRegressionModel(lags=3, output_chunk_length=2)
+    >>> model.fit(train_series)
+    >>> series = TimeSeries.from_times_and_values(pd.date_range('2000-01-01', '2000-01-10'), np.arange(10))
+    >>> model._get_historical_forecastable_time_index(series=series, is_training=False)
+    DatetimeIndex(['2000-01-04', '2000-01-05', '2000-01-06', '2000-01-07',
+            '2000-01-08', '2000-01-09', '2000-01-10'],
+            dtype='datetime64[ns]', freq='D')
+    >>> model._get_historical_forecastable_time_index(series=series, is_training=True)
+    DatetimeIndex(['2000-01-06', '2000-01-08', '2000-01-09', '2000-01-10'],
+            dtype='datetime64[ns]', freq='D')
+
+    >>> model = NBEATSModel(input_chunk_length=3, output_chunk_length=3)
+    >>> model.fit(train_series, train_past_covariates)
+    >>> series = TimeSeries.from_times_and_values(pd.date_range('2000-10-01', '2000-10-09'), np.arange(8))
+    >>> past_covariates = TimeSeries.from_times_and_values(pd.date_range('2000-10-03', '2000-10-20'),
+    np.arange(18))
+    >>> model._get_historical_forecastable_time_index(series=series, past_covariates=past_covariates,
+    is_training=False)
+    DatetimeIndex(['2000-10-06', '2000-10-07', '2000-10-08', '2000-10-09'], dtype='datetime64[ns]', freq='D')
+    >>> model._get_historical_forecastable_time_index(series=series, past_covariates=past_covariates,
+    is_training=True)
+    DatetimeIndex(['2000-10-09'], dtype='datetime64[ns]', freq='D') # Only one point is trainable, and
+    # corresponds to the first point after we reach a common subset of timestamps of training_sample_length length.
+    """
+
+    (
+        min_target_lag,
+        max_target_lag,
+        min_past_cov_lag,
+        max_past_cov_lag,
+        min_future_cov_lag,
+        max_future_cov_lag,
+    ) = model.extreme_lags
+
+    if min_target_lag is None:
+        min_target_lag = 0
+
+    # longest possible time index for target
+    start = (
+        series.start_time() + (max_target_lag - min_target_lag + 1) * series.freq
+        if is_training
+        else series.start_time() - min_target_lag * series.freq
+    )
+    end = series.end_time() + 1 * series.freq
+
+    intersect_ = (start, end)
+
+    # longest possible time index for past covariates
+    if (min_past_cov_lag is not None) and (past_covariates is not None):
+        start_pc = (
+            past_covariates.start_time()
+            - (min_past_cov_lag - max_target_lag - 1) * past_covariates.freq
+            if is_training
+            else past_covariates.start_time() - min_past_cov_lag * past_covariates.freq
+        )
+        end_pc = past_covariates.end_time() - max_past_cov_lag * past_covariates.freq
+        tmp_ = (start_pc, end_pc)
+
+        if intersect_ is not None:
+            intersect_ = (
+                max([intersect_[0], tmp_[0]]),
+                min([intersect_[1], tmp_[1]]),
+            )
+        else:
+            intersect_ = tmp_
+
+    # longest possible time index for future covariates
+    if (min_future_cov_lag is not None) and (future_covariates is not None):
+        start_fc = (
+            future_covariates.start_time()
+            - (min_future_cov_lag - max_target_lag - 1) * future_covariates.freq
+            if is_training
+            else future_covariates.start_time()
+            - min_future_cov_lag * future_covariates.freq
+        )
+        end_fc = (
+            future_covariates.end_time() - max_future_cov_lag * future_covariates.freq
+        )
+        tmp_ = (start_fc, end_fc)
+
+        if intersect_ is not None:
+            intersect_ = (
+                max([intersect_[0], tmp_[0]]),
+                min([intersect_[1], tmp_[1]]),
+            )
+        else:
+            intersect_ = tmp_
+
+    # end comes before the start
+    if intersect_[1] < intersect_[0]:
+        return None
+
+    # if RegressionModel is not multi_models, it looks further in the past
+    is_multi_models = getattr(model, "multi_models", None)
+    if is_multi_models is not None and not is_multi_models:
+        intersect_ = (
+            intersect_[0] + (model.output_chunk_length - 1) * series.freq,
+            intersect_[1],
+        )
+
+    # generate an index
+    if not reduce_to_bounds:
+        intersect_ = generate_index(
+            start=intersect_[0], end=intersect_[1], freq=series.freq
+        )
+
+    return intersect_ if len(intersect_) > 0 else None
+
+
 def _adjust_historical_forecasts_time_index(
     model,
     series: TimeSeries,
@@ -262,7 +419,8 @@ def _get_historical_forecast_predict_index(
     future_covariates: Optional[TimeSeries],
 ) -> TimeIndex:
     """Obtain the boundaries of the predictable time indices, raise an exception if None"""
-    historical_forecasts_time_index = model._get_historical_forecastable_time_index(
+    historical_forecasts_time_index = _get_historical_forecastable_time_index(
+        model,
         series,
         past_covariates,
         future_covariates,
@@ -289,13 +447,13 @@ def _get_historical_forecast_train_index(
     series_idx: int,
     past_covariates: Optional[TimeSeries],
     future_covariates: Optional[TimeSeries],
-    retrain: bool,
 ) -> TimeIndex:
     """
     Obtain the boundaries of the time indices usable for training, raise an exception if training is required and
     no indices are available.
     """
-    historical_forecasts_time_index = model._get_historical_forecastable_time_index(
+    historical_forecasts_time_index = _get_historical_forecastable_time_index(
+        model,
         series,
         past_covariates,
         future_covariates,
@@ -303,9 +461,7 @@ def _get_historical_forecast_train_index(
         reduce_to_bounds=True,
     )
 
-    if (
-        (retrain is not False) or (not model._fit_called)
-    ) and historical_forecasts_time_index is None:
+    if not model._fit_called and historical_forecasts_time_index is None:
         raise_log(
             ValueError(
                 "Cannot build a single input for training with the provided untrained model, "
@@ -366,6 +522,7 @@ def _reconciliate_historical_time_indices(
                     f"`train_length` is larger than the length of series at index: {series_idx}. "
                     f"Ignoring `train_length` and using default behavior where all available time steps up "
                     f"until the end of the expanding training set."
+                    f"To hide these warnings, set `show_warnings=False`."
                 )
 
             train_length_ = None
@@ -394,8 +551,8 @@ def _get_historical_forecast_boundaries(
     """
     Based on the boundaries of the forecastable time index, generates the boundaries of each covariates using the lags.
 
-    For TimeSeries with a RangeIndex, the boundaries are converted to absolute indexes to slice the array appropriately
-    when start > 0.
+    For TimeSeries with a RangeIndex, the boundaries are converted to positional indexes to slice the array
+    appropriately when start > 0.
 
     When applicable, move the start boundaries to the value provided by the user.
     """
@@ -444,7 +601,7 @@ def _get_historical_forecast_boundaries(
     if max_future_cov_lag is not None:
         hist_fct_fc_end += max_future_cov_lag * freq
 
-    # convert relative integer index to absolute, make end bound inclusive
+    # convert actual integer index values (points) to positional index, make end bound inclusive
     if series.has_range_index:
         hist_fct_tgt_start = series.get_index_at_point(hist_fct_tgt_start)
         hist_fct_tgt_end = series.get_index_at_point(hist_fct_tgt_end) + 1

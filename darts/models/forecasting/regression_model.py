@@ -910,20 +910,17 @@ class RegressionModel(GlobalForecastingModel):
     ]:
         """
         TODO: support forecast_horizon > output_chunk_length (auto-regression)
-        TODO: support series_ is None (models relying on covariates only at prediction)
         """
         if not self._fit_called:
             raise_log(
-                ValueError(
-                    "Model has not been fit before the first predict iteration at prediction point (in time)"
-                ),
+                ValueError("Model has not been fit yet."),
                 logger,
             )
         if forecast_horizon > self.output_chunk_length:
             raise_log(
                 ValueError(
-                    "As `forecast_horizon > model.output_chunk_length`, historical forecast "
-                    "requires auto-regression which is not supported in this optimized routine."
+                    "`forecast_horizon > model.output_chunk_length` requires auto-regression which is not "
+                    "supported in this optimized routine."
                 ),
                 logger,
             )
@@ -963,43 +960,6 @@ class RegressionModel(GlobalForecastingModel):
                 show_warnings=show_warnings,
                 predict_likelihood_parameters=predict_likelihood_parameters,
             )
-
-    def _get_historical_forecastable_time_index(
-        self,
-        series: TimeSeries,
-        past_covariates: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
-        is_training: Optional[bool] = False,
-        reduce_to_bounds: bool = False,
-    ) -> Union[
-        pd.DatetimeIndex,
-        pd.RangeIndex,
-        Tuple[int, int],
-        Tuple[pd.Timestamp, pd.Timestamp],
-        None,
-    ]:
-        """Shift the first forecastable index for regression model with multi_models=False."""
-        intersect_ = super()._get_historical_forecastable_time_index(
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            is_training=is_training,
-            reduce_to_bounds=reduce_to_bounds,
-        )
-        if intersect_ is None:
-            return intersect_
-
-        # if not multi_models, the model looks further in the past
-        if not self.multi_models:
-            if reduce_to_bounds:
-                intersect_ = (
-                    intersect_[0] + (self.output_chunk_length - 1) * series.freq,
-                    intersect_[-1],
-                )
-            else:
-                intersect_ = intersect_[self.output_chunk_length - 1 :]
-
-        return intersect_
 
 
 class _LikelihoodMixin:
