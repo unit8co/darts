@@ -81,7 +81,7 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
             self.n_short, self.target_time, self.cov_time_inf_short
         )
         self.assertTrue(isinstance(idx, pd.DatetimeIndex))
-        idx, _ = ig.generate_inference_idx(
+        idx, _ = ig.generate_train_inference_idx(
             self.n_short, self.target_time, self.cov_time_inf_short
         )
         self.assertTrue(isinstance(idx, pd.DatetimeIndex))

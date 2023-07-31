@@ -39,6 +39,7 @@ There are two main types of encoder classes: `SingleEncoder` and `SequentialEnco
                 target=target,
                 covariates=optional_past_covariates
             )
+            # or generate encodings for train and inference together
             past_covariates_train_inf = encoder.encode_train_inference(
                 n=12,
                 target=target,
