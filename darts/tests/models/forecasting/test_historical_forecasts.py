@@ -723,6 +723,49 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                                             fct.all_values(), opti_fct.all_values()
                                         )
 
+    def test_optimized_historical_forecasts_regression_with_encoders(self):
+        model = LinearRegressionModel(
+            lags=3,
+            lags_past_covariates=2,
+            lags_future_covariates=[2, 3],
+            add_encoders={
+                "cyclic": {"future": ["month"]},
+                "custom": {"past": [lambda idx: (idx.year - 1950) / 50]},
+                "position": {"past": ["relative"], "future": ["relative"]},
+            },
+            output_chunk_length=5,
+        )
+
+        model.fit(self.ts_pass_train)
+
+        hist_fct = model.historical_forecasts(
+            series=self.ts_pass_val,
+            retrain=False,
+            last_points_only=True,
+            forecast_horizon=5,
+            enable_optimization=False,
+        )
+        # opti_hist_fct = model.historical_forecasts(
+        #                                series=self.ts_pass_val,
+        #                                retrain=False,
+        #                                last_points_only=True,
+        #                                forecast_horizon=5,
+        #                                enable_optimization=True,
+        #                            )
+
+        opti_hist_fct = model._optimized_historical_forecasts(
+            series=[self.ts_pass_val],
+            last_points_only=True,
+            forecast_horizon=5,
+        )
+
+        self.assertTrue((hist_fct.time_index == opti_hist_fct.time_index).all())
+        print(hist_fct.all_values()[:10])
+        print(opti_hist_fct.all_values()[:10])
+        np.testing.assert_array_almost_equal(
+            hist_fct.all_values(), opti_hist_fct.all_values()
+        )
+
     @pytest.mark.slow
     @unittest.skipUnless(
         TORCH_AVAILABLE,

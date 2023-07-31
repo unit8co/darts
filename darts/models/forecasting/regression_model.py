@@ -925,6 +925,15 @@ class RegressionModel(GlobalForecastingModel):
                 logger,
             )
 
+        # generate encodings, usually handled by RegressionModel.predict()
+        if self.encoders.encoding_available:
+            past_covariates, future_covariates = self.generate_fit_predict_encodings(
+                n=forecast_horizon,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+            )
+
         # retrieve stored covariates, usually handled by RegressionModel.predict()
         if past_covariates is None and self.past_covariate_series is not None:
             past_covariates = series2seq(self.past_covariate_series)
