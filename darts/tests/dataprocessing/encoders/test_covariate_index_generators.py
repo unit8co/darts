@@ -553,7 +553,7 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
         test_routine_inf(self, ig, 1, expected_start_inf, expected_end_inf)
         test_routine_train_inf(self, ig, 1, expected_start_train, expected_end_inf)
         test_routine_inf(self, ig, ocl, expected_start_inf, expected_end_inf)
-        test_routine_train_inf(self, ig, 1, expected_start_train, expected_end_inf)
+        test_routine_train_inf(self, ig, ocl, expected_start_train, expected_end_inf)
         # check inference for n > ocl
         test_routine_inf(self, ig, ocl + 1, expected_start_inf, "2002-01-01")
         test_routine_train_inf(self, ig, ocl + 1, expected_start_train, "2002-01-01")
@@ -572,7 +572,7 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
         test_routine_inf(self, ig, 1, expected_start_inf, expected_end_inf)
         test_routine_train_inf(self, ig, 1, expected_start_train, expected_end_inf)
         test_routine_inf(self, ig, ocl, expected_start_inf, expected_end_inf)
-        test_routine_train_inf(self, ig, 1, expected_start_train, expected_end_inf)
+        test_routine_train_inf(self, ig, ocl, expected_start_train, expected_end_inf)
         # check inference for n > ocl
         test_routine_inf(self, ig, ocl + 1, expected_start_inf, "2001-12-01")
         test_routine_train_inf(self, ig, ocl + 1, expected_start_train, "2001-12-01")
@@ -596,7 +596,7 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
         test_routine_inf(self, ig, 1, expected_start_inf, expected_end_inf)
         test_routine_train_inf(self, ig, 1, expected_start_train, expected_end_inf)
         test_routine_inf(self, ig, ocl, expected_start_inf, expected_end_inf)
-        test_routine_train_inf(self, ig, 1, expected_start_train, expected_end_inf)
+        test_routine_train_inf(self, ig, ocl, expected_start_train, expected_end_inf)
         # check inference for n > ocl
         test_routine_inf(self, ig, ocl + 1, expected_start_inf, "2002-07-01")
         test_routine_train_inf(self, ig, ocl + 1, expected_start_train, "2002-07-01")
@@ -614,7 +614,7 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
         test_routine_inf(self, ig, 1, expected_start_inf, expected_end_inf)
         test_routine_train_inf(self, ig, 1, expected_start_train, expected_end_inf)
         test_routine_inf(self, ig, ocl, expected_start_inf, expected_end_inf)
-        test_routine_train_inf(self, ig, 1, expected_start_train, expected_end_inf)
+        test_routine_train_inf(self, ig, ocl, expected_start_train, expected_end_inf)
         # check inference for n > ocl
         test_routine_inf(self, ig, ocl + 1, expected_start_inf, "2002-02-01")
         test_routine_train_inf(self, ig, ocl + 1, expected_start_train, "2002-02-01")
@@ -632,7 +632,7 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
         test_routine_inf(self, ig, 1, expected_start_inf, expected_end_inf)
         test_routine_train_inf(self, ig, 1, expected_start_train, expected_end_inf)
         test_routine_inf(self, ig, ocl, expected_start_inf, expected_end_inf)
-        test_routine_train_inf(self, ig, 1, expected_start_train, expected_end_inf)
+        test_routine_train_inf(self, ig, ocl, expected_start_train, expected_end_inf)
         # check inference for n > ocl
         test_routine_inf(self, ig, ocl + 1, expected_start_inf, "2003-07-01")
         test_routine_train_inf(self, ig, ocl + 1, expected_start_train, "2003-07-01")
@@ -650,7 +650,7 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
         test_routine_inf(self, ig, 1, expected_start_inf, expected_end_inf)
         test_routine_train_inf(self, ig, 1, expected_start_train, expected_end_inf)
         test_routine_inf(self, ig, ocl, expected_start_inf, expected_end_inf)
-        test_routine_train_inf(self, ig, 1, expected_start_train, expected_end_inf)
+        test_routine_train_inf(self, ig, ocl, expected_start_train, expected_end_inf)
         # check inference for n > ocl
         test_routine_inf(self, ig, ocl + 1, expected_start_inf, "2002-04-01")
         test_routine_train_inf(self, ig, ocl + 1, expected_start_train, "2002-04-01")
@@ -668,7 +668,7 @@ class CovariatesIndexGeneratorTestCase(DartsBaseTestClass):
         test_routine_inf(self, ig, 1, expected_start_inf, expected_end_inf)
         test_routine_train_inf(self, ig, 1, expected_start_train, expected_end_inf)
         test_routine_inf(self, ig, ocl, expected_start_inf, expected_end_inf)
-        test_routine_train_inf(self, ig, 1, expected_start_train, expected_end_inf)
+        test_routine_train_inf(self, ig, ocl, expected_start_train, expected_end_inf)
         # check inference for n > ocl
         test_routine_inf(self, ig, ocl + 1, expected_start_inf, "2003-07-01")
         test_routine_train_inf(self, ig, ocl + 1, expected_start_train, "2003-07-01")
