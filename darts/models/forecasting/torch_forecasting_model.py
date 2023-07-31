@@ -29,7 +29,6 @@ from glob import glob
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
-import pandas as pd
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning import loggers as pl_loggers
@@ -592,22 +591,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         pass
 
-    def _verify_static_covariates(self, static_covariates: Optional[pd.DataFrame]):
-        """
-        Verify that all static covariates are numeric.
-        """
-        if static_covariates is not None and self.uses_static_covariates:
-            numeric_mask = static_covariates.columns.isin(
-                static_covariates.select_dtypes(include=np.number)
-            )
-            raise_if(
-                sum(~numeric_mask),
-                "TorchForecastingModels can only interpret numeric static covariate data. Consider "
-                "encoding/transforming categorical static covariates with "
-                "`darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer`.",
-                logger,
-            )
-
     @random_method
     def fit(
         self,
@@ -685,7 +668,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self
             Fitted model.
         """
-        params = self._setup_for_fit_from_dataset(
+        (
+            series,
+            past_covariates,
+            future_covariates,
+        ), params = self._setup_for_fit_from_dataset(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
@@ -720,12 +707,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         max_samples_per_ts: Optional[int] = None,
         num_loader_workers: int = 0,
     ) -> Tuple[
-        TrainingDataset,
-        Optional[TrainingDataset],
-        Optional[pl.Trainer],
-        Optional[bool],
-        int,
-        int,
+        Tuple[
+            Sequence[TimeSeries],
+            Optional[Sequence[TimeSeries]],
+            Optional[Sequence[TimeSeries]],
+        ],
+        Tuple[
+            TrainingDataset,
+            Optional[TrainingDataset],
+            Optional[pl.Trainer],
+            Optional[bool],
+            int,
+            int,
+        ],
     ]:
         """This method acts on `TimeSeries` inputs. It performs sanity checks, and sets up / returns the datasets and
         additional inputs required for training the model with `fit_from_dataset()`.
@@ -836,7 +830,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             ),
         )
         logger.info(f"Train dataset contains {len(train_dataset)} samples.")
-        return (
+        series_input = (series, past_covariates, future_covariates)
+        fit_from_ds_params = (
             train_dataset,
             val_dataset,
             trainer,
@@ -844,6 +839,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             epochs,
             num_loader_workers,
         )
+        return series_input, fit_from_ds_params
 
     @random_method
     def fit_from_dataset(
@@ -1158,22 +1154,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         lr_finder
             `_LRFinder` object of Lightning containing the results of the LR sweep.
         """
-
-        trainer, model, train_loader, val_loader = self._setup_for_train(
-            *self._setup_for_fit_from_dataset(
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                val_series=val_series,
-                val_past_covariates=val_past_covariates,
-                val_future_covariates=val_future_covariates,
-                trainer=trainer,
-                verbose=verbose,
-                epochs=epochs,
-                max_samples_per_ts=max_samples_per_ts,
-                num_loader_workers=num_loader_workers,
-            )
+        _, params = self._setup_for_fit_from_dataset(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            val_series=val_series,
+            val_past_covariates=val_past_covariates,
+            val_future_covariates=val_future_covariates,
+            trainer=trainer,
+            verbose=verbose,
+            epochs=epochs,
+            max_samples_per_ts=max_samples_per_ts,
+            num_loader_workers=num_loader_workers,
         )
+        trainer, model, train_loader, val_loader = self._setup_for_train(*params)
         return Tuner(trainer).lr_find(
             model,
             train_dataloaders=train_loader,
@@ -1280,25 +1274,33 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             if ``series`` is not specified and the model has been trained on a single series.
         """
         if series is None:
-            raise_if(
-                self.training_series is None,
-                "Input `series` must be provided. This is the result either from fitting on multiple series, "
-                "or from not having fit the model yet.",
-            )
+            if self.training_series is None:
+                raise_log(
+                    ValueError(
+                        "Input `series` must be provided. This is the result either from fitting on multiple series, "
+                        "or from not having fit the model yet."
+                    ),
+                    logger,
+                )
             series = self.training_series
 
         called_with_single_series = True if isinstance(series, TimeSeries) else False
 
         # guarantee that all inputs are either list of TimeSeries or None
         series = series2seq(series)
+
+        if past_covariates is None and self.past_covariate_series is not None:
+            past_covariates = [self.past_covariate_series] * len(series)
+        if future_covariates is None and self.future_covariate_series is not None:
+            future_covariates = [self.future_covariate_series] * len(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
         self._verify_static_covariates(series[0].static_covariates)
 
         # encoders are set when calling fit(), but not when calling fit_from_dataset()
-        # additionally, do not generate encodings when covariates were loaded as they already
-        # contain the encodings
+        # when covariates are loaded from model, they already contain the encodings: this is not a problem as the
+        # encoders regenerate the encodings
         if self.encoders is not None and self.encoders.encoding_available:
             past_covariates, future_covariates = self.generate_predict_encodings(
                 n=n,
@@ -1306,12 +1308,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
             )
-
-        if past_covariates is None and self.past_covariate_series is not None:
-            past_covariates = series2seq(self.past_covariate_series)
-        if future_covariates is None and self.future_covariate_series is not None:
-            future_covariates = series2seq(self.future_covariate_series)
-
         super().predict(
             n,
             series,
