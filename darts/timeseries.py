@@ -42,6 +42,7 @@ from copy import deepcopy
 from inspect import signature
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
+import matplotlib.axes
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -3696,9 +3697,10 @@ class TimeSeries:
         default_formatting: bool = True,
         label: Optional[Union[str, Sequence[str]]] = "",
         max_nr_components: int = 10,
+        ax: Optional[matplotlib.axes.Axes] = None,
         *args,
         **kwargs,
-    ):
+    ) -> matplotlib.axes.Axes:
         """Plot the series.
 
         This is a wrapper method around :func:`xarray.DataArray.plot()`.
@@ -3706,7 +3708,7 @@ class TimeSeries:
         Parameters
         ----------
         new_plot
-            whether to spawn a new Figure
+            Whether to spawn a new axis to plot on. See also parameter `ax`.
         central_quantile
             The quantile (between 0 and 1) to plot as a "central" value, if the series is stochastic (i.e., if
             it has multiple samples). This will be applied on each component separately (i.e., to display quantiles
@@ -3729,10 +3731,18 @@ class TimeSeries:
             the series, the labels will be mapped to the components in order.
         max_nr_components
             The maximum number of components of a series to plot. -1 means all components will be plotted.
+        ax
+            Optionally, an axis to plot on. If `None`, and `new_plot=False`, will use the current axis. If
+            `new_plot=True`, will create a new axis.
         args
             some positional arguments for the `plot()` method
         kwargs
             some keyword arguments for the `plot()` method
+
+        Returns
+        -------
+        matplotlib.axes.Axes
+            Either the passed `ax` axis, a newly created one if `new_plot=True`, or the existing one.
         """
         alpha_confidence_intvls = 0.25
 
@@ -3750,12 +3760,11 @@ class TimeSeries:
                 logger,
             )
 
-        fig = (
-            plt.figure()
-            if new_plot
-            else (kwargs["figure"] if "figure" in kwargs else plt.gcf())
-        )
-        kwargs["figure"] = fig
+        if new_plot:
+            fig, ax = plt.subplots()
+        else:
+            if ax is None:
+                ax = plt.gca()
 
         if not any(lw in kwargs for lw in ["lw", "linewidth"]):
             kwargs["lw"] = 2
@@ -3788,10 +3797,6 @@ class TimeSeries:
 
         for i, c in enumerate(self._xa.component[:n_components_to_plot]):
             comp_name = str(c.values)
-
-            if i > 0:
-                kwargs["figure"] = plt.gcf()
-
             comp = self._xa.sel(component=c)
 
             if comp.sample.size > 1:
@@ -3818,18 +3823,18 @@ class TimeSeries:
             kwargs["label"] = label_to_use
 
             if central_series.shape[0] > 1:
-                p = central_series.plot(*args, **kwargs)
+                p = central_series.plot(*args, ax=ax, **kwargs)
             # empty TimeSeries
             elif central_series.shape[0] == 0:
-                p = plt.plot(
+                p = ax.plot(
                     [],
                     [],
                     *args,
                     **kwargs,
                 )
-                plt.xlabel(self.time_index.name)
+                ax.set_xlabel(self.time_index.name)
             else:
-                p = plt.plot(
+                p = ax.plot(
                     [self.start_time()],
                     central_series.values[0],
                     "o",
@@ -3848,7 +3853,7 @@ class TimeSeries:
                 low_series = comp.quantile(q=low_quantile, dim=DIMS[2])
                 high_series = comp.quantile(q=high_quantile, dim=DIMS[2])
                 if low_series.shape[0] > 1:
-                    plt.fill_between(
+                    ax.fill_between(
                         self.time_index,
                         low_series,
                         high_series,
@@ -3860,7 +3865,7 @@ class TimeSeries:
                         ),
                     )
                 else:
-                    plt.plot(
+                    ax.plot(
                         [self.start_time(), self.start_time()],
                         [low_series.values[0], high_series.values[0]],
                         "-+",
@@ -3868,8 +3873,9 @@ class TimeSeries:
                         lw=2,
                     )
 
-        plt.legend()
-        plt.title(self._xa.name)
+        ax.legend()
+        ax.set_title(self._xa.name)
+        return ax
 
     def with_columns_renamed(
         self, col_names: Union[List[str], str], col_names_new: Union[List[str], str]
