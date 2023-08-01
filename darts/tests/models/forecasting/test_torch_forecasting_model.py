@@ -14,6 +14,7 @@ from darts.dataprocessing.transformers import BoxCox, Scaler
 from darts.logging import get_logger
 from darts.metrics import mape
 from darts.tests.base_test_class import DartsBaseTestClass
+from darts.utils.timeseries_generation import linear_timeseries
 
 logger = get_logger(__name__)
 
@@ -860,33 +861,15 @@ if TORCH_AVAILABLE:
             pretrain_model_name = "pre-train"
             retrained_model_name = "re-train"
 
-            def create_RNNModel(model_name: str):
-                return RNNModel(
-                    input_chunk_length=4,
-                    hidden_dim=3,
-                    add_encoders={
-                        "cyclic": {"past": ["month"]},
-                        "datetime_attribute": {
-                            "past": ["hour"],
-                        },
-                        "transformer": Scaler(),
-                    },
-                    n_epochs=2,
-                    model_name=model_name,
-                    work_dir=self.temp_work_dir,
-                    force_reset=True,
-                    save_checkpoints=True,
-                )
-
             # pretraining
-            model = create_RNNModel(pretrain_model_name)
+            model = self.helper_create_RNNModel(pretrain_model_name)
             model.fit(
                 ts_training,
                 val_series=ts_val,
             )
 
             # finetuning
-            model = create_RNNModel(retrained_model_name)
+            model = self.helper_create_RNNModel(retrained_model_name)
             model.load_weights_from_checkpoint(
                 model_name=pretrain_model_name,
                 work_dir=self.temp_work_dir,
@@ -1151,6 +1134,52 @@ if TORCH_AVAILABLE:
                 )
             assert scores["worst"] > scores["suggested"]
 
+        def test_encoders(self):
+            series = linear_timeseries(length=10)
+            pc = linear_timeseries(length=12)
+            fc = linear_timeseries(length=13)
+            # 1 == output_chunk_length, 3 > output_chunk_length
+            ns = [1, 3]
+
+            model = self.helper_create_DLinearModel()
+            model.fit(series)
+            for n in ns:
+                _ = model.predict(n=n)
+                with pytest.raises(ValueError):
+                    _ = model.predict(n=n, past_covariates=pc)
+                with pytest.raises(ValueError):
+                    _ = model.predict(n=n, future_covariates=fc)
+                with pytest.raises(ValueError):
+                    _ = model.predict(n=n, past_covariates=pc, future_covariates=fc)
+
+            model = self.helper_create_DLinearModel()
+            for n in ns:
+                model.fit(series, past_covariates=pc)
+                _ = model.predict(n=n)
+                _ = model.predict(n=n, past_covariates=pc)
+                with pytest.raises(ValueError):
+                    _ = model.predict(n=n, future_covariates=fc)
+                with pytest.raises(ValueError):
+                    _ = model.predict(n=n, past_covariates=pc, future_covariates=fc)
+
+            model = self.helper_create_DLinearModel()
+            for n in ns:
+                model.fit(series, future_covariates=fc)
+                _ = model.predict(n=n)
+                with pytest.raises(ValueError):
+                    _ = model.predict(n=n, past_covariates=pc)
+                _ = model.predict(n=n, future_covariates=fc)
+                with pytest.raises(ValueError):
+                    _ = model.predict(n=n, past_covariates=pc, future_covariates=fc)
+
+            model = self.helper_create_DLinearModel()
+            for n in ns:
+                model.fit(series, past_covariates=pc, future_covariates=fc)
+                _ = model.predict(n=n)
+                _ = model.predict(n=n, past_covariates=pc)
+                _ = model.predict(n=n, future_covariates=fc)
+                _ = model.predict(n=n, past_covariates=pc, future_covariates=fc)
+
         def helper_equality_encoders(
             self, first_encoders: Dict[str, Any], second_encoders: Dict[str, Any]
         ):
@@ -1173,4 +1202,32 @@ if TORCH_AVAILABLE:
             self.assertEqual(
                 type(first_encoders.get("transformer", None)),
                 type(second_encoders.get("transformer", None)),
+            )
+
+        def helper_create_RNNModel(self, model_name: str):
+            return RNNModel(
+                input_chunk_length=4,
+                hidden_dim=3,
+                add_encoders={
+                    "cyclic": {"past": ["month"]},
+                    "datetime_attribute": {
+                        "past": ["hour"],
+                    },
+                    "transformer": Scaler(),
+                },
+                n_epochs=2,
+                model_name=model_name,
+                work_dir=self.temp_work_dir,
+                force_reset=True,
+                save_checkpoints=True,
+            )
+
+        def helper_create_DLinearModel(self):
+            return DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                add_encoders={
+                    "datetime_attribute": {"past": ["hour"], "future": ["month"]}
+                },
+                n_epochs=1,
             )

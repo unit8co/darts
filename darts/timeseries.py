@@ -1267,52 +1267,55 @@ class TimeSeries:
         )
 
     @property
-    def n_samples(self):
+    def n_samples(self) -> int:
         """Number of samples contained in the series."""
         return len(self._xa.sample)
 
     @property
-    def n_components(self):
+    def n_components(self) -> int:
         """Number of components (dimensions) contained in the series."""
         return len(self._xa.component)
 
     @property
-    def width(self):
+    def width(self) -> int:
         """ "Width" (= number of components) of the series."""
         return self.n_components
 
     @property
-    def n_timesteps(self):
+    def n_timesteps(self) -> int:
         """Number of time steps in the series."""
         return len(self._time_index)
 
     @property
-    def is_deterministic(self):
+    def is_deterministic(self) -> bool:
         """Whether this series is deterministic."""
         return self.n_samples == 1
 
     @property
-    def is_stochastic(self):
+    def is_stochastic(self) -> bool:
         """Whether this series is stochastic."""
         return not self.is_deterministic
 
     @property
-    def is_probabilistic(self):
+    def is_probabilistic(self) -> bool:
         """Whether this series is stochastic (= probabilistic)."""
         return self.is_stochastic
 
     @property
-    def is_univariate(self):
+    def is_univariate(self) -> bool:
         """Whether this series is univariate."""
         return self.n_components == 1
 
     @property
-    def freq(self):
-        """The frequency of the series."""
+    def freq(self) -> Union[pd.DateOffset, int]:
+        """The frequency of the series.
+        A `pd.DateOffset` if series is indexed with a `pd.DatetimeIndex`.
+        An integer (step size) if series is indexed with a `pd.RangeIndex`.
+        """
         return self._freq
 
     @property
-    def freq_str(self):
+    def freq_str(self) -> str:
         """The frequency string representation of the series."""
         return self._freq_str
 
@@ -1322,12 +1325,12 @@ class TimeSeries:
         return self._xa.values.dtype
 
     @property
-    def components(self):
+    def components(self) -> pd.Index:
         """The names of the components, as a Pandas Index."""
         return self._xa.get_index(DIMS[1]).copy()
 
     @property
-    def columns(self):
+    def columns(self) -> pd.Index:
         """The names of the components, as a Pandas Index."""
         return self.components
 
@@ -1419,10 +1422,10 @@ class TimeSeries:
             logger,
         )
 
-    def _get_first_timestamp_after(self, ts: pd.Timestamp) -> pd.Timestamp:
+    def _get_first_timestamp_after(self, ts: pd.Timestamp) -> Union[pd.Timestamp, int]:
         return next(filter(lambda t: t >= ts, self._time_index))
 
-    def _get_last_timestamp_before(self, ts: pd.Timestamp) -> pd.Timestamp:
+    def _get_last_timestamp_before(self, ts: pd.Timestamp) -> Union[pd.Timestamp, int]:
         return next(filter(lambda t: t <= ts, self._time_index[::-1]))
 
     """
@@ -2126,7 +2129,7 @@ class TimeSeries:
 
     def get_timestamp_at_point(
         self, point: Union[pd.Timestamp, float, int]
-    ) -> pd.Timestamp:
+    ) -> Union[pd.Timestamp, int]:
         """
         Converts a point into a pandas.Timestamp (if Datetime-indexed) or into an integer (if Int64-indexed).
 
@@ -3693,7 +3696,8 @@ class TimeSeries:
         high_quantile: Optional[float] = 0.95,
         default_formatting: bool = True,
         label: Optional[Union[str, Sequence[str]]] = "",
-        ax=None,
+        max_nr_components: int = 10,
+        ax: Optional[matplotlib.axes.Axes] = None,
         *args,
         **kwargs,
     ) -> matplotlib.axes.Axes:
@@ -3725,8 +3729,10 @@ class TimeSeries:
             used as the label for that component. If a string and the series has multiple components, it is used as
             a prefix for each component name. If a list of strings with length equal to the number of components in
             the series, the labels will be mapped to the components in order.
+        max_nr_components
+            The maximum number of components of a series to plot. -1 means all components will be plotted.
         ax
-            Optionally, an axis to plot on. If `None`, and `new_plot=False`, we use the current axis. If
+            Optionally, an axis to plot on. If `None`, and `new_plot=False`, will use the current axis. If
             `new_plot=True`, will create a new axis.
         args
             some positional arguments for the `plot()` method
@@ -3763,26 +3769,33 @@ class TimeSeries:
         if not any(lw in kwargs for lw in ["lw", "linewidth"]):
             kwargs["lw"] = 2
 
-        if self.n_components > 10:
+        n_components_to_plot = max_nr_components
+        if n_components_to_plot == -1:
+            n_components_to_plot = self.n_components
+        elif self.n_components > max_nr_components:
             logger.warning(
-                "Number of components is larger than 10 ({}). Plotting only the first 10 components.".format(
-                    self.n_components
-                )
+                f"Number of components is larger than {max_nr_components} ({self.n_components}). "
+                f"Plotting only the first {max_nr_components} components."
+                f"You can overwrite this in the using the `plot_all_components` argument in plot()"
+                f"Beware that plotting a large number of components may cause performance issues."
             )
 
         if not isinstance(label, str) and isinstance(label, Sequence):
             raise_if_not(
                 len(label) == self.n_components
-                or (self.n_components > 10 and len(label) >= 10),
+                or (
+                    self.n_components > n_components_to_plot
+                    and len(label) >= n_components_to_plot
+                ),
                 "The label argument should have the same length as the number of plotted components "
-                f"({min(self.n_components, 10)}), only {len(label)} labels were provided",
+                f"({min(self.n_components, n_components_to_plot)}), only {len(label)} labels were provided",
                 logger,
             )
             custom_labels = True
         else:
             custom_labels = False
 
-        for i, c in enumerate(self._xa.component[:10]):
+        for i, c in enumerate(self._xa.component[:n_components_to_plot]):
             comp_name = str(c.values)
             comp = self._xa.sel(component=c)
 
