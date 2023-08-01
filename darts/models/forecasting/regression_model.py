@@ -27,9 +27,10 @@ When static covariates are present, they are appended to the lagged features. Wh
 if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.
 """
 from collections import OrderedDict
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
+import pandas as pd
 from sklearn.linear_model import LinearRegression
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
@@ -39,6 +40,10 @@ from darts.utils.data.tabularization import (
     add_static_covariates_to_lagged_data,
     create_lagged_component_names,
     create_lagged_training_data,
+)
+from darts.utils.historical_forecasts import (
+    _optimized_historical_forecasts_regression_all_points,
+    _optimized_historical_forecasts_regression_last_points_only,
 )
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import (
@@ -859,6 +864,121 @@ class RegressionModel(GlobalForecastingModel):
     @property
     def supports_static_covariates(self) -> bool:
         return True
+
+    @property
+    def supports_optimized_historical_forecasts(self) -> bool:
+        return True
+
+    def _check_optimizable_historical_forecasts(
+        self,
+        forecast_horizon: int,
+        retrain: Union[bool, int, Callable[..., bool]],
+        show_warnings=bool,
+    ) -> bool:
+        """
+        Historical forecast can be optimized only if `retrain=False` and `forecast_horizon <= self.output_chunk_length`
+        (no auto-regression required).
+        """
+
+        supported_retrain = (retrain is False) or (retrain == 0)
+        supported_forecast_horizon = forecast_horizon <= self.output_chunk_length
+        if supported_retrain and supported_forecast_horizon:
+            return True
+
+        if show_warnings:
+            if not supported_retrain:
+                logger.warning(
+                    "`enable_optimization=True` is ignored because `retrain` is not `False`"
+                    "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
+                )
+            if not supported_forecast_horizon:
+                logger.warning(
+                    "`enable_optimization=True` is ignored because "
+                    "`forecast_horizon > self.output_chunk_length`."
+                    "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
+                )
+
+        return False
+
+    def _optimized_historical_forecasts(
+        self,
+        series: Optional[Sequence[TimeSeries]],
+        past_covariates: Optional[Sequence[TimeSeries]] = None,
+        future_covariates: Optional[Sequence[TimeSeries]] = None,
+        num_samples: int = 1,
+        start: Optional[Union[pd.Timestamp, float, int]] = None,
+        forecast_horizon: int = 1,
+        stride: int = 1,
+        overlap_end: bool = False,
+        last_points_only: bool = True,
+        verbose: bool = False,
+        show_warnings: bool = True,
+        predict_likelihood_parameters: bool = False,
+    ) -> Union[
+        TimeSeries, List[TimeSeries], Sequence[TimeSeries], Sequence[List[TimeSeries]]
+    ]:
+        """
+        TODO: support forecast_horizon > output_chunk_length (auto-regression)
+        """
+        if not self._fit_called:
+            raise_log(
+                ValueError("Model has not been fit yet."),
+                logger,
+            )
+        if forecast_horizon > self.output_chunk_length:
+            raise_log(
+                ValueError(
+                    "`forecast_horizon > model.output_chunk_length` requires auto-regression which is not "
+                    "supported in this optimized routine."
+                ),
+                logger,
+            )
+
+        # manage covariates, usually handled by RegressionModel.predict()
+        if past_covariates is None and self.past_covariate_series is not None:
+            past_covariates = [self.past_covariate_series] * len(series)
+        if future_covariates is None and self.future_covariate_series is not None:
+            future_covariates = [self.future_covariate_series] * len(series)
+
+        self._verify_static_covariates(series[0].static_covariates)
+
+        if self.encoders.encoding_available:
+            past_covariates, future_covariates = self.generate_fit_predict_encodings(
+                n=forecast_horizon,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+            )
+
+        # TODO: move the loop here instead of duplicated code in each sub-routine?
+        if last_points_only:
+            return _optimized_historical_forecasts_regression_last_points_only(
+                model=self,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                num_samples=num_samples,
+                start=start,
+                forecast_horizon=forecast_horizon,
+                stride=stride,
+                overlap_end=overlap_end,
+                show_warnings=show_warnings,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+            )
+        else:
+            return _optimized_historical_forecasts_regression_all_points(
+                model=self,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                num_samples=num_samples,
+                start=start,
+                forecast_horizon=forecast_horizon,
+                stride=stride,
+                overlap_end=overlap_end,
+                show_warnings=show_warnings,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+            )
 
 
 class _LikelihoodMixin:
