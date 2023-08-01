@@ -1,5 +1,4 @@
 import unittest
-from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -1404,9 +1403,7 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
         """standard checks that historical forecasts work with direct likelihood parameter predictions
         with regression and torch models."""
 
-        def create_model(
-            ocl, use_ll=True, model_type="regression"
-        ) -> Union[LinearRegressionModel, NLinearModel]:
+        def create_model(ocl, use_ll=True, model_type="regression"):
             if model_type == "regression":
                 return LinearRegressionModel(
                     lags=3,
