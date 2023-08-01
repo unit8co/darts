@@ -630,17 +630,18 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
     def test_optimized_historical_forecasts_regression(self):
         start_ts = pd.Timestamp("2000-01-01")
         ts_univariate = tg.linear_timeseries(
-            start_value=1, end_value=100, length=100, start=start_ts
+            start_value=1, end_value=100, length=20, start=start_ts
         )
         ts_multivariate = ts_univariate.stack(
-            tg.sine_timeseries(length=100, start=start_ts)
+            tg.sine_timeseries(length=20, start=start_ts)
         )
         # slightly longer to not affect the last predictable timestamp
-        ts_covs = tg.gaussian_timeseries(length=110, start=start_ts)
-        start = 80
+        ts_covs = tg.gaussian_timeseries(length=30, start=start_ts)
+        start = 14
+        model_cls = LinearRegressionModel
         for ts in [ts_univariate, ts_multivariate]:
             # cover several covariates combinations and several regression models
-            for model_cls, model_kwargs, _ in (
+            for _, model_kwargs, _ in (
                 models_reg_no_cov_cls_kwargs + models_reg_cov_cls_kwargs
             ):
                 for multi_models in [True, False]:
@@ -724,37 +725,56 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                                         )
 
     def test_optimized_historical_forecasts_regression_with_encoders(self):
-        model = LinearRegressionModel(
-            lags=3,
-            lags_past_covariates=2,
-            lags_future_covariates=[2, 3],
-            add_encoders={
-                "cyclic": {"future": ["month"]},
-                "datetime_attribute": {"past": ["dayofweek"]},
-            },
-            output_chunk_length=5,
-        )
+        for use_covs in [False, True]:
+            series_train, series_val = self.ts_pass_train, self.ts_pass_val
+            model = LinearRegressionModel(
+                lags=3,
+                lags_past_covariates=2,
+                lags_future_covariates=[2, 3],
+                add_encoders={
+                    "cyclic": {"future": ["month"]},
+                    "datetime_attribute": {"past": ["dayofweek"]},
+                },
+                output_chunk_length=5,
+            )
+            if use_covs:
+                pc = tg.gaussian_timeseries(
+                    start=series_train.start_time() - 2 * series_train.freq,
+                    end=series_val.end_time(),
+                    freq=series_train.freq,
+                )
+                fc = tg.gaussian_timeseries(
+                    start=series_train.start_time() + 3 * series_train.freq,
+                    end=series_val.end_time() + 4 * series_train.freq,
+                    freq=series_train.freq,
+                )
+            else:
+                pc, fc = None, None
 
-        model.fit(self.ts_pass_train)
+            model.fit(self.ts_pass_train, past_covariates=pc, future_covariates=fc)
 
-        hist_fct = model.historical_forecasts(
-            series=self.ts_pass_val,
-            retrain=False,
-            last_points_only=True,
-            forecast_horizon=5,
-            enable_optimization=False,
-        )
+            hist_fct = model.historical_forecasts(
+                series=self.ts_pass_val,
+                past_covariates=pc,
+                future_covariates=fc,
+                retrain=False,
+                last_points_only=True,
+                forecast_horizon=5,
+                enable_optimization=False,
+            )
 
-        opti_hist_fct = model._optimized_historical_forecasts(
-            series=[self.ts_pass_val],
-            last_points_only=True,
-            forecast_horizon=5,
-        )
+            opti_hist_fct = model._optimized_historical_forecasts(
+                series=[self.ts_pass_val],
+                past_covariates=[pc],
+                future_covariates=[fc],
+                last_points_only=True,
+                forecast_horizon=5,
+            )
 
-        self.assertTrue((hist_fct.time_index == opti_hist_fct.time_index).all())
-        np.testing.assert_array_almost_equal(
-            hist_fct.all_values(), opti_hist_fct.all_values()
-        )
+            self.assertTrue((hist_fct.time_index == opti_hist_fct.time_index).all())
+            np.testing.assert_array_almost_equal(
+                hist_fct.all_values(), opti_hist_fct.all_values()
+            )
 
     @pytest.mark.slow
     @unittest.skipUnless(

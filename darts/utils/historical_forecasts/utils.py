@@ -521,7 +521,7 @@ def _reconciliate_historical_time_indices(
                 logger.warning(
                     f"`train_length` is larger than the length of series at index: {series_idx}. "
                     f"Ignoring `train_length` and using default behavior where all available time steps up "
-                    f"until the end of the expanding training set."
+                    f"until the end of the expanding training set. "
                     f"To hide these warnings, set `show_warnings=False`."
                 )
 
