@@ -3,13 +3,13 @@ Time Axes Encoders
 ------------------
 
 Encoders can generate past and/or future covariates series by encoding the index of a TimeSeries `series`.
-Each encoder class has an `encode_train()` and `encode_inference()` to generate the encodings for training and
-inference.
+Each encoder class has methods `encode_train()`, `encode_inference()`, and `encode_train_inference()` to generate the
+encodings for training and inference.
 
 The encoders extract the index either from the target series or optional additional past/future covariates.
-If additional covariates are supplied to `encode_train()` or `encode_inference()`, the time index of those
-covariates are used for the encodings. This means that the input covariates must meet the same model-specific
-requirements as without encoders.
+If additional covariates are supplied to `encode_train()`, `encode_inference()`, or `encode_train_inference()`,
+the time index of those covariates are used for the encodings. This means that the input covariates must meet the same
+model-specific requirements as without encoders.
 
 There are two main types of encoder classes: `SingleEncoder` and `SequentialEncoder`.
 
@@ -24,26 +24,39 @@ There are two main types of encoder classes: `SingleEncoder` and `SequentialEnco
         .. highlight:: python
         .. code-block:: python
 
-            encoder = PastDatetimeAttributeEncoder(input_chunk_length=24,
-                                                   output_chunk_length=12,
-                                                   attribute='month')
+            encoder = PastDatetimeAttributeEncoder(
+                input_chunk_length=24,
+                output_chunk_length=12,
+                attribute='month'
+            )
 
-            past_covariates_train = encoder.encode_train(target=target,
-                                                         covariates=optional_past_covariates)
-            past_covariates_inf = encoder.encode_inference(n=12,
-                                                           target=target,
-                                                           covariates=optional_past_covariates)
+            past_covariates_train = encoder.encode_train(
+                target=target,
+                covariates=optional_past_covariates
+            )
+            past_covariates_inf = encoder.encode_inference(
+                n=12,
+                target=target,
+                covariates=optional_past_covariates
+            )
+            # or generate encodings for train and inference together
+            past_covariates_train_inf = encoder.encode_train_inference(
+                n=12,
+                target=target,
+                covariates=optional_past_covariates
+            )
 
 *   SequentialEncoder
         Stores and controls multiple SingleEncoders for both past and/or future covariates all under one hood.
-        It provides the same functionality as SingleEncoders (`encode_train()` and `encode_inference()`).
-        It can be used both as stand-alone or as an all-in-one solution with Darts' `TorchForecastingModel` models
-        through optional parameter `add_encoders`:
+        It provides the same functionality as SingleEncoders (`encode_train()`, `encode_inference()`, and
+        `encode_train_inference()`).
+        It can be used both as stand-alone or as an all-in-one solution with Darts' forecasting models that support
+        covariates through optional parameter `add_encoders`:
 
         .. highlight:: python
         .. code-block:: python
 
-            model = SomeTorchForecastingModel(..., add_encoders={...})
+            model = SomeForecastingModel(..., add_encoders={...})
         ..
 
         If used at model creation, the SequentialEncoder will handle all past and future encoders autonomously.
@@ -97,7 +110,7 @@ The SequentialEncoder combines the logic of all SingleEncoders from above and ha
 *   generate multiple attribute encodings at once
 *   generate both past and future at once
 *   supports transformers (Scaler)
-*   easy to use with TorchForecastingModels
+*   easy to use with any forecasting model that supports covariates.
 
 The model parameter `add_encoders` must be a Dict following of this convention:
 
@@ -151,6 +164,7 @@ from darts.dataprocessing.encoders.encoder_base import (
     SequentialEncoderTransformer,
     SingleEncoder,
     SupportedIndex,
+    _EncoderMethod,
 )
 from darts.dataprocessing.transformers import FittableDataTransformer
 from darts.logging import get_logger, raise_if, raise_if_not
@@ -226,6 +240,10 @@ class CyclicTemporalEncoder(SingleEncoder):
     @property
     def base_component_name(self) -> str:
         return super().base_component_name + "_cyc_"
+
+    @property
+    def encoding_n_components(self) -> int:
+        return 2
 
 
 class PastCyclicEncoder(CyclicTemporalEncoder):
@@ -331,7 +349,7 @@ class DatetimeAttributeEncoder(SingleEncoder):
             An instance of `CovariatesIndexGenerator` with methods `generate_train_idx()` and
             `generate_inference_idx()`. Used to generate the index for encoders.
         attribute
-            The attribute of the underlying pd.DatetimeIndex from  for which to add scalar information.
+            The attribute of the underlying pd.DatetimeIndex for which to add scalar information.
             Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
             "weekday", "day", "hour", "minute", "second". See all available attributes in
             https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
@@ -344,7 +362,7 @@ class DatetimeAttributeEncoder(SingleEncoder):
     def _encode(
         self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype
     ) -> TimeSeries:
-        """Applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`."""
+        """Encode `index` as a scalar."""
         super()._encode(index, target_end, dtype)
         return datetime_attribute_timeseries(
             index,
@@ -366,6 +384,10 @@ class DatetimeAttributeEncoder(SingleEncoder):
     def base_component_name(self) -> str:
         return super().base_component_name + "_dta_"
 
+    @property
+    def encoding_n_components(self) -> int:
+        return 1
+
 
 class PastDatetimeAttributeEncoder(DatetimeAttributeEncoder):
     """Datetime attribute encoder for past covariates."""
@@ -381,7 +403,7 @@ class PastDatetimeAttributeEncoder(DatetimeAttributeEncoder):
         Parameters
         ----------
         attribute
-            The attribute of the underlying pd.DatetimeIndex from  for which to add scalar information.
+            The attribute of the underlying pd.DatetimeIndex for which to add scalar information.
             Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
             "weekday", "day", "hour", "minute", "second". See all available attributes in
             https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
@@ -426,7 +448,7 @@ class FutureDatetimeAttributeEncoder(DatetimeAttributeEncoder):
         Parameters
         ----------
         attribute
-            The attribute of the underlying pd.DatetimeIndex from  for which to add scalar information.
+            The attribute of the underlying pd.DatetimeIndex for which to add scalar information.
             Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
             "weekday", "day", "hour", "minute", "second". See all available attributes in
             https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
@@ -486,7 +508,7 @@ class IntegerIndexEncoder(SingleEncoder):
     def _encode(
         self, index: SupportedIndex, target_end: pd.Timestamp, dtype: np.dtype
     ) -> TimeSeries:
-        """Applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`.
+        """Adds integer index value (position) to the provided `index`.
         For attribute=='relative', the reference point/index is the prediction/forecast index of the target series.
         """
         super()._encode(index, target_end, dtype)
@@ -528,6 +550,10 @@ class IntegerIndexEncoder(SingleEncoder):
     @property
     def base_component_name(self) -> str:
         return super().base_component_name + "_pos_"
+
+    @property
+    def encoding_n_components(self) -> int:
+        return 1
 
 
 class PastIntegerIndexEncoder(IntegerIndexEncoder):
@@ -671,6 +697,10 @@ class CallableIndexEncoder(SingleEncoder):
     def base_component_name(self) -> str:
         return super().base_component_name + "_cus_"
 
+    @property
+    def encoding_n_components(self) -> int:
+        return 1
+
 
 class PastCallableIndexEncoder(CallableIndexEncoder):
     """`IntegerIndexEncoder`: Adds integer index value (position) for past covariates derived from the underlying
@@ -766,7 +796,8 @@ class FutureCallableIndexEncoder(CallableIndexEncoder):
 
 class SequentialEncoder(Encoder):
     """A `SequentialEncoder` object can store and control multiple past and future covariates encoders at once.
-    It provides the same functionality as single encoders (`encode_train()` and `encode_inference()`).
+    It provides the same functionality as single encoders (`encode_train()`, `encode_inference()`,
+    `encode_train_inference()`).
     """
 
     def __init__(
@@ -901,15 +932,15 @@ class SequentialEncoder(Encoder):
         Parameters
         ----------
         target
-            The target TimeSeries used during training or passed to prediction as `series`
+            The target TimeSeries used during training or passed to prediction as `series`.
         past_covariates
             Optionally, the past covariates used for training.
         future_covariates
             Optionally, the future covariates used for training.
         encode_past
-            Whether to apply encoders for past covariates
+            Whether to apply encoders for past covariates.
         encode_future
-            Whether to apply encoders for future covariates
+            Whether to apply encoders for future covariates.
         Returns
         -------
         Tuple[past_covariates, future_covariates]
@@ -939,6 +970,7 @@ class SequentialEncoder(Encoder):
             target=target,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
+            encoder_method=_EncoderMethod("train"),
             n=None,
             encode_past=encode_past,
             encode_future=encode_future,
@@ -965,15 +997,15 @@ class SequentialEncoder(Encoder):
         n
             The forecast horizon
         target
-            The target TimeSeries used during training or passed to prediction as `series`
+            The target TimeSeries used during training or passed to prediction as `series`.
         past_covariates
             Optionally, the past covariates used for training.
         future_covariates
             Optionally, the future covariates used for training.
         encode_past
-            Whether to apply encoders for past covariates
+            Whether to apply encoders for past covariates.
         encode_future
-            Whether to apply encoders for future covariates
+            Whether to apply encoders for future covariates.
 
         Returns
         -------
@@ -992,24 +1024,82 @@ class SequentialEncoder(Encoder):
             target=target,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
+            encoder_method=_EncoderMethod("inference"),
             n=n,
             encode_past=encode_past,
             encode_future=encode_future,
         )
+
+    def encode_train_inference(
+        self,
+        n: int,
+        target: SupportedTimeSeries,
+        past_covariates: Optional[SupportedTimeSeries] = None,
+        future_covariates: Optional[SupportedTimeSeries] = None,
+        encode_past: bool = True,
+        encode_future: bool = True,
+    ) -> Tuple[
+        Union[TimeSeries, Sequence[TimeSeries]], Union[TimeSeries, Sequence[TimeSeries]]
+    ]:
+        """Returns encoded index for all past and/or future covariates for training and inference/prediction.
+        Which covariates are generated depends on the parameters used at model creation.
+
+        Parameters
+        ----------
+        n
+            The forecast horizon
+        target
+            The target TimeSeries used for training and prediction.
+        past_covariates
+            Optionally, the past covariates used for training and prediction.
+        future_covariates
+            Optionally, the future covariates used for training and prediction.
+        encode_past
+            Whether to apply encoders for past covariates.
+        encode_future
+            Whether to apply encoders for future covariates.
+
+        Returns
+        -------
+        Tuple[past_covariates, future_covariates]
+            The past_covariates and/or future_covariates for prediction/inference including the encodings.
+            If input {x}_covariates is None and no {x}_encoders are given, will return `None`
+            for the {x}_covariates.
+        """
+        if not self.fit_called:
+            if not isinstance(target, (TimeSeries, list)):
+                logger.warning(
+                    "Fitting was called with `add_encoders` and suspicion of lazy loading. "
+                    "The encodings/covariates are generated pre-train for all individual targets and "
+                    "loaded into memory. Depending on the size of your data, this can create memory issues. "
+                    "In case this applies, consider setting `add_encoders=None` at model creation."
+                )
+
+            self._fit_called = True
+        past_covariates, future_covariates = self._launch_encoder(
+            target=target,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            encoder_method=_EncoderMethod("train_inference"),
+            n=n,
+            encode_past=encode_past,
+            encode_future=encode_future,
+        )
+        self._fit_called = True
+        return past_covariates, future_covariates
 
     def _launch_encoder(
         self,
         target: Sequence[TimeSeries],
         past_covariates: SupportedTimeSeries,
         future_covariates: SupportedTimeSeries,
+        encoder_method: _EncoderMethod,
         n: Optional[int] = None,
         encode_past: bool = True,
         encode_future: bool = True,
     ) -> Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
-        """Launches the encode sequence for past covariates and future covariates for either training or
-        inference/prediction.
-
-        If `n` is not `None` it is a prediction, otherwise it is training.
+        """Launches the encode sequence for past covariates and future covariates for either training,
+        inference/prediction or training and inference/prediction depending on `encoder_method`.
         """
         if not self.encoding_available:
             return past_covariates, future_covariates
@@ -1028,6 +1118,7 @@ class SequentialEncoder(Encoder):
                 target=target,
                 covariates=past_covariates,
                 covariates_type=PAST,
+                encoder_method=encoder_method,
                 n=n,
             )
 
@@ -1039,6 +1130,7 @@ class SequentialEncoder(Encoder):
                 target=target,
                 covariates=future_covariates,
                 covariates_type=FUTURE,
+                encoder_method=encoder_method,
                 n=n,
             )
 
@@ -1055,14 +1147,13 @@ class SequentialEncoder(Encoder):
         target: Sequence[TimeSeries],
         covariates: Optional[SupportedTimeSeries],
         covariates_type: str,
+        encoder_method: _EncoderMethod,
         n: Optional[int] = None,
     ) -> List[TimeSeries]:
-        """Sequentially encodes the index of all input target/covariates TimeSeries
-
-        If `n` is not `None` it is a prediction and method `encoder.encode_inference()` is called.
-        Otherwise, it is a training case and `encoder.encode_train()` is called.
+        """Sequentially encodes the index of all input target/covariates TimeSeries with the corresponding
+        `encoder_method`.
         """
-        encode_method = "encode_train" if n is None else "encode_inference"
+        encode_method = encoder_method.method
 
         encoded_sequence = []
         if covariates is None:
@@ -1135,10 +1226,24 @@ class SequentialEncoder(Encoder):
     @property
     def components(self) -> Tuple[pd.Index, pd.Index]:
         """Returns the covariates component names generated by `SequentialEncoder.past_encoders` and
-        `SequentialEncoder.past_encoders`. A tuple of (past encoded components, future encoded components).
+        `SequentialEncoder.future_encoders`. A tuple of (past encoded components, future encoded components).
         Only available after calling `SequentialEncoder.encode_train()`
         """
         return self.past_components, self.future_components
+
+    @property
+    def encoding_n_components(self) -> Tuple[int, int]:
+        """Returns the number of components generated by `SequentialEncoder.past_encoders` and
+        `SequentialEncoder.future_encoders`.
+        """
+        # by default, _[past/future]_encoders are empty lists
+        past_enc_n_compoments = sum(
+            past_enc.encoding_n_components for past_enc in self.past_encoders
+        )
+        future_enc_n_compoments = sum(
+            future_enc.encoding_n_components for future_enc in self.future_encoders
+        )
+        return past_enc_n_compoments, future_enc_n_compoments
 
     @property
     def past_transformer(self) -> SequentialEncoderTransformer:

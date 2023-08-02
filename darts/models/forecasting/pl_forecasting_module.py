@@ -21,7 +21,7 @@ logger = get_logger(__name__)
 
 # Check whether we are running pytorch-lightning >= 1.6.0 or not:
 tokens = pl.__version__.split(".")
-pl_160_or_above = int(tokens[0]) >= 1 and int(tokens[1]) >= 6
+pl_160_or_above = int(tokens[0]) > 1 or int(tokens[0]) == 1 and int(tokens[1]) >= 6
 
 
 class PLForecastingModule(pl.LightningModule, ABC):
@@ -88,8 +88,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         super().__init__()
 
         # save hyper parameters for saving/loading
-        # do not save type nn.Module params
-        self.save_hyperparameters(ignore=["loss_fn", "torch_metrics"])
+        self.save_hyperparameters()
 
         raise_if(
             input_chunk_length is None or output_chunk_length is None,
@@ -98,7 +97,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
         )
 
         self.input_chunk_length = input_chunk_length
-        self.output_chunk_length = output_chunk_length
+        # output_chunk_length is a property
+        self._output_chunk_length = output_chunk_length
 
         # define the loss function
         self.criterion = loss_fn
@@ -116,19 +116,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
             dict() if lr_scheduler_kwargs is None else lr_scheduler_kwargs
         )
 
-        if torch_metrics is None:
-            torch_metrics = torchmetrics.MetricCollection([])
-        elif isinstance(torch_metrics, torchmetrics.Metric):
-            torch_metrics = torchmetrics.MetricCollection([torch_metrics])
-        elif isinstance(torch_metrics, torchmetrics.MetricCollection):
-            pass
-        else:
-            raise_log(
-                AttributeError(
-                    "`torch_metrics` only accepts type torchmetrics.Metric or torchmetrics.MetricCollection"
-                ),
-                logger,
-            )
+        # convert torch_metrics to torchmetrics.MetricCollection
+        torch_metrics = self.configure_torch_metrics(torch_metrics)
         self.train_metrics = torch_metrics.clone(prefix="train_")
         self.val_metrics = torch_metrics.clone(prefix="val_")
 
@@ -252,13 +241,24 @@ class PLForecastingModule(pl.LightningModule, ABC):
             delayed(_build_forecast_series)(
                 [batch_prediction[batch_idx] for batch_prediction in batch_predictions],
                 input_series,
+                custom_columns=self.likelihood.likelihood_components_names(input_series)
+                if self.predict_likelihood_parameters
+                else None,
+                with_static_covs=False if self.predict_likelihood_parameters else True,
+                with_hierarchy=False if self.predict_likelihood_parameters else True,
             )
             for batch_idx, input_series in enumerate(batch_input_series)
         )
         return ts_forecasts
 
     def set_predict_parameters(
-        self, n: int, num_samples: int, roll_size: int, batch_size: int, n_jobs: int
+        self,
+        n: int,
+        num_samples: int,
+        roll_size: int,
+        batch_size: int,
+        n_jobs: int,
+        predict_likelihood_parameters: bool,
     ) -> None:
         """to be set from TorchForecastingModel before calling trainer.predict() and reset at self.on_predict_end()"""
         self.pred_n = n
@@ -266,6 +266,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.pred_roll_size = roll_size
         self.pred_batch_size = batch_size
         self.pred_n_jobs = n_jobs
+        self.predict_likelihood_parameters = predict_likelihood_parameters
 
     def _compute_loss(self, output, target):
         # output is of shape (batch_size, n_timesteps, n_components, n_params)
@@ -377,13 +378,17 @@ class PLForecastingModule(pl.LightningModule, ABC):
         for module in self._get_mc_dropout_modules():
             module.mc_dropout_enabled = active
 
+    @property
     def _is_probabilistic(self) -> bool:
         return self.likelihood is not None or len(self._get_mc_dropout_modules()) > 0
 
-    def _produce_predict_output(self, x: Tuple):
+    def _produce_predict_output(self, x: Tuple) -> torch.Tensor:
         if self.likelihood:
             output = self(x)
-            return self.likelihood.sample(output)
+            if self.predict_likelihood_parameters:
+                return self.likelihood.predict_likelihood_parameters(output)
+            else:
+                return self.likelihood.sample(output)
         else:
             return self(x).squeeze(dim=-1)
 
@@ -424,6 +429,33 @@ class PLForecastingModule(pl.LightningModule, ABC):
             current_epoch += 1
 
         return current_epoch
+
+    @property
+    def output_chunk_length(self) -> Optional[int]:
+        """
+        Number of time steps predicted at once by the model.
+        """
+        return self._output_chunk_length
+
+    @staticmethod
+    def configure_torch_metrics(
+        torch_metrics: Union[torchmetrics.Metric, torchmetrics.MetricCollection]
+    ) -> torchmetrics.MetricCollection:
+        """process the torch_metrics parameter."""
+        if torch_metrics is None:
+            torch_metrics = torchmetrics.MetricCollection([])
+        elif isinstance(torch_metrics, torchmetrics.Metric):
+            torch_metrics = torchmetrics.MetricCollection([torch_metrics])
+        elif isinstance(torch_metrics, torchmetrics.MetricCollection):
+            pass
+        else:
+            raise_log(
+                AttributeError(
+                    "`torch_metrics` only accepts type torchmetrics.Metric or torchmetrics.MetricCollection"
+                ),
+                logger,
+            )
+        return torch_metrics
 
 
 class PLPastCovariatesModule(PLForecastingModule, ABC):
@@ -482,7 +514,7 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
             dim=dim_component,
         )
 
-        out = self._produce_predict_output((input_past, static_covariates))[
+        out = self._produce_predict_output(x=(input_past, static_covariates))[
             :, self.first_prediction_index :, :
         ]
 
@@ -531,9 +563,10 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
                 ] = future_past_covariates[:, left_past:right_past, :]
 
             # take only last part of the output sequence where needed
-            out = self._produce_predict_output((input_past, static_covariates))[
+            out = self._produce_predict_output(x=(input_past, static_covariates))[
                 :, self.first_prediction_index :, :
             ]
+
             batch_prediction.append(out)
             prediction_length += self.output_chunk_length
 

@@ -5,12 +5,12 @@
 ---
 [![PyPI version](https://badge.fury.io/py/u8darts.svg)](https://badge.fury.io/py/darts)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/u8darts-all.svg)](https://anaconda.org/conda-forge/u8darts-all)
-![Supported versions](https://img.shields.io/badge/python-3.7+-blue.svg)
+![Supported versions](https://img.shields.io/badge/python-3.8+-blue.svg)
 ![Docker Image Version (latest by date)](https://img.shields.io/docker/v/unit8/darts?label=docker&sort=date)
 ![GitHub Release Date](https://img.shields.io/github/release-date/unit8co/darts)
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/unit8co/darts/release.yml?branch=master)
-[![Downloads](https://pepy.tech/badge/u8darts)](https://pepy.tech/project/u8darts)
 [![Downloads](https://pepy.tech/badge/darts)](https://pepy.tech/project/darts)
+[![Downloads](https://pepy.tech/badge/u8darts)](https://pepy.tech/project/u8darts)
 [![codecov](https://codecov.io/gh/unit8co/darts/branch/master/graph/badge.svg?token=7F1TLUFHQW)](https://codecov.io/gh/unit8co/darts)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![Join the chat at https://gitter.im/u8darts/darts](https://badges.gitter.im/u8darts/darts.svg)](https://gitter.im/u8darts/darts?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -50,7 +50,7 @@ fledged anomaly detection models.
 
 ## Quick Install
 
-We recommend to first setup a clean Python environment for your project with Python 3.7+ using your favorite tool
+We recommend to first setup a clean Python environment for your project with Python 3.8+ using your favorite tool
 ([conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html "conda-env"),
 [venv](https://docs.python.org/3/library/venv.html), [virtualenv](https://virtualenv.pypa.io/en/latest/) with
 or without [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/)).
@@ -200,7 +200,7 @@ series.plot()
   supporting among other things custom callbacks, GPUs/TPUs training and custom trainers.
 
 * **Filtering Models:** Darts offers three filtering models: `KalmanFilter`, `GaussianProcessFilter`,
-  and `MovingAverage`, which allow to filter time series, and in some cases obtain probabilistic
+  and `MovingAverageFilter`, which allow to filter time series, and in some cases obtain probabilistic
   inferences of the underlying states/values.
 
 * **Datasets** The `darts.datasets` submodule contains some popular time series datasets for rapid
@@ -213,13 +213,15 @@ on bringing more models and features.
 Model | Univariate | Multivariate | Probabilistic | Multiple series (global) | Past-observed covariates | Future-known covariates | Static covariates | Reference
 --- | --- | --- | --- | --- | --- | --- | --- | ---
 `ARIMA` | ✅ | | ✅ | | | ✅ | |
-`VARIMA` | ✅ | ✅ | | | | ✅ | |
+`VARIMA` | | ✅ | | | | ✅ | |
 `AutoARIMA` | ✅ | | | | | ✅ | |
 `StatsForecastAutoARIMA` (faster AutoARIMA) | ✅ | | ✅ | | | ✅ | | [Nixtla's statsforecast](https://github.com/Nixtla/statsforecast)
 `ExponentialSmoothing` | ✅ | | ✅ | | | | |
-`StatsForecastETS` | ✅ | | | | | ✅ | | [Nixtla's statsforecast](https://github.com/Nixtla/statsforecast)
+`StatsForecastETS` | ✅ | | ✅ | | | ✅ | | [Nixtla's statsforecast](https://github.com/Nixtla/statsforecast)
+`StatsForecastAutoCES` | ✅ | | | | | | | [Nixtla's statsforecast](https://github.com/Nixtla/statsforecast)
 `BATS` and `TBATS` | ✅ | | ✅ | | | | | [TBATS paper](https://robjhyndman.com/papers/ComplexSeasonality.pdf)
 `Theta` and `FourTheta` | ✅ | | | | | | | [Theta](https://robjhyndman.com/papers/Theta.pdf) & [4 Theta](https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R)
+`StatsForecastAutoTheta` | ✅ | | ✅ | | | | | [Nixtla's statsforecast](https://github.com/Nixtla/statsforecast)
 `Prophet` (see [install notes](https://github.com/unit8co/darts/blob/master/INSTALL.md#enabling-support-for-facebook-prophet)) | ✅ | | ✅ | | | ✅ | | [Prophet repo](https://github.com/facebook/prophet)
 `FFT` (Fast Fourier Transform) | ✅ | | | | | | |
 `KalmanForecaster` using the Kalman filter and N4SID for system identification | ✅ | ✅ | ✅ | | | ✅ | | [N4SID paper](https://people.duke.edu/~hpgavin/SystemID/References/VanOverschee-Automatica-1994.pdf)
@@ -239,6 +241,7 @@ Model | Univariate | Multivariate | Probabilistic | Multiple series (global) | P
 `TFTModel` (Temporal Fusion Transformer) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [TFT paper](https://arxiv.org/pdf/1912.09363.pdf), [PyTorch Forecasting](https://pytorch-forecasting.readthedocs.io/en/latest/models.html)
 `DLinearModel` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [DLinear paper](https://arxiv.org/pdf/2205.13504.pdf)
 `NLinearModel` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [NLinear paper](https://arxiv.org/pdf/2205.13504.pdf)
+`TiDEModel` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [TiDE paper](https://arxiv.org/pdf/2304.08424.pdf)
 Naive Baselines | ✅ | ✅ | | | | | |
 
 

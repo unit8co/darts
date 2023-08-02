@@ -12,6 +12,8 @@ For the sake of the example, we train a `TCNModel` on a single series, and optim
 You can also have a look at [this notebook](https://github.com/unit8co/darts/blob/master/examples/17-hyperparameter-optimization.ipynb)
 for a more complete example.
 
+>**NOTE** (2023-19-02): Optuna's `PyTorchLightningPruningCallback` raises an error with pytorch-lightning>=1.8. Until this fixed, a workaround is proposed [here](https://github.com/optuna/optuna-examples/issues/166#issuecomment-1403112861).
+
 ```python
 import numpy as np
 import optuna
@@ -20,8 +22,8 @@ from optuna.integration import PyTorchLightningPruningCallback
 from pytorch_lightning.callbacks import EarlyStopping
 from sklearn.preprocessing import MaxAbsScaler
 
-from darts.dataprocessing.transformers import Scale
-from darts.datasets import AirPassengersDatasetr
+from darts.dataprocessing.transformers import Scaler
+from darts.datasets import AirPassengersDataset
 from darts.metrics import smape
 from darts.models import TCNModel
 from darts.utils.likelihood_models import GaussianLikelihood
@@ -60,16 +62,14 @@ def objective(trial):
 
     # detect if a GPU is available
     if torch.cuda.is_available():
-        pl_trainer_kwargs = {
-            "accelerator": "gpu",
-            "gpus": -1,
-            "auto_select_gpus": True,
-            "callbacks": callbacks,
-        }
         num_workers = 4
     else:
-        pl_trainer_kwargs = {"callbacks": callbacks}
         num_workers = 0
+        
+    pl_trainer_kwargs = {
+        "accelerator": "auto",
+        "callbacks": callbacks,
+    }
 
     # optionally also add the (scaled) year value as a past covariate
     if include_year:
@@ -118,7 +118,7 @@ def objective(trial):
     model = TCNModel.load_from_checkpoint("tcn_model")
     
     # Evaluate how good it is on the validation set, using sMAPE
-    preds = model.predict(series=train, n=val_len)
+    preds = model.predict(series=train, n=VAL_LEN)
     smapes = smape(val, preds, n_jobs=-1, verbose=True)
     smape_val = np.mean(smapes)
 
@@ -131,9 +131,10 @@ def print_callback(study, trial):
     print(f"Best value: {study.best_value}, Best params: {study.best_trial.params}")
 
 
-# optimize hyperparameters by minimizing the sMAPE on the validation set 
-study = optuna.create_study(direction="minimize")
-study.optimize(objective, n_trials=100, callbacks=[print_callback])
+# optimize hyperparameters by minimizing the sMAPE on the validation set
+if __name__ == "__main__":
+    study = optuna.create_study(direction="minimize")
+    study.optimize(objective, n_trials=100, callbacks=[print_callback])
 ```
 
 ## Hyperparameter optimization with Ray Tune
@@ -193,7 +194,7 @@ my_stopper = EarlyStopping(
 # set up ray tune callback
 tune_callback = TuneReportCallback(
     {
-        "loss": "val_Loss",
+        "loss": "val_loss",
         "MAPE": "val_MeanAbsolutePercentageError",
     },
     on="validation_end",

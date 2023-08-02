@@ -524,7 +524,7 @@ class ElectricityDataset(DatasetLoaderCSV):
         super().__init__(
             metadata=DatasetLoaderMetadata(
                 "Electricity.csv",
-                uri="https://archive.ics.uci.edu/ml/machine-learning-databases/00321/LD2011_2014.txt.zip",
+                uri="https://archive.ics.uci.edu/static/public/321/electricityloaddiagrams20112014.zip",
                 hash="acfe6783eea43905e510f537add940fd",
                 header_time="Unnamed: 0",
                 format_time="%Y-%m-%d %H:%M:%S",
@@ -611,7 +611,7 @@ class UberTLCDataset(DatasetLoaderCSV):
 
                 output_dict[locationID] = count_series
             output_df = pd.DataFrame(output_dict)
-            output_df.to_csv(dataset_path, line_terminator="\n")
+            output_df.to_csv(dataset_path)
 
         super().__init__(
             metadata=DatasetLoaderMetadata(
@@ -623,7 +623,7 @@ class UberTLCDataset(DatasetLoaderCSV):
                 if sample_freq == "hourly"
                 else "24f9fd67e4b9e53f0214a90268cd9bee",
                 header_time="Pickup_date",
-                format_time="%Y-%m-%d %H:%M",
+                format_time="%Y-%m-%d %H:%M:%S",
                 pre_process_zipped_csv_fn=pre_proces_fn,
                 multivariate=multivariate,
             )

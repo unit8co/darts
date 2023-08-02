@@ -4,6 +4,7 @@ from itertools import product
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts import concatenate
 from darts.logging import get_logger
@@ -59,13 +60,18 @@ if TORCH_AVAILABLE:
             large_ts = tg.constant_timeseries(length=100, value=1000)
             small_ts = tg.constant_timeseries(length=100, value=10)
 
-            for model_cls in [DLinearModel, NLinearModel]:
+            for (model_cls, kwargs) in [
+                (DLinearModel, {"kernel_size": 5}),
+                (DLinearModel, {"kernel_size": 6}),
+                (NLinearModel, {}),
+            ]:
                 # Test basic fit and predict
                 model = model_cls(
                     input_chunk_length=1,
                     output_chunk_length=1,
                     n_epochs=10,
                     random_state=42,
+                    **kwargs
                 )
                 model.fit(large_ts[:98])
                 pred = model.predict(n=2).values()[0]
@@ -247,3 +253,55 @@ if TORCH_AVAILABLE:
                 )
                 self.assertLessEqual(e1, 0.40)
                 self.assertLessEqual(e2, 0.34)
+
+            # can only fit models with past/future covariates when shared_weights=False
+            for model in [DLinearModel, NLinearModel]:
+                for shared_weights in [True, False]:
+                    model_instance = model(5, 5, shared_weights=shared_weights)
+                    assert model_instance.supports_past_covariates == (
+                        not shared_weights
+                    )
+                    assert model_instance.supports_future_covariates == (
+                        not shared_weights
+                    )
+                    if shared_weights:
+                        with pytest.raises(ValueError):
+                            model_instance.fit(series1, future_covariates=fut_cov1)
+
+        def test_optional_static_covariates(self):
+            series = tg.sine_timeseries(length=20).with_static_covariates(
+                pd.DataFrame({"a": [1]})
+            )
+            for model_cls in [NLinearModel, DLinearModel]:
+                # training model with static covs and predicting without will raise an error
+                model = model_cls(
+                    input_chunk_length=12,
+                    output_chunk_length=6,
+                    use_static_covariates=True,
+                    n_epochs=1,
+                )
+                model.fit(series)
+                with pytest.raises(ValueError):
+                    model.predict(n=2, series=series.with_static_covariates(None))
+
+                # with `use_static_covariates=False`, static covariates are ignored and prediction works
+                model = model_cls(
+                    input_chunk_length=12,
+                    output_chunk_length=6,
+                    use_static_covariates=False,
+                    n_epochs=1,
+                )
+                model.fit(series)
+                preds = model.predict(n=2, series=series.with_static_covariates(None))
+                assert preds.static_covariates is None
+
+                # with `use_static_covariates=False`, static covariates are ignored and prediction works
+                model = model_cls(
+                    input_chunk_length=12,
+                    output_chunk_length=6,
+                    use_static_covariates=False,
+                    n_epochs=1,
+                )
+                model.fit(series.with_static_covariates(None))
+                preds = model.predict(n=2, series=series)
+                assert preds.static_covariates.equals(series.static_covariates)

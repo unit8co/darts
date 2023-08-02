@@ -3,7 +3,7 @@
 Below, we detail how to install Darts using either `conda` or `pip`.
 
 ## From conda-forge
-Currently only the x86_64 architecture with Python 3.7-3.10
+Currently only the x86_64 architecture with Python 3.8-3.10
 is fully supported with conda; consider using PyPI if you are running into troubles.
 
 Create a conda environment (e.g., for Python 3.10):

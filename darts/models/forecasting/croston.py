@@ -98,8 +98,9 @@ class Croston(FutureCovariatesLocalForecastingModel):
 
         self.version = version
 
-    def __str__(self):
-        return "Croston"
+    @property
+    def supports_multivariate(self) -> bool:
+        return False
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         super()._fit(series, future_covariates)
@@ -135,8 +136,10 @@ class Croston(FutureCovariatesLocalForecastingModel):
     def min_train_series_length(self) -> int:
         return 10
 
+    @property
     def _supports_range_index(self) -> bool:
         return True
 
+    @property
     def _is_probabilistic(self) -> bool:
         return False

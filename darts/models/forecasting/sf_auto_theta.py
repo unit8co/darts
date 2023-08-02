@@ -50,9 +50,6 @@ class StatsForecastAutoTheta(LocalForecastingModel):
         super().__init__()
         self.model = SFAutoTheta(*autotheta_args, **autotheta_kwargs)
 
-    def __str__(self):
-        return "Auto-Theta-Statsforecasts"
-
     def fit(self, series: TimeSeries):
         super().fit(series)
         self._assert_univariate(series)
@@ -83,11 +80,17 @@ class StatsForecastAutoTheta(LocalForecastingModel):
         return self._build_forecast_series(samples)
 
     @property
+    def supports_multivariate(self) -> bool:
+        return False
+
+    @property
     def min_train_series_length(self) -> int:
         return 10
 
+    @property
     def _supports_range_index(self) -> bool:
         return True
 
+    @property
     def _is_probabilistic(self) -> bool:
         return True

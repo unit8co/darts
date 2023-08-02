@@ -5,17 +5,15 @@ Additional util functions
 from enum import Enum
 from functools import wraps
 from inspect import Parameter, getcallargs, signature
-from types import SimpleNamespace
 from typing import Callable, Iterator, List, Optional, Sequence, Tuple, TypeVar, Union
 
-import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 from tqdm import tqdm
 from tqdm.notebook import tqdm as tqdm_notebook
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.logging import get_logger, raise_if_not, raise_log
 from darts.utils.timeseries_generation import generate_index
 
 try:
@@ -183,90 +181,6 @@ def _with_sanity_checks(
     return decorator
 
 
-def _historical_forecasts_general_checks(series, kwargs):
-    """
-    Performs checks common to ForecastingModel and RegressionModel backtest() methods
-    Parameters
-    ----------
-    series
-        Either series when called from ForecastingModel, or target_series if called from RegressionModel
-    signature_params
-        A dictionary of the signature parameters of the calling method, to get the default values
-        Typically would be signature(self.backtest).parameters
-    kwargs
-        Params specified by the caller of backtest(), they take precedence over the arguments' default values
-    """
-
-    # parse kwargs
-    n = SimpleNamespace(**kwargs)
-
-    # check forecast horizon
-    forecast_horizon = n.forecast_horizon
-    raise_if_not(
-        forecast_horizon > 0,
-        "The provided forecasting horizon must be a positive integer.",
-        logger,
-    )
-
-    # check stride
-    stride = n.stride
-    raise_if_not(
-        stride > 0, "The provided stride parameter must be a positive integer.", logger
-    )
-
-    series = series2seq(series)
-
-    # check start parameter
-    if hasattr(n, "start"):
-        if isinstance(n.start, float):
-            raise_if_not(
-                0.0 <= n.start < 1.0, "`start` should be between 0.0 and 1.0.", logger
-            )
-        elif isinstance(n.start, (int, np.int64)):
-            raise_if_not(n.start >= 0, logger=logger)
-            raise_if(
-                any([n.start > len(serie) for serie in series]),
-                "`start` index should be smaller than length of the series",
-                logger,
-            )
-        elif n.start and not isinstance(n.start, pd.Timestamp):
-            raise_log(
-                TypeError(
-                    "`start` needs to be either `float`, `int`, `pd.Timestamp` or `None`"
-                ),
-                logger,
-            )
-
-    if n.start is not None:
-        for idx, serie in enumerate(series):
-
-            start = serie.get_timestamp_at_point(n.start)
-
-            # check start parameter
-            raise_if(
-                start == serie.end_time(),
-                f"`start` timestamp is the last timestamp of the series {idx}.",
-                logger,
-            )
-            raise_if(
-                start == serie.start_time(),
-                "`start` corresponds to the first timestamp of the series {}, resulting "
-                "in empty training set".format(idx),
-                logger,
-            )
-
-            # check that overlap_end and start together form a valid combination
-            overlap_end = n.overlap_end
-
-            if not overlap_end:
-                raise_if_not(
-                    start + serie.freq * forecast_horizon in serie,
-                    "`start` timestamp is too late in the series {} to make any predictions with"
-                    "`overlap_end` set to `False`.".format(idx),
-                    logger,
-                )
-
-
 def _parallel_apply(
     iterator: Iterator[Tuple], fn: Callable, n_jobs: int, fn_args, fn_kwargs
 ) -> List:
@@ -319,25 +233,6 @@ def _check_quantiles(quantiles):
         "quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles "
         "higher than `q=0.5`",
     )
-
-
-def _retrain_wrapper(func: Callable[..., bool]):
-    """Utility function that keeps original signature in `retrain` function param in `historical_forecasts` method"""
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-
-        original_signature = tuple(signature(func).parameters.keys())
-        result = func(
-            *args, **{k: v for k, v in kwargs.items() if k in original_signature}
-        )
-
-        if not isinstance(result, bool):
-            raise_log(ValueError("Return value of `retrain` must be bool"), logger)
-
-        return result
-
-    return wrapper
 
 
 def series2seq(
@@ -479,3 +374,25 @@ def drop_after_index(
     """
 
     return slice_index(index, index[0], split_point)
+
+
+def get_single_series(
+    ts: Optional[Union[TimeSeries, Sequence[TimeSeries]]]
+) -> Optional[TimeSeries]:
+    """Returns a single (first) TimeSeries or `None` from `ts`. Returns `ts` if  `ts` is a TimeSeries, `ts[0]` if
+    `ts` is a Sequence of TimeSeries. Otherwise, returns `None`.
+
+    Parameters
+    ----------
+    ts
+        None, a single TimeSeries, or a sequence of TimeSeries.
+
+    Returns
+    -------
+        `ts` if  `ts` is a TimeSeries, `ts[0]` if `ts` is a Sequence of TimeSeries. Otherwise, returns `None`
+
+    """
+    if isinstance(ts, TimeSeries) or ts is None:
+        return ts
+    else:
+        return ts[0]

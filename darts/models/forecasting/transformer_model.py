@@ -277,7 +277,7 @@ class _TransformerModule(PLPastCovariatesModule):
         )
 
         self.decoder = nn.Linear(
-            d_model, self.output_chunk_length * self.target_size * self.nr_params
+            d_model, self.target_length * self.target_size * self.nr_params
         )
 
     def _create_transformer_inputs(self, data):
@@ -542,6 +542,10 @@ class TransformerModel(PastCovariatesTorchModel):
         self.custom_encoder = custom_encoder
         self.custom_decoder = custom_decoder
 
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
+
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
         input_dim = train_sample[0].shape[1] + (
@@ -566,7 +570,3 @@ class TransformerModel(PastCovariatesTorchModel):
             custom_decoder=self.custom_decoder,
             **self.pl_module_params,
         )
-
-    @staticmethod
-    def _supports_static_covariates() -> bool:
-        return False

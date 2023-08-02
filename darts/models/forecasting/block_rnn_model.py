@@ -96,9 +96,7 @@ class _BlockRNNModule(PLPastCovariatesModule):
         # to the output of desired length
         last = hidden_dim
         feats = []
-        for feature in num_layers_out_fc + [
-            self.output_chunk_length * target_size * nr_params
-        ]:
+        for feature in num_layers_out_fc + [self.out_len * target_size * nr_params]:
             feats.append(nn.Linear(last, feature))
             last = feature
         self.fc = nn.Sequential(*feats)
@@ -321,9 +319,9 @@ class BlockRNNModel(PastCovariatesTorchModel):
         self.n_rnn_layers = n_rnn_layers
         self.dropout = dropout
 
-    @staticmethod
-    def _supports_static_covariates() -> bool:
-        return False
+    @property
+    def supports_multivariate(self) -> bool:
+        return True
 
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)

@@ -1,16 +1,19 @@
+import copy
 from datetime import date, timedelta
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import pytest
 import shap
 import sklearn
 from dateutil.relativedelta import relativedelta
+from numpy.testing import assert_array_equal
 from sklearn.preprocessing import MinMaxScaler
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
-from darts.explainability.explainability import ExplainabilityResult
+from darts.explainability.explainability_result import ShapExplainabilityResult
 from darts.explainability.shap_explainer import ShapExplainer
 from darts.models import (
     CatBoostModel,
@@ -23,7 +26,6 @@ from darts.tests.base_test_class import DartsBaseTestClass
 
 
 class ShapExplainerTestCase(DartsBaseTestClass):
-
     np.random.seed(42)
 
     scaler = MinMaxScaler(feature_range=(-1, 1))
@@ -90,6 +92,25 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         days, np.concatenate([x_1.reshape(-1, 1), x_2.reshape(-1, 1)], axis=1)
     ).with_columns_renamed(["0", "1"], ["price", "power"])
 
+    target_ts_with_static_covs = TimeSeries.from_times_and_values(
+        days,
+        x_1.reshape(-1, 1),
+        static_covariates=pd.DataFrame({"type": [0], "state": [1]}),
+    ).with_columns_renamed(["0"], ["price"])
+    target_ts_with_multi_component_static_covs = TimeSeries.from_times_and_values(
+        days,
+        np.concatenate([x_1.reshape(-1, 1), x_2.reshape(-1, 1)], axis=1),
+        static_covariates=pd.DataFrame({"type": [0, 1], "state": [2, 3]}),
+    ).with_columns_renamed(["0", "1"], ["price", "power"])
+    target_ts_multiple_series_with_different_static_covs = [
+        TimeSeries.from_times_and_values(
+            days, x_1.reshape(-1, 1), static_covariates=pd.DataFrame({"type": [0]})
+        ).with_columns_renamed(["0"], ["price"]),
+        TimeSeries.from_times_and_values(
+            days, x_2.reshape(-1, 1), static_covariates=pd.DataFrame({"state": [1]})
+        ).with_columns_renamed(["0"], ["price"]),
+    ]
+
     past_cov_ts = TimeSeries.from_times_and_values(
         days_past_cov,
         np.concatenate(
@@ -107,58 +128,18 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         np.concatenate([fut_cov_1.reshape(-1, 1), fut_cov_2.reshape(-1, 1)], axis=1),
     )
 
-    models = []
-    models.append(
-        LightGBMModel(
-            lags=4,
-            lags_past_covariates=[-1, -2, -3],
-            lags_future_covariates=[0],
-            output_chunk_length=4,
-            add_encoders=add_encoders,
-        )
-    )
-
-    models.append(
-        CatBoostModel(
-            lags=4,
-            lags_past_covariates=[-1, -2, -6],
-            lags_future_covariates=[0],
-            output_chunk_length=4,
-        )
-    )
-    models.append(
-        LinearRegressionModel(
-            lags=1,
-            lags_past_covariates=[-1, -2, -3],
-            lags_future_covariates=[0],
-            output_chunk_length=2,
-        )
-    )
-
-    models.append(
-        RegressionModel(
-            lags=4,
-            lags_past_covariates=[-1, -2, -3],
-            lags_future_covariates=[0],
-            output_chunk_length=2,
-            model=sklearn.tree.ExtraTreeRegressor(),
-        )
-    )
-
-    models.append(
-        LinearRegressionModel(
-            lags=1,
-            output_chunk_length=2,
-        )
-    )
-
     def test_creation(self):
 
         # Model should be fitted first
+        m = LightGBMModel(
+            lags=4,
+            lags_past_covariates=[-1, -2, -3],
+            lags_future_covariates=[0],
+            output_chunk_length=4,
+            add_encoders=self.add_encoders,
+        )
         with self.assertRaises(ValueError):
-            ShapExplainer(
-                self.models[0], self.target_ts, self.past_cov_ts, self.fut_cov_ts
-            )
+            ShapExplainer(m, self.target_ts, self.past_cov_ts, self.fut_cov_ts)
 
         # Model should be a RegressionModel
         m = ExponentialSmoothing()
@@ -166,16 +147,35 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             ShapExplainer(m)
 
-        m = self.models[0].fit(
+        # For now, multi_models=False not allowed
+        m = LinearRegressionModel(lags=1, output_chunk_length=2, multi_models=False)
+        m.fit(
+            series=self.target_ts,
+        )
+        with self.assertRaises(ValueError):
+            ShapExplainer(
+                m,
+                self.target_ts,
+            )
+
+        m = LightGBMModel(
+            lags=4,
+            lags_past_covariates=[-1, -2, -3],
+            lags_future_covariates=[0],
+            output_chunk_length=4,
+            add_encoders=self.add_encoders,
+        )
+
+        m.fit(
             series=self.target_ts,
             past_covariates=self.past_cov_ts,
             future_covariates=self.fut_cov_ts,
         )
 
-        # SHould have the same number of target, past and futures in the respective lists
+        # Should have the same number of target, past and futures in the respective lists
         with self.assertRaises(ValueError):
             ShapExplainer(
-                self.models[0],
+                m,
                 [self.target_ts, self.target_ts],
                 self.past_cov_ts,
                 self.fut_cov_ts,
@@ -193,26 +193,38 @@ class ShapExplainerTestCase(DartsBaseTestClass):
                 m, self.target_ts, background_future_covariates=self.fut_cov_ts
             )
 
-        # good type of explainers
+        # Good type of explainers
         shap_explain = ShapExplainer(m)
         self.assertTrue(
             isinstance(shap_explain.explainers.explainers[0][0], shap.explainers.Tree)
         )
 
-        # Linear model - also not a MultiOuputRegressor
-        m = self.models[2].fit(
+        # Linear model - also not a MultiOutputRegressor
+        m = LinearRegressionModel(
+            lags=1,
+            lags_past_covariates=[-1, -2, -3],
+            lags_future_covariates=[0],
+            output_chunk_length=2,
+        )
+        m.fit(
             series=self.target_ts,
             past_covariates=self.past_cov_ts,
             future_covariates=self.fut_cov_ts,
         )
-
         shap_explain = ShapExplainer(m)
         self.assertTrue(
             isinstance(shap_explain.explainers.explainers, shap.explainers.Linear)
         )
 
-        # ExtraTreesRegressor - also not a MultiOuputRegressor
-        m = self.models[3].fit(
+        # ExtraTreesRegressor - also not a MultiOutputRegressor
+        m = RegressionModel(
+            lags=4,
+            lags_past_covariates=[-1, -2, -3],
+            lags_future_covariates=[0],
+            output_chunk_length=2,
+            model=sklearn.tree.ExtraTreeRegressor(),
+        )
+        m.fit(
             series=self.target_ts,
             past_covariates=self.past_cov_ts,
             future_covariates=self.fut_cov_ts,
@@ -223,7 +235,11 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         )
 
         # No past or future covariates
-        m = self.models[4].fit(
+        m = LinearRegressionModel(
+            lags=1,
+            output_chunk_length=2,
+        )
+        m.fit(
             series=self.target_ts,
         )
 
@@ -233,7 +249,13 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         )
 
         # CatBoost
-        m = self.models[1].fit(
+        m = CatBoostModel(
+            lags=4,
+            lags_past_covariates=[-1, -2, -6],
+            lags_future_covariates=[0],
+            output_chunk_length=4,
+        )
+        m.fit(
             series=self.target_ts,
             past_covariates=self.past_cov_ts,
             future_covariates=self.fut_cov_ts,
@@ -245,42 +267,62 @@ class ShapExplainerTestCase(DartsBaseTestClass):
 
         # Bad choice of shap explainer
         with self.assertRaises(ValueError):
-            shap_explain = ShapExplainer(m, shap_method="bad_choice")
+            ShapExplainer(m, shap_method="bad_choice")
 
     def test_explain(self):
-
-        m_0 = self.models[0].fit(
+        m = LightGBMModel(
+            lags=4,
+            lags_past_covariates=[-1, -2, -3],
+            lags_future_covariates=[0],
+            output_chunk_length=4,
+            add_encoders=self.add_encoders,
+        )
+        m.fit(
             series=self.target_ts,
             past_covariates=self.past_cov_ts,
             future_covariates=self.fut_cov_ts,
         )
 
-        shap_explain = ShapExplainer(m_0)
-
+        shap_explain = ShapExplainer(m)
         with self.assertRaises(ValueError):
-            # horizon > output_chunk_length
-            results = shap_explain.explain(horizons=[1, 5])
-            # wrong name
-            results = shap_explain.explain(horizons=[1, 2], target_components=["test"])
+            _ = shap_explain.explain(horizons=[1, 5])  # horizon > output_chunk_length
+        with self.assertRaises(ValueError):
+            _ = shap_explain.explain(
+                horizons=[1, 2], target_components=["test"]
+            )  # wrong name
 
         results = shap_explain.explain()
-
         with self.assertRaises(ValueError):
-            # wrong horizon
             results.get_explanation(horizon=5, component="price")
-            # wrong component name
+        with self.assertRaises(ValueError):
+            results.get_feature_values(horizon=5, component="price")
+        with self.assertRaises(ValueError):
+            results.get_shap_explanation_object(horizon=5, component="price")
+        with self.assertRaises(ValueError):
             results.get_explanation(horizon=1, component="test")
+        with self.assertRaises(ValueError):
+            results.get_feature_values(horizon=1, component="test")
+        with self.assertRaises(ValueError):
+            results.get_shap_explanation_object(horizon=1, component="test")
 
         results = shap_explain.explain(horizons=[1, 3], target_components=["power"])
         with self.assertRaises(ValueError):
-            # wrong horizon
             results.get_explanation(horizon=2, component="power")
-            # wrong component name
+        with self.assertRaises(ValueError):
+            results.get_feature_values(horizon=2, component="power")
+        with self.assertRaises(ValueError):
+            results.get_shap_explanation_object(horizon=2, component="power")
+        with self.assertRaises(ValueError):
             results.get_explanation(horizon=1, component="test")
+        with self.assertRaises(ValueError):
+            results.get_feature_values(horizon=1, component="test")
+        with self.assertRaises(ValueError):
+            results.get_shap_explanation_object(horizon=1, component="test")
 
         explanation = results.get_explanation(horizon=1, component="power")
-
         self.assertEqual(len(explanation), 537)
+        feature_vals = results.get_feature_values(horizon=1, component="power")
+        self.assertEqual(len(feature_vals), 537)
 
         # list of foregrounds: encoders have to be corrected first.
         results = shap_explain.explain(
@@ -289,8 +331,10 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             foreground_future_covariates=[self.fut_cov_ts, self.fut_cov_ts[:40]],
         )
         ts_res = results.get_explanation(horizon=2, component="power")
-
         self.assertEqual(len(ts_res), 2)
+        feature_vals = results.get_feature_values(horizon=2, component="power")
+        self.assertEqual(len(feature_vals), 2)
+
         # explain with a new foreground, minimum required. We should obtain one
         # timeseries with only one time element
         results = shap_explain.explain(
@@ -302,15 +346,21 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         ts_res = results.get_explanation(horizon=2, component="power")
         self.assertTrue(len(ts_res) == 1)
         self.assertTrue(ts_res.time_index[-1] == pd.Timestamp(2014, 6, 5))
+        feature_vals = results.get_feature_values(horizon=2, component="power")
+        self.assertTrue(len(feature_vals) == 1)
+        self.assertTrue(feature_vals.time_index[-1] == pd.Timestamp(2014, 6, 5))
 
         with self.assertRaises(ValueError):
-            # wrong horizon
             results.get_explanation(horizon=5, component="price")
-            # wrong component name
+        with self.assertRaises(ValueError):
+            results.get_feature_values(horizon=5, component="price")
+        with self.assertRaises(ValueError):
             results.get_explanation(horizon=1, component="test")
+        with self.assertRaises(ValueError):
+            results.get_feature_values(horizon=1, component="test")
 
         # right instance
-        self.assertTrue(isinstance(results, ExplainabilityResult))
+        self.assertTrue(isinstance(results, ShapExplainabilityResult))
 
         components_list = [
             "price_target_lag-4",
@@ -367,12 +417,16 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         )
 
         # No past or future covariates
-        m = self.models[4].fit(
+        m = LinearRegressionModel(
+            lags=1,
+            output_chunk_length=2,
+        )
+        m.fit(
             series=self.target_ts,
         )
         shap_explain = ShapExplainer(m)
 
-        self.assertTrue(isinstance(shap_explain.explain(), ExplainabilityResult))
+        self.assertTrue(isinstance(shap_explain.explain(), ShapExplainabilityResult))
 
     def test_explain_with_lags_future_covariates_series_of_same_length_as_target(self):
         model = LightGBMModel(
@@ -404,7 +458,6 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             )
 
     def test_explain_with_lags_future_covariates_series_extending_into_future(self):
-
         # Constructing future covariates TimeSeries that extends further into the future than the target series
         date_start = date(2012, 12, 12)
         date_end = date(2014, 6, 7)
@@ -438,7 +491,6 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             self.assertEqual(explanation.end_time(), self.target_ts.end_time())
 
     def test_explain_with_lags_covariates_series_older_timestamps_than_target(self):
-
         # Constructing covariates TimeSeries with older timestamps than target
         date_start = date(2012, 12, 10)
         date_end = date(2014, 6, 5)
@@ -474,8 +526,14 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             self.assertEqual(explanation.start_time(), self.target_ts.start_time())
 
     def test_plot(self):
-
-        m_0 = self.models[0].fit(
+        m_0 = LightGBMModel(
+            lags=4,
+            lags_past_covariates=[-1, -2, -3],
+            lags_future_covariates=[0],
+            output_chunk_length=4,
+            add_encoders=self.add_encoders,
+        )
+        m_0.fit(
             series=self.target_ts,
             past_covariates=self.past_cov_ts,
             future_covariates=self.fut_cov_ts,
@@ -543,7 +601,11 @@ class ShapExplainerTestCase(DartsBaseTestClass):
             shap_explain.summary_plot(horizons=[10], target_components=["test"])
 
         # No past or future covariates
-        m = self.models[4].fit(
+        m = LinearRegressionModel(
+            lags=1,
+            output_chunk_length=2,
+        )
+        m.fit(
             series=self.target_ts,
         )
 
@@ -555,3 +617,179 @@ class ShapExplainerTestCase(DartsBaseTestClass):
         )
         self.assertTrue(isinstance(fplot, shap.plots._force.BaseVisualizer))
         plt.close()
+
+    def test_feature_values_align_with_input(self):
+        model = LightGBMModel(
+            lags=4,
+            output_chunk_length=1,
+        )
+        model.fit(
+            series=self.target_ts,
+        )
+        shap_explain = ShapExplainer(model)
+        explanation_results = shap_explain.explain()
+        df = pd.merge(
+            self.target_ts.pd_dataframe(),
+            explanation_results.get_feature_values(
+                horizon=1, component="price"
+            ).pd_dataframe(),
+            how="left",
+            left_index=True,
+            right_index=True,
+        )
+        df[["price_shift_4", "power_shift_4"]] = df[["price", "power"]].shift(4)
+
+        assert_array_equal(
+            df[["price_shift_4", "power_shift_4"]].values,
+            df[["price_target_lag-4", "power_target_lag-4"]].values,
+        )
+
+    def test_feature_values_align_with_raw_output_shap(self):
+        model = LightGBMModel(
+            lags=4,
+            output_chunk_length=1,
+        )
+        model.fit(
+            series=self.target_ts,
+        )
+        shap_explain = ShapExplainer(model)
+        explanation_results = shap_explain.explain()
+
+        feature_values = explanation_results.get_feature_values(
+            horizon=1, component="price"
+        )
+        comparison = explanation_results.get_shap_explanation_object(
+            horizon=1, component="price"
+        ).data
+
+        assert_array_equal(feature_values.values(), comparison)
+        self.assertEqual(
+            feature_values.values().shape,
+            explanation_results.get_explanation(horizon=1, component="price")
+            .values()
+            .shape,
+        ), "The shape of the feature values should be the same as the shap values"
+
+    def test_shap_explanation_object_validity(self):
+        model = LightGBMModel(
+            lags=4,
+            lags_past_covariates=2,
+            lags_future_covariates=[1],
+            output_chunk_length=1,
+        )
+        model.fit(
+            series=self.target_ts,
+            past_covariates=self.past_cov_ts,
+            future_covariates=self.fut_cov_ts,
+        )
+        shap_explain = ShapExplainer(model)
+        explanation_results = shap_explain.explain()
+
+        self.assertIsInstance(
+            explanation_results.get_shap_explanation_object(
+                horizon=1, component="power"
+            ),
+            shap.Explanation,
+        )
+
+    def test_shap_selected_components(self):
+        model = LightGBMModel(
+            lags=4,
+            lags_past_covariates=2,
+            lags_future_covariates=[1],
+            output_chunk_length=1,
+        )
+        model.fit(
+            series=self.target_ts,
+            past_covariates=self.past_cov_ts,
+            future_covariates=self.fut_cov_ts,
+        )
+        shap_explain = ShapExplainer(model)
+        explanation_results = shap_explain.explain()
+        # check that explain() with selected components gives identical results
+        for comp in self.target_ts.components:
+            explanation_comp = shap_explain.explain(target_components=[comp])
+            assert explanation_comp.available_components == [comp]
+            assert explanation_comp.available_horizons == [1]
+            # explained forecasts
+            fc_res_tmp = copy.deepcopy(explanation_results.explained_forecasts)
+            fc_res_tmp[1] = {str(comp): fc_res_tmp[1][comp]}
+            assert explanation_comp.explained_forecasts == fc_res_tmp
+
+            # feature values
+            fv_res_tmp = copy.deepcopy(explanation_results.feature_values)
+            fv_res_tmp[1] = {str(comp): fv_res_tmp[1][comp]}
+            assert explanation_comp.explained_forecasts == fc_res_tmp
+
+            # shap objects
+            assert (
+                len(explanation_comp.shap_explanation_object[1]) == 1
+                and comp in explanation_comp.shap_explanation_object[1]
+            )
+
+    def test_shapley_with_static_cov(self):
+        ts = self.target_ts_with_static_covs
+        model = LightGBMModel(
+            lags=4,
+            output_chunk_length=1,
+        )
+        model.fit(
+            series=ts,
+        )
+        shap_explain = ShapExplainer(model)
+
+        # different static covariates dimensions should raise an error
+        with pytest.raises(ValueError):
+            shap_explain.explain(
+                ts.with_static_covariates(ts.static_covariates["state"])
+            )
+
+        # without static covariates should raise an error
+        with pytest.raises(ValueError):
+            shap_explain.explain(ts.with_static_covariates(None))
+
+        explanation_results = shap_explain.explain(ts)
+        assert len(explanation_results.explained_forecasts[1]["price"].columns) == (
+            -(min(model.lags["target"])) + model.static_covariates.shape[1]
+        )
+
+        model.fit(
+            series=self.target_ts_with_multi_component_static_covs,
+        )
+        shap_explain = ShapExplainer(model)
+        explanation_results = shap_explain.explain()
+        assert len(explanation_results.feature_values[1]) == 2
+        for comp in self.target_ts_with_multi_component_static_covs.components:
+            comps_out = explanation_results.explained_forecasts[1][comp].columns
+            assert len(comps_out) == (
+                -(min(model.lags["target"])) * model.input_dim["target"]
+                + model.input_dim["target"] * model.static_covariates.shape[1]
+            )
+            assert comps_out[-4:].tolist() == [
+                "type_statcov_target_price",
+                "type_statcov_target_power",
+                "state_statcov_target_price",
+                "state_statcov_target_power",
+            ]
+
+    def test_shapley_multiple_series_with_different_static_covs(self):
+        model = LightGBMModel(
+            lags=4,
+            output_chunk_length=1,
+        )
+        model.fit(
+            series=self.target_ts_multiple_series_with_different_static_covs,
+        )
+        shap_explain = ShapExplainer(
+            model,
+            background_series=self.target_ts_multiple_series_with_different_static_covs,
+        )
+        explanation_results = shap_explain.explain()
+
+        self.assertTrue(len(explanation_results.feature_values) == 2)
+
+        # model trained on multiple series will take column names of first series -> even though
+        # static covs have different names, the output will show the same names
+        for explained_forecast in explanation_results.explained_forecasts:
+            comps_out = explained_forecast[1]["price"].columns.tolist()
+            assert comps_out[-1] == "type_statcov_target_price"
