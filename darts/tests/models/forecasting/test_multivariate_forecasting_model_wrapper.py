@@ -11,8 +11,8 @@ from darts.models import (
     Croston,
     ExponentialSmoothing,
     FourTheta,
-    GlobalForecastingModelWrapper,
     KalmanForecaster,
+    MultivariateForecastingModelWrapper,
     NaiveMean,
     NaiveMovingAverage,
     NaiveSeasonal,
@@ -49,7 +49,7 @@ future_covariates_models = [
 ]
 
 
-class GlobalForecastingModelTestCase(DartsBaseTestClass):
+class MultivariateForecastingModelWrapperTestCase(DartsBaseTestClass):
     RANDOM_SEED = 42
 
     ts_length = 50
@@ -84,11 +84,7 @@ class GlobalForecastingModelTestCase(DartsBaseTestClass):
                 model_params["add_encoders"] = add_encoders
                 model = model_object.__class__(**model_params)
 
-                # Test models with user supplied covariates
-                model.fit(self.univariate, future_covariates=fc)
-
-                prediction = model.predict(self.n_pred, future_covariates=fc)
-                self.assertTrue(len(prediction) == self.n_pred)
+                self._test_predict_with_base_model(model, fc)
 
     def _test_predict_with_base_model(self, model, future_covariates):
         series_univariate = self.univariate
@@ -96,21 +92,17 @@ class GlobalForecastingModelTestCase(DartsBaseTestClass):
 
         combinations = [
             series_univariate,
-            [series_univariate] * 2,
             series_multivariate,
-            [series_multivariate] * 2,
         ]
 
         for combination in combinations:
             preds = self.trained_model_predictions(
                 model, self.n_pred, combination, future_covariates
             )
-            if isinstance(combination, TimeSeries):
-                self.assertTrue(isinstance(preds, TimeSeries))
-            else:
-                self.assertTrue(isinstance(preds, list) and len(preds) == 2)
+            self.assertTrue(isinstance(preds, TimeSeries))
+            self.assertTrue(preds.n_components == combination.n_components)
 
     def trained_model_predictions(self, base_model, n, series, future_covariates):
-        model = GlobalForecastingModelWrapper(base_model)
+        model = MultivariateForecastingModelWrapper(base_model)
         model.fit(series, future_covariates=future_covariates)
         return model.predict(n=n, series=series, future_covariates=future_covariates)

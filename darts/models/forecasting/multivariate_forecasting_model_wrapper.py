@@ -4,22 +4,70 @@ Regression ensemble model
 
 An ensemble model which uses a regression model to compute the ensemble forecast.
 """
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import List, Optional, Tuple
 
 from darts.logging import get_logger
 from darts.models.forecasting.forecasting_model import (
     FutureCovariatesLocalForecastingModel,
-    GlobalForecastingModel,
+    LocalForecastingModel,
     TransferableFutureCovariatesLocalForecastingModel,
 )
 from darts.timeseries import TimeSeries, concatenate
-from darts.utils.utils import seq2series, series2seq
+from darts.utils.utils import seq2series
 
 logger = get_logger(__name__)
 
 
-class GlobalForecastingModelWrapper(GlobalForecastingModel):
-    def __init__(self, model: FutureCovariatesLocalForecastingModel):
+class MultivariateForecastingModelWrapper(FutureCovariatesLocalForecastingModel):
+    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+        super()._fit(series, future_covariates)
+        self._trained_models = []
+
+        series = seq2series(series)
+        components = self._split_multivariate(series)
+        if self.supports_future_covariates:
+            self._trained_models = [
+                self.base_model.untrained_model().fit(c, future_covariates)
+                for c in components
+            ]
+        else:
+            self._trained_models = [
+                self.base_model.untrained_model().fit(c) for c in components
+            ]
+
+        return self
+
+    def predict(
+        self,
+        n: int,
+        series: Optional[TimeSeries] = None,
+        future_covariates: Optional[TimeSeries] = None,
+        num_samples: int = 1,
+        **kwargs,
+    ) -> TimeSeries:
+        # we override `predict()` to pass a non-None `series`, so that historic_future_covariates
+        # will be passed to `_predict()` (some future covariates local models require it ex. Kalman)
+        return self._predict(n, future_covariates, num_samples, **kwargs)
+
+    def _predict(
+        self,
+        n: int,
+        future_covariates: Optional[TimeSeries] = None,
+        num_samples: int = 1,
+        verbose: bool = False,
+        **kwargs,
+    ) -> TimeSeries:
+        predictions = [
+            model.predict(n=n, future_covariates=future_covariates)
+            if isinstance(model, FutureCovariatesLocalForecastingModel)
+            else model.predict(n=n)
+            for model in self._trained_models
+        ]
+
+        multivariate_series = concatenate(predictions, axis=1)
+        return multivariate_series
+
+    def __init__(self, model: LocalForecastingModel):
         """
         Wrapper around LocalForecastingModel allowing it to act like a GlobalForecastingModel
 
@@ -33,54 +81,8 @@ class GlobalForecastingModelWrapper(GlobalForecastingModel):
         """
         super().__init__()
 
-        self.base_model: FutureCovariatesLocalForecastingModel = model
-        self._trained_models: List[List[FutureCovariatesLocalForecastingModel]] = []
-
-    def fit(
-        self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    ):
-        self._trained_models = []
-        super().fit(series)
-
-        for multivariate_ts in series2seq(series):
-            components = self._split_multivariate(multivariate_ts)
-            if self.supports_future_covariates:
-                series_models = [
-                    self.base_model.untrained_model().fit(c, future_covariates)
-                    for c in components
-                ]
-            else:
-                series_models = [
-                    self.base_model.untrained_model().fit(c) for c in components
-                ]
-            self._trained_models.append(series_models)
-
-        return self
-
-    def predict(
-        self,
-        n: int,
-        series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        num_samples: int = 1,
-        verbose: bool = False,
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        result = []
-        for ts_models in self._trained_models:
-            if self.supports_future_covariates:
-                predictions = [
-                    model.predict(n=n, future_covariates=future_covariates)
-                    for model in ts_models
-                ]
-            else:
-                predictions = [model.predict(n=n) for model in ts_models]
-            multivariate_series = concatenate(predictions, axis=1)
-            result.append(multivariate_series)
-        return seq2series(result)
+        self.base_model: LocalForecastingModel = model
+        self._trained_models: List[LocalForecastingModel] = []
 
     def _split_multivariate(self, time_series: TimeSeries):
         """split multivariate TimeSeries into a list of univariate TimeSeries"""
