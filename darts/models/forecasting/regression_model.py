@@ -55,16 +55,6 @@ from darts.utils.utils import (
 
 logger = get_logger(__name__)
 
-try:
-    from catboost import CatBoostRegressor
-except ModuleNotFoundError:
-    logger.warning(
-        "The catboost module could not be imported. "
-        "To enable support for CatBoostRegressor, "
-        "follow the instruction in the README: "
-        "https://github.com/unit8co/darts/blob/master/INSTALL.md"
-    )
-
 
 class RegressionModel(GlobalForecastingModel):
     def __init__(
@@ -533,7 +523,7 @@ class RegressionModel(GlobalForecastingModel):
                     self.model = MultiOutputRegressor(
                         self.model, n_jobs=n_jobs_multioutput_wrapper
                     )
-                elif isinstance(self.model, CatBoostRegressor):
+                elif self.model.__class__.__name__ == "CatBoostRegressor":
                     if (
                         self.model.get_params()["loss_function"]
                         == "RMSEWithUncertainty"

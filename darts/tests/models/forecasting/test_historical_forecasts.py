@@ -16,6 +16,7 @@ from darts.models import (
     LightGBMModel,
     LinearRegressionModel,
     NaiveSeasonal,
+    NotImportedModule,
 )
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
@@ -42,11 +43,11 @@ except ImportError:
     )
     TORCH_AVAILABLE = False
 
-models_reg_no_cov_cls_kwargs = [
-    (LinearRegressionModel, {"lags": 8}, (8, 1)),
-    (CatBoostModel, {"lags": 6}, (6, 1)),
-    (LightGBMModel, {"lags": 4}, (4, 1)),
-]
+models_reg_no_cov_cls_kwargs = [(LinearRegressionModel, {"lags": 8}, (8, 1))]
+if not isinstance(CatBoostModel, NotImportedModule):
+    models_reg_no_cov_cls_kwargs.append((CatBoostModel, {"lags": 6}, (6, 1)))
+if not isinstance(LightGBMModel, NotImportedModule):
+    models_reg_no_cov_cls_kwargs.append((LightGBMModel, {"lags": 4}, (4, 1)))
 
 models_reg_cov_cls_kwargs = [
     # target + past covariates

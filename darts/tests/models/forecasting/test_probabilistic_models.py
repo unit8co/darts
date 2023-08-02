@@ -12,6 +12,8 @@ from darts.models import (
     ExponentialSmoothing,
     LightGBMModel,
     LinearRegressionModel,
+    NotImportedModule,
+    XGBModel,
 )
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.tests.base_test_class import DartsBaseTestClass
@@ -56,6 +58,9 @@ except ImportError:
         "Torch not available. Tests related to torch-based models will be skipped."
     )
     TORCH_AVAILABLE = False
+
+lgbm_available = not isinstance(LightGBMModel, NotImportedModule)
+cb_available = not isinstance(CatBoostModel, NotImportedModule)
 
 models_cls_kwargs_errs = [
     (ExponentialSmoothing, {}, 0.3),
@@ -227,7 +232,11 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
         """
         seed = 142857
         n_times, n_samples = 100, 1
-        model_classes = [LinearRegressionModel, LightGBMModel, CatBoostModel]
+        model_classes = [LinearRegressionModel, XGBModel]
+        if lgbm_available:
+            model_classes.append(LightGBMModel)
+        if cb_available:
+            model_classes.append(CatBoostModel)
 
         for n_comp in [1, 3]:
             list_lkl = [
@@ -254,7 +263,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
 
             for model_cls in model_classes:
                 # Catboost is the only regression model supporting the GaussianLikelihood
-                if isinstance(model_cls, CatBoostModel):
+                if cb_available and issubclass(model_cls, CatBoostModel):
                     list_lkl.append(
                         {
                             "kwargs": {"likelihood": "gaussian"},

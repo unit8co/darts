@@ -1,3 +1,4 @@
+import unittest
 from unittest.mock import Mock
 
 import numpy as np
@@ -6,13 +7,14 @@ import pytest
 
 from darts import TimeSeries
 from darts.logging import get_logger
-from darts.models import Prophet
+from darts.models import NotImportedModule, Prophet
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
 
 
+@unittest.skipUnless(not isinstance(Prophet, NotImportedModule), "requires prophet")
 class ProphetTestCase(DartsBaseTestClass):
     def test_add_seasonality_calls(self):
         # test if adding seasonality at model creation and with method model.add_seasonality() are equal
