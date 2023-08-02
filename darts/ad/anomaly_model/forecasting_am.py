@@ -554,7 +554,7 @@ class ForecastingAnomalyModel(AnomalyModel):
 
         # TODO: raise an exception. We only support models that do not need retrain
         # checks if model accepts to not be retrained in the historical_forecasts()
-        if self.model._supports_non_retrainable_historical_forecasts():
+        if self.model._supports_non_retrainable_historical_forecasts:
             # default: set to False. Allows a faster computation.
             retrain = False
         else:

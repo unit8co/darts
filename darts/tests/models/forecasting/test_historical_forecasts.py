@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+import darts
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
 from darts.datasets import AirPassengersDataset
@@ -31,7 +32,7 @@ try:
         TFTModel,
         TransformerModel,
     )
-    from darts.utils.likelihood_models import GaussianLikelihood
+    from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
 
     TORCH_AVAILABLE = True
 except ImportError:
@@ -622,6 +623,156 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
                 f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
                 f"of retrain=True and overlap_end=False, and a time index of type DateTimeIndex. "
                 f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}",
+            )
+
+    @pytest.mark.slow
+    def test_optimized_historical_forecasts_regression(self):
+        start_ts = pd.Timestamp("2000-01-01")
+        ts_univariate = tg.linear_timeseries(
+            start_value=1, end_value=100, length=20, start=start_ts
+        )
+        ts_multivariate = ts_univariate.stack(
+            tg.sine_timeseries(length=20, start=start_ts)
+        )
+        # slightly longer to not affect the last predictable timestamp
+        ts_covs = tg.gaussian_timeseries(length=30, start=start_ts)
+        start = 14
+        model_cls = LinearRegressionModel
+        for ts in [ts_univariate, ts_multivariate]:
+            # cover several covariates combinations and several regression models
+            for _, model_kwargs, _ in (
+                models_reg_no_cov_cls_kwargs + models_reg_cov_cls_kwargs
+            ):
+                for multi_models in [True, False]:
+                    for forecast_horizon in [1, 5]:
+                        # ocl == forecast horizon
+                        model_kwargs_same = model_kwargs.copy()
+                        model_kwargs_same["output_chunk_length"] = forecast_horizon
+                        model_kwargs_same["multi_models"] = multi_models
+                        model_same = model_cls(**model_kwargs_same)
+                        model_same.fit(
+                            series=ts[:start],
+                            past_covariates=ts_covs
+                            if model_same.supports_past_covariates
+                            else None,
+                            future_covariates=ts_covs
+                            if model_same.supports_future_covariates
+                            else None,
+                        )
+                        # ocl >= forecast horizon
+                        model_kwargs_diff = model_kwargs.copy()
+                        model_kwargs_diff["output_chunk_length"] = 5
+                        model_kwargs_diff["multi_models"] = multi_models
+                        model_diff = model_cls(**model_kwargs_same)
+                        model_diff.fit(
+                            series=ts[:start],
+                            past_covariates=ts_covs
+                            if model_diff.supports_past_covariates
+                            else None,
+                            future_covariates=ts_covs
+                            if model_diff.supports_future_covariates
+                            else None,
+                        )
+                        for model in [model_same, model_diff]:
+                            for last_points_only in [True, False]:
+                                for stride in [1, 2]:
+                                    hist_fct = model.historical_forecasts(
+                                        series=ts,
+                                        past_covariates=ts_covs
+                                        if model.supports_past_covariates
+                                        else None,
+                                        future_covariates=ts_covs
+                                        if model.supports_future_covariates
+                                        else None,
+                                        start=start,
+                                        retrain=False,
+                                        last_points_only=last_points_only,
+                                        stride=stride,
+                                        forecast_horizon=forecast_horizon,
+                                        enable_optimization=False,
+                                    )
+
+                                    # manually packing the series in list to match expected inputs
+                                    opti_hist_fct = (
+                                        model._optimized_historical_forecasts(
+                                            series=[ts],
+                                            past_covariates=[ts_covs]
+                                            if model.supports_past_covariates
+                                            else None,
+                                            future_covariates=[ts_covs]
+                                            if model.supports_future_covariates
+                                            else None,
+                                            start=start,
+                                            last_points_only=last_points_only,
+                                            stride=stride,
+                                            forecast_horizon=forecast_horizon,
+                                        )
+                                    )
+                                    # pack the output to generalize the tests
+                                    if last_points_only:
+                                        hist_fct = [hist_fct]
+                                        opti_hist_fct = [opti_hist_fct]
+
+                                    for fct, opti_fct in zip(hist_fct, opti_hist_fct):
+                                        self.assertTrue(
+                                            (
+                                                fct.time_index == opti_fct.time_index
+                                            ).all()
+                                        )
+                                        np.testing.assert_array_almost_equal(
+                                            fct.all_values(), opti_fct.all_values()
+                                        )
+
+    def test_optimized_historical_forecasts_regression_with_encoders(self):
+        for use_covs in [False, True]:
+            series_train, series_val = self.ts_pass_train, self.ts_pass_val
+            model = LinearRegressionModel(
+                lags=3,
+                lags_past_covariates=2,
+                lags_future_covariates=[2, 3],
+                add_encoders={
+                    "cyclic": {"future": ["month"]},
+                    "datetime_attribute": {"past": ["dayofweek"]},
+                },
+                output_chunk_length=5,
+            )
+            if use_covs:
+                pc = tg.gaussian_timeseries(
+                    start=series_train.start_time() - 2 * series_train.freq,
+                    end=series_val.end_time(),
+                    freq=series_train.freq,
+                )
+                fc = tg.gaussian_timeseries(
+                    start=series_train.start_time() + 3 * series_train.freq,
+                    end=series_val.end_time() + 4 * series_train.freq,
+                    freq=series_train.freq,
+                )
+            else:
+                pc, fc = None, None
+
+            model.fit(self.ts_pass_train, past_covariates=pc, future_covariates=fc)
+
+            hist_fct = model.historical_forecasts(
+                series=self.ts_pass_val,
+                past_covariates=pc,
+                future_covariates=fc,
+                retrain=False,
+                last_points_only=True,
+                forecast_horizon=5,
+                enable_optimization=False,
+            )
+
+            opti_hist_fct = model._optimized_historical_forecasts(
+                series=[self.ts_pass_val],
+                past_covariates=[pc],
+                future_covariates=[fc],
+                last_points_only=True,
+                forecast_horizon=5,
+            )
+
+            self.assertTrue((hist_fct.time_index == opti_hist_fct.time_index).all())
+            np.testing.assert_array_almost_equal(
+                hist_fct.all_values(), opti_hist_fct.all_values()
             )
 
     @pytest.mark.slow
@@ -1220,11 +1371,13 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
 
         # test int
         helper_hist_forecasts(10, 0.9)
-        expected_msg = "Model has not been fit before the first predict iteration at prediction point (in time)"
+        expected_msg = "Model has not been fit yet."
         # `retrain=0` with not-trained model, encountering directly a predictable time index
         with pytest.raises(ValueError) as error_msg:
             helper_hist_forecasts(0, 0.9)
-        self.assertTrue(str(error_msg.value).startswith(expected_msg))
+        self.assertTrue(
+            str(error_msg.value).startswith(expected_msg), str(error_msg.value)
+        )
 
         # test bool
         helper_hist_forecasts(True, 0.9)
@@ -1245,3 +1398,131 @@ class HistoricalforecastTestCase(DartsBaseTestClass):
         expected_end = pd.Timestamp("1960-12-01 00:00:00")
         res = helper_hist_forecasts(True, expected_end)
         self.assertTrue(res.time_index[0] == expected_end)
+
+    def test_predict_likelihood_parameters(self):
+        """standard checks that historical forecasts work with direct likelihood parameter predictions
+        with regression and torch models."""
+
+        def create_model(ocl, use_ll=True, model_type="regression"):
+            if model_type == "regression":
+                return LinearRegressionModel(
+                    lags=3,
+                    likelihood="quantile" if use_ll else None,
+                    quantiles=[0.05, 0.4, 0.5, 0.6, 0.95] if use_ll else None,
+                    output_chunk_length=ocl,
+                )
+            else:  # model_type == "torch"
+                if not TORCH_AVAILABLE:
+                    return None
+                return NLinearModel(
+                    input_chunk_length=3,
+                    likelihood=QuantileRegression([0.05, 0.4, 0.5, 0.6, 0.95])
+                    if use_ll
+                    else None,
+                    output_chunk_length=ocl,
+                    n_epochs=1,
+                    random_state=42,
+                )
+
+        for model_type in ["regression", "torch"]:
+            model = create_model(1, False, model_type=model_type)
+            # skip torch models if not installed
+            if model is None:
+                continue
+            # model doesn't use likelihood
+            with pytest.raises(ValueError):
+                model.historical_forecasts(
+                    self.ts_pass_train,
+                    predict_likelihood_parameters=True,
+                )
+
+            model = create_model(1, model_type=model_type)
+            # forecast_horizon > output_chunk_length doesn't work
+            with pytest.raises(ValueError):
+                model.historical_forecasts(
+                    self.ts_pass_train,
+                    predict_likelihood_parameters=True,
+                    forecast_horizon=2,
+                )
+
+            model = create_model(1, model_type=model_type)
+            # num_samples != 1 doesn't work
+            with pytest.raises(ValueError):
+                model.historical_forecasts(
+                    self.ts_pass_train,
+                    predict_likelihood_parameters=True,
+                    forecast_horizon=1,
+                    num_samples=2,
+                )
+
+            n = 3
+            target_name = self.ts_pass_train.components[0]
+            qs_expected = ["q0.05", "q0.40", "q0.50", "q0.60", "q0.95"]
+            qs_expected = pd.Index([target_name + "_" + q for q in qs_expected])
+            # check that it works with retrain
+            model = create_model(1, model_type=model_type)
+            hist_fc = model.historical_forecasts(
+                self.ts_pass_train,
+                predict_likelihood_parameters=True,
+                forecast_horizon=1,
+                num_samples=1,
+                start=len(self.ts_pass_train) - n,  # predict on last 10 steps
+                retrain=True,
+            )
+            assert hist_fc.components.equals(qs_expected)
+            assert len(hist_fc) == n
+
+            # check for equal results between predict and hist fc without retraining
+            model = create_model(1, model_type=model_type)
+            model.fit(series=self.ts_pass_train[:-n])
+            hist_fc = model.historical_forecasts(
+                self.ts_pass_train,
+                predict_likelihood_parameters=True,
+                forecast_horizon=1,
+                num_samples=1,
+                start=len(self.ts_pass_train) - n,  # predict on last 10 steps
+                retrain=False,
+            )
+            assert hist_fc.components.equals(qs_expected)
+            assert len(hist_fc) == n
+
+            preds = []
+            for n_i in range(n):
+                preds.append(
+                    model.predict(
+                        n=1,
+                        series=self.ts_pass_train[: -(n - n_i)],
+                        predict_likelihood_parameters=True,
+                    )
+                )
+            preds = darts.concatenate(preds)
+            assert np.all(preds.values() == hist_fc.values())
+
+            # check equal results between predict and hist fc with higher output_chunk_length and horizon,
+            # and last_points_only=False
+            model = create_model(2, model_type=model_type)
+            # we take one more training step so that model trained on ocl=1 has the same training samples
+            # as model above
+            model.fit(series=self.ts_pass_train[: -(n - 1)])
+            hist_fc = model.historical_forecasts(
+                self.ts_pass_train,
+                predict_likelihood_parameters=True,
+                forecast_horizon=2,
+                num_samples=1,
+                start=len(self.ts_pass_train) - n,  # predict on last 10 steps
+                retrain=False,
+                last_points_only=False,
+                overlap_end=True,
+            )
+            # generate the same predictions manually
+            preds = []
+            for n_i in range(n):
+                preds.append(
+                    model.predict(
+                        n=2,
+                        series=self.ts_pass_train[: -(n - n_i)],
+                        predict_likelihood_parameters=True,
+                    )
+                )
+            assert preds == hist_fc
+            assert len(hist_fc) == n

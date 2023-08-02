@@ -1689,6 +1689,76 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                         _ = model.predict(n=3, series=ts, **covariates)
                         _ = model.predict(n=8, series=ts, **covariates)
 
+    def test_encoders_from_covariates_input(self):
+        from darts.datasets import AirPassengersDataset
+        from darts.models import LinearRegressionModel
+
+        model = LinearRegressionModel(
+            lags=3,
+            lags_past_covariates=[-3, -2],
+            add_encoders={
+                "cyclic": {"past": ["month"]},
+            },
+        )
+
+        series = AirPassengersDataset().load()
+        # hc = model.historical_forecasts(series=series)
+
+        series = tg.linear_timeseries(length=10, freq="MS")
+        pc = tg.linear_timeseries(length=12, freq="MS")
+        fc = tg.linear_timeseries(length=14, freq="MS")
+        # 1 == output_chunk_length, 3 > output_chunk_length
+        ns = [1, 3]
+
+        for multi_models in [False, True]:
+            for extreme_lags in [False, True]:
+                model = self.helper_create_LinearModel(
+                    multi_models=multi_models, extreme_lags=extreme_lags
+                )
+                model.fit(series)
+                for n in ns:
+                    _ = model.predict(n=n)
+                    with pytest.raises(ValueError):
+                        _ = model.predict(n=n, past_covariates=pc)
+                    with pytest.raises(ValueError):
+                        _ = model.predict(n=n, future_covariates=fc)
+                    with pytest.raises(ValueError):
+                        _ = model.predict(n=n, past_covariates=pc, future_covariates=fc)
+
+                model = self.helper_create_LinearModel(
+                    multi_models=multi_models, extreme_lags=extreme_lags
+                )
+                for n in ns:
+                    model.fit(series, past_covariates=pc)
+                    _ = model.predict(n=n)
+                    _ = model.predict(n=n, past_covariates=pc)
+                    with pytest.raises(ValueError):
+                        _ = model.predict(n=n, future_covariates=fc)
+                    with pytest.raises(ValueError):
+                        _ = model.predict(n=n, past_covariates=pc, future_covariates=fc)
+
+                model = self.helper_create_LinearModel(
+                    multi_models=multi_models, extreme_lags=extreme_lags
+                )
+                for n in ns:
+                    model.fit(series, future_covariates=fc)
+                    _ = model.predict(n=n)
+                    with pytest.raises(ValueError):
+                        _ = model.predict(n=n, past_covariates=pc)
+                    _ = model.predict(n=n, future_covariates=fc)
+                    with pytest.raises(ValueError):
+                        _ = model.predict(n=n, past_covariates=pc, future_covariates=fc)
+
+                model = self.helper_create_LinearModel(
+                    multi_models=multi_models, extreme_lags=extreme_lags
+                )
+                for n in ns:
+                    model.fit(series, past_covariates=pc, future_covariates=fc)
+                    _ = model.predict(n=n)
+                    _ = model.predict(n=n, past_covariates=pc)
+                    _ = model.predict(n=n, future_covariates=fc)
+                    _ = model.predict(n=n, past_covariates=pc, future_covariates=fc)
+
     @staticmethod
     def helper_compare_encoded_covs_with_ref(
         model, ts, covariates, n, ocl, multi_model
@@ -2025,6 +2095,25 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         self.assertEqual(
             kwargs[cat_param_name],
             [2, 3, 5],
+        )
+
+    def helper_create_LinearModel(self, multi_models=True, extreme_lags=False):
+        if not extreme_lags:
+            lags, lags_pc, lags_fc = 3, 3, [-3, -2, -1, 0]
+        else:
+            lags, lags_pc, lags_fc = None, [-3], [1]
+        return LinearRegressionModel(
+            lags=lags,
+            lags_past_covariates=lags_pc,
+            lags_future_covariates=lags_fc,
+            output_chunk_length=1,
+            multi_models=multi_models,
+            add_encoders={
+                "datetime_attribute": {
+                    "past": ["month", "dayofweek"],
+                    "future": ["month", "dayofweek"],
+                }
+            },
         )
 
 
