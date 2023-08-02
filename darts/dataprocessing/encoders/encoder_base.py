@@ -178,7 +178,14 @@ class CovariatesIndexGenerator(ABC):
         inference_idx, _ = self.generate_inference_idx(
             n=n, target=target, covariates=covariates
         )
-        return train_idx.__class__.union(train_idx, inference_idx), target_end
+        # generate index end is inclusive, should not be a problem when taking union
+        gap = generate_index(
+            start=train_idx[-1], end=inference_idx[0] - target.freq, freq=target.freq
+        )
+        return (
+            train_idx.__class__.union(train_idx, gap).union(inference_idx),
+            target_end,
+        )
 
     @property
     @abstractmethod
