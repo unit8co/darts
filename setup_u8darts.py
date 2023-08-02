@@ -9,9 +9,9 @@ def read_requirements(path):
 
 base_reqs = read_requirements("requirements/core.txt")
 torch_reqs = read_requirements("requirements/torch.txt")
-prophet_reqs = read_requirements("requirements/prophet.txt")
+no_torch_reqs = read_requirements("requirements/no-torch.txt")
 
-all_reqs = base_reqs + torch_reqs + prophet_reqs
+all_reqs = base_reqs + torch_reqs + no_torch_reqs
 
 with open("README.md") as fh:
     LONG_DESCRIPTION = fh.read()
@@ -40,7 +40,7 @@ setup(
     license="Apache License 2.0",
     packages=find_packages(),
     install_requires=base_reqs,
-    extras_require={"all": all_reqs, "torch": torch_reqs, "prophet": prophet_reqs},
+    extras_require={"all": all_reqs, "torch": torch_reqs, "no-torch": no_torch_reqs},
     package_data={
         "darts": ["py.typed"],
     },

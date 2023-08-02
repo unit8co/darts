@@ -10,7 +10,7 @@ def read_requirements(path):
 base_reqs = read_requirements("requirements/core.txt")
 torch_reqs = read_requirements("requirements/torch.txt")
 
-# Note: Prophet is not included in darts package by default
+# Note: Prophet, LightGBM, Catboost are not included in darts package by default
 
 reqs = base_reqs + torch_reqs
 
