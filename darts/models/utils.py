@@ -1,4 +1,4 @@
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_log
 
 logger = get_logger(__name__)
 
@@ -9,11 +9,14 @@ class NotImportedModule:
     usable = False
 
     def __init__(self, module_name: str, warn: bool = True):
+        self.error_message = (
+            f"The `{module_name}` module could not be imported. "
+            f"To enable {module_name} support in Darts, follow the detailed "
+            f"install instructions for LightGBM in the README: "
+            f"https://github.com/unit8co/darts/blob/master/INSTALL.md"
+        )
         if warn:
-            txt = (
-                f"The {module_name} module could not be imported. "
-                "To enable LightGBM support in Darts, follow the detailed "
-                "install instructions for LightGBM in the README: "
-                "https://github.com/unit8co/darts/blob/master/INSTALL.md"
-            )
-            logger.warning(txt)
+            logger.warning(self.error_message)
+
+    def __call__(self, *args, **kwargs):
+        raise_log(ImportError(self.error_message), logger=logger)

@@ -64,7 +64,7 @@ task installPipLatest {
             commandLine "pip", "install", "pip-tools"
         }
         exec {
-            commandLine "pip-compile", "-o", "requirements-latest.txt"
+            commandLine "pip-compile", "requirements/core.txt", "requirements/notorch.txt", "requirements/torch.txt", "-o", "requirements-latest.txt"
         }
         exec {
             commandLine "pip", "install", "-r", "requirements-latest.txt"
@@ -80,7 +80,7 @@ void createPipInstallTask(String flavour) {
    }
 }
 
-String[] flavours = ["core", "dev", "torch", "release"];
+String[] flavours = ["core", "dev", "notorch", "torch", "release"];
 
 for(String flavour : flavours) {
     createPipInstallTask(flavour);
@@ -94,7 +94,7 @@ task pipInstall() {
     doFirst {
         setupPip
     }
-    dependsOn pip_core, pip_dev, pip_torch, pip_release
+    dependsOn pip_core, pip_dev, pip_notorch, pip_torch, pip_release
 }
 
 task lint_black(type: Exec) {
