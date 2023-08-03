@@ -751,9 +751,11 @@ class _RegressionShapExplainers:
         lags_future_covariates_list = self.model.lags.get("future")
 
         X, indexes = create_lagged_prediction_data(
-            target_series=target_series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
+            target_series=target_series if lags_list else None,
+            past_covariates=past_covariates if lags_past_covariates_list else None,
+            future_covariates=future_covariates
+            if lags_future_covariates_list
+            else None,
             lags=lags_list,
             lags_past_covariates=lags_past_covariates_list if past_covariates else None,
             lags_future_covariates=lags_future_covariates_list
