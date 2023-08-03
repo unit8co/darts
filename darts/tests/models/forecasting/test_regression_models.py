@@ -1,6 +1,7 @@
 import copy
 import functools
 import math
+import unittest
 from unittest.mock import patch
 
 import numpy as np
@@ -21,6 +22,7 @@ from darts.models import (
     CatBoostModel,
     LightGBMModel,
     LinearRegressionModel,
+    NotImportedModule,
     RandomForest,
     RegressionModel,
     XGBModel,
@@ -31,6 +33,10 @@ from darts.utils import timeseries_generation as tg
 from darts.utils.multioutput import MultiOutputRegressor
 
 logger = get_logger(__name__)
+
+# replace catboost and lgbm with xgb in case of core requirements
+cb_available = not isinstance(CatBoostModel, NotImportedModule)
+lgbm_available = not isinstance(LightGBMModel, NotImportedModule)
 
 
 def train_test_split(series, split_ts):
@@ -161,36 +167,9 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         RandomForest,
         LinearRegressionModel,
         RegressionModel,
-        LightGBMModel,
-        CatBoostModel,
     ]
 
     # register likelihood regression models
-    QuantileCatBoostModel = partialclass(
-        CatBoostModel,
-        likelihood="quantile",
-        quantiles=[0.05, 0.5, 0.95],
-        random_state=42,
-    )
-    PoissonCatBoostModel = partialclass(
-        CatBoostModel,
-        likelihood="poisson",
-        random_state=42,
-    )
-    NormalCatBoostModel = partialclass(
-        CatBoostModel,
-        likelihood="gaussian",
-        random_state=42,
-    )
-    QuantileLightGBMModel = partialclass(
-        LightGBMModel,
-        likelihood="quantile",
-        quantiles=[0.05, 0.5, 0.95],
-        random_state=42,
-    )
-    PoissonLightGBMModel = partialclass(
-        LightGBMModel, likelihood="poisson", random_state=42
-    )
     QuantileLinearRegressionModel = partialclass(
         LinearRegressionModel,
         likelihood="quantile",
@@ -213,76 +192,123 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     # targets for poisson regression must be positive, so we exclude them for some tests
     models.extend(
         [
-            QuantileLightGBMModel,
             QuantileLinearRegressionModel,
-            QuantileCatBoostModel,
-            PoissonLightGBMModel,
             PoissonLinearRegressionModel,
-            PoissonCatBoostModel,
-            NormalCatBoostModel,
             PoissonXGBModel,
             QuantileXGBModel,
         ]
-    )
-
-    lgbm_w_categorical_covariates = LightGBMModel(
-        lags=1,
-        lags_past_covariates=1,
-        lags_future_covariates=[1],
-        output_chunk_length=1,
-        categorical_future_covariates=["fut_cov_promo_mechanism"],
-        categorical_past_covariates=["past_cov_cat_dummy"],
-        categorical_static_covariates=["product_id"],
     )
 
     univariate_accuracies = [
         0.03,  # RandomForest
         1e-13,  # LinearRegressionModel
         1e-13,  # RegressionModel
-        0.3,  # LightGBMModel
-        0.75,  # CatBoostModel
-        0.5,  # QuantileLightGBMModel
         0.8,  # QuantileLinearRegressionModel
-        1e-03,  # QuantileCatBoostModel
-        0.4,  # PoissonLightGBMModel
         0.4,  # PoissonLinearRegressionModel
-        1e-01,  # PoissonCatBoostModel
-        1e-05,  # NormalCatBoostModel
         1e-01,  # PoissonXGBModel
         0.5,  # QuantileXGBModel
     ]
     multivariate_accuracies = [
-        0.3,
-        1e-13,
-        1e-13,
-        0.4,
-        0.75,  # CatBoostModel
-        0.4,  # QuantileLightGBMModel
+        0.3,  # RandomForest
+        1e-13,  # LinearRegressionModel
+        1e-13,  # RegressionModel
         0.8,  # QuantileLinearRegressionModel
-        1e-03,
-        0.4,
-        0.4,
-        0.15,
-        1e-05,
-        0.15,
-        0.4,
+        0.4,  # PoissonLinearRegressionModel
+        0.15,  # PoissonXGBModel
+        0.4,  # QuantileXGBModel
     ]
     multivariate_multiseries_accuracies = [
         0.05,  # RandomForest
         1e-13,  # LinearRegressionModel
         1e-13,  # RegressionModel
-        0.05,  # LightGBMModel
-        0.75,  # CatBoostModel
-        0.4,  # QuantileLightGBMModel
         0.8,  # QuantileLinearRegressionModel
-        1e-03,  # QuantileCatBoostModel
-        0.4,  # PoissonLightGBMModel
         0.4,  # PoissonLinearRegressionModel
-        1e-01,  # PoissonCatBoostModel
-        1e-03,  # NormalCatBoostModel
         1e-01,  # PoissonXGBModel
         0.4,  # QuantileXGBModel
     ]
+
+    lgbm_w_categorical_covariates = NotImportedModule
+    if lgbm_available:
+        QuantileLightGBMModel = partialclass(
+            LightGBMModel,
+            likelihood="quantile",
+            quantiles=[0.05, 0.5, 0.95],
+            random_state=42,
+        )
+        PoissonLightGBMModel = partialclass(
+            LightGBMModel, likelihood="poisson", random_state=42
+        )
+        models += [
+            LightGBMModel,
+            QuantileLightGBMModel,
+            PoissonLightGBMModel,
+        ]
+
+        lgbm_w_categorical_covariates = LightGBMModel(
+            lags=1,
+            lags_past_covariates=1,
+            lags_future_covariates=[1],
+            output_chunk_length=1,
+            categorical_future_covariates=["fut_cov_promo_mechanism"],
+            categorical_past_covariates=["past_cov_cat_dummy"],
+            categorical_static_covariates=["product_id"],
+        )
+        univariate_accuracies += [
+            0.3,  # LightGBMModel
+            0.5,  # QuantileLightGBMModel
+            0.4,  # PoissonLightGBMModel
+        ]
+        multivariate_accuracies += [
+            0.4,  # LightGBMModel
+            0.4,  # QuantileLightGBMModel
+            0.4,  # PoissonLightGBMModel
+        ]
+        multivariate_multiseries_accuracies += [
+            0.05,  # LightGBMModel
+            0.4,  # QuantileLightGBMModel
+            0.4,  # PoissonLightGBMModel
+        ]
+    if cb_available:
+        QuantileCatBoostModel = partialclass(
+            CatBoostModel,
+            likelihood="quantile",
+            quantiles=[0.05, 0.5, 0.95],
+            random_state=42,
+        )
+        PoissonCatBoostModel = partialclass(
+            CatBoostModel,
+            likelihood="poisson",
+            random_state=42,
+        )
+        NormalCatBoostModel = partialclass(
+            CatBoostModel,
+            likelihood="gaussian",
+            random_state=42,
+        )
+        models += [
+            CatBoostModel,
+            QuantileCatBoostModel,
+            PoissonCatBoostModel,
+            NormalCatBoostModel,
+        ]
+        univariate_accuracies += [
+            0.75,  # CatBoostModel
+            1e-03,  # QuantileCatBoostModel
+            1e-01,  # PoissonCatBoostModel
+            1e-05,  # NormalCatBoostModel
+        ]
+        multivariate_accuracies += [
+            0.75,  # CatBoostModel
+            1e-03,  # QuantileCatBoostModel
+            0.15,  # PoissonCatBoostModel
+            1e-05,  # NormalCatBoostModel
+        ]
+        multivariate_multiseries_accuracies += [
+            0.75,  # CatBoostModel
+            1e-03,  # QuantileCatBoostModel
+            1e-01,  # PoissonCatBoostModel
+            1e-03,  # NormalCatBoostModel
+        ]
 
     # dummy feature and target TimeSeries instances
     target_series, past_covariates, future_covariates = dummy_timeseries(
@@ -1077,22 +1103,24 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
     def test_min_train_series_length(self):
         mutli_models_modes = [True, False]
+        lgbm_cls = LightGBMModel if lgbm_available else XGBModel
+        cb_cls = CatBoostModel if cb_available else XGBModel
         for mode in mutli_models_modes:
-            model = LightGBMModel(lags=4, multi_models=mode)
+            model = lgbm_cls(lags=4, multi_models=mode)
             min_train_series_length_expected = (
                 -model.lags["target"][0] + model.output_chunk_length + 1
             )
             self.assertEqual(
                 min_train_series_length_expected, model.min_train_series_length
             )
-            model = CatBoostModel(lags=2, multi_models=mode)
+            model = cb_cls(lags=2, multi_models=mode)
             min_train_series_length_expected = (
                 -model.lags["target"][0] + model.output_chunk_length + 1
             )
             self.assertEqual(
                 min_train_series_length_expected, model.min_train_series_length
             )
-            model = LightGBMModel(lags=[-4, -3, -2], multi_models=mode)
+            model = lgbm_cls(lags=[-4, -3, -2], multi_models=mode)
             min_train_series_length_expected = (
                 -model.lags["target"][0] + model.output_chunk_length + 1
             )
@@ -1178,20 +1206,25 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         lags = 4
 
         models = [
-            LightGBMModel(lags=lags, output_chunk_length=1, multi_models=True),
-            LightGBMModel(lags=lags, output_chunk_length=1, multi_models=False),
-            LightGBMModel(lags=lags, output_chunk_length=2, multi_models=True),
-            LightGBMModel(lags=lags, output_chunk_length=2, multi_models=False),
-            CatBoostModel(lags=lags, output_chunk_length=1, multi_models=True),
-            CatBoostModel(lags=lags, output_chunk_length=1, multi_models=False),
-            CatBoostModel(lags=lags, output_chunk_length=2, multi_models=True),
-            CatBoostModel(lags=lags, output_chunk_length=2, multi_models=False),
             XGBModel(lags=lags, output_chunk_length=1, multi_models=True),
             XGBModel(lags=lags, output_chunk_length=1, multi_models=False),
             XGBModel(lags=lags, output_chunk_length=2, multi_models=True),
             XGBModel(lags=lags, output_chunk_length=2, multi_models=False),
         ]
-
+        if lgbm_available:
+            models += [
+                LightGBMModel(lags=lags, output_chunk_length=1, multi_models=True),
+                LightGBMModel(lags=lags, output_chunk_length=1, multi_models=False),
+                LightGBMModel(lags=lags, output_chunk_length=2, multi_models=True),
+                LightGBMModel(lags=lags, output_chunk_length=2, multi_models=False),
+            ]
+        if cb_available:
+            models += [
+                CatBoostModel(lags=lags, output_chunk_length=1, multi_models=True),
+                CatBoostModel(lags=lags, output_chunk_length=1, multi_models=False),
+                CatBoostModel(lags=lags, output_chunk_length=2, multi_models=True),
+                CatBoostModel(lags=lags, output_chunk_length=2, multi_models=False),
+            ]
         train, val = self.sine_univariate1.split_after(0.6)
 
         for model in models:
@@ -1464,7 +1497,13 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                         future_covariates=future_covariates[: -26 + req_future_offset],
                     )
 
-    @patch.object(darts.models.forecasting.lgbm.lgb.LGBMRegressor, "fit")
+    @unittest.skipUnless(lgbm_available, "requires lightgbm")
+    @patch.object(
+        darts.models.forecasting.lgbm.lgb.LGBMRegressor
+        if lgbm_available
+        else darts.models.utils.NotImportedModule,
+        "fit",
+    )
     def test_gradient_boosted_model_with_eval_set(self, lgb_fit_patch):
         """Test whether these evaluation set parameters are passed to LGBRegressor"""
         model = LightGBMModel(lags=4, lags_past_covariates=2)
@@ -1574,14 +1613,12 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         }
 
         multi_models_mode = [True, False]
+        models_cls = [RegressionModel, LinearRegressionModel, XGBModel]
+        if lgbm_available:
+            models_cls.append(LightGBMModel)
         for mode in multi_models_mode:
             for ocl in [1, 2]:
-                for model_cls in [
-                    RegressionModel,
-                    LinearRegressionModel,
-                    LightGBMModel,
-                    XGBModel,
-                ]:
+                for model_cls in models_cls:
                     model_pc_valid0 = model_cls(
                         lags=2,
                         add_encoders=encoder_examples["past"],
@@ -1914,7 +1951,13 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             assert len(model.encoders.future_encoders) == 1
             assert isinstance(model.encoders.future_encoders[0], FutureCyclicEncoder)
 
-    @patch.object(darts.models.forecasting.catboost_model.CatBoostRegressor, "fit")
+    @unittest.skipUnless(cb_available, "requires catboost")
+    @patch.object(
+        darts.models.forecasting.catboost_model.CatBoostRegressor
+        if cb_available
+        else darts.models.utils.NotImportedModule,
+        "fit",
+    )
     def test_catboost_model_with_eval_set(self, lgb_fit_patch):
         """Test whether these evaluation set parameters are passed to CatBoostRegressor"""
         model = CatBoostModel(lags=4, lags_past_covariates=2)
@@ -1931,6 +1974,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         assert lgb_fit_patch.call_args[1]["eval_set"] is not None
         assert lgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
 
+    @unittest.skipUnless(lgbm_available, "requires lightgbm")
     def test_quality_forecast_with_categorical_covariates(self):
         """Test case: two time series, a full sine wave series and a sine wave series
         with some irregularities every other period. Only models which use categorical
@@ -2006,6 +2050,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                 ]
             )
 
+    @unittest.skipUnless(lgbm_available, "requires lightgbm")
     def test_fit_with_categorical_features_raises_error(self):
         (
             series,
@@ -2047,6 +2092,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                     future_covariates=future_covariates,
                 )
 
+    @unittest.skipUnless(lgbm_available, "requires lightgbm")
     def test_get_categorical_features_helper(self):
         """Test helper function responsible for retrieving indices of categorical features"""
         (
@@ -2072,7 +2118,13 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             ],
         )
 
-    @patch.object(darts.models.forecasting.lgbm.lgb.LGBMRegressor, "fit")
+    @unittest.skipUnless(lgbm_available, "requires lightgbm")
+    @patch.object(
+        darts.models.forecasting.lgbm.lgb.LGBMRegressor
+        if lgbm_available
+        else darts.models.utils.NotImportedModule,
+        "fit",
+    )
     def test_lgbm_categorical_features_passed_to_fit_correctly(self, lgb_fit_patch):
         """Test whether the categorical features are passed to LightGBMRegressor"""
         (
@@ -2120,78 +2172,6 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):
     models_cls_kwargs_errs = [
         (
-            LightGBMModel,
-            {
-                "lags": 2,
-                "likelihood": "quantile",
-                "random_state": 42,
-                "multi_models": True,
-            },
-            0.4,
-        ),
-        (
-            LightGBMModel,
-            {
-                "lags": 2,
-                "likelihood": "quantile",
-                "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
-                "random_state": 42,
-                "multi_models": True,
-            },
-            0.4,
-        ),
-        (
-            LightGBMModel,
-            {
-                "lags": 2,
-                "likelihood": "poisson",
-                "random_state": 42,
-                "multi_models": True,
-            },
-            0.6,
-        ),
-        (
-            CatBoostModel,
-            {
-                "lags": 2,
-                "likelihood": "quantile",
-                "random_state": 42,
-                "multi_models": True,
-            },
-            0.05,
-        ),
-        (
-            CatBoostModel,
-            {
-                "lags": 2,
-                "likelihood": "quantile",
-                "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
-                "random_state": 42,
-                "multi_models": True,
-            },
-            0.05,
-        ),
-        (
-            CatBoostModel,
-            {
-                "lags": 2,
-                "likelihood": "poisson",
-                "random_state": 42,
-                "multi_models": True,
-            },
-            0.6,
-        ),
-        (
-            CatBoostModel,
-            {
-                "lags": 2,
-                "likelihood": "gaussian",
-                "random_state": 42,
-                "multi_models": True,
-            },
-            0.05,
-        ),
-        (
             LinearRegressionModel,
             {
                 "lags": 2,
@@ -2233,6 +2213,84 @@ class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):
             0.4,
         ),
     ]
+    if lgbm_available:
+        models_cls_kwargs_errs += [
+            (
+                LightGBMModel,
+                {
+                    "lags": 2,
+                    "likelihood": "quantile",
+                    "random_state": 42,
+                    "multi_models": True,
+                },
+                0.4,
+            ),
+            (
+                LightGBMModel,
+                {
+                    "lags": 2,
+                    "likelihood": "quantile",
+                    "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
+                    "random_state": 42,
+                    "multi_models": True,
+                },
+                0.4,
+            ),
+            (
+                LightGBMModel,
+                {
+                    "lags": 2,
+                    "likelihood": "poisson",
+                    "random_state": 42,
+                    "multi_models": True,
+                },
+                0.6,
+            ),
+        ]
+    if cb_available:
+        models_cls_kwargs_errs += [
+            (
+                CatBoostModel,
+                {
+                    "lags": 2,
+                    "likelihood": "quantile",
+                    "random_state": 42,
+                    "multi_models": True,
+                },
+                0.05,
+            ),
+            (
+                CatBoostModel,
+                {
+                    "lags": 2,
+                    "likelihood": "quantile",
+                    "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
+                    "random_state": 42,
+                    "multi_models": True,
+                },
+                0.05,
+            ),
+            (
+                CatBoostModel,
+                {
+                    "lags": 2,
+                    "likelihood": "poisson",
+                    "random_state": 42,
+                    "multi_models": True,
+                },
+                0.6,
+            ),
+            (
+                CatBoostModel,
+                {
+                    "lags": 2,
+                    "likelihood": "gaussian",
+                    "random_state": 42,
+                    "multi_models": True,
+                },
+                0.05,
+            ),
+        ]
 
     constant_ts = tg.constant_timeseries(length=200, value=0.5)
     constant_noisy_ts = constant_ts + tg.gaussian_timeseries(length=200, std=0.1)

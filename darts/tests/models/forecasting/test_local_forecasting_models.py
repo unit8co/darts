@@ -29,6 +29,7 @@ from darts.models import (
     NaiveMean,
     NaiveMovingAverage,
     NaiveSeasonal,
+    NotImportedModule,
     Prophet,
     RandomForest,
     RegressionModel,
@@ -72,7 +73,6 @@ models = [
     (KalmanForecaster(dim_x=3), 20),
     (LinearRegressionModel(lags=12), 13),
     (RandomForest(lags=12, n_estimators=5, max_depth=3), 14),
-    (Prophet(), 9.0),
     (AutoARIMA(), 12),
     (TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 8.5),
     (BATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 11),
@@ -93,7 +93,6 @@ dual_models = [
     ARIMA(),
     StatsForecastAutoARIMA(season_length=12),
     StatsForecastAutoETS(season_length=12),
-    Prophet(),
     AutoARIMA(),
 ]
 
@@ -102,9 +101,12 @@ encoder_support_models = [
     VARIMA(1, 0, 0),
     ARIMA(),
     AutoARIMA(),
-    Prophet(),
     KalmanForecaster(dim_x=30),
 ]
+if not isinstance(Prophet, NotImportedModule):
+    models.append((Prophet(), 9.0))
+    dual_models.append(Prophet())
+    encoder_support_models.append(Prophet())
 
 
 class LocalForecastingModelsTestCase(DartsBaseTestClass):
@@ -612,10 +614,10 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             (ExponentialSmoothing(), "ExponentialSmoothing()"),  # no params changed
             (ARIMA(1, 1, 1), "ARIMA(p=1, q=1)"),  # default value for a param
             (
-                Prophet(
+                KalmanForecaster(
                     add_encoders={"cyclic": {"past": ["month"]}}
                 ),  # data structure param
-                "Prophet(add_encoders={'cyclic': {'past': ['month']}})",
+                "KalmanForecaster(add_encoders={'cyclic': {'past': ['month']}})",
             ),
             (
                 TBATS(

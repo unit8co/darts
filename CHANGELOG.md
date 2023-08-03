@@ -10,6 +10,13 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For users of the library:
 
+**Installation**
+- 🔴 Removed Prophet, LightGBM, and CatBoost dependencies from PyPI packages (`darts`, `u8darts`, `u8darts[torch]`), and conda-forge packages (`u8darts`, `u8darts-torch`)  to avoid installation issues that some users were facing (installation on Apple M1/M2 devices, ...). [#1589](https://github.com/unit8co/darts/pull/1589) by [Julien Herzen](https://github.com/hrzn) and [Dennis Bader](https://github.com/dennisbader).
+  - The models are still supported by installing the required packages as described in our [installation guide](https://github.com/unit8co/darts/blob/master/INSTALL.md#enabling-optional-dependencies).
+  - PyPi package `u8darts[all]` and conda-forge package `u8darts-all` are now equivalent to the old `darts` package (all dependencies). 
+  - Added new PyPI flavor `u8darts[notorch]`, and conda-forge flavor `u8darts-notorch` which are equivalent to the old `u8darts` installation.
+- 🔴 Removed support for Python 3.7 [#1864](https://github.com/unit8co/darts/pull/#1864) by [Dennis Bader](https://github.com/dennisbader).
+
 **Improved**
 - General model improvements:
   - Added support for `PathLike` to the `save()` and `load()` functions of all non-deep learning based models. [#1754](https://github.com/unit8co/darts/pull/1754) by [Simon Sudrich](https://github.com/sudrich).
@@ -42,9 +49,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed an issue where `DTWAlignment.plot_alignment()` was not plotting the alignment plot of series with a RangeIndex correctly. [#1880](https://github.com/unit8co/darts/pull/1880) by [Ahmet Zamanis](https://github.com/AhmetZamanis) and [Dennis Bader](https://github.com/dennisbader).
 - Fixed an issue when calling `ARIMA.predict()` and `num_samples > 1` (probabilistic forecasting), where the start point of the simulation was not anchored to the end of the target series. [#1893](https://github.com/unit8co/darts/pull/1893) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed an issue when using `TFTModel.predict()` with `full_attention=True` where the attention mask was not applied properly. [#1392](https://github.com/unit8co/darts/issues/1392) by [Dennis Bader](https://github.com/dennisbader).
-
-**Removed**
-- Removed support for Python 3.7 [#1864](https://github.com/unit8co/darts/pull/#1864) by [Dennis Bader](https://github.com/dennisbader).
 
 ### For developers of the library:
 
