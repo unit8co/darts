@@ -33,7 +33,7 @@ As some models have relatively heavy dependencies, we provide four conda-forge p
 
 * Install darts with all available models: `conda install -c conda-forge -c pytorch u8darts-all`
 * Install core only (without neural networks, Prophet, LightGBM and Catboost): `conda install -c conda-forge u8darts`
-* Install core + Prophet + LightGBM + CatBoost: `pip install "u8darts[notorch]"`
+* Install core + Prophet + LightGBM + CatBoost: `pip install "u8darts-notorch"`
 * Install core + neural networks (PyTorch): `conda install -c conda-forge -c pytorch u8darts-torch`
 
 
@@ -78,7 +78,7 @@ softwareupdate --install-rosetta
 
 Below are the necessary instructions to create and configure the environment:
 - Install conda if you haven't done so (e.g., with miniforge : `brew install miniforge`).
-- Create the x_64 environment : `CONDA_SUBDIR=osx-64 conda create -n env_name python=3.9 pip`
+- Create the x_64 environment : `CONDA_SUBDIR=osx-64 conda create -n env_name python=3.10 pip`
 - Activate the environment: `conda activate env_name`
 - Configure the environment : `conda env config vars set CONDA_SUBDIR=osx-64`
 - Deactivate and reactivate the environment:
