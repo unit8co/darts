@@ -1497,7 +1497,6 @@ class RegressionModelsTestCase(DartsBaseTestClass):
                         future_covariates=future_covariates[: -26 + req_future_offset],
                     )
 
-    # @patch.object(darts.models.forecasting.lgbm.lgb.LGBMRegressor, "fit")
     @unittest.skipUnless(lgbm_available, "requires lightgbm")
     @patch.object(
         darts.models.forecasting.lgbm.lgb.LGBMRegressor
@@ -1619,11 +1618,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             models_cls.append(LightGBMModel)
         for mode in multi_models_mode:
             for ocl in [1, 2]:
-                for model_cls in [
-                    RegressionModel,
-                    LinearRegressionModel,
-                    XGBModel,
-                ]:
+                for model_cls in models_cls:
                     model_pc_valid0 = model_cls(
                         lags=2,
                         add_encoders=encoder_examples["past"],
