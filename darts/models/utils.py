@@ -12,7 +12,7 @@ class NotImportedModule:
         self.error_message = (
             f"The `{module_name}` module could not be imported. "
             f"To enable {module_name} support in Darts, follow the detailed "
-            f"install instructions for LightGBM in the README: "
+            f"instructions in the installation guide: "
             f"https://github.com/unit8co/darts/blob/master/INSTALL.md"
         )
         if warn:
