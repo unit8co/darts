@@ -22,6 +22,9 @@ except ImportError:
 if TORCH_AVAILABLE:
 
     class NbeatsNhitsModelTestCase(DartsBaseTestClass):
+        # for running locally on M1 devices
+        model_kwargs = {"pl_trainer_kwargs": {"accelerator": "cpu"}}
+
         def setUp(self):
             self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
 

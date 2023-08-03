@@ -21,6 +21,9 @@ except ImportError:
 if TORCH_AVAILABLE:
 
     class TCNModelTestCase(DartsBaseTestClass):
+        # for running locally on M1 devices
+        model_kwargs = {"pl_trainer_kwargs": {"accelerator": "cpu"}}
+
         def test_creation(self):
             with self.assertRaises(ValueError):
                 # cannot choose a kernel size larger than the input length

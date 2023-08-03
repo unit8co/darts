@@ -27,8 +27,8 @@ if TORCH_AVAILABLE:
             "max_epochs": 1,
             "logger": False,
             "enable_checkpointing": False,
+            "accelerator": "cpu",  # for running locally on M1 devices
         }
-
         series = linear_timeseries(length=100).astype(np.float32)
         pl_200_or_above = int(pl.__version__.split(".")[0]) >= 2
         precisions = {

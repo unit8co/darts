@@ -28,6 +28,7 @@ except ImportError:
 if TORCH_AVAILABLE:
 
     class TFTModelTestCase(DartsBaseTestClass):
+        # for running locally on M1 devices
         model_kwargs = {"pl_trainer_kwargs": {"accelerator": "cpu"}}
 
         def test_quantile_regression(self):

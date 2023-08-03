@@ -27,6 +27,8 @@ except ImportError:
 if TORCH_AVAILABLE:
 
     class TiDEModelModelTestCase(DartsBaseTestClass):
+        # for running locally on M1 devices
+        model_kwargs = {"pl_trainer_kwargs": {"accelerator": "cpu"}}
         np.random.seed(42)
         torch.manual_seed(42)
 
