@@ -1133,13 +1133,15 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             resampled_timeseries.pd_series().at[pd.Timestamp("20130109")], 8
         )
 
-        # using loffset to avoid nan in the first value
+        # using offset to avoid nan in the first value
         times = pd.date_range(
             start=pd.Timestamp("20200101233000"), periods=10, freq="15T"
         )
         pd_series = pd.Series(range(10), index=times)
         timeseries = TimeSeries.from_series(pd_series)
-        resampled_timeseries = timeseries.resample(freq="1h", loffset="30T")
+        resampled_timeseries = timeseries.resample(
+            freq="1h", offset=pd.Timedelta("30T")
+        )
         self.assertEqual(
             resampled_timeseries.pd_series().at[pd.Timestamp("20200101233000")], 0
         )
