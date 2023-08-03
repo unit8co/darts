@@ -73,7 +73,8 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     n_epochs=10,
                     random_state=42,
-                    **kwargs
+                    **kwargs,
+                    **self.model_kwargs
                 )
                 model.fit(large_ts[:98])
                 pred = model.predict(n=2).values()[0]
@@ -84,6 +85,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     n_epochs=10,
                     random_state=42,
+                    **self.model_kwargs
                 )
                 model2.fit(small_ts[:98])
                 pred2 = model2.predict(n=2).values()[0]
@@ -104,7 +106,10 @@ if TORCH_AVAILABLE:
                     n_epochs=1,
                     log_tensorboard=True,
                     work_dir=self.temp_work_dir,
-                    pl_trainer_kwargs={"log_every_n_steps": 1},
+                    pl_trainer_kwargs={
+                        "log_every_n_steps": 1,
+                        **self.model_kwargs["pl_trainer_kwargs"],
+                    },
                 )
                 model.fit(ts)
                 model.predict(n=2)
@@ -123,6 +128,7 @@ if TORCH_AVAILABLE:
                     const_init=False,
                     shared_weights=True,
                     random_state=42,
+                    **self.model_kwargs
                 )
                 model_not_shared = model_cls(
                     input_chunk_length=5,
@@ -131,6 +137,7 @@ if TORCH_AVAILABLE:
                     const_init=False,
                     shared_weights=False,
                     random_state=42,
+                    **self.model_kwargs
                 )
                 model_shared.fit(ts)
                 model_not_shared.fit(ts)
@@ -187,6 +194,7 @@ if TORCH_AVAILABLE:
                     const_init=True,
                     likelihood=lkl,
                     random_state=42,
+                    **self.model_kwargs
                 )
 
                 model.fit(
@@ -259,7 +267,9 @@ if TORCH_AVAILABLE:
             # can only fit models with past/future covariates when shared_weights=False
             for model in [DLinearModel, NLinearModel]:
                 for shared_weights in [True, False]:
-                    model_instance = model(5, 5, shared_weights=shared_weights)
+                    model_instance = model(
+                        5, 5, shared_weights=shared_weights, **self.model_kwargs
+                    )
                     assert model_instance.supports_past_covariates == (
                         not shared_weights
                     )
@@ -281,6 +291,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=6,
                     use_static_covariates=True,
                     n_epochs=1,
+                    **self.model_kwargs
                 )
                 model.fit(series)
                 with pytest.raises(ValueError):
@@ -292,6 +303,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=6,
                     use_static_covariates=False,
                     n_epochs=1,
+                    **self.model_kwargs
                 )
                 model.fit(series)
                 preds = model.predict(n=2, series=series.with_static_covariates(None))
@@ -303,6 +315,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=6,
                     use_static_covariates=False,
                     n_epochs=1,
+                    **self.model_kwargs
                 )
                 model.fit(series.with_static_covariates(None))
                 preds = model.predict(n=2, series=series)
