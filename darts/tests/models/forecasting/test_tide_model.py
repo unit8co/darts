@@ -56,6 +56,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 n_epochs=10,
                 random_state=42,
+                **self.model_kwargs
             )
 
             model.fit(large_ts[:98])
@@ -67,6 +68,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 n_epochs=10,
                 random_state=42,
+                **self.model_kwargs
             )
 
             model2.fit(small_ts[:98])
@@ -87,7 +89,10 @@ if TORCH_AVAILABLE:
                 n_epochs=1,
                 log_tensorboard=True,
                 work_dir=self.temp_work_dir,
-                pl_trainer_kwargs={"log_every_n_steps": 1},
+                pl_trainer_kwargs={
+                    "log_every_n_steps": 1,
+                    **self.model_kwargs["pl_trainer_kwargs"],
+                },
             )
             model.fit(ts)
             model.predict(n=2)
@@ -100,6 +105,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 add_encoders={"cyclic": {"future": "hour"}},
                 use_reversible_instance_norm=False,
+                **self.model_kwargs
             )
             model.fit(ts_time_index, verbose=False, epochs=1)
 
@@ -108,6 +114,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 add_encoders={"cyclic": {"future": "hour"}},
                 use_reversible_instance_norm=True,
+                **self.model_kwargs
             )
             model.fit(ts_time_index, verbose=False, epochs=1)
 
@@ -118,6 +125,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 add_encoders={"cyclic": {"future": "hour", "past": "hour"}},
+                **self.model_kwargs
             )
             model.fit(ts_time_index, verbose=False, epochs=1)
 
@@ -128,6 +136,7 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 add_encoders={"cyclic": {"past": "hour"}},
+                **self.model_kwargs
             )
             model.fit(ts_time_index, verbose=False, epochs=1)
 
@@ -142,6 +151,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     add_encoders={"cyclic": {"future": "hour", "past": "hour"}},
                     use_reversible_instance_norm=enable_rin,
+                    **self.model_kwargs
                 )
                 model.fit(ts_time_index, ts_time_index, verbose=False, epochs=1)
 
@@ -151,6 +161,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     add_encoders={"cyclic": {"future": "hour", "past": "hour"}},
                     use_reversible_instance_norm=enable_rin,
+                    **self.model_kwargs
                 )
                 model.fit(
                     ts_time_index, ts_time_index, ts_time_index, verbose=False, epochs=1
@@ -173,7 +184,10 @@ if TORCH_AVAILABLE:
                 input_chunk_length=3,
                 output_chunk_length=4,
                 add_encoders={"cyclic": {"future": "hour"}},
-                pl_trainer_kwargs={"fast_dev_run": True},
+                pl_trainer_kwargs={
+                    "fast_dev_run": True,
+                    **self.model_kwargs["pl_trainer_kwargs"],
+                },
             )
             model.fit(target_multi, verbose=False)
 
@@ -200,6 +214,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=4,
                 use_static_covariates=False,
                 n_epochs=1,
+                **self.model_kwargs
             )
             model.fit(target_multi)
             preds = model.predict(n=2, series=target_multi.with_static_covariates(None))
@@ -210,6 +225,7 @@ if TORCH_AVAILABLE:
                 output_chunk_length=4,
                 use_static_covariates=False,
                 n_epochs=1,
+                **self.model_kwargs
             )
             model.fit(target_multi.with_static_covariates(None))
             preds = model.predict(n=2, series=target_multi)
