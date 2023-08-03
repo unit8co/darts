@@ -53,28 +53,24 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         # Test univariate
         with self.assertRaises(AssertionError):
-            granger_causality_tests(series_cause_1, series_effect_1, 10, verbose=False)
+            granger_causality_tests(series_cause_1, series_effect_1, 10)
         with self.assertRaises(AssertionError):
-            granger_causality_tests(series_effect_1, series_cause_1, 10, verbose=False)
+            granger_causality_tests(series_effect_1, series_cause_1, 10)
 
         # Test deterministic
         with self.assertRaises(AssertionError):
-            granger_causality_tests(series_cause_1, series_effect_3, 10, verbose=False)
+            granger_causality_tests(series_cause_1, series_effect_3, 10)
         with self.assertRaises(AssertionError):
-            granger_causality_tests(series_effect_3, series_cause_1, 10, verbose=False)
+            granger_causality_tests(series_effect_3, series_cause_1, 10)
 
         # Test Frequency
         with self.assertRaises(ValueError):
-            granger_causality_tests(series_cause_2, series_effect_4, 10, verbose=False)
+            granger_causality_tests(series_cause_2, series_effect_4, 10)
 
         # Test granger basics
-        tests = granger_causality_tests(
-            series_effect_2, series_effect_2, 10, verbose=False
-        )
+        tests = granger_causality_tests(series_effect_2, series_effect_2, 10)
         self.assertTrue(tests[1][0]["ssr_ftest"][1] > 0.99)
-        tests = granger_causality_tests(
-            series_cause_2, series_effect_2, 10, verbose=False
-        )
+        tests = granger_causality_tests(series_cause_2, series_effect_2, 10)
         self.assertTrue(tests[1][0]["ssr_ftest"][1] > 0.01)
 
     def test_stationarity_tests(self):
