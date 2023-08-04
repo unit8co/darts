@@ -26,7 +26,6 @@ from darts.models.forecasting.tft_submodels import (
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 from darts.utils.data import (
-    MixedCovariatesInferenceDataset,
     MixedCovariatesSequentialDataset,
     MixedCovariatesTrainingDataset,
     TrainingDataset,
@@ -1123,24 +1122,6 @@ class TFTModel(MixedCovariatesTorchModel):
         raise_if_not(
             isinstance(train_dataset, MixedCovariatesTrainingDataset),
             "TFTModel requires a training dataset of type MixedCovariatesTrainingDataset.",
-        )
-
-    def _build_inference_dataset(
-        self,
-        target: Sequence[TimeSeries],
-        n: int,
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-    ) -> MixedCovariatesInferenceDataset:
-
-        return MixedCovariatesInferenceDataset(
-            target_series=target,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            n=n,
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
-            use_static_covariates=self.uses_static_covariates,
         )
 
     @property
