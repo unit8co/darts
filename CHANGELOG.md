@@ -53,7 +53,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improvements**
 - Refactored the `ForecastingModelExplainer` and `ExplainabilityResult` to simplify implementation of new explainers. [#1392](https://github.com/unit8co/darts/issues/1392) by [Dennis Bader](https://github.com/dennisbader).
-- Adapted all unit tests to run successfully on M1 devices. [#1933](https://github.com/unit8co/darts/issues/1392) by [Dennis Bader](https://github.com/dennisbader).
+- Adapted all unit tests to run successfully on M1 devices. [#1933](https://github.com/unit8co/darts/issues/1393) by [Dennis Bader](https://github.com/dennisbader).
 
 ## [0.24.0](https://github.com/unit8co/darts/tree/0.24.0) (2023-04-12)
 ### For users of the library:
