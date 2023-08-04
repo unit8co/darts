@@ -1,6 +1,7 @@
 import itertools
 from unittest.mock import patch
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
@@ -442,26 +443,32 @@ if TORCH_AVAILABLE:
                     _ = explainer.plot_attention(
                         results, plot_type="all", show_index_as="relative"
                     )
+                    plt.close()
                 with patch("matplotlib.pyplot.show") as _:
                     _ = explainer.plot_attention(
                         results, plot_type="all", show_index_as="time"
                     )
+                    plt.close()
                 with patch("matplotlib.pyplot.show") as _:
                     _ = explainer.plot_attention(
                         results, plot_type="time", show_index_as="relative"
                     )
+                    plt.close()
                 with patch("matplotlib.pyplot.show") as _:
                     _ = explainer.plot_attention(
                         results, plot_type="time", show_index_as="time"
                     )
+                    plt.close()
                 with patch("matplotlib.pyplot.show") as _:
                     _ = explainer.plot_attention(
                         results, plot_type="heatmap", show_index_as="relative"
                     )
+                    plt.close()
                 with patch("matplotlib.pyplot.show") as _:
                     _ = explainer.plot_attention(
                         results, plot_type="heatmap", show_index_as="time"
                     )
+                    plt.close()
 
         def helper_create_model(
             self, use_encoders=True, add_relative_idx=True, full_attention=False

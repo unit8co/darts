@@ -85,7 +85,9 @@ def _optimized_historical_forecasts_regression_last_points_only(
             hist_fct_fc_end -= shift * unit
 
         X, times = create_lagged_prediction_data(
-            target_series=series_[hist_fct_tgt_start:hist_fct_tgt_end],
+            target_series=None
+            if len(model.lags.get("target", [])) == 0
+            else series_[hist_fct_tgt_start:hist_fct_tgt_end],
             past_covariates=None
             if past_covariates_ is None
             else past_covariates_[hist_fct_pc_start:hist_fct_pc_end],
@@ -226,7 +228,9 @@ def _optimized_historical_forecasts_regression_all_points(
                 hist_fct_fc_end += shift_end * unit
 
         X, _ = create_lagged_prediction_data(
-            target_series=series_[hist_fct_tgt_start:hist_fct_tgt_end],
+            target_series=None
+            if len(model.lags.get("target", [])) == 0
+            else series_[hist_fct_tgt_start:hist_fct_tgt_end],
             past_covariates=None
             if past_covariates_ is None
             else past_covariates_[hist_fct_pc_start:hist_fct_pc_end],
